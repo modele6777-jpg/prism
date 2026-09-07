@@ -21,8 +21,8 @@ interface BigBangCircularMeterProps {
 
 /**
  * 🔮 빅뱅 아케인 마법진 매트릭스 (BigBang Arcane Magic Circle)
- * - GPU 하드웨어 가속 기반 초경량 60fps 무부하 렌더링
- * - 버튼 중심 아이콘을 코어로 삼는 신비롭고 정교한 마법진 룬 서클 시스템
+ * - 현대적이고 신비로운 대형 코스믹 아케인 서클 시스템
+ * - 직경 144px로 확대되어 76~84px 크기의 코스믹 옵시디언 버튼을 웅장하고 유려하게 감쌈
  */
 export const BigBangCircularMeter = React.memo(function BigBangCircularMeter({
   isPressing,
@@ -31,14 +31,13 @@ export const BigBangCircularMeter = React.memo(function BigBangCircularMeter({
   durationMs = 0,
   activePhase = 'idle',
   isAborted = false,
-  idleCycleProgress,
 }: BigBangCircularMeterProps) {
   const gradientId = useId();
 
-  // 버튼(56px) 외곽을 자연스럽고 고급스럽게 감싸는 최적의 마법진 직경 (104px)
-  const size = 104;
-  const center = size / 2; // 52px
-  const rArc = 42;
+  // 대형화된 버튼(76~84px) 외곽을 웅장하고 신비롭게 감싸는 최적의 마법진 직경 (144px)
+  const size = 144;
+  const center = size / 2; // 72px
+  const rArc = 58;
   const circumferenceArc = 2 * Math.PI * rArc;
 
   return (
@@ -47,7 +46,7 @@ export const BigBangCircularMeter = React.memo(function BigBangCircularMeter({
       style={{
         width: size,
         height: size,
-        transform: isPressing ? 'scale(1.15)' : isHovered ? 'scale(1.15)' : 'scale(1)',
+        transform: isPressing ? 'scale(1.12)' : isHovered ? 'scale(1.08)' : 'scale(1)',
       }}
     >
       {/* 🌟 1. 마법진 앰비언트 글로우 오라 */}
@@ -83,7 +82,7 @@ export const BigBangCircularMeter = React.memo(function BigBangCircularMeter({
         <circle
           cx={center}
           cy={center}
-          r={46}
+          r={62}
           fill="none"
           stroke="rgba(255, 255, 255, 0.15)"
           strokeWidth={0.8}
@@ -91,7 +90,7 @@ export const BigBangCircularMeter = React.memo(function BigBangCircularMeter({
         <circle
           cx={center}
           cy={center}
-          r={38}
+          r={52}
           fill="none"
           stroke="rgba(0, 240, 255, 0.2)"
           strokeWidth={0.6}
@@ -105,7 +104,7 @@ export const BigBangCircularMeter = React.memo(function BigBangCircularMeter({
             r={rArc}
             fill="none"
             stroke={`url(#${gradientId}-magic-gradient)`}
-            strokeWidth={isPressing ? 2.2 : isHovered ? 2 : 1.5}
+            strokeWidth={isPressing ? 2.4 : isHovered ? 2 : 1.6}
             strokeDasharray={
               isPressing
                 ? `${circumferenceArc * Math.max(0.15, Math.min(1.0, gauge))} ${circumferenceArc * (1 - Math.max(0.15, Math.min(1.0, gauge)))}`
@@ -133,21 +132,21 @@ export const BigBangCircularMeter = React.memo(function BigBangCircularMeter({
         <circle
           cx={center}
           cy={center}
-          r={48}
+          r={66}
           fill="none"
           stroke="currentColor"
           strokeWidth={0.8}
-          strokeDasharray="2 4"
+          strokeDasharray="3 5"
           className="opacity-60"
         />
 
-        {/* 12방위 눈금 */}
+        {/* 12방위 정밀 눈금선 */}
         {Array.from({ length: 12 }).map((_, i) => {
           const angle = (i * 30 * Math.PI) / 180;
-          const x1 = center + 44 * Math.cos(angle);
-          const y1 = center + 44 * Math.sin(angle);
-          const x2 = center + 48 * Math.cos(angle);
-          const y2 = center + 48 * Math.sin(angle);
+          const x1 = center + 60 * Math.cos(angle);
+          const y1 = center + 60 * Math.sin(angle);
+          const x2 = center + 66 * Math.cos(angle);
+          const y2 = center + 66 * Math.sin(angle);
           return (
             <line
               key={`rune-line-${i}`}
@@ -163,10 +162,10 @@ export const BigBangCircularMeter = React.memo(function BigBangCircularMeter({
         })}
 
         {/* 4 방위 룬 보석 */}
-        <circle cx={center} cy={4} r={1.8} fill="#38bdf8" />
-        <circle cx={center} cy={size - 4} r={1.8} fill="#c084fc" />
-        <circle cx={4} cy={center} r={1.8} fill="#38bdf8" />
-        <circle cx={size - 4} cy={center} r={1.8} fill="#c084fc" />
+        <circle cx={center} cy={5} r={2.2} fill="#38bdf8" />
+        <circle cx={center} cy={size - 5} r={2.2} fill="#c084fc" />
+        <circle cx={5} cy={center} r={2.2} fill="#38bdf8" />
+        <circle cx={size - 5} cy={center} r={2.2} fill="#c084fc" />
       </svg>
 
       {/* 🌟 4. 내부 역방향 회전 신성기하학 마법진 (CSS spin-reverse, 누를 때 가속) */}
@@ -185,7 +184,7 @@ export const BigBangCircularMeter = React.memo(function BigBangCircularMeter({
         <circle
           cx={center}
           cy={center}
-          r={35}
+          r={46}
           fill="none"
           stroke="currentColor"
           strokeWidth={0.6}
@@ -193,9 +192,9 @@ export const BigBangCircularMeter = React.memo(function BigBangCircularMeter({
           className="opacity-70"
         />
 
-        {/* 교차 삼각성 */}
+        {/* 교차 삼각성 (Hexagram Sacred Geometry) */}
         <polygon
-          points={`${center},17 ${center + 26},61 ${center - 26},61`}
+          points={`${center},24 ${center + 36},86 ${center - 36},86`}
           fill="none"
           stroke="currentColor"
           strokeWidth={0.6}
@@ -203,7 +202,7 @@ export const BigBangCircularMeter = React.memo(function BigBangCircularMeter({
           className="opacity-40"
         />
         <polygon
-          points={`${center},87 ${center - 26},43 ${center + 26},43`}
+          points={`${center},120 ${center - 36},58 ${center + 36},58`}
           fill="none"
           stroke="#fbbf24"
           strokeWidth={0.6}
