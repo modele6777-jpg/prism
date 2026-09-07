@@ -457,6 +457,128 @@ export function BigBangButton() {
               />
             </div>
 
+            {/* 🌌 7대 정규 앱 성좌 노드 매트릭스 (현대적이고 신비로운 딥 코스믹 젬 시길) */}
+            <AnimatePresence>
+              {(isPressing || isHovered) && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.88 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.88 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute inset-0 flex items-center justify-center pointer-events-none z-35"
+                >
+                  {RADIAL_WARP_APPS.map((app, i) => {
+                    const angleDeg = (i * 360) / 7;
+                    const angleRad = ((angleDeg - 90) * Math.PI) / 180;
+                    const R = 82; // 82px orbit radius around 76-84px button
+                    const x = Math.round(R * Math.cos(angleRad));
+                    const y = Math.round(R * Math.sin(angleRad));
+                    const isSelected = radialSectorIndex === i;
+
+                    return (
+                      <motion.div
+                        key={app.id}
+                        initial={{ opacity: 0, scale: 0.5, x: 0, y: 0 }}
+                        animate={{
+                          opacity: 1,
+                          scale: isSelected ? 1.25 : 1,
+                          x,
+                          y,
+                        }}
+                        exit={{ opacity: 0, scale: 0.5, x: 0, y: 0 }}
+                        transition={{ type: 'spring', stiffness: 420, damping: 26 }}
+                        className="absolute flex items-center justify-center pointer-events-none"
+                      >
+                        {/* Selected Starlight Laser Guide Ray */}
+                        {isSelected && (
+                          <svg
+                            className="absolute overflow-visible pointer-events-none"
+                            style={{ width: 1, height: 1 }}
+                          >
+                            <line
+                              x1={-x}
+                              y1={-y}
+                              x2={0}
+                              y2={0}
+                              stroke={app.themeColor}
+                              strokeWidth={1.5}
+                              strokeDasharray="3 3"
+                              className="opacity-70 animate-pulse"
+                            />
+                          </svg>
+                        )}
+
+                        {/* Celestial Node Disc */}
+                        <div
+                          className={`relative w-8 h-8 sm:w-9 sm:h-9 rounded-full flex flex-col items-center justify-center transition-all duration-200 border ${
+                            isSelected
+                              ? 'border-white text-white'
+                              : 'border-white/20 bg-zinc-950/80 backdrop-blur-md opacity-80 text-zinc-300'
+                          }`}
+                          style={{
+                            background: isSelected
+                              ? `radial-gradient(circle at 35% 30%, ${app.themeColor} 0%, #121429 70%, #03040c 100%)`
+                              : 'radial-gradient(circle at 35% 30%, rgba(255,255,255,0.15) 0%, rgba(13,15,30,0.9) 60%, rgba(3,4,10,0.98) 100%)',
+                            boxShadow: isSelected
+                              ? `0 0 24px ${app.accentGlow}, inset 0 0 10px rgba(255,255,255,0.5)`
+                              : '0 2px 8px rgba(0,0,0,0.7), inset 0 0 6px rgba(255,255,255,0.08)',
+                            borderColor: isSelected ? '#ffffff' : 'rgba(255,255,255,0.25)',
+                          }}
+                        >
+                          <PrismAppIcon
+                            nameOrId={app.id}
+                            size={isSelected ? 16 : 14}
+                            color={isSelected ? '#ffffff' : app.themeColor}
+                            className="drop-shadow-[0_0_6px_rgba(255,255,255,0.6)]"
+                          />
+
+                          {/* Rune Symbol Badge */}
+                          <span
+                            className="absolute -bottom-1.5 text-[8px] font-mono font-bold leading-none px-1 py-0.5 rounded-full bg-black/80 border border-white/15"
+                            style={{ color: isSelected ? '#ffffff' : app.themeColor }}
+                          >
+                            {app.runeSymbol}
+                          </span>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* 🌟 실시간 타깃 HUD 배지 (선택된 앱 및 룬 상징 안내) */}
+            <AnimatePresence>
+              {radialSectorIndex >= 0 && RADIAL_WARP_APPS[radialSectorIndex] && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.9 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute -top-[76px] sm:-top-[84px] left-1/2 -translate-x-1/2 whitespace-nowrap z-50 pointer-events-none"
+                >
+                  <div
+                    className="flex items-center gap-2 px-3.5 py-1.5 rounded-full backdrop-blur-xl border shadow-[0_8px_32px_rgba(0,0,0,0.8)]"
+                    style={{
+                      background: 'rgba(6, 7, 18, 0.94)',
+                      borderColor: RADIAL_WARP_APPS[radialSectorIndex].themeColor,
+                      boxShadow: `0 0 20px ${RADIAL_WARP_APPS[radialSectorIndex].accentGlow}`,
+                    }}
+                  >
+                    <span className="text-sm font-bold" style={{ color: RADIAL_WARP_APPS[radialSectorIndex].themeColor }}>
+                      {RADIAL_WARP_APPS[radialSectorIndex].runeSymbol}
+                    </span>
+                    <span className="text-xs font-semibold text-white tracking-wide">
+                      {RADIAL_WARP_APPS[radialSectorIndex].name}
+                    </span>
+                    <span className="text-[10px] text-zinc-400 font-mono">
+                      · {RADIAL_WARP_APPS[radialSectorIndex].runeMeaning}
+                    </span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Ambient Gravitational Ripple Waves */}
             {activePhase === 'idle' && (
               <>
