@@ -403,8 +403,8 @@ export function BigBangButton() {
     if (isAborted) return 'aborted';
     // 🌌 사건의 지평선 상태 (조준 중): 해당 조준 채널의 아이콘을 최우선으로 표출!
     if (radialSectorIndex >= 0) return RADIAL_WARP_APPS[radialSectorIndex]?.id || 'hub';
-    // 🪞 제자리 홀드 - 미러홀은 프리즘 홈
-    if (isMirrorholeMode) return 'hub';
+    // 🪞 제자리 홀드 - 미러홀은 프리즘 세모 아이콘
+    if (isMirrorholeMode) return 'mirrorhole';
     // 🕳️ 제자리 홀드 - 블랙홀은 크리스탈 오브
     if (isBlackholeMode || isTargetOrb) return 'orb';
     // ⚪ 제자리 홀드 - 화이트홀은 루시 채팅
@@ -588,7 +588,7 @@ export function BigBangButton() {
                   : isWhiteholeMode
                   ? 'scale-110 border-cyan-300 shadow-[0_0_25px_rgba(255,255,255,0.9)]'
                   : isMirrorholeMode
-                  ? 'scale-110 border-white/90 shadow-[0_0_30px_rgba(255,255,255,0.95),inset_0_0_15px_rgba(255,255,255,0.8)] backdrop-blur-md'
+                  ? 'scale-110 border-cyan-200/80 shadow-[0_0_30px_rgba(56,189,248,0.7),inset_0_0_15px_rgba(255,255,255,0.75)] backdrop-blur-xl'
                   : isBlackholeMode
                   ? 'scale-105 border-zinc-800 shadow-[0_0_20px_rgba(0,0,0,0.95)]'
                   : 'border-cyan-400/40 hover:border-cyan-300/80 shadow-[0_0_20px_rgba(56,189,248,0.3)]'
@@ -599,7 +599,7 @@ export function BigBangButton() {
                   : isWhiteholeMode
                   ? 'radial-gradient(circle at 50% 50%, #ffffff 0%, #bae6fd 45%, #38bdf8 85%, #0284c7 100%)'
                   : isMirrorholeMode
-                  ? 'linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(186,230,253,0.4) 40%, rgba(224,242,254,0.2) 70%, rgba(255,255,255,0.6) 100%)'
+                  ? 'radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.38) 0%, rgba(186, 230, 253, 0.16) 45%, rgba(10, 15, 30, 0.3) 100%)'
                   : isBlackholeMode
                   ? '#04030a'
                   : '#080918',
@@ -612,7 +612,7 @@ export function BigBangButton() {
                   : isWhiteholeMode
                   ? 'inset 0 0 25px rgba(255, 255, 255, 1), 0 0 25px rgba(56, 189, 248, 0.9)'
                   : isMirrorholeMode
-                  ? 'inset 0 0 20px rgba(255, 255, 255, 0.95), 0 0 25px rgba(186, 230, 253, 0.9)'
+                  ? 'inset 0 0 16px rgba(255, 255, 255, 0.8), inset 0 0 6px rgba(56, 189, 248, 0.4), 0 0 25px rgba(56, 189, 248, 0.65)'
                   : isBlackholeMode
                   ? 'inset 0 0 22px #000000, 0 0 20px rgba(0, 0, 0, 0.95)'
                   : 'inset 0 0 18px rgba(168, 85, 247, 0.5), 0 0 25px rgba(168, 85, 247, 0.5)',
@@ -730,12 +730,12 @@ export function BigBangButton() {
                   background: isWhiteholeMode
                     ? 'radial-gradient(circle at 50% 50%, #ffffff 0%, #e0f2fe 50%, #38bdf8 100%)'
                     : isMirrorholeMode
-                    ? 'radial-gradient(circle at 45% 40%, rgba(255,255,255,0.95) 0%, rgba(224,242,254,0.7) 45%, rgba(186,230,253,0.3) 100%)'
+                    ? 'radial-gradient(circle at 40% 35%, rgba(255,255,255,0.32) 0%, rgba(186,230,253,0.12) 50%, rgba(10,15,30,0.2) 100%)'
                     : 'radial-gradient(circle at 45% 35%, #0f1124 0%, #080916 55%, #030309 100%)',
                   boxShadow: isWhiteholeMode
                     ? 'inset 0 0 12px rgba(255, 255, 255, 1), 0 0 10px rgba(255, 255, 255, 0.8)'
                     : isMirrorholeMode
-                    ? 'inset 0 0 14px rgba(255, 255, 255, 0.95), 0 0 12px rgba(255, 255, 255, 0.8)'
+                    ? 'inset 0 0 12px rgba(255, 255, 255, 0.7), 0 0 14px rgba(56, 189, 248, 0.5)'
                     : 'inset 0 0 12px rgba(0, 0, 0, 0.95)',
                 }}
               />
@@ -761,7 +761,7 @@ export function BigBangButton() {
                           : isWhiteholeMode
                           ? 'radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(56,189,248,0.6) 60%, transparent 80%)'
                           : isMirrorholeMode
-                          ? 'radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(186,230,253,0.7) 60%, transparent 80%)'
+                          ? 'radial-gradient(circle, rgba(255,255,255,0.85) 0%, rgba(56,189,248,0.5) 50%, transparent 80%)'
                           : 'radial-gradient(circle, rgba(168,85,247,0.8) 0%, transparent 80%)',
                       }}
                     />
@@ -782,14 +782,16 @@ export function BigBangButton() {
                             : isWhiteholeMode
                             ? '#0284c7'
                             : isMirrorholeMode
-                            ? '#0369a1'
+                            ? '#38bdf8'
                             : isBlackholeMode
                             ? '#f59e0b'
                             : '#ffffff'
                         }
                         className={
-                          isWhiteholeMode || isMirrorholeMode
+                          isWhiteholeMode
                             ? 'drop-shadow-[0_0_8px_rgba(255,255,255,0.95)]'
+                            : isMirrorholeMode
+                            ? 'drop-shadow-[0_0_12px_rgba(56,189,248,0.95)]'
                             : 'drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]'
                         }
                       />

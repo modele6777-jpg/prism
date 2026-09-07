@@ -12,6 +12,7 @@ import {
   AlertCircle,
   MessageCircle,
   Eye,
+  Triangle,
   LucideProps,
 } from 'lucide-react';
 import { CrystalOrbIcon } from '@/components/icons/CrystalOrbIcon';
@@ -216,13 +217,20 @@ export function PrismAppIcon({
     );
   }
 
-  if (normalized === 'mirrorhole' || normalized === '🪞' || normalized === 'mirror') {
+  if (
+    normalized === 'mirrorhole' ||
+    normalized === '🪞' ||
+    normalized === 'mirror' ||
+    normalized === 'prism' ||
+    normalized === 'prismhome'
+  ) {
     return (
-      <Sparkles
+      <Triangle
         size={size}
         className={className}
-        color={color || '#0284c7'}
-        strokeWidth={strokeWidth}
+        color={color || '#38bdf8'}
+        fill="rgba(56, 189, 248, 0.28)"
+        strokeWidth={strokeWidth || 2.2}
       />
     );
   }

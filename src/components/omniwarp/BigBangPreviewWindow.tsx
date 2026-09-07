@@ -192,7 +192,7 @@ export function BigBangPreviewWindow({
       <div className="flex items-center justify-between bg-white/[0.08] px-2.5 py-2 rounded-xl border border-white/10 shadow-inner">
         <div className="flex items-center gap-2 min-w-0">
           {isMirrorhole ? (
-            <PrismAppIcon nameOrId="hub" size={20} className="shrink-0 text-sky-200 drop-shadow-[0_0_8px_rgba(224,242,254,0.9)]" />
+            <PrismAppIcon nameOrId="mirrorhole" size={20} className="shrink-0 text-sky-200 drop-shadow-[0_0_8px_rgba(224,242,254,0.9)]" />
           ) : isBlackhole ? (
             <CrystalOrbIcon size={22} className="shrink-0 drop-shadow-[0_0_10px_rgba(245,158,11,0.9)]" />
           ) : isWhitehole ? (
