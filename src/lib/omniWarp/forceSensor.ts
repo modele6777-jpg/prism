@@ -193,31 +193,34 @@ export function calculateWarpMetrics(
   const virtualForce = Math.min(1.0, Math.max(0.08, timeForce));
 
   let phase: WarpPhase = 'wormhole';
+  let eventHorizonMode: 'whitehole' | 'blackhole' | undefined = undefined;
+
   if (isAborted) {
     phase = 'aborted';
   } else if (radialSectorIndex >= 0) {
-    // 🌌 7대 앱으로 버튼을 옮기는 기능 = 사건의 지평선 (Event Horizon)
-    // ☯️ 사건의 지평선에서도 빛(화이트홀: 해당 앱)과 어둠(블랙홀: 추천 2순위)이 실시간으로 교차!
+    // 🌌 7대 앱으로 튕기거나 조준하는 기능 = 사건의 지평선 (Event Horizon)
+    phase = 'event_horizon';
+    // ☯️ 사건의 지평선: 빛과 어둠의 호흡에 따라 열리는 자유로운 지평선 차원 전이
     if (durationMs < 250) {
-      phase = 'whitehole';
+      eventHorizonMode = 'whitehole';
     } else {
       const holdDuration = durationMs - 250;
       const cycleState = Math.floor(holdDuration / 650) % 2;
-      phase = cycleState === 0 ? 'blackhole' : 'whitehole';
+      eventHorizonMode = cycleState === 0 ? 'whitehole' : 'blackhole';
     }
   } else if (durationMs < 250) {
-    // 🌀 제자리에서 가볍게 터치(탭) = 웜홀 (Wormhole: 임의 도약)
+    // 🌀 제자리에서 가볍게 터치(탭) = 웜홀 (Wormhole: 자유 양자 도약)
     phase = 'wormhole';
   } else {
-    // ☯️ 제자리 홀드 유지: 빛(화이트홀: 추천1순위)과 어둠(블랙홀: 추천2순위)이 실시간으로 교차!
+    // ☯️ 제자리 홀드 유지: 빛(화이트홀)과 어둠(블랙홀)이 실시간으로 교차
     // 250ms 이후부터 650ms 주기로 빛 ⟷ 어둠 영구 교차
     const holdDuration = durationMs - 250;
     const cycleState = Math.floor(holdDuration / 650) % 2; // 0: 빛(화이트홀), 1: 어둠(블랙홀)
     if (cycleState === 0) {
-      // ☀️ 빛: 화이트홀 (추천 1순위)
+      // ☀️ 빛: 화이트홀 (빛의 차원 방출)
       phase = 'whitehole';
     } else {
-      // 🕳️ 어둠: 블랙홀 (추천 2순위)
+      // 🕳️ 어둠: 블랙홀 (심연 차원 흡수)
       phase = 'blackhole';
     }
   }
@@ -235,6 +238,7 @@ export function calculateWarpMetrics(
     dragDistance: dist,
     dragAngleDeg,
     radialSectorIndex,
+    eventHorizonMode,
   };
 }
 

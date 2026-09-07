@@ -10,7 +10,13 @@ import { omniWarpAudio } from './omniWarpAudio';
 import { triggerHaptic } from './omniWarpHaptics';
 import { getTossRule, CHANNEL_TOSS_RULES } from '@/lib/prismTossRegistry';
 import { sendPrismToss } from '@/lib/prismToss';
-import { getRankedWormholeApps, getLowestRankedWormholeApp, getWormholeAppByGauge } from './wormholeSpectrum';
+import {
+  getRankedWormholeApps,
+  getLowestRankedWormholeApp,
+  getWhiteholeRecommendedApp,
+  getBlackholeRecommendedApp,
+  getWormholeAppByGauge,
+} from './wormholeSpectrum';
 import { getPrismRouteByPathOrId, resolveCanonicalPath } from '@/lib/prismRouteRegistry';
 import {
   extractLatestDialogueContext,
@@ -325,7 +331,8 @@ export function synthesizeWarpTarget(context: OmniWarpContext, metrics: WarpForc
     return dest;
   };
 
-  // 🎯 0단계: 7대 앱 방사형 조이스틱 워프 (사건의 지평선: 빛과 어둠의 실시간 교차!)
+  // 🎯 0단계: 7대 앱 방사형 조이스틱 튕기기 = 사건의 지평선 (Event Horizon)
+  // 🌌 사건의 지평선: 목적지나 기능을 정해두지 않고, 경계면의 시공간 왜곡 속에서 자유롭게 열리는 차원 도약
   if (
     metrics.radialSectorIndex !== undefined &&
     metrics.radialSectorIndex >= 0 &&
@@ -333,53 +340,39 @@ export function synthesizeWarpTarget(context: OmniWarpContext, metrics: WarpForc
     !metrics.isAborted
   ) {
     const radialApp = RADIAL_WARP_APPS[metrics.radialSectorIndex];
-    
-    // ☀️ 빛 주기: 조준한 앱의 1순위 정규 차원 (화이트홀)
-    if (metrics.phase === 'whitehole') {
-      const safePath = resolveCanonicalPath(radialApp.path);
-      return {
-        id: radialApp.id,
-        icon: radialApp.icon,
-        phase: 'whitehole',
-        gauge: Math.max(0.35, metrics.virtualForce),
-        aiTemperature: T,
-        title: radialApp.name,
-        actionType: `radial_whitehole_${radialApp.id}`,
-        destinationPath: safePath,
-        previewLabel: `[사건의 지평선: 빛] ☀️ ${radialApp.runeSymbol} ${radialApp.name} 방출`,
-        previewDescription: `${radialApp.title} · ${radialApp.description} (화이트홀 1순위)`,
-        themeColor: radialApp.themeColor,
-        accentGlow: radialApp.accentGlow,
-        stageIndex: metrics.radialSectorIndex + 1,
-        runeSymbol: radialApp.runeSymbol,
-        runeName: radialApp.runeName,
-      };
-    } else {
-      // 🕳️ 어둠 주기: 조준한 앱의 추천 최하위(뒤에서 1순위 / 꼴찌) 대척점 차원 (블랙홀)
-      const lowestApp = getLowestRankedWormholeApp(radialApp.id);
-      const secSafePath = resolveCanonicalPath(lowestApp.path);
+    const isWhiteholeMode = metrics.eventHorizonMode === 'whitehole' || metrics.phase === 'whitehole';
+    const seed = (metrics.startTime || Date.now()) + metrics.radialSectorIndex * 137;
 
-      return {
-        id: lowestApp.id,
-        icon: lowestApp.icon,
-        phase: 'blackhole',
-        gauge: Math.max(0.35, metrics.virtualForce),
-        aiTemperature: T,
-        title: lowestApp.name,
-        actionType: `radial_blackhole_${lowestApp.id}`,
-        destinationPath: secSafePath,
-        previewLabel: `[사건의 지평선: 블랙홀] 🕳️ ${lowestApp.runeSymbol} ${lowestApp.name} 전이`,
-        previewDescription: `${radialApp.name} 대척점 심연 ➔ [${lowestApp.name} · ${lowestApp.subName}] (뒤에서 1순위 반전)`,
-        themeColor: lowestApp.themeColor || '#a855f7',
-        accentGlow: 'rgba(168, 85, 247, 0.85)',
-        stageIndex: metrics.radialSectorIndex + 1,
-        runeSymbol: lowestApp.runeSymbol,
-        runeName: lowestApp.runeName,
-      };
-    }
+    // 목적지나 기능을 사전에 고정해두지 않고, 경계면 파동에 따라 자유롭게 차원 연결
+    const rawDest = isWhiteholeMode
+      ? getWhiteholeRecommendedApp(context.activeRoute, context.sessionData, seed)
+      : getBlackholeRecommendedApp(context.activeRoute, context.sessionData, seed + 883);
+
+    const dest = sanitizeDest(rawDest);
+    const safePath = resolveCanonicalPath(dest.path);
+    const rune = getOrbRunicSigil(dest.id);
+
+    return {
+      id: dest.id,
+      icon: dest.icon || radialApp.icon,
+      phase: 'event_horizon',
+      eventHorizonMode: isWhiteholeMode ? 'whitehole' : 'blackhole',
+      gauge: Math.max(0.35, metrics.virtualForce),
+      aiTemperature: T,
+      title: dest.name,
+      actionType: `event_horizon_${isWhiteholeMode ? 'radiant' : 'singularity'}_${dest.id}`,
+      destinationPath: safePath,
+      previewLabel: `[사건의 지평선] 🌌 ${radialApp.name} ➔ ${dest.name}`,
+      previewDescription: `사건의 지평선 경계면 왜곡을 뚫고 [${dest.name} · ${dest.subName}] 차원으로 전이합니다.`,
+      themeColor: dest.themeColor || radialApp.themeColor || '#a855f7',
+      accentGlow: isWhiteholeMode ? 'rgba(56, 189, 248, 0.75)' : 'rgba(168, 85, 247, 0.85)',
+      stageIndex: metrics.radialSectorIndex + 1,
+      runeSymbol: rune.symbol || radialApp.runeSymbol,
+      runeName: rune.name || radialApp.runeName,
+    };
   }
 
-  // 1. 탭하면 웜홀 (임의의 장소나 기능으로 양자 도약!)
+  // 1. 탭하면 웜홀 (목적지나 기능이 정해져 있지 않은 자유 양자 도약)
   if (metrics.phase === 'wormhole') {
     const dest = pickRandomQuantumDestination(context.activeRoute, metrics.startTime);
     const safePath = resolveCanonicalPath(dest.path);
@@ -392,8 +385,8 @@ export function synthesizeWarpTarget(context: OmniWarpContext, metrics: WarpForc
       title: dest.name,
       actionType: `wormhole_quantum_${dest.id}`,
       destinationPath: safePath,
-      previewLabel: `[웜홀 임의 도약] 🌀 ${dest.runeSymbol} ${dest.name}`,
-      previewDescription: `우주의 시공간 웜홀에 빨려 들어가 임의의 차원 [${dest.name} · ${dest.subName}]으로 불시착합니다.`,
+      previewLabel: `[웜홀 도약] 🌀 ${dest.runeSymbol} ${dest.name}`,
+      previewDescription: `시공간 웜홀의 양자 요동을 타고 [${dest.name} · ${dest.subName}] 차원으로 자유롭게 도약합니다.`,
       themeColor: dest.themeColor || '#38bdf8',
       accentGlow: dest.accentGlow || 'rgba(56, 189, 248, 0.65)',
       stageIndex: 1,
@@ -402,9 +395,10 @@ export function synthesizeWarpTarget(context: OmniWarpContext, metrics: WarpForc
     };
   }
 
-  // 2. 홀드 중 빛이면 화이트홀 (1순위 다이렉트 차원 방출)
+  // 2. 홀드 중 빛이면 화이트홀 (목적지나 기능이 정해져 있지 않은 빛의 차원 방출)
   if (metrics.phase === 'whitehole') {
-    const dest = sanitizeDest(rule.primary);
+    const rawDest = getWhiteholeRecommendedApp(context.activeRoute, context.sessionData, metrics.startTime);
+    const dest = sanitizeDest(rawDest);
     const rune = getOrbRunicSigil(dest.id);
     const safePath = resolveCanonicalPath(dest.path);
     return {
@@ -414,37 +408,39 @@ export function synthesizeWarpTarget(context: OmniWarpContext, metrics: WarpForc
       gauge: metrics.virtualForce,
       aiTemperature: T,
       title: dest.name,
-      actionType: 'omniwarp_primary',
+      actionType: 'omniwarp_whitehole',
       destinationPath: safePath,
       previewLabel: `[화이트홀 방출] ☀️ ${rune.symbol} ${dest.name}`,
-      previewDescription: dest.description,
+      previewDescription: `화이트홀의 강력한 빛 에너지를 타고 [${dest.name} · ${dest.subName}] 차원으로 방출됩니다.`,
       themeColor: dest.themeColor || '#38bdf8',
-      accentGlow: 'rgba(56, 189, 248, 0.45)',
+      accentGlow: 'rgba(56, 189, 248, 0.55)',
       stageIndex: 9,
       runeSymbol: rune.symbol,
       runeName: rune.name,
     };
   }
 
-  // 3. 홀드 중 어둠이면 블랙홀 (추천 최하위 / 뒤에서 1순위 대척점 차원으로 시공간 전이)
-  const lowestDest = getLowestRankedWormholeApp(context.activeRoute);
-  const safePath = resolveCanonicalPath(lowestDest.path);
+  // 3. 홀드 중 어둠이면 블랙홀 (목적지나 기능이 정해져 있지 않은 심연 특이점 전이)
+  const rawBlackhole = getBlackholeRecommendedApp(context.activeRoute, context.sessionData, metrics.startTime);
+  const blackholeDest = sanitizeDest(rawBlackhole);
+  const rune = getOrbRunicSigil(blackholeDest.id);
+  const safePath = resolveCanonicalPath(blackholeDest.path);
   return {
-    id: lowestDest.id,
-    icon: lowestDest.icon,
+    id: blackholeDest.id,
+    icon: blackholeDest.icon,
     phase: 'blackhole',
     gauge: metrics.virtualForce,
     aiTemperature: T,
-    title: lowestDest.name,
+    title: blackholeDest.name,
     actionType: 'omniwarp_blackhole',
     destinationPath: safePath,
-    previewLabel: `[블랙홀 전이] 🕳️ ${lowestDest.runeSymbol} ${lowestDest.name}`,
-    previewDescription: `어둠의 블랙홀 특이점으로 현재 맥락의 대척점 [${lowestDest.name} · ${lowestDest.subName}] (뒤에서 1순위 반전)으로 전이합니다.`,
-    themeColor: lowestDest.themeColor || '#a855f7',
+    previewLabel: `[블랙홀 흡수] 🕳️ ${rune.symbol} ${blackholeDest.name}`,
+    previewDescription: `블랙홀의 무한한 중력 특이점에 이끌려 [${blackholeDest.name} · ${blackholeDest.subName}] 차원으로 전이합니다.`,
+    themeColor: blackholeDest.themeColor || '#a855f7',
     accentGlow: 'rgba(168, 85, 247, 0.75)',
     stageIndex: 2,
-    runeSymbol: lowestDest.runeSymbol,
-    runeName: lowestDest.runeName,
+    runeSymbol: rune.symbol,
+    runeName: rune.name,
   };
 }
 
@@ -494,7 +490,7 @@ export function executeBigBangCommit(
     sourceApp,
     targetApp,
     actionType: `omniwarp_${target.phase}`,
-    contextMessage: `[옴니워프 ${target.phase === 'whitehole' ? '화이트홀' : target.phase === 'event_horizon' ? '사건의 지평선' : '블랙홀'}] ${context.primarySubject || context.activeTitle}`,
+    contextMessage: `[옴니워프 ${target.phase === 'whitehole' ? '화이트홀' : target.phase === 'event_horizon' ? '사건의 지평선' : target.phase === 'wormhole' ? '웜홀' : '블랙홀'}] ${context.primarySubject || context.activeTitle}`,
     cards: context.sessionData?.oracleReading?.cards,
     anchorArtworkTitle: context.sessionData?.artContext?.anchorArtworkTitle,
     anchorArtQuote: context.sessionData?.artContext?.anchorArtQuote,

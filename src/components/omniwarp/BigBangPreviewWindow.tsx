@@ -54,9 +54,11 @@ export function BigBangPreviewWindow({
   const elapsedSec = (durationMs / 1000).toFixed(2);
 
   // 0~34% 탭: 블랙홀, 35~69% 사건의 지평선(웜홀), 70~100% 홀드: 화이트홀
-  const isBlackhole = displayProgress < 0.35;
-  const isWhitehole = displayProgress >= 0.70;
-  const isWormhole = !isWhitehole && !isBlackhole;
+  const isEventHorizon = activePhase === 'event_horizon' || currentTarget?.phase === 'event_horizon';
+  const isEventHorizonWhitehole = currentTarget?.eventHorizonMode === 'whitehole' || currentTarget?.actionType?.includes('whitehole');
+  const isBlackhole = !isEventHorizon && (activePhase === 'blackhole' || (!isPressing && displayProgress < 0.35));
+  const isWhitehole = !isEventHorizon && (activePhase === 'whitehole' || (!isPressing && displayProgress >= 0.70));
+  const isWormhole = !isEventHorizon && !isWhitehole && !isBlackhole;
 
   // 💡 빛과 어둠의 농도
   const lightDensity = isPressing ? Math.max(0.15, 1.0 - gauge * 0.85) : 0.7;
@@ -81,7 +83,9 @@ export function BigBangPreviewWindow({
         isAborted
           ? 'bg-zinc-950/95 border-red-500/50 text-red-300 shadow-[0_0_30px_rgba(239,68,68,0.4)]'
           : isPressing
-          ? isWhitehole
+          ? isEventHorizon
+            ? 'bg-purple-950/95 text-white border-purple-400/50 shadow-[0_0_35px_rgba(168,85,247,0.45)]'
+            : isWhitehole
             ? 'bg-slate-950/95 text-white'
             : isWormhole
             ? 'bg-purple-950/95 text-white'
@@ -92,14 +96,22 @@ export function BigBangPreviewWindow({
         boxShadow: isAborted
           ? undefined
           : isPressing
-          ? isWhitehole
+          ? isEventHorizon
+            ? isEventHorizonWhitehole
+              ? `0 0 ${glowSpread}px rgba(56,189,248,0.8), 0 0 ${glowSpread * 1.5}px rgba(168,85,247,0.6)`
+              : `0 0 ${glowSpread}px rgba(168,85,247,0.9), 0 0 ${glowSpread * 1.5}px rgba(245,158,11,0.7)`
+            : isWhitehole
             ? `0 0 ${glowSpread}px rgba(255,255,255,${lightDensity.toFixed(2)}), 0 0 ${glowSpread * 1.6}px rgba(56,189,248,${lightDensity.toFixed(2)})`
             : isWormhole
             ? `0 0 ${glowSpread}px rgba(168,85,247,${lightDensity.toFixed(2)}), 0 0 ${glowSpread * 1.4}px rgba(0,240,255,${(lightDensity * 0.7).toFixed(2)})`
             : `0 0 25px #000000, 0 0 50px rgba(0,0,0,${darknessDensity.toFixed(2)})`
           : undefined,
         borderColor: isPressing
-          ? isWhitehole
+          ? isEventHorizon
+            ? isEventHorizonWhitehole
+              ? 'rgba(56, 189, 248, 0.8)'
+              : 'rgba(168, 85, 247, 0.8)'
+            : isWhitehole
             ? `rgba(255, 255, 255, ${lightDensity.toFixed(2)})`
             : isWormhole
             ? `rgba(192, 132, 252, ${lightDensity.toFixed(2)})`
@@ -115,17 +127,21 @@ export function BigBangPreviewWindow({
               <AlertCircle size={14} /> 안전 취소 대기
             </span>
           ) : isPressing ? (
-            isWhitehole ? (
+            isEventHorizon ? (
+              <span className="flex items-center gap-1 text-purple-200 drop-shadow-[0_0_8px_rgba(168,85,247,0.9)]">
+                <Compass size={14} className="animate-spin text-purple-300" /> 🌌 사건의 지평선 [{isEventHorizonWhitehole ? '☀️ 빛의 도약' : '🕳️ 심연 도약'}]
+              </span>
+            ) : isWhitehole ? (
               <span className="flex items-center gap-1 text-cyan-200 drop-shadow-[0_0_8px_rgba(255,255,255,0.9)]">
-                <Sparkles size={14} className="animate-spin text-white" /> ✨ 화이트홀 [0~10%]
+                <Sparkles size={14} className="animate-spin text-white" /> ☀️ 화이트홀 (빛의 방출)
               </span>
             ) : isWormhole ? (
               <span className="flex items-center gap-1 text-purple-300">
-                <Zap size={14} className="animate-pulse text-purple-400" /> 🌀 웜홀 [20~80%]
+                <Zap size={14} className="animate-pulse text-purple-400" /> 🌀 웜홀 (자유 양자 도약)
               </span>
             ) : (
               <span className="flex items-center gap-1 text-amber-400 drop-shadow-[0_0_10px_rgba(245,158,11,0.8)]">
-                <Compass size={14} className="animate-spin text-amber-300" /> 🕳️ 블랙홀 [90~100%]
+                <Compass size={14} className="animate-spin text-amber-300" /> 🕳️ 블랙홀 (심연 특이점)
               </span>
             )
           ) : (
@@ -192,14 +208,14 @@ export function BigBangPreviewWindow({
       {/* 3. 7대 룬 스펙트럼 인디케이터 바 (20%~80% 10% 단위 룬 점등) */}
       <div className="flex flex-col gap-1.5 pt-0.5">
         <div className="flex items-center justify-between px-1">
-          {/* 0%: 루시 */}
+          {/* 0%: 화이트홀 */}
           <div
             className={`flex flex-col items-center transition-transform ${
               isWhitehole ? 'scale-125 font-black text-cyan-300' : 'opacity-60 text-white/60'
             }`}
           >
-            <span className="text-[10px]">✨</span>
-            <span className="text-[7.5px] font-mono">0% 루시</span>
+            <span className="text-[10px]">☀️</span>
+            <span className="text-[7.5px] font-mono whitespace-nowrap">화이트홀</span>
           </div>
 
           {/* 20% ~ 80%: 7대 룬 노드 */}
@@ -226,14 +242,14 @@ export function BigBangPreviewWindow({
             );
           })}
 
-          {/* 100%: 오브 */}
+          {/* 100%: 블랙홀 */}
           <div
             className={`flex flex-col items-center transition-transform ${
               isBlackhole ? 'scale-125 font-black text-amber-400' : 'opacity-60 text-white/60'
             }`}
           >
-            <span className="text-[10px]">🔮</span>
-            <span className="text-[7.5px] font-mono">100% 오브</span>
+            <span className="text-[10px]">🕳️</span>
+            <span className="text-[7.5px] font-mono whitespace-nowrap">블랙홀</span>
           </div>
         </div>
 

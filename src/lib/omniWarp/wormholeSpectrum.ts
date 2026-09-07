@@ -9,6 +9,7 @@ import {
   getActivePrismRoutes,
   PrismRouteDefinition,
 } from '@/lib/prismRouteRegistry';
+import { getTossRule } from '@/lib/prismTossRegistry';
 
 export interface WormholeAppInfo {
   id: string;
@@ -137,13 +138,85 @@ export function getRankedWormholeApps(activeRoute: string): WormholeAppInfo[] {
   });
 }
 
+// 🧠 전체 페이지 기준 좌뇌적·의식적·이성적 스펙트럼 순위 (화이트홀 0% 축)
+export const GLOBAL_RATIONAL_PAGE_RANKING = [
+  'trinity',   // 1위: 사주·점성 데이터 분석과 운명 나침반 (극 이성·체계)
+  'epilogue',  // 2위: 영감의 밤 서재 일기 및 지적 회고 (언어·기록)
+  'orange',    // 3위: 감정 성찰과 내면의 생각 정리 (성찰·인지)
+  'bluebird',  // 4위: 일상의 감사와 마음의 안식 (평온·정돈)
+  'heal',      // 5위: 호오포노포노 & 생체 에너지 정화 (신체·리듬)
+  'lucy',      // 6위: 루시 1:1 심층 교감 대화 (정서적 유대)
+  'muse',      // 7위: 명화·명시·명곡 삼위일체 예술 (예술적 감성)
+  'orb',       // 8위: 크리스탈 오브 직관 점술 (극 무의식·초감각)
+];
+
+// 🎨 전체 페이지 기준 우뇌적·무의식적·감성적 스펙트럼 순위 (블랙홀 100% 축)
+export const GLOBAL_EMOTIONAL_PAGE_RANKING = [
+  'orb',       // 1위: 크리스탈 오브 무의식 비춤과 직관 점술 (극 무의식·초직관)
+  'muse',      // 2위: 뮤즈 예술처방 명화·명시·명곡 감성 공명 (예술·감성 폭발)
+  'lucy',      // 3위: 루시 1:1 심층 감성 대화 (무의식적 감정 토로)
+  'heal',      // 4위: 호오포노포노 & 아우라 생체 에너지 정화 (무의식 신체 이완)
+  'bluebird',  // 5위: 파랑새의 영혼 안식과 온기 (감성적 위로)
+  'orange',    // 6위: 소원의 우물과 감정 투영 (정서적 소망)
+  'epilogue',  // 7위: 밤 서재 회고 (이성적 정리)
+  'trinity',   // 8위: 사주·점성 데이터 분석 (체계적 구조)
+];
+
 /**
- * 🕳️ 블랙홀 전용: 현재 맥락에서 가장 순위가 낮은(뒤에서 1순위 / 꼴찌) 대척점 차원 반환
- * (화이트홀이 추천 1순위라면, 블랙홀은 가장 예상치 못한 심연의 반전 차원으로 전이)
+ * 🌌 루시 유니버스 동적 차원 도약 생성기:
+ * 웜홀, 화이트홀, 블랙홀, 사건의 지평선 그 어떤 것도 목적지나 기능을 사전에 고정해두지 않고,
+ * 현재 위치를 제외한 모든 실존 차원 풀에서 자유롭고 유동적으로 도약 차원을 발현시킵니다.
  */
-export function getLowestRankedWormholeApp(activeRoute: string): WormholeAppInfo {
-  const ranked = getRankedWormholeApps(activeRoute);
-  return ranked[ranked.length - 1] || ranked[0];
+export function getDynamicUniverseApp(
+  activeRoute?: string,
+  entropyOffset: number = 0,
+  seedTime?: number
+): WormholeAppInfo {
+  const allActive = getAllActiveWormholeApps();
+  const normCurrent = (activeRoute || '/').toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
+  const normCurrentId = normCurrent.replace('/', '') || 'hub';
+
+  // 현재 머물고 있는 장소를 배제하여 항상 새로운 차원으로 도약 가능하게 필터링
+  const available = allActive.filter((a) => {
+    const normPath = a.path.toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
+    return normPath !== normCurrent && a.id !== normCurrentId;
+  });
+
+  const pool = available.length > 0 ? available : allActive;
+  const time = seedTime ?? (typeof performance !== 'undefined' ? performance.now() : Date.now());
+  const hash = Math.floor((time + entropyOffset * 3571) * 1000) ^ 0x5bd1e995;
+  const index = Math.abs(hash) % pool.length;
+  return pool[index];
+}
+
+/**
+ * ☀️ 화이트홀:
+ * 목적지나 기능을 사전에 정해두지 않고, 순수한 빛의 에너지 파동에 따라 자유롭게 차원을 방출합니다.
+ */
+export function getWhiteholeRecommendedApp(activeRoute?: string, contextHint?: any, seedTime?: number): WormholeAppInfo {
+  return getDynamicUniverseApp(activeRoute, 137, seedTime);
+}
+
+/**
+ * 🕳️ 블랙홀:
+ * 목적지나 기능을 사전에 정해두지 않고, 심연의 중력 특이점에 이끌려 자유롭게 차원을 전이합니다.
+ */
+export function getBlackholeRecommendedApp(activeRoute?: string, contextHint?: any, seedTime?: number): WormholeAppInfo {
+  const white = getDynamicUniverseApp(activeRoute, 137, seedTime);
+  const black = getDynamicUniverseApp(activeRoute, 997, seedTime);
+
+  // 화이트홀과 블랙홀이 교차할 때 서로 다른 차원으로 유동적 도약 지원
+  if (white.id === black.id) {
+    return getDynamicUniverseApp(activeRoute, 1601, seedTime);
+  }
+  return black;
+}
+
+/**
+ * 🕳️ 블랙홀 전용 (하위 호환 래퍼)
+ */
+export function getLowestRankedWormholeApp(activeRoute: string, contextHint?: any): WormholeAppInfo {
+  return getBlackholeRecommendedApp(activeRoute, contextHint);
 }
 
 /**

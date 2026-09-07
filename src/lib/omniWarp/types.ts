@@ -30,6 +30,7 @@ export interface OmniWarpTarget {
   stageIndex?: number; // 1 ~ 9
   runeSymbol?: string;
   runeName?: string;
+  eventHorizonMode?: 'whitehole' | 'blackhole';
 }
 
 export interface WarpForceMetrics {
@@ -45,6 +46,7 @@ export interface WarpForceMetrics {
   dragDistance?: number;
   dragAngleDeg?: number;
   radialSectorIndex?: number;
+  eventHorizonMode?: 'whitehole' | 'blackhole';
 }
 
 export interface BigBangCommitEventDetail {

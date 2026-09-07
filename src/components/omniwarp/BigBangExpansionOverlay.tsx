@@ -210,12 +210,14 @@ export function BigBangExpansionOverlay() {
         >
           <div className="text-[10px] font-mono font-bold tracking-widest text-amber-300 uppercase">
             {phase === 'whitehole'
-              ? 'WHITE HOLE RADIANT EMISSION'
+              ? 'WHITE HOLE · RADIANT EMISSION (화이트홀 광휘 방출)'
               : phase === 'wormhole'
-              ? 'QUANTUM WORMHOLE RANDOM JUMP'
+              ? 'QUANTUM WORMHOLE · RANDOM JUMP (웜홀 자유 양자 도약)'
               : phase === 'event_horizon'
-              ? 'EVENT HORIZON CONTINUUM WARP'
-              : 'BLACK HOLE SINGULARITY TRANSCENDENCE'}
+              ? target.eventHorizonMode === 'whitehole'
+                ? 'EVENT HORIZON · RADIANT WARP (사건의 지평선 빛의 도약)'
+                : 'EVENT HORIZON · SINGULARITY WARP (사건의 지평선 심연 도약)'
+              : 'BLACK HOLE · GRAVITATIONAL SINGULARITY (블랙홀 특이점 도약)'}
           </div>
           <div className="text-base font-extrabold text-white">
             {target.title}
