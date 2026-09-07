@@ -110,6 +110,7 @@ export function BigBangButton() {
   const touchStartRef = useRef<{ time: number; x: number; y: number } | null>(null);
   const rafRef = useRef<number | null>(null);
   const lastPhaseRef = useRef<WarpPhase>('idle');
+  const lastEventHorizonModeRef = useRef<'whitehole' | 'mirrorhole' | 'blackhole' | undefined>(undefined);
   const currentPointerEventRef = useRef<React.PointerEvent | null>(null);
   const hasTriggeredBlackHolePeakRef = useRef<boolean>(false);
   const lastStageRef = useRef<number>(1);
@@ -200,6 +201,25 @@ export function BigBangButton() {
       lastPhaseRef.current = metrics.phase;
     }
 
+    // 🌌 사건의 지평선 조준 상태에서 4단계 순환(화이트홀·미러홀·블랙홀·미러홀) 모드 변경 시 실시간 공명 햅틱 & 오디오 피드백
+    if (metrics.phase === 'event_horizon' && !metrics.isAborted && metrics.eventHorizonMode) {
+      if (metrics.eventHorizonMode !== lastEventHorizonModeRef.current) {
+        lastEventHorizonModeRef.current = metrics.eventHorizonMode;
+        if (metrics.eventHorizonMode === 'whitehole') {
+          omniWarpAudio.playWhiteHole();
+          triggerHaptic('whitehole');
+        } else if (metrics.eventHorizonMode === 'mirrorhole') {
+          omniWarpAudio.playMirrorHole();
+          triggerHaptic('mirrorhole');
+        } else if (metrics.eventHorizonMode === 'blackhole') {
+          omniWarpAudio.playBlackHole();
+          triggerHaptic('blackhole');
+        }
+      }
+    } else if (metrics.phase !== 'event_horizon') {
+      lastEventHorizonModeRef.current = undefined;
+    }
+
     if (metrics.isAborted && lastPhaseRef.current !== 'aborted') {
       omniWarpAudio.playAbort();
       triggerHaptic('abort');
@@ -224,6 +244,7 @@ export function BigBangButton() {
     };
     currentPointerEventRef.current = e;
     lastPhaseRef.current = 'wormhole';
+    lastEventHorizonModeRef.current = undefined;
     lastSectorRef.current = -1;
     lastStageRef.current = 1;
     lastUpdateGaugeRef.current = 0.08;
@@ -297,6 +318,7 @@ export function BigBangButton() {
     cachedContextRef.current = null;
     lastStageRef.current = 1;
     lastSectorRef.current = -1;
+    lastEventHorizonModeRef.current = undefined;
     stopBlackHoleContinuousHaptic();
     setDragOffset({ x: 0, y: 0 });
     setDragDistance(0);
