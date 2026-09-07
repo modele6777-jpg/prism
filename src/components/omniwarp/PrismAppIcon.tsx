@@ -187,19 +187,20 @@ export function PrismAppIcon({
     );
   }
 
-  // 9. Lucy Chat
+  // 9. Lucy Chat (원래 루시 버튼 아이콘: 별빛 스파클 Sparkles)
   if (
     normalized === 'lucy' ||
     normalized === 'chat' ||
     normalized === '/chat' ||
     normalized.includes('루시') ||
-    normalized === '💬'
+    normalized === '💬' ||
+    normalized === '✨'
   ) {
     return (
-      <MessageCircle
+      <Sparkles
         size={size}
         className={className}
-        color={color || '#c084fc'}
+        color={color || '#fde68a'} // Warm amber-200
         strokeWidth={strokeWidth}
       />
     );
@@ -208,10 +209,10 @@ export function PrismAppIcon({
   // 10. Cosmological Phases
   if (normalized === 'whitehole' || normalized === '☀️') {
     return (
-      <Sun
+      <Sparkles
         size={size}
         className={className}
-        color={color || '#38bdf8'}
+        color={color || '#fde68a'}
         strokeWidth={strokeWidth}
       />
     );
@@ -237,11 +238,9 @@ export function PrismAppIcon({
 
   if (normalized === 'blackhole' || normalized === '🕳️') {
     return (
-      <Moon
+      <CrystalOrbIcon
         size={size}
         className={className}
-        color={color || '#a855f7'}
-        strokeWidth={strokeWidth}
       />
     );
   }

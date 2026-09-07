@@ -759,14 +759,16 @@ export function BigBangButton() {
                           : isAborted
                           ? 'radial-gradient(circle, rgba(239,68,68,0.8) 0%, transparent 80%)'
                           : isWhiteholeMode
-                          ? 'radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(56,189,248,0.6) 60%, transparent 80%)'
+                          ? 'radial-gradient(circle, rgba(253,230,138,0.9) 0%, rgba(244,114,182,0.6) 50%, transparent 80%)'
                           : isMirrorholeMode
                           ? 'radial-gradient(circle, rgba(255,255,255,0.85) 0%, rgba(56,189,248,0.5) 50%, transparent 80%)'
+                          : isBlackholeMode
+                          ? 'radial-gradient(circle, rgba(56,189,248,0.8) 0%, rgba(168,85,247,0.5) 50%, transparent 80%)'
                           : 'radial-gradient(circle, rgba(168,85,247,0.8) 0%, transparent 80%)',
                       }}
                     />
 
-                    {/* ✨ 프리즘 메인 아이콘을 선명하게 표시 */}
+                    {/* ✨ 프리즘 메인 아이콘을 선명하게 표시 (루시: 원래 루시 스파클, 오브: 원래 크리스탈 오브) */}
                     <div
                       className="relative z-10 flex items-center justify-center select-none"
                       title={activeAppName}
@@ -780,18 +782,20 @@ export function BigBangButton() {
                             : radialSectorIndex >= 0 && !isMirrorholeMode
                             ? RADIAL_WARP_APPS[radialSectorIndex]?.themeColor || '#ffffff'
                             : isWhiteholeMode
-                            ? '#0284c7'
+                            ? '#fde68a'
                             : isMirrorholeMode
                             ? '#38bdf8'
                             : isBlackholeMode
-                            ? '#f59e0b'
+                            ? '#38bdf8'
                             : '#ffffff'
                         }
                         className={
                           isWhiteholeMode
-                            ? 'drop-shadow-[0_0_8px_rgba(255,255,255,0.95)]'
+                            ? 'text-amber-200 drop-shadow-[0_0_8px_rgba(244,114,182,0.9)]'
                             : isMirrorholeMode
                             ? 'drop-shadow-[0_0_12px_rgba(56,189,248,0.95)]'
+                            : isBlackholeMode
+                            ? 'drop-shadow-[0_0_10px_rgba(56,189,248,0.9)]'
                             : 'drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]'
                         }
                       />
