@@ -30,12 +30,12 @@ export const RADIAL_WARP_APPS: RadialWarpApp[] = [
     name: '프롤로그',
     title: '프롤로그 허브',
     path: '/',
-    icon: '🏛️',
+    icon: 'hub',
     runeSymbol: 'ᚠ',
     runeName: 'Fehu',
     runeMeaning: '새로운 시작과 운명의 창조',
-    themeColor: '#38bdf8',
-    accentGlow: 'rgba(56, 189, 248, 0.65)',
+    themeColor: '#ef4444', // 빨강 (Red)
+    accentGlow: 'rgba(239, 68, 68, 0.65)',
     description: '모든 영감과 여정이 교차하는 중심 허브',
   },
   {
@@ -43,11 +43,11 @@ export const RADIAL_WARP_APPS: RadialWarpApp[] = [
     name: '오렌지',
     title: '오렌지 소원의 우물',
     path: '/orange',
-    icon: '🍊',
+    icon: 'orange',
     runeSymbol: 'ᛋ',
     runeName: 'Sowilo',
     runeMeaning: '태양과 소원',
-    themeColor: '#f97316',
+    themeColor: '#f97316', // 주황 (Orange)
     accentGlow: 'rgba(249, 115, 22, 0.65)',
     description: '감정 성찰과 소원의 우물에 소망을 띄우는 비밀의 숲',
   },
@@ -56,12 +56,12 @@ export const RADIAL_WARP_APPS: RadialWarpApp[] = [
     name: '트리니티',
     title: '트리니티 오라클',
     path: '/trinity',
-    icon: '🔺',
+    icon: 'trinity',
     runeSymbol: 'ᛈ',
     runeName: 'Pertho',
     runeMeaning: '운명과 무의식',
-    themeColor: '#a855f7',
-    accentGlow: 'rgba(168, 85, 247, 0.65)',
+    themeColor: '#eab308', // 노랑 (Yellow)
+    accentGlow: 'rgba(234, 179, 8, 0.65)',
     description: '내면아이 무의식과 3장의 타로 카드 상징 탐색',
   },
   {
@@ -69,11 +69,11 @@ export const RADIAL_WARP_APPS: RadialWarpApp[] = [
     name: '아우라',
     title: '아우라 치유',
     path: '/heal',
-    icon: '🔮',
+    icon: 'heal',
     runeSymbol: 'ᛉ',
     runeName: 'Algiz',
     runeMeaning: '신성한 수호',
-    themeColor: '#10b981',
+    themeColor: '#10b981', // 초록 (Green)
     accentGlow: 'rgba(16, 185, 129, 0.65)',
     description: '호오포노포노와 심신 에너지 감정 정화 의식',
   },
@@ -82,11 +82,11 @@ export const RADIAL_WARP_APPS: RadialWarpApp[] = [
     name: '블루버드',
     title: '블루버드 메신저',
     path: '/bluebird',
-    icon: '🐦',
+    icon: 'bluebird',
     runeSymbol: 'ᛒ',
     runeName: 'Berkana',
     runeMeaning: '치유와 안식',
-    themeColor: '#0ea5e9',
+    themeColor: '#0ea5e9', // 파랑 (Blue)
     accentGlow: 'rgba(14, 165, 233, 0.65)',
     description: '소소한 감사와 일상의 온기 기록',
   },
@@ -95,12 +95,12 @@ export const RADIAL_WARP_APPS: RadialWarpApp[] = [
     name: '뮤즈',
     title: '뮤즈 예술처방',
     path: '/muse',
-    icon: '🎵',
+    icon: 'muse',
     runeSymbol: 'ᚹ',
     runeName: 'Wunjo',
     runeMeaning: '예술과 기쁨',
-    themeColor: '#ec4899',
-    accentGlow: 'rgba(236, 72, 153, 0.65)',
+    themeColor: '#4f46e5', // 남색 (Indigo)
+    accentGlow: 'rgba(79, 70, 229, 0.65)',
     description: '명화·명시·명곡 3위 일체 심미적 카타르시스',
   },
   {
@@ -108,12 +108,12 @@ export const RADIAL_WARP_APPS: RadialWarpApp[] = [
     name: '에필로그',
     title: '에필로그 밤 서재',
     path: '/epilogue',
-    icon: '📜',
+    icon: 'epilogue',
     runeSymbol: 'ᚨ',
     runeName: 'Ansuz',
     runeMeaning: '지혜와 마감',
-    themeColor: '#f59e0b',
-    accentGlow: 'rgba(245, 158, 11, 0.65)',
+    themeColor: '#a855f7', // 보라 (Violet)
+    accentGlow: 'rgba(168, 85, 247, 0.65)',
     description: '오늘의 영감과 감정을 한 편의 수필로 엮는 회고',
   },
 ];
@@ -193,34 +193,37 @@ export function calculateWarpMetrics(
   const virtualForce = Math.min(1.0, Math.max(0.08, timeForce));
 
   let phase: WarpPhase = 'wormhole';
-  let eventHorizonMode: 'whitehole' | 'blackhole' | undefined = undefined;
+  let eventHorizonMode: 'whitehole' | 'mirrorhole' | 'blackhole' | undefined = undefined;
 
   if (isAborted) {
     phase = 'aborted';
   } else if (radialSectorIndex >= 0) {
     // 🌌 7대 앱으로 튕기거나 조준하는 기능 = 사건의 지평선 (Event Horizon)
     phase = 'event_horizon';
-    // ☯️ 사건의 지평선: 빛과 어둠의 호흡에 따라 열리는 자유로운 지평선 차원 전이
+    // 🪞 삼위일체 순환: 화이트홀(빛) ➔ 미러홀(유리) ➔ 블랙홀(어둠)
     if (durationMs < 250) {
       eventHorizonMode = 'whitehole';
     } else {
       const holdDuration = durationMs - 250;
-      const cycleState = Math.floor(holdDuration / 650) % 2;
-      eventHorizonMode = cycleState === 0 ? 'whitehole' : 'blackhole';
+      const cycleState = Math.floor(holdDuration / 650) % 3; // 0: 화이트홀, 1: 미러홀, 2: 블랙홀
+      eventHorizonMode = cycleState === 0 ? 'whitehole' : cycleState === 1 ? 'mirrorhole' : 'blackhole';
     }
   } else if (durationMs < 250) {
     // 🌀 제자리에서 가볍게 터치(탭) = 웜홀 (Wormhole: 자유 양자 도약)
     phase = 'wormhole';
   } else {
-    // ☯️ 제자리 홀드 유지: 빛(화이트홀)과 어둠(블랙홀)이 실시간으로 교차
-    // 250ms 이후부터 650ms 주기로 빛 ⟷ 어둠 영구 교차
+    // 🪞 제자리 홀드 유지: 화이트홀(빛비춤) ➔ 미러홀(유리) ➔ 블랙홀(어두움) 3위상 실시간 순환
+    // 250ms 이후부터 650ms 주기로 순차 교차
     const holdDuration = durationMs - 250;
-    const cycleState = Math.floor(holdDuration / 650) % 2; // 0: 빛(화이트홀), 1: 어둠(블랙홀)
+    const cycleState = Math.floor(holdDuration / 650) % 3; // 0: 화이트홀(빛비춤), 1: 미러홀(유리), 2: 블랙홀(어두움)
     if (cycleState === 0) {
-      // ☀️ 빛: 화이트홀 (빛의 차원 방출)
+      // ☀️ 화이트홀: 빛비춤 (빛의 차원 방출)
       phase = 'whitehole';
+    } else if (cycleState === 1) {
+      // 🪞 미러홀: 유리테마 (항시 프리즘 홈으로 들어감)
+      phase = 'mirrorhole';
     } else {
-      // 🕳️ 어둠: 블랙홀 (심연 차원 흡수)
+      // 🕳️ 블랙홀: 어두움 (심연 차원 흡수)
       phase = 'blackhole';
     }
   }

@@ -3,7 +3,7 @@
  * Zero-UI Embodied Cognition Framework
  */
 
-export type WarpPhase = 'idle' | 'whitehole' | 'event_horizon' | 'blackhole' | 'wormhole' | 'bigbang' | 'aborted';
+export type WarpPhase = 'idle' | 'whitehole' | 'mirrorhole' | 'event_horizon' | 'blackhole' | 'wormhole' | 'bigbang' | 'aborted';
 
 export interface OmniWarpContext {
   activeRoute: string;
@@ -30,7 +30,7 @@ export interface OmniWarpTarget {
   stageIndex?: number; // 1 ~ 9
   runeSymbol?: string;
   runeName?: string;
-  eventHorizonMode?: 'whitehole' | 'blackhole';
+  eventHorizonMode?: 'whitehole' | 'mirrorhole' | 'blackhole';
 }
 
 export interface WarpForceMetrics {
@@ -46,7 +46,7 @@ export interface WarpForceMetrics {
   dragDistance?: number;
   dragAngleDeg?: number;
   radialSectorIndex?: number;
-  eventHorizonMode?: 'whitehole' | 'blackhole';
+  eventHorizonMode?: 'whitehole' | 'mirrorhole' | 'blackhole';
 }
 
 export interface BigBangCommitEventDetail {

@@ -332,7 +332,7 @@ export function synthesizeWarpTarget(context: OmniWarpContext, metrics: WarpForc
   };
 
   // 🎯 0단계: 7대 앱 방사형 조이스틱 튕기기 = 사건의 지평선 (Event Horizon)
-  // 🌌 사건의 지평선: 목적지나 기능을 정해두지 않고, 경계면의 시공간 왜곡 속에서 자유롭게 열리는 차원 도약
+  // 🌌 사건의 지평선: 조준한 앱 방향의 1순위 정규 도약(빛) ⟷ 추천 2순위 연계/심연 대척점 전이(어둠)
   if (
     metrics.radialSectorIndex !== undefined &&
     metrics.radialSectorIndex >= 0 &&
@@ -341,12 +341,30 @@ export function synthesizeWarpTarget(context: OmniWarpContext, metrics: WarpForc
   ) {
     const radialApp = RADIAL_WARP_APPS[metrics.radialSectorIndex];
     const isWhiteholeMode = metrics.eventHorizonMode === 'whitehole' || metrics.phase === 'whitehole';
-    const seed = (metrics.startTime || Date.now()) + metrics.radialSectorIndex * 137;
+    const isMirrorholeMode = metrics.eventHorizonMode === 'mirrorhole' || metrics.phase === 'mirrorhole';
 
-    // 목적지나 기능을 사전에 고정해두지 않고, 경계면 파동에 따라 자유롭게 차원 연결
-    const rawDest = isWhiteholeMode
-      ? getWhiteholeRecommendedApp(context.activeRoute, context.sessionData, seed)
-      : getBlackholeRecommendedApp(context.activeRoute, context.sessionData, seed + 883);
+    // 🌟 사건의 지평선 삼위일체:
+    // - 화이트홀(빛 주기): 조준 채널의 화이트홀 차원 (tossRule.whitehole)
+    // - 미러홀(유리 주기): 항시 프리즘 홈으로 귀환
+    // - 블랙홀(어둠 주기): 조준 채널의 블랙홀 차원 (tossRule.blackhole)
+    const tossRule = getTossRule(radialApp.id, context.sessionData);
+    let rawDest;
+    if (isWhiteholeMode) {
+      rawDest = tossRule?.whitehole || radialApp;
+    } else if (isMirrorholeMode) {
+      rawDest = {
+        id: 'hub',
+        name: '프리즘 홈',
+        subName: '모든 차원의 시초 허브',
+        path: '/',
+        icon: '🌌',
+        themeColor: '#38bdf8',
+        accentGlow: 'rgba(255, 255, 255, 0.95)',
+        description: '영롱한 크리스탈 거울 면을 통과하여 프리즘 홈으로 귀환합니다.',
+      };
+    } else {
+      rawDest = tossRule?.blackhole || tossRule?.secondary || radialApp;
+    }
 
     const dest = sanitizeDest(rawDest);
     const safePath = resolveCanonicalPath(dest.path);
@@ -356,19 +374,27 @@ export function synthesizeWarpTarget(context: OmniWarpContext, metrics: WarpForc
       id: dest.id,
       icon: dest.icon || radialApp.icon,
       phase: 'event_horizon',
-      eventHorizonMode: isWhiteholeMode ? 'whitehole' : 'blackhole',
+      eventHorizonMode: isWhiteholeMode ? 'whitehole' : isMirrorholeMode ? 'mirrorhole' : 'blackhole',
       gauge: Math.max(0.35, metrics.virtualForce),
       aiTemperature: T,
       title: dest.name,
-      actionType: `event_horizon_${isWhiteholeMode ? 'radiant' : 'singularity'}_${dest.id}`,
+      actionType: `event_horizon_${isWhiteholeMode ? 'whitehole' : isMirrorholeMode ? 'mirrorhole' : 'blackhole'}_${dest.id}`,
       destinationPath: safePath,
-      previewLabel: `[사건의 지평선] 🌌 ${radialApp.name} ➔ ${dest.name}`,
-      previewDescription: `사건의 지평선 경계면 왜곡을 뚫고 [${dest.name} · ${dest.subName}] 차원으로 전이합니다.`,
-      themeColor: dest.themeColor || radialApp.themeColor || '#a855f7',
-      accentGlow: isWhiteholeMode ? 'rgba(56, 189, 248, 0.75)' : 'rgba(168, 85, 247, 0.85)',
+      previewLabel: isWhiteholeMode
+        ? `[사건의 지평선 화이트홀] ☀️ ${radialApp.name} ➔ ${dest.name}`
+        : isMirrorholeMode
+        ? `[사건의 지평선 미러홀] 🪞 프리즘 홈 귀환`
+        : `[사건의 지평선 블랙홀] 🕳️ ${radialApp.name} ➔ ${dest.name}`,
+      previewDescription: isWhiteholeMode
+        ? `[${radialApp.name}] 채널의 화이트홀(빛) 차원인 [${dest.name} · ${dest.subName}]으로 방출 도약합니다.`
+        : isMirrorholeMode
+        ? `영롱한 크리스탈 거울 면을 통과하여 항시 프리즘 홈으로 투영 귀환합니다.`
+        : `[${radialApp.name}] 채널의 블랙홀(어둠) 차원인 [${dest.name} · ${dest.subName}]으로 심연 전이합니다.`,
+      themeColor: isMirrorholeMode ? '#38bdf8' : (dest.themeColor || radialApp.themeColor || '#a855f7'),
+      accentGlow: isWhiteholeMode ? (radialApp.accentGlow || 'rgba(56, 189, 248, 0.75)') : isMirrorholeMode ? 'rgba(255, 255, 255, 0.95)' : 'rgba(168, 85, 247, 0.85)',
       stageIndex: metrics.radialSectorIndex + 1,
-      runeSymbol: rune.symbol || radialApp.runeSymbol,
-      runeName: rune.name || radialApp.runeName,
+      runeSymbol: isMirrorholeMode ? '🪞' : (rune.symbol || radialApp.runeSymbol),
+      runeName: isMirrorholeMode ? 'Mirror' : (rune.name || radialApp.runeName),
     };
   }
 
@@ -420,7 +446,39 @@ export function synthesizeWarpTarget(context: OmniWarpContext, metrics: WarpForc
     };
   }
 
-  // 3. 홀드 중 어둠이면 블랙홀 (목적지나 기능이 정해져 있지 않은 심연 특이점 전이)
+  // 🪞 3. 홀드 중 유리테마면 미러홀 (기능: 항시 프리즘 홈으로 들어감)
+  if (metrics.phase === 'mirrorhole') {
+    const dest = sanitizeDest({
+      id: 'hub',
+      name: '프리즘 홈',
+      subName: '모든 영감의 시초 허브',
+      path: '/',
+      icon: '🌌',
+      themeColor: '#38bdf8',
+      accentGlow: 'rgba(255, 255, 255, 0.95)',
+      description: '투명하고 영롱한 크리스탈 유리 거울 면을 통과하여 프리즘 홈 허브로 즉시 귀환합니다.',
+    });
+    const safePath = resolveCanonicalPath(dest.path);
+    return {
+      id: 'hub',
+      icon: '🌌',
+      phase: 'mirrorhole',
+      gauge: metrics.virtualForce,
+      aiTemperature: T,
+      title: '프리즘 홈',
+      actionType: 'omniwarp_mirrorhole',
+      destinationPath: safePath,
+      previewLabel: `[미러홀 투영] 🪞 프리즘 홈`,
+      previewDescription: `투명하고 영롱한 크리스탈 유리 거울 면을 통과하여 항시 프리즘 홈으로 귀환합니다.`,
+      themeColor: '#38bdf8',
+      accentGlow: 'rgba(255, 255, 255, 0.95)',
+      stageIndex: 5,
+      runeSymbol: '🪞',
+      runeName: 'Mirror',
+    };
+  }
+
+  // 4. 홀드 중 어둠이면 블랙홀 (목적지나 기능이 정해져 있지 않은 심연 특이점 전이)
   const rawBlackhole = getBlackholeRecommendedApp(context.activeRoute, context.sessionData, metrics.startTime);
   const blackholeDest = sanitizeDest(rawBlackhole);
   const rune = getOrbRunicSigil(blackholeDest.id);

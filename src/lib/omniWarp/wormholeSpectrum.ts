@@ -191,25 +191,44 @@ export function getDynamicUniverseApp(
 
 /**
  * ☀️ 화이트홀:
- * 목적지나 기능을 사전에 정해두지 않고, 순수한 빛의 에너지 파동에 따라 자유롭게 차원을 방출합니다.
+ * 좌뇌적·의식적·이성적 스펙트럼 1순위 추천 차원을 도약지로 배정합니다.
+ * 현재 머무는 장소를 배제하여 항상 상위 1순위 이성 차원(트리니티 오라클 데이터 분석, 에필로그 밤 서재 회고 등)으로 방출합니다.
  */
 export function getWhiteholeRecommendedApp(activeRoute?: string, contextHint?: any, seedTime?: number): WormholeAppInfo {
-  return getDynamicUniverseApp(activeRoute, 137, seedTime);
+  const allActive = getAllActiveWormholeApps();
+  const normCurrent = (activeRoute || '/').toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
+  const normCurrentId = normCurrent.replace('/', '') || 'hub';
+
+  const appMap = new Map(allActive.map((a) => [a.id, a]));
+  for (const id of GLOBAL_RATIONAL_PAGE_RANKING) {
+    if (id === normCurrentId) continue;
+    const target = appMap.get(id);
+    if (target && target.path.replace(/\/$/, '') !== normCurrent) {
+      return target;
+    }
+  }
+  return allActive[0] || ALL_WORMHOLE_APPS[0];
 }
 
 /**
  * 🕳️ 블랙홀:
- * 목적지나 기능을 사전에 정해두지 않고, 심연의 중력 특이점에 이끌려 자유롭게 차원을 전이합니다.
+ * 우뇌적·무의식적·감성적 스펙트럼 1순위 추천 차원을 도약지로 배정합니다.
+ * 현재 머무는 장소를 배제하여 항상 상위 1순위 감성·무의식 차원(크리스탈 오브 직관 점술, 뮤즈 예술처방 등)으로 전이합니다.
  */
 export function getBlackholeRecommendedApp(activeRoute?: string, contextHint?: any, seedTime?: number): WormholeAppInfo {
-  const white = getDynamicUniverseApp(activeRoute, 137, seedTime);
-  const black = getDynamicUniverseApp(activeRoute, 997, seedTime);
+  const allActive = getAllActiveWormholeApps();
+  const normCurrent = (activeRoute || '/').toLowerCase().split('?')[0].replace(/\/$/, '') || '/';
+  const normCurrentId = normCurrent.replace('/', '') || 'hub';
 
-  // 화이트홀과 블랙홀이 교차할 때 서로 다른 차원으로 유동적 도약 지원
-  if (white.id === black.id) {
-    return getDynamicUniverseApp(activeRoute, 1601, seedTime);
+  const appMap = new Map(allActive.map((a) => [a.id, a]));
+  for (const id of GLOBAL_EMOTIONAL_PAGE_RANKING) {
+    if (id === normCurrentId) continue;
+    const target = appMap.get(id);
+    if (target && target.path.replace(/\/$/, '') !== normCurrent) {
+      return target;
+    }
   }
-  return black;
+  return allActive[allActive.length - 1] || ALL_WORMHOLE_APPS[1];
 }
 
 /**

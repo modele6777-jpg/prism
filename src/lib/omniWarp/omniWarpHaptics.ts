@@ -3,7 +3,7 @@
  * 차등 진동 피드백 (navigator.vibrate)
  */
 
-export type HapticType = 'whitehole' | 'event_horizon' | 'blackhole' | 'blackhole_peak' | 'bigbang' | 'abort';
+export type HapticType = 'whitehole' | 'mirrorhole' | 'event_horizon' | 'blackhole' | 'blackhole_peak' | 'bigbang' | 'abort';
 
 let blackHoleLoopInterval: number | null = null;
 
@@ -52,6 +52,10 @@ export function triggerHaptic(type: HapticType): void {
       case 'whitehole':
         // 맑고 가벼운 고주파 탭 (톡-)
         navigator.vibrate?.([12]);
+        break;
+      case 'mirrorhole':
+        // 영롱하고 산뜻한 크리스탈 유리 햅틱 (경쾌한 이중 탭)
+        navigator.vibrate?.([8, 14, 10]);
         break;
       case 'event_horizon':
         // 부드러운 웜홀 통과 진동

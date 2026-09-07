@@ -928,5 +928,110 @@ html.perf-reduced .cosmic-star-flare {
   will-change: transform;
 }
 
+/* 🌟 빅뱅 차원도약: 빛비춤(화이트홀) & 어둠현상(블랙홀) 복원 효과 */
+@keyframes bigbang-starlight-rays {
+  0% {
+    transform: rotate(0deg) scale(0.95);
+    opacity: 0.75;
+  }
+  50% {
+    transform: rotate(180deg) scale(1.12);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(360deg) scale(0.95);
+    opacity: 0.75;
+  }
+}
+
+@keyframes bigbang-darkness-suction {
+  0% {
+    transform: scale(1.38);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(0.92);
+    opacity: 0.45;
+  }
+  100% {
+    transform: scale(0.48);
+    opacity: 0;
+  }
+}
+
+@keyframes bigbang-radiance-pulse {
+  0% {
+    opacity: 0.72;
+    transform: scale(0.99);
+  }
+  50% {
+    opacity: 0.98;
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 0.72;
+    transform: scale(0.99);
+  }
+}
+
+@keyframes bigbang-darkness-pulse {
+  0% {
+    opacity: 0.82;
+    transform: scale(1.01);
+  }
+  50% {
+    opacity: 0.98;
+    transform: scale(0.99);
+  }
+  100% {
+    opacity: 0.82;
+    transform: scale(1.01);
+  }
+}
+
+@keyframes bigbang-photon-sweep {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.bigbang-rays-spin {
+  animation: bigbang-starlight-rays 14s linear infinite;
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+
+.bigbang-suction-wave-1 {
+  animation: bigbang-darkness-suction 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+
+.bigbang-suction-wave-2 {
+  animation: bigbang-darkness-suction 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation-delay: 0.75s;
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+
+.bigbang-radiance-field {
+  animation: bigbang-radiance-pulse 2.4s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+.bigbang-darkness-field {
+  animation: bigbang-darkness-pulse 2.2s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+.bigbang-photon-sweep {
+  animation: bigbang-photon-sweep 24s linear infinite;
+  transform-origin: 50% 100%;
+  will-change: transform;
+}
+
 
 

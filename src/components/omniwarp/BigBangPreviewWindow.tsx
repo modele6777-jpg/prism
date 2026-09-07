@@ -1,10 +1,11 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Sparkles, Zap, Compass, AlertCircle, Eye } from 'lucide-react';
+import { Sparkles, Zap, Compass, AlertCircle, Eye, Sun, Moon, Timer } from 'lucide-react';
 import { CrystalOrbIcon } from '@/components/icons/CrystalOrbIcon';
 import { WarpPhase, OmniWarpTarget } from '@/lib/omniWarp/types';
 import { TossDestination } from '@/lib/prismTossRegistry';
 import { getRankedWormholeApps } from '@/lib/omniWarp/wormholeSpectrum';
+import { PrismAppIcon } from './PrismAppIcon';
 
 interface BigBangPreviewWindowProps {
   /** 현재 누르는 중인지 여부 */
@@ -129,24 +130,24 @@ export function BigBangPreviewWindow({
           ) : isPressing ? (
             isEventHorizon ? (
               <span className="flex items-center gap-1 text-purple-200 drop-shadow-[0_0_8px_rgba(168,85,247,0.9)]">
-                <Compass size={14} className="animate-spin text-purple-300" /> 🌌 사건의 지평선 [{isEventHorizonWhitehole ? '☀️ 빛의 도약' : '🕳️ 심연 도약'}]
+                <Compass size={14} className="animate-spin text-purple-300" /> 사건의 지평선 [{isEventHorizonWhitehole ? '빛의 도약' : '심연 도약'}]
               </span>
             ) : isWhitehole ? (
               <span className="flex items-center gap-1 text-cyan-200 drop-shadow-[0_0_8px_rgba(255,255,255,0.9)]">
-                <Sparkles size={14} className="animate-spin text-white" /> ☀️ 화이트홀 (빛의 방출)
+                <Sun size={14} className="animate-spin text-white" /> 화이트홀 (빛의 방출)
               </span>
             ) : isWormhole ? (
               <span className="flex items-center gap-1 text-purple-300">
-                <Zap size={14} className="animate-pulse text-purple-400" /> 🌀 웜홀 (자유 양자 도약)
+                <Zap size={14} className="animate-pulse text-purple-400" /> 웜홀 (자유 양자 도약)
               </span>
             ) : (
               <span className="flex items-center gap-1 text-amber-400 drop-shadow-[0_0_10px_rgba(245,158,11,0.8)]">
-                <Compass size={14} className="animate-spin text-amber-300" /> 🕳️ 블랙홀 (심연 특이점)
+                <Moon size={14} className="animate-spin text-amber-300" /> 블랙홀 (심연 특이점)
               </span>
             )
           ) : (
             <span className="flex items-center gap-1 text-cyan-200">
-              <Eye size={14} className="text-cyan-400 animate-pulse" /> 🎲 빅뱅 실시간 타이밍 궤도
+              <Eye size={14} className="text-cyan-400 animate-pulse" /> 빅뱅 실시간 타이밍 궤도
             </span>
           )}
         </div>
@@ -155,8 +156,8 @@ export function BigBangPreviewWindow({
         <div className="flex items-center gap-2 text-[10px] font-mono">
           {isPressing ? (
             <>
-              <span className="px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-200 border border-cyan-400/30 font-bold">
-                ⏱️ {elapsedSec}s
+              <span className="px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-200 border border-cyan-400/30 font-bold flex items-center gap-1">
+                <Timer size={11} className="text-cyan-300" /> {elapsedSec}s
               </span>
               <span className="px-1.5 py-0.5 rounded bg-white/10 font-bold text-white">
                 압력 {(gauge * 100).toFixed(0)}%
@@ -177,11 +178,11 @@ export function BigBangPreviewWindow({
           {isBlackhole ? (
             <CrystalOrbIcon size={22} className="shrink-0 drop-shadow-[0_0_10px_rgba(245,158,11,0.9)]" />
           ) : isWhitehole ? (
-            <span className="text-lg shrink-0">✨</span>
+            <PrismAppIcon nameOrId="lucy" size={20} className="shrink-0 text-cyan-300" />
           ) : currentTarget ? (
-            <span className="text-lg shrink-0">{rankedApps[currentWormholeIndex]?.icon || '🌀'}</span>
+            <PrismAppIcon nameOrId={rankedApps[currentWormholeIndex]?.id || currentTarget.id || 'hub'} size={20} className="shrink-0 text-purple-300" />
           ) : (
-            <span className="text-lg shrink-0">{nextDest.icon}</span>
+            <PrismAppIcon nameOrId={nextDest.id || 'hub'} size={20} className="shrink-0 text-cyan-300" />
           )}
           <div className="flex flex-col min-w-0 text-left">
             <span className="text-[11px] font-extrabold text-cyan-200 truncate flex items-center gap-1">
@@ -214,8 +215,8 @@ export function BigBangPreviewWindow({
               isWhitehole ? 'scale-125 font-black text-cyan-300' : 'opacity-60 text-white/60'
             }`}
           >
-            <span className="text-[10px]">☀️</span>
-            <span className="text-[7.5px] font-mono whitespace-nowrap">화이트홀</span>
+            <Sun size={12} className="text-cyan-300" />
+            <span className="text-[7.5px] font-mono whitespace-nowrap mt-0.5">화이트홀</span>
           </div>
 
           {/* 20% ~ 80%: 7대 룬 노드 */}
@@ -248,8 +249,8 @@ export function BigBangPreviewWindow({
               isBlackhole ? 'scale-125 font-black text-amber-400' : 'opacity-60 text-white/60'
             }`}
           >
-            <span className="text-[10px]">🕳️</span>
-            <span className="text-[7.5px] font-mono whitespace-nowrap">블랙홀</span>
+            <Moon size={12} className="text-amber-400" />
+            <span className="text-[7.5px] font-mono whitespace-nowrap mt-0.5">블랙홀</span>
           </div>
         </div>
 
