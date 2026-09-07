@@ -247,7 +247,7 @@ export function BigBangPreviewWindow({
                 : 'opacity-60 text-white/60'
             }`}
           >
-            <Triangle size={12} className="text-sky-200 fill-sky-200/30" />
+            <Triangle size={12} className="text-sky-200" fill="none" />
             <span className="text-[7.5px] font-mono whitespace-nowrap mt-0.5">미러홀(유리)</span>
           </div>
 

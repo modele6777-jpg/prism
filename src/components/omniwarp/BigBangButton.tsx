@@ -588,7 +588,7 @@ export function BigBangButton() {
                   : isWhiteholeMode
                   ? 'scale-110 border-cyan-300 shadow-[0_0_25px_rgba(255,255,255,0.9)]'
                   : isMirrorholeMode
-                  ? 'scale-110 border-cyan-200/80 shadow-[0_0_30px_rgba(56,189,248,0.7),inset_0_0_15px_rgba(255,255,255,0.75)] backdrop-blur-xl'
+                  ? 'scale-110 border-white/60 shadow-[0_0_20px_rgba(255,255,255,0.35)] backdrop-blur-md'
                   : isBlackholeMode
                   ? 'scale-105 border-zinc-800 shadow-[0_0_20px_rgba(0,0,0,0.95)]'
                   : 'border-cyan-400/40 hover:border-cyan-300/80 shadow-[0_0_20px_rgba(56,189,248,0.3)]'
@@ -599,7 +599,7 @@ export function BigBangButton() {
                   : isWhiteholeMode
                   ? 'radial-gradient(circle at 50% 50%, #ffffff 0%, #bae6fd 45%, #38bdf8 85%, #0284c7 100%)'
                   : isMirrorholeMode
-                  ? 'radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.38) 0%, rgba(186, 230, 253, 0.16) 45%, rgba(10, 15, 30, 0.3) 100%)'
+                  ? 'transparent'
                   : isBlackholeMode
                   ? '#04030a'
                   : '#080918',
@@ -612,7 +612,7 @@ export function BigBangButton() {
                   : isWhiteholeMode
                   ? 'inset 0 0 25px rgba(255, 255, 255, 1), 0 0 25px rgba(56, 189, 248, 0.9)'
                   : isMirrorholeMode
-                  ? 'inset 0 0 16px rgba(255, 255, 255, 0.8), inset 0 0 6px rgba(56, 189, 248, 0.4), 0 0 25px rgba(56, 189, 248, 0.65)'
+                  ? 'inset 0 0 10px rgba(255, 255, 255, 0.4), 0 0 16px rgba(56, 189, 248, 0.3)'
                   : isBlackholeMode
                   ? 'inset 0 0 22px #000000, 0 0 20px rgba(0, 0, 0, 0.95)'
                   : 'inset 0 0 18px rgba(168, 85, 247, 0.5), 0 0 25px rgba(168, 85, 247, 0.5)',
@@ -676,9 +676,9 @@ export function BigBangButton() {
                         }}
                       />
 
-                      {/* 중심부 크리스탈 거울 프리즘 코어 */}
+                      {/* 중심부 크리스탈 거울 프리즘 코어 (완전 투명 유리 링) */}
                       <div
-                        className="absolute w-5 h-5 rounded-full bg-white/90 shadow-[0_0_12px_rgba(255,255,255,1),inset_0_0_4px_rgba(56,189,248,0.6)] animate-pulse pointer-events-none"
+                        className="absolute w-5 h-5 rounded-full border border-white/40 shadow-[0_0_8px_rgba(255,255,255,0.3)] pointer-events-none"
                       />
                     </div>
                   )}
@@ -730,12 +730,12 @@ export function BigBangButton() {
                   background: isWhiteholeMode
                     ? 'radial-gradient(circle at 50% 50%, #ffffff 0%, #e0f2fe 50%, #38bdf8 100%)'
                     : isMirrorholeMode
-                    ? 'radial-gradient(circle at 40% 35%, rgba(255,255,255,0.32) 0%, rgba(186,230,253,0.12) 50%, rgba(10,15,30,0.2) 100%)'
+                    ? 'transparent'
                     : 'radial-gradient(circle at 45% 35%, #0f1124 0%, #080916 55%, #030309 100%)',
                   boxShadow: isWhiteholeMode
                     ? 'inset 0 0 12px rgba(255, 255, 255, 1), 0 0 10px rgba(255, 255, 255, 0.8)'
                     : isMirrorholeMode
-                    ? 'inset 0 0 12px rgba(255, 255, 255, 0.7), 0 0 14px rgba(56, 189, 248, 0.5)'
+                    ? 'none'
                     : 'inset 0 0 12px rgba(0, 0, 0, 0.95)',
                 }}
               />
@@ -761,7 +761,7 @@ export function BigBangButton() {
                           : isWhiteholeMode
                           ? 'radial-gradient(circle, rgba(253,230,138,0.9) 0%, rgba(244,114,182,0.6) 50%, transparent 80%)'
                           : isMirrorholeMode
-                          ? 'radial-gradient(circle, rgba(255,255,255,0.85) 0%, rgba(56,189,248,0.5) 50%, transparent 80%)'
+                          ? 'transparent'
                           : isBlackholeMode
                           ? 'radial-gradient(circle, rgba(56,189,248,0.8) 0%, rgba(168,85,247,0.5) 50%, transparent 80%)'
                           : 'radial-gradient(circle, rgba(168,85,247,0.8) 0%, transparent 80%)',

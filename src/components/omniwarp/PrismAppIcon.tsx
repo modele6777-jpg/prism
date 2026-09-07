@@ -230,7 +230,7 @@ export function PrismAppIcon({
         size={size}
         className={className}
         color={color || '#38bdf8'}
-        fill="rgba(56, 189, 248, 0.28)"
+        fill="none"
         strokeWidth={strokeWidth || 2.2}
       />
     );
