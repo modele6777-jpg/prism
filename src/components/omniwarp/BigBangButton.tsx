@@ -11,6 +11,30 @@ import { triggerHaptic, startBlackHoleContinuousHaptic, stopBlackHoleContinuousH
 import { BigBangCircularMeter } from './BigBangCircularMeter';
 import { PrismAppIcon } from './PrismAppIcon';
 
+const R_ROULETTE_OUTER = 88;
+const R_ROULETTE_INNER = 28;
+const ROULETTE_SECTOR_ANGLE = 360 / 7; // ~51.42857°
+
+function getRainbowRouletteSectorPath(index: number, rIn = R_ROULETTE_INNER, rOut = R_ROULETTE_OUTER): string {
+  const startDeg = (index - 0.5) * ROULETTE_SECTOR_ANGLE;
+  const endDeg = (index + 0.5) * ROULETTE_SECTOR_ANGLE;
+  const startRad = (startDeg * Math.PI) / 180;
+  const endRad = (endDeg * Math.PI) / 180;
+
+  // 12 o'clock is 0°
+  const xOut1 = rOut * Math.sin(startRad);
+  const yOut1 = -rOut * Math.cos(startRad);
+  const xOut2 = rOut * Math.sin(endRad);
+  const yOut2 = -rOut * Math.cos(endRad);
+
+  const xIn1 = rIn * Math.sin(startRad);
+  const yIn1 = -rIn * Math.cos(startRad);
+  const xIn2 = rIn * Math.sin(endRad);
+  const yIn2 = -rIn * Math.cos(endRad);
+
+  return `M ${xIn1.toFixed(2)} ${yIn1.toFixed(2)} L ${xOut1.toFixed(2)} ${yOut1.toFixed(2)} A ${rOut} ${rOut} 0 0 1 ${xOut2.toFixed(2)} ${yOut2.toFixed(2)} L ${xIn2.toFixed(2)} ${yIn2.toFixed(2)} A ${rIn} ${rIn} 0 0 0 ${xIn1.toFixed(2)} ${yIn1.toFixed(2)} Z`;
+}
+
 export function BigBangButton() {
   const [location] = useLocation();
   const [isPressing, setIsPressing] = useState(false);
@@ -476,41 +500,89 @@ export function BigBangButton() {
               </>
             )}
 
-            {/* 🎯 7대 앱 방사형 조이스틱 HUD (버튼 누르고 움직일 때 전개) */}
+            {/* 🎯 7대 앱 무지개 돌림판 방사형 조이스틱 HUD (버튼 홀드 시 전개) */}
             <AnimatePresence>
               {isPressing && (
                 <>
-                  {/* 1) 유효 조작 반경 경계 링 */}
+                  {/* 1) 🌈 7색 무지개 돌림판 (Rainbow Roulette Wheel) */}
                   <motion.div
-                    key="radial-boundary-ring"
-                    initial={{ scale: 0.8, opacity: 0 }}
+                    key="rainbow-roulette-wheel"
+                    initial={{ scale: 0.7, opacity: 0 }}
                     animate={{
                       scale: 1,
-                      opacity: 1,
-                      borderColor: isAborted
-                        ? 'rgba(239, 68, 68, 0.85)'
-                        : radialSectorIndex >= 0
-                        ? RADIAL_WARP_APPS[radialSectorIndex]?.themeColor || 'rgba(56, 189, 248, 0.6)'
-                        : 'rgba(56, 189, 248, 0.35)',
-                      boxShadow: isAborted
-                        ? '0 0 20px rgba(239, 68, 68, 0.4)'
-                        : radialSectorIndex >= 0
-                        ? `0 0 20px ${RADIAL_WARP_APPS[radialSectorIndex]?.accentGlow}`
-                        : '0 0 10px rgba(56, 189, 248, 0.15)',
+                      opacity: isAborted ? 0.35 : 1,
                     }}
-                    exit={{ scale: 0.8, opacity: 0 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[176px] h-[176px] rounded-full border-2 border-dashed pointer-events-none z-25"
-                  />
+                    exit={{ scale: 0.7, opacity: 0 }}
+                    transition={{ type: 'spring', stiffness: 420, damping: 26 }}
+                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[176px] h-[176px] pointer-events-none z-22 flex items-center justify-center select-none"
+                  >
+                    <svg
+                      width="176"
+                      height="176"
+                      viewBox="-88 -88 176 176"
+                      className="w-full h-full drop-shadow-[0_0_20px_rgba(0,0,0,0.6)]"
+                    >
+                      {/* 7개 무지개 섹션 슬라이스 (빨·주·노·초·파·남·보) */}
+                      {RADIAL_WARP_APPS.map((app, idx) => {
+                        const isSelected = radialSectorIndex === idx && !isAborted;
+                        const d = getRainbowRouletteSectorPath(idx, 28, 88);
 
-                  {/* 2) 7대 앱 궤도 노드: 프리즘 메인 아이콘 장착 */}
+                        return (
+                          <path
+                            key={`roulette-sector-${app.id}`}
+                            d={d}
+                            fill={app.themeColor}
+                            fillOpacity={isSelected ? 0.95 : 0.65}
+                            stroke={isSelected ? '#ffffff' : 'rgba(255, 255, 255, 0.45)'}
+                            strokeWidth={isSelected ? 2.5 : 1.2}
+                            className="transition-all duration-150"
+                            style={{
+                              filter: isSelected
+                                ? `drop-shadow(0 0 12px ${app.accentGlow}) brightness(1.25)`
+                                : undefined,
+                            }}
+                          />
+                        );
+                      })}
+
+                      {/* 돌림판 바깥쪽 원형 테두리 림 */}
+                      <circle
+                        cx="0"
+                        cy="0"
+                        r="87"
+                        fill="none"
+                        stroke={
+                          isAborted
+                            ? 'rgba(239, 68, 68, 0.85)'
+                            : radialSectorIndex >= 0
+                            ? '#ffffff'
+                            : 'rgba(255, 255, 255, 0.65)'
+                        }
+                        strokeWidth="2"
+                        strokeDasharray="4 2.5"
+                        className="transition-colors duration-150"
+                      />
+
+                      {/* 돌림판 안쪽 원형 림 */}
+                      <circle
+                        cx="0"
+                        cy="0"
+                        r="28"
+                        fill="none"
+                        stroke="rgba(255, 255, 255, 0.5)"
+                        strokeWidth="1.5"
+                      />
+                    </svg>
+                  </motion.div>
+
+                  {/* 2) 7대 앱 아이콘: 동그라미 배경 없이 순수 하얀색 아이콘으로 표출 */}
                   {RADIAL_WARP_APPS.map((app, idx) => {
                     const sectorAngle = 360 / RADIAL_WARP_APPS.length;
                     const angleDeg = idx * sectorAngle;
                     const angleRad = (angleDeg * Math.PI) / 180;
-                    // 12시 방향이 0도: x = R * sin, y = -R * cos (반지름 72px)
-                    const nodeX = 72 * Math.sin(angleRad);
-                    const nodeY = -72 * Math.cos(angleRad);
+                    // 돌림판 슬라이스 정중앙 반경 (28 + 88)/2 = 58px ~ 60px
+                    const nodeX = 60 * Math.sin(angleRad);
+                    const nodeY = -60 * Math.cos(angleRad);
                     const isSelected = radialSectorIndex === idx && !isAborted;
 
                     return (
@@ -518,8 +590,8 @@ export function BigBangButton() {
                         key={app.id}
                         initial={{ scale: 0, opacity: 0 }}
                         animate={{
-                          scale: isSelected ? 1.35 : 0.95,
-                          opacity: isAborted ? 0.25 : isSelected ? 1 : 0.85,
+                          scale: isSelected ? 1.4 : 1.0,
+                          opacity: isAborted ? 0.3 : isSelected ? 1 : 0.95,
                           x: nodeX,
                           y: nodeY,
                         }}
@@ -527,28 +599,16 @@ export function BigBangButton() {
                         transition={{ type: 'spring', stiffness: 450, damping: 28 }}
                         className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-30 flex items-center justify-center select-none"
                       >
-                        {/* 🌟 노드 원형 뱃지 (어플 고유 프리즘 아이콘 및 하이라이트 글로우) */}
-                        <div
-                          className={`w-8.5 h-8.5 rounded-full flex items-center justify-center shadow-lg transition-all duration-150 border ${
+                        <PrismAppIcon
+                          nameOrId={app.id}
+                          size={isSelected ? 22 : 18}
+                          color="#ffffff"
+                          className={
                             isSelected
-                              ? 'border-white ring-2 ring-white/90 font-bold scale-110'
-                              : 'border-white/30 bg-black/85 text-white/90'
-                          }`}
-                          style={{
-                            background: isSelected
-                              ? `radial-gradient(circle, ${app.themeColor} 0%, #050612 100%)`
-                              : 'rgba(5, 6, 18, 0.9)',
-                            boxShadow: isSelected
-                              ? `0 0 18px ${app.accentGlow}, inset 0 0 6px rgba(255,255,255,0.7)`
-                              : '0 0 6px rgba(0, 0, 0, 0.7)',
-                          }}
-                        >
-                          <PrismAppIcon
-                            nameOrId={app.id}
-                            size={isSelected ? 18 : 15}
-                            color={isSelected ? '#ffffff' : app.themeColor}
-                          />
-                        </div>
+                              ? 'text-white drop-shadow-[0_0_10px_rgba(255,255,255,1)] transition-transform'
+                              : 'text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.85)] transition-transform'
+                          }
+                        />
                       </motion.div>
                     );
                   })}
