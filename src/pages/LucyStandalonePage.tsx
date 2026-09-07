@@ -357,22 +357,11 @@ export default function LucyStandalonePage() {
     return [];
   });
   const [input, setInput] = useState('');
-  const [isAutoDetect, setIsAutoDetect] = useState<boolean>(() => {
-    try {
-      const saved = localStorage.getItem('lucy_pro_auto_detect');
-      return saved !== 'false';
-    } catch {
-      return true;
-    }
-  });
+  const isAutoDetect = true;
   const [autoDetectedTitle, setAutoDetectedTitle] = useState<string | null>(null);
 
-  // Real-time input text analysis for live dynamic mode switching when Auto-Detect is enabled
+  // Real-time input text analysis for live dynamic mode switching (항시 AI 자동 감지 고정)
   useEffect(() => {
-    if (!isAutoDetect) {
-      setAutoDetectedTitle(null);
-      return;
-    }
     if (!input.trim() || input.trim().length < 2) {
       setAutoDetectedTitle(null);
       return;
@@ -391,7 +380,7 @@ export default function LucyStandalonePage() {
       }
     }, 180);
     return () => clearTimeout(timer);
-  }, [input, isAutoDetect]);
+  }, [input]);
 
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -988,20 +977,18 @@ export default function LucyStandalonePage() {
                 <h1 className="text-sm sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-1.5">
                   Lucy
                 </h1>
-                <span className={`text-[9px] sm:text-[10px] font-black px-2 py-0.5 rounded-full font-mono shadow-xs shrink-0 tracking-wider ${
-                  isFullProMaster 
-                    ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500 text-white animate-pulse'
-                    : isSynergy 
-                    ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' 
-                    : isCasualChat 
-                    ? 'bg-slate-200 text-slate-700' 
-                    : 'bg-amber-500 text-white'
-                }`}>
-                  {isCasualChat ? '수다' : isFullProMaster ? '마스터' : isSynergy ? `${channelCount}중 시너지` : '특화'}
+                <span className="text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-violet-600/10 via-purple-600/10 to-indigo-600/10 text-indigo-600 border border-indigo-200/60 flex items-center gap-1">
+                  <Sparkles size={10} className="text-indigo-500 animate-spin" />
+                  AI 자동 감지
                 </span>
+                {autoDetectedTitle && (
+                  <span className="text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200/80">
+                    {autoDetectedTitle}
+                  </span>
+                )}
               </div>
               <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium truncate">
-                {currentModeTagline}
+                {autoDetectedTitle ? `AI가 대화 의도를 분석하여 맞춤 지능으로 실시간 응답합니다.` : '대화 내용과 맥락에 맞춰 최적의 지능 모드가 실시간 자동 감지됩니다.'}
               </p>
             </div>
           </div>
@@ -1114,83 +1101,6 @@ export default function LucyStandalonePage() {
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* 🎛️ AI Smart Auto-Detect + Master All Toggle + 5 Multi-Toggle Booster Channels Bar */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1 -mb-1">
-          {/* AI Smart Auto-Detect Toggle Button */}
-          <button
-            onClick={() => {
-              const next = !isAutoDetect;
-              setIsAutoDetect(next);
-              try {
-                localStorage.setItem('lucy_pro_auto_detect', String(next));
-              } catch (_) {}
-            }}
-            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-black transition-all shrink-0 cursor-pointer shadow-xs active:scale-95 ${
-              isAutoDetect
-                ? 'bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white ring-2 ring-violet-400/50 shadow-sm'
-                : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200'
-            }`}
-            title={
-              isAutoDetect
-                ? 'AI 스마트 자동 감지 작동 중 (대화 내용에 맞춰 모드가 실시간 자동 전환됨) - 클릭 시 수동 모드로 변경'
-                : 'AI 스마트 자동 감지 꺼짐 (수동 선택 모드) - 클릭 시 자동 감지 켜기'
-            }
-          >
-            <Sparkles size={12} className={isAutoDetect ? 'text-amber-300 animate-spin' : 'text-slate-400'} />
-            <span>{isAutoDetect ? 'AI 자동 감지' : '수동 선택'}</span>
-            <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded-full font-bold ${isAutoDetect ? 'bg-white/25 text-white' : 'bg-slate-200 text-slate-600'}`}>
-              {isAutoDetect ? 'AUTO' : 'MANUAL'}
-            </span>
-          </button>
-
-          <div className="h-4 w-px bg-slate-200 shrink-0" />
-
-          {/* Quick All-On Master / Reset Button */}
-          <button
-            onClick={toggleAllChannels}
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-black transition-all shrink-0 cursor-pointer shadow-xs active:scale-95 ${
-              isFullProMaster
-                ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 ring-2 ring-amber-400/60 shadow-sm'
-                : isCasualChat
-                ? 'bg-slate-200/90 hover:bg-slate-300 text-slate-700 border border-slate-300/80'
-                : 'bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300'
-            }`}
-            title={isFullProMaster ? '모든 채널 끄고 수다 모드로 전환' : '5대 채널 모두 켜고 PRO 마스터 풀가동'}
-          >
-            <Sparkles size={12} className={isFullProMaster ? 'text-slate-950 animate-spin' : 'text-amber-600'} />
-            <span>{isFullProMaster ? '마스터 풀가동 중' : isCasualChat ? '수다 모드' : `${channelCount}개 융합 중`}</span>
-          </button>
-
-          <div className="h-4 w-px bg-slate-200 shrink-0" />
-
-          {/* 5 Individual Booster Chips */}
-          {ALL_CHANNELS.map((channelKey) => {
-            const config = SPECIAL_CHANNELS[channelKey];
-            const Icon = config.icon;
-            const isToggledOn = activeChannels.includes(channelKey);
-
-            return (
-              <button
-                key={channelKey}
-                onClick={() => toggleChannel(channelKey)}
-                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all shrink-0 cursor-pointer shadow-xs active:scale-95 ${
-                  isToggledOn
-                    ? `${config.activeColor} border font-black shadow-sm`
-                    : 'bg-white/90 hover:bg-slate-100 border border-slate-200 text-slate-600'
-                }`}
-                title={isToggledOn ? `${config.name} 켜짐 (클릭 시 끄기)` : `${config.name} 켜기`}
-              >
-                <div className={`w-2 h-2 rounded-full transition-all ${isToggledOn ? `${config.dotColor} animate-pulse scale-110` : 'bg-slate-300'}`} />
-                <Icon size={13} className={isToggledOn ? 'text-slate-950' : 'text-slate-400'} />
-                <span>{config.shortName}</span>
-                <span className={`text-[9px] font-mono px-1 py-0.2 rounded ${isToggledOn ? config.onBadgeColor : 'bg-slate-100 text-slate-400'}`}>
-                  {isToggledOn ? 'ON' : 'OFF'}
-                </span>
-              </button>
-            );
-          })}
-        </div>
       </header>
 
       {/* Chat Messages Stream */}
@@ -1206,15 +1116,7 @@ export default function LucyStandalonePage() {
                   안녕하세요, {userDisplayName} 님! Lucy예요.
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-500 max-w-lg mx-auto leading-relaxed">
-                  {isCasualChat ? (
-                    <>현재 <span className="font-bold text-slate-800">가벼운 일상 수다</span> 모드입니다.<br/>부담 없이 오늘 하루 있었던 일이나 소소한 이야기를 나눠보세요. 상단 채널을 켜면 원하는 전문 지능이 켜집니다.</>
-                  ) : isFullProMaster ? (
-                    <>현재 <span className="font-bold text-amber-700">5대 우주 지능 올인원 마스터</span>가 풀가동되었습니다!<br/>사주, 딥리즈닝 전략, 심리치유, 웰니스, 창의성이 최고 출력으로 통합된 답변을 제공합니다.</>
-                  ) : isSingleSpecial ? (
-                    <>현재 <span className="font-bold text-amber-700">{SPECIAL_CHANNELS[activeChannels[0]].name}</span> 채널이 켜져 있습니다.<br/>해당 분야에 초정밀 집중된 전문 가이드를 제공합니다. 다른 채널을 추가로 켜서 시너지 효과를 낼 수도 있습니다.</>
-                  ) : (
-                    <>현재 <span className="font-bold text-indigo-700">{channelCount}중 융합 시너지</span> 모드가 가동 중입니다!<br/>선택하신 채널들의 관점이 결합되어 다각도 입체 인사이트를 생성합니다.</>
-                  )}
+                  궁금한 점이나 고민, 일상 이야기를 자유롭게 들려주세요.<br/>AI가 대화 내용을 실시간으로 자동 감지하여 최적의 전문 지능(사주·전략·치유·호흡·창의)으로 응답합니다.
                 </p>
               </div>
             </div>
