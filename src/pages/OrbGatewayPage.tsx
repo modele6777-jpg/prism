@@ -297,23 +297,12 @@ export default function OrbGatewayPage() {
   // 가운데 오브 터치 시 활성화되는 마스터 모드 (7대 차원 통합 공명)
   const [isMasterMode, setIsMasterMode] = useState<boolean>(false);
 
-  // 🤖 AI 스마트 자동 감지 (Lucy AI Auto-Detect Engine 연동)
-  const [isAutoDetect, setIsAutoDetect] = useState<boolean>(() => {
-    try {
-      const saved = safeLocalStorage.getItem("prism_orb_auto_detect");
-      return saved !== "false";
-    } catch {
-      return true;
-    }
-  });
+  // 🤖 AI 스마트 자동 감지 (상시 고정)
+  const isAutoDetect = true;
   const [autoDetectedTitle, setAutoDetectedTitle] = useState<string | null>(null);
 
   // 실시간 질문 텍스트 분석 및 룬/차원 모드 지능형 자동 감지 (루시 AI 엔진 연동)
   useEffect(() => {
-    if (!isAutoDetect) {
-      setAutoDetectedTitle(null);
-      return;
-    }
     const text = inquiry.trim();
     // 🚀 [핵심] 글자를 다 지우거나 2자 미만이면 즉시 수다 모드로 즉각 복귀!
     if (!text || text.length < 2) {
@@ -348,7 +337,7 @@ export default function OrbGatewayPage() {
       }
     }, 180);
     return () => clearTimeout(timer);
-  }, [inquiry, isAutoDetect]);
+  }, [inquiry]);
 
   // 현재 활성 모드 sessionStorage 동기화 (옴니워프 빅뱅 버튼 등과 연동)
   useEffect(() => {
@@ -2011,116 +2000,9 @@ ${dimensionDescriptions}
 
       {/* Bottom Divination Inquiry Console */}
       <footer className="relative z-40 w-full max-w-lg px-2.5 sm:px-4 pb-[calc(var(--sab)+7.75rem)] sm:pb-32 flex flex-col items-center shrink-0">
-        {/* 🎛️ AI Smart Auto-Detect + Master All Toggle + 7 Dimension Booster Chips Bar (Like Lucy Chat) */}
-        <div className="w-full flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar py-0.5 sm:py-1 px-0.5 mb-1 sm:mb-1.5 touch-pan-x">
-          {/* AI Smart Auto-Detect Toggle Button */}
-          <button
-            type="button"
-            onClick={() => {
-              const next = !isAutoDetect;
-              setIsAutoDetect(next);
-              try {
-                safeLocalStorage.setItem("prism_orb_auto_detect", String(next));
-              } catch (_) {}
-              triggerHaptic("whitehole");
-            }}
-            className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-[11px] font-black transition-all shrink-0 cursor-pointer shadow-xs active:scale-95 border touch-manipulation ${
-              isAutoDetect
-                ? "bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white border-violet-400/60 shadow-violet-500/25 shadow-sm ring-1 ring-violet-400/40"
-                : "bg-zinc-800/90 hover:bg-zinc-750 text-slate-400 border-white/10"
-            }`}
-            title={
-              isAutoDetect
-                ? "AI 스마트 자동 감지 작동 중 (질문 내용에 맞춰 차원과 모드가 실시간 자동 전환됨) - 클릭 시 수동 모드로 변경"
-                : "AI 스마트 자동 감지 꺼짐 (수동 차원 선택 모드) - 클릭 시 자동 감지 켜기"
-            }
-          >
-            <Sparkles size={12} className={isAutoDetect ? "text-amber-300 animate-spin" : "text-slate-400"} />
-            <span>{isAutoDetect ? "AI 자동 감지" : "수동 선택"}</span>
-            <span
-              className={`text-[9px] font-mono px-1.5 py-0.2 rounded-full font-bold ${
-                isAutoDetect ? "bg-white/25 text-white" : "bg-white/10 text-slate-400"
-              }`}
-            >
-              {isAutoDetect ? "AUTO" : "MANUAL"}
-            </span>
-          </button>
-
-          <div className="h-4 w-px bg-white/20 shrink-0" />
-
-          {/* Quick All-On Master / Casual Reset Button */}
-          <button
-            type="button"
-            onClick={handleCenterOrbClick}
-            className={`flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-black transition-all shrink-0 cursor-pointer shadow-xs active:scale-95 border touch-manipulation ${
-              isMasterMode || selectedRuneIds.length === 7
-                ? "bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 border-amber-400 ring-2 ring-amber-400/60 shadow-md font-black"
-                : selectedRuneIds.length === 0
-                ? "bg-zinc-800/80 hover:bg-zinc-750 text-slate-300 border-white/10"
-                : "bg-cyan-950/80 hover:bg-cyan-900/80 text-cyan-200 border-cyan-500/40"
-            }`}
-            title={isMasterMode || selectedRuneIds.length === 7 ? "모든 차원 끄고 수다 모드로 전환" : "7대 차원 모두 켜고 마스터 풀가동"}
-          >
-            <Sparkles size={12} className={isMasterMode || selectedRuneIds.length === 7 ? "text-slate-950 animate-spin" : "text-amber-400"} />
-            <span>
-              {isMasterMode || selectedRuneIds.length === 7
-                ? "마스터 풀가동 (7/7)"
-                : selectedRuneIds.length === 0
-                ? "수다 모드"
-                : `${selectedRuneIds.length}개 융합 중`}
-            </span>
-          </button>
-
-          <div className="h-4 w-px bg-white/20 shrink-0" />
-
-          {/* 7 Individual Dimension Booster Chips */}
-          {SEPTAGRAM_APPS.map((app) => {
-            const isToggledOn = selectedRuneIds.includes(app.id);
-            return (
-              <button
-                key={app.id}
-                type="button"
-                onClick={() => handleRuneClick(app)}
-                className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold transition-all shrink-0 cursor-pointer shadow-xs active:scale-95 border touch-manipulation ${
-                  isToggledOn
-                    ? "bg-white/15 text-white font-black shadow-sm"
-                    : "bg-zinc-900/80 hover:bg-zinc-800 text-slate-400 border-white/10 hover:text-slate-200"
-                }`}
-                style={
-                  isToggledOn
-                    ? {
-                        borderColor: app.color,
-                        boxShadow: `0 0 10px ${app.glowColor}`,
-                        color: "#fff",
-                      }
-                    : {}
-                }
-                title={isToggledOn ? `${app.name} 켜짐 (클릭 시 끄기)` : `${app.name} 켜기`}
-              >
-                <div
-                  className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all shrink-0 ${
-                    isToggledOn ? "animate-pulse scale-110" : "bg-white/20"
-                  }`}
-                  style={isToggledOn ? { backgroundColor: app.color, boxShadow: `0 0 6px ${app.color}` } : {}}
-                />
-                <span className="text-[11px] sm:text-xs">{app.icon}</span>
-                <span className="font-serif font-black text-[11px] sm:text-xs">{app.runeSymbol}</span>
-                <span>{app.shortName}</span>
-                <span
-                  className={`text-[8px] sm:text-[9px] font-mono px-1 py-0.2 rounded font-bold ${
-                    isToggledOn ? "bg-white/25 text-white" : "bg-white/10 text-slate-500"
-                  }`}
-                >
-                  {isToggledOn ? "ON" : "OFF"}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
         {/* Live Auto-Detect Indicator Banner */}
         <AnimatePresence>
-          {isAutoDetect && autoDetectedTitle && autoDetectedTitle !== "수다 모드" && (
+          {autoDetectedTitle && autoDetectedTitle !== "수다 모드" && (
             <motion.div
               initial={{ opacity: 0, y: 3, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -2157,22 +2039,9 @@ ${dimensionDescriptions}
             value={inquiry}
             onChange={(e) => setInquiry(e.target.value)}
             placeholder={
-              (isMasterMode || selectedRuneIds.length === 7)
-                ? (narrow ? "[마스터] 7대 차원 통합 질문 입력..." : "[마스터 모드] 7대 차원의 통합 통섭으로 답할 깊은 질문을 입력하세요...")
-                : selectedRuneIds.length >= 2
-                ? (narrow ? `[${selectedRuneIds.length}중 연동] 차원 융합 질문 입력...` : (() => {
-                    const names = selectedRuneIds
-                      .map((id) => SEPTAGRAM_APPS.find((a) => a.id === id)?.shortName)
-                      .filter(Boolean)
-                      .join(" × ");
-                    return `[${selectedRuneIds.length}중 연동: ${names}] 차원을 융합할 질문을 입력하세요...`;
-                  })())
-                : selectedRuneIds.length === 1
-                ? (() => {
-                    const a = SEPTAGRAM_APPS.find((a) => a.id === selectedRuneIds[0]);
-                    return narrow ? `[${a?.shortName || a?.name}] 질문 입력...` : `[${a?.name} 모드] 차원의 관점으로 답할 질문을 입력하세요...`;
-                  })()
-                : (narrow ? "질문이나 고민을 입력해보세요..." : "[수다 모드] 마음속 고민이나 가벼운 일상을 이야기해보세요...")
+              autoDetectedTitle && autoDetectedTitle !== "수다 모드"
+                ? `[${autoDetectedTitle}] 질문이나 고민을 입력하세요...`
+                : (narrow ? "고민이나 질문을 입력하세요..." : "무엇이든 물어보세요 (AI 자동 감지)...")
             }
             className="flex-1 bg-transparent px-2.5 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base text-white placeholder-slate-500 outline-none"
           />
