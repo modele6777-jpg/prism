@@ -15,9 +15,16 @@ const R_ROULETTE_OUTER = 88;
 const R_ROULETTE_INNER = 28;
 const ROULETTE_SECTOR_ANGLE = 360 / 7; // ~51.42857°
 
-function getRainbowRouletteSectorPath(index: number, rIn = R_ROULETTE_INNER, rOut = R_ROULETTE_OUTER): string {
-  const startDeg = (index - 0.5) * ROULETTE_SECTOR_ANGLE;
-  const endDeg = (index + 0.5) * ROULETTE_SECTOR_ANGLE;
+function getRainbowRouletteSectorPath(
+  index: number,
+  rIn = R_ROULETTE_INNER,
+  rOut = R_ROULETTE_OUTER,
+  gapDeg = 2.4
+): string {
+  const midDeg = index * ROULETTE_SECTOR_ANGLE;
+  const halfSpan = (ROULETTE_SECTOR_ANGLE - gapDeg) / 2;
+  const startDeg = midDeg - halfSpan;
+  const endDeg = midDeg + halfSpan;
   const startRad = (startDeg * Math.PI) / 180;
   const endRad = (endDeg * Math.PI) / 180;
 
@@ -33,6 +40,26 @@ function getRainbowRouletteSectorPath(index: number, rIn = R_ROULETTE_INNER, rOu
   const yIn2 = -rIn * Math.cos(endRad);
 
   return `M ${xIn1.toFixed(2)} ${yIn1.toFixed(2)} L ${xOut1.toFixed(2)} ${yOut1.toFixed(2)} A ${rOut} ${rOut} 0 0 1 ${xOut2.toFixed(2)} ${yOut2.toFixed(2)} L ${xIn2.toFixed(2)} ${yIn2.toFixed(2)} A ${rIn} ${rIn} 0 0 0 ${xIn1.toFixed(2)} ${yIn1.toFixed(2)} Z`;
+}
+
+function getRainbowRouletteOuterArc(
+  index: number,
+  rOut = R_ROULETTE_OUTER,
+  gapDeg = 2.4
+): string {
+  const midDeg = index * ROULETTE_SECTOR_ANGLE;
+  const halfSpan = (ROULETTE_SECTOR_ANGLE - gapDeg) / 2;
+  const startDeg = midDeg - halfSpan;
+  const endDeg = midDeg + halfSpan;
+  const startRad = (startDeg * Math.PI) / 180;
+  const endRad = (endDeg * Math.PI) / 180;
+
+  const xOut1 = rOut * Math.sin(startRad);
+  const yOut1 = -rOut * Math.cos(startRad);
+  const xOut2 = rOut * Math.sin(endRad);
+  const yOut2 = -rOut * Math.cos(endRad);
+
+  return `M ${xOut1.toFixed(2)} ${yOut1.toFixed(2)} A ${rOut} ${rOut} 0 0 1 ${xOut2.toFixed(2)} ${yOut2.toFixed(2)}`;
 }
 
 export function BigBangButton() {
@@ -504,7 +531,7 @@ export function BigBangButton() {
             <AnimatePresence>
               {isPressing && (
                 <>
-                  {/* 1) 🌈 7색 무지개 돌림판 (Rainbow Roulette Wheel) */}
+                  {/* 1) 🌈 7색 무지개 돌림판 (Sleek Prismatic Smoked Glass & Neon Laser Arc HUD) */}
                   <motion.div
                     key="rainbow-roulette-wheel"
                     initial={{ scale: 0.7, opacity: 0 }}
@@ -514,63 +541,111 @@ export function BigBangButton() {
                     }}
                     exit={{ scale: 0.7, opacity: 0 }}
                     transition={{ type: 'spring', stiffness: 420, damping: 26 }}
-                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[176px] h-[176px] pointer-events-none z-22 flex items-center justify-center select-none"
+                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[184px] h-[184px] pointer-events-none z-22 flex items-center justify-center select-none"
                   >
                     <svg
-                      width="176"
-                      height="176"
-                      viewBox="-88 -88 176 176"
-                      className="w-full h-full drop-shadow-[0_0_20px_rgba(0,0,0,0.6)]"
+                      width="184"
+                      height="184"
+                      viewBox="-92 -92 184 184"
+                      className="w-full h-full drop-shadow-[0_0_24px_rgba(0,0,0,0.8)]"
                     >
-                      {/* 7개 무지개 섹션 슬라이스 (빨·주·노·초·파·남·보) */}
+                      {/* 7개 무지개 섹션 슬라이스 (빨·주·노·초·파·남·보 스모크 글래스 & 네온 림) */}
                       {RADIAL_WARP_APPS.map((app, idx) => {
                         const isSelected = radialSectorIndex === idx && !isAborted;
-                        const d = getRainbowRouletteSectorPath(idx, 28, 88);
+                        const sectorPath = getRainbowRouletteSectorPath(idx, 29, 87, 2.4);
+                        const outerArc = getRainbowRouletteOuterArc(idx, 87, 2.4);
 
                         return (
-                          <path
-                            key={`roulette-sector-${app.id}`}
-                            d={d}
-                            fill={app.themeColor}
-                            fillOpacity={isSelected ? 0.95 : 0.65}
-                            stroke={isSelected ? '#ffffff' : 'rgba(255, 255, 255, 0.45)'}
-                            strokeWidth={isSelected ? 2.5 : 1.2}
-                            className="transition-all duration-150"
-                            style={{
-                              filter: isSelected
-                                ? `drop-shadow(0 0 12px ${app.accentGlow}) brightness(1.25)`
-                                : undefined,
-                            }}
-                          />
+                          <g key={`roulette-sector-${app.id}`}>
+                            {/* 베이스 흑요석 스모크 글래스 섹터 바디 */}
+                            <path
+                              d={sectorPath}
+                              fill="rgba(10, 14, 28, 0.75)"
+                              stroke="rgba(255, 255, 255, 0.12)"
+                              strokeWidth={0.8}
+                              className="transition-all duration-150"
+                            />
+
+                            {/* 세련된 무지개 스펙트럼 틴트 & 액티브 글로우 */}
+                            <path
+                              d={sectorPath}
+                              fill={app.themeColor}
+                              fillOpacity={isSelected ? 0.45 : 0.14}
+                              stroke={isSelected ? '#ffffff' : 'transparent'}
+                              strokeWidth={isSelected ? 2 : 0}
+                              className="transition-all duration-150"
+                              style={{
+                                filter: isSelected
+                                  ? `drop-shadow(0 0 14px ${app.accentGlow}) drop-shadow(0 0 4px #ffffff)`
+                                  : undefined,
+                              }}
+                            />
+
+                            {/* ⚡ 외곽 네온 레이저 아크 림 (유치하지 않은 샤프한 엣지 라인) */}
+                            <path
+                              d={outerArc}
+                              fill="none"
+                              stroke={isSelected ? '#ffffff' : app.themeColor}
+                              strokeWidth={isSelected ? 3.2 : 1.8}
+                              strokeLinecap="round"
+                              className="transition-all duration-150"
+                              style={{
+                                filter: isSelected
+                                  ? `drop-shadow(0 0 10px ${app.accentGlow}) drop-shadow(0 0 6px #ffffff)`
+                                  : `drop-shadow(0 0 4px ${app.accentGlow})`,
+                              }}
+                            />
+                          </g>
                         );
                       })}
 
-                      {/* 돌림판 바깥쪽 원형 테두리 림 */}
+                      {/* 🎛️ 하이엔드 크로노그래프 스타일 정밀 HUD 외곽 림 */}
                       <circle
                         cx="0"
                         cy="0"
-                        r="87"
+                        r="90.5"
                         fill="none"
                         stroke={
                           isAborted
                             ? 'rgba(239, 68, 68, 0.85)'
                             : radialSectorIndex >= 0
-                            ? '#ffffff'
-                            : 'rgba(255, 255, 255, 0.65)'
+                            ? 'rgba(255, 255, 255, 0.65)'
+                            : 'rgba(255, 255, 255, 0.25)'
                         }
-                        strokeWidth="2"
-                        strokeDasharray="4 2.5"
+                        strokeWidth="0.8"
+                        strokeDasharray={radialSectorIndex >= 0 ? undefined : '2 3'}
                         className="transition-colors duration-150"
                       />
 
-                      {/* 돌림판 안쪽 원형 림 */}
+                      {/* 7개 경계부 정밀 틱 마크 (외곽 방사형 레이저 눈금) */}
+                      {RADIAL_WARP_APPS.map((_, idx) => {
+                        const angleDeg = (idx + 0.5) * ROULETTE_SECTOR_ANGLE;
+                        const rad = (angleDeg * Math.PI) / 180;
+                        const x1 = 88.5 * Math.sin(rad);
+                        const y1 = -88.5 * Math.cos(rad);
+                        const x2 = 91.5 * Math.sin(rad);
+                        const y2 = -91.5 * Math.cos(rad);
+                        return (
+                          <line
+                            key={`tick-${idx}`}
+                            x1={x1.toFixed(2)}
+                            y1={y1.toFixed(2)}
+                            x2={x2.toFixed(2)}
+                            y2={y2.toFixed(2)}
+                            stroke="rgba(255, 255, 255, 0.4)"
+                            strokeWidth="1"
+                          />
+                        );
+                      })}
+
+                      {/* 돌림판 안쪽 미세 정밀 림 */}
                       <circle
                         cx="0"
                         cy="0"
-                        r="28"
+                        r="27.5"
                         fill="none"
-                        stroke="rgba(255, 255, 255, 0.5)"
-                        strokeWidth="1.5"
+                        stroke="rgba(255, 255, 255, 0.35)"
+                        strokeWidth="1"
                       />
                     </svg>
                   </motion.div>
@@ -580,9 +655,9 @@ export function BigBangButton() {
                     const sectorAngle = 360 / RADIAL_WARP_APPS.length;
                     const angleDeg = idx * sectorAngle;
                     const angleRad = (angleDeg * Math.PI) / 180;
-                    // 돌림판 슬라이스 정중앙 반경 (28 + 88)/2 = 58px ~ 60px
-                    const nodeX = 60 * Math.sin(angleRad);
-                    const nodeY = -60 * Math.cos(angleRad);
+                    // 돌림판 슬라이스 정중앙 반경 (29 + 87)/2 = 58px
+                    const nodeX = 58 * Math.sin(angleRad);
+                    const nodeY = -58 * Math.cos(angleRad);
                     const isSelected = radialSectorIndex === idx && !isAborted;
 
                     return (
@@ -590,8 +665,8 @@ export function BigBangButton() {
                         key={app.id}
                         initial={{ scale: 0, opacity: 0 }}
                         animate={{
-                          scale: isSelected ? 1.4 : 1.0,
-                          opacity: isAborted ? 0.3 : isSelected ? 1 : 0.95,
+                          scale: isSelected ? 1.35 : 1.0,
+                          opacity: isAborted ? 0.3 : isSelected ? 1 : 0.92,
                           x: nodeX,
                           y: nodeY,
                         }}
@@ -605,8 +680,8 @@ export function BigBangButton() {
                           color="#ffffff"
                           className={
                             isSelected
-                              ? 'text-white drop-shadow-[0_0_10px_rgba(255,255,255,1)] transition-transform'
-                              : 'text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.85)] transition-transform'
+                              ? 'text-white drop-shadow-[0_0_12px_#ffffff] transition-transform'
+                              : 'text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] transition-transform'
                           }
                         />
                       </motion.div>
@@ -646,16 +721,18 @@ export function BigBangButton() {
                   : radialSectorIndex >= 0 && !isMirrorholeMode
                   ? 'scale-110 border-white shadow-[0_0_25px_rgba(255,255,255,0.8)]'
                   : isWhiteholeMode
-                  ? 'scale-110 border-cyan-300 shadow-[0_0_25px_rgba(255,255,255,0.9)]'
-                  : isMirrorholeMode || isBlackholeMode
-                  ? 'scale-110 border-cyan-300/60 shadow-[0_0_20px_rgba(56,189,248,0.35)] backdrop-blur-md'
+                  ? 'scale-110 border-white shadow-[0_0_30px_rgba(255,255,255,1),0_0_50px_rgba(56,189,248,0.8)]'
+                  : isMirrorholeMode
+                  ? 'scale-110 border-white/80 shadow-[0_0_22px_rgba(255,255,255,0.6)] backdrop-blur-md'
+                  : isBlackholeMode
+                  ? 'scale-110 border-cyan-400/80 shadow-[0_0_25px_rgba(56,189,248,0.5),0_0_40px_rgba(168,85,247,0.45)] backdrop-blur-md'
                   : 'border-cyan-400/40 hover:border-cyan-300/80 shadow-[0_0_20px_rgba(56,189,248,0.3)]'
               }`}
               style={{
                 background: !isPressing
                   ? 'radial-gradient(circle at 35% 30%, #15162c 0%, #0d0e1d 45%, #05060f 80%, #020207 100%)'
                   : isWhiteholeMode
-                  ? 'radial-gradient(circle at 50% 50%, #ffffff 0%, #bae6fd 45%, #38bdf8 85%, #0284c7 100%)'
+                  ? 'radial-gradient(circle at 50% 50%, #ffffff 0%, #f0fdf4 25%, #e0f2fe 55%, #38bdf8 90%, #0284c7 100%)'
                   : isMirrorholeMode || isBlackholeMode
                   ? 'transparent'
                   : '#080918',
@@ -666,9 +743,11 @@ export function BigBangButton() {
                   : !isPressing
                   ? 'inset 0 0 18px rgba(56, 189, 248, 0.25), inset -5px -5px 14px rgba(0, 0, 0, 0.9), 0 0 25px rgba(56, 189, 248, 0.3)'
                   : isWhiteholeMode
-                  ? 'inset 0 0 25px rgba(255, 255, 255, 1), 0 0 25px rgba(56, 189, 248, 0.9)'
-                  : isMirrorholeMode || isBlackholeMode
-                  ? 'inset 0 0 10px rgba(56, 189, 248, 0.35), 0 0 16px rgba(56, 189, 248, 0.3)'
+                  ? 'inset 0 0 25px rgba(255, 255, 255, 1), 0 0 35px rgba(56, 189, 248, 0.9)'
+                  : isMirrorholeMode
+                  ? 'inset 0 0 12px rgba(255, 255, 255, 0.5), 0 0 20px rgba(255, 255, 255, 0.4)'
+                  : isBlackholeMode
+                  ? 'inset 0 0 12px rgba(56, 189, 248, 0.4), 0 0 22px rgba(168, 85, 247, 0.45)'
                   : 'inset 0 0 18px rgba(168, 85, 247, 0.5), 0 0 25px rgba(168, 85, 247, 0.5)',
               }}
               aria-label={`빅뱅 차원 도약 · 탭: 웜홀 양자도약, 홀드: 화이트홀(빛) - 미러홀(유리) - 블랙홀(심연), 조준/튕기기: 사건의 지평선`}
@@ -676,90 +755,96 @@ export function BigBangButton() {
               {/* 📡 1. 버튼 내부 레이더 스위프 효과 (화이트홀: 빛비춤 -> 미러홀: 유리 -> 블랙홀: 어두움) */}
               {isPressing && !isAborted && (
                 <div className="absolute inset-0 rounded-full overflow-hidden pointer-events-none z-10">
-                  {/* ☀️ 1-A. 화이트홀 빛비춤 레이더 (버튼 내부에서 레이더처럼 360도 스위프) */}
+                  {/* ☀️ 1-A. 화이트홀 빛비춤 레이더 (심플하고 화려한 엣지 렌즈 플레어 & 레이저 스위프) */}
                   {isWhiteholeMode && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      {/* 레이더 동심원 그리드 링 */}
-                      <div className="absolute inset-1 rounded-full border border-white/40 pointer-events-none" />
-                      <div className="absolute inset-2.5 rounded-full border border-white/60 pointer-events-none" />
-                      <div className="absolute inset-4 rounded-full border border-cyan-200/70 pointer-events-none" />
-                      {/* 십자 레이더 크로스헤어 */}
-                      <div className="absolute w-full h-[1px] bg-white/40 pointer-events-none" />
-                      <div className="absolute h-full w-[1px] bg-white/40 pointer-events-none" />
+                      {/* 정밀 동심 광학 링 3단계 (초슬림 헤어라인) */}
+                      <div className="absolute inset-1 rounded-full border-[0.75px] border-white/60 pointer-events-none" />
+                      <div className="absolute inset-2.5 rounded-full border-[0.5px] border-cyan-100/40 pointer-events-none" />
+                      <div className="absolute inset-4 rounded-full border-[0.75px] border-white/75 pointer-events-none" />
 
-                      {/* 360도 회전 레이더 스위프 빔 (빛비춤) */}
+                      {/* 엣지있는 아나모픽 십자 렌즈 플레어 (초미세 수평/수직 레이저 광선) */}
+                      <div className="absolute w-full h-[0.75px] bg-gradient-to-r from-transparent via-white to-transparent pointer-events-none drop-shadow-[0_0_4px_#ffffff]" />
+                      <div className="absolute h-full w-[0.75px] bg-gradient-to-b from-transparent via-white to-transparent pointer-events-none drop-shadow-[0_0_4px_#ffffff]" />
+
+                      {/* 45도 다이아몬드 스파이크 레이저 광선 */}
+                      <div className="absolute w-10 h-[0.5px] rotate-45 bg-gradient-to-r from-transparent via-cyan-100/90 to-transparent pointer-events-none" />
+                      <div className="absolute w-10 h-[0.5px] -rotate-45 bg-gradient-to-r from-transparent via-cyan-100/90 to-transparent pointer-events-none" />
+
+                      {/* 360도 초정밀 레이저 비콘 스위프 빔 (섬세하고 화려한 광휘) */}
                       <div
-                        className="absolute inset-0 rounded-full animate-[spin_1.2s_linear_infinite] pointer-events-none"
+                        className="absolute inset-0 rounded-full animate-[spin_0.9s_linear_infinite] pointer-events-none"
                         style={{
                           background:
-                            'conic-gradient(from 0deg, transparent 0deg, transparent 200deg, rgba(255,255,255,0.2) 260deg, rgba(56,189,248,0.7) 325deg, rgba(255,255,255,1) 360deg)',
+                            'conic-gradient(from 0deg, transparent 0deg, transparent 240deg, rgba(255,255,255,0.15) 300deg, rgba(186,230,253,0.7) 345deg, rgba(255,255,255,1) 360deg)',
                         }}
                       />
 
-                      {/* 중심부 순백 광휘 발광 펄스 */}
+                      {/* 중심부 다이아몬드 포톤 스파클 글린트 */}
                       <div
-                        className="absolute w-6 h-6 rounded-full animate-ping opacity-60 pointer-events-none"
-                        style={{
-                          background: 'radial-gradient(circle, #ffffff 0%, rgba(56,189,248,0.6) 80%, transparent 100%)',
-                        }}
+                        className="absolute w-2.5 h-2.5 rotate-45 bg-white shadow-[0_0_12px_#ffffff,0_0_24px_rgba(56,189,248,0.9)] animate-pulse pointer-events-none"
                       />
                     </div>
                   )}
 
-                  {/* 🪞 1-B. 미러홀 유리테마 레이더 (버튼 내부에서 투명 크리스탈 거울 반사광 & 유리 스위프) */}
+                  {/* 🪞 1-B. 미러홀 투명유리 (엣지있는 다이아몬드 컷팅 글래스 & 프리즘 카우스틱 반사광) */}
                   {isMirrorholeMode && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none backdrop-blur-sm">
-                      {/* 크리스탈 컷팅 다이아몬드 유리 링 3단계 */}
-                      <div className="absolute inset-1 rounded-full border border-white/70 shadow-[inset_0_0_6px_rgba(255,255,255,0.7)] pointer-events-none" />
-                      <div className="absolute inset-2.5 rounded-full border border-cyan-100/60 pointer-events-none" />
-                      <div className="absolute inset-4 rounded-full border border-white/80 pointer-events-none" />
+                      {/* 크리스탈 컷팅 베벨 링 (초정밀 글래스 림) */}
+                      <div className="absolute inset-1 rounded-full border-[0.8px] border-white/80 shadow-[inset_0_0_8px_rgba(255,255,255,0.6)] pointer-events-none" />
+                      <div className="absolute inset-2.5 rounded-full border-[0.5px] border-cyan-100/40 pointer-events-none" />
+                      <div className="absolute inset-4 rounded-full border-[0.8px] border-white/60 pointer-events-none" />
 
-                      {/* 거울 프리즘 십자선 (투명 백색 사선 글리터 크로스헤어) */}
-                      <div className="absolute w-full h-[1px] bg-gradient-to-r from-transparent via-white/80 to-transparent pointer-events-none" />
-                      <div className="absolute h-full w-[1px] bg-gradient-to-b from-transparent via-white/80 to-transparent pointer-events-none" />
+                      {/* 4분면 크리스탈 틱 노치 (12, 3, 6, 9시) */}
+                      <div className="absolute top-1 w-1 h-[2px] bg-white/90 rounded-full pointer-events-none" />
+                      <div className="absolute bottom-1 w-1 h-[2px] bg-white/90 rounded-full pointer-events-none" />
+                      <div className="absolute left-1 h-1 w-[2px] bg-white/90 rounded-full pointer-events-none" />
+                      <div className="absolute right-1 h-1 w-[2px] bg-white/90 rounded-full pointer-events-none" />
 
-                      {/* 사선 거울 반사광 글린트 (Glass Glint Specular Ray) */}
-                      <div className="absolute w-12 h-2.5 -rotate-45 -translate-y-2 bg-gradient-to-r from-transparent via-white/70 to-transparent blur-[0.5px] pointer-events-none" />
+                      {/* 사선 다이아몬드 거울 글린트 (듀얼 글래스 스펙큘러 레이) */}
+                      <div className="absolute w-12 h-[0.75px] -rotate-45 -translate-y-2.5 bg-gradient-to-r from-transparent via-white/95 to-transparent pointer-events-none drop-shadow-[0_0_4px_#ffffff]" />
+                      <div className="absolute w-8 h-[0.5px] -rotate-45 translate-y-2.5 bg-gradient-to-r from-transparent via-white/80 to-transparent pointer-events-none" />
 
-                      {/* 360도 회전 크리스탈 유리 레이더 스위프 빔 */}
+                      {/* 360도 스펙트럼 카우스틱 굴절 스위프 (맑고 투명한 레인보우 프리즘 빔) */}
                       <div
                         className="absolute inset-0 rounded-full animate-[spin_1.1s_linear_infinite] pointer-events-none"
                         style={{
                           background:
-                            'conic-gradient(from 0deg, transparent 0deg, transparent 190deg, rgba(255,255,255,0.2) 250deg, rgba(186,230,253,0.75) 320deg, rgba(255,255,255,0.95) 360deg)',
+                            'conic-gradient(from 0deg, transparent 0deg, transparent 230deg, rgba(255,255,255,0.08) 280deg, rgba(56,189,248,0.35) 325deg, rgba(168,85,247,0.5) 350deg, rgba(255,255,255,0.95) 360deg)',
                         }}
                       />
 
-                      {/* 중심부 크리스탈 거울 프리즘 코어 (완전 투명 유리 링) */}
+                      {/* 중심부 투명 글래스 옵틱 링 */}
                       <div
-                        className="absolute w-5 h-5 rounded-full border border-white/40 shadow-[0_0_8px_rgba(255,255,255,0.3)] pointer-events-none"
+                        className="absolute w-5 h-5 rounded-full border-[0.75px] border-white/60 shadow-[0_0_8px_rgba(255,255,255,0.4)] pointer-events-none"
                       />
                     </div>
                   )}
 
-                  {/* 🔮 1-C. 크리스탈 오브 투명 글래스 레이더 (완전 투명 배경) */}
+                  {/* 🔮 1-C. 블랙홀/오브 어둠효과 (엣지있는 상대론적 강착원반 레이저 & 시안-바이올렛 지평선 림) */}
                   {isBlackholeMode && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none backdrop-blur-sm">
-                      {/* 네온 시안 크리스탈 유리 링 3단계 */}
-                      <div className="absolute inset-1 rounded-full border border-cyan-300/40 shadow-[inset_0_0_6px_rgba(56,189,248,0.3)] pointer-events-none" />
-                      <div className="absolute inset-2.5 rounded-full border border-cyan-200/30 pointer-events-none" />
-                      <div className="absolute inset-4 rounded-full border border-cyan-300/50 pointer-events-none" />
-                      {/* 십자 레이더 크로스헤어 */}
-                      <div className="absolute w-full h-[1px] bg-gradient-to-r from-transparent via-cyan-300/60 to-transparent pointer-events-none" />
-                      <div className="absolute h-full w-[1px] bg-gradient-to-b from-transparent via-cyan-300/60 to-transparent pointer-events-none" />
+                      {/* 상대론적 사건의 지평선 링 (네온 시안 & 바이올렛 듀얼 림) */}
+                      <div className="absolute inset-1 rounded-full border-[0.8px] border-cyan-300/60 shadow-[inset_0_0_10px_rgba(56,189,248,0.4)] pointer-events-none" />
+                      <div className="absolute inset-2.5 rounded-full border-[0.5px] border-purple-400/35 pointer-events-none" />
+                      <div className="absolute inset-4 rounded-full border-[0.8px] border-cyan-300/70 pointer-events-none" />
 
-                      {/* 360도 회전 투명 시안 레이더 스위프 빔 */}
+                      {/* 초미세 중력 렌즈 크로스헤어 (중심부로 갈수록 집광되는 엣지 레이저 라인) */}
+                      <div className="absolute w-full h-[0.75px] bg-gradient-to-r from-transparent via-cyan-300/80 to-transparent pointer-events-none drop-shadow-[0_0_4px_rgba(56,189,248,0.8)]" />
+                      <div className="absolute h-full w-[0.75px] bg-gradient-to-b from-transparent via-cyan-300/80 to-transparent pointer-events-none drop-shadow-[0_0_4px_rgba(56,189,248,0.8)]" />
+
+                      {/* 360도 초고속 나선 강착원반 레이저 스위프 (심플하고 화려한 볼텍스 빔) */}
                       <div
-                        className="absolute inset-0 rounded-full animate-[spin_1.2s_linear_infinite] pointer-events-none"
+                        className="absolute inset-0 rounded-full animate-[spin_0.85s_linear_infinite] pointer-events-none"
                         style={{
                           background:
-                            'conic-gradient(from 0deg, transparent 0deg, transparent 190deg, rgba(56,189,248,0.1) 250deg, rgba(56,189,248,0.45) 320deg, rgba(168,85,247,0.6) 360deg)',
+                            'conic-gradient(from 0deg, transparent 0deg, transparent 230deg, rgba(168,85,247,0.2) 280deg, rgba(56,189,248,0.6) 335deg, rgba(103,232,249,1) 360deg)',
                         }}
                       />
 
-                      {/* 중심부 투명 글래스 링 */}
+                      {/* 중심부 투명 특이점 옵틱 링 (3D 오브를 완벽히 투영) */}
                       <div
-                        className="absolute w-5 h-5 rounded-full border border-cyan-300/40 shadow-[0_0_8px_rgba(56,189,248,0.3)] pointer-events-none"
+                        className="absolute w-5 h-5 rounded-full border-[0.75px] border-cyan-300/60 shadow-[0_0_10px_rgba(56,189,248,0.5)] pointer-events-none"
                       />
                     </div>
                   )}
