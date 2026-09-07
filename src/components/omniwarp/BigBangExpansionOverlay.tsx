@@ -139,8 +139,10 @@ export function BigBangExpansionOverlay() {
           animate={{ scale: 18, opacity: 0, borderWidth: 1 }}
           transition={{ duration: 0.48, ease: 'easeOut' }}
           className={`absolute w-20 h-20 rounded-full pointer-events-none border ${
-            phase === 'whitehole'
+            phase === 'whitehole' || (phase === 'event_horizon' && target?.eventHorizonMode === 'whitehole')
               ? 'border-cyan-300 shadow-[0_0_30px_rgba(56,189,248,0.8)]'
+              : phase === 'mirrorhole' || (phase === 'event_horizon' && target?.eventHorizonMode === 'mirrorhole')
+              ? 'border-sky-200 shadow-[0_0_35px_rgba(224,242,254,1),inset_0_0_15px_rgba(255,255,255,0.9)] backdrop-blur-sm'
               : phase === 'wormhole'
               ? 'border-emerald-300 shadow-[0_0_30px_rgba(52,211,153,0.8)]'
               : phase === 'event_horizon'

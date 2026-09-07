@@ -54,12 +54,14 @@ export function BigBangPreviewWindow({
   const displayProgress = isPressing ? gauge : idleCycleProgress;
   const elapsedSec = (durationMs / 1000).toFixed(2);
 
-  // 0~34% 탭: 블랙홀, 35~69% 사건의 지평선(웜홀), 70~100% 홀드: 화이트홀
+  // 0~33%: 화이트홀(빛), 34~66%: 미러홀(유리), 67~100%: 블랙홀(어둠)
   const isEventHorizon = activePhase === 'event_horizon' || currentTarget?.phase === 'event_horizon';
   const isEventHorizonWhitehole = currentTarget?.eventHorizonMode === 'whitehole' || currentTarget?.actionType?.includes('whitehole');
-  const isBlackhole = !isEventHorizon && (activePhase === 'blackhole' || (!isPressing && displayProgress < 0.35));
-  const isWhitehole = !isEventHorizon && (activePhase === 'whitehole' || (!isPressing && displayProgress >= 0.70));
-  const isWormhole = !isEventHorizon && !isWhitehole && !isBlackhole;
+  const isEventHorizonMirrorhole = currentTarget?.eventHorizonMode === 'mirrorhole' || currentTarget?.actionType?.includes('mirrorhole');
+  const isMirrorhole = !isEventHorizon && (activePhase === 'mirrorhole' || (!isPressing && displayProgress >= 0.33 && displayProgress < 0.67));
+  const isWhitehole = !isEventHorizon && !isMirrorhole && (activePhase === 'whitehole' || (!isPressing && displayProgress < 0.33));
+  const isBlackhole = !isEventHorizon && !isMirrorhole && (activePhase === 'blackhole' || (!isPressing && displayProgress >= 0.67));
+  const isWormhole = !isEventHorizon && !isWhitehole && !isMirrorhole && !isBlackhole;
 
   // 💡 빛과 어둠의 농도
   const lightDensity = isPressing ? Math.max(0.15, 1.0 - gauge * 0.85) : 0.7;
@@ -88,6 +90,8 @@ export function BigBangPreviewWindow({
             ? 'bg-purple-950/95 text-white border-purple-400/50 shadow-[0_0_35px_rgba(168,85,247,0.45)]'
             : isWhitehole
             ? 'bg-slate-950/95 text-white'
+            : isMirrorhole
+            ? 'bg-sky-950/90 text-white border-sky-300/60 shadow-[0_0_35px_rgba(186,230,253,0.5)] backdrop-blur-3xl'
             : isWormhole
             ? 'bg-purple-950/95 text-white'
             : 'bg-black/98 text-zinc-300'
@@ -100,9 +104,13 @@ export function BigBangPreviewWindow({
           ? isEventHorizon
             ? isEventHorizonWhitehole
               ? `0 0 ${glowSpread}px rgba(56,189,248,0.8), 0 0 ${glowSpread * 1.5}px rgba(168,85,247,0.6)`
+              : isEventHorizonMirrorhole
+              ? `0 0 ${glowSpread}px rgba(224,242,254,0.9), 0 0 ${glowSpread * 1.5}px rgba(56,189,248,0.7)`
               : `0 0 ${glowSpread}px rgba(168,85,247,0.9), 0 0 ${glowSpread * 1.5}px rgba(245,158,11,0.7)`
             : isWhitehole
             ? `0 0 ${glowSpread}px rgba(255,255,255,${lightDensity.toFixed(2)}), 0 0 ${glowSpread * 1.6}px rgba(56,189,248,${lightDensity.toFixed(2)})`
+            : isMirrorhole
+            ? `0 0 ${glowSpread}px rgba(255,255,255,0.95), 0 0 ${glowSpread * 1.5}px rgba(186,230,253,0.85)`
             : isWormhole
             ? `0 0 ${glowSpread}px rgba(168,85,247,${lightDensity.toFixed(2)}), 0 0 ${glowSpread * 1.4}px rgba(0,240,255,${(lightDensity * 0.7).toFixed(2)})`
             : `0 0 25px #000000, 0 0 50px rgba(0,0,0,${darknessDensity.toFixed(2)})`
@@ -111,9 +119,13 @@ export function BigBangPreviewWindow({
           ? isEventHorizon
             ? isEventHorizonWhitehole
               ? 'rgba(56, 189, 248, 0.8)'
+              : isEventHorizonMirrorhole
+              ? 'rgba(224, 242, 254, 0.9)'
               : 'rgba(168, 85, 247, 0.8)'
             : isWhitehole
             ? `rgba(255, 255, 255, ${lightDensity.toFixed(2)})`
+            : isMirrorhole
+            ? 'rgba(224, 242, 254, 0.9)'
             : isWormhole
             ? `rgba(192, 132, 252, ${lightDensity.toFixed(2)})`
             : `rgba(245, 158, 11, ${darknessDensity.toFixed(2)})`
@@ -130,11 +142,15 @@ export function BigBangPreviewWindow({
           ) : isPressing ? (
             isEventHorizon ? (
               <span className="flex items-center gap-1 text-purple-200 drop-shadow-[0_0_8px_rgba(168,85,247,0.9)]">
-                <Compass size={14} className="animate-spin text-purple-300" /> 사건의 지평선 [{isEventHorizonWhitehole ? '빛의 도약' : '심연 도약'}]
+                <Compass size={14} className="animate-spin text-purple-300" /> 사건의 지평선 [{isEventHorizonWhitehole ? '빛의 도약' : isEventHorizonMirrorhole ? '유리 도약' : '심연 도약'}]
               </span>
             ) : isWhitehole ? (
               <span className="flex items-center gap-1 text-cyan-200 drop-shadow-[0_0_8px_rgba(255,255,255,0.9)]">
                 <Sun size={14} className="animate-spin text-white" /> 화이트홀 (빛의 방출)
+              </span>
+            ) : isMirrorhole ? (
+              <span className="flex items-center gap-1 text-sky-200 drop-shadow-[0_0_8px_rgba(224,242,254,0.9)]">
+                <Sparkles size={14} className="animate-pulse text-sky-200" /> 미러홀 (유리 · 프리즘 홈)
               </span>
             ) : isWormhole ? (
               <span className="flex items-center gap-1 text-purple-300">
@@ -175,7 +191,9 @@ export function BigBangPreviewWindow({
       {/* 2. 다음 도약 기능 영시 (Pre-vision) 카드 */}
       <div className="flex items-center justify-between bg-white/[0.08] px-2.5 py-2 rounded-xl border border-white/10 shadow-inner">
         <div className="flex items-center gap-2 min-w-0">
-          {isBlackhole ? (
+          {isMirrorhole ? (
+            <PrismAppIcon nameOrId="hub" size={20} className="shrink-0 text-sky-200 drop-shadow-[0_0_8px_rgba(224,242,254,0.9)]" />
+          ) : isBlackhole ? (
             <CrystalOrbIcon size={22} className="shrink-0 drop-shadow-[0_0_10px_rgba(245,158,11,0.9)]" />
           ) : isWhitehole ? (
             <PrismAppIcon nameOrId="lucy" size={20} className="shrink-0 text-cyan-300" />
@@ -186,30 +204,32 @@ export function BigBangPreviewWindow({
           )}
           <div className="flex flex-col min-w-0 text-left">
             <span className="text-[11px] font-extrabold text-cyan-200 truncate flex items-center gap-1">
-              {currentTarget ? currentTarget.previewLabel : `다음 도약: ${nextDest.name}`}
+              {currentTarget ? currentTarget.previewLabel : isMirrorhole ? '[미러홀 투영] 🪞 프리즘 홈' : `다음 도약: ${nextDest.name}`}
             </span>
             <span className="text-[8.5px] text-white/80 truncate mt-0.5">
-              {currentTarget?.previewDescription || nextDest.description}
+              {currentTarget?.previewDescription || (isMirrorhole ? '투명한 크리스탈 유리 거울 면을 통과하여 프리즘 홈 허브로 즉시 귀환합니다.' : nextDest.description)}
             </span>
           </div>
         </div>
         <span
           className={`text-[8px] px-1.5 py-0.5 rounded-md font-mono font-bold uppercase shrink-0 border ${
-            isBlackhole
+            isMirrorhole
+              ? 'bg-sky-400/20 text-sky-200 border-sky-400/40'
+              : isBlackhole
               ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
               : isWhitehole
               ? 'bg-cyan-400/20 text-cyan-200 border-cyan-400/40'
               : 'bg-purple-500/20 text-purple-300 border-purple-500/40'
           }`}
         >
-          {isBlackhole ? 'BLACKHOLE' : isWhitehole ? 'WHITEHOLE' : 'WORMHOLE'}
+          {isMirrorhole ? 'MIRRORHOLE' : isBlackhole ? 'BLACKHOLE' : isWhitehole ? 'WHITEHOLE' : 'WORMHOLE'}
         </span>
       </div>
 
-      {/* 3. 7대 룬 스펙트럼 인디케이터 바 (20%~80% 10% 단위 룬 점등) */}
+      {/* 3. 위상 스펙트럼 인디케이터 바: 화이트홀(빛) -> 미러홀(유리) -> 블랙홀(어둠) */}
       <div className="flex flex-col gap-1.5 pt-0.5">
         <div className="flex items-center justify-between px-1">
-          {/* 0%: 화이트홀 */}
+          {/* 1단계: 화이트홀 (빛비춤) */}
           <div
             className={`flex flex-col items-center transition-transform ${
               isWhitehole ? 'scale-125 font-black text-cyan-300' : 'opacity-60 text-white/60'
@@ -219,31 +239,19 @@ export function BigBangPreviewWindow({
             <span className="text-[7.5px] font-mono whitespace-nowrap mt-0.5">화이트홀</span>
           </div>
 
-          {/* 20% ~ 80%: 7대 룬 노드 */}
-          {rankedApps.map((app, idx) => {
-            const isActive = currentWormholeIndex === idx;
-            return (
-              <div
-                key={app.id}
-                className={`flex flex-col items-center transition-all ${
-                  isActive
-                    ? 'scale-130 font-black text-purple-300 drop-shadow-[0_0_8px_rgba(168,85,247,1)]'
-                    : 'opacity-60 text-white/60'
-                }`}
-              >
-                <span
-                  className={`text-[11px] font-serif transition-colors ${
-                    isActive ? 'text-white' : 'text-purple-300/80'
-                  }`}
-                >
-                  {app.runeSymbol}
-                </span>
-                <span className="text-[7px] font-mono">{app.defaultGaugePercent}%</span>
-              </div>
-            );
-          })}
+          {/* 2단계: 미러홀 (유리테마 · 프리즘 홈) */}
+          <div
+            className={`flex flex-col items-center transition-all ${
+              isMirrorhole
+                ? 'scale-130 font-black text-sky-200 drop-shadow-[0_0_8px_rgba(224,242,254,1)]'
+                : 'opacity-60 text-white/60'
+            }`}
+          >
+            <Sparkles size={12} className="text-sky-200" />
+            <span className="text-[7.5px] font-mono whitespace-nowrap mt-0.5">미러홀(유리)</span>
+          </div>
 
-          {/* 100%: 블랙홀 */}
+          {/* 3단계: 블랙홀 (어두움) */}
           <div
             className={`flex flex-col items-center transition-transform ${
               isBlackhole ? 'scale-125 font-black text-amber-400' : 'opacity-60 text-white/60'
@@ -262,7 +270,7 @@ export function BigBangPreviewWindow({
             style={{
               opacity: 0.5 + lightDensity * 0.5,
               background:
-                'linear-gradient(90deg, #ffffff 0%, #38bdf8 15%, #c084fc 50%, #f59e0b 85%, #000000 100%)',
+                'linear-gradient(90deg, #ffffff 0%, #38bdf8 25%, #e0f2fe 50%, #c084fc 75%, #000000 100%)',
             }}
           />
 
@@ -277,6 +285,8 @@ export function BigBangPreviewWindow({
                 ? '#f59e0b'
                 : isWhitehole
                 ? '#ffffff'
+                : isMirrorhole
+                ? '#e0f2fe'
                 : '#c084fc',
               boxShadow: isAborted
                 ? '0 0 10px #ef4444'
@@ -284,6 +294,8 @@ export function BigBangPreviewWindow({
                 ? `0 0 ${Math.round(8 + gauge * 16)}px #f59e0b, 0 0 ${Math.round(14 + gauge * 25)}px rgba(0,0,0,${darknessDensity})`
                 : isWhitehole
                 ? `0 0 ${Math.round(10 + (1 - gauge) * 22)}px rgba(255,255,255,${lightDensity}), 0 0 ${Math.round(18 + (1 - gauge) * 28)}px rgba(56,189,248,${lightDensity})`
+                : isMirrorhole
+                ? `0 0 14px rgba(255,255,255,1), 0 0 20px rgba(186,230,253,0.9)`
                 : `0 0 ${Math.round(8 + (1 - gauge) * 16)}px rgba(168,85,247,${lightDensity})`,
             }}
           />
@@ -298,6 +310,8 @@ export function BigBangPreviewWindow({
             : isPressing
             ? isWhitehole
               ? '지금 손을 떼면 [루시 1:1 대화]로 직행합니다'
+              : isMirrorhole
+              ? '지금 손을 떼면 [프리즘 홈]으로 즉시 귀환합니다'
               : isBlackhole
               ? '지금 손을 떼면 [크리스탈 오브]로 빨려 들어갑니다'
               : currentTarget?.previewLabel || '손을 떼면 선택된 차원으로 도약합니다'

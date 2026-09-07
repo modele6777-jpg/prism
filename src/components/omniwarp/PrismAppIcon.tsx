@@ -216,6 +216,17 @@ export function PrismAppIcon({
     );
   }
 
+  if (normalized === 'mirrorhole' || normalized === '🪞' || normalized === 'mirror') {
+    return (
+      <Sparkles
+        size={size}
+        className={className}
+        color={color || '#0284c7'}
+        strokeWidth={strokeWidth}
+      />
+    );
+  }
+
   if (normalized === 'blackhole' || normalized === '🕳️') {
     return (
       <Moon

@@ -380,7 +380,7 @@ export function BigBangButton() {
   const activeAppId = (() => {
     if (isAborted) return 'aborted';
     // 🪞 미러홀은 항시 프리즘 홈으로 들어감
-    if (isMirrorholeMode) return 'hub';
+    if (isMirrorholeMode) return 'mirrorhole';
     // 🌌 사건의 지평선 상태 (조준 중): 해당 조준 채널의 아이콘을 최우선으로 표출!
     if (radialSectorIndex >= 0) return RADIAL_WARP_APPS[radialSectorIndex]?.id || 'hub';
     if (isTargetLucy) return 'lucy';
@@ -393,7 +393,7 @@ export function BigBangButton() {
   const activeAppName = (() => {
     if (isAborted) return '취소';
     // 🪞 미러홀은 항시 프리즘 홈으로 들어감
-    if (isMirrorholeMode) return '프리즘 홈';
+    if (isMirrorholeMode) return '미러홀 (프리즘 홈)';
     // 🌌 사건의 지평선 상태 (조준 중): 해당 조준 채널의 이름 표출
     if (radialSectorIndex >= 0) return RADIAL_WARP_APPS[radialSectorIndex]?.name || '';
     if (isTargetLucy) return '루시 1:1 대화';
