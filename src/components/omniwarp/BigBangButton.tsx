@@ -445,30 +445,17 @@ export function BigBangButton() {
         >
           {/* 🎯 버튼 & 궤도 정밀 센터링 앵커 */}
           <div className="relative w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center shrink-0">
-            {/* 🌟 빅뱅 아케인 마법진 매트릭스 (하드웨어 가속) */}
-            <AnimatePresence>
-              {!isPressing && (
-                <motion.div
-                  key="circular-meter-track"
-                  initial={{ opacity: 0 }}
-                  animate={{
-                    opacity: isHovered ? 1 : 0.85,
-                  }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="absolute inset-0 flex items-center justify-center pointer-events-none z-30"
-                >
-                  <BigBangCircularMeter
-                    isPressing={false}
-                    isHovered={isHovered}
-                    gauge={gauge}
-                    durationMs={durationMs}
-                    activePhase={activePhase}
-                    isAborted={isAborted}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* 🌟 빅뱅 아케인 마법진 매트릭스 (하드웨어 가속, 상시 렌더링 및 누를 때 공명 가속) */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
+              <BigBangCircularMeter
+                isPressing={isPressing}
+                isHovered={isHovered}
+                gauge={gauge}
+                durationMs={durationMs}
+                activePhase={activePhase}
+                isAborted={isAborted}
+              />
+            </div>
 
             {/* Ambient Gravitational Ripple Waves */}
             {activePhase === 'idle' && (
@@ -478,178 +465,97 @@ export function BigBangButton() {
               </>
             )}
 
-            {/* 🎯 7대 앱 무지개 돌림판 방사형 조이스틱 HUD (버튼 홀드 시 전개) */}
+            {/* 🎯 7대 앱 천체 성좌 룬 노드 (버튼 홀드 시 마법진 궤도 위에 정밀하게 각인) */}
             <AnimatePresence>
               {isPressing && (
                 <>
-                  {/* 1) 🌈 7색 무지개 테마: 아스트롤라베 천체 크로매틱 성운 & 부유 크리스탈 젬 시길 */}
                   <motion.div
-                    key="rainbow-roulette-wheel"
-                    initial={{ scale: 0.5, opacity: 0 }}
+                    key="arcane-constellation-nodes"
+                    initial={{ scale: 0.8, opacity: 0 }}
                     animate={{
                       scale: 1,
                       opacity: isAborted ? 0.35 : 1,
                     }}
-                    exit={{ scale: 0.5, opacity: 0 }}
+                    exit={{ scale: 0.8, opacity: 0 }}
                     transition={{ type: 'spring', stiffness: 420, damping: 26 }}
-                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[184px] h-[184px] pointer-events-none z-22 flex items-center justify-center select-none"
+                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[112px] h-[112px] pointer-events-none z-35 flex items-center justify-center select-none"
                   >
-                    {/* A. 🌌 살아 숨쉬는 에테르 크로매틱 디스퍼전 성운 오라 */}
-                    <div
-                      className="absolute inset-0 rounded-full pointer-events-none animate-[spin_24s_linear_infinite]"
-                      style={{
-                        background:
-                          'conic-gradient(from -90deg, rgba(239,68,68,0.45) 0deg, rgba(249,115,22,0.45) 51.4deg, rgba(234,179,8,0.45) 102.8deg, rgba(16,185,129,0.45) 154.2deg, rgba(14,165,233,0.45) 205.7deg, rgba(79,70,229,0.45) 257.1deg, rgba(168,85,247,0.45) 308.6deg, rgba(239,68,68,0.45) 360deg)',
-                        maskImage: 'radial-gradient(circle, transparent 46px, black 52px, black 82px, transparent 92px)',
-                        WebkitMaskImage: 'radial-gradient(circle, transparent 46px, black 52px, black 82px, transparent 92px)',
-                        filter: 'blur(6px)',
-                        opacity: radialSectorIndex >= 0 ? 0.95 : 0.75,
-                      }}
-                    />
-
-                    {/* B. 정밀 천체 아스트롤라베 좌표 림 & 미세 눈금 링 */}
-                    <div className="absolute inset-[24px] rounded-full border border-white/25 pointer-events-none shadow-[0_0_20px_rgba(255,255,255,0.15)]" />
-                    <div className="absolute inset-[10px] rounded-full border border-white/10 pointer-events-none" />
-
-                    {/* C. ⚡ 조준된 앱으로 뻗어 나가는 양자 포톤 레이저 브릿지 */}
-                    {radialSectorIndex >= 0 && !isAborted && (() => {
-                      const sectorAngle = 360 / RADIAL_WARP_APPS.length;
-                      const angleDeg = radialSectorIndex * sectorAngle;
-                      const angleRad = (angleDeg * Math.PI) / 180;
-                      const targetX = 66 * Math.sin(angleRad);
-                      const targetY = -66 * Math.cos(angleRad);
-                      const targetedApp = RADIAL_WARP_APPS[radialSectorIndex];
-
-                      return (
-                        <svg className="absolute inset-0 w-full h-full pointer-events-none z-15 overflow-visible">
-                          <defs>
-                            <linearGradient id="quantum-laser-beam" x1="92" y1="92" x2={92 + targetX} y2={92 + targetY} gradientUnits="userSpaceOnUse">
-                              <stop offset="0%" stopColor="#ffffff" stopOpacity={0.95} />
-                              <stop offset="60%" stopColor={targetedApp.themeColor} stopOpacity={0.85} />
-                              <stop offset="100%" stopColor={targetedApp.themeColor} stopOpacity={1} />
-                            </linearGradient>
-                            <filter id="laser-glow-filter" x="-20%" y="-20%" width="140%" height="140%">
-                              <feGaussianBlur stdDeviation="3" result="glow" />
-                              <feMerge>
-                                <feMergeNode in="glow" />
-                                <feMergeNode in="SourceGraphic" />
-                              </feMerge>
-                            </filter>
-                          </defs>
-                          {/* 외곽 글로우 레이저 */}
-                          <line
-                            x1={92}
-                            y1={92}
-                            x2={92 + targetX}
-                            y2={92 + targetY}
-                            stroke="url(#quantum-laser-beam)"
-                            strokeWidth={3}
-                            strokeLinecap="round"
-                            filter="url(#laser-glow-filter)"
-                          />
-                          {/* 코어 순백 광자선 */}
-                          <line
-                            x1={92}
-                            y1={92}
-                            x2={92 + targetX}
-                            y2={92 + targetY}
-                            stroke="#ffffff"
-                            strokeWidth={1.2}
-                            strokeLinecap="round"
-                          />
-                        </svg>
-                      );
-                    })()}
-
-                    {/* D. 💎 7대 앱 부유 크리스탈 젬 시길 노드 */}
+                    {/* 마법진 궤도 링과 완벽히 일치하는 7대 앱 미니멀 룬 노드 */}
                     {RADIAL_WARP_APPS.map((app, idx) => {
                       const sectorAngle = 360 / RADIAL_WARP_APPS.length;
                       const angleDeg = idx * sectorAngle;
                       const angleRad = (angleDeg * Math.PI) / 180;
-                      // 궤도 반경 R = 66px
-                      const nodeX = 66 * Math.sin(angleRad);
-                      const nodeY = -66 * Math.cos(angleRad);
+                      // 마법진 궤도 반경 R = 50px (104px 마법진 둘레와 완벽 정렬)
+                      const nodeX = 50 * Math.sin(angleRad);
+                      const nodeY = -50 * Math.cos(angleRad);
                       const isSelected = radialSectorIndex === idx && !isAborted;
 
                       return (
                         <motion.div
-                          key={`crystal-node-${app.id}`}
+                          key={`arcane-node-${app.id}`}
                           animate={{
                             x: nodeX,
                             y: nodeY,
-                            scale: isSelected ? 1.34 : 1.0,
+                            scale: isSelected ? 1.3 : 1.0,
                           }}
-                          transition={{ type: 'spring', stiffness: 480, damping: 25 }}
-                          className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full flex flex-col items-center justify-center select-none pointer-events-none transition-all duration-200 ${
+                          transition={{ type: 'spring', stiffness: 500, damping: 26 }}
+                          className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[24px] h-[24px] rounded-full flex flex-col items-center justify-center select-none pointer-events-none transition-all duration-200 ${
                             isSelected
-                              ? 'bg-white/35 border-2 border-white backdrop-blur-2xl'
-                              : 'bg-slate-950/80 border border-white/25 backdrop-blur-xl'
+                              ? 'bg-[#0a0d22] border-2 backdrop-blur-xl'
+                              : 'bg-[#060816]/90 border border-white/20 backdrop-blur-lg'
                           }`}
                           style={{
+                            borderColor: isSelected ? app.themeColor : 'rgba(255, 255, 255, 0.25)',
                             boxShadow: isSelected
-                              ? `0 0 32px ${app.accentGlow}, 0 0 16px #ffffff, 0 8px 24px rgba(0,0,0,0.85)`
-                              : `0 4px 16px rgba(0,0,0,0.7), inset 0 1px 1.5px rgba(255,255,255,0.3), 0 0 12px ${app.themeColor}33`,
+                              ? `0 0 16px ${app.accentGlow}, 0 0 6px #ffffff, 0 4px 12px rgba(0,0,0,0.8)`
+                              : '0 2px 8px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.2)',
                           }}
                         >
-                          {/* 상단 다이아몬드 곡면 반사광 */}
-                          <div
-                            className="absolute top-0.5 left-1.5 w-4 h-1.5 rounded-full pointer-events-none -rotate-12"
-                            style={{
-                              background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.7) 0%, transparent 80%)',
-                            }}
-                          />
-
-                          {/* 앱 아이콘 (순수 흰색 벡터) */}
+                          {/* 앱 순백 벡터 아이콘 */}
                           <PrismAppIcon
                             nameOrId={app.id}
-                            size={isSelected ? 19 : 16}
+                            size={isSelected ? 13 : 11}
                             color="#ffffff"
-                            className={
-                              isSelected
-                                ? 'text-white drop-shadow-[0_0_10px_#ffffff]'
-                                : 'text-white/95 drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]'
-                            }
+                            className="text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
                           />
 
-                          {/* 하단 영롱한 젬스톤 발광 도트 */}
+                          {/* 하단 미세 룬 보석 도트 */}
                           <div
-                            className={`w-1.5 h-1.5 rounded-full transition-all duration-150 mt-0.5 ${
-                              isSelected ? 'scale-125' : 'opacity-85'
+                            className={`w-1 h-1 rounded-full transition-all duration-150 mt-0.5 ${
+                              isSelected ? 'scale-125' : 'opacity-80'
                             }`}
                             style={{
                               backgroundColor: app.themeColor,
-                              boxShadow: isSelected
-                                ? `0 0 10px ${app.themeColor}, 0 0 5px #ffffff`
-                                : `0 0 5px ${app.themeColor}`,
+                              boxShadow: `0 0 4px ${app.themeColor}`,
                             }}
                           />
                         </motion.div>
                       );
                     })}
 
-                    {/* E. 🛸 실시간 조준 홀로그램 타깃 배지 (앱 명칭 + 룬 상징) */}
+                    {/* 조준 시 마법진 상단에 정갈하게 표출되는 룬 타이틀 배지 */}
                     {radialSectorIndex >= 0 && !isAborted && (() => {
                       const targetedApp = RADIAL_WARP_APPS[radialSectorIndex];
                       return (
                         <motion.div
-                          key={`target-pill-${targetedApp.id}`}
-                          initial={{ opacity: 0, y: 6, scale: 0.9 }}
+                          key={`arcane-target-pill-${targetedApp.id}`}
+                          initial={{ opacity: 0, y: 4, scale: 0.9 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: 6, scale: 0.9 }}
+                          exit={{ opacity: 0, y: 4, scale: 0.9 }}
                           transition={{ duration: 0.15 }}
-                          className="absolute -top-11 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-950/90 border backdrop-blur-2xl pointer-events-none z-30 whitespace-nowrap shadow-[0_8px_30px_rgba(0,0,0,0.9)]"
+                          className="absolute -top-10 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#060818]/95 border border-white/25 backdrop-blur-xl pointer-events-none z-40 whitespace-nowrap shadow-[0_4px_16px_rgba(0,0,0,0.8)]"
                           style={{
-                            borderColor: `${targetedApp.themeColor}99`,
-                            boxShadow: `0 0 20px ${targetedApp.accentGlow}, 0 8px 30px rgba(0,0,0,0.9)`,
+                            borderColor: `${targetedApp.themeColor}88`,
+                            boxShadow: `0 0 14px ${targetedApp.accentGlow}`,
                           }}
                         >
-                          <span className="text-xs font-mono font-bold" style={{ color: targetedApp.themeColor }}>
+                          <span className="text-[11px] font-mono font-bold" style={{ color: targetedApp.themeColor }}>
                             {targetedApp.runeSymbol}
                           </span>
-                          <span className="text-xs font-semibold text-white tracking-wide">
+                          <span className="text-[11px] font-semibold text-white tracking-wide">
                             {targetedApp.name}
                           </span>
-                          <span className="text-[10px] text-white/70 font-medium">
+                          <span className="text-[9px] text-white/70 font-medium">
                             {targetedApp.title.replace(targetedApp.name, '').trim()}
                           </span>
                         </motion.div>
@@ -667,7 +573,7 @@ export function BigBangButton() {
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
               onPointerCancel={handlePointerCancel}
-              whileHover={{ scale: 1.1 }}
+              whileHover={{ scale: 1.08 }}
               whileTap={{ scale: 0.95 }}
               animate={{
                 x: isPressing
@@ -681,7 +587,7 @@ export function BigBangButton() {
                     : (dragDistance > 0 ? (dragOffset.y * Math.min(dragDistance * 0.65, 38)) / dragDistance : 0)
                   : 0,
                 scale: isPressing
-                  ? (1.08 + gauge * 0.1)
+                  ? (1.05 + gauge * 0.08)
                   : 1.0,
               }}
               transition={{
@@ -689,132 +595,86 @@ export function BigBangButton() {
               }}
               className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full flex flex-col items-center justify-center shrink-0 cursor-pointer outline-none relative overflow-hidden transition-all duration-200 border will-change-transform ${
                 isPressing && isAborted
-                  ? 'opacity-75 border-red-500/80 shadow-[0_0_25px_rgba(239,68,68,0.8)]'
+                  ? 'opacity-75 border-red-500/80 shadow-[0_0_20px_rgba(239,68,68,0.7)]'
                   : radialSectorIndex >= 0 && !isMirrorholeMode
-                  ? 'border-white shadow-[0_0_30px_rgba(255,255,255,0.9)]'
+                  ? 'border-white/80 shadow-[0_0_25px_rgba(255,255,255,0.7)]'
                   : isWhiteholeMode
-                  ? 'border-2 border-white/95 shadow-[0_0_45px_rgba(255,255,255,0.95),0_0_85px_rgba(251,191,36,0.85),0_0_140px_rgba(245,158,11,0.5)]'
+                  ? 'border border-amber-200/70 shadow-[0_0_20px_rgba(254,240,138,0.35)]'
                   : isMirrorholeMode
-                  ? 'border border-white/90 shadow-[inset_0_2px_4px_rgba(255,255,255,0.95),inset_0_-2px_6px_rgba(56,189,248,0.4),0_0_35px_rgba(255,255,255,0.7),0_0_70px_rgba(56,189,248,0.45)] backdrop-blur-3xl'
+                  ? 'border border-sky-300/60 shadow-[inset_0_1px_2px_rgba(255,255,255,0.7),0_0_18px_rgba(56,189,248,0.3)]'
                   : isBlackholeMode
-                  ? 'border-2 border-cyan-300/95 shadow-[inset_0_0_25px_rgba(168,85,247,0.9),0_0_45px_rgba(0,240,255,0.85),0_0_90px_rgba(168,85,247,0.7),0_0_140px_rgba(56,189,248,0.4)] backdrop-blur-3xl'
+                  ? 'border border-cyan-400/60 shadow-[inset_0_0_12px_rgba(168,85,247,0.4),0_0_20px_rgba(56,189,248,0.35)]'
                   : 'border-cyan-400/40 hover:border-cyan-300/80 shadow-[0_0_20px_rgba(56,189,248,0.3)]'
               }`}
               style={{
-                background: !isPressing
-                  ? 'radial-gradient(circle at 35% 30%, #15162c 0%, #0d0e1d 45%, #05060f 80%, #020207 100%)'
+                background: isBlackholeMode
+                  ? 'radial-gradient(circle at 50% 50%, #000000 0%, #020308 60%, #070614 100%)'
                   : isWhiteholeMode
-                  ? 'radial-gradient(circle at 45% 35%, #ffffff 0%, #fffbeb 25%, #fef08a 55%, #f59e0b 90%, #d97706 100%)'
+                  ? 'radial-gradient(circle at 35% 30%, #181b3b 0%, #0e1026 50%, #050612 100%)'
                   : isMirrorholeMode
-                  ? 'radial-gradient(circle at 35% 25%, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.08) 45%, rgba(14,165,233,0.15) 80%, rgba(168,85,247,0.2) 100%)'
-                  : isBlackholeMode
-                  ? 'radial-gradient(circle at 50% 50%, #000000 0%, #02030a 50%, #09081a 80%, #0b132b 100%)'
+                  ? 'radial-gradient(circle at 35% 30%, #0c1c30 0%, #071222 50%, #030712 100%)'
                   : radialSectorIndex >= 0
-                  ? `radial-gradient(circle at 50% 50%, ${RADIAL_WARP_APPS[radialSectorIndex].themeColor}55 0%, #080918 80%)`
-                  : '#080918',
+                  ? 'radial-gradient(circle at 35% 30%, #15162c 0%, #0d0e1d 45%, #05060f 80%, #020207 100%)'
+                  : 'radial-gradient(circle at 35% 30%, #15162c 0%, #0d0e1d 45%, #05060f 80%, #020207 100%)',
                 boxShadow: (isPressing && isAborted)
                   ? 'inset 0 0 16px rgba(239, 68, 68, 0.5), 0 0 20px rgba(239, 68, 68, 0.6)'
                   : radialSectorIndex >= 0 && !isMirrorholeMode
-                  ? `inset 0 0 20px ${RADIAL_WARP_APPS[radialSectorIndex].themeColor}, 0 0 35px ${RADIAL_WARP_APPS[radialSectorIndex].accentGlow}`
+                  ? `inset 0 0 14px ${RADIAL_WARP_APPS[radialSectorIndex].themeColor}44, 0 0 22px ${RADIAL_WARP_APPS[radialSectorIndex].accentGlow}`
                   : !isPressing
-                  ? 'inset 0 0 18px rgba(56, 189, 248, 0.25), inset -5px -5px 14px rgba(0, 0, 0, 0.9), 0 0 25px rgba(56, 189, 248, 0.3)'
+                  ? 'inset 0 0 18px rgba(56, 189, 248, 0.25), inset -5px -5px 14px rgba(0, 0, 0, 0.9), 0 0 20px rgba(56, 189, 248, 0.3)'
                   : isWhiteholeMode
-                  ? 'inset 0 0 25px rgba(255, 255, 255, 1), 0 0 45px rgba(255, 255, 255, 0.95), 0 0 85px rgba(251, 191, 36, 0.85)'
+                  ? 'inset 0 0 16px rgba(255, 255, 255, 0.4), 0 0 22px rgba(254, 240, 138, 0.35)'
                   : isMirrorholeMode
-                  ? 'inset 0 2px 4px rgba(255, 255, 255, 0.95), inset 0 -2px 6px rgba(56, 189, 248, 0.4), 0 0 35px rgba(255, 255, 255, 0.7)'
+                  ? 'inset 0 1px 2px rgba(255, 255, 255, 0.7), 0 0 18px rgba(56, 189, 248, 0.3)'
                   : isBlackholeMode
-                  ? 'inset 0 0 25px rgba(168, 85, 247, 0.9), 0 0 45px rgba(0, 240, 255, 0.85), 0 0 90px rgba(168, 85, 247, 0.7)'
-                  : 'inset 0 0 18px rgba(168, 85, 247, 0.5), 0 0 25px rgba(168, 85, 247, 0.5)',
+                  ? 'inset 0 0 14px rgba(168, 85, 247, 0.4), 0 0 20px rgba(56, 189, 248, 0.35)'
+                  : 'inset 0 0 16px rgba(168, 85, 247, 0.4), 0 0 20px rgba(168, 85, 247, 0.35)',
               }}
               aria-label={`빅뱅 차원 도약 · 탭: 웜홀 양자도약, 홀드: 화이트홀(빛) - 미러홀(유리) - 블랙홀(심연), 조준/튕기기: 사건의 지평선`}
             >
-              {/* 📡 1. 버튼 내부 핵심 위상 효과 (화이트홀: 빛비춤 -> 미러홀: 유리 -> 블랙홀: 암흑) */}
+              {/* 📡 1. 버튼 내부 핵심 위상 효과 (딥 옵시디언 크리스탈 안에서 은밀하게 발현) */}
               {isPressing && !isAborted && (
                 <div className="absolute inset-0 rounded-full overflow-hidden pointer-events-none z-10">
-                  {/* ☀️ 1-A. 화이트홀: 빛비춤 (천상의 태양 초신성 광휘 & 8축 아나모픽 스타버스트) */}
+                  {/* ☀️ 1-A. 화이트홀: 빛비춤 (딥 우주 중심 순백 펄서 광자 스타버스트) */}
                   {isWhiteholeMode && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      {/* 부드러운 온기 품은 태양 중심 코어 광채 */}
+                      {/* 은은한 중심 백색광 글로우 */}
                       <div
-                        className="absolute inset-0 rounded-full animate-pulse pointer-events-none"
+                        className="absolute inset-0 rounded-full pointer-events-none opacity-60"
                         style={{
-                          background: 'radial-gradient(circle at 50% 50%, rgba(255,255,255,0.98) 0%, rgba(254,243,199,0.85) 40%, rgba(251,146,60,0.45) 75%, transparent 100%)',
+                          background: 'radial-gradient(circle at 50% 50%, rgba(255,255,255,0.4) 0%, rgba(254,240,138,0.15) 50%, transparent 80%)',
                         }}
                       />
-                      {/* 회전하는 8축 천체 스타버스트 볼류메트릭 라이트 샤프트 */}
-                      <div className="absolute inset-0 flex items-center justify-center animate-[spin_20s_linear_infinite] pointer-events-none">
-                        {/* 십자 메인 라이트 빔 (부드러운 가우시안 폴오프) */}
-                        <div className="absolute w-full h-3.5 bg-gradient-to-r from-transparent via-white/85 to-transparent blur-[1.5px]" />
-                        <div className="absolute h-full w-3.5 bg-gradient-to-b from-transparent via-white/85 to-transparent blur-[1.5px]" />
-                        {/* 45도 대각 앰버 보조 광선 */}
-                        <div className="absolute w-full h-2.5 rotate-45 bg-gradient-to-r from-transparent via-amber-100/75 to-transparent blur-[1.2px]" />
-                        <div className="absolute w-full h-2.5 -rotate-45 bg-gradient-to-r from-transparent via-amber-100/75 to-transparent blur-[1.2px]" />
-                      </div>
-                      {/* 팽창하는 태양 코로나 쇼크웨이브 링 */}
-                      <div className="absolute inset-1.5 rounded-full border border-white/60 animate-ping opacity-30" />
-                      {/* 중심 순백 다이아몬드 스파클 코어 */}
-                      <div className="absolute w-4 h-4 rounded-full bg-white shadow-[0_0_16px_#ffffff,0_0_28px_#fde047] pointer-events-none" />
+                      {/* 초슬림 순백 십자 광자선 */}
+                      <div className="absolute w-full h-[0.8px] bg-gradient-to-r from-transparent via-white/80 to-transparent blur-[0.3px]" />
+                      <div className="absolute h-full w-[0.8px] bg-gradient-to-b from-transparent via-white/80 to-transparent blur-[0.3px]" />
+                      {/* 중심 순백 코어 */}
+                      <div className="absolute w-2 h-2 rounded-full bg-white shadow-[0_0_8px_#ffffff] pointer-events-none" />
                     </div>
                   )}
 
-                  {/* 🪞 1-B. 미러홀: 유리 (바카라·스와로브스키 급 광학 다이아몬드 프리즘 글래스 렌즈) */}
+                  {/* 🪞 1-B. 미러홀: 유리 (딥 사파이어 글래스 오브 상단 곡면 반사광) */}
                   {isMirrorholeMode && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none backdrop-blur-3xl overflow-hidden">
-                      {/* A. 렌즈 표면을 유려하게 훑고 지나가는 스페큘러 코스틱 라이트 스윕 */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      {/* 럭셔리 사파이어 글래스 상단 곡면 반사광 */}
                       <div
-                        className="absolute -inset-full w-[300%] h-full bg-gradient-to-r from-transparent via-white/40 to-transparent -rotate-45 pointer-events-none animate-[pulse_2.5s_ease-in-out_infinite]"
-                      />
-                      {/* B. 좌상단 프리즘 크로매틱 디스퍼전 엣지 (온화한 앰버-골드 굴절광) */}
-                      <div
-                        className="absolute -top-1 -left-1 w-8 h-8 rounded-full pointer-events-none blur-[1px]"
+                        className="absolute top-1 left-2 sm:left-3 w-6 h-2 rounded-full pointer-events-none -rotate-[20deg]"
                         style={{
-                          background: 'radial-gradient(circle at 30% 30%, rgba(254,215,170,0.6) 0%, transparent 70%)',
+                          background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.5) 0%, transparent 80%)',
                         }}
                       />
-                      {/* C. 우하단 프리즘 크로매틱 디스퍼전 엣지 (신비로운 사이언-바이올렛 굴절광) */}
-                      <div
-                        className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full pointer-events-none blur-[1px]"
-                        style={{
-                          background: 'radial-gradient(circle at 70% 70%, rgba(168,85,247,0.5) 0%, rgba(56,189,248,0.4) 50%, transparent 80%)',
-                        }}
-                      />
-                      {/* D. 기하학적 정밀 다이아몬드 컷 파셋 라인 */}
-                      <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-40">
-                        <line x1="20%" y1="35%" x2="80%" y2="35%" stroke="white" strokeWidth="0.8" strokeDasharray="2 3" />
-                        <line x1="20%" y1="65%" x2="80%" y2="65%" stroke="white" strokeWidth="0.8" strokeDasharray="2 3" />
-                        <circle cx="50%" cy="50%" r="42%" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="1" />
-                      </svg>
-                      {/* E. 럭셔리 사파이어 글래스 상단 곡면 반사광 */}
-                      <div
-                        className="absolute top-1 left-2 sm:left-3 w-8 h-3 rounded-full pointer-events-none -rotate-[22deg]"
-                        style={{
-                          background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.95) 0%, transparent 75%)',
-                        }}
-                      />
+                      {/* 하단 투명 림 반사광 */}
+                      <div className="absolute inset-x-2 bottom-1 h-0.5 rounded-full bg-gradient-to-t from-sky-300/30 to-transparent pointer-events-none" />
                     </div>
                   )}
 
-                  {/* 🕳️ 1-C. 블랙홀: 암흑 (가르강튀아 급 상대론적 강착원반 플라즈마 & 사건의 지평선 특이점) */}
+                  {/* 🕳️ 1-C. 블랙홀: 암흑 (심연의 특이점 네온 에르소스피어 림) */}
                   {isBlackholeMode && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none backdrop-blur-3xl overflow-hidden">
-                      {/* A. 초고속 회전하는 상대론적 강착원반 플라즈마 보텍스 */}
-                      <div
-                        className="absolute inset-0.5 rounded-full pointer-events-none animate-[spin_3.5s_linear_infinite]"
-                        style={{
-                          background: 'conic-gradient(from 0deg, #00f0ff 0deg, #a855f7 90deg, #02030a 180deg, #00f0ff 270deg, #a855f7 360deg)',
-                          maskImage: 'radial-gradient(circle, transparent 52%, black 58%, black 90%, transparent 98%)',
-                          WebkitMaskImage: 'radial-gradient(circle, transparent 52%, black 58%, black 90%, transparent 98%)',
-                          filter: 'blur(1.5px)',
-                          opacity: 0.95,
-                        }}
-                      />
-                      {/* B. 중력 렌즈 안쪽으로 빨려 들어가는 흡입 파동 (Gravitational Inward Contraction) */}
-                      <div className="absolute inset-2 rounded-full border border-cyan-400/50 animate-ping opacity-25" />
-                      <div className="absolute inset-3 rounded-full border border-purple-400/40 animate-pulse opacity-40" />
-                      {/* C. 슈바르츠실트 포톤 스피어 초정밀 네온 림 */}
-                      <div className="absolute inset-1.5 rounded-full border border-cyan-300/70 shadow-[inset_0_0_12px_rgba(0,240,255,0.8)] pointer-events-none" />
-                      {/* D. 중심 심연 특이점 보이드 (순수 암흑 코어) */}
-                      <div className="absolute inset-3 rounded-full bg-black shadow-[inset_0_0_15px_rgba(0,0,0,1)] pointer-events-none" />
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      {/* 중심 순수 암흑 보이드 싱귤래리티 */}
+                      <div className="absolute inset-1 rounded-full bg-black shadow-[inset_0_0_10px_rgba(0,0,0,1)] pointer-events-none" />
+                      {/* 회전하는 초슬림 네온 림 */}
+                      <div className="absolute inset-1.5 rounded-full border border-cyan-400/40 pointer-events-none" />
                     </div>
                   )}
                 </div>
@@ -831,16 +691,12 @@ export function BigBangButton() {
                 />
               )}
 
-              {/* Event Horizon Deep Singularity Core (대기 시 및 조준 시 내부 구체) */}
+              {/* Event Horizon Deep Singularity Core (크리스탈 구체의 딥 옵시디언 코어) */}
               <div
                 className="absolute inset-2 sm:inset-2.5 rounded-full z-15 pointer-events-none transition-all duration-200 overflow-hidden flex items-center justify-center"
                 style={{
-                  background: isWhiteholeMode || isMirrorholeMode || isBlackholeMode
-                    ? 'transparent'
-                    : 'radial-gradient(circle at 45% 35%, #0f1124 0%, #080916 55%, #030309 100%)',
-                  boxShadow: isWhiteholeMode || isMirrorholeMode || isBlackholeMode
-                    ? 'none'
-                    : 'inset 0 0 12px rgba(0, 0, 0, 0.95)',
+                  background: 'radial-gradient(circle at 45% 35%, #0f1124 0%, #080916 55%, #030309 100%)',
+                  boxShadow: 'inset 0 0 12px rgba(0, 0, 0, 0.95)',
                 }}
               />
 
@@ -856,17 +712,19 @@ export function BigBangButton() {
                   >
                     {/* 은은한 앰비언트 글로우 오라 */}
                     <div
-                      className="absolute -inset-2 rounded-full pointer-events-none blur-[6px] opacity-80"
+                      className="absolute -inset-2 rounded-full pointer-events-none blur-[6px] opacity-70"
                       style={{
                         background: radialSectorIndex >= 0 && !isMirrorholeMode
                           ? `radial-gradient(circle, ${RADIAL_WARP_APPS[radialSectorIndex].themeColor} 0%, transparent 80%)`
                           : isAborted
                           ? 'radial-gradient(circle, rgba(239,68,68,0.8) 0%, transparent 80%)'
                           : isWhiteholeMode
-                          ? 'radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(253,230,138,0.7) 50%, transparent 80%)'
-                          : isMirrorholeMode || isBlackholeMode
-                          ? 'transparent'
-                          : 'radial-gradient(circle, rgba(168,85,247,0.8) 0%, transparent 80%)',
+                          ? 'radial-gradient(circle, rgba(255,255,255,0.7) 0%, rgba(254,240,138,0.3) 50%, transparent 80%)'
+                          : isMirrorholeMode
+                          ? 'radial-gradient(circle, rgba(56,189,248,0.4) 0%, transparent 80%)'
+                          : isBlackholeMode
+                          ? 'radial-gradient(circle, rgba(168,85,247,0.4) 0%, transparent 80%)'
+                          : 'radial-gradient(circle, rgba(168,85,247,0.6) 0%, transparent 80%)',
                       }}
                     />
 

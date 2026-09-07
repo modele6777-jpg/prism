@@ -33,9 +33,6 @@ export const BigBangCircularMeter = React.memo(function BigBangCircularMeter({
   isAborted = false,
   idleCycleProgress,
 }: BigBangCircularMeterProps) {
-  // 터치(누르는 중) 시에는 버튼 본체의 화이트홀/블랙홀 분출에 집중
-  if (isPressing) return null;
-
   const gradientId = useId();
 
   // 버튼(56px) 외곽을 자연스럽고 고급스럽게 감싸는 최적의 마법진 직경 (104px)
@@ -50,17 +47,19 @@ export const BigBangCircularMeter = React.memo(function BigBangCircularMeter({
       style={{
         width: size,
         height: size,
-        transform: isHovered ? 'scale(1.15)' : 'scale(1)',
+        transform: isPressing ? 'scale(1.15)' : isHovered ? 'scale(1.15)' : 'scale(1)',
       }}
     >
       {/* 🌟 1. 마법진 앰비언트 글로우 오라 */}
       <div
         className="absolute inset-2 rounded-full pointer-events-none transition-opacity duration-300"
         style={{
-          background: isHovered
+          background: isPressing
+            ? 'radial-gradient(circle, rgba(56,189,248,0.28) 0%, rgba(168,85,247,0.25) 50%, transparent 75%)'
+            : isHovered
             ? 'radial-gradient(circle, rgba(56,189,248,0.22) 0%, rgba(168,85,247,0.2) 50%, transparent 75%)'
             : 'radial-gradient(circle, rgba(56,189,248,0.12) 0%, rgba(168,85,247,0.1) 50%, transparent 75%)',
-          opacity: isHovered ? 0.9 : 0.6,
+          opacity: isPressing ? 1 : isHovered ? 0.9 : 0.6,
         }}
       />
 
@@ -98,29 +97,37 @@ export const BigBangCircularMeter = React.memo(function BigBangCircularMeter({
           strokeWidth={0.6}
         />
 
-        {/* 실시간 타이밍 오로라 아크 진행선 (순수 CSS 회전으로 무부하 60fps 보장) */}
-        <g style={{ transformOrigin: `${center}px ${center}px` }} className="animate-[spin_3.6s_linear_infinite]">
+        {/* 실시간 타이밍 오로라 아크 진행선 (누를 때 실시간 압력 게이지 연동) */}
+        <g style={{ transformOrigin: `${center}px ${center}px` }} className={isPressing ? 'animate-[spin_2s_linear_infinite]' : 'animate-[spin_3.6s_linear_infinite]'}>
           <circle
             cx={center}
             cy={center}
             r={rArc}
             fill="none"
             stroke={`url(#${gradientId}-magic-gradient)`}
-            strokeWidth={isHovered ? 2 : 1.5}
-            strokeDasharray={`${circumferenceArc * 0.45} ${circumferenceArc * 0.55}`}
+            strokeWidth={isPressing ? 2.2 : isHovered ? 2 : 1.5}
+            strokeDasharray={
+              isPressing
+                ? `${circumferenceArc * Math.max(0.15, Math.min(1.0, gauge))} ${circumferenceArc * (1 - Math.max(0.15, Math.min(1.0, gauge)))}`
+                : `${circumferenceArc * 0.45} ${circumferenceArc * 0.55}`
+            }
             strokeLinecap="round"
-            opacity={0.85}
+            opacity={isPressing ? 1 : 0.85}
           />
         </g>
       </svg>
 
-      {/* 🌟 3. 외곽 정방향 회전 룬 서클 (CSS spin 애니메이션으로 GPU 단독 실행) */}
+      {/* 🌟 3. 외곽 정방향 회전 룬 서클 (누를 때 고속 공명) */}
       <svg
         width={size}
         height={size}
         viewBox={`0 0 ${size} ${size}`}
         className={`absolute inset-0 text-cyan-400/60 pointer-events-none will-change-transform ${
-          isHovered ? 'animate-[spin_12s_linear_infinite]' : 'animate-[spin_24s_linear_infinite]'
+          isPressing
+            ? 'animate-[spin_6s_linear_infinite]'
+            : isHovered
+            ? 'animate-[spin_12s_linear_infinite]'
+            : 'animate-[spin_24s_linear_infinite]'
         }`}
       >
         <circle
@@ -162,13 +169,17 @@ export const BigBangCircularMeter = React.memo(function BigBangCircularMeter({
         <circle cx={size - 4} cy={center} r={1.8} fill="#c084fc" />
       </svg>
 
-      {/* 🌟 4. 내부 역방향 회전 신성기하학 마법진 (CSS spin-reverse) */}
+      {/* 🌟 4. 내부 역방향 회전 신성기하학 마법진 (CSS spin-reverse, 누를 때 가속) */}
       <svg
         width={size}
         height={size}
         viewBox={`0 0 ${size} ${size}`}
         className={`absolute inset-0 text-purple-400/60 pointer-events-none will-change-transform ${
-          isHovered ? 'animate-[spin_16s_linear_infinite_reverse]' : 'animate-[spin_28s_linear_infinite_reverse]'
+          isPressing
+            ? 'animate-[spin_8s_linear_infinite_reverse]'
+            : isHovered
+            ? 'animate-[spin_16s_linear_infinite_reverse]'
+            : 'animate-[spin_28s_linear_infinite_reverse]'
         }`}
       >
         <circle
