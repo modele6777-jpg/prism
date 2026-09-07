@@ -379,29 +379,33 @@ export function BigBangButton() {
   // 🎯 현재 활성화된 목적지의 상징 아이콘 식별자 결정 (프리즘 메인 아이콘 규격)
   const activeAppId = (() => {
     if (isAborted) return 'aborted';
-    // 🪞 미러홀은 항시 프리즘 홈으로 들어감
-    if (isMirrorholeMode) return 'mirrorhole';
     // 🌌 사건의 지평선 상태 (조준 중): 해당 조준 채널의 아이콘을 최우선으로 표출!
     if (radialSectorIndex >= 0) return RADIAL_WARP_APPS[radialSectorIndex]?.id || 'hub';
-    if (isTargetLucy) return 'lucy';
-    if (isTargetOrb) return 'orb';
-    if (activePhase === 'blackhole') return blackholeApp.id || 'blackhole';
-    if (activePhase === 'whitehole') return whiteholeApp.id || 'whitehole';
-    return currentTarget?.id || whiteholeApp.id || 'hub';
+    // 🪞 제자리 홀드 - 미러홀은 프리즘 홈
+    if (isMirrorholeMode) return 'hub';
+    // 🕳️ 제자리 홀드 - 블랙홀은 크리스탈 오브
+    if (isBlackholeMode || isTargetOrb) return 'orb';
+    // ⚪ 제자리 홀드 - 화이트홀은 루시 채팅
+    if (isWhiteholeMode || isTargetLucy) return 'lucy';
+    return currentTarget?.id || 'hub';
   })();
 
   const activeAppName = (() => {
     if (isAborted) return '취소';
-    // 🪞 미러홀은 항시 프리즘 홈으로 들어감
+    // 🌌 사건의 지평선 상태 (조준 중): 해당 조준 채널 및 서브메뉴 명칭 표출
+    if (radialSectorIndex >= 0) {
+      const channel = RADIAL_WARP_APPS[radialSectorIndex];
+      const subTitle = currentTarget?.title || '';
+      return subTitle ? `${channel?.name || ''} · ${subTitle}` : (channel?.name || '');
+    }
+    // 🪞 제자리 홀드 - 미러홀은 프리즘 홈
     if (isMirrorholeMode) return '미러홀 (프리즘 홈)';
-    // 🌌 사건의 지평선 상태 (조준 중): 해당 조준 채널의 이름 표출
-    if (radialSectorIndex >= 0) return RADIAL_WARP_APPS[radialSectorIndex]?.name || '';
-    if (isTargetLucy) return '루시 1:1 대화';
-    if (isTargetOrb) return '크리스탈 오브';
-    if (activePhase === 'blackhole') return blackholeApp.name;
-    if (activePhase === 'whitehole') return whiteholeApp.name;
+    // 🕳️ 제자리 홀드 - 블랙홀은 크리스탈 오브
+    if (isBlackholeMode || isTargetOrb) return '블랙홀 (크리스탈 오브)';
+    // ⚪ 제자리 홀드 - 화이트홀은 루시
+    if (isWhiteholeMode || isTargetLucy) return '화이트홀 (루시 채팅)';
     if (activePhase === 'event_horizon') return currentTarget?.title || '사건의 지평선';
-    return currentTarget?.title || whiteholeApp.name;
+    return currentTarget?.title || '프리즘 워프';
   })();
 
   return (

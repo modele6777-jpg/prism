@@ -167,6 +167,15 @@ export default function EpilogueApp() {
 
   // Mode: 'diary' | 'profile' | 'synergy'
   const [activeMode, setActiveMode] = useState<'diary' | 'profile' | 'synergy'>(() => {
+    if (typeof window !== 'undefined') {
+      const urlTab = new URLSearchParams(window.location.search).get('tab');
+      const sessionTab = sessionStorage.getItem('prism_target_tab');
+      const tab = urlTab || sessionTab;
+      if (tab === 'diary' || tab === 'profile' || tab === 'synergy') {
+        sessionStorage.removeItem('prism_target_tab');
+        return tab;
+      }
+    }
     return location === '/profile' ? 'profile' : 'diary';
   });
 
@@ -175,6 +184,49 @@ export default function EpilogueApp() {
       setActiveMode('profile');
     }
   }, [location]);
+
+  useEffect(() => {
+    const applyTargetTab = (tab: string | null | undefined) => {
+      if (!tab) return;
+      if (tab === 'diary' || tab === 'profile' || tab === 'synergy') {
+        setActiveMode(tab);
+        sessionStorage.removeItem('prism_target_tab');
+      }
+    };
+
+    const handleTabChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      applyTargetTab(customEvent.detail?.tab);
+    };
+
+    const handleNavClick = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const path = customEvent.detail?.path || '';
+      if (path.startsWith('/epilogue') || path.startsWith('/profile')) {
+        let tab = customEvent.detail?.tab;
+        if (!tab && path.includes('?')) {
+          try {
+            const url = new URL(path, 'http://localhost');
+            tab = url.searchParams.get('tab');
+          } catch (_) {}
+        }
+        if (tab) {
+          applyTargetTab(tab);
+        } else if (path === '/epilogue') {
+          setActiveMode('diary');
+        } else if (path === '/profile') {
+          setActiveMode('profile');
+        }
+      }
+    };
+
+    window.addEventListener('prism-tab-change', handleTabChange);
+    window.addEventListener('nav-click-active', handleNavClick);
+    return () => {
+      window.removeEventListener('prism-tab-change', handleTabChange);
+      window.removeEventListener('nav-click-active', handleNavClick);
+    };
+  }, []);
 
   useScrollToTopOnChange([activeMode]);
 

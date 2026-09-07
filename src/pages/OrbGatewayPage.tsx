@@ -21,8 +21,7 @@ import { sacredAudio } from "@/lib/omniWarp/sacredAudio";
 import { triggerHaptic } from "@/lib/omniWarp/omniWarpHaptics";
 import { playTTS, stopTTS, useTTSActive } from "@/utils/tts";
 import { getPendingPrismToss, clearPrismToss } from "@/lib/prismToss";
-import { PrismGatewayFabButton } from "@/components/PrismGatewayFabButton";
-import { LucyGatewayFabButton } from "@/components/LucyGatewayFabButton";
+
 import { BgMusicPlayer } from "@/components/trinity/BgMusicPlayer";
 import { CrystalOrbIcon } from "@/components/icons/CrystalOrbIcon";
 import { safeLocalStorage } from "@/utils/safeStorage";
@@ -2188,27 +2187,7 @@ ${dimensionDescriptions}
         </form>
       </footer>
 
-      {/* 🔺 Bottom-Left Prism Gateway Button (좌측 하단 프리즘 메인 허브 바로가기) */}
-      <PrismGatewayFabButton
-        position="left"
-        onClick={() => {
-          try {
-            triggerHaptic("whitehole");
-          } catch (_) {}
-          window.location.href = "/";
-        }}
-      />
 
-      {/* 💬 Bottom-Right Lucy AI Chat Button (우측 하단 루시채팅 바로가기) */}
-      <LucyGatewayFabButton
-        position="right"
-        onClick={() => {
-          try {
-            triggerHaptic("whitehole");
-          } catch (_) {}
-          window.location.href = "/chat";
-        }}
-      />
 
       {/* 🏷️ 연동 모드 및 마스터 모드에서는 팝업메시지 제거 (단일/일반 모드에서만 표시, 데스크톱 호버 전용) */}
       <AnimatePresence>

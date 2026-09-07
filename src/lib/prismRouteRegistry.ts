@@ -298,12 +298,19 @@ export function isValidPrismPath(rawPath: string): boolean {
  * - 별칭(예: /lucy -> /chat, /gateway -> /orb)은 정식 표준 경로로 자동 승격합니다.
  */
 export function resolveCanonicalPath(rawPath: string): string {
-  const norm = normalizePath(rawPath);
+  if (!rawPath) return '/';
+  const qIdx = rawPath.indexOf('?');
+  const hIdx = rawPath.indexOf('#');
+  const splitIdx = qIdx !== -1 && hIdx !== -1 ? Math.min(qIdx, hIdx) : qIdx !== -1 ? qIdx : hIdx;
+  const pathOnly = splitIdx !== -1 ? rawPath.substring(0, splitIdx) : rawPath;
+  const suffix = splitIdx !== -1 ? rawPath.substring(splitIdx) : '';
+
+  const norm = normalizePath(pathOnly);
   const activeRoutes = getActivePrismRoutes();
 
   for (const r of activeRoutes) {
-    if (normalizePath(r.path) === norm) return r.path;
-    if (r.aliases && r.aliases.some((a) => normalizePath(a) === norm)) return r.path;
+    if (normalizePath(r.path) === norm) return r.path + suffix;
+    if (r.aliases && r.aliases.some((a) => normalizePath(a) === norm)) return r.path + suffix;
   }
 
   // 매칭되는 활성 라우트가 없을 경우 (사라진 페이지 방어)

@@ -304,15 +304,302 @@ export function pickRandomQuantumDestination(
   return pool[idx];
 }
 
+export interface ChannelSubmenuDef {
+  id: string;
+  name: string;
+  subName: string;
+  path: string;
+  icon: string;
+  themeColor: string;
+  accentGlow: string;
+  description: string;
+  runeSymbol: string;
+  runeName: string;
+}
+
+export const CHANNEL_SUBMENUS: Record<
+  string,
+  {
+    whitehole: ChannelSubmenuDef; // 1번째 처음 메뉴
+    mirrorhole: ChannelSubmenuDef; // 2번째 메뉴
+    blackhole: ChannelSubmenuDef; // 3번째 메뉴
+  }
+> = {
+  hub: {
+    whitehole: {
+      id: 'universe',
+      name: '프리즘 유니버스',
+      subName: '모든 차원의 시작과 7대 옴니버스 광장',
+      path: '/',
+      icon: '🌌',
+      themeColor: '#00f0ff',
+      accentGlow: 'rgba(0, 240, 255, 0.95)',
+      description: '프리즘의 7대 우주와 모든 여정이 시작되는 중심 허브 광장입니다.',
+      runeSymbol: 'ᚲ',
+      runeName: 'Kenaz',
+    },
+    mirrorhole: {
+      id: 'synergy',
+      name: '이지스 시너지',
+      subName: '7대 채널 통합 지능 시너지 매트릭스',
+      path: '/synergy',
+      icon: '✨',
+      themeColor: '#38bdf8',
+      accentGlow: 'rgba(56, 189, 248, 0.95)',
+      description: '7대 채널의 영적 데이터와 에너지가 상호작용하는 시너지 카탈리스트입니다.',
+      runeSymbol: 'ᛟ',
+      runeName: 'Othala',
+    },
+    blackhole: {
+      id: 'ecpr',
+      name: 'eCPR 영혼 응급소생',
+      subName: '감정 위기 구조와 심연의 응급 소생술',
+      path: '/ecpr',
+      icon: '🕳️',
+      themeColor: '#ef4444',
+      accentGlow: 'rgba(239, 68, 68, 0.95)',
+      description: '극심한 정신적 고통이나 감정적 위기 상태에서 즉각적인 소생 프로토콜을 가동합니다.',
+      runeSymbol: 'ᚦ',
+      runeName: 'Thurisaz',
+    },
+  },
+  orange: {
+    whitehole: {
+      id: 'orange-secret',
+      name: '비밀의 방 성찰',
+      subName: '내면 성찰과 솔직한 감정 고백',
+      path: '/orange?tab=secret',
+      icon: '🍊',
+      themeColor: '#f97316',
+      accentGlow: 'rgba(249, 115, 22, 0.95)',
+      description: '비밀의 방에서 나만의 감정과 생각을 솔직하게 털어놓고 성찰합니다.',
+      runeSymbol: 'ᛋ',
+      runeName: 'Sowilo',
+    },
+    mirrorhole: {
+      id: 'orange-synergy',
+      name: '시너지 카탈리스트',
+      subName: '오렌지 영혼 촉매와 채널 연계',
+      path: '/orange?tab=synergy',
+      icon: '⚡',
+      themeColor: '#fb923c',
+      accentGlow: 'rgba(251, 146, 60, 0.95)',
+      description: '오렌지 채널의 감정 에너지를 다른 차원들과 결합하는 촉매 작용을 가동합니다.',
+      runeSymbol: 'ᚲ',
+      runeName: 'Kenaz',
+    },
+    blackhole: {
+      id: 'orange-wishingWell',
+      name: '소원의 우물',
+      subName: '무의식의 소망을 띄우는 신비한 우물',
+      path: '/orange?tab=wishingWell',
+      icon: '🪙',
+      themeColor: '#ea580c',
+      accentGlow: 'rgba(234, 88, 12, 0.95)',
+      description: '마음 깊은 곳의 갈망과 소원을 신비로운 우물에 띄워 우주로 전송합니다.',
+      runeSymbol: 'ᚷ',
+      runeName: 'Gebo',
+    },
+  },
+  trinity: {
+    whitehole: {
+      id: 'trinity-daily',
+      name: '데일리 럭키',
+      subName: '오늘의 운세와 행운 주파수 분석',
+      path: '/trinity?tab=daily',
+      icon: '✨',
+      themeColor: '#eab308',
+      accentGlow: 'rgba(234, 179, 8, 0.95)',
+      description: '사주와 점성학을 결합한 오늘의 행운 에너지와 실천 가이드를 확인합니다.',
+      runeSymbol: 'ᛈ',
+      runeName: 'Pertho',
+    },
+    mirrorhole: {
+      id: 'trinity-oracle',
+      name: '트리니티 오라클',
+      subName: '운명의 나침반 심층 오라클 리딩',
+      path: '/trinity?tab=oracle',
+      icon: '🔮',
+      themeColor: '#facc15',
+      accentGlow: 'rgba(250, 204, 21, 0.95)',
+      description: '운명의 기로에서 가장 현명한 길을 비추는 트리니티 오라클의 계시를 마주합니다.',
+      runeSymbol: 'ᛞ',
+      runeName: 'Dagaz',
+    },
+    blackhole: {
+      id: 'trinity-tarot',
+      name: '타로 스프레드',
+      subName: '3장 타로 카드 무의식 탐색',
+      path: '/trinity?tab=tarot',
+      icon: '🎴',
+      themeColor: '#ca8a04',
+      accentGlow: 'rgba(202, 138, 4, 0.95)',
+      description: '과거, 현재, 미래를 아우르는 3장의 타로 카드로 무의식의 심연을 들여다봅니다.',
+      runeSymbol: 'ᛟ',
+      runeName: 'Othala',
+    },
+  },
+  heal: {
+    whitehole: {
+      id: 'heal-meditation',
+      name: '내려놓음 명상',
+      subName: '세도나 릴리즈 & 깊은 내려놓음',
+      path: '/heal?tab=meditation',
+      icon: '🧘',
+      themeColor: '#10b981',
+      accentGlow: 'rgba(16, 185, 129, 0.95)',
+      description: '마음의 묵은 집착과 긴장을 부드럽게 흘려보내는 세도나 내려놓음 명상입니다.',
+      runeSymbol: 'ᛉ',
+      runeName: 'Algiz',
+    },
+    mirrorhole: {
+      id: 'heal-synergy',
+      name: '생체 에너지 성소',
+      subName: '신체 오행 조율 & 생체 에너지 정화',
+      path: '/heal?tab=synergy',
+      icon: '🌊',
+      themeColor: '#06b6d4',
+      accentGlow: 'rgba(6, 182, 212, 0.95)',
+      description: '오행 밸런스와 생체 리듬을 조율하여 몸과 마음에 활력을 충전합니다.',
+      runeSymbol: 'ᛚ',
+      runeName: 'Laguz',
+    },
+    blackhole: {
+      id: 'heal-oneMinute',
+      name: '1분 감정 정화',
+      subName: '즉각적인 호오포노포노 정화 리셋',
+      path: '/heal?tab=oneMinute',
+      icon: '⏱️',
+      themeColor: '#059669',
+      accentGlow: 'rgba(5, 150, 105, 0.95)',
+      description: '미안합니다, 용서하세요, 감사합니다, 사랑합니다 4마디로 1분 만에 감정을 정화합니다.',
+      runeSymbol: 'ᚷ',
+      runeName: 'Gebo',
+    },
+  },
+  bluebird: {
+    whitehole: {
+      id: 'bluebird-daily',
+      name: '호오포노포노 정화',
+      subName: '영혼의 평온과 감사 리셋',
+      path: '/bluebird?tab=daily',
+      icon: '🕊️',
+      themeColor: '#38bdf8',
+      accentGlow: 'rgba(56, 189, 248, 0.95)',
+      description: '일상의 상처와 피로를 정화하고 내면의 평온과 감사의 빛을 밝힙니다.',
+      runeSymbol: 'ᛒ',
+      runeName: 'Berkana',
+    },
+    mirrorhole: {
+      id: 'bluebird-synergy',
+      name: '트랜스뮤테이션',
+      subName: '파랑새 시너지 변용 매트릭스',
+      path: '/bluebird?tab=synergy',
+      icon: '💎',
+      themeColor: '#0ea5e9',
+      accentGlow: 'rgba(14, 165, 233, 0.95)',
+      description: '부정적인 에너지를 긍정적인 치유의 힘으로 전환하는 변용의 장입니다.',
+      runeSymbol: 'ᛞ',
+      runeName: 'Dagaz',
+    },
+    blackhole: {
+      id: 'bluebird-secretMessage',
+      name: '비밀 편지',
+      subName: '시간을 넘어 전하는 위로의 편지',
+      path: '/bluebird?tab=secretMessage',
+      icon: '💌',
+      themeColor: '#0284c7',
+      accentGlow: 'rgba(2, 132, 199, 0.95)',
+      description: '지친 나에게 또는 소중한 존재에게 보내는 따뜻한 비밀 편지를 봉인합니다.',
+      runeSymbol: 'ᚹ',
+      runeName: 'Wunjo',
+    },
+  },
+  muse: {
+    whitehole: {
+      id: 'muse-artRecommendation',
+      name: '예술처방 큐레이션',
+      subName: '명화·명시·명곡 삼위일체 처방',
+      path: '/muse?tab=artRecommendation',
+      icon: '🎨',
+      themeColor: '#ec4899',
+      accentGlow: 'rgba(236, 72, 153, 0.95)',
+      description: '현재 마음에 공명하는 세계적 명화, 명시, 클래식 명곡을 삼위일체로 큐레이션합니다.',
+      runeSymbol: 'ᚹ',
+      runeName: 'Wunjo',
+    },
+    mirrorhole: {
+      id: 'muse-synergy',
+      name: '뮤즈 마스터클래스',
+      subName: '창작과 심미적 카타르시스 시너지',
+      path: '/muse?tab=synergy',
+      icon: '🎭',
+      themeColor: '#d946ef',
+      accentGlow: 'rgba(217, 70, 239, 0.95)',
+      description: '예술적 영감을 일상의 창작 에너지로 승화하는 뮤즈 마스터클래스입니다.',
+      runeSymbol: 'ᚲ',
+      runeName: 'Kenaz',
+    },
+    blackhole: {
+      id: 'muse-roleModel',
+      name: '롤모델 메이트',
+      subName: '위대한 예술가와의 영혼 대화',
+      path: '/muse?tab=roleModel',
+      icon: '👥',
+      themeColor: '#a855f7',
+      accentGlow: 'rgba(168, 85, 247, 0.95)',
+      description: '역사 속 위대한 거장들과 깊은 예술적 통찰과 고민을 나눕니다.',
+      runeSymbol: 'ᛗ',
+      runeName: 'Mannaz',
+    },
+  },
+  epilogue: {
+    whitehole: {
+      id: 'epilogue-diary',
+      name: '에필로그 서재 일기',
+      subName: '오늘 하루의 영감과 사유 회고',
+      path: '/epilogue?tab=diary',
+      icon: '📖',
+      themeColor: '#a855f7',
+      accentGlow: 'rgba(168, 85, 247, 0.95)',
+      description: '하루 동안 마주한 모든 영감과 사유를 한 편의 수필처럼 정리하는 서재 일기입니다.',
+      runeSymbol: 'ᚨ',
+      runeName: 'Ansuz',
+    },
+    mirrorhole: {
+      id: 'epilogue-synergy',
+      name: '시너지 연대기',
+      subName: '영혼의 발자취와 종합 분석',
+      path: '/epilogue?tab=synergy',
+      icon: '📊',
+      themeColor: '#8b5cf6',
+      accentGlow: 'rgba(139, 92, 246, 0.95)',
+      description: '모든 채널에서 축적된 데이터와 영혼의 성장 추이를 종합 분석합니다.',
+      runeSymbol: 'ᛃ',
+      runeName: 'Jera',
+    },
+    blackhole: {
+      id: 'epilogue-profile',
+      name: '영혼 프로필',
+      subName: '사주·점성·심리 마스터 프로필',
+      path: '/epilogue?tab=profile',
+      icon: '👤',
+      themeColor: '#6366f1',
+      accentGlow: 'rgba(99, 102, 241, 0.95)',
+      description: '나의 사주 원국, 점성 차트, 심리 특성이 집대성된 마스터 영혼 프로필입니다.',
+      runeSymbol: 'ᛗ',
+      runeName: 'Mannaz',
+    },
+  },
+};
+
 /**
  * 2단계: 터치 압력/온도 기반 온디바이스 SLM 맥락 합성 (<100ms)
- * - 블랙홀 (탭): 시공간 특이점에 빨려 들어가 임의의 장소나 기능으로 양자 도약
- * - 화이트홀 (홀드): 제자리에서 꾹 누를 시 1순위 연계 정규 차원으로 다이렉트 방출
- * - 사건의 지평선 (드래그): 버튼을 밀어 7개 앱을 직접 조준 워프
+ * - 웜홀 (탭): 시공간 특이점에 빨려 들어가 임의의 장소나 기능으로 양자 도약
+ * - 제자리 홀드: 화이트홀(루시채팅) ➔ 미러홀(프리즘홈) ➔ 블랙홀(크리스탈오브) 무한 반복 순환
+ * - 사건의 지평선 (드래그): 해당 조준 채널의 1번째 메뉴(화이트홀), 2번째 메뉴(미러홀), 3번째 메뉴(블랙홀) 도약
  */
 export function synthesizeWarpTarget(context: OmniWarpContext, metrics: WarpForceMetrics): OmniWarpTarget {
-  const norm = context.activeRoute.replace('/', '') || 'hub';
-  const rule = getTossRule(norm, context.sessionData);
   const T = forceToAiTemperature(metrics.virtualForce);
 
   // 워프 불가 목적지 필터링
@@ -320,7 +607,7 @@ export function synthesizeWarpTarget(context: OmniWarpContext, metrics: WarpForc
     if (!dest || isDisallowedWarpDestination(dest.id) || isDisallowedWarpDestination(dest.path)) {
       return {
         id: 'hub',
-        name: '프롤로그 허브',
+        name: '프리즘 홈',
         subName: '프리즘 우주의 중심',
         path: '/',
         icon: '🌌',
@@ -331,8 +618,11 @@ export function synthesizeWarpTarget(context: OmniWarpContext, metrics: WarpForc
     return dest;
   };
 
-  // 🎯 0단계: 7대 앱 방사형 조이스틱 튕기기 = 사건의 지평선 (Event Horizon)
-  // 🌌 사건의 지평선: 조준한 앱 방향의 1순위 정규 도약(빛) ⟷ 추천 2순위 연계/심연 대척점 전이(어둠)
+  // 🎯 0단계: 7대 앱 방사형 조이스틱 튕기기/조준 = 사건의 지평선 (Event Horizon)
+  // 사건의 지평선에서:
+  // - 화이트홀: 해당 조준 채널의 1번째 처음 메뉴
+  // - 미러홀: 해당 조준 채널의 2번째 메뉴
+  // - 블랙홀: 해당 조준 채널의 3번째 메뉴
   if (
     metrics.radialSectorIndex !== undefined &&
     metrics.radialSectorIndex >= 0 &&
@@ -343,32 +633,17 @@ export function synthesizeWarpTarget(context: OmniWarpContext, metrics: WarpForc
     const isWhiteholeMode = metrics.eventHorizonMode === 'whitehole' || metrics.phase === 'whitehole';
     const isMirrorholeMode = metrics.eventHorizonMode === 'mirrorhole' || metrics.phase === 'mirrorhole';
 
-    // 🌟 사건의 지평선 삼위일체:
-    // - 화이트홀(빛 주기): 조준 채널의 화이트홀 차원 (tossRule.whitehole)
-    // - 미러홀(유리 주기): 항시 프리즘 홈으로 귀환
-    // - 블랙홀(어둠 주기): 조준 채널의 블랙홀 차원 (tossRule.blackhole)
-    const tossRule = getTossRule(radialApp.id, context.sessionData);
-    let rawDest;
-    if (isWhiteholeMode) {
-      rawDest = tossRule?.whitehole || radialApp;
-    } else if (isMirrorholeMode) {
-      rawDest = {
-        id: 'hub',
-        name: '프리즘 홈',
-        subName: '모든 차원의 시초 허브',
-        path: '/',
-        icon: '🌌',
-        themeColor: '#38bdf8',
-        accentGlow: 'rgba(255, 255, 255, 0.95)',
-        description: '영롱한 크리스탈 거울 면을 통과하여 프리즘 홈으로 귀환합니다.',
-      };
-    } else {
-      rawDest = tossRule?.blackhole || tossRule?.secondary || radialApp;
-    }
+    const channelSub = CHANNEL_SUBMENUS[radialApp.id] || CHANNEL_SUBMENUS.hub;
+    const dest = isWhiteholeMode
+      ? channelSub.whitehole
+      : isMirrorholeMode
+      ? channelSub.mirrorhole
+      : channelSub.blackhole;
 
-    const dest = sanitizeDest(rawDest);
     const safePath = resolveCanonicalPath(dest.path);
-    const rune = getOrbRunicSigil(dest.id);
+    const modeLabel = isWhiteholeMode ? '화이트홀' : isMirrorholeMode ? '미러홀' : '블랙홀';
+    const modeEmoji = isWhiteholeMode ? '☀️' : isMirrorholeMode ? '🪞' : '🕳️';
+    const menuOrder = isWhiteholeMode ? '처음 메뉴' : isMirrorholeMode ? '두 번째 메뉴' : '세 번째 메뉴';
 
     return {
       id: dest.id,
@@ -378,27 +653,19 @@ export function synthesizeWarpTarget(context: OmniWarpContext, metrics: WarpForc
       gauge: Math.max(0.35, metrics.virtualForce),
       aiTemperature: T,
       title: dest.name,
-      actionType: `event_horizon_${isWhiteholeMode ? 'whitehole' : isMirrorholeMode ? 'mirrorhole' : 'blackhole'}_${dest.id}`,
+      actionType: `event_horizon_${isWhiteholeMode ? 'whitehole' : isMirrorholeMode ? 'mirrorhole' : 'blackhole'}_${radialApp.id}`,
       destinationPath: safePath,
-      previewLabel: isWhiteholeMode
-        ? `[사건의 지평선 화이트홀] ☀️ ${radialApp.name} ➔ ${dest.name}`
-        : isMirrorholeMode
-        ? `[사건의 지평선 미러홀] 🪞 프리즘 홈 귀환`
-        : `[사건의 지평선 블랙홀] 🕳️ ${radialApp.name} ➔ ${dest.name}`,
-      previewDescription: isWhiteholeMode
-        ? `[${radialApp.name}] 채널의 화이트홀(빛) 차원인 [${dest.name} · ${dest.subName}]으로 방출 도약합니다.`
-        : isMirrorholeMode
-        ? `영롱한 크리스탈 거울 면을 통과하여 항시 프리즘 홈으로 투영 귀환합니다.`
-        : `[${radialApp.name}] 채널의 블랙홀(어둠) 차원인 [${dest.name} · ${dest.subName}]으로 심연 전이합니다.`,
-      themeColor: isMirrorholeMode ? '#38bdf8' : (dest.themeColor || radialApp.themeColor || '#a855f7'),
-      accentGlow: isWhiteholeMode ? (radialApp.accentGlow || 'rgba(56, 189, 248, 0.75)') : isMirrorholeMode ? 'rgba(255, 255, 255, 0.95)' : 'rgba(168, 85, 247, 0.85)',
+      previewLabel: `[사건의 지평선 ${modeLabel}] ${modeEmoji} ${radialApp.name} · ${dest.name}`,
+      previewDescription: `[${radialApp.name}] 채널의 ${menuOrder}인 [${dest.name} · ${dest.subName}]으로 즉시 도약합니다.`,
+      themeColor: dest.themeColor || radialApp.themeColor || '#38bdf8',
+      accentGlow: isMirrorholeMode ? 'rgba(255, 255, 255, 0.95)' : dest.accentGlow || radialApp.accentGlow,
       stageIndex: metrics.radialSectorIndex + 1,
-      runeSymbol: isMirrorholeMode ? '🪞' : (rune.symbol || radialApp.runeSymbol),
-      runeName: isMirrorholeMode ? 'Mirror' : (rune.name || radialApp.runeName),
+      runeSymbol: isMirrorholeMode ? '🪞' : dest.runeSymbol,
+      runeName: isMirrorholeMode ? 'Mirror' : dest.runeName,
     };
   }
 
-  // 1. 탭하면 웜홀 (목적지나 기능이 정해져 있지 않은 자유 양자 도약)
+  // 1. 제자리 탭 (가볍게 터치) = 웜홀 (Wormhole: 자유 양자 도약)
   if (metrics.phase === 'wormhole') {
     const dest = pickRandomQuantumDestination(context.activeRoute, metrics.startTime);
     const safePath = resolveCanonicalPath(dest.path);
@@ -421,32 +688,39 @@ export function synthesizeWarpTarget(context: OmniWarpContext, metrics: WarpForc
     };
   }
 
-  // 2. 홀드 중 빛이면 화이트홀 (목적지나 기능이 정해져 있지 않은 빛의 차원 방출)
+  // 2. 제자리 홀드 1단계: 화이트홀 (빛비춤) ➔ 루시 채팅 (/chat)
   if (metrics.phase === 'whitehole') {
-    const rawDest = getWhiteholeRecommendedApp(context.activeRoute, context.sessionData, metrics.startTime);
-    const dest = sanitizeDest(rawDest);
-    const rune = getOrbRunicSigil(dest.id);
+    const dest = sanitizeDest({
+      id: 'lucy',
+      name: '루시 1:1 대화',
+      subName: '영혼의 가이드 루시와의 심층 대화',
+      path: '/chat',
+      icon: '💬',
+      themeColor: '#c084fc',
+      accentGlow: 'rgba(192, 132, 252, 0.95)',
+      description: '영혼의 가이드 루시와 1:1로 마음 깊은 대화와 지혜를 나눕니다.',
+    });
     const safePath = resolveCanonicalPath(dest.path);
     return {
-      id: dest.id,
-      icon: dest.icon,
+      id: 'lucy',
+      icon: '💬',
       phase: 'whitehole',
       gauge: metrics.virtualForce,
       aiTemperature: T,
-      title: dest.name,
-      actionType: 'omniwarp_whitehole',
+      title: '루시 1:1 심층 대화',
+      actionType: 'omniwarp_whitehole_lucy',
       destinationPath: safePath,
-      previewLabel: `[화이트홀 방출] ☀️ ${rune.symbol} ${dest.name}`,
-      previewDescription: `화이트홀의 강력한 빛 에너지를 타고 [${dest.name} · ${dest.subName}] 차원으로 방출됩니다.`,
-      themeColor: dest.themeColor || '#38bdf8',
-      accentGlow: 'rgba(56, 189, 248, 0.55)',
+      previewLabel: `[화이트홀 방출] ☀️ ᛞ 루시 1:1 대화`,
+      previewDescription: `화이트홀의 강력한 빛 에너지를 타고 영혼의 AI 가이드 [루시 1:1 대화]로 즉시 연결됩니다.`,
+      themeColor: '#c084fc',
+      accentGlow: 'rgba(192, 132, 252, 0.95)',
       stageIndex: 9,
-      runeSymbol: rune.symbol,
-      runeName: rune.name,
+      runeSymbol: 'ᛞ',
+      runeName: 'Dagaz',
     };
   }
 
-  // 🪞 3. 홀드 중 유리테마면 미러홀 (기능: 항시 프리즘 홈으로 들어감)
+  // 🪞 3. 제자리 홀드 2단계: 미러홀 (유리테마) ➔ 프리즘 홈 (/)
   if (metrics.phase === 'mirrorhole') {
     const dest = sanitizeDest({
       id: 'hub',
@@ -456,7 +730,7 @@ export function synthesizeWarpTarget(context: OmniWarpContext, metrics: WarpForc
       icon: '🌌',
       themeColor: '#38bdf8',
       accentGlow: 'rgba(255, 255, 255, 0.95)',
-      description: '투명하고 영롱한 크리스탈 유리 거울 면을 통과하여 프리즘 홈 허브로 즉시 귀환합니다.',
+      description: '투명하고 영롱한 크리스탈 유리 거울 면을 통과하여 프리즘 홈으로 귀환합니다.',
     });
     const safePath = resolveCanonicalPath(dest.path);
     return {
@@ -466,10 +740,10 @@ export function synthesizeWarpTarget(context: OmniWarpContext, metrics: WarpForc
       gauge: metrics.virtualForce,
       aiTemperature: T,
       title: '프리즘 홈',
-      actionType: 'omniwarp_mirrorhole',
+      actionType: 'omniwarp_mirrorhole_home',
       destinationPath: safePath,
       previewLabel: `[미러홀 투영] 🪞 프리즘 홈`,
-      previewDescription: `투명하고 영롱한 크리스탈 유리 거울 면을 통과하여 항시 프리즘 홈으로 귀환합니다.`,
+      previewDescription: `투명하고 영롱한 크리스탈 유리 거울 면을 통과하여 프리즘 홈으로 연결됩니다.`,
       themeColor: '#38bdf8',
       accentGlow: 'rgba(255, 255, 255, 0.95)',
       stageIndex: 5,
@@ -478,27 +752,34 @@ export function synthesizeWarpTarget(context: OmniWarpContext, metrics: WarpForc
     };
   }
 
-  // 4. 홀드 중 어둠이면 블랙홀 (목적지나 기능이 정해져 있지 않은 심연 특이점 전이)
-  const rawBlackhole = getBlackholeRecommendedApp(context.activeRoute, context.sessionData, metrics.startTime);
-  const blackholeDest = sanitizeDest(rawBlackhole);
-  const rune = getOrbRunicSigil(blackholeDest.id);
-  const safePath = resolveCanonicalPath(blackholeDest.path);
+  // 4. 제자리 홀드 3단계: 블랙홀 (어두움) ➔ 크리스탈 오브 (/orb)
+  const orbDest = sanitizeDest({
+    id: 'orb',
+    name: '크리스탈 오브',
+    subName: '직관의 예지와 마음 투영 점술',
+    path: '/orb',
+    icon: '🔮',
+    themeColor: '#38bdf8',
+    accentGlow: 'rgba(56, 189, 248, 0.95)',
+    description: '무의식의 질문을 투영하는 3D 크리스탈 오브 직관 점술로 연결됩니다.',
+  });
+  const safeOrbPath = resolveCanonicalPath(orbDest.path);
   return {
-    id: blackholeDest.id,
-    icon: blackholeDest.icon,
+    id: 'orb',
+    icon: '🔮',
     phase: 'blackhole',
     gauge: metrics.virtualForce,
     aiTemperature: T,
-    title: blackholeDest.name,
-    actionType: 'omniwarp_blackhole',
-    destinationPath: safePath,
-    previewLabel: `[블랙홀 흡수] 🕳️ ${rune.symbol} ${blackholeDest.name}`,
-    previewDescription: `블랙홀의 무한한 중력 특이점에 이끌려 [${blackholeDest.name} · ${blackholeDest.subName}] 차원으로 전이합니다.`,
-    themeColor: blackholeDest.themeColor || '#a855f7',
-    accentGlow: 'rgba(168, 85, 247, 0.75)',
+    title: '크리스탈 오브',
+    actionType: 'omniwarp_blackhole_orb',
+    destinationPath: safeOrbPath,
+    previewLabel: `[블랙홀 흡수] 🕳️ ᛟ 크리스탈 오브`,
+    previewDescription: `블랙홀의 무한한 심연 특이점에 이끌려 직관의 성소 [크리스탈 오브]로 연결됩니다.`,
+    themeColor: '#38bdf8',
+    accentGlow: 'rgba(56, 189, 248, 0.95)',
     stageIndex: 2,
-    runeSymbol: rune.symbol,
-    runeName: rune.name,
+    runeSymbol: 'ᛟ',
+    runeName: 'Othala',
   };
 }
 
@@ -583,7 +864,26 @@ export function executeBigBangCommit(
 
     // 5. Smooth Navigation Routing with cosmological timing
     const safePath = resolveCanonicalPath(target.destinationPath);
+    let targetTab: string | null = null;
+    try {
+      const parsedUrl = new URL(safePath, 'http://localhost');
+      targetTab = parsedUrl.searchParams.get('tab');
+    } catch (_) {}
+
+    if (targetTab) {
+      try {
+        sessionStorage.setItem('prism_target_tab', targetTab);
+      } catch (_) {}
+    }
+
     setTimeout(() => {
+      if (targetTab) {
+        window.dispatchEvent(
+          new CustomEvent('prism-tab-change', {
+            detail: { tab: targetTab, path: safePath },
+          })
+        );
+      }
       window.dispatchEvent(
         new CustomEvent('prism-navigate', {
           detail: { path: safePath },
@@ -591,7 +891,7 @@ export function executeBigBangCommit(
       );
       window.dispatchEvent(
         new CustomEvent('nav-click-active', {
-          detail: { path: safePath },
+          detail: { path: safePath, tab: targetTab },
         })
       );
       window.scrollTo({ top: 0, behavior: 'smooth' });

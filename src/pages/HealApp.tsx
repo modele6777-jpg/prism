@@ -953,23 +953,69 @@ export default function HealApp() {
     return () => window.removeEventListener("resize", checkIsMobile);
   }, []);
 
-  const [activeMode, setActiveMode] = useState<'simple' | 'soul' | 'bible' | 'history' | 'meditation' | 'oneMinute' | 'mission' | 'synergy'>('meditation');
+  const [activeMode, setActiveMode] = useState<'simple' | 'soul' | 'bible' | 'history' | 'meditation' | 'oneMinute' | 'mission' | 'synergy'>(() => {
+    if (typeof window !== 'undefined') {
+      const urlTab = new URLSearchParams(window.location.search).get('tab');
+      const sessionTab = sessionStorage.getItem('prism_target_tab');
+      const tab = urlTab || sessionTab;
+      if (tab === 'meditation' || tab === 'synergy' || tab === 'oneMinute' || tab === 'mission') {
+        sessionStorage.removeItem('prism_target_tab');
+        return tab as any;
+      }
+    }
+    return 'meditation';
+  });
   useScrollToTopOnChange([activeMode]);
 
   useEffect(() => {
-    const handleNavClick = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      if (customEvent.detail?.path === '/heal') {
-        setActiveMode('meditation');
+    const applyTargetTab = (tab: string | null | undefined) => {
+      if (!tab) return;
+      if (tab === 'meditation' || tab === 'synergy' || tab === 'oneMinute' || tab === 'mission') {
+        setActiveMode(tab as any);
         setShowDailyModal(false);
         setShowSoulModal(false);
         setIsChatOpen(false);
         setShowEmblemModal(false);
         resetAppScroll();
+        sessionStorage.removeItem('prism_target_tab');
       }
     };
+
+    const handleTabChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      applyTargetTab(customEvent.detail?.tab);
+    };
+
+    const handleNavClick = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const path = customEvent.detail?.path || '';
+      if (path.startsWith('/heal')) {
+        let tab = customEvent.detail?.tab;
+        if (!tab && path.includes('?')) {
+          try {
+            const url = new URL(path, 'http://localhost');
+            tab = url.searchParams.get('tab');
+          } catch (_) {}
+        }
+        if (tab) {
+          applyTargetTab(tab);
+        } else if (path === '/heal') {
+          setActiveMode('meditation');
+          setShowDailyModal(false);
+          setShowSoulModal(false);
+          setIsChatOpen(false);
+          setShowEmblemModal(false);
+          resetAppScroll();
+        }
+      }
+    };
+
+    window.addEventListener('prism-tab-change', handleTabChange);
     window.addEventListener('nav-click-active', handleNavClick);
-    return () => window.removeEventListener('nav-click-active', handleNavClick);
+    return () => {
+      window.removeEventListener('prism-tab-change', handleTabChange);
+      window.removeEventListener('nav-click-active', handleNavClick);
+    };
   }, []);
 
   const ALL_HEAL_SUGGESTIONS = [

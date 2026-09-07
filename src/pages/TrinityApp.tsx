@@ -804,7 +804,18 @@ export default function TrinityApp() {
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
   const [activeMode, setActiveMode] = useState<
     "simple" | "daily" | "soul" | "bible" | "history" | "tarot" | "synergy" | "oracle"
-  >("daily");
+  >(() => {
+    if (typeof window !== 'undefined') {
+      const urlTab = new URLSearchParams(window.location.search).get('tab');
+      const sessionTab = sessionStorage.getItem('prism_target_tab');
+      const tab = urlTab || sessionTab;
+      if (tab === 'daily' || tab === 'oracle' || tab === 'tarot' || tab === 'synergy') {
+        sessionStorage.removeItem('prism_target_tab');
+        return tab as any;
+      }
+    }
+    return 'daily';
+  });
   useScrollToTopOnChange([activeMode]);
   const [lastNonTarotMode, setLastNonTarotMode] = useState<string>("daily");
   useEffect(() => {
@@ -821,19 +832,54 @@ export default function TrinityApp() {
   }, [activeMode]);
 
   useEffect(() => {
-    const handleNavClick = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      if (customEvent.detail?.path === '/trinity') {
-        setActiveMode('daily');
+    const applyTargetTab = (tab: string | null | undefined) => {
+      if (!tab) return;
+      if (tab === 'daily' || tab === 'oracle' || tab === 'tarot' || tab === 'synergy') {
+        setActiveMode(tab as any);
         setShowEmblemModal(false);
         setShowDailyModal(false);
         setShowDashboard(false);
         setShowTarot(false);
         resetAppScroll();
+        sessionStorage.removeItem('prism_target_tab');
       }
     };
+
+    const handleTabChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      applyTargetTab(customEvent.detail?.tab);
+    };
+
+    const handleNavClick = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const path = customEvent.detail?.path || '';
+      if (path.startsWith('/trinity')) {
+        let tab = customEvent.detail?.tab;
+        if (!tab && path.includes('?')) {
+          try {
+            const url = new URL(path, 'http://localhost');
+            tab = url.searchParams.get('tab');
+          } catch (_) {}
+        }
+        if (tab) {
+          applyTargetTab(tab);
+        } else if (path === '/trinity') {
+          setActiveMode('daily');
+          setShowEmblemModal(false);
+          setShowDailyModal(false);
+          setShowDashboard(false);
+          setShowTarot(false);
+          resetAppScroll();
+        }
+      }
+    };
+
+    window.addEventListener('prism-tab-change', handleTabChange);
     window.addEventListener('nav-click-active', handleNavClick);
-    return () => window.removeEventListener('nav-click-active', handleNavClick);
+    return () => {
+      window.removeEventListener('prism-tab-change', handleTabChange);
+      window.removeEventListener('nav-click-active', handleNavClick);
+    };
   }, []);
   const [stage, setStage] = useState<
     | "landing"

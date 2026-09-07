@@ -5,7 +5,6 @@ import {
   Download, User, Sparkles, Sun, TreeDeciduous, Activity, Bird, Music, Zap, Flame, Compass,
   Loader2, Copy, RefreshCw, Camera, MicOff, Mic, BookOpen, BookMarked
 } from 'lucide-react';
-import { PrismGatewayFabButton } from '@/components/PrismGatewayFabButton';
 import { useApp, PersonaType } from '@/contexts/AppContext';
 import { useLocation } from 'wouter';
 import { playTTS, stopTTS, useTTSActive, playConversation, subscribeTTS, prefetchTTS, normalizeTextForSpeech } from '@/utils/tts';
@@ -1663,8 +1662,6 @@ export default function LucyStandalonePage() {
         )}
       </AnimatePresence>
 
-      {/* 🔮 Bottom-Right Prism Portal Button (루시에서 프리즘 메인 홈 복귀) */}
-      <PrismGatewayFabButton position="right" />
     </div>
   );
 }

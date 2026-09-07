@@ -1392,20 +1392,60 @@ export default function MuseApp() {
     | "roleModel"
     | "artRecommendation"
     | "synergy"
-  >("artRecommendation");
+  >(() => {
+    if (typeof window !== 'undefined') {
+      const urlTab = new URLSearchParams(window.location.search).get('tab');
+      const sessionTab = sessionStorage.getItem('prism_target_tab');
+      const tab = urlTab || sessionTab;
+      if (tab === 'artRecommendation' || tab === 'synergy' || tab === 'roleModel') {
+        sessionStorage.removeItem('prism_target_tab');
+        return tab as any;
+      }
+    }
+    return "artRecommendation";
+  });
   useScrollToTopOnChange([activeMode]);
 
   useEffect(() => {
-    const handleNavClick = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      if (customEvent.detail?.path === "/muse") {
-        setActiveMode("artRecommendation");
+    const applyTargetTab = (tab: string | null | undefined) => {
+      if (!tab) return;
+      if (tab === 'artRecommendation' || tab === 'synergy' || tab === 'roleModel') {
+        setActiveMode(tab as any);
         setShowDailyModal(false);
         setShowSoulModal(false);
-
         setShowDashboard(false);
         setShowEmblemModal(false);
         resetAppScroll();
+        sessionStorage.removeItem('prism_target_tab');
+      }
+    };
+
+    const handleTabChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      applyTargetTab(customEvent.detail?.tab);
+    };
+
+    const handleNavClick = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const path = customEvent.detail?.path || '';
+      if (path.startsWith('/muse')) {
+        let tab = customEvent.detail?.tab;
+        if (!tab && path.includes('?')) {
+          try {
+            const url = new URL(path, 'http://localhost');
+            tab = url.searchParams.get('tab');
+          } catch (_) {}
+        }
+        if (tab) {
+          applyTargetTab(tab);
+        } else if (path === '/muse') {
+          setActiveMode('artRecommendation');
+          setShowDailyModal(false);
+          setShowSoulModal(false);
+          setShowDashboard(false);
+          setShowEmblemModal(false);
+          resetAppScroll();
+        }
       }
     };
     const handleToss = () => {
@@ -1416,9 +1456,11 @@ export default function MuseApp() {
       setShowEmblemModal(false);
       resetAppScroll();
     };
+    window.addEventListener("prism-tab-change", handleTabChange);
     window.addEventListener("nav-click-active", handleNavClick);
     window.addEventListener("prism:toss_received", handleToss);
     return () => {
+      window.removeEventListener("prism-tab-change", handleTabChange);
       window.removeEventListener("nav-click-active", handleNavClick);
       window.removeEventListener("prism:toss_received", handleToss);
     };
