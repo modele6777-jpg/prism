@@ -1233,8 +1233,14 @@ ${dimensionDescriptions}
       </header>
 
       {/* Main Stage: Pristine 3D Crystal Ball with Arcane Magic Circle Matrix */}
-      <main className="relative z-30 flex-1 flex flex-col items-center justify-center w-full max-w-lg px-3 sm:px-4 my-auto min-h-0">
-        <div className="relative flex items-center justify-center scale-[0.80] xs:scale-[0.88] sm:scale-100 transition-transform duration-300 origin-center my-1 sm:my-auto shrink-0 w-72 h-72 sm:w-80 sm:h-80">
+      <main className="relative z-30 flex-1 flex flex-col items-center justify-center w-full max-w-lg px-2 sm:px-4 my-auto min-h-0">
+        <div
+          className={`relative flex items-center justify-center transition-transform duration-300 origin-center my-0.5 sm:my-auto shrink-0 ${
+            narrow
+              ? "w-60 h-60 scale-[0.68]"
+              : "w-72 h-72 scale-[0.80] xs:scale-[0.88] sm:scale-100 sm:w-80 sm:h-80"
+          }`}
+        >
           {/* 🌟 1. 대형 아케인 마법진 & 태양계 다층 오러리 (Concentric Planetary Orrery Matrix) */}
           <div
             className="absolute inset-[-68px] sm:inset-[-88px] pointer-events-none flex items-center justify-center transition-all duration-700 select-none z-0"
@@ -1667,7 +1673,9 @@ ${dimensionDescriptions}
           {/* Pure Hyper-Realistic Glass Crystal Orb (터치 시: 마스터 모드 토글) */}
           <div
             onClick={handleCenterOrbClick}
-            className="group relative w-52 h-52 sm:w-60 sm:h-60 rounded-full flex items-center justify-center cursor-pointer transition-transform duration-300 active:scale-95 overflow-hidden touch-manipulation"
+            className={`group relative rounded-full flex items-center justify-center cursor-pointer transition-transform duration-300 active:scale-95 overflow-hidden touch-manipulation ${
+              narrow ? "w-44 h-44" : "w-52 h-52 sm:w-60 sm:h-60"
+            }`}
             style={{
               background: isMasterMode
                 ? "radial-gradient(circle at 35% 30%, rgba(251, 191, 36, 0.35) 0%, rgba(245, 158, 11, 0.1) 45%, rgba(0, 0, 0, 0.92) 100%)"
@@ -2003,9 +2011,9 @@ ${dimensionDescriptions}
       </main>
 
       {/* Bottom Divination Inquiry Console */}
-      <footer className="relative z-40 w-full max-w-lg px-3 sm:px-4 pb-[calc(var(--sab)+5.5rem)] sm:pb-32 flex flex-col items-center shrink-0">
+      <footer className="relative z-40 w-full max-w-lg px-2.5 sm:px-4 pb-[calc(var(--sab)+7.75rem)] sm:pb-32 flex flex-col items-center shrink-0">
         {/* 🎛️ AI Smart Auto-Detect + Master All Toggle + 7 Dimension Booster Chips Bar (Like Lucy Chat) */}
-        <div className="w-full flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 px-1 mb-1.5">
+        <div className="w-full flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar py-0.5 sm:py-1 px-0.5 mb-1 sm:mb-1.5 touch-pan-x">
           {/* AI Smart Auto-Detect Toggle Button */}
           <button
             type="button"
@@ -2017,7 +2025,7 @@ ${dimensionDescriptions}
               } catch (_) {}
               triggerHaptic("whitehole");
             }}
-            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-black transition-all shrink-0 cursor-pointer shadow-xs active:scale-95 border touch-manipulation ${
+            className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-[11px] font-black transition-all shrink-0 cursor-pointer shadow-xs active:scale-95 border touch-manipulation ${
               isAutoDetect
                 ? "bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white border-violet-400/60 shadow-violet-500/25 shadow-sm ring-1 ring-violet-400/40"
                 : "bg-zinc-800/90 hover:bg-zinc-750 text-slate-400 border-white/10"
@@ -2074,7 +2082,7 @@ ${dimensionDescriptions}
                 key={app.id}
                 type="button"
                 onClick={() => handleRuneClick(app)}
-                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all shrink-0 cursor-pointer shadow-xs active:scale-95 border touch-manipulation ${
+                className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl text-[10px] sm:text-xs font-bold transition-all shrink-0 cursor-pointer shadow-xs active:scale-95 border touch-manipulation ${
                   isToggledOn
                     ? "bg-white/15 text-white font-black shadow-sm"
                     : "bg-zinc-900/80 hover:bg-zinc-800 text-slate-400 border-white/10 hover:text-slate-200"
@@ -2091,16 +2099,16 @@ ${dimensionDescriptions}
                 title={isToggledOn ? `${app.name} 켜짐 (클릭 시 끄기)` : `${app.name} 켜기`}
               >
                 <div
-                  className={`w-2 h-2 rounded-full transition-all shrink-0 ${
+                  className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all shrink-0 ${
                     isToggledOn ? "animate-pulse scale-110" : "bg-white/20"
                   }`}
                   style={isToggledOn ? { backgroundColor: app.color, boxShadow: `0 0 6px ${app.color}` } : {}}
                 />
-                <span className="text-xs">{app.icon}</span>
-                <span className="font-serif font-black text-xs">{app.runeSymbol}</span>
+                <span className="text-[11px] sm:text-xs">{app.icon}</span>
+                <span className="font-serif font-black text-[11px] sm:text-xs">{app.runeSymbol}</span>
                 <span>{app.shortName}</span>
                 <span
-                  className={`text-[9px] font-mono px-1 py-0.2 rounded font-bold ${
+                  className={`text-[8px] sm:text-[9px] font-mono px-1 py-0.2 rounded font-bold ${
                     isToggledOn ? "bg-white/25 text-white" : "bg-white/10 text-slate-500"
                   }`}
                 >
@@ -2141,7 +2149,7 @@ ${dimensionDescriptions}
             e.preventDefault();
             if (inquiry.trim()) executeScrying(inquiry);
           }}
-          className="w-full flex items-center gap-1.5 sm:gap-2 p-1 sm:p-1.5 rounded-2xl bg-zinc-900/90 border border-white/10 backdrop-blur-2xl shadow-xl transition-all focus-within:border-cyan-400/50 focus-within:ring-2 focus-within:ring-cyan-400/20"
+          className="w-full flex items-center gap-1 sm:gap-2 p-1 sm:p-1.5 rounded-2xl bg-zinc-900/90 border border-white/10 backdrop-blur-2xl shadow-xl transition-all focus-within:border-cyan-400/50 focus-within:ring-2 focus-within:ring-cyan-400/20"
         >
           <input
             type="text"
@@ -2165,17 +2173,17 @@ ${dimensionDescriptions}
                     const a = SEPTAGRAM_APPS.find((a) => a.id === selectedRuneIds[0]);
                     return narrow ? `[${a?.shortName || a?.name}] 질문 입력...` : `[${a?.name} 모드] 차원의 관점으로 답할 질문을 입력하세요...`;
                   })()
-                : (narrow ? "고민이나 일상을 입력해보세요..." : "[수다 모드] 마음속 고민이나 가벼운 일상을 이야기해보세요...")
+                : (narrow ? "질문이나 고민을 입력해보세요..." : "[수다 모드] 마음속 고민이나 가벼운 일상을 이야기해보세요...")
             }
-            className="flex-1 bg-transparent px-2.5 sm:px-3 py-2 text-base sm:text-sm text-white placeholder-slate-500 outline-none"
+            className="flex-1 bg-transparent px-2.5 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base text-white placeholder-slate-500 outline-none"
           />
           <button
             type="submit"
             disabled={isScrying}
-            className="shrink-0 flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold bg-cyan-500 hover:bg-cyan-400 text-black active:scale-95 transition-all disabled:opacity-50 shadow-md cursor-pointer touch-manipulation"
+            className="shrink-0 flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs font-bold bg-cyan-500 hover:bg-cyan-400 text-black active:scale-95 transition-all disabled:opacity-50 shadow-md cursor-pointer touch-manipulation"
           >
             <span>답변받기</span>
-            <Send size={13} />
+            <Send size={12} className="sm:w-[13px] sm:h-[13px]" />
           </button>
         </form>
       </footer>
