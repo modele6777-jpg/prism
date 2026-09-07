@@ -1235,10 +1235,10 @@ ${dimensionDescriptions}
       {/* Main Stage: Pristine 3D Crystal Ball with Arcane Magic Circle Matrix */}
       <main className="relative z-30 flex-1 flex flex-col items-center justify-center w-full max-w-lg px-2 sm:px-4 my-auto min-h-0">
         <div
-          className={`relative flex items-center justify-center transition-transform duration-300 origin-center my-0.5 sm:my-auto shrink-0 ${
+          className={`relative flex items-center justify-center transition-transform duration-300 origin-center my-1 sm:my-auto shrink-0 ${
             narrow
-              ? "w-60 h-60 scale-[0.68]"
-              : "w-72 h-72 scale-[0.80] xs:scale-[0.88] sm:scale-100 sm:w-80 sm:h-80"
+              ? "w-72 h-72 scale-[0.86]"
+              : "w-80 h-80 scale-[0.92] xs:scale-100 sm:w-96 sm:h-96 sm:scale-105"
           }`}
         >
           {/* 🌟 1. 대형 아케인 마법진 & 태양계 다층 오러리 (Concentric Planetary Orrery Matrix) */}
@@ -1674,7 +1674,7 @@ ${dimensionDescriptions}
           <div
             onClick={handleCenterOrbClick}
             className={`group relative rounded-full flex items-center justify-center cursor-pointer transition-transform duration-300 active:scale-95 overflow-hidden touch-manipulation ${
-              narrow ? "w-44 h-44" : "w-52 h-52 sm:w-60 sm:h-60"
+              narrow ? "w-56 h-56" : "w-60 h-60 xs:w-64 xs:h-64 sm:w-72 sm:h-72"
             }`}
             style={{
               background: isMasterMode
@@ -1697,14 +1697,14 @@ ${dimensionDescriptions}
 
             {/* Top Specular Glare (Glass Surface Reflection) */}
             <div
-              className="absolute top-3 left-6 sm:top-4 sm:left-8 w-20 sm:w-24 h-8 sm:h-10 rounded-full pointer-events-none z-30 -rotate-[28deg]"
+              className="absolute top-3 left-6 sm:top-5 sm:left-10 w-24 sm:w-32 h-9 sm:h-12 rounded-full pointer-events-none z-30 -rotate-[28deg]"
               style={{
                 background: "radial-gradient(ellipse at center, rgba(255, 255, 255, 0.75) 0%, transparent 75%)",
               }}
             />
 
             {/* Internal Center Revelation Typography */}
-            <div className="relative z-20 flex flex-col items-center justify-center text-center pointer-events-none p-4 select-none">
+            <div className="relative z-20 flex flex-col items-center justify-center text-center pointer-events-none p-4 sm:p-6 select-none">
               <AnimatePresence mode="wait">
                 {isScrying ? (
                   <motion.div
@@ -1750,13 +1750,13 @@ ${dimensionDescriptions}
                   </motion.div>
                 ) : (isMasterMode || selectedRuneIds.length === 7) ? (
                   <motion.div key="master" initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center">
-                    <span className="text-amber-300 text-lg font-black drop-shadow-[0_0_10px_rgba(251,191,36,0.9)] animate-pulse">
+                    <span className="text-amber-300 text-xl sm:text-2xl font-black drop-shadow-[0_0_12px_rgba(251,191,36,0.95)] animate-pulse">
                       ✦ 👑 ✦
                     </span>
-                    <span className="text-xs sm:text-sm font-extrabold tracking-widest text-amber-200 mt-0.5">
+                    <span className="text-sm sm:text-base font-extrabold tracking-widest text-amber-200 mt-1">
                       마스터 모드
                     </span>
-                    <span className="text-[9px] text-amber-300/80 mt-1">
+                    <span className="text-[10px] sm:text-xs text-amber-300/90 mt-1 font-medium">
                       7대 차원 통합 공명 (7/7)
                     </span>
                   </motion.div>
@@ -1767,13 +1767,13 @@ ${dimensionDescriptions}
                       .filter(Boolean) as SeptagramAppDimension[];
                     return (
                       <motion.div key={`multi-${selectedRuneIds.length}`} initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center">
-                        <span className="text-cyan-300 text-base font-serif font-black tracking-widest drop-shadow-[0_0_8px_rgba(56,189,248,0.8)]">
+                        <span className="text-cyan-300 text-lg sm:text-xl font-serif font-black tracking-widest drop-shadow-[0_0_10px_rgba(56,189,248,0.9)]">
                           {activeApps.map((a) => a.runeSymbol).join(" · ")}
                         </span>
-                        <span className="text-xs sm:text-sm font-bold tracking-wider text-cyan-200 mt-0.5">
+                        <span className="text-sm sm:text-base font-bold tracking-wider text-cyan-200 mt-1">
                           {activeApps.length}중 연동 모드
                         </span>
-                        <span className="text-[9px] text-slate-400 mt-1">
+                        <span className="text-[10px] sm:text-xs text-slate-300 mt-1">
                           {activeApps.map((a) => a.shortName).join(" + ")}
                         </span>
                       </motion.div>
@@ -1784,13 +1784,13 @@ ${dimensionDescriptions}
                     const app = SEPTAGRAM_APPS.find((a) => a.id === selectedRuneIds[0]);
                     return (
                       <motion.div key="single" initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center">
-                        <span className="text-lg font-serif font-black drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]" style={{ color: app?.color || "#38bdf8" }}>
+                        <span className="text-2xl sm:text-3xl font-serif font-black drop-shadow-[0_0_10px_rgba(255,255,255,0.85)]" style={{ color: app?.color || "#38bdf8" }}>
                           {app?.runeSymbol}
                         </span>
-                        <span className="text-xs sm:text-sm font-bold tracking-wider text-white mt-0.5">
+                        <span className="text-sm sm:text-base font-bold tracking-wider text-white mt-1">
                           {app?.name}
                         </span>
-                        <span className="text-[9px] text-slate-400 mt-1">
+                        <span className="text-[10px] sm:text-xs text-slate-300 mt-1">
                           다른 룬 클릭 시 연동 확장
                         </span>
                       </motion.div>
@@ -1798,11 +1798,11 @@ ${dimensionDescriptions}
                   })()
                 ) : (
                   <motion.div key="casual" initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center">
-                    <span className="text-sm">💬</span>
-                    <span className="text-xs sm:text-sm font-medium tracking-wider text-slate-200 mt-0.5">
+                    <span className="text-base sm:text-lg">💬</span>
+                    <span className="text-sm sm:text-base font-medium tracking-wider text-slate-200 mt-1">
                       수다 모드
                     </span>
-                    <span className="text-[9px] text-slate-400 mt-1">
+                    <span className="text-[10px] sm:text-xs text-slate-300 mt-1">
                       룬 클릭: 연동(최대 7개) · 오브 터치: 마스터
                     </span>
                   </motion.div>
