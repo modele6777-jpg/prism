@@ -15,7 +15,7 @@ import {
   Triangle,
   LucideProps,
 } from 'lucide-react';
-import { CrystalOrbIcon } from '@/components/icons/CrystalOrbIcon';
+import { OrbShapeIcon } from '@/components/icons/OrbShapeIcon';
 
 export interface PrismAppIconProps {
   nameOrId?: string;
@@ -39,7 +39,7 @@ export function PrismAppIcon({
 }: PrismAppIconProps) {
   const normalized = (nameOrId || '').toLowerCase().trim();
 
-  // 1. Crystal Orb
+  // 1. Crystal Orb (오브 모양)
   if (
     normalized === 'orb' ||
     normalized === 'crystal' ||
@@ -48,7 +48,7 @@ export function PrismAppIcon({
     normalized.includes('오브') ||
     normalized === '🔮'
   ) {
-    return <CrystalOrbIcon size={size} className={className} />;
+    return <OrbShapeIcon size={size} className={className} />;
   }
 
   // 2. Hub / Prologue
@@ -238,7 +238,7 @@ export function PrismAppIcon({
 
   if (normalized === 'blackhole' || normalized === '🕳️') {
     return (
-      <CrystalOrbIcon
+      <OrbShapeIcon
         size={size}
         className={className}
       />

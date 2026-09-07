@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { Sparkles, Zap, Compass, AlertCircle, Eye, Sun, Moon, Timer, Triangle } from 'lucide-react';
-import { CrystalOrbIcon } from '@/components/icons/CrystalOrbIcon';
+import { OrbShapeIcon } from '@/components/icons/OrbShapeIcon';
 import { WarpPhase, OmniWarpTarget } from '@/lib/omniWarp/types';
 import { TossDestination } from '@/lib/prismTossRegistry';
 import { getRankedWormholeApps } from '@/lib/omniWarp/wormholeSpectrum';
@@ -194,7 +194,7 @@ export function BigBangPreviewWindow({
           {isMirrorhole ? (
             <PrismAppIcon nameOrId="mirrorhole" size={20} className="shrink-0 text-sky-200 drop-shadow-[0_0_8px_rgba(224,242,254,0.9)]" />
           ) : isBlackhole ? (
-            <CrystalOrbIcon size={22} className="shrink-0 drop-shadow-[0_0_10px_rgba(56,189,248,0.9)]" />
+            <OrbShapeIcon size={22} className="shrink-0 drop-shadow-[0_0_10px_rgba(56,189,248,0.9)]" />
           ) : isWhitehole ? (
             <PrismAppIcon nameOrId="lucy" size={20} className="shrink-0 text-amber-200 drop-shadow-[0_0_8px_rgba(244,114,182,0.9)]" />
           ) : currentTarget ? (
@@ -257,7 +257,7 @@ export function BigBangPreviewWindow({
               isBlackhole ? 'scale-125 font-black text-cyan-300 drop-shadow-[0_0_6px_rgba(56,189,248,0.9)]' : 'opacity-60 text-white/60'
             }`}
           >
-            <CrystalOrbIcon size={14} className="shrink-0" />
+            <OrbShapeIcon size={14} className="shrink-0" />
             <span className="text-[7.5px] font-mono whitespace-nowrap mt-0.5">블랙홀(오브)</span>
           </div>
         </div>

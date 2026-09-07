@@ -647,10 +647,8 @@ export function BigBangButton() {
                   ? 'scale-110 border-white shadow-[0_0_25px_rgba(255,255,255,0.8)]'
                   : isWhiteholeMode
                   ? 'scale-110 border-cyan-300 shadow-[0_0_25px_rgba(255,255,255,0.9)]'
-                  : isMirrorholeMode
-                  ? 'scale-110 border-white/60 shadow-[0_0_20px_rgba(255,255,255,0.35)] backdrop-blur-md'
-                  : isBlackholeMode
-                  ? 'scale-105 border-zinc-800 shadow-[0_0_20px_rgba(0,0,0,0.95)]'
+                  : isMirrorholeMode || isBlackholeMode
+                  ? 'scale-110 border-cyan-300/60 shadow-[0_0_20px_rgba(56,189,248,0.35)] backdrop-blur-md'
                   : 'border-cyan-400/40 hover:border-cyan-300/80 shadow-[0_0_20px_rgba(56,189,248,0.3)]'
               }`}
               style={{
@@ -658,10 +656,8 @@ export function BigBangButton() {
                   ? 'radial-gradient(circle at 35% 30%, #15162c 0%, #0d0e1d 45%, #05060f 80%, #020207 100%)'
                   : isWhiteholeMode
                   ? 'radial-gradient(circle at 50% 50%, #ffffff 0%, #bae6fd 45%, #38bdf8 85%, #0284c7 100%)'
-                  : isMirrorholeMode
+                  : isMirrorholeMode || isBlackholeMode
                   ? 'transparent'
-                  : isBlackholeMode
-                  ? '#04030a'
                   : '#080918',
                 boxShadow: (isPressing && isAborted)
                   ? 'inset 0 0 16px rgba(239, 68, 68, 0.5), 0 0 20px rgba(239, 68, 68, 0.6)'
@@ -671,10 +667,8 @@ export function BigBangButton() {
                   ? 'inset 0 0 18px rgba(56, 189, 248, 0.25), inset -5px -5px 14px rgba(0, 0, 0, 0.9), 0 0 25px rgba(56, 189, 248, 0.3)'
                   : isWhiteholeMode
                   ? 'inset 0 0 25px rgba(255, 255, 255, 1), 0 0 25px rgba(56, 189, 248, 0.9)'
-                  : isMirrorholeMode
-                  ? 'inset 0 0 10px rgba(255, 255, 255, 0.4), 0 0 16px rgba(56, 189, 248, 0.3)'
-                  : isBlackholeMode
-                  ? 'inset 0 0 22px #000000, 0 0 20px rgba(0, 0, 0, 0.95)'
+                  : isMirrorholeMode || isBlackholeMode
+                  ? 'inset 0 0 10px rgba(56, 189, 248, 0.35), 0 0 16px rgba(56, 189, 248, 0.3)'
                   : 'inset 0 0 18px rgba(168, 85, 247, 0.5), 0 0 25px rgba(168, 85, 247, 0.5)',
               }}
               aria-label={`빅뱅 차원 도약 · 탭: 웜홀 양자도약, 홀드: 화이트홀(빛) - 미러홀(유리) - 블랙홀(심연), 조준/튕기기: 사건의 지평선`}
@@ -743,29 +737,29 @@ export function BigBangButton() {
                     </div>
                   )}
 
-                  {/* 🕳️ 1-C. 블랙홀 어둠 레이더 (버튼 내부에서 심연 레이더 스위프 & 흡입) */}
+                  {/* 🔮 1-C. 크리스탈 오브 투명 글래스 레이더 (완전 투명 배경) */}
                   {isBlackholeMode && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      {/* 흑요석 레이더 동심원 그리드 링 */}
-                      <div className="absolute inset-1 rounded-full border border-zinc-800/80 pointer-events-none" />
-                      <div className="absolute inset-2.5 rounded-full border border-purple-950/80 pointer-events-none" />
-                      <div className="absolute inset-4 rounded-full border border-black/90 pointer-events-none" />
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none backdrop-blur-sm">
+                      {/* 네온 시안 크리스탈 유리 링 3단계 */}
+                      <div className="absolute inset-1 rounded-full border border-cyan-300/40 shadow-[inset_0_0_6px_rgba(56,189,248,0.3)] pointer-events-none" />
+                      <div className="absolute inset-2.5 rounded-full border border-cyan-200/30 pointer-events-none" />
+                      <div className="absolute inset-4 rounded-full border border-cyan-300/50 pointer-events-none" />
                       {/* 십자 레이더 크로스헤어 */}
-                      <div className="absolute w-full h-[1px] bg-zinc-700/50 pointer-events-none" />
-                      <div className="absolute h-full w-[1px] bg-zinc-700/50 pointer-events-none" />
+                      <div className="absolute w-full h-[1px] bg-gradient-to-r from-transparent via-cyan-300/60 to-transparent pointer-events-none" />
+                      <div className="absolute h-full w-[1px] bg-gradient-to-b from-transparent via-cyan-300/60 to-transparent pointer-events-none" />
 
-                      {/* 360도 회전 암흑 레이더 스위프 빔 (어둠효과) */}
+                      {/* 360도 회전 투명 시안 레이더 스위프 빔 */}
                       <div
-                        className="absolute inset-0 rounded-full animate-[spin_1.4s_linear_infinite] pointer-events-none"
+                        className="absolute inset-0 rounded-full animate-[spin_1.2s_linear_infinite] pointer-events-none"
                         style={{
                           background:
-                            'conic-gradient(from 0deg, transparent 0deg, transparent 190deg, rgba(168,85,247,0.25) 250deg, rgba(245,158,11,0.5) 315deg, #000000 360deg)',
+                            'conic-gradient(from 0deg, transparent 0deg, transparent 190deg, rgba(56,189,248,0.1) 250deg, rgba(56,189,248,0.45) 320deg, rgba(168,85,247,0.6) 360deg)',
                         }}
                       />
 
-                      {/* 중심부 싱귤래리티 중력 흡입 코어 */}
+                      {/* 중심부 투명 글래스 링 */}
                       <div
-                        className="absolute w-5 h-5 rounded-full bg-black shadow-[inset_0_0_8px_#000000] pointer-events-none"
+                        className="absolute w-5 h-5 rounded-full border border-cyan-300/40 shadow-[0_0_8px_rgba(56,189,248,0.3)] pointer-events-none"
                       />
                     </div>
                   )}
@@ -789,12 +783,12 @@ export function BigBangButton() {
                 style={{
                   background: isWhiteholeMode
                     ? 'radial-gradient(circle at 50% 50%, #ffffff 0%, #e0f2fe 50%, #38bdf8 100%)'
-                    : isMirrorholeMode
+                    : isMirrorholeMode || isBlackholeMode
                     ? 'transparent'
                     : 'radial-gradient(circle at 45% 35%, #0f1124 0%, #080916 55%, #030309 100%)',
                   boxShadow: isWhiteholeMode
                     ? 'inset 0 0 12px rgba(255, 255, 255, 1), 0 0 10px rgba(255, 255, 255, 0.8)'
-                    : isMirrorholeMode
+                    : isMirrorholeMode || isBlackholeMode
                     ? 'none'
                     : 'inset 0 0 12px rgba(0, 0, 0, 0.95)',
                 }}
@@ -820,10 +814,8 @@ export function BigBangButton() {
                           ? 'radial-gradient(circle, rgba(239,68,68,0.8) 0%, transparent 80%)'
                           : isWhiteholeMode
                           ? 'radial-gradient(circle, rgba(253,230,138,0.9) 0%, rgba(244,114,182,0.6) 50%, transparent 80%)'
-                          : isMirrorholeMode
+                          : isMirrorholeMode || isBlackholeMode
                           ? 'transparent'
-                          : isBlackholeMode
-                          ? 'radial-gradient(circle, rgba(56,189,248,0.8) 0%, rgba(168,85,247,0.5) 50%, transparent 80%)'
                           : 'radial-gradient(circle, rgba(168,85,247,0.8) 0%, transparent 80%)',
                       }}
                     />
