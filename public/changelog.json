@@ -1,5 +1,17 @@
 [
   {
+    "version": "1.2.875",
+    "summary": "빅뱅 오브(블랙홀) 아이콘을 다른 앱 아이콘들과 완벽히 일관된 미니멀 Lucide 벡터 문법으로 전면 통합 개편",
+    "builtAt": "2026-09-07T23:22:00.000Z",
+    "items": [
+      "🔮 오브 모양 아이콘 Lucide 디자인 시스템 일관화: 이질적이었던 3D 그라디언트 렌더링을 완전히 걷어내고, Sun/Sparkles/Triangle과 동일한 선 두께·컬러·스타일의 순수 벡터 구체(외곽 원, 상단 렌즈 아크, 중심 코어 닷, 하단 림)로 리팩터링",
+      "🎨 단일 디자인 언어(Visual Consistency) 완성: 오브 모드 진입 시 및 미리보기 창에서 다른 아이콘들과 동일하게 color, strokeWidth, drop-shadow를 자연스럽게 상속받아 과하지 않고 일관된 프리즘 패밀리 룩 유지",
+      "✨ 프리뷰 및 버튼 인디케이터 연동 통일: BigBangPreviewWindow 및 PrismAppIcon 전반에서 blackhole/orb 식별자를 통일된 미니멀 벡터 아이콘으로 연동"
+    ],
+    "author": "Antigravity AI Agent",
+    "buildEnvironment": "cloud-run"
+  },
+  {
     "version": "1.2.874",
     "summary": "빅뱅 버튼 7색 무지개 섹션 하이엔드 스모크 글래스 & 네온 림 개편 및 빛비춤·투명유리·어둠 3대 위상 엣지 레이저 효과 고도화",
     "builtAt": "2026-09-07T23:18:00.000Z",

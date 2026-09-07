@@ -48,7 +48,14 @@ export function PrismAppIcon({
     normalized.includes('오브') ||
     normalized === '🔮'
   ) {
-    return <OrbShapeIcon size={size} className={className} />;
+    return (
+      <OrbShapeIcon
+        size={size}
+        className={className}
+        color={color || '#38bdf8'}
+        strokeWidth={strokeWidth}
+      />
+    );
   }
 
   // 2. Hub / Prologue
@@ -241,6 +248,8 @@ export function PrismAppIcon({
       <OrbShapeIcon
         size={size}
         className={className}
+        color={color || '#38bdf8'}
+        strokeWidth={strokeWidth || 2}
       />
     );
   }

@@ -1,107 +1,49 @@
-import React from "react";
+import React from 'react';
 
 export interface OrbShapeIconProps {
   size?: number;
   className?: string;
+  color?: string;
+  strokeWidth?: number;
 }
 
 /**
- * 🔮 OrbShapeIcon (오브 본체 구체 형상)
- * - 인위적인 궤도 링(Saturn Orbit Ring)을 완전히 배제한 정통 크리스탈 구체(Orb Sphere) 본연의 형상
- * - 3D 구체 라디얼 그라디언트 및 입체 렌즈 굴절감
- * - 상단 곡면 반사광(Glass Glare) 및 스펙큘러 하이라이트 글린트
- * - 중심부 네온 시안/마젠타 성운 코어 및 하단 림 앰비언트 라이트
+ * 🔮 OrbShapeIcon (오브 모양 Lucide 스타일 일관 벡터 아이콘)
+ * - 다른 Lucide 아이콘(Sun, Sparkles, Triangle, Moon 등)과 완전히 동일한 스트로크 & 벡터 문법
+ * - 복잡한 3D 라디얼 그라디언트 렌더링 대신, 순수하고 세련된 크리스탈 오브 구체 벡터
+ * - 외부 원형 구체(Circle), 내부 코어 펄스 포인트, 상단 글래스 하이라이트 아크로 구성
+ * - color, strokeWidth, className 속성을 투명하게 상속받아 다른 앱 아이콘들과 완벽한 일관성 유지
  */
-export function OrbShapeIcon({ size = 24, className = "" }: OrbShapeIconProps) {
-  const gradId = React.useId().replace(/:/g, "_");
-  const sphereGradId = `orb_shape_sphere_${gradId}`;
-  const coreGradId = `orb_shape_core_${gradId}`;
-
+export function OrbShapeIcon({
+  size = 24,
+  className = '',
+  color = 'currentColor',
+  strokeWidth = 2,
+}: OrbShapeIconProps) {
   return (
     <svg
       width={size}
       height={size}
       viewBox="0 0 24 24"
       fill="none"
-      xmlns="http://www.w3.org/2000/svg"
+      stroke={color}
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={`shrink-0 select-none ${className}`}
+      xmlns="http://www.w3.org/2000/svg"
     >
-      <defs>
-        {/* 3D Glass Crystal Orb Sphere Radial Gradient */}
-        <radialGradient
-          id={sphereGradId}
-          cx="35%"
-          cy="30%"
-          r="70%"
-          fx="32%"
-          fy="26%"
-        >
-          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
-          <stop offset="25%" stopColor="#a5f3fc" stopOpacity="0.85" />
-          <stop offset="52%" stopColor="#38bdf8" stopOpacity="0.72" />
-          <stop offset="78%" stopColor="#818cf8" stopOpacity="0.55" />
-          <stop offset="92%" stopColor="#312e81" stopOpacity="0.8" />
-          <stop offset="100%" stopColor="#09090b" stopOpacity="0.92" />
-        </radialGradient>
+      {/* 1. 크리스탈 구체 외곽 메인 바디 원 (Main Sphere Outline) */}
+      <circle cx="12" cy="12" r="9" />
 
-        {/* Glowing Inner Core Singularity Gradient */}
-        <radialGradient id={coreGradId} cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
-          <stop offset="45%" stopColor="#67e8f9" stopOpacity="0.85" />
-          <stop offset="100%" stopColor="#c084fc" stopOpacity="0" />
-        </radialGradient>
-      </defs>
+      {/* 2. 상단 글래스 렌즈 곡면 반사광 (Curved Specular Highlight Arc) */}
+      <path d="M8 8a5.5 5.5 0 0 1 8 0" strokeWidth={Math.max(strokeWidth - 0.5, 1.2)} />
 
-      {/* Outer Soft Ambient Crystal Aura */}
-      <circle
-        cx="12"
-        cy="12"
-        r="9.8"
-        fill="#38bdf8"
-        fillOpacity="0.25"
-        className="blur-[1px]"
-      />
+      {/* 3. 구체 중심 싱귤래리티 코어 (Center Core Dot) */}
+      <circle cx="12" cy="12" r="1.75" fill={color} stroke="none" />
 
-      {/* 🔮 Pure 3D Glass Crystal Orb Main Sphere (오브 본체 구체) */}
-      <circle
-        cx="12"
-        cy="12"
-        r="9"
-        fill={`url(#${sphereGradId})`}
-        stroke="#67e8f9"
-        strokeWidth="1.2"
-        strokeOpacity="0.9"
-      />
-
-      {/* Glowing Inner Nebula Core */}
-      <circle
-        cx="12"
-        cy="12"
-        r="3.8"
-        fill={`url(#${coreGradId})`}
-        className="animate-pulse"
-      />
-
-      {/* Top Curved Specular Glass Glare (크리스탈 렌즈 상단 곡면 반사광) */}
-      <path
-        d="M7.8 6.8 C9.6 5.2 14.4 5.2 16.2 6.8"
-        stroke="#ffffff"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-        strokeOpacity="0.95"
-      />
-
-      {/* Specular Star Sparkle Glint */}
-      <circle cx="8.8" cy="8.6" r="0.9" fill="#ffffff" fillOpacity="0.95" />
-
-      {/* Bottom Rim Ambient Light Reflection */}
-      <path
-        d="M9 17.2 C10.8 18.2 13.2 18.2 15 17.2"
-        stroke="#38bdf8"
-        strokeWidth="1.1"
-        strokeLinecap="round"
-        strokeOpacity="0.75"
-      />
+      {/* 4. 하단 림 반사광 미세 아크 (Bottom Rim Reflection Arc) */}
+      <path d="M9.5 16.5a4 4 0 0 0 5 0" strokeWidth={Math.max(strokeWidth - 0.7, 1)} strokeOpacity="0.75" />
     </svg>
   );
 }
