@@ -5,6 +5,7 @@ import { LogOut, User, Volume2, VolumeX, Download, Triangle, RefreshCw, HelpCirc
 
 import { AppProvider, useApp } from "./contexts/AppContext";
 import { LoginScreen } from "./components/LoginScreen";
+import BottomNav from "./components/BottomNav";
 import { BigBangButton } from "./components/omniwarp/BigBangButton";
 import { BigBangExpansionOverlay } from "./components/omniwarp/BigBangExpansionOverlay";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -458,6 +459,7 @@ function AppContent() {
           )}
         </AnimatePresence>
       </main>
+      {!isChatOpen && !isStandaloneChat && <BottomNav />}
       <BigBangButton />
       <BigBangExpansionOverlay />
 

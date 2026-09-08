@@ -1,5 +1,17 @@
 [
   {
+    "version": "1.2.889",
+    "summary": "하단 네비게이션 바(BottomNav) 완전 복원 및 상단 플로팅 컨트롤 레이아웃 정합성 동기화",
+    "builtAt": "2026-09-08T12:30:00.000Z",
+    "items": [
+      "🧭 하단 네비게이션 바(BottomNav) 복원: 7대 핵심 프레임워크 앱(Prologue, Orange, Trinity, Aura, Bluebird, Muse, Epilogue) 탭 네비게이션을 앱 쉘 하단에 재배치",
+      "🛡️ 뷰포트 상태별 스마트 표시 제어: 루시 전용 채팅창 및 크리스탈 오브 등 몰입형 뷰포트에서는 화면 공간 극대화를 위해 자동으로 숨김 처리",
+      "📐 플로팅 UI 및 스크롤 여백 조화: 하단 네비게이션 복원에 맞춰 플로팅 빅뱅 버튼 및 FAB 마진(bottom-safe-fab: 3.85rem)과 스크롤 컨텐츠 하단 패딩(6.5rem)을 최적 정렬하여 겹침 없이 쾌적한 조작감 제공"
+    ],
+    "author": "Antigravity AI Agent",
+    "buildEnvironment": "cloud-run"
+  },
+  {
     "version": "1.2.888",
     "summary": "웜홀 발동 시 [빛비춤(화이트홀) + 어두운 심연(블랙홀) 동시 전개 & 사건의 지평선(Event Horizon) 효과] 완벽 구현",
     "builtAt": "2026-09-08T12:26:00.000Z",

@@ -348,11 +348,11 @@
   }
 
   .bottom-safe-fab {
-    bottom: calc(var(--sab) + 3.75rem);
+    bottom: calc(var(--sab) + 3.85rem);
   }
 
   .bottom-safe-music {
-    bottom: calc(var(--sab) + 3.75rem);
+    bottom: calc(var(--sab) + 3.85rem);
   }
 
   .no-scrollbar {
@@ -476,11 +476,11 @@
   }
 
   .bottom-safe-fab {
-    bottom: calc(var(--sab) + 3.75rem);
+    bottom: calc(var(--sab) + 3.85rem);
   }
 
   .bottom-safe-music {
-    bottom: calc(var(--sab) + 3.75rem);
+    bottom: calc(var(--sab) + 3.85rem);
     left: 0.75rem;
   }
 
