@@ -120,7 +120,8 @@ export const RADIAL_WARP_APPS: RadialWarpApp[] = [
 
 export interface ForceSensorOptions {
   abortDistanceThreshold?: number; // default 88px (범위 밖으로 벗어날 시 안전 취소)
-  innerDeadzone?: number; // default 18px (중앙 제자리 압력 모드)
+  innerDeadzone?: number; // default 20px (중앙 제자리 압력 모드)
+  buttonRadius?: number; // default 44px (버튼 표면 영역 반경)
   maxDurationMs?: number; // duration to reach 100% force, default 1100ms
 }
 
@@ -138,7 +139,8 @@ export function calculateWarpMetrics(
   options: ForceSensorOptions = {}
 ): WarpForceMetrics {
   const abortThreshold = options.abortDistanceThreshold ?? 88;
-  const innerDeadzone = options.innerDeadzone ?? 18;
+  const innerDeadzone = options.innerDeadzone ?? 20;
+  const buttonRadius = options.buttonRadius ?? 44;
 
   const durationMs = Math.max(0, currentTime - startTime);
   const deltaX = currentX - startX;
@@ -155,12 +157,15 @@ export function calculateWarpMetrics(
   const normalizedDeg = (dragAngleDeg + sectorSize / 2) % 360;
   const calculatedSectorIndex = Math.floor(normalizedDeg / sectorSize);
 
-  // 거리 판정:
+  // 거리 및 영역 판정:
   // 1) dist > 88px: 유효 조작 반경을 벗어남 -> 취소(isAborted)
-  // 2) 18px <= dist <= 88px: 유효 방사형 조이스틱 영역 -> 해당 섹터 앱 조준
-  // 3) dist < 18px: 중앙 코어 영역 -> 중립(radialSectorIndex = -1, 제자리 압력 모드)
+  // 2) dist > buttonRadius && dist <= 88px: 버튼 바깥 마법진 궤도(7대 룬 노드) -> 해당 섹터 앱 조준
+  // 3) dist >= innerDeadzone && dist <= buttonRadius: 버튼영역내(제자리영역 제외) -> 웜홀 (Wormhole)
+  // 4) dist < innerDeadzone: 중앙 제자리 영역 -> 중립 (화이트홀 탭 / 블랙홀 홀드)
   const isAborted = dist > abortThreshold;
-  const radialSectorIndex = (dist >= innerDeadzone && !isAborted) ? calculatedSectorIndex : -1;
+  const isOuterRadialZone = dist > buttonRadius && !isAborted;
+  const isWormholeZone = dist >= innerDeadzone && dist <= buttonRadius && !isAborted;
+  const radialSectorIndex = isOuterRadialZone ? calculatedSectorIndex : -1;
 
   // 1. Hardware Pressure check
   let hwPressure = 0;
@@ -200,14 +205,15 @@ export function calculateWarpMetrics(
   } else if (radialSectorIndex >= 0) {
     // 🌌 7대 앱으로 튕기거나 조준하는 기능 = 사건의 지평선 (Event Horizon)
     phase = 'event_horizon';
-    // 미러홀 제거: 탭은 화이트홀(1번 메뉴), 홀드는 블랙홀(심연 메뉴)
     eventHorizonMode = durationMs < 250 ? 'whitehole' : 'blackhole';
+  } else if (isWormholeZone) {
+    // 🌀 버튼영역내(제자리영역 제외) = 웜홀 (Wormhole: 앱 내 모든 실존 페이지 임의 도약)
+    phase = 'wormhole';
   } else if (durationMs < 250) {
     // ☀️ 제자리에서 가볍게 터치(탭) = 빛비춤(화이트홀: 루시 1:1 대화)
     phase = 'whitehole';
   } else {
     // 🕳️ 제자리 홀드 = 어두운 심연(블랙홀: 크리스탈 오브)
-    // 홀드 시간이 길어질수록 어두운 심연의 중력 게이지가 차오름
     phase = 'blackhole';
   }
 

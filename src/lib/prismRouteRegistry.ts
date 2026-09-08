@@ -339,3 +339,46 @@ export function getPrismRouteByPathOrId(pathOrId: string): PrismRouteDefinition 
 
   return undefined;
 }
+
+/**
+ * 🌀 웜홀(Wormhole) 전용: 루시 채팅(/chat)과 크리스탈 오브(/orb)를 제외한,
+ * 현재 프리즘 앱 내부에 실존하는 모든 유효 페이지 중 임의의 목적지 1곳 무작위 반환
+ */
+export function getRandomWormholeDestination(currentLocation?: string): PrismRouteDefinition {
+  const normCurrent = (currentLocation || '/').trim().toLowerCase().split('?')[0].split('#')[0].replace(/\/$/, '') || '/';
+
+  const eligibleRoutes = getActivePrismRoutes().filter((route) => {
+    if (!route.isActive) return false;
+    const rId = route.id.toLowerCase();
+    const rPath = route.path.toLowerCase().replace(/\/$/, '') || '/';
+
+    // 1. 루시 채팅 (/chat, /lucy) 원천 배제
+    if (rId === 'lucy' || rId === 'chat' || rPath.includes('/chat') || rPath.includes('/lucy')) {
+      return false;
+    }
+    // 2. 크리스탈 오브 사이트 (/orb, /gateway, /crystal) 원천 배제
+    if (rId === 'orb' || rId === 'gateway' || rId === 'crystal' || rPath.includes('/orb')) {
+      return false;
+    }
+    return true;
+  });
+
+  // 현재 있는 페이지와 다른 페이지를 우선 선택하여 신선한 도약 경험 제공
+  const differentRoutes = eligibleRoutes.filter((route) => {
+    const rPath = route.path.toLowerCase().replace(/\/$/, '') || '/';
+    if (rPath === normCurrent) return false;
+    if (route.aliases && route.aliases.some((a) => (a.toLowerCase().replace(/\/$/, '') || '/') === normCurrent)) {
+      return false;
+    }
+    return true;
+  });
+
+  const pool = differentRoutes.length > 0 ? differentRoutes : eligibleRoutes;
+  if (pool.length === 0) {
+    // 안전 폴백 (기본 허브)
+    return INITIAL_PRISM_ROUTES[0];
+  }
+
+  const randomIndex = Math.floor(Math.random() * pool.length);
+  return pool[randomIndex];
+}

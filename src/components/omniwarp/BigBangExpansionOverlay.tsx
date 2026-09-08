@@ -34,13 +34,15 @@ export function BigBangExpansionOverlay() {
         const isWormhole = detail.phase === 'wormhole';
 
         particlesRef.current = [];
-        const count = isWhitehole ? 170 : isBlackhole ? 160 : 130;
+        const count = isWhitehole ? 170 : isBlackhole ? 160 : isWormhole ? 160 : 130;
         for (let i = 0; i < count; i++) {
           const angle = Math.random() * Math.PI * 2;
           const speed = isBlackhole
             ? (Math.random() * 14 + 5)
             : isWhitehole
             ? (Math.random() * 12 + 4)
+            : isWormhole
+            ? (Math.random() * 13 + 5)
             : (Math.random() * 8 + 3);
 
           let particleColor = `hsl(${Math.random() * 40 + 190}, 100%, 80%)`;
@@ -65,7 +67,17 @@ export function BigBangExpansionOverlay() {
               particleColor = `rgba(10, 5, 20, 0.95)`; // 칠흑 같은 암흑 물질
             }
           } else if (isWormhole) {
-            particleColor = `hsl(${Math.random() * 40 + 150}, 100%, 75%)`;
+            // 🌀 웜홀 시공간 도약: 에메랄드, 아쿠아 시안, 네온 바이올렛, 스타더스트
+            const pType = Math.random();
+            if (pType < 0.4) {
+              particleColor = `hsl(${Math.random() * 30 + 145}, 100%, 75%)`; // 에메랄드
+            } else if (pType < 0.75) {
+              particleColor = `hsl(${Math.random() * 25 + 185}, 100%, 80%)`; // 아쿠아 시안
+            } else if (pType < 0.9) {
+              particleColor = `hsl(${Math.random() * 35 + 265}, 100%, 80%)`; // 네온 바이올렛
+            } else {
+              particleColor = `rgba(255, 255, 255, 0.95)`; // 순백 양자 입자
+            }
           }
 
           particlesRef.current.push({
@@ -73,10 +85,20 @@ export function BigBangExpansionOverlay() {
             y: originY,
             vx: Math.cos(angle) * speed,
             vy: Math.sin(angle) * speed,
-            radius: isWhitehole ? (Math.random() * 4 + 1.2) : (Math.random() * 3.8 + 1.0),
+            radius: isWhitehole
+              ? (Math.random() * 4 + 1.2)
+              : isBlackhole
+              ? (Math.random() * 3.8 + 1.0)
+              : isWormhole
+              ? (Math.random() * 3.9 + 1.1)
+              : (Math.random() * 3.0 + 1.0),
             color: particleColor,
             alpha: 1.0,
-            decay: isWhitehole ? (Math.random() * 0.024 + 0.012) : (Math.random() * 0.02 + 0.015),
+            decay: isWhitehole
+              ? (Math.random() * 0.024 + 0.012)
+              : isBlackhole
+              ? (Math.random() * 0.02 + 0.015)
+              : (Math.random() * 0.022 + 0.014),
           });
         }
 
@@ -187,6 +209,21 @@ export function BigBangExpansionOverlay() {
           </>
         )}
 
+        {/* 🌀 3. 웜홀 시공간 도약 효과: 에메랄드 & 아쿠아 시공간 소용돌이 왜곡 */}
+        {isWormhole && (
+          <>
+            {/* 시공간 워프 터널 필드 */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.6 }}
+              animate={{ opacity: [0, 0.95, 0.7, 0], scale: [0.6, 1.4, 2.2, 2.8] }}
+              transition={{ duration: 0.62, ease: 'easeOut' }}
+              className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,rgba(52,211,153,0.95)_0%,rgba(6,182,212,0.85)_35%,rgba(15,23,42,0.9)_70%,transparent_100%)]"
+            />
+            {/* 회전하는 하이퍼스페이스 웜홀 소용돌이 */}
+            <div className="absolute inset-[-30%] pointer-events-none bigbang-wormhole-vortex opacity-85 bg-[conic-gradient(from_0deg,rgba(52,211,153,0.9)_0deg,transparent_45deg,rgba(6,182,212,0.85)_90deg,transparent_135deg,rgba(167,139,250,0.85)_180deg,transparent_225deg,rgba(52,211,153,0.9)_270deg,transparent_315deg,rgba(6,182,212,0.85)_360deg)] blur-[2px]" />
+          </>
+        )}
+
         {/* Space Particle Canvas for Big Bang Burst */}
         <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none z-20" />
 
@@ -201,7 +238,7 @@ export function BigBangExpansionOverlay() {
               : isBlackhole
               ? 'border-violet-500 shadow-[0_0_50px_rgba(168,85,247,0.9),inset_0_0_30px_rgba(0,0,0,0.95)]'
               : isWormhole
-              ? 'border-emerald-300 shadow-[0_0_35px_rgba(52,211,153,0.85)]'
+              ? 'border-emerald-300 shadow-[0_0_55px_rgba(52,211,153,0.95),0_0_30px_rgba(6,182,212,0.9),inset_0_0_20px_rgba(52,211,153,0.8)]'
               : 'border-purple-300 shadow-[0_0_35px_rgba(168,85,247,0.85)]'
           }`}
         />

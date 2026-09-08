@@ -3,7 +3,7 @@
  * 차등 진동 피드백 (navigator.vibrate)
  */
 
-export type HapticType = 'whitehole' | 'mirrorhole' | 'event_horizon' | 'blackhole' | 'blackhole_peak' | 'bigbang' | 'abort';
+export type HapticType = 'whitehole' | 'mirrorhole' | 'event_horizon' | 'blackhole' | 'blackhole_peak' | 'wormhole' | 'bigbang' | 'abort';
 
 let blackHoleLoopInterval: number | null = null;
 
@@ -68,6 +68,10 @@ export function triggerHaptic(type: HapticType): void {
       case 'blackhole_peak':
         // 압력 최대치(블랙홀 단계) 도달 시 미세 진동 피드백 (틱-틱-지잉)
         navigator.vibrate?.([10, 15, 10, 20, 12]);
+        break;
+      case 'wormhole':
+        // 🌀 웜홀 시공간 도약 햅틱: 에메랄드/사이버 트리플 펄스 바운스
+        navigator.vibrate?.([16, 26, 20, 26, 22]);
         break;
       case 'bigbang':
         // 단발성 임팩트 킥 (쿵!)

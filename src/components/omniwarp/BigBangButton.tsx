@@ -10,6 +10,7 @@ import {
   getAllActiveWormholeApps,
 } from '@/lib/omniWarp/wormholeSpectrum';
 import { getTossRule } from '@/lib/prismTossRegistry';
+import { getRandomWormholeDestination, resolveCanonicalPath } from '@/lib/prismRouteRegistry';
 import { omniWarpAudio } from '@/lib/omniWarp/omniWarpAudio';
 import { triggerHaptic, startBlackHoleContinuousHaptic, stopBlackHoleContinuousHaptic } from '@/lib/omniWarp/omniWarpHaptics';
 import { safeSessionStorage } from '@/utils/safeStorage';
@@ -234,8 +235,8 @@ export function BigBangButton() {
       triggerHaptic('whitehole');
     }
 
-    // 🕳️ 블랙홀 단계 미세 진동 피드백 (홀드 지속 시 심연 럼블)
-    if (currentHole === 'blackhole' && !metrics.isAborted && sectorIdx === -1) {
+    // 🕳️ 블랙홀 단계 미세 진동 피드백 (홀드 지속 시 심연 럼블 - 웜홀 및 방사형 조이스틱 영역에서는 중단)
+    if (metrics.phase === 'blackhole' && !metrics.isAborted && sectorIdx === -1) {
       startBlackHoleContinuousHaptic();
     } else {
       stopBlackHoleContinuousHaptic();
@@ -246,9 +247,9 @@ export function BigBangButton() {
       if (metrics.phase === 'whitehole') {
         omniWarpAudio.playWhiteHole();
         triggerHaptic('whitehole');
-      } else if (metrics.phase === 'mirrorhole') {
-        omniWarpAudio.playMirrorHole();
-        triggerHaptic('mirrorhole');
+      } else if (metrics.phase === 'wormhole') {
+        omniWarpAudio.playWormhole();
+        triggerHaptic('wormhole');
       } else if (metrics.phase === 'event_horizon') {
         omniWarpAudio.playEventHorizon();
         triggerHaptic('event_horizon');
@@ -386,8 +387,20 @@ export function BigBangButton() {
     setIsAborted(false);
     const context = serializeCurrentView(location);
 
-    // [1] 제자리 단순 탭 (250ms 미만 및 드래그 없음) -> 빛비춤(화이트홀) 효과 및 루시 채팅 켜기/끄기
-    if (duration < 250 && dist < 25) {
+    // 버튼 영역 내부인지 정밀 판별 (버튼 bounding rect 기준)
+    const isWithinButton = (() => {
+      if (buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const distFromCenter = Math.hypot(e.clientX - centerX, e.clientY - centerY);
+        return distFromCenter <= (rect.width / 2) + 6;
+      }
+      return dist <= 44;
+    })();
+
+    // [1] 제자리 단순 탭 (250ms 미만 및 제자리 영역 dist < 20) -> 빛비춤(화이트홀) 효과 및 루시 채팅 켜기/끄기
+    if (duration < 250 && dist < 20) {
       triggerHaptic('whitehole');
       omniWarpAudio.playWhiteHole();
 
@@ -440,9 +453,9 @@ export function BigBangButton() {
       return;
     }
 
-    // [2] 홀드 (250ms 이상)
-    // A. 만약 사용자가 특정 7대 룬 노드로 명확히 드래그 조준한 경우: 해당 앱으로 워프!
-    if (radialSectorIndex >= 0 && dist >= 35) {
+    // [2] 홀드 (250ms 이상) 또는 드래그 릴리즈 분기
+    // A. 만약 사용자가 버튼 바깥으로 드래그하여 특정 7대 룬 노드로 명확히 조준한 경우: 해당 앱으로 워프!
+    if (!isWithinButton && radialSectorIndex >= 0 && dist > 44) {
       const target = synthesizeWarpTarget(context, metrics);
       if (!isDisallowedWarpDestination(target.id || '') && !isDisallowedWarpDestination(target.destinationPath || '')) {
         executeBigBangCommit(target, context, metrics);
@@ -453,7 +466,56 @@ export function BigBangButton() {
       }
     }
 
-    // B. 제자리 홀드 후 떼기: 어두운 심연(블랙홀) 효과 발동 및 크리스탈 오브 들어가기 / 나가기 토글!
+    // B. 🌀 만약 사용자가 홀드하다가 버튼영역내(제자리영역 제외, dist >= 20 && isWithinButton)에서 뗀 경우:
+    // -> <웜홀> 발동! 루시채팅과 오브사이트를 제외한 지금 앱 내부 실존 모든 페이지로 임의 도약!
+    if (dist >= 20 && isWithinButton) {
+      triggerHaptic('wormhole');
+      omniWarpAudio.playWormhole();
+
+      const randomDest = getRandomWormholeDestination(location);
+      const safePath = resolveCanonicalPath(randomDest.path);
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('prism:bigbang_commit', {
+            detail: {
+              phase: 'wormhole',
+              target: {
+                id: randomDest.id,
+                name: randomDest.name,
+                destinationPath: safePath,
+                themeColor: randomDest.themeColor,
+                icon: randomDest.icon,
+                runeSymbol: randomDest.runeSymbol,
+                runeName: randomDest.runeName,
+                previewLabel: `[웜홀 임의 도약] 🌀 ${randomDest.runeSymbol} ${randomDest.name}`,
+                previewDescription: `시공간 웜홀을 통과하여 [${randomDest.name} · ${randomDest.subName}]으로 차원 도약합니다.`,
+              },
+              context,
+              metrics: { ...metrics, phase: 'wormhole' },
+              timestamp: Date.now(),
+            },
+          })
+        );
+      }
+
+      setTimeout(() => {
+        if (isOrbSite) {
+          window.location.href = safePath;
+        } else {
+          navigate(safePath);
+          window.dispatchEvent(new CustomEvent('prism-navigate', { detail: { path: safePath } }));
+          window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: safePath } }));
+        }
+      }, 240);
+
+      setActivePhase('idle');
+      setGauge(0);
+      setDurationMs(0);
+      return;
+    }
+
+    // C. 제자리 홀드 후 떼기 (dist < 20): 어두운 심연(블랙홀) 효과 발동 및 크리스탈 오브 들어가기 / 나가기 토글!
     triggerHaptic('blackhole');
     omniWarpAudio.playBlackHole();
 
@@ -549,6 +611,8 @@ export function BigBangButton() {
   // 🎯 현재 활성화된 목적지의 상징 아이콘 식별자 결정 (프리즘 메인 아이콘 규격)
   const activeAppId = (() => {
     if (isAborted) return 'aborted';
+    // 🌀 웜홀 상태 (버튼영역내 제자리 제외): 옴니워프 유니버스 아이콘
+    if (activePhase === 'wormhole') return 'omniwarp';
     // 🌌 사건의 지평선 상태 (조준 중): 해당 조준 채널의 아이콘을 최우선으로 표출!
     if (radialSectorIndex >= 0) return RADIAL_WARP_APPS[radialSectorIndex]?.id || 'hub';
     // 🪞 제자리 홀드 - 오브 사이트에서는 프리즘 홈 귀환
@@ -559,6 +623,8 @@ export function BigBangButton() {
 
   const activeAppName = (() => {
     if (isAborted) return '취소';
+    // 🌀 웜홀 상태: 임의 차원 도약 명칭 표출
+    if (activePhase === 'wormhole') return '웜홀 시공간 도약 (임의 차원 전이)';
     // 🌌 사건의 지평선 상태 (조준 중): 해당 조준 채널 및 서브메뉴 명칭 표출
     if (radialSectorIndex >= 0) {
       const channel = RADIAL_WARP_APPS[radialSectorIndex];
@@ -596,29 +662,43 @@ export function BigBangButton() {
                 <div
                   className="px-3 py-1 rounded-full text-xs font-medium border backdrop-blur-md shadow-lg flex items-center gap-1.5 transition-all duration-200"
                   style={{
-                    background: radialSectorIndex >= 0 && RADIAL_WARP_APPS[radialSectorIndex]
+                    background: activePhase === 'wormhole'
+                      ? 'rgba(4, 28, 18, 0.95)'
+                      : radialSectorIndex >= 0 && RADIAL_WARP_APPS[radialSectorIndex]
                       ? 'rgba(10, 14, 28, 0.92)'
                       : isOrbSite
                       ? 'rgba(15, 23, 42, 0.94)'
                       : 'rgba(24, 10, 40, 0.94)',
-                    borderColor: radialSectorIndex >= 0 && RADIAL_WARP_APPS[radialSectorIndex]
+                    borderColor: activePhase === 'wormhole'
+                      ? 'rgba(52, 211, 153, 0.85)'
+                      : radialSectorIndex >= 0 && RADIAL_WARP_APPS[radialSectorIndex]
                       ? RADIAL_WARP_APPS[radialSectorIndex].themeColor
                       : isOrbSite
                       ? 'rgba(56, 189, 248, 0.8)'
                       : 'rgba(168, 85, 247, 0.8)',
-                    color: radialSectorIndex >= 0 && RADIAL_WARP_APPS[radialSectorIndex]
+                    color: activePhase === 'wormhole'
+                      ? '#ecfdf5'
+                      : radialSectorIndex >= 0 && RADIAL_WARP_APPS[radialSectorIndex]
                       ? '#ffffff'
                       : isOrbSite
                       ? '#e0f2fe'
                       : '#f3e8ff',
-                    boxShadow: radialSectorIndex >= 0 && RADIAL_WARP_APPS[radialSectorIndex]
+                    boxShadow: activePhase === 'wormhole'
+                      ? '0 0 16px rgba(52, 211, 153, 0.65)'
+                      : radialSectorIndex >= 0 && RADIAL_WARP_APPS[radialSectorIndex]
                       ? `0 0 16px ${RADIAL_WARP_APPS[radialSectorIndex].accentGlow}`
                       : isOrbSite
                       ? '0 0 16px rgba(56, 189, 248, 0.5)'
                       : '0 0 16px rgba(168, 85, 247, 0.5)',
                   }}
                 >
-                  {radialSectorIndex >= 0 && RADIAL_WARP_APPS[radialSectorIndex] ? (
+                  {activePhase === 'wormhole' ? (
+                    <>
+                      <span className="font-serif text-sm text-emerald-300">🌀</span>
+                      <span className="font-semibold text-emerald-200">웜홀 시공간 도약</span>
+                      <span className="opacity-80 text-[11px] text-emerald-300">· 임의 차원 전이</span>
+                    </>
+                  ) : radialSectorIndex >= 0 && RADIAL_WARP_APPS[radialSectorIndex] ? (
                     <>
                       <span className="font-serif text-sm text-cyan-300">
                         {RADIAL_WARP_APPS[radialSectorIndex].runeSymbol}
@@ -796,6 +876,8 @@ export function BigBangButton() {
               className={`w-[76px] h-[76px] sm:w-[84px] sm:h-[84px] rounded-full flex flex-col items-center justify-center shrink-0 cursor-pointer outline-none relative overflow-hidden transition-all duration-200 border will-change-transform z-30 ${
                 isPressing && isAborted
                   ? 'opacity-70 border-red-500/70 shadow-[0_0_24px_rgba(239,68,68,0.5)]'
+                  : isPressing && activePhase === 'wormhole'
+                  ? 'border-emerald-300/90 shadow-[0_0_40px_rgba(52,211,153,0.9),0_0_24px_rgba(6,182,212,0.7),inset_0_0_26px_rgba(52,211,153,0.7)]'
                   : isPressing && isWhiteholeMode
                   ? 'border-amber-100/95 shadow-[0_0_40px_rgba(255,255,255,0.95),0_0_28px_rgba(254,240,138,0.8),inset_0_0_24px_rgba(255,255,255,0.9)]'
                   : isPressing && isBlackholeMode
@@ -807,6 +889,8 @@ export function BigBangButton() {
               style={{
                 background: isPressing && isAborted
                   ? 'radial-gradient(circle at 40% 35%, #1f0b0f 0%, #0d0406 55%, #040102 100%)'
+                  : isPressing && activePhase === 'wormhole'
+                  ? 'radial-gradient(circle at 50% 50%, #064e3b 0%, #022c22 45%, #081a24 75%, #020617 100%)'
                   : isPressing && isWhiteholeMode
                   ? 'radial-gradient(circle at 40% 30%, #ffffff 0%, #fef3c7 35%, #fde68a 65%, #f59e0b 100%)'
                   : isPressing && isBlackholeMode
@@ -816,6 +900,8 @@ export function BigBangButton() {
                   : 'radial-gradient(circle at 35% 30%, #171833 0%, #0e0f21 45%, #060712 80%, #020207 100%)',
                 boxShadow: isPressing && isAborted
                   ? 'inset 0 0 20px rgba(239, 68, 68, 0.4), 0 0 24px rgba(239, 68, 68, 0.5)'
+                  : isPressing && activePhase === 'wormhole'
+                  ? 'inset 0 0 25px rgba(52, 211, 153, 0.9), 0 0 35px rgba(6, 182, 212, 0.85)'
                   : isPressing && isWhiteholeMode
                   ? 'inset 0 0 25px rgba(255, 255, 255, 0.95), 0 0 35px rgba(253, 230, 138, 0.9)'
                   : isPressing && isBlackholeMode
@@ -833,12 +919,17 @@ export function BigBangButton() {
               }
               title={
                 isChatView
-                  ? '탭: 루시 채팅 끄기 · 홀드: 크리스탈 오브'
+                  ? '탭: 루시 채팅 끄기 · 홀드: 크리스탈 오브 · 웜홀: 임의 도약'
                   : isOrbSite
-                  ? '탭: 루시 채팅 켜기 · 홀드: 오브 사이트 나가기'
-                  : '탭: 루시 채팅 켜기 · 홀드: 크리스탈 오브'
+                  ? '탭: 루시 채팅 켜기 · 홀드: 오브 사이트 나가기 · 웜홀: 임의 도약'
+                  : '탭: 루시 채팅 켜기 · 홀드: 크리스탈 오브 · 웜홀: 임의 도약'
               }
             >
+              {/* 🌀 홀드 중 버튼영역내 드래그 시 웜홀 시공간 소용돌이 왜곡 (Wormhole Vortex) */}
+              {isPressing && activePhase === 'wormhole' && (
+                <div className="absolute inset-0 rounded-full pointer-events-none bigbang-wormhole-vortex opacity-85 bg-[conic-gradient(from_0deg,rgba(52,211,153,0.95)_0deg,transparent_60deg,rgba(6,182,212,0.85)_120deg,transparent_180deg,rgba(167,139,250,0.9)_240deg,transparent_300deg,rgba(52,211,153,0.95)_360deg)]" />
+              )}
+
               {/* 홀드 시 블랙홀 어두운 심연 흡입 파동 (Suction Waves) */}
               {isPressing && isBlackholeMode && (
                 <>
@@ -863,16 +954,20 @@ export function BigBangButton() {
                 />
               )}
 
-              {/* Event Horizon Deep Singularity Core (크리스탈 구체의 코어 - 화이트홀/블랙홀 반응) */}
+              {/* Event Horizon Deep Singularity Core (크리스탈 구체의 코어 - 화이트홀/블랙홀/웜홀 반응) */}
               <div
                 className="absolute inset-2.5 sm:inset-3 rounded-full z-15 pointer-events-none transition-all duration-200 overflow-hidden flex items-center justify-center"
                 style={{
-                  background: isPressing && isWhiteholeMode
+                  background: isPressing && activePhase === 'wormhole'
+                    ? 'radial-gradient(circle at 45% 35%, #052e16 0%, #064e3b 50%, #022c22 100%)'
+                    : isPressing && isWhiteholeMode
                     ? 'radial-gradient(circle at 45% 35%, #ffffff 0%, #fef08a 45%, #f59e0b 100%)'
                     : isPressing && isBlackholeMode
                     ? 'radial-gradient(circle at 50% 50%, #000000 0%, #020206 55%, #05040b 100%)'
                     : 'radial-gradient(circle at 45% 35%, #101228 0%, #090a1a 55%, #03030a 100%)',
-                  boxShadow: isPressing && isWhiteholeMode
+                  boxShadow: isPressing && activePhase === 'wormhole'
+                    ? '0 0 18px rgba(52, 211, 153, 0.8), inset 0 0 14px rgba(6, 182, 212, 0.7)'
+                    : isPressing && isWhiteholeMode
                     ? '0 0 20px rgba(255, 255, 255, 1), inset 0 0 10px rgba(255, 255, 255, 0.9)'
                     : isPressing && isBlackholeMode
                     ? 'inset 0 0 24px rgba(0, 0, 0, 1)'

@@ -17,7 +17,7 @@ import {
   getBlackholeRecommendedApp,
   getWormholeAppByGauge,
 } from './wormholeSpectrum';
-import { getPrismRouteByPathOrId, resolveCanonicalPath } from '@/lib/prismRouteRegistry';
+import { getPrismRouteByPathOrId, resolveCanonicalPath, getRandomWormholeDestination } from '@/lib/prismRouteRegistry';
 import {
   extractLatestDialogueContext,
   recordCrossAppDialogue,
@@ -693,9 +693,9 @@ export function synthesizeWarpTarget(context: OmniWarpContext, metrics: WarpForc
     };
   }
 
-  // 2. 웜홀 (Wormhole: 자유 양자 도약) - 웜홀 요청 시
+  // 2. 웜홀 (Wormhole: 루시채팅과 오브사이트를 제외한 앱 내 모든 실존 페이지 임의 도약)
   if (metrics.phase === 'wormhole') {
-    const dest = pickRandomQuantumDestination(context.activeRoute, metrics.startTime);
+    const dest = getRandomWormholeDestination(context.activeRoute);
     const safePath = resolveCanonicalPath(dest.path);
     return {
       id: dest.id,
@@ -704,12 +704,12 @@ export function synthesizeWarpTarget(context: OmniWarpContext, metrics: WarpForc
       gauge: metrics.virtualForce,
       aiTemperature: T,
       title: dest.name,
-      actionType: `wormhole_quantum_${dest.id}`,
+      actionType: `wormhole_random_${dest.id}`,
       destinationPath: safePath,
       previewLabel: `[웜홀 도약] 🌀 ${dest.runeSymbol} ${dest.name}`,
-      previewDescription: `시공간 웜홀의 양자 요동을 타고 [${dest.name} · ${dest.subName}] 차원으로 자유롭게 도약합니다.`,
-      themeColor: dest.themeColor || '#38bdf8',
-      accentGlow: dest.accentGlow || 'rgba(56, 189, 248, 0.65)',
+      previewDescription: `시공간 웜홀을 통과하여 [${dest.name} · ${dest.subName}]으로 즉시 도약합니다.`,
+      themeColor: dest.themeColor || '#10b981',
+      accentGlow: dest.accentGlow || 'rgba(16, 185, 129, 0.75)',
       stageIndex: 1,
       runeSymbol: dest.runeSymbol,
       runeName: dest.runeName,
@@ -756,8 +756,11 @@ export function executeBigBangCommit(
   context: OmniWarpContext,
   metrics: WarpForceMetrics
 ): void {
-  // 워프 불가 4대 목적지(profile, handbook, library, omniwarp) 원천 차단 가드
-  if (isDisallowedWarpDestination(target.id || '') || isDisallowedWarpDestination(target.destinationPath || '')) {
+  // 워프 불가 목적지 가드 (단, 웜홀 임의 도약은 루시/오브 제외 앱 내 모든 실존 페이지 도약 전면 허용)
+  if (
+    target.phase !== 'wormhole' &&
+    (isDisallowedWarpDestination(target.id || '') || isDisallowedWarpDestination(target.destinationPath || ''))
+  ) {
     console.warn(`[OmniWarp Guard] Prohibited warp destination blocked: ${target.id} (${target.destinationPath})`);
     omniWarpAudio.playAbort();
     triggerHaptic('abort');

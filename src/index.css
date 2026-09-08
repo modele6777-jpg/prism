@@ -1033,5 +1033,26 @@ html.perf-reduced .cosmic-star-flare {
   will-change: transform;
 }
 
+@keyframes bigbang-wormhole-vortex {
+  0% {
+    transform: rotate(0deg) scale(0.92);
+    opacity: 0.75;
+  }
+  50% {
+    transform: rotate(180deg) scale(1.08);
+    opacity: 0.95;
+  }
+  100% {
+    transform: rotate(360deg) scale(0.92);
+    opacity: 0.75;
+  }
+}
+
+.bigbang-wormhole-vortex {
+  animation: bigbang-wormhole-vortex 3.2s ease-in-out infinite;
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+
 
 
