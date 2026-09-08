@@ -82,7 +82,7 @@ export const GlobalHandbookAudioWidget: React.FC = () => {
       case 'chapter':
         return '📑 챕터 낭독';
       default:
-        return '🎧 ReBible 낭독';
+        return '🎧 핸드북 낭독';
     }
   };
 
@@ -93,7 +93,7 @@ export const GlobalHandbookAudioWidget: React.FC = () => {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 20, scale: 0.95 }}
         transition={{ duration: 0.25 }}
-        aria-label="ReBible 백그라운드 오디오 플레이어"
+        aria-label="핸드북 백그라운드 오디오 플레이어"
         className="fixed bottom-20 md:bottom-6 right-3 md:right-6 z-[80] max-w-[calc(100vw-24px)] md:max-w-md"
       >
         <div
@@ -116,7 +116,7 @@ export const GlobalHandbookAudioWidget: React.FC = () => {
                 type="button"
                 onClick={handleGoToHandbook}
                 className="flex items-center gap-2 text-left group min-w-0"
-                title="ReBible 화면으로 이동"
+                title="핸드북 화면으로 이동"
               >
                 <div
                   className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${channelMeta.bgActive}`}
@@ -213,7 +213,7 @@ export const GlobalHandbookAudioWidget: React.FC = () => {
                   className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-bold border border-white/10 transition active:scale-95"
                 >
                   <BookOpen size={12} className="text-amber-400" />
-                  <span>ReBible 열기</span>
+                  <span>핸드북 열기</span>
                 </button>
 
                 <div className="flex items-center gap-1.5">

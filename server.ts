@@ -926,7 +926,7 @@ ${content}
 
   // Daily Tarot Oracle Handler
   app.post("/api/ai/daily-tarot", async (req, res) => {
-    const { card, mode = "oracle", comfortLevel = 3, profile } = req.body || {};
+    const { card, mode = "oracle", comfortLevel = 3, profile, touchMetadata } = req.body || {};
     if (!card) {
       return res.status(400).json({ error: "카드 정보가 필요합니다." });
     }
@@ -944,12 +944,21 @@ ${content}
       userContextBlock = `\n\n[질문자 프로필 & 사주 배경지식]:\n- 이름/호칭: ${b.name || b.nickname || "질문자"}\n- 생년월일: ${b.birthdate || "미입력"} (${b.lunarSolar || "양력"})\n- 생시: ${b.birthtime || "미입력"}\n- 성별: ${b.gender || "미입력"}${profile.fate?.currentWorry ? `\n- 최근 주요 고민: ${profile.fate.currentWorry}` : ""}${profile.fate?.lifeGoal ? `\n- 인생 핵심 목표: ${profile.fate.lifeGoal}` : ""}\n[배경지식 반영 필수 원칙]: 위 질문자의 기본 프로필과 운명적 배경을 카드의 ${orientation} 상징 및 일일 비전과 깊이 있게 연계하여 서술하세요.`;
     }
 
+    const touchWaveBlock = touchMetadata
+      ? `\n\n[손끝 터치 물리 파동 (실측치)]:
+- 체류 시간: ${touchMetadata.durationMs}ms
+- 손끝 미세 떨림/망설임 지수: ${touchMetadata.jitterScore}
+- 파동 깊이 모드: ${touchMetadata.depthMode}
+- 리딩 톤 지침: ${touchMetadata.promptTone}
+-> **반영 지침**: diagnosis의 첫 시작 문장에 질문자의 손끝 체류 파동(${touchMetadata.durationMs}ms)과 집중/망설임 상태를 영험하고 다정하게 짚어주세요.`
+      : '';
+
     const { apiKey } = getAIConfig();
     if (apiKey) {
       try {
         const ai = new GoogleGenAI({ apiKey });
         const systemInstruction = `당신은 전 세계 최고의 타로 오라클 마스터 '트리니티'입니다.
-오늘 질문자가 뽑은 타로 카드는 **[${cardNameKo} (${cardNameEn})]** [${cardType}, ${orientation}, 핵심 키워드: ${cardKeywords}]입니다.${userContextBlock}
+오늘 질문자가 뽑은 타로 카드는 **[${cardNameKo} (${cardNameEn})]** [${cardType}, ${orientation}, 핵심 키워드: ${cardKeywords}]입니다.${userContextBlock}${touchWaveBlock}
 
 [반드시 준수할 오늘의 타로 리딩 원칙 - 간결하고 심플한 오늘 중심]:
 1. 장황하고 추상적인 장설이나 복잡한 철학적 만연체를 전면 배제하고, 오직 **오늘 하루에 직접적으로 관련된 핵심 내용만 간결하고 심플하게(Concise & Simple)** 작성하세요.

@@ -200,31 +200,31 @@ export function calculateWarpMetrics(
   } else if (radialSectorIndex >= 0) {
     // 🌌 7대 앱으로 튕기거나 조준하는 기능 = 사건의 지평선 (Event Horizon)
     phase = 'event_horizon';
-    // 🪞 진자 순환: 화이트홀(1번메뉴) ➔ 미러홀(2번메뉴) ➔ 블랙홀(3번메뉴) ➔ 미러홀(2번메뉴)
+    // 🪞 진자 순환: 화이트홀(1번메뉴) ➔ 미러홀(2번메뉴) ➔ 블랙홀(3번메뉴) 순환
     if (durationMs < 250) {
       eventHorizonMode = 'whitehole';
     } else {
       const holdDuration = durationMs - 250;
-      const cycleState = Math.floor(holdDuration / 650) % 4; // 0: 화이트홀, 1: 미러홀, 2: 블랙홀, 3: 미러홀
-      eventHorizonMode = cycleState === 0 ? 'whitehole' : cycleState === 2 ? 'blackhole' : 'mirrorhole';
+      const cycleState = Math.floor(holdDuration / 650) % 3; // 0: 화이트홀, 1: 미러홀, 2: 블랙홀
+      eventHorizonMode = cycleState === 0 ? 'whitehole' : cycleState === 1 ? 'mirrorhole' : 'blackhole';
     }
   } else if (durationMs < 250) {
     // 🌀 제자리에서 가볍게 터치(탭) = 웜홀 (Wormhole: 자유 양자 도약)
     phase = 'wormhole';
   } else {
-    // 🪞 제자리 홀드 유지: 화이트홀(루시) ➔ 미러홀(홈) ➔ 블랙홀(오브) ➔ 미러홀(홈) 4위상 실시간 순환
+    // 🪞 제자리 홀드 유지: 화이트홀(빛비춤) ➔ 미러홀(유리) ➔ 블랙홀(어두움) 3단계 순서대로 순환
     // 250ms 이후부터 650ms 주기로 순차 교차
     const holdDuration = durationMs - 250;
-    const cycleState = Math.floor(holdDuration / 650) % 4; // 0: 화이트홀(루시), 1: 미러홀(홈), 2: 블랙홀(오브), 3: 미러홀(홈)
+    const cycleState = Math.floor(holdDuration / 650) % 3; // 0: 화이트홀(루시), 1: 미러홀(홈), 2: 블랙홀(오브)
     if (cycleState === 0) {
       // ☀️ 화이트홀: 빛비춤 (루시 1:1 대화)
       phase = 'whitehole';
-    } else if (cycleState === 2) {
+    } else if (cycleState === 1) {
+      // 🪞 미러홀: 유리테마 (항시 프리즘 홈)
+      phase = 'mirrorhole';
+    } else {
       // 🕳️ 블랙홀: 어두움 (크리스탈 오브)
       phase = 'blackhole';
-    } else {
-      // 🪞 미러홀 (1, 3): 유리테마 (항시 프리즘 홈)
-      phase = 'mirrorhole';
     }
   }
 

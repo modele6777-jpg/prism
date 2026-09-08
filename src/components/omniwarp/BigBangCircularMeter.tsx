@@ -54,7 +54,13 @@ export const BigBangCircularMeter = React.memo(function BigBangCircularMeter({
         className="absolute inset-2 rounded-full pointer-events-none transition-opacity duration-300"
         style={{
           background: isPressing
-            ? 'radial-gradient(circle, rgba(56,189,248,0.28) 0%, rgba(168,85,247,0.25) 50%, transparent 75%)'
+            ? activePhase === 'whitehole'
+              ? 'radial-gradient(circle, rgba(255,255,255,0.5) 0%, rgba(254,240,138,0.4) 45%, transparent 75%)'
+              : activePhase === 'mirrorhole'
+              ? 'radial-gradient(circle, rgba(224,242,254,0.5) 0%, rgba(186,230,253,0.4) 45%, transparent 75%)'
+              : activePhase === 'blackhole'
+              ? 'radial-gradient(circle, rgba(88,28,135,0.45) 0%, rgba(0,0,0,0.6) 50%, transparent 80%)'
+              : 'radial-gradient(circle, rgba(56,189,248,0.28) 0%, rgba(168,85,247,0.25) 50%, transparent 75%)'
             : isHovered
             ? 'radial-gradient(circle, rgba(56,189,248,0.22) 0%, rgba(168,85,247,0.2) 50%, transparent 75%)'
             : 'radial-gradient(circle, rgba(56,189,248,0.12) 0%, rgba(168,85,247,0.1) 50%, transparent 75%)',

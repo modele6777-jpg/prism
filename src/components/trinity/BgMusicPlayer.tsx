@@ -3178,7 +3178,22 @@ export function BgMusicPlayer() {
       try {
         const ctx = getSharedAudioContext();
         if (ctx.state === 'suspended') {
-          ctx.resume().catch(() => {});
+          ctx.resume().then(() => {
+            if (isPlayingRef.current) {
+              const curTrackIndex = shuffledIndicesRef.current[queueIndexRef.current] ?? activeTrackIndexRef.current;
+              try {
+                playTrackDirectly(curTrackIndex, false);
+              } catch (_) {}
+            }
+          }).catch(() => {});
+        } else if (isPlayingRef.current) {
+          const curTrackIndex = shuffledIndicesRef.current[queueIndexRef.current] ?? activeTrackIndexRef.current;
+          const track = tracksRef.current[curTrackIndex];
+          const isSynth = track?.url?.startsWith("synth");
+          const audio = audioRef.current;
+          if (audio && audio.paused && !isSynth) {
+            audio.play().catch(() => {});
+          }
         }
       } catch (_) {}
     };
@@ -3195,13 +3210,6 @@ export function BgMusicPlayer() {
       window.removeEventListener("touchend", unlockAudioContext);
       window.removeEventListener("pointerdown", unlockAudioContext);
       window.removeEventListener("keydown", unlockAudioContext);
-      const audio = audioRef.current;
-      if (audio) {
-        try {
-          if (!audio.paused) audio.pause();
-        } catch (_) {}
-      }
-      stopProceduralSynth();
     };
   }, []);
 

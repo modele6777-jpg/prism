@@ -22,9 +22,7 @@ import {
 import { useApp, getPersistentUserProfile } from '@/contexts/AppContext';
 import { invokeLLM } from '@/lib/ai';
 import { recordPrismFeature } from '@/lib/prismOmniSync';
-import { saveLocalVerses, getLocalDateKey } from '@/lib/rebibleStorage';
 import { playTTS, stopTTS, useTTSActive } from '@/utils/tts';
-import type { ReBibleVerse } from '@/types/rebible';
 
 interface CosmicFocusOption {
   id: string;
@@ -280,39 +278,6 @@ export function EpilogueSynergySection() {
     setTimeout(() => setCopied(false), 2500);
   };
 
-  const handleSaveToReBible = () => {
-    try {
-      const dateKey = getLocalDateKey();
-      const verse: ReBibleVerse = {
-        id: `seed-chronicle-${dateKey}`,
-        bookTitle: '각성의 서',
-        chapterNumber: 1,
-        verseNumber: 1,
-        reference: `SoulChronicle ${dateKey}`,
-        title: chronicleData.title,
-        fact: chronicleData.dailyCoreTheme,
-        insight: chronicleData.soulAlignmentSynthesis,
-        emotions: ['gratitude', 'peace', 'awakening'],
-        tags: ['에필로그', 'SoulChronicle', `포커스:${selectedFocus}`, `날짜:${dateKey}`],
-        annotations: [],
-        isSacredFavorite: true,
-        recordedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      saveLocalVerses([verse]);
-      recordPrismFeature({
-        app: 'epilogue',
-        featureName: 'Save Epilogue Chronicle to ReBible',
-        summary: chronicleData.title,
-        details: { dateKey }
-      });
-      setSavedToast(true);
-      setTimeout(() => setSavedToast(false), 3000);
-    } catch (e) {
-      console.warn('ReBible save failed', e);
-    }
-  };
-
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8 pb-12 text-white font-sans">
       {/* Header Banner */}
@@ -535,18 +500,6 @@ export function EpilogueSynergySection() {
               >
                 {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
                 <span>{copied ? '복사 완료' : '전체 복사'}</span>
-              </button>
-
-              <button
-                onClick={handleSaveToReBible}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                  savedToast
-                    ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/50'
-                    : 'bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-500/30'
-                }`}
-              >
-                {savedToast ? <Check size={14} className="text-emerald-400" /> : <Award size={14} className="text-purple-300" />}
-                <span>{savedToast ? '각성의 서 저장 완료!' : 'Re:Bible에 저장'}</span>
               </button>
             </div>
           </div>

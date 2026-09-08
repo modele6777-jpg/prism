@@ -219,6 +219,10 @@ import {
   type TarotConcernKind,
 } from "@/lib/trinity/utils";
 import {
+  type TarotPhysicalMetadata,
+  defaultTarotTouchAnalyzer,
+} from "@/lib/trinity/tarotTouchAnalyzer";
+import {
   auth,
   db,
   collection,
@@ -1826,7 +1830,12 @@ export default function TrinityApp() {
 
     const handleUnifiedReading = async (
     type: "daily" | "tarot",
-    params?: { selectedCards?: TarotCard[]; selectedCard?: TarotCard; autoRun?: boolean },
+    params?: {
+      selectedCards?: TarotCard[];
+      selectedCard?: TarotCard;
+      autoRun?: boolean;
+      touchMetadata?: TarotPhysicalMetadata | null;
+    },
   ) => {
     if (type === "daily") {
       const card = params?.selectedCard;
@@ -2074,13 +2083,25 @@ export default function TrinityApp() {
           const dailyCardDirective = dailyCard
             ? `\n오늘의 지배 카드 (배경 에너지): ${dailyCard.nameKo} (${dailyCard.name})${dailyCard.reversed ? ' [역방향]' : ''}\n-> 이번 고민 리딩 시 오늘 하루를 이끄는 [${dailyCard.nameKo}]의 파동과 상호작용을 1단계(마음과 현재 에너지)와 4단계(실천 처방)에 필히 융합하여 서술하십시오.`
             : '';
+
+          // 손끝 물리적 터치/파동 메타데이터 반영
+          const touchMeta = params?.touchMetadata || (selectedCards as any[])?.[0]?.touchMetadata || null;
+          const touchPhysicalDirective = touchMeta
+            ? `\n\n[🖐️ 질문자의 손끝 물리 파동 및 심층 체류 지표 (실측치)]
+- 공명 깊이/모드: ${touchMeta.depthMode}
+- 터치 체류 시간: ${touchMeta.durationMs}ms (집중도 및 영적 체류 시간)
+- 손끝 미세 떨림/망설임 지수: ${touchMeta.jitterScore} (점수가 높을수록 내면의 복잡한 번뇌와 갈등이 큼)
+- 해석 어조 가이드: ${touchMeta.tonePrompt}
+-> **필수 반영 규칙**: 1단계(카드가 비추는 당신의 마음과 현재 에너지)의 첫 시작 문단에서 반드시 내담자가 카드를 뽑을 때 감지된 손끝의 물리적 체류(${touchMeta.durationMs}ms)와 번뇌/집중도(${touchMeta.depthMode.split(' ')[0]})의 파동을 신비롭게 짚어주며 리딩을 여십시오.`
+            : '';
+
           systemPrompt = `당신은 질문자의 가슴 깊은 고민을 꿰뚫어보고, 따뜻한 공감과 날카로운 직관으로 운명의 길을 밝혀주는 신비롭고 영험한 전문 타로 마스터 '트리니티'입니다.
 실제 1:1 타로 상담실에서 촛불을 켜고 내담자의 눈을 마주 보며 카드를 한 장씩 넘겨 리딩해 주듯, 살아 숨 쉬는 생생한 대화형 어조(정중하고 기품 있는 해요체·하십시오체)로 깊은 울림을 선사하십시오.
 
 [상담 개요]
 - 내담자 고민: "${tarotConcern}"
 - 적용 배열법: ${concernAnalysis.spread.name} (${concernAnalysis.spread.cardCount}장)
-- 펼쳐진 카드: [${cardNames}]${dailyCardDirective}
+- 펼쳐진 카드: [${cardNames}]${dailyCardDirective}${touchPhysicalDirective}
 
 [🔮 타로 마스터 리딩 원칙 — 보고서형 어투 절대 금지]
 1. **생생한 상담실 대화체**: 딱딱한 기획서·보고서·수치 나열형(예: '성공률 80%, 실패율 20%', '1단계: 진단' 등 사무적 어투)은 절대 지양하십시오. 대신 "카드를 가만히 마주하니...", "가장 먼저 눈에 밟히는 카드는...", "이 카드가 당신께 이렇게 속삭이고 있네요"처럼 실제 타로 마스터의 생동감 넘치는 호흡으로 이야기하듯 서술하십시오.
@@ -2091,7 +2112,7 @@ export default function TrinityApp() {
 [✨ 리딩 구성 형식 — 아래 5단계 마크다운 구조로 감동적이고 흡입력 있게 전개하세요]
 
 ### 🕯️ 1. 카드가 비추는 당신의 마음과 현재 에너지
-- 질문자님의 고민("${tarotConcern}")을 마주했을 때 전해져 오는 내면의 파동과 말 못 할 갈등, 현재 상황의 숨은 진실을 마스터의 깊은 직관으로 짚어주며 깊은 공감대를 형성하십시오. ${dailyCard ? `(오늘의 배경을 이끄는 [${dailyCard.nameKo}] 카드의 기운과 맞물려 지금 어떤 국면에 서 있는지 함께 짚어주세요.)` : ''}
+- 질문자님의 고민("${tarotConcern}")을 마주했을 때 전해져 오는 내면의 파동과 말 못 할 갈등, 현재 상황의 숨은 진실을 마스터의 깊은 직관으로 짚어주며 깊은 공감대를 형성하십시오. ${dailyCard ? `(오늘의 배경을 이끄는 [${dailyCard.nameKo}] 카드의 기운과 맞물려 지금 어떤 국면에 서 있는지 함께 짚어주세요.)` : ''}${touchMeta ? ` (손끝에서 전해진 ${touchMeta.depthMode.split(' ')[0]}의 파동을 첫 문장에 깃들여주세요.)` : ''}
 
 ### 🎴 2. 펼쳐진 카드들이 들려주는 이야기
 - **${concernAnalysis.spread.name}**의 각 위치에 놓인 카드들([${cardNames}])을 한 장씩 짚어가며, 카드의 상징 그림과 위치 의미를 생생하게 해독하십시오.
@@ -2163,6 +2184,7 @@ export default function TrinityApp() {
                   ? selectedCards.map((c) => `${c.nameKo}${c.reversed ? "(역)" : ""}`)
                   : [],
                 reversed: selectedCards?.map((c) => !!c.reversed),
+                touchMetadata: params?.touchMetadata || (selectedCards as any[])?.[0]?.touchMetadata || null,
               }
             }
           ).catch((err) => {
@@ -2588,11 +2610,11 @@ export default function TrinityApp() {
                       spreadReason={tarotSpreadRecommendation.reason}
                       concern={tarotConcern}
                       onCancel={() => setTarotVirtualMode(false)}
-                      onComplete={(cards) => {
+                      onComplete={(cards, touchMetadata) => {
                         setTarotVirtualMode(false);
                         setDrawnCards(cards);
                         setHideTarotPopup(false);
-                        handleUnifiedReading("tarot", { selectedCards: cards });
+                        handleUnifiedReading("tarot", { selectedCards: cards, touchMetadata });
                       }}
                     />
                   )}
@@ -3779,11 +3801,11 @@ export default function TrinityApp() {
                       spreadReason={tarotSpreadRecommendation.reason}
                       concern={tarotConcern}
                       onCancel={() => setTarotVirtualMode(false)}
-                      onComplete={(cards) => {
+                      onComplete={(cards, touchMetadata) => {
                         setTarotVirtualMode(false);
                         setDrawnCards(cards);
                         setHideTarotPopup(false);
-                        handleUnifiedReading("tarot", { selectedCards: cards });
+                        handleUnifiedReading("tarot", { selectedCards: cards, touchMetadata });
                       }}
                     />
                   )}

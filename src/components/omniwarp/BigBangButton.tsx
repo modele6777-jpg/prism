@@ -4,12 +4,19 @@ import { motion, AnimatePresence } from 'motion/react';
 import { WarpPhase, OmniWarpTarget, OmniWarpContext } from '@/lib/omniWarp/types';
 import { calculateWarpMetrics, forceToAiTemperature, RADIAL_WARP_APPS } from '@/lib/omniWarp/forceSensor';
 import { serializeCurrentView, synthesizeWarpTarget, executeBigBangCommit, isDisallowedWarpDestination } from '@/lib/omniWarp/omniWarpEngine';
-import { getWhiteholeRecommendedApp, getBlackholeRecommendedApp } from '@/lib/omniWarp/wormholeSpectrum';
+import {
+  getWhiteholeRecommendedApp,
+  getBlackholeRecommendedApp,
+  getAllActiveWormholeApps,
+} from '@/lib/omniWarp/wormholeSpectrum';
 import { getTossRule } from '@/lib/prismTossRegistry';
 import { omniWarpAudio } from '@/lib/omniWarp/omniWarpAudio';
 import { triggerHaptic, startBlackHoleContinuousHaptic, stopBlackHoleContinuousHaptic } from '@/lib/omniWarp/omniWarpHaptics';
 import { BigBangCircularMeter } from './BigBangCircularMeter';
 import { PrismAppIcon } from './PrismAppIcon';
+import {
+  BigBangHorizonOverlay,
+} from './BigBangHorizonOverlay';
 
 
 
@@ -27,6 +34,10 @@ export function BigBangButton() {
   const [dragDistance, setDragDistance] = useState(0);
   const [dragAngleDeg, setDragAngleDeg] = useState(0);
   const [radialSectorIndex, setRadialSectorIndex] = useState<number>(-1);
+
+  // 🎯 OmniWarp BigBang Controller 3대 홀 (화이트홀 · 미러홀 · 블랙홀) 상태
+  const [activeHole, setActiveHole] = useState<'whitehole' | 'mirrorhole' | 'blackhole'>('whitehole');
+  const lastHoleRef = useRef<'whitehole' | 'mirrorhole' | 'blackhole'>('whitehole');
 
   const lastSectorRef = useRef<number>(-1);
   const cachedContextRef = useRef<OmniWarpContext | null>(null);
@@ -140,14 +151,27 @@ export function BigBangButton() {
     const temp = forceToAiTemperature(metrics.virtualForce);
     const sectorIdx = metrics.radialSectorIndex !== undefined ? metrics.radialSectorIndex : -1;
 
-    // 중요한 상태 변경(섹터, 페이즈, 어보트)이 발생했거나 약 33ms(30fps) 경과 시 상태 일괄 동기화
+    const deltaX = currentPointer ? currentPointer.clientX - start.x : 0;
+    const deltaY = currentPointer ? currentPointer.clientY - start.y : 0;
+    const dist = Math.hypot(deltaX, deltaY);
+
+    // 🪞 홀드 시 3대 홀 순환 (화이트홀:빛비춤 -> 미러홀:유리 -> 블랙홀:어두움)
+    const elapsed = now - start.time;
+    let currentHole: 'whitehole' | 'mirrorhole' | 'blackhole' = 'whitehole';
+    if (elapsed >= 300) {
+      const cycle = Math.floor((elapsed - 300) / 650) % 3;
+      currentHole = cycle === 0 ? 'whitehole' : cycle === 1 ? 'mirrorhole' : 'blackhole';
+    }
+
+    // 중요한 상태 변경(섹터, 페이즈, 어보트, 홀)이 발생했거나 약 33ms(30fps) 경과 시 상태 일괄 동기화
     const isSectorChanged = sectorIdx !== lastSectorRef.current;
     const isPhaseChanged = metrics.phase !== lastPhaseRef.current;
     const isAbortedChanged = metrics.isAborted !== isAborted;
+    const isHoleChanged = currentHole !== lastHoleRef.current;
     const isGaugeSignificantlyChanged = Math.abs(metrics.virtualForce - lastUpdateGaugeRef.current) >= 0.04;
     const isTimeThrottled = now - lastStateUpdateTimeRef.current >= 32;
 
-    if (isSectorChanged || isPhaseChanged || isAbortedChanged || isGaugeSignificantlyChanged || isTimeThrottled) {
+    if (isSectorChanged || isPhaseChanged || isAbortedChanged || isHoleChanged || isGaugeSignificantlyChanged || isTimeThrottled) {
       lastStateUpdateTimeRef.current = now;
       lastUpdateGaugeRef.current = metrics.virtualForce;
 
@@ -158,17 +182,33 @@ export function BigBangButton() {
       setCurrentTarget(target);
       setIsAborted(metrics.isAborted);
       setDragOffset({ x: metrics.dragOffsetX || 0, y: metrics.dragOffsetY || 0 });
-      setDragDistance(metrics.dragDistance || 0);
+      setDragDistance(dist);
       setDragAngleDeg(metrics.dragAngleDeg || 0);
       setRadialSectorIndex(sectorIdx);
+      setActiveHole(currentHole);
     }
 
-    // 🎯 방사형 조이스틱 각 앱 섹터 진입 시 기계식 마그네틱 틱 햅틱 진동
+    // 🎯 7대 앱 방사형 조이스틱 각 앱 섹터 진입 시 기계식 마그네틱 틱 햅틱 진동
     if (sectorIdx !== -1 && sectorIdx !== lastSectorRef.current && !metrics.isAborted) {
       lastSectorRef.current = sectorIdx;
       triggerHaptic('whitehole');
     } else if (sectorIdx === -1) {
       lastSectorRef.current = -1;
+    }
+
+    // 🧲 홀 순환 전환 시 실시간 오디오 & 햅틱
+    if (elapsed >= 300 && currentHole !== lastHoleRef.current && !metrics.isAborted) {
+      lastHoleRef.current = currentHole;
+      if (currentHole === 'whitehole') {
+        omniWarpAudio.playWhiteHole();
+        triggerHaptic('whitehole');
+      } else if (currentHole === 'mirrorhole') {
+        omniWarpAudio.playMirrorHole();
+        triggerHaptic('mirrorhole');
+      } else if (currentHole === 'blackhole') {
+        omniWarpAudio.playBlackHole();
+        triggerHaptic('blackhole');
+      }
     }
 
     // 🧲 마그네틱 래칫 햅틱
@@ -203,25 +243,6 @@ export function BigBangButton() {
       lastPhaseRef.current = metrics.phase;
     }
 
-    // 🌌 사건의 지평선 조준 상태에서 4단계 순환(화이트홀·미러홀·블랙홀·미러홀) 모드 변경 시 실시간 공명 햅틱 & 오디오 피드백
-    if (metrics.phase === 'event_horizon' && !metrics.isAborted && metrics.eventHorizonMode) {
-      if (metrics.eventHorizonMode !== lastEventHorizonModeRef.current) {
-        lastEventHorizonModeRef.current = metrics.eventHorizonMode;
-        if (metrics.eventHorizonMode === 'whitehole') {
-          omniWarpAudio.playWhiteHole();
-          triggerHaptic('whitehole');
-        } else if (metrics.eventHorizonMode === 'mirrorhole') {
-          omniWarpAudio.playMirrorHole();
-          triggerHaptic('mirrorhole');
-        } else if (metrics.eventHorizonMode === 'blackhole') {
-          omniWarpAudio.playBlackHole();
-          triggerHaptic('blackhole');
-        }
-      }
-    } else if (metrics.phase !== 'event_horizon') {
-      lastEventHorizonModeRef.current = undefined;
-    }
-
     if (metrics.isAborted && lastPhaseRef.current !== 'aborted') {
       omniWarpAudio.playAbort();
       triggerHaptic('abort');
@@ -251,6 +272,7 @@ export function BigBangButton() {
     lastStageRef.current = 1;
     lastUpdateGaugeRef.current = 0.08;
     lastStateUpdateTimeRef.current = now;
+    lastHoleRef.current = 'whitehole';
 
     // 터치 시작 시 단 한 번만 직렬화하여 캐싱 (매 16ms마다 I/O 파싱 방지)
     const context = serializeCurrentView(location);
@@ -260,6 +282,7 @@ export function BigBangButton() {
     setDragDistance(0);
     setDragAngleDeg(0);
     setRadialSectorIndex(-1);
+    setActiveHole('whitehole');
     setIsPressing(true);
     setIsAborted(false);
     setActivePhase('wormhole');
@@ -304,6 +327,11 @@ export function BigBangButton() {
 
     const start = touchStartRef.current;
     const now = performance.now();
+    const duration = now - start.time;
+    const deltaX = e.clientX - start.x;
+    const deltaY = e.clientY - start.y;
+    const dist = Math.hypot(deltaX, deltaY);
+
     const metrics = calculateWarpMetrics(
       start.time,
       now,
@@ -320,6 +348,7 @@ export function BigBangButton() {
     cachedContextRef.current = null;
     lastStageRef.current = 1;
     lastSectorRef.current = -1;
+    lastHoleRef.current = 'whitehole';
     lastEventHorizonModeRef.current = undefined;
     stopBlackHoleContinuousHaptic();
     setDragOffset({ x: 0, y: 0 });
@@ -338,8 +367,38 @@ export function BigBangButton() {
     }
 
     setIsAborted(false);
-
     const context = serializeCurrentView(location);
+
+    // [1] 제자리 단순 탭 (300ms 미만 및 드래그 없음) -> 웜홀 (전체 앱 중 무작위 순간이동)
+    if (duration < 300 && dist < 25) {
+      const allActive = getAllActiveWormholeApps();
+      const randomApp = allActive[Math.floor(Math.random() * allActive.length)] || allActive[0];
+      const wormholeTarget: OmniWarpTarget = {
+        id: randomApp.id,
+        icon: randomApp.icon,
+        phase: 'wormhole',
+        gauge: 0.5,
+        aiTemperature: 0.5,
+        title: randomApp.name,
+        actionType: 'omniwarp_wormhole_random',
+        destinationPath: randomApp.path,
+        previewLabel: `[웜홀 양자도약] 🌀 ${randomApp.name}`,
+        previewDescription: `시공간 웜홀의 양자 요동을 타고 [${randomApp.name}] 차원으로 무작위 양자도약합니다.`,
+        themeColor: randomApp.themeColor,
+        accentGlow: randomApp.accentGlow,
+        stageIndex: 1,
+        runeSymbol: randomApp.runeSymbol,
+        runeName: randomApp.runeName,
+      };
+      executeBigBangCommit(wormholeTarget, context, metrics);
+      setActivePhase('idle');
+      setGauge(0);
+      setDurationMs(0);
+      return;
+    }
+
+    // [2 & 3] 사건의 지평선 (7대 정규 앱 조준) 또는 3대 홀 (화이트홀 / 미러홀 / 블랙홀)
+    // synthesizeWarpTarget가 7개 실존 앱과 3대 홀의 정규 목적지를 완벽하게 합성
     const target = synthesizeWarpTarget(context, metrics);
 
     if (isDisallowedWarpDestination(target.id || '') || isDisallowedWarpDestination(target.destinationPath || '')) {
@@ -389,14 +448,17 @@ export function BigBangButton() {
 
   // 🌟 위상 판별: 화이트홀(빛비춤), 미러홀(유리테마), 블랙홀(어둠효과)
   const isWhiteholeMode =
+    activeHole === 'whitehole' ||
     activePhase === 'whitehole' ||
     (activePhase === 'event_horizon' && currentTarget?.eventHorizonMode === 'whitehole');
 
   const isMirrorholeMode =
+    activeHole === 'mirrorhole' ||
     activePhase === 'mirrorhole' ||
     (activePhase === 'event_horizon' && currentTarget?.eventHorizonMode === 'mirrorhole');
 
   const isBlackholeMode =
+    activeHole === 'blackhole' ||
     activePhase === 'blackhole' ||
     (activePhase === 'event_horizon' && currentTarget?.eventHorizonMode === 'blackhole');
 
@@ -434,6 +496,15 @@ export function BigBangButton() {
 
   return (
     <>
+      {/* 🌌 사건의 지평선 오버레이 (7대 정규 앱 셉타그램 & 3대 홀 포털) */}
+      <BigBangHorizonOverlay
+        isVisible={isPressing && durationMs >= 300 && !isAborted}
+        radialSectorIndex={radialSectorIndex}
+        activeHole={activeHole}
+        dragDistance={dragDistance}
+        dragAngleDeg={dragAngleDeg}
+      />
+
       {/* 🚀 Crystal Ball Big Bang Button (군더더기 없는 현대적이고 웅장한 대형 코스믹 아티팩트) */}
       <div
         className="fixed left-1/2 -translate-x-1/2 z-[350] pointer-events-none flex items-center justify-center select-none bottom-safe-fab"
@@ -496,6 +567,12 @@ export function BigBangButton() {
               className={`w-[76px] h-[76px] sm:w-[84px] sm:h-[84px] rounded-full flex flex-col items-center justify-center shrink-0 cursor-pointer outline-none relative overflow-hidden transition-all duration-200 border will-change-transform ${
                 isPressing && isAborted
                   ? 'opacity-70 border-red-500/70 shadow-[0_0_24px_rgba(239,68,68,0.5)]'
+                  : isPressing && isWhiteholeMode
+                  ? 'border-amber-100/95 shadow-[0_0_40px_rgba(255,255,255,0.95),0_0_28px_rgba(254,240,138,0.8),inset_0_0_24px_rgba(255,255,255,0.9)]'
+                  : isPressing && isMirrorholeMode
+                  ? 'border-white/90 shadow-[0_0_36px_rgba(224,242,254,0.9),0_0_22px_rgba(186,230,253,0.7),inset_0_0_22px_rgba(255,255,255,0.85)]'
+                  : isPressing && isBlackholeMode
+                  ? 'border-purple-900/90 shadow-[0_0_40px_rgba(0,0,0,1),0_0_22px_rgba(107,33,168,0.5),inset_0_0_28px_rgba(0,0,0,1)]'
                   : isPressing
                   ? 'border-cyan-300/80 shadow-[0_0_32px_rgba(56,189,248,0.45),inset_0_0_22px_rgba(56,189,248,0.35)]'
                   : 'border-cyan-400/40 hover:border-cyan-300/80 shadow-[0_0_24px_rgba(56,189,248,0.3)]'
@@ -503,15 +580,36 @@ export function BigBangButton() {
               style={{
                 background: isPressing && isAborted
                   ? 'radial-gradient(circle at 40% 35%, #1f0b0f 0%, #0d0406 55%, #040102 100%)'
+                  : isPressing && isWhiteholeMode
+                  ? 'radial-gradient(circle at 40% 30%, #ffffff 0%, #fef3c7 35%, #fde68a 65%, #f59e0b 100%)'
+                  : isPressing && isMirrorholeMode
+                  ? 'linear-gradient(135deg, rgba(255,255,255,0.75) 0%, rgba(224,242,254,0.4) 40%, rgba(186,230,253,0.3) 70%, rgba(255,255,255,0.6) 100%)'
+                  : isPressing && isBlackholeMode
+                  ? 'radial-gradient(circle at 50% 50%, #000000 0%, #040308 45%, #090514 80%, #020104 100%)'
+                  : isPressing
+                  ? 'radial-gradient(circle at 35% 30%, #171833 0%, #0e0f21 45%, #060712 80%, #020207 100%)'
                   : 'radial-gradient(circle at 35% 30%, #171833 0%, #0e0f21 45%, #060712 80%, #020207 100%)',
                 boxShadow: isPressing && isAborted
                   ? 'inset 0 0 20px rgba(239, 68, 68, 0.4), 0 0 24px rgba(239, 68, 68, 0.5)'
+                  : isPressing && isWhiteholeMode
+                  ? 'inset 0 0 25px rgba(255, 255, 255, 0.95), 0 0 35px rgba(253, 230, 138, 0.9)'
+                  : isPressing && isMirrorholeMode
+                  ? 'inset 0 0 24px rgba(255, 255, 255, 0.8), inset 1px 1px 2px rgba(255, 255, 255, 1), 0 0 32px rgba(186, 230, 253, 0.75)'
+                  : isPressing && isBlackholeMode
+                  ? 'inset 0 0 30px rgba(0, 0, 0, 1), inset 0 0 15px rgba(88, 28, 135, 0.4), 0 0 36px rgba(0, 0, 0, 0.95)'
                   : isPressing
                   ? 'inset 0 0 22px rgba(56, 189, 248, 0.35), inset -6px -6px 18px rgba(0, 0, 0, 0.9), 0 0 30px rgba(56, 189, 248, 0.45)'
                   : 'inset 0 0 22px rgba(56, 189, 248, 0.25), inset -6px -6px 18px rgba(0, 0, 0, 0.9), 0 0 24px rgba(56, 189, 248, 0.3)',
               }}
               aria-label={`빅뱅 차원 도약 · 탭: 웜홀 양자도약, 홀드: 차원 수렴 도약`}
             >
+              {/* 미러홀 유리 질감 광택 층 */}
+              {isPressing && isMirrorholeMode && (
+                <div
+                  className="absolute inset-0 rounded-full pointer-events-none z-10 bg-gradient-to-tr from-white/20 via-sky-200/30 to-white/60 mix-blend-overlay backdrop-blur-md"
+                />
+              )}
+
               {/* 기본 대기 상태일 때의 은은한 회전 볼텍스 링 */}
               {!isPressing && (
                 <div
@@ -523,12 +621,24 @@ export function BigBangButton() {
                 />
               )}
 
-              {/* Event Horizon Deep Singularity Core (크리스탈 구체의 딥 옵시디언 코어) */}
+              {/* Event Horizon Deep Singularity Core (크리스탈 구체의 코어 - 화이트홀/미러홀/블랙홀 반응) */}
               <div
                 className="absolute inset-2.5 sm:inset-3 rounded-full z-15 pointer-events-none transition-all duration-200 overflow-hidden flex items-center justify-center"
                 style={{
-                  background: 'radial-gradient(circle at 45% 35%, #101228 0%, #090a1a 55%, #03030a 100%)',
-                  boxShadow: 'inset 0 0 16px rgba(0, 0, 0, 0.95)',
+                  background: isPressing && isWhiteholeMode
+                    ? 'radial-gradient(circle at 45% 35%, #ffffff 0%, #fef08a 45%, #f59e0b 100%)'
+                    : isPressing && isMirrorholeMode
+                    ? 'radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9) 0%, rgba(224,242,254,0.6) 45%, rgba(186,230,253,0.3) 80%, rgba(255,255,255,0.5) 100%)'
+                    : isPressing && isBlackholeMode
+                    ? 'radial-gradient(circle at 50% 50%, #000000 0%, #020206 55%, #05040b 100%)'
+                    : 'radial-gradient(circle at 45% 35%, #101228 0%, #090a1a 55%, #03030a 100%)',
+                  boxShadow: isPressing && isWhiteholeMode
+                    ? '0 0 20px rgba(255, 255, 255, 1), inset 0 0 10px rgba(255, 255, 255, 0.9)'
+                    : isPressing && isMirrorholeMode
+                    ? 'inset 0 0 16px rgba(255, 255, 255, 0.8), 0 0 15px rgba(224, 242, 254, 0.6)'
+                    : isPressing && isBlackholeMode
+                    ? 'inset 0 0 24px rgba(0, 0, 0, 1)'
+                    : 'inset 0 0 16px rgba(0, 0, 0, 0.95)',
                 }}
               />
 

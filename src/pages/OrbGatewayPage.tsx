@@ -21,8 +21,8 @@ import { sacredAudio } from "@/lib/omniWarp/sacredAudio";
 import { triggerHaptic } from "@/lib/omniWarp/omniWarpHaptics";
 import { playTTS, stopTTS, useTTSActive } from "@/utils/tts";
 import { getPendingPrismToss, clearPrismToss } from "@/lib/prismToss";
+import { startBinauralBeat } from "@/lib/binauralBeats";
 
-import { BgMusicPlayer } from "@/components/trinity/BgMusicPlayer";
 import { CrystalOrbIcon } from "@/components/icons/CrystalOrbIcon";
 import { safeLocalStorage } from "@/utils/safeStorage";
 import { useNarrowPhone } from "@/hooks/useNarrowPhone";
@@ -443,6 +443,13 @@ export default function OrbGatewayPage() {
     setScryingResult(null); // 이전 결과 리셋하여 전환된 모드 상태가 오브 중심에 즉시 표기되게 함
     setHoveredRuneInfo(null); // 연동 모드 전환/조작 시 팝업메시지 즉시 소멸
 
+    // 🎧 해당 룬의 어플 바이노럴 비트 즉각 재생
+    try {
+      startBinauralBeat(app.id);
+    } catch (binauralErr) {
+      console.warn("[OrbGateway] Binaural beat start error:", binauralErr);
+    }
+
     setSelectedRuneIds((prev) => {
       let next: string[];
       if (prev.includes(app.id)) {
@@ -848,6 +855,7 @@ export default function OrbGatewayPage() {
     if (isScrying) return; // Prevent concurrent overlapping requests
 
     const query = questionText || inquiry.trim() || "지금 나에게 가장 필요한 명료한 방향과 선택";
+    setInquiry(""); // 🔮 고민 실행 즉시 대화창/입력창 초기화
     stopTTS();
     setIsScrying(true);
     setScryingResult(null);
@@ -1061,6 +1069,7 @@ ${dimensionDescriptions}
       );
       setIsScrying(false);
       setScryingResult(finalResult);
+      setInquiry(""); // 🔮 고민 완료 후 대화창/입력창 확실히 초기화
       sacredAudio.playSingingBowl(639);
 
       // Auto play TTS voice reading
@@ -1129,14 +1138,22 @@ ${dimensionDescriptions}
       const pending = getPendingPrismToss("orb");
       if (pending) {
         clearPrismToss();
-        const incomingQuestion = pending.personaDialogue?.lastUserMessage || pending.autoPrompt || pending.contextMessage || "";
-        if (incomingQuestion) {
+        // 15초 이내에 명시적으로 발생한 유효 토스만 수신
+        const isFresh = pending.tossedAt && (Date.now() - pending.tossedAt < 15000);
+        // 이전 감정 상담 흔적(우울/부정적 기본 문구 등)은 자동 주입되지 않도록 정제
+        const incomingQuestion = (pending.autoPrompt || pending.contextMessage || (pending as any).query || "").trim();
+        const isEmotionalSpillover =
+          incomingQuestion.includes("우울해") ||
+          incomingQuestion.includes("자존감이 낮아") ||
+          incomingQuestion.includes("너무 우울");
+
+        if (isFresh && incomingQuestion && !isEmotionalSpillover) {
           setInquiry(incomingQuestion);
-        }
-        if (pending.autoTrigger) {
-          setTimeout(() => {
-            executeScrying(incomingQuestion || undefined);
-          }, 450);
+          if (pending.autoTrigger) {
+            setTimeout(() => {
+              executeScrying(incomingQuestion || undefined);
+            }, 450);
+          }
         }
       }
     } catch (_) {}
@@ -1151,11 +1168,6 @@ ${dimensionDescriptions}
     >
       {/* Background Soft Glow */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
-
-      {/* Top-Right Background Music Player (Same position as Prism Main & Expands Leftwards) */}
-      <div className="fixed top-safe-2 right-4 sm:right-6 md:top-safe-4 z-[300]">
-        <BgMusicPlayer />
-      </div>
 
       {/* Top Header */}
       <header className="relative z-40 w-full max-w-4xl px-3 sm:px-6 pt-[max(env(safe-area-inset-top,0px),0.75rem)] sm:pt-6 pr-14 sm:pr-24 flex items-center justify-between gap-1.5 sm:gap-3 shrink-0">

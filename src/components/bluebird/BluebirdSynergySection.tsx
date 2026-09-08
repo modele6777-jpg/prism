@@ -4,9 +4,7 @@ import { Heart, Flame, Sparkles, Mail, Send, Check, Copy, RefreshCw, Volume2, Vo
 import { useApp, getPersistentUserProfile } from '@/contexts/AppContext';
 import { invokeLLM } from '@/lib/ai';
 import { recordPrismFeature } from '@/lib/prismOmniSync';
-import { saveLocalVerses, getLocalDateKey } from '@/lib/rebibleStorage';
 import { playTTS, stopTTS, useTTSActive } from '@/utils/tts';
-import type { ReBibleVerse } from '@/types/rebible';
 
 interface PureZeroData {
   title: string;
@@ -181,34 +179,6 @@ export function BluebirdSynergySection() {
     setTimeout(() => setCopied(false), 2500);
   };
 
-  const handleSaveToReBible = () => {
-    try {
-      const dateKey = getLocalDateKey();
-      const verse: ReBibleVerse = {
-        id: `seed-purezero-${dateKey}`,
-        bookTitle: '정화의 서',
-        chapterNumber: 1,
-        verseNumber: 1,
-        reference: `PureZero ${dateKey}`,
-        title: pureZeroData.title,
-        fact: pureZeroData.transmutedOracleResponse,
-        insight: `호오포노포노: ${pureZeroData.hoponoponoWhisper.sorry} / ${pureZeroData.hoponoponoWhisper.forgive}`,
-        emotions: ['purification', 'release', 'peace'],
-        tags: ['블루버드', 'PureZero', `날짜:${dateKey}`],
-        annotations: [],
-        isSacredFavorite: true,
-        recordedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      saveLocalVerses([verse]);
-      recordPrismFeature({ app: 'bluebird', featureName: 'Save Bluebird PureZero to ReBible', summary: pureZeroData.title, details: { dateKey } });
-      setSavedToast(true);
-      setTimeout(() => setSavedToast(false), 3000);
-    } catch (e) {
-      console.warn('ReBible save failed', e);
-    }
-  };
-
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8 pb-12 text-white font-sans">
       {/* Header Banner */}
@@ -324,18 +294,6 @@ export function BluebirdSynergySection() {
               >
                 {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
                 <span>{copied ? '복사 완료' : '정화 확언 복사'}</span>
-              </button>
-
-              <button
-                onClick={handleSaveToReBible}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                  savedToast
-                    ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/50'
-                    : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/30'
-                }`}
-              >
-                {savedToast ? <Check size={14} className="text-emerald-400" /> : <Award size={14} className="text-amber-300" />}
-                <span>{savedToast ? '정화의 서 저장 완료!' : 'Re:Bible에 저장'}</span>
               </button>
 
               <button

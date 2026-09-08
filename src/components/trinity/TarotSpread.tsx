@@ -6,6 +6,16 @@ import {
   ChevronLeft, ChevronRight, Shuffle,
 } from 'lucide-react';
 import { TAROT_DECK, TarotCard, getTarotCardImageUrl, rollTarotReversed } from '../../data/tarotData';
+import {
+  TarotDepthMode,
+  TarotPhysicalMetadata,
+  defaultTarotTouchAnalyzer,
+  TarotTouchAnalyzer,
+} from '@/lib/trinity/tarotTouchAnalyzer';
+
+export interface SelectedTarotCardEntry extends TarotCard {
+  touchMetadata?: TarotPhysicalMetadata | null;
+}
 
 const shuffleArray = <T,>(array: T[]): T[] => {
   const newArr = [...array];
@@ -173,7 +183,7 @@ const DeckWheelCard = React.memo(function DeckWheelCard({
 });
 
 interface TarotSpreadProps {
-  onComplete: (cards: TarotCard[]) => void;
+  onComplete: (cards: SelectedTarotCardEntry[], touchMetadata?: TarotPhysicalMetadata | null) => void;
   onCancel: () => void;
   maxCards?: number;
   concern?: string;
@@ -228,7 +238,9 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
     [deck.length],
   );
 
-  const [selectedEntries, setSelectedEntries] = useState<Array<{ card: TarotCard; reversed: boolean }>>([]);
+  const [selectedEntries, setSelectedEntries] = useState<Array<{ card: TarotCard; reversed: boolean; touchMetadata?: TarotPhysicalMetadata | null }>>([]);
+  const [touchStatusText, setTouchStatusText] = useState<string | null>(null);
+  const touchAnalyzerRef = useRef(new TarotTouchAnalyzer());
   const selectedIds = useMemo(
     () => selectedEntries.map((entry) => entry.card.id),
     [selectedEntries],
@@ -396,7 +408,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
   );
 
   const handleSelect = useCallback(
-    (cardToSelect: TarotCard) => {
+    (cardToSelect: TarotCard, touchMetadata?: TarotPhysicalMetadata | null) => {
       // Tactile haptic vibration on mobile
       try {
         if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
@@ -404,17 +416,26 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
         }
       } catch (_) {}
 
+      if (touchMetadata) {
+        setTouchStatusText(
+          `[파동 감지] ${touchMetadata.depthMode.split(' ')[0]} · 체류 ${touchMetadata.durationMs}ms · 떨림 ${touchMetadata.jitterScore}`
+        );
+      }
+
       setSelectedEntries((prev) => {
         if (prev.some((entry) => entry.card.id === cardToSelect.id) || prev.length >= maxCards) return prev;
         const isReversed = allowReversed ? rollTarotReversed() : false;
-        const next = [...prev, { card: cardToSelect, reversed: isReversed }];
+        const next = [...prev, { card: cardToSelect, reversed: isReversed, touchMetadata }];
         if (next.length === maxCards) {
           window.setTimeout(() => {
+            const primaryMetadata = next.find((n) => n.touchMetadata)?.touchMetadata || touchMetadata || null;
             onComplete(
               next.map((entry) => ({
                 ...entry.card,
                 reversed: entry.reversed,
+                touchMetadata: entry.touchMetadata,
               })),
+              primaryMetadata,
             );
           }, 650);
         }
@@ -452,6 +473,11 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     stopMomentum();
     if (!containerRef.current) return;
+
+    // 파동 측정 시작
+    touchAnalyzerRef.current.startTracking(e.clientX, e.clientY);
+    setTouchStatusText("파동 측정 중... (손끝을 가만히 얹고 집중하세요)");
+
     if (e.pointerType === 'touch') {
       try {
         e.currentTarget.setPointerCapture(e.pointerId);
@@ -483,6 +509,9 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!containerRef.current) return;
+
+    // 파동 지점 기록 (손끝 미세 떨림/망설임 계산용)
+    touchAnalyzerRef.current.recordPoint(e.clientX, e.clientY);
 
     // Hover detection when mouse is moving without dragging
     if (activePointerIdRef.current === null) {
@@ -573,6 +602,8 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
     }
 
     if (wasDragging) {
+      touchAnalyzerRef.current.reset();
+      setTouchStatusText(null);
       // If user flicked with velocity, apply smooth momentum
       if (Math.abs(velocityRef.current) > 0.08) {
         startMomentum(velocityRef.current);
@@ -581,8 +612,17 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
       // Direct tap selection
       const tapped = findTappedCard(e.clientX, e.clientY);
       if (tapped !== null) {
-        handleSelect(tapped);
+        const payload = touchAnalyzerRef.current.endTrackingAndBuildPayload(
+          `${tapped.nameKo} (${tapped.name})`
+        );
+        handleSelect(tapped, payload);
+      } else {
+        touchAnalyzerRef.current.reset();
+        setTouchStatusText(null);
       }
+    } else {
+      touchAnalyzerRef.current.reset();
+      setTouchStatusText(null);
     }
   };
 
@@ -808,7 +848,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
           </div>
 
           {/* Selection Instruction and Help */}
-          <div className="text-center pointer-events-none flex flex-col items-center gap-1 px-4 w-full select-none">
+          <div className="text-center pointer-events-none flex flex-col items-center gap-1.5 px-4 w-full select-none">
             <div className="flex items-center gap-2">
               <span className="text-yellow-400 font-bold tracking-[0.15em] text-xs sm:text-[13px] md:text-sm font-sans drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
                 {selectedEntries.length} / {maxCards} 카드를 선택하세요
@@ -817,9 +857,16 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
                 남은 덱: {visibleDeck.length}장
               </span>
             </div>
-            <span className="text-white/60 text-[10px] sm:text-[11px] tracking-wide font-normal max-w-xs md:max-w-md drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
-              부드럽게 밀어서 회전시키거나 원하는 카드를 탭하세요 (뽑은 카드는 덱에서 영구 제외됩니다)
-            </span>
+            {touchStatusText ? (
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-200 text-[10px] sm:text-[11px] font-mono shadow-[0_0_12px_rgba(245,158,11,0.3)] animate-pulse">
+                <Activity size={12} className="text-amber-300 animate-spin" />
+                <span>{touchStatusText}</span>
+              </div>
+            ) : (
+              <span className="text-white/60 text-[10px] sm:text-[11px] tracking-wide font-normal max-w-xs md:max-w-md drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+                부드럽게 밀어서 회전시키거나 원하는 카드를 탭하세요 (손끝 물리량 감지 엔진 가동 중)
+              </span>
+            )}
           </div>
         </div>
       </div>

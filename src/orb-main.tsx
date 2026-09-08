@@ -4,6 +4,7 @@ import { registerSW } from "virtual:pwa-register";
 import OrbGatewayPage from "./pages/OrbGatewayPage";
 import { BigBangButton } from "./components/omniwarp/BigBangButton";
 import { BigBangExpansionOverlay } from "./components/omniwarp/BigBangExpansionOverlay";
+import { GlobalNavigationFabs } from "./components/navigation/GlobalNavigationFabs";
 import InstallPrompt from "./components/InstallPrompt";
 import "./index.css";
 import { initPerfMode, getSwUpdateIntervalMs } from "./lib/perfMode";
@@ -48,6 +49,7 @@ if (rootElement) {
       <OrbGatewayPage />
       <BigBangButton />
       <BigBangExpansionOverlay />
+      <GlobalNavigationFabs forceIsOrb={true} />
       <InstallPrompt />
     </StrictMode>
   );

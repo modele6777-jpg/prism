@@ -32,8 +32,6 @@ import {
 } from "@/utils/artworkImage";
 import { useApp } from "@/contexts/AppContext";
 import { sendArtRecommendationToLucy } from "@/lib/oracleDeepInsight";
-import { getLocalVerses, saveLocalVerses, saveVerseToFirestore, getLocalDateKey } from "@/lib/rebibleStorage";
-import type { ReBibleVerse } from "@/types/rebible";
 import { getPendingPrismToss, clearPrismToss, type PrismTossPayload } from "@/lib/prismToss";
 
 interface FamousPoem {
@@ -991,89 +989,6 @@ function clearArtRecommendationCache(): void {
   Object.values(ART_CACHE_KEYS).forEach((key) => localStorage.removeItem(key));
 }
 
-export function buildArtReBibleVerse(
-  enriched: ArtRecommendation,
-  moodLabel: string = '오늘의 영감',
-  concernText: string = ''
-): ReBibleVerse {
-  const today = getTodayDateKey();
-  const verseId = `muse-${today}`;
-
-  const factLines: string[] = [
-    `🎨 작품명: ${enriched.title}${enriched.titleOriginal ? ` (${enriched.titleOriginal})` : ''}`,
-    `👤 작가: ${enriched.creator}${enriched.creatorOriginal ? ` (${enriched.creatorOriginal})` : ''}`,
-    `⏳ 제작 시기: ${enriched.year || '시기 정보 미상'} | 사조: ${enriched.style || '회화 예술'} | 매체: ${enriched.medium || '캔버스 회화'}`,
-    `🏛️ 소장처: ${enriched.location || '미술관 / 소장처 정보'}`,
-    `✨ 감상 테마: ${moodLabel}`,
-  ];
-  if (concernText) {
-    factLines.push(`💬 사용자 탐색 고민: "${concernText}"`);
-  }
-  if (enriched.famousPoem?.title) {
-    factLines.push(`📜 연계 명시: 《${enriched.famousPoem.title}》 (${enriched.famousPoem.poet})`);
-  }
-  if (enriched.famousSong?.title) {
-    factLines.push(`🎵 연계 명곡: 《${enriched.famousSong.title}》 (${enriched.famousSong.artist})`);
-  }
-
-  const insightSections: string[] = [
-    `### 🎨 작품 심층 해설\n${enriched.description || '오늘 당신의 영혼을 울리는 예술 작품입니다.'}`,
-    `### 💡 오늘의 예술적 처방 & 추천 사유\n${enriched.whyRecommended || '내면의 감성을 일깨우고 새로운 창작과 성찰의 시야를 열어줍니다.'}`,
-  ];
-
-  if (enriched.docentInsight) {
-    insightSections.push(`### 🏛️ 뮤즈 도슨트 인사이트\n${enriched.docentInsight}`);
-  }
-
-  if (enriched.famousPoem?.title) {
-    insightSections.push(
-      `### 📜 함께 낭독하는 명시: 《${enriched.famousPoem.title}》 — ${enriched.famousPoem.poet}\n> ${enriched.famousPoem.excerpt}\n\n*추천 사유: ${enriched.famousPoem.whyRecommended}*`
-    );
-  }
-
-  if (enriched.famousSong?.title) {
-    insightSections.push(
-      `### 🎵 함께 감상하는 클래식 명곡: 《${enriched.famousSong.title}》 — ${enriched.famousSong.artist}\n*감상 가이드: ${enriched.famousSong.listeningGuide}*`
-    );
-  }
-
-  return {
-    id: verseId,
-    bookTitle: '영감의 서',
-    chapterNumber: 1,
-    verseNumber: 1,
-    reference: `영감의 서 ${today}`,
-    title: `[뮤즈 예술 추천] ${enriched.title} — ${enriched.creator}`,
-    fact: factLines.join('\n'),
-    insight: insightSections.join('\n\n'),
-    emotions: ['영감', '예술', '치유', '감수성', '성찰'],
-    tags: ['뮤즈', '데일리예술추천', enriched.creator, enriched.style || '명작', `날짜:${today}`],
-    annotations: [],
-    isSacredFavorite: false,
-    recordedAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-}
-
-export function saveArtRecommendationToReBible(
-  enriched: ArtRecommendation,
-  moodLabel: string = '오늘의 영감',
-  concernText: string = ''
-): boolean {
-  try {
-    const newVerse = buildArtReBibleVerse(enriched, moodLabel, concernText);
-    const existing = getLocalVerses();
-    const filtered = existing.filter((v) => v.id !== newVerse.id);
-    const merged = [newVerse, ...filtered];
-    saveLocalVerses(merged);
-    void saveVerseToFirestore(newVerse);
-    return true;
-  } catch (err) {
-    console.warn('Failed to save art recommendation to ReBible:', err);
-    return false;
-  }
-}
-
 function isArtCacheFresh(): boolean {
   return isSameDayString(localStorage.getItem(ART_CACHE_KEYS.date));
 }
@@ -1116,7 +1031,6 @@ export function ArtRecommendationView() {
   
   const [copiedQuote, setCopiedQuote] = useState(false);
   const [geminiCopied, setGeminiCopied] = useState(false);
-  const [savedToReBible, setSavedToReBible] = useState(false);
   const hydrateStartedRef = useRef(false);
 
   const restoreDailyArtFromCache = useCallback((): boolean => {
@@ -1290,9 +1204,6 @@ export function ArtRecommendationView() {
       localStorage.setItem(ART_CACHE_KEYS.recommendation, JSON.stringify(enriched));
       recordArtworkHistory(enriched);
 
-      // Save rich, comprehensive record to ReBible '영감의 서'
-      saveArtRecommendationToReBible(enriched, dailyMood.label, concernText);
-
       // Realtime cross-device synchronization to Firestore & server vault
       try {
         const today = getTodayDateKey();
@@ -1320,7 +1231,6 @@ export function ArtRecommendationView() {
       touchArtCacheDate();
       localStorage.setItem(ART_CACHE_KEYS.recommendation, JSON.stringify(genericFallback));
       recordArtworkHistory(genericFallback);
-      saveArtRecommendationToReBible(genericFallback, dailyMood.label, concernText);
 
       try {
         const today = getTodayDateKey();
@@ -1439,9 +1349,6 @@ export function ArtRecommendationView() {
         setSavedCustomConcern(toss.contextMessage);
       }
 
-      // Save to ReBible
-      saveArtRecommendationToReBible(sanitizedArt, "오라클 타로 토스 처방", toss.contextMessage || cardNames);
-
       // Trigger artwork visualization
       await generateNanobananaImage(sanitizedArt);
     } catch (err) {
@@ -1491,37 +1398,26 @@ export function ArtRecommendationView() {
     const cloudArt = sharedState?.dailyArts?.[today];
     if (cloudArt && typeof cloudArt === "object" && (cloudArt.recommendation || cloudArt.title)) {
       const rec = cloudArt.recommendation || cloudArt;
-      setRecommendation(rec);
       localStorage.setItem(ART_CACHE_KEYS.recommendation, JSON.stringify(rec));
       localStorage.setItem(ART_CACHE_KEYS.date, today);
 
       const img = cloudArt.image || cloudArt.nanobananaImage || cloudArt.imageUrl || rec.imageUrl;
       if (img) {
-        setNanobananaImage(img);
         localStorage.setItem(ART_CACHE_KEYS.image, img);
       }
       const source = cloudArt.imageSource || cloudArt.artworkImageSource || "dailyart";
-      setArtworkImageSource(source);
       localStorage.setItem(ART_CACHE_KEYS.imageSource, source);
 
       const mood = cloudArt.moodLabel || cloudArt.currentMoodLabel;
       if (mood) {
-        setCurrentMoodLabel(mood);
-        setSavedThemeLabel(mood);
         localStorage.setItem(ART_CACHE_KEYS.mood, mood);
       }
       if (cloudArt.userConcern) {
-        setSavedCustomConcern(cloudArt.userConcern);
         localStorage.setItem(ART_CACHE_KEYS.userConcern, cloudArt.userConcern);
       }
       if (cloudArt.completedChallenges) {
         setCompletedChallenges(cloudArt.completedChallenges);
       }
-      saveArtRecommendationToReBible(
-        rec,
-        cloudArt.moodLabel || cloudArt.currentMoodLabel || "오늘의 영감",
-        cloudArt.userConcern
-      );
     }
   }, [sharedState?.dailyArts]);
 
@@ -1623,7 +1519,7 @@ export function ArtRecommendationView() {
   useEffect(() => {
     // 0. Check pending Prism Toss first (Oracle -> Muse toss pipeline & Big Bang Warp)
     const pendingToss = getPendingPrismToss("muse");
-    if (pendingToss && (pendingToss.actionType === "art_prescription" || pendingToss.autoTrigger || pendingToss.personaDialogue)) {
+    if (pendingToss && (pendingToss.actionType === "art_prescription" || pendingToss.autoTrigger)) {
       clearPrismToss();
       void handleTossedArtRecommendation(pendingToss);
       return;
@@ -1632,29 +1528,8 @@ export function ArtRecommendationView() {
     if (activeTossRef.current) return;
     if (hydrateStartedRef.current) return;
     hydrateStartedRef.current = true;
-
-    const today = getTodayDateKey();
-    const cloudArt = sharedState?.dailyArts?.[today];
-    if (cloudArt && typeof cloudArt === "object" && (cloudArt.recommendation || cloudArt.title)) {
-      const rec = cloudArt.recommendation || cloudArt;
-      setRecommendation(rec);
-      const img = cloudArt.image || cloudArt.nanobananaImage || cloudArt.imageUrl || rec.imageUrl;
-      if (img) setNanobananaImage(img);
-      const source = cloudArt.imageSource || cloudArt.artworkImageSource || "dailyart";
-      setArtworkImageSource(source);
-      return;
-    }
-
-    if (restoreDailyArtFromCache()) {
-      const cachedRec = parseCachedRecommendation();
-      if (cachedRec && !localStorage.getItem(ART_CACHE_KEYS.image)) {
-        void generateNanobananaImage(cachedRec);
-      }
-      return;
-    }
-
-    // Do NOT auto-run without listening to user concern first!
-  }, [generateNanobananaImage, handleTossedArtRecommendation, restoreDailyArtFromCache, sharedState?.dailyArts]);
+    // Do NOT auto-run or display result in advance without user request
+  }, [handleTossedArtRecommendation]);
 
   const toggleChallenge = (index: number) => {
     setCompletedChallenges((prev) => ({
@@ -1872,7 +1747,7 @@ export function ArtRecommendationView() {
           </div>
 
           {/* Action Trigger Button */}
-          <div className="flex justify-center pt-2">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             <button
               onClick={() => void handleRecommendArt({ forceRefresh: true, userConcern: customConcern.trim() })}
               disabled={loading}
@@ -1881,6 +1756,16 @@ export function ArtRecommendationView() {
               <Sparkles size={16} className={loading ? "animate-spin" : "animate-pulse"} />
               <span>{customConcern.trim() ? "🎨 나의 고민에 맞춤 예술 추천받기" : "🎨 오늘의 맞춤 예술 추천받기"}</span>
             </button>
+            {isArtCacheFresh() && (
+              <button
+                type="button"
+                onClick={() => restoreDailyArtFromCache()}
+                className="py-3.5 px-6 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-2"
+              >
+                <Palette size={14} className="text-blue-400" />
+                <span>오늘 저장된 추천 결과 보기</span>
+              </button>
+            )}
           </div>
         </motion.div>
       )}
@@ -2398,25 +2283,8 @@ export function ArtRecommendationView() {
               </button>
             </div>
 
-            {/* ReBible Save & Unlimited Re-generation Action Buttons */}
+            {/* Unlimited Re-generation Action Button */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 text-center">
-              <button
-                type="button"
-                onClick={() => {
-                  saveArtRecommendationToReBible(
-                    recommendation,
-                    currentMoodLabel || savedThemeLabel || "오늘의 영감",
-                    customConcern || savedCustomConcern
-                  );
-                  setSavedToReBible(true);
-                  setTimeout(() => setSavedToReBible(false), 3000);
-                }}
-                className="px-5 py-3 rounded-2xl border border-amber-400/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-200 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer active:scale-95 shadow-lg shadow-amber-950/20"
-                title="오늘의 예술 추천 상세 해설과 명시·명곡을 리바이블 영감의 서에 보관합니다"
-              >
-                <BookOpen size={14} className="text-amber-400" />
-                <span>{savedToReBible ? "리바이블 [영감의 서]에 상세 기록 보관 완료!" : "리바이블 [영감의 서]에 상세 기록 보관"}</span>
-              </button>
               <button
                 type="button"
                 onClick={() => {

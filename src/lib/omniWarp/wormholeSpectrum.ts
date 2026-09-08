@@ -211,6 +211,39 @@ export function getWhiteholeRecommendedApp(activeRoute?: string, contextHint?: a
 }
 
 /**
+ * 🪞 미러홀 (유리테마):
+ * 화이트홀과 블랙홀 사이에 위치하며, 기능은 항시 프리즘 홈(/)으로 귀환합니다.
+ */
+export function getMirrorholeRecommendedApp(activeRoute?: string): WormholeAppInfo {
+  const allActive = getAllActiveWormholeApps();
+  const hubApp = allActive.find((a) => a.id === 'hub' || a.path === '/');
+  if (hubApp) {
+    return {
+      ...hubApp,
+      name: '프리즘 홈',
+      subName: '모든 영감의 시초 허브',
+      description: '투명하고 영롱한 크리스탈 유리 거울 면을 통과하여 항시 프리즘 홈으로 연결됩니다.',
+      themeColor: '#38bdf8',
+      accentGlow: 'rgba(255, 255, 255, 0.95)',
+    };
+  }
+  return {
+    id: 'hub',
+    name: '프리즘 홈',
+    subName: '모든 영감의 시초 허브',
+    path: '/',
+    icon: '🌌',
+    runeSymbol: '🪞',
+    runeName: 'Mirror',
+    runeMeaning: '진실의 거울과 프리즘 홈',
+    description: '투명하고 영롱한 크리스탈 유리 거울 면을 통과하여 항시 프리즘 홈으로 연결됩니다.',
+    themeColor: '#38bdf8',
+    accentGlow: 'rgba(255, 255, 255, 0.95)',
+    defaultGaugePercent: 50,
+  };
+}
+
+/**
  * 🕳️ 블랙홀:
  * 우뇌적·무의식적·감성적 스펙트럼 1순위 추천 차원을 도약지로 배정합니다.
  * 현재 머무는 장소를 배제하여 항상 상위 1순위 감성·무의식 차원(크리스탈 오브 직관 점술, 뮤즈 예술처방 등)으로 전이합니다.

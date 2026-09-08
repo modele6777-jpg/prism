@@ -54,6 +54,13 @@ class OmniWarpAudioEngine {
   }
 
   /**
+   * 가벼운 인터랙션 탭/클릭 사운드
+   */
+  playClick(): void {
+    this.playWhiteHole();
+  }
+
+  /**
    * 미러홀 (Mirror Hole): 맑고 영롱한 크리스탈 유리 챠임 (*찰랑- 팅-*)
    */
   playMirrorHole(): void {

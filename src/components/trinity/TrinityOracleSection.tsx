@@ -6,7 +6,8 @@ import {
   CheckCircle2, RotateCcw, Zap, Sun, Moon, Feather, Check, Palette, ArrowRight, Share2
 } from 'lucide-react';
 import { TAROT_DECK, TarotCard, getTarotCardImageUrl } from '@/data/tarotData';
-import { TarotSpread } from './TarotSpread';
+import { TarotSpread, SelectedTarotCardEntry } from './TarotSpread';
+import { TarotPhysicalMetadata } from '@/lib/trinity/tarotTouchAnalyzer';
 import { invokeLLM } from '@/lib/ai';
 import { playTTS, stopTTS, useTTSActive } from '@/utils/tts';
 import { sendPrismToss } from '@/lib/prismToss';
@@ -132,7 +133,7 @@ export function TrinityOracleSection() {
   };
 
   // Run AI analysis after 3 cards are drawn (All upright in Oracle section)
-  const handleCardsComplete = async (cards: TarotCard[]) => {
+  const handleCardsComplete = async (cards: SelectedTarotCardEntry[], touchMetadata?: TarotPhysicalMetadata | null) => {
     const uprightCards = cards.map((c) => ({ ...c, reversed: false }));
     setDrawnCards(uprightCards);
     setStage('result');
@@ -142,6 +143,10 @@ export function TrinityOracleSection() {
     const cardDescriptions = cards
       .map((c, i) => `${i + 1}번 슬롯 [${slotPositions[i]}]: ${c.nameKo} (${c.name}) - 유형: ${c.type}, 핵심 키워드: [${c.keywords.join(', ')}]`)
       .join('\n');
+
+    const touchDirective = touchMetadata
+      ? `\n[사용자 손끝 물리 파동 지표]\n- 심층 모드: ${touchMetadata.depthMode}\n- 체류 시간: ${touchMetadata.durationMs}ms\n- 떨림/망설임 지수: ${touchMetadata.jitterScore}\n- 리딩 톤 지침: ${touchMetadata.tonePrompt}\n(손끝에서 감지된 체류 시간과 떨림의 진동을 첫 문장에 따뜻하게 녹여내어 감동을 더해주세요.)`
+      : '';
 
     try {
       if (oracleMode === 'healing') {
@@ -194,7 +199,7 @@ export function TrinityOracleSection() {
   }
 }`;
 
-        const prompt = `사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 카드 각각의 상징과 의미를 깊이 반영하여, 3장의 카드별 심층 리딩(card_insights)과 제제의 다정한 마음 처방을 JSON으로 생성해 줘.`;
+        const prompt = `사용자가 뽑은 3장의 카드:\n${cardDescriptions}${touchDirective}\n\n위 카드 각각의 상징과 의미를 깊이 반영하여, 3장의 카드별 심층 리딩(card_insights)과 제제의 다정한 마음 처방을 JSON으로 생성해 줘.`;
         const res = await invokeLLM({
           messages: [
             { role: 'system', content: systemPrompt },
@@ -250,7 +255,7 @@ export function TrinityOracleSection() {
   "evening_reflection": "오늘 저녁 나의 행동을 돌아보는 1줄 성찰 질문"
 }`;
 
-        const prompt = `사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 카드 각각의 상징과 의미를 100% 반영하여, 3장의 카드별 심층 리딩(card_insights)과 마인드셋 브리핑, 1줄 마이크로 미션을 JSON으로 도출해 줘.`;
+        const prompt = `사용자가 뽑은 3장의 카드:\n${cardDescriptions}${touchDirective}\n\n위 카드 각각의 상징과 의미를 100% 반영하여, 3장의 카드별 심층 리딩(card_insights)과 마인드셋 브리핑, 1줄 마이크로 미션을 JSON으로 도출해 줘.`;
         const res = await invokeLLM({
           messages: [
             { role: 'system', content: systemPrompt },
