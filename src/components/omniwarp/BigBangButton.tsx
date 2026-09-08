@@ -10,7 +10,7 @@ import {
   getAllActiveWormholeApps,
 } from '@/lib/omniWarp/wormholeSpectrum';
 import { getTossRule } from '@/lib/prismTossRegistry';
-import { getRandomWormholeDestination, resolveCanonicalPath } from '@/lib/prismRouteRegistry';
+import { getRandomWormholeDestination, resolveCanonicalPath, isValidPrismPath } from '@/lib/prismRouteRegistry';
 import { omniWarpAudio } from '@/lib/omniWarp/omniWarpAudio';
 import { triggerHaptic, startBlackHoleContinuousHaptic, stopBlackHoleContinuousHaptic } from '@/lib/omniWarp/omniWarpHaptics';
 import { safeSessionStorage } from '@/utils/safeStorage';
@@ -551,6 +551,15 @@ export function BigBangButton() {
       const randomDest = getRandomWormholeDestination(location);
       const safePath = resolveCanonicalPath(randomDest.path);
 
+      // 🛡️ 실존 페이지 검증: 존재하지 않는 경로는 이동 차단 (허브 '/'로만 fallback)
+      if (!isValidPrismPath(safePath)) {
+        console.warn(`[Wormhole] Blocked navigation to non-existent path: ${safePath}`);
+        setActivePhase('idle');
+        setGauge(0);
+        setDurationMs(0);
+        return;
+      }
+
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
           new CustomEvent('prism:bigbang_commit', {
@@ -724,75 +733,7 @@ export function BigBangButton() {
           onPointerEnter={() => setIsHovered(true)}
           onPointerLeave={() => setIsHovered(false)}
         >
-          {/* 🌟 1. 상단 미니멀 HUD 캡슐 (화면 시야를 가리지 않고 버튼 바로 위에만 은은하게 표출) */}
-          <AnimatePresence>
-            {isPressing && durationMs >= 200 && !isAborted && (
-              <motion.div
-                key="bigbang-compact-hud"
-                initial={{ opacity: 0, y: 10, scale: 0.9 }}
-                animate={{ opacity: 1, y: -58, scale: 1 }}
-                exit={{ opacity: 0, y: 5, scale: 0.9 }}
-                transition={{ duration: 0.15 }}
-                className="absolute pointer-events-none z-50 whitespace-nowrap"
-              >
-                <div
-                  className="px-3 py-1 rounded-full text-xs font-medium border backdrop-blur-md shadow-lg flex items-center gap-1.5 transition-all duration-200"
-                  style={{
-                    background: activePhase === 'wormhole'
-                      ? 'rgba(4, 28, 18, 0.95)'
-                      : radialSectorIndex >= 0 && RADIAL_WARP_APPS[radialSectorIndex]
-                      ? 'rgba(10, 14, 28, 0.92)'
-                      : isOrbSite
-                      ? 'rgba(15, 23, 42, 0.94)'
-                      : 'rgba(24, 10, 40, 0.94)',
-                    borderColor: activePhase === 'wormhole'
-                      ? 'rgba(52, 211, 153, 0.85)'
-                      : radialSectorIndex >= 0 && RADIAL_WARP_APPS[radialSectorIndex]
-                      ? RADIAL_WARP_APPS[radialSectorIndex].themeColor
-                      : isOrbSite
-                      ? 'rgba(56, 189, 248, 0.8)'
-                      : 'rgba(168, 85, 247, 0.8)',
-                    color: activePhase === 'wormhole'
-                      ? '#ecfdf5'
-                      : radialSectorIndex >= 0 && RADIAL_WARP_APPS[radialSectorIndex]
-                      ? '#ffffff'
-                      : isOrbSite
-                      ? '#e0f2fe'
-                      : '#f3e8ff',
-                    boxShadow: activePhase === 'wormhole'
-                      ? '0 0 16px rgba(52, 211, 153, 0.65)'
-                      : radialSectorIndex >= 0 && RADIAL_WARP_APPS[radialSectorIndex]
-                      ? `0 0 16px ${RADIAL_WARP_APPS[radialSectorIndex].accentGlow}`
-                      : isOrbSite
-                      ? '0 0 16px rgba(56, 189, 248, 0.5)'
-                      : '0 0 16px rgba(168, 85, 247, 0.5)',
-                  }}
-                >
-                  {activePhase === 'wormhole' ? (
-                    <>
-                      <span className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-cyan-200 to-purple-300">사건의 지평선 웜홀</span>
-                      <span className="opacity-90 text-[11px] text-cyan-200">· 빛과 심연의 차원 도약</span>
-                    </>
-                  ) : radialSectorIndex >= 0 && RADIAL_WARP_APPS[radialSectorIndex] ? (
-                    <>
-                      <span className="font-semibold">{RADIAL_WARP_APPS[radialSectorIndex].name}</span>
-                      <span className="opacity-70 text-[11px]">· {RADIAL_WARP_APPS[radialSectorIndex].title}</span>
-                    </>
-                  ) : isOrbSite ? (
-                    <>
-                      <span className="font-semibold text-cyan-200">프리즘 귀환</span>
-                      <span className="opacity-80 text-[11px] text-cyan-300">· 오브 사이트 나가기</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="font-semibold text-purple-200">크리스탈 오브</span>
-                      <span className="opacity-80 text-[11px] text-purple-300">· 직관 포털 들어가기</span>
-                    </>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+
 
           {/* 🎯 버튼 & 궤도 정밀 센터링 앵커 (대형 코스믹 아티팩트 규격 76~84px) */}
           <div className="relative w-[76px] h-[76px] sm:w-[84px] sm:h-[84px] flex items-center justify-center shrink-0">
