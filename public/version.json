@@ -1,11 +1,10 @@
 {
   "name": "lucy-universe",
-  "version": "1.2.894",
-  "summary": "빅뱅 버튼 누를 시 팝업 HUD 캡슐 제거 및 웜홀 실존 페이지 이동 검증 강화",
-  "builtAt": "2026-09-08T12:59:00.000Z",
+  "version": "1.2.895",
+  "summary": "영혼의 도서관(/library) 웜홀 이동 대상 경로 제거",
+  "builtAt": "2026-09-08T13:02:00.000Z",
   "items": [
-    "🚫 빅뱅 버튼 팝업 HUD 캡슐 제거: 버튼을 200ms 이상 누를 때 상단에 나타나던 웜홀/오브/프리즘 귀환 등의 목적지 안내 HUD 캡슐(팝업 뱃지)을 완전 제거하여 UI 간소화",
-    "🛡️ 웜홀 실존 페이지 이동 검증 강화: 웜홀 발동 시 isValidPrismPath()로 실존 여부를 이중 검증하여 존재하지 않는 페이지로 이동하는 것을 원천 차단"
+    "🚫 영혼의 도서관(/library) 웜홀 이동 대상 제거: prismRouteRegistry에서 library 라우트의 isActive를 false로 설정하여 웜홀 임의 도약 후보 목록에서 원천 배제"
   ],
   "author": "Antigravity AI Agent",
   "buildEnvironment": "cloud-run"

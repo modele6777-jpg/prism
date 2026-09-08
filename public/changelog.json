@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.2.895",
+    "summary": "영혼의 도서관(/library) 웜홀 이동 대상 경로 제거",
+    "builtAt": "2026-09-08T13:02:00.000Z",
+    "items": [
+      "🚫 영혼의 도서관(/library) 웜홀 이동 대상 제거: prismRouteRegistry에서 library 라우트의 isActive를 false로 설정하여 웜홀 임의 도약 후보 목록에서 원천 배제"
+    ],
+    "author": "Antigravity AI Agent",
+    "buildEnvironment": "cloud-run"
+  },
+
+  {
     "version": "1.2.894",
     "summary": "빅뱅 버튼 누를 시 팝업 HUD 캡슐 제거 및 웜홀 실존 페이지 이동 검증 강화",
     "builtAt": "2026-09-08T12:59:00.000Z",

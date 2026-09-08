@@ -209,7 +209,7 @@ export const INITIAL_PRISM_ROUTES: PrismRouteDefinition[] = [
     description: '모든 기록과 사유가 축적된 영혼의 도서관 아카이브',
     themeColor: '#6366f1',
     accentGlow: 'rgba(99, 102, 241, 0.9)',
-    isActive: true,
+    isActive: false,
     category: 'archive',
   },
   {
