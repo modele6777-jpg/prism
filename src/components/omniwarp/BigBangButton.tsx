@@ -67,6 +67,18 @@ export function BigBangButton() {
   const lastUpdateGaugeRef = useRef<number>(0);
   const lastStateUpdateTimeRef = useRef<number>(0);
 
+  // ⚡ 더블탭 감지용 타이머 및 이전 탭 타임스탬프 ref
+  const lastTapTimeRef = useRef<number>(0);
+  const singleTapTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (singleTapTimerRef.current) {
+        clearTimeout(singleTapTimerRef.current);
+      }
+    };
+  }, []);
+
   // Active view context and next destination pre-vision (수정구슬 영시)
   const currentContext = serializeCurrentView(location);
   const normPath = location.replace('/', '') || 'hub';
@@ -398,33 +410,91 @@ export function BigBangButton() {
       return dist <= 44;
     })();
 
-    // [1] 제자리 단순 탭 (250ms 미만 및 제자리 영역 dist < 20) -> 빛비춤(화이트홀) 효과 및 루시 채팅 켜기/끄기
+    // [1] 제자리 탭 (250ms 미만 및 제자리 영역 dist < 20)
     if (duration < 250 && dist < 20) {
-      triggerHaptic('whitehole');
-      omniWarpAudio.playWhiteHole();
+      const nowMs = performance.now();
+      const timeSinceLastTap = nowMs - lastTapTimeRef.current;
 
-      // ☀️ 제자리 탭: 빛비춤(화이트홀) 화면 이펙트 발동!
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(
-          new CustomEvent('prism:bigbang_commit', {
-            detail: {
-              phase: 'whitehole',
-              target: {
-                id: 'lucy',
-                name: '루시 1:1 대화',
-                destinationPath: '/chat',
-                themeColor: '#fde68a',
-                eventHorizonMode: 'whitehole',
+      // 🎯 더블탭 감지 (이전 탭 후 280ms 이내 재탭 시): 즉시 프리즘 메인('/')으로 바로가기!
+      if (timeSinceLastTap > 0 && timeSinceLastTap < 280) {
+        // 대기 중인 1회 탭(루시 채팅 토글) 타이머 취소
+        if (singleTapTimerRef.current) {
+          clearTimeout(singleTapTimerRef.current);
+          singleTapTimerRef.current = null;
+        }
+        lastTapTimeRef.current = 0;
+
+        // 🌟 더블탭: 프리즘 메인 귀환 차임 & 햅틱 & 화면 이펙트
+        omniWarpAudio.playDoubleTap();
+        triggerHaptic('whitehole');
+
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('prism:bigbang_commit', {
+              detail: {
+                phase: 'whitehole',
+                target: {
+                  id: 'hub',
+                  name: '프리즘 프롤로그 메인',
+                  destinationPath: '/',
+                  themeColor: '#38bdf8',
+                  eventHorizonMode: 'whitehole',
+                },
+                context,
+                metrics,
+                timestamp: Date.now(),
               },
-              context,
-              metrics,
-              timestamp: Date.now(),
-            },
-          })
-        );
+            })
+          );
+        }
+
+        // 프리즘 메인('/')으로 즉시 도약
+        if (typeof window !== 'undefined' && window.location.pathname.includes('orb')) {
+          window.location.href = '/';
+        } else {
+          navigate('/');
+          window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: '/' } }));
+        }
+
+        setActivePhase('idle');
+        setGauge(0);
+        setDurationMs(0);
+        return;
       }
 
-      setTimeout(() => {
+      // ☀️ 첫 번째 탭: 더블탭 입력 대기 (260ms) 후 싱글탭(루시 채팅 토글) 실행
+      lastTapTimeRef.current = nowMs;
+
+      if (singleTapTimerRef.current) {
+        clearTimeout(singleTapTimerRef.current);
+      }
+
+      singleTapTimerRef.current = setTimeout(() => {
+        singleTapTimerRef.current = null;
+        triggerHaptic('whitehole');
+        omniWarpAudio.playWhiteHole();
+
+        // ☀️ 제자리 탭: 빛비춤(화이트홀) 화면 이펙트 발동!
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('prism:bigbang_commit', {
+              detail: {
+                phase: 'whitehole',
+                target: {
+                  id: 'lucy',
+                  name: '루시 1:1 대화',
+                  destinationPath: '/chat',
+                  themeColor: '#fde68a',
+                  eventHorizonMode: 'whitehole',
+                },
+                context,
+                metrics,
+                timestamp: Date.now(),
+              },
+            })
+          );
+        }
+
         if (isChatView) {
           // 루시 채팅 끄기 (닫기) -> 이전 페이지로 복귀
           const returnPath = safeSessionStorage.getItem('prism_chat_return_path') || '/';
@@ -444,13 +514,20 @@ export function BigBangButton() {
             navigate('/chat');
           }
         }
-      }, 160);
+      }, 260);
 
       setActivePhase('idle');
       setGauge(0);
       setDurationMs(0);
       return;
     }
+
+    // 홀드/드래그 발생 시 더블탭 타이머 및 기록 리셋
+    if (singleTapTimerRef.current) {
+      clearTimeout(singleTapTimerRef.current);
+      singleTapTimerRef.current = null;
+    }
+    lastTapTimeRef.current = 0;
 
     // [2] 홀드 (250ms 이상) 또는 드래그 릴리즈 분기
     // A. 만약 사용자가 버튼 바깥으로 드래그하여 특정 7대 룬 노드로 명확히 조준한 경우: 해당 앱으로 워프!
@@ -807,17 +884,17 @@ export function BigBangButton() {
               }}
               aria-label={
                 isChatView
-                  ? '빅뱅 버튼 · 탭: 루시 채팅 끄기, 홀드: 크리스탈 오브'
+                  ? '빅뱅 버튼 · 탭: 루시 채팅 끄기, 더블탭: 프리즘 메인, 홀드: 크리스탈 오브'
                   : isOrbSite
-                  ? '빅뱅 버튼 · 탭: 루시 채팅 켜기, 홀드: 오브 사이트 나가기'
-                  : '빅뱅 버튼 · 탭: 루시 채팅 켜기, 홀드: 크리스탈 오브 들어가기'
+                  ? '빅뱅 버튼 · 탭: 루시 채팅 켜기, 더블탭: 프리즘 메인, 홀드: 오브 사이트 나가기'
+                  : '빅뱅 버튼 · 탭: 루시 채팅 켜기, 더블탭: 프리즘 메인, 홀드: 크리스탈 오브 들어가기'
               }
               title={
                 isChatView
-                  ? '탭: 루시 채팅 끄기 · 홀드: 크리스탈 오브 · 웜홀: 임의 도약'
+                  ? '탭: 루시 채팅 끄기 · 더블탭: 프리즘 메인 · 홀드: 크리스탈 오브 · 웜홀: 임의 도약'
                   : isOrbSite
-                  ? '탭: 루시 채팅 켜기 · 홀드: 오브 사이트 나가기 · 웜홀: 임의 도약'
-                  : '탭: 루시 채팅 켜기 · 홀드: 크리스탈 오브 · 웜홀: 임의 도약'
+                  ? '탭: 루시 채팅 켜기 · 더블탭: 프리즘 메인 · 홀드: 오브 사이트 나가기 · 웜홀: 임의 도약'
+                  : '탭: 루시 채팅 켜기 · 더블탭: 프리즘 메인 · 홀드: 크리스탈 오브 · 웜홀: 임의 도약'
               }
             >
               {/* 🌀 [웜홀] 빛비춤 + 어두운 심연 + 사건의 지평선 3원 동시 융합 전개 */}
