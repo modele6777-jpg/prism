@@ -21,7 +21,7 @@ import { sacredAudio } from "@/lib/omniWarp/sacredAudio";
 import { triggerHaptic } from "@/lib/omniWarp/omniWarpHaptics";
 import { playTTS, stopTTS, useTTSActive } from "@/utils/tts";
 import { getPendingPrismToss, clearPrismToss } from "@/lib/prismToss";
-import { startBinauralBeat } from "@/lib/binauralBeats";
+import { startBinauralBeat, stopBinauralBeat } from "@/lib/binauralBeats";
 
 import { CrystalOrbIcon } from "@/components/icons/CrystalOrbIcon";
 import { safeLocalStorage } from "@/utils/safeStorage";
@@ -292,6 +292,15 @@ export default function OrbGatewayPage() {
     }
   }, [scryingResult]);
 
+  // 오브 사이트 이탈 시 재생 중인 바이노럴 비트 안전 종료
+  useEffect(() => {
+    return () => {
+      try {
+        stopBinauralBeat();
+      } catch (_) {}
+    };
+  }, []);
+
   // 룬 선택 및 연동 모드 상태 (최대 2개 선택)
   const [selectedRuneIds, setSelectedRuneIds] = useState<string[]>([]);
   // 가운데 오브 터치 시 활성화되는 마스터 모드 (7대 차원 통합 공명)
@@ -443,20 +452,27 @@ export default function OrbGatewayPage() {
     setScryingResult(null); // 이전 결과 리셋하여 전환된 모드 상태가 오브 중심에 즉시 표기되게 함
     setHoveredRuneInfo(null); // 연동 모드 전환/조작 시 팝업메시지 즉시 소멸
 
-    // 🎧 해당 룬의 어플 바이노럴 비트 즉각 재생
-    try {
-      startBinauralBeat(app.id);
-    } catch (binauralErr) {
-      console.warn("[OrbGateway] Binaural beat start error:", binauralErr);
-    }
-
     setSelectedRuneIds((prev) => {
       let next: string[];
-      if (prev.includes(app.id)) {
+      const isDeselecting = prev.includes(app.id);
+
+      if (isDeselecting) {
         // 이미 선택된 룬 클릭 시 즉시 선택 해제
         next = prev.filter((id) => id !== app.id);
         triggerHaptic("whitehole");
         sacredAudio.playSingingBowl(639);
+
+        // 🛑 룬문자 선택 취소 시 바이노럴 비트 즉각 정지 또는 잔여 선택 룬 사운드로 전환
+        try {
+          if (next.length === 0) {
+            stopBinauralBeat();
+          } else {
+            const nextActiveId = next[next.length - 1];
+            startBinauralBeat(nextActiveId);
+          }
+        } catch (binauralErr) {
+          console.warn("[OrbGateway] Binaural beat stop/switch error:", binauralErr);
+        }
       } else {
         // 최대 7개까지 연동 선택 추가
         if (prev.length >= 7) {
@@ -466,6 +482,13 @@ export default function OrbGatewayPage() {
         }
         triggerHaptic("whitehole");
         sacredAudio.playSingingBowl(639);
+
+        // 🎧 해당 룬의 어플 바이노럴 비트 즉각 재생
+        try {
+          startBinauralBeat(app.id);
+        } catch (binauralErr) {
+          console.warn("[OrbGateway] Binaural beat start error:", binauralErr);
+        }
       }
 
       // 7개 연동되면 그게 바로 마스터 모드!
@@ -490,6 +513,9 @@ export default function OrbGatewayPage() {
       sacredAudio.playSingingBowl(528);
       setIsMasterMode(false);
       setSelectedRuneIds([]);
+      try {
+        stopBinauralBeat();
+      } catch (_) {}
     } else {
       // 일반/연동 모드에서 가운데 오브 터치 시 -> 7개 룬 전체 동시 연동으로 마스터 모드 즉각 가동!
       triggerHaptic("blackhole");
