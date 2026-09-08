@@ -15,7 +15,6 @@ import { omniWarpAudio } from '@/lib/omniWarp/omniWarpAudio';
 import { triggerHaptic, startBlackHoleContinuousHaptic, stopBlackHoleContinuousHaptic } from '@/lib/omniWarp/omniWarpHaptics';
 import { safeSessionStorage } from '@/utils/safeStorage';
 import { BigBangCircularMeter } from './BigBangCircularMeter';
-import { PrismAppIcon } from './PrismAppIcon';
 
 export function BigBangButton() {
   let location = '/';
@@ -694,27 +693,21 @@ export function BigBangButton() {
                 >
                   {activePhase === 'wormhole' ? (
                     <>
-                      <span className="font-serif text-sm text-cyan-300 animate-spin">🌌</span>
                       <span className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-cyan-200 to-purple-300">사건의 지평선 웜홀</span>
                       <span className="opacity-90 text-[11px] text-cyan-200">· 빛과 심연의 차원 도약</span>
                     </>
                   ) : radialSectorIndex >= 0 && RADIAL_WARP_APPS[radialSectorIndex] ? (
                     <>
-                      <span className="font-serif text-sm text-cyan-300">
-                        {RADIAL_WARP_APPS[radialSectorIndex].runeSymbol}
-                      </span>
                       <span className="font-semibold">{RADIAL_WARP_APPS[radialSectorIndex].name}</span>
                       <span className="opacity-70 text-[11px]">· {RADIAL_WARP_APPS[radialSectorIndex].title}</span>
                     </>
                   ) : isOrbSite ? (
                     <>
-                      <span>🪞</span>
                       <span className="font-semibold text-cyan-200">프리즘 귀환</span>
                       <span className="opacity-80 text-[11px] text-cyan-300">· 오브 사이트 나가기</span>
                     </>
                   ) : (
                     <>
-                      <span>🔮</span>
                       <span className="font-semibold text-purple-200">크리스탈 오브</span>
                       <span className="opacity-80 text-[11px] text-purple-300">· 직관 포털 들어가기</span>
                     </>
@@ -726,104 +719,6 @@ export function BigBangButton() {
 
           {/* 🎯 버튼 & 궤도 정밀 센터링 앵커 (대형 코스믹 아티팩트 규격 76~84px) */}
           <div className="relative w-[76px] h-[76px] sm:w-[84px] sm:h-[84px] flex items-center justify-center shrink-0">
-            {/* 🌟 2. 마법진 배경 7대 앱 룬 노드 서클 (버튼 배경에만 나타나는 방사형 선택 휠) */}
-            <AnimatePresence>
-              {isPressing && durationMs >= 150 && !isAborted && (
-                <motion.div
-                  key="magic-circle-rune-nodes"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  transition={{ duration: 0.18, ease: 'easeOut' }}
-                  className="absolute inset-0 flex items-center justify-center pointer-events-none z-25"
-                >
-                  {/* 중앙 레이저 연결선 (조준된 노드로 뻗는 빔) */}
-                  {radialSectorIndex >= 0 && (
-                    <svg className="absolute w-[200px] h-[200px] overflow-visible pointer-events-none">
-                      {(() => {
-                        const targetApp = RADIAL_WARP_APPS[radialSectorIndex];
-                        const angleDeg = (radialSectorIndex * 360) / 7 - 90;
-                        const angleRad = (angleDeg * Math.PI) / 180;
-                        const r = 74;
-                        const x2 = 100 + Math.cos(angleRad) * r;
-                        const y2 = 100 + Math.sin(angleRad) * r;
-                        return (
-                          <line
-                            x1={100}
-                            y1={100}
-                            x2={x2}
-                            y2={y2}
-                            stroke={targetApp ? targetApp.themeColor : '#38bdf8'}
-                            strokeWidth={1.8}
-                            strokeDasharray="3 3"
-                            className="animate-pulse"
-                            opacity={0.85}
-                          />
-                        );
-                      })()}
-                    </svg>
-                  )}
-
-                  {/* 7개 앱 룬 노드 (반경 74px 궤도 위에 배치) */}
-                  {RADIAL_WARP_APPS.map((app, index) => {
-                    const angleDeg = (index * 360) / 7 - 90;
-                    const angleRad = (angleDeg * Math.PI) / 180;
-                    const orbitR = 74; // 버튼 반경(40px) 바깥 마법진 궤도 링 위
-                    const x = Math.cos(angleRad) * orbitR;
-                    const y = Math.sin(angleRad) * orbitR;
-                    const isSelected = radialSectorIndex === index;
-
-                    return (
-                      <div
-                        key={`rune-node-${app.id}`}
-                        className="absolute flex items-center justify-center transition-all duration-150 will-change-transform"
-                        style={{
-                          transform: `translate(${x}px, ${y}px) scale(${isSelected ? 1.28 : 1})`,
-                          zIndex: isSelected ? 40 : 25,
-                        }}
-                      >
-                        <div
-                          className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center border transition-all duration-150 backdrop-blur-md shadow-md"
-                          style={{
-                            background: isSelected
-                              ? 'radial-gradient(circle at 40% 35%, #181c38 0%, #0c0e1e 65%, #05060f 100%)'
-                              : 'rgba(8, 10, 24, 0.85)',
-                            borderColor: isSelected ? app.themeColor : 'rgba(255, 255, 255, 0.25)',
-                            boxShadow: isSelected
-                              ? `0 0 16px ${app.accentGlow}, inset 0 0 8px ${app.accentGlow}`
-                              : '0 0 6px rgba(0, 0, 0, 0.6)',
-                          }}
-                        >
-                          <span
-                            className="font-serif text-sm transition-colors duration-150 select-none"
-                            style={{
-                              color: isSelected ? app.themeColor : 'rgba(255, 255, 255, 0.7)',
-                              textShadow: isSelected ? `0 0 8px ${app.themeColor}` : 'none',
-                            }}
-                          >
-                            {app.runeSymbol}
-                          </span>
-                        </div>
-
-                        {/* 선택 시 아래에 나타나는 미니 이름 라벨 */}
-                        {isSelected && (
-                          <div
-                            className="absolute -bottom-4 whitespace-nowrap text-[10px] font-semibold px-1.5 py-0.2 rounded-full border shadow-sm"
-                            style={{
-                              background: 'rgba(6, 8, 18, 0.95)',
-                              borderColor: app.themeColor,
-                              color: app.themeColor,
-                            }}
-                          >
-                            {app.name}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </motion.div>
-              )}
-            </AnimatePresence>
 
             {/* 🌟 빅뱅 아케인 마법진 매트릭스 (하드웨어 가속, 상시 렌더링 및 누를 때 공명 가속) */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
@@ -982,47 +877,33 @@ export function BigBangButton() {
                 }}
               />
 
-              {/* 🎯 Big Bang Center: 목적지 정통 Lucide 벡터 아이콘 */}
+              {/* 🎯 Big Bang Center: 순수 코스믹 싱귤래리티 코어 (아이콘 없이 순수 빛과 에너지 집중) */}
               <div className="relative z-20 w-full h-full rounded-full flex items-center justify-center text-center select-none pointer-events-none">
-                {isPressing ? (
-                  <motion.div
-                    key={`active-icon-${activeAppId}`}
-                    initial={{ scale: 0.7, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ duration: 0.12 }}
-                    className="relative flex flex-col items-center justify-center"
-                  >
-                    {/* 은은한 앰비언트 글로우 오라 */}
-                    <div
-                      className="absolute -inset-3 rounded-full pointer-events-none blur-[8px] opacity-60"
-                      style={{
-                        background: isAborted
-                          ? 'radial-gradient(circle, rgba(239,68,68,0.8) 0%, transparent 80%)'
-                          : 'radial-gradient(circle, rgba(56,189,248,0.5) 0%, rgba(168,85,247,0.3) 50%, transparent 80%)',
-                      }}
-                    />
-
-                    {/* 프리즘 메인 아이콘을 깔끔하고 선명하게 표시 */}
-                    <div
-                      className="relative z-10 flex items-center justify-center select-none"
-                      title={activeAppName}
-                    >
-                      <PrismAppIcon
-                        nameOrId={activeAppId}
-                        size={32}
-                        color={isAborted ? '#ef4444' : '#ffffff'}
-                        className="text-white drop-shadow-[0_0_12px_rgba(255,255,255,0.85)]"
-                      />
-                    </div>
-                  </motion.div>
-                ) : (
-                  /* 대기 상태: 궤도 색감과 공명하는 은은한 싱귤래리티 코어 */
-                  <div className="relative flex items-center justify-center pointer-events-none">
-                    <div className="w-2.5 h-2.5 rounded-full bg-cyan-300/80 blur-[1px] animate-pulse" />
-                    <div className="absolute w-5 h-5 rounded-full border border-cyan-400/30 animate-ping opacity-40" />
-                    <div className="absolute w-8 h-8 rounded-full border border-purple-400/20 animate-pulse opacity-30" />
-                  </div>
-                )}
+                <div className="relative flex items-center justify-center pointer-events-none">
+                  <div
+                    className={`rounded-full transition-all duration-200 ${
+                      isPressing
+                        ? activePhase === 'wormhole'
+                          ? 'w-4 h-4 bg-cyan-200 blur-[0.5px] shadow-[0_0_14px_#38bdf8]'
+                          : isWhiteholeMode
+                          ? 'w-4 h-4 bg-white blur-[0.5px] shadow-[0_0_18px_#ffffff]'
+                          : isBlackholeMode
+                          ? 'w-3 h-3 bg-black border border-purple-400/60 shadow-[0_0_12px_#000000]'
+                          : 'w-3.5 h-3.5 bg-cyan-300/90 blur-[0.5px] shadow-[0_0_10px_#38bdf8]'
+                        : 'w-2.5 h-2.5 bg-cyan-300/80 blur-[1px] animate-pulse'
+                    }`}
+                  />
+                  <div
+                    className={`absolute rounded-full border border-cyan-400/30 transition-all duration-300 ${
+                      isPressing ? 'w-8 h-8 scale-110 opacity-70' : 'w-5 h-5 animate-ping opacity-40'
+                    }`}
+                  />
+                  <div
+                    className={`absolute rounded-full border border-purple-400/20 transition-all duration-300 ${
+                      isPressing ? 'w-12 h-12 scale-115 opacity-60' : 'w-8 h-8 animate-pulse opacity-30'
+                    }`}
+                  />
+                </div>
               </div>
             </motion.button>
           </div>
