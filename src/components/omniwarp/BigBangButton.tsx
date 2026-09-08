@@ -58,9 +58,9 @@ export function BigBangButton() {
   const [dragAngleDeg, setDragAngleDeg] = useState(0);
   const [radialSectorIndex, setRadialSectorIndex] = useState<number>(-1);
 
-  // 🎯 OmniWarp BigBang Controller 3대 홀 (화이트홀 · 미러홀 · 블랙홀) 상태
-  const [activeHole, setActiveHole] = useState<'whitehole' | 'mirrorhole' | 'blackhole'>('whitehole');
-  const lastHoleRef = useRef<'whitehole' | 'mirrorhole' | 'blackhole'>('whitehole');
+  // 🎯 OmniWarp BigBang Controller: 화이트홀(빛비춤) · 블랙홀(어두운 심연) 상태
+  const [activeHole, setActiveHole] = useState<'whitehole' | 'blackhole'>('whitehole');
+  const lastHoleRef = useRef<'whitehole' | 'blackhole'>('whitehole');
 
   const lastSectorRef = useRef<number>(-1);
   const cachedContextRef = useRef<OmniWarpContext | null>(null);
@@ -178,13 +178,9 @@ export function BigBangButton() {
     const deltaY = currentPointer ? currentPointer.clientY - start.y : 0;
     const dist = Math.hypot(deltaX, deltaY);
 
-    // 🪞 홀드 시 3대 홀 순환 (화이트홀:빛비춤 -> 미러홀:유리 -> 블랙홀:어두움)
+    // 🪞 미러홀 제거: 250ms 미만은 화이트홀(빛비춤), 250ms 이상 홀드 시 블랙홀(어두운 심연)로 즉시 전환
     const elapsed = now - start.time;
-    let currentHole: 'whitehole' | 'mirrorhole' | 'blackhole' = 'whitehole';
-    if (elapsed >= 300) {
-      const cycle = Math.floor((elapsed - 300) / 650) % 3;
-      currentHole = cycle === 0 ? 'whitehole' : cycle === 1 ? 'mirrorhole' : 'blackhole';
-    }
+    let currentHole: 'whitehole' | 'blackhole' = elapsed >= 250 ? 'blackhole' : 'whitehole';
 
     // 중요한 상태 변경(섹터, 페이즈, 어보트, 홀)이 발생했거나 약 33ms(30fps) 경과 시 상태 일괄 동기화
     const isSectorChanged = sectorIdx !== lastSectorRef.current;
@@ -219,15 +215,12 @@ export function BigBangButton() {
       lastSectorRef.current = -1;
     }
 
-    // 🧲 홀 순환 전환 시 실시간 오디오 & 햅틱
-    if (elapsed >= 300 && currentHole !== lastHoleRef.current && !metrics.isAborted) {
+    // 🧲 화이트홀 ➔ 블랙홀 전환 시 실시간 오디오 & 햅틱
+    if (currentHole !== lastHoleRef.current && !metrics.isAborted) {
       lastHoleRef.current = currentHole;
       if (currentHole === 'whitehole') {
         omniWarpAudio.playWhiteHole();
         triggerHaptic('whitehole');
-      } else if (currentHole === 'mirrorhole') {
-        omniWarpAudio.playMirrorHole();
-        triggerHaptic('mirrorhole');
       } else if (currentHole === 'blackhole') {
         omniWarpAudio.playBlackHole();
         triggerHaptic('blackhole');
@@ -241,8 +234,8 @@ export function BigBangButton() {
       triggerHaptic('whitehole');
     }
 
-    // 🕳️ 블랙홀 단계 미세 진동 피드백
-    if (metrics.virtualForce >= 0.85 && !metrics.isAborted && sectorIdx === -1) {
+    // 🕳️ 블랙홀 단계 미세 진동 피드백 (홀드 지속 시 심연 럼블)
+    if (currentHole === 'blackhole' && !metrics.isAborted && sectorIdx === -1) {
       startBlackHoleContinuousHaptic();
     } else {
       stopBlackHoleContinuousHaptic();
@@ -289,7 +282,7 @@ export function BigBangButton() {
       y: e.clientY,
     };
     currentPointerEventRef.current = e;
-    lastPhaseRef.current = 'wormhole';
+    lastPhaseRef.current = 'whitehole';
     lastEventHorizonModeRef.current = undefined;
     lastSectorRef.current = -1;
     lastStageRef.current = 1;
@@ -308,7 +301,7 @@ export function BigBangButton() {
     setActiveHole('whitehole');
     setIsPressing(true);
     setIsAborted(false);
-    setActivePhase('wormhole');
+    setActivePhase('whitehole');
     setGauge(0.08);
     setDurationMs(0);
 
@@ -324,8 +317,9 @@ export function BigBangButton() {
     const target = synthesizeWarpTarget(context, initialMetrics);
     setCurrentTarget(target);
 
-    omniWarpAudio.playBlackHole();
-    triggerHaptic('blackhole');
+    // ☀️ 가벼운 탭 진입 시 화이트홀 빛비춤 햅틱 및 사운드
+    omniWarpAudio.playWhiteHole();
+    triggerHaptic('whitehole');
 
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(updateLoop);
@@ -392,38 +386,61 @@ export function BigBangButton() {
     setIsAborted(false);
     const context = serializeCurrentView(location);
 
-    // [1] 제자리 단순 탭 (300ms 미만 및 드래그 없음) -> 루시 채팅 켜기/끄기 (ON/OFF 토글)
-    if (duration < 300 && dist < 25) {
-      if (isChatView) {
-        // 루시 채팅 끄기 (닫기) -> 이전 페이지로 복귀
-        const returnPath = safeSessionStorage.getItem('prism_chat_return_path') || '/';
-        safeSessionStorage.removeItem('prism_chat_return_path');
-        triggerHaptic('whitehole');
-        omniWarpAudio.playClick();
-        if (returnPath.includes('orb')) {
-          window.location.href = '/orb.html';
-        } else {
-          navigate(returnPath);
-        }
-      } else {
-        // 루시 채팅 켜기 (열기) -> 현재 경로 저장 후 /chat 이동
-        const currentPath = isOrbSite ? '/orb.html' : (location || '/');
-        safeSessionStorage.setItem('prism_chat_return_path', currentPath);
-        triggerHaptic('whitehole');
-        omniWarpAudio.playClick();
-        if (isOrbSite) {
-          window.location.href = '/chat';
-        } else {
-          navigate('/chat');
-        }
+    // [1] 제자리 단순 탭 (250ms 미만 및 드래그 없음) -> 빛비춤(화이트홀) 효과 및 루시 채팅 켜기/끄기
+    if (duration < 250 && dist < 25) {
+      triggerHaptic('whitehole');
+      omniWarpAudio.playWhiteHole();
+
+      // ☀️ 제자리 탭: 빛비춤(화이트홀) 화면 이펙트 발동!
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('prism:bigbang_commit', {
+            detail: {
+              phase: 'whitehole',
+              target: {
+                id: 'lucy',
+                name: '루시 1:1 대화',
+                destinationPath: '/chat',
+                themeColor: '#fde68a',
+                eventHorizonMode: 'whitehole',
+              },
+              context,
+              metrics,
+              timestamp: Date.now(),
+            },
+          })
+        );
       }
+
+      setTimeout(() => {
+        if (isChatView) {
+          // 루시 채팅 끄기 (닫기) -> 이전 페이지로 복귀
+          const returnPath = safeSessionStorage.getItem('prism_chat_return_path') || '/';
+          safeSessionStorage.removeItem('prism_chat_return_path');
+          if (returnPath.includes('orb')) {
+            window.location.href = '/orb.html';
+          } else {
+            navigate(returnPath);
+          }
+        } else {
+          // 루시 채팅 켜기 (열기) -> 현재 경로 저장 후 /chat 이동
+          const currentPath = isOrbSite ? '/orb.html' : (location || '/');
+          safeSessionStorage.setItem('prism_chat_return_path', currentPath);
+          if (isOrbSite) {
+            window.location.href = '/chat';
+          } else {
+            navigate('/chat');
+          }
+        }
+      }, 160);
+
       setActivePhase('idle');
       setGauge(0);
       setDurationMs(0);
       return;
     }
 
-    // [2] 홀드 (300ms 이상)
+    // [2] 홀드 (250ms 이상)
     // A. 만약 사용자가 특정 7대 룬 노드로 명확히 드래그 조준한 경우: 해당 앱으로 워프!
     if (radialSectorIndex >= 0 && dist >= 35) {
       const target = synthesizeWarpTarget(context, metrics);
@@ -436,31 +453,53 @@ export function BigBangButton() {
       }
     }
 
-    // B. 제자리 홀드 (드래그 없음 또는 기본 홀드): 오브 사이트 들어가기 / 나가기 토글!
-    if (isOrbSite) {
-      // 오브 사이트 나가기 -> 프리즘 귀환
-      const returnPath = safeSessionStorage.getItem('prism_orb_return_path') || '/';
-      safeSessionStorage.removeItem('prism_orb_return_path');
-      triggerHaptic('whitehole');
-      omniWarpAudio.playCommit();
-      const finalDest = returnPath.includes('orb') ? '/' : returnPath;
-      if (typeof window !== 'undefined' && window.location.pathname.includes('orb')) {
-        window.location.href = finalDest;
-      } else {
-        navigate(finalDest);
-      }
-    } else {
-      // 오브 사이트 들어가기 -> /orb.html 입장
-      const currentPath = location || '/';
-      safeSessionStorage.setItem('prism_orb_return_path', currentPath);
-      triggerHaptic('blackhole');
-      omniWarpAudio.playCommit();
-      if (typeof window !== 'undefined') {
-        window.location.href = '/orb.html';
-      } else {
-        navigate('/orb');
-      }
+    // B. 제자리 홀드 후 떼기: 어두운 심연(블랙홀) 효과 발동 및 크리스탈 오브 들어가기 / 나가기 토글!
+    triggerHaptic('blackhole');
+    omniWarpAudio.playBlackHole();
+
+    // 🕳️ 제자리 홀드 후 떼기: 어두운 심연(블랙홀) 화면 이펙트 발동!
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('prism:bigbang_commit', {
+          detail: {
+            phase: 'blackhole',
+            target: {
+              id: 'orb',
+              name: '크리스탈 오브',
+              destinationPath: '/orb',
+              themeColor: '#38bdf8',
+              eventHorizonMode: 'blackhole',
+            },
+            context,
+            metrics,
+            timestamp: Date.now(),
+          },
+        })
+      );
     }
+
+    setTimeout(() => {
+      if (isOrbSite) {
+        // 오브 사이트 나가기 -> 프리즘 귀환
+        const returnPath = safeSessionStorage.getItem('prism_orb_return_path') || '/';
+        safeSessionStorage.removeItem('prism_orb_return_path');
+        const finalDest = returnPath.includes('orb') ? '/' : returnPath;
+        if (typeof window !== 'undefined' && window.location.pathname.includes('orb')) {
+          window.location.href = finalDest;
+        } else {
+          navigate(finalDest);
+        }
+      } else {
+        // 오브 사이트 들어가기 -> /orb.html 입장
+        const currentPath = location || '/';
+        safeSessionStorage.setItem('prism_orb_return_path', currentPath);
+        if (typeof window !== 'undefined') {
+          window.location.href = '/orb.html';
+        } else {
+          navigate('/orb');
+        }
+      }
+    }, 240);
 
     setActivePhase('idle');
     setGauge(0);
@@ -496,16 +535,11 @@ export function BigBangButton() {
     };
   }, []);
 
-  // 🌟 위상 판별: 화이트홀(빛비춤), 미러홀(유리테마), 블랙홀(어둠효과)
+  // 🌟 위상 판별: 화이트홀(빛비춤), 블랙홀(어두운 심연) - 미러홀 완전 제거
   const isWhiteholeMode =
     activeHole === 'whitehole' ||
     activePhase === 'whitehole' ||
     (activePhase === 'event_horizon' && currentTarget?.eventHorizonMode === 'whitehole');
-
-  const isMirrorholeMode =
-    activeHole === 'mirrorhole' ||
-    activePhase === 'mirrorhole' ||
-    (activePhase === 'event_horizon' && currentTarget?.eventHorizonMode === 'mirrorhole');
 
   const isBlackholeMode =
     activeHole === 'blackhole' ||
@@ -764,10 +798,8 @@ export function BigBangButton() {
                   ? 'opacity-70 border-red-500/70 shadow-[0_0_24px_rgba(239,68,68,0.5)]'
                   : isPressing && isWhiteholeMode
                   ? 'border-amber-100/95 shadow-[0_0_40px_rgba(255,255,255,0.95),0_0_28px_rgba(254,240,138,0.8),inset_0_0_24px_rgba(255,255,255,0.9)]'
-                  : isPressing && isMirrorholeMode
-                  ? 'border-white/90 shadow-[0_0_36px_rgba(224,242,254,0.9),0_0_22px_rgba(186,230,253,0.7),inset_0_0_22px_rgba(255,255,255,0.85)]'
                   : isPressing && isBlackholeMode
-                  ? 'border-purple-900/90 shadow-[0_0_40px_rgba(0,0,0,1),0_0_22px_rgba(107,33,168,0.5),inset_0_0_28px_rgba(0,0,0,1)]'
+                  ? 'border-purple-900/90 shadow-[0_0_40px_rgba(0,0,0,1),0_0_24px_rgba(147,51,234,0.6),inset_0_0_28px_rgba(0,0,0,1)]'
                   : isPressing
                   ? 'border-cyan-300/80 shadow-[0_0_32px_rgba(56,189,248,0.45),inset_0_0_22px_rgba(56,189,248,0.35)]'
                   : 'border-cyan-400/40 hover:border-cyan-300/80 shadow-[0_0_24px_rgba(56,189,248,0.3)]'
@@ -777,8 +809,6 @@ export function BigBangButton() {
                   ? 'radial-gradient(circle at 40% 35%, #1f0b0f 0%, #0d0406 55%, #040102 100%)'
                   : isPressing && isWhiteholeMode
                   ? 'radial-gradient(circle at 40% 30%, #ffffff 0%, #fef3c7 35%, #fde68a 65%, #f59e0b 100%)'
-                  : isPressing && isMirrorholeMode
-                  ? 'linear-gradient(135deg, rgba(255,255,255,0.75) 0%, rgba(224,242,254,0.4) 40%, rgba(186,230,253,0.3) 70%, rgba(255,255,255,0.6) 100%)'
                   : isPressing && isBlackholeMode
                   ? 'radial-gradient(circle at 50% 50%, #000000 0%, #040308 45%, #090514 80%, #020104 100%)'
                   : isPressing
@@ -788,10 +818,8 @@ export function BigBangButton() {
                   ? 'inset 0 0 20px rgba(239, 68, 68, 0.4), 0 0 24px rgba(239, 68, 68, 0.5)'
                   : isPressing && isWhiteholeMode
                   ? 'inset 0 0 25px rgba(255, 255, 255, 0.95), 0 0 35px rgba(253, 230, 138, 0.9)'
-                  : isPressing && isMirrorholeMode
-                  ? 'inset 0 0 24px rgba(255, 255, 255, 0.8), inset 1px 1px 2px rgba(255, 255, 255, 1), 0 0 32px rgba(186, 230, 253, 0.75)'
                   : isPressing && isBlackholeMode
-                  ? 'inset 0 0 30px rgba(0, 0, 0, 1), inset 0 0 15px rgba(88, 28, 135, 0.4), 0 0 36px rgba(0, 0, 0, 0.95)'
+                  ? 'inset 0 0 30px rgba(0, 0, 0, 1), inset 0 0 15px rgba(88, 28, 135, 0.5), 0 0 40px rgba(0, 0, 0, 0.95)'
                   : isPressing
                   ? 'inset 0 0 22px rgba(56, 189, 248, 0.35), inset -6px -6px 18px rgba(0, 0, 0, 0.9), 0 0 30px rgba(56, 189, 248, 0.45)'
                   : 'inset 0 0 22px rgba(56, 189, 248, 0.25), inset -6px -6px 18px rgba(0, 0, 0, 0.9), 0 0 24px rgba(56, 189, 248, 0.3)',
@@ -811,11 +839,17 @@ export function BigBangButton() {
                   : '탭: 루시 채팅 켜기 · 홀드: 크리스탈 오브'
               }
             >
-              {/* 미러홀 유리 질감 광택 층 */}
-              {isPressing && isMirrorholeMode && (
-                <div
-                  className="absolute inset-0 rounded-full pointer-events-none z-10 bg-gradient-to-tr from-white/20 via-sky-200/30 to-white/60 mix-blend-overlay backdrop-blur-md"
-                />
+              {/* 홀드 시 블랙홀 어두운 심연 흡입 파동 (Suction Waves) */}
+              {isPressing && isBlackholeMode && (
+                <>
+                  <div className="absolute inset-0 rounded-full pointer-events-none bigbang-suction-wave-1 opacity-75 bg-[radial-gradient(circle_at_center,transparent_25%,rgba(147,51,234,0.35)_65%,black_100%)]" />
+                  <div className="absolute inset-0 rounded-full pointer-events-none bigbang-suction-wave-2 opacity-65 bg-[radial-gradient(circle_at_center,transparent_15%,rgba(79,70,229,0.3)_60%,black_100%)]" />
+                </>
+              )}
+
+              {/* 탭 시 화이트홀 찬란한 빛비춤 방사광 (Starlight Rays) */}
+              {isPressing && isWhiteholeMode && (
+                <div className="absolute inset-0 rounded-full pointer-events-none bigbang-rays-spin opacity-85 bg-[conic-gradient(from_0deg,rgba(255,255,255,0.95)_0deg,transparent_60deg,rgba(254,240,138,0.85)_120deg,transparent_180deg,rgba(255,255,255,0.95)_240deg,transparent_300deg,rgba(255,255,255,0.95)_360deg)]" />
               )}
 
               {/* 기본 대기 상태일 때의 은은한 회전 볼텍스 링 */}
@@ -829,21 +863,17 @@ export function BigBangButton() {
                 />
               )}
 
-              {/* Event Horizon Deep Singularity Core (크리스탈 구체의 코어 - 화이트홀/미러홀/블랙홀 반응) */}
+              {/* Event Horizon Deep Singularity Core (크리스탈 구체의 코어 - 화이트홀/블랙홀 반응) */}
               <div
                 className="absolute inset-2.5 sm:inset-3 rounded-full z-15 pointer-events-none transition-all duration-200 overflow-hidden flex items-center justify-center"
                 style={{
                   background: isPressing && isWhiteholeMode
                     ? 'radial-gradient(circle at 45% 35%, #ffffff 0%, #fef08a 45%, #f59e0b 100%)'
-                    : isPressing && isMirrorholeMode
-                    ? 'radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9) 0%, rgba(224,242,254,0.6) 45%, rgba(186,230,253,0.3) 80%, rgba(255,255,255,0.5) 100%)'
                     : isPressing && isBlackholeMode
                     ? 'radial-gradient(circle at 50% 50%, #000000 0%, #020206 55%, #05040b 100%)'
                     : 'radial-gradient(circle at 45% 35%, #101228 0%, #090a1a 55%, #03030a 100%)',
                   boxShadow: isPressing && isWhiteholeMode
                     ? '0 0 20px rgba(255, 255, 255, 1), inset 0 0 10px rgba(255, 255, 255, 0.9)'
-                    : isPressing && isMirrorholeMode
-                    ? 'inset 0 0 16px rgba(255, 255, 255, 0.8), 0 0 15px rgba(224, 242, 254, 0.6)'
                     : isPressing && isBlackholeMode
                     ? 'inset 0 0 24px rgba(0, 0, 0, 1)'
                     : 'inset 0 0 16px rgba(0, 0, 0, 0.95)',

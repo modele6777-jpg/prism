@@ -631,41 +631,69 @@ export function synthesizeWarpTarget(context: OmniWarpContext, metrics: WarpForc
   ) {
     const radialApp = RADIAL_WARP_APPS[metrics.radialSectorIndex];
     const isWhiteholeMode = metrics.eventHorizonMode === 'whitehole' || metrics.phase === 'whitehole';
-    const isMirrorholeMode = metrics.eventHorizonMode === 'mirrorhole' || metrics.phase === 'mirrorhole';
 
     const channelSub = CHANNEL_SUBMENUS[radialApp.id] || CHANNEL_SUBMENUS.hub;
-    const dest = isWhiteholeMode
-      ? channelSub.whitehole
-      : isMirrorholeMode
-      ? channelSub.mirrorhole
-      : channelSub.blackhole;
+    // 미러홀 제거: 탭은 화이트홀(1번 메뉴), 홀드는 블랙홀(심연 메뉴)
+    const dest = isWhiteholeMode ? channelSub.whitehole : (channelSub.blackhole || channelSub.mirrorhole);
 
     const safePath = resolveCanonicalPath(dest.path);
-    const modeLabel = isWhiteholeMode ? '화이트홀' : isMirrorholeMode ? '미러홀' : '블랙홀';
-    const modeEmoji = isWhiteholeMode ? '☀️' : isMirrorholeMode ? '🪞' : '🕳️';
-    const menuOrder = isWhiteholeMode ? '처음 메뉴' : isMirrorholeMode ? '두 번째 메뉴' : '세 번째 메뉴';
+    const modeLabel = isWhiteholeMode ? '화이트홀' : '블랙홀';
+    const modeEmoji = isWhiteholeMode ? '☀️' : '🕳️';
+    const menuOrder = isWhiteholeMode ? '처음 메뉴' : '심연 메뉴';
 
     return {
       id: dest.id,
       icon: dest.icon || radialApp.icon,
       phase: 'event_horizon',
-      eventHorizonMode: isWhiteholeMode ? 'whitehole' : isMirrorholeMode ? 'mirrorhole' : 'blackhole',
+      eventHorizonMode: isWhiteholeMode ? 'whitehole' : 'blackhole',
       gauge: Math.max(0.35, metrics.virtualForce),
       aiTemperature: T,
       title: dest.name,
-      actionType: `event_horizon_${isWhiteholeMode ? 'whitehole' : isMirrorholeMode ? 'mirrorhole' : 'blackhole'}_${radialApp.id}`,
+      actionType: `event_horizon_${isWhiteholeMode ? 'whitehole' : 'blackhole'}_${radialApp.id}`,
       destinationPath: safePath,
       previewLabel: `[사건의 지평선 ${modeLabel}] ${modeEmoji} ${radialApp.name} · ${dest.name}`,
       previewDescription: `[${radialApp.name}] 채널의 ${menuOrder}인 [${dest.name} · ${dest.subName}]으로 즉시 도약합니다.`,
       themeColor: dest.themeColor || radialApp.themeColor || '#38bdf8',
-      accentGlow: isMirrorholeMode ? 'rgba(255, 255, 255, 0.95)' : dest.accentGlow || radialApp.accentGlow,
+      accentGlow: dest.accentGlow || radialApp.accentGlow,
       stageIndex: metrics.radialSectorIndex + 1,
-      runeSymbol: isMirrorholeMode ? '🪞' : dest.runeSymbol,
-      runeName: isMirrorholeMode ? 'Mirror' : dest.runeName,
+      runeSymbol: dest.runeSymbol,
+      runeName: dest.runeName,
     };
   }
 
-  // 1. 제자리 탭 (가볍게 터치) = 웜홀 (Wormhole: 자유 양자 도약)
+  // 1. 제자리 탭 (가볍게 터치): 화이트홀 (빛비춤) ➔ 루시 채팅 (/chat)
+  if (metrics.phase === 'whitehole') {
+    const dest = sanitizeDest({
+      id: 'lucy',
+      name: '루시 1:1 대화',
+      subName: '영혼의 가이드 루시와의 심층 대화',
+      path: '/chat',
+      icon: '✨',
+      themeColor: '#fde68a',
+      accentGlow: 'rgba(244, 114, 182, 0.95)',
+      description: '영혼의 가이드 루시와 1:1로 마음 깊은 대화와 지혜를 나눕니다.',
+    });
+    const safePath = resolveCanonicalPath(dest.path);
+    return {
+      id: 'lucy',
+      icon: '✨',
+      phase: 'whitehole',
+      gauge: metrics.virtualForce,
+      aiTemperature: T,
+      title: '루시 1:1 심층 대화',
+      actionType: 'omniwarp_whitehole_lucy',
+      destinationPath: safePath,
+      previewLabel: `[화이트홀 빛비춤] ✨ ᛞ 루시 1:1 대화`,
+      previewDescription: `화이트홀의 찬란한 빛비춤 에너지를 타고 영혼의 AI 가이드 [루시 1:1 대화]로 즉시 연결됩니다.`,
+      themeColor: '#fde68a',
+      accentGlow: 'rgba(244, 114, 182, 0.95)',
+      stageIndex: 9,
+      runeSymbol: 'ᛞ',
+      runeName: 'Dagaz',
+    };
+  }
+
+  // 2. 웜홀 (Wormhole: 자유 양자 도약) - 웜홀 요청 시
   if (metrics.phase === 'wormhole') {
     const dest = pickRandomQuantumDestination(context.activeRoute, metrics.startTime);
     const safePath = resolveCanonicalPath(dest.path);
@@ -688,71 +716,7 @@ export function synthesizeWarpTarget(context: OmniWarpContext, metrics: WarpForc
     };
   }
 
-  // 2. 제자리 홀드 1단계: 화이트홀 (빛비춤) ➔ 루시 채팅 (/chat)
-  if (metrics.phase === 'whitehole') {
-    const dest = sanitizeDest({
-      id: 'lucy',
-      name: '루시 1:1 대화',
-      subName: '영혼의 가이드 루시와의 심층 대화',
-      path: '/chat',
-      icon: '✨',
-      themeColor: '#fde68a',
-      accentGlow: 'rgba(244, 114, 182, 0.95)',
-      description: '영혼의 가이드 루시와 1:1로 마음 깊은 대화와 지혜를 나눕니다.',
-    });
-    const safePath = resolveCanonicalPath(dest.path);
-    return {
-      id: 'lucy',
-      icon: '✨',
-      phase: 'whitehole',
-      gauge: metrics.virtualForce,
-      aiTemperature: T,
-      title: '루시 1:1 심층 대화',
-      actionType: 'omniwarp_whitehole_lucy',
-      destinationPath: safePath,
-      previewLabel: `[화이트홀 방출] ✨ ᛞ 루시 1:1 대화`,
-      previewDescription: `화이트홀의 강력한 빛 에너지를 타고 영혼의 AI 가이드 [루시 1:1 대화]로 즉시 연결됩니다.`,
-      themeColor: '#fde68a',
-      accentGlow: 'rgba(244, 114, 182, 0.95)',
-      stageIndex: 9,
-      runeSymbol: 'ᛞ',
-      runeName: 'Dagaz',
-    };
-  }
-
-  // 🪞 3. 제자리 홀드 2단계: 미러홀 (유리테마) ➔ 프리즘 홈 (/)
-  if (metrics.phase === 'mirrorhole') {
-    const dest = sanitizeDest({
-      id: 'hub',
-      name: '프리즘 홈',
-      subName: '모든 영감의 시초 허브',
-      path: '/',
-      icon: '🌌',
-      themeColor: '#38bdf8',
-      accentGlow: 'rgba(255, 255, 255, 0.95)',
-      description: '투명하고 영롱한 크리스탈 유리 거울 면을 통과하여 프리즘 홈으로 귀환합니다.',
-    });
-    const safePath = resolveCanonicalPath(dest.path);
-    return {
-      id: 'hub',
-      icon: '🌌',
-      phase: 'mirrorhole',
-      gauge: metrics.virtualForce,
-      aiTemperature: T,
-      title: '프리즘 홈',
-      actionType: 'omniwarp_mirrorhole_home',
-      destinationPath: safePath,
-      previewLabel: `[미러홀 투영] 🪞 프리즘 홈`,
-      previewDescription: `투명하고 영롱한 크리스탈 유리 거울 면을 통과하여 프리즘 홈으로 연결됩니다.`,
-      themeColor: '#38bdf8',
-      accentGlow: 'rgba(255, 255, 255, 0.95)',
-      stageIndex: 5,
-      runeSymbol: '🪞',
-      runeName: 'Mirror',
-    };
-  }
-
-  // 4. 제자리 홀드 3단계: 블랙홀 (어두움) ➔ 크리스탈 오브 (/orb)
+  // 3. 제자리 홀드: 블랙홀 (어두운 심연) ➔ 크리스탈 오브 (/orb)
   const orbDest = sanitizeDest({
     id: 'orb',
     name: '크리스탈 오브',
@@ -773,8 +737,8 @@ export function synthesizeWarpTarget(context: OmniWarpContext, metrics: WarpForc
     title: '크리스탈 오브',
     actionType: 'omniwarp_blackhole_orb',
     destinationPath: safeOrbPath,
-    previewLabel: `[블랙홀 흡수] 🕳️ ᛟ 크리스탈 오브`,
-    previewDescription: `블랙홀의 무한한 심연 특이점에 이끌려 직관의 성소 [크리스탈 오브]로 연결됩니다.`,
+    previewLabel: `[블랙홀 어두운 심연] 🕳️ ᛟ 크리스탈 오브`,
+    previewDescription: `블랙홀의 어두운 심연 특이점에 이끌려 직관의 성소 [크리스탈 오브]로 연결됩니다.`,
     themeColor: '#38bdf8',
     accentGlow: 'rgba(56, 189, 248, 0.95)',
     stageIndex: 2,

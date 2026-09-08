@@ -192,7 +192,7 @@ export function calculateWarpMetrics(
 
   const virtualForce = Math.min(1.0, Math.max(0.08, timeForce));
 
-  let phase: WarpPhase = 'wormhole';
+  let phase: WarpPhase = 'whitehole';
   let eventHorizonMode: 'whitehole' | 'mirrorhole' | 'blackhole' | undefined = undefined;
 
   if (isAborted) {
@@ -200,32 +200,15 @@ export function calculateWarpMetrics(
   } else if (radialSectorIndex >= 0) {
     // 🌌 7대 앱으로 튕기거나 조준하는 기능 = 사건의 지평선 (Event Horizon)
     phase = 'event_horizon';
-    // 🪞 진자 순환: 화이트홀(1번메뉴) ➔ 미러홀(2번메뉴) ➔ 블랙홀(3번메뉴) 순환
-    if (durationMs < 250) {
-      eventHorizonMode = 'whitehole';
-    } else {
-      const holdDuration = durationMs - 250;
-      const cycleState = Math.floor(holdDuration / 650) % 3; // 0: 화이트홀, 1: 미러홀, 2: 블랙홀
-      eventHorizonMode = cycleState === 0 ? 'whitehole' : cycleState === 1 ? 'mirrorhole' : 'blackhole';
-    }
+    // 미러홀 제거: 탭은 화이트홀(1번 메뉴), 홀드는 블랙홀(심연 메뉴)
+    eventHorizonMode = durationMs < 250 ? 'whitehole' : 'blackhole';
   } else if (durationMs < 250) {
-    // 🌀 제자리에서 가볍게 터치(탭) = 웜홀 (Wormhole: 자유 양자 도약)
-    phase = 'wormhole';
+    // ☀️ 제자리에서 가볍게 터치(탭) = 빛비춤(화이트홀: 루시 1:1 대화)
+    phase = 'whitehole';
   } else {
-    // 🪞 제자리 홀드 유지: 화이트홀(빛비춤) ➔ 미러홀(유리) ➔ 블랙홀(어두움) 3단계 순서대로 순환
-    // 250ms 이후부터 650ms 주기로 순차 교차
-    const holdDuration = durationMs - 250;
-    const cycleState = Math.floor(holdDuration / 650) % 3; // 0: 화이트홀(루시), 1: 미러홀(홈), 2: 블랙홀(오브)
-    if (cycleState === 0) {
-      // ☀️ 화이트홀: 빛비춤 (루시 1:1 대화)
-      phase = 'whitehole';
-    } else if (cycleState === 1) {
-      // 🪞 미러홀: 유리테마 (항시 프리즘 홈)
-      phase = 'mirrorhole';
-    } else {
-      // 🕳️ 블랙홀: 어두움 (크리스탈 오브)
-      phase = 'blackhole';
-    }
+    // 🕳️ 제자리 홀드 = 어두운 심연(블랙홀: 크리스탈 오브)
+    // 홀드 시간이 길어질수록 어두운 심연의 중력 게이지가 차오름
+    phase = 'blackhole';
   }
 
   return {
