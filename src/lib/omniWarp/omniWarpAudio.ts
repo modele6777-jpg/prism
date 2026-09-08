@@ -228,6 +228,10 @@ class OmniWarpAudioEngine {
       osc.stop(now + 0.15);
     } catch (_) {}
   }
+
+  playCommit(): void {
+    this.playBigBang();
+  }
 }
 
 export const omniWarpAudio = new OmniWarpAudioEngine();
