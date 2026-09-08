@@ -694,9 +694,9 @@ export function BigBangButton() {
                 >
                   {activePhase === 'wormhole' ? (
                     <>
-                      <span className="font-serif text-sm text-emerald-300">🌀</span>
-                      <span className="font-semibold text-emerald-200">웜홀 시공간 도약</span>
-                      <span className="opacity-80 text-[11px] text-emerald-300">· 임의 차원 전이</span>
+                      <span className="font-serif text-sm text-cyan-300 animate-spin">🌌</span>
+                      <span className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-cyan-200 to-purple-300">사건의 지평선 웜홀</span>
+                      <span className="opacity-90 text-[11px] text-cyan-200">· 빛과 심연의 차원 도약</span>
                     </>
                   ) : radialSectorIndex >= 0 && RADIAL_WARP_APPS[radialSectorIndex] ? (
                     <>
@@ -890,7 +890,7 @@ export function BigBangButton() {
                 background: isPressing && isAborted
                   ? 'radial-gradient(circle at 40% 35%, #1f0b0f 0%, #0d0406 55%, #040102 100%)'
                   : isPressing && activePhase === 'wormhole'
-                  ? 'radial-gradient(circle at 50% 50%, #064e3b 0%, #022c22 45%, #081a24 75%, #020617 100%)'
+                  ? 'radial-gradient(circle at 50% 50%, #ffffff 0%, #38bdf8 20%, #a855f7 42%, #0e051e 68%, #000000 100%)'
                   : isPressing && isWhiteholeMode
                   ? 'radial-gradient(circle at 40% 30%, #ffffff 0%, #fef3c7 35%, #fde68a 65%, #f59e0b 100%)'
                   : isPressing && isBlackholeMode
@@ -925,9 +925,16 @@ export function BigBangButton() {
                   : '탭: 루시 채팅 켜기 · 홀드: 크리스탈 오브 · 웜홀: 임의 도약'
               }
             >
-              {/* 🌀 홀드 중 버튼영역내 드래그 시 웜홀 시공간 소용돌이 왜곡 (Wormhole Vortex) */}
+              {/* 🌀 [웜홀] 빛비춤 + 어두운 심연 + 사건의 지평선 3원 동시 융합 전개 */}
               {isPressing && activePhase === 'wormhole' && (
-                <div className="absolute inset-0 rounded-full pointer-events-none bigbang-wormhole-vortex opacity-85 bg-[conic-gradient(from_0deg,rgba(52,211,153,0.95)_0deg,transparent_60deg,rgba(6,182,212,0.85)_120deg,transparent_180deg,rgba(167,139,250,0.9)_240deg,transparent_300deg,rgba(52,211,153,0.95)_360deg)]" />
+                <>
+                  {/* 🕳️ 심연: 외곽 암흑 흡입 파동 (Blackhole Suction) */}
+                  <div className="absolute inset-0 rounded-full pointer-events-none bigbang-suction-wave-1 opacity-80 bg-[radial-gradient(circle_at_center,transparent_25%,rgba(147,51,234,0.45)_65%,black_100%)]" />
+                  {/* ☀️ 빛비춤: 중심 찬란한 성광 회전 광선 (Whitehole Rays) */}
+                  <div className="absolute inset-0 rounded-full pointer-events-none bigbang-rays-spin opacity-85 bg-[conic-gradient(from_0deg,rgba(255,255,255,0.95)_0deg,transparent_60deg,rgba(254,240,138,0.85)_120deg,transparent_180deg,rgba(255,255,255,0.95)_240deg,transparent_300deg,rgba(255,255,255,0.95)_360deg)]" />
+                  {/* 🌌 사건의 지평선: 빛과 어둠이 교차하는 상대론적 소용돌이 (Event Horizon Accretion Vortex) */}
+                  <div className="absolute inset-0 rounded-full pointer-events-none bigbang-wormhole-vortex opacity-90 bg-[conic-gradient(from_0deg,rgba(56,189,248,0.9)_0deg,transparent_45deg,rgba(168,85,247,0.85)_90deg,transparent_135deg,rgba(52,211,153,0.85)_180deg,transparent_225deg,rgba(255,255,255,0.95)_270deg,transparent_315deg,rgba(56,189,248,0.9)_360deg)]" />
+                </>
               )}
 
               {/* 홀드 시 블랙홀 어두운 심연 흡입 파동 (Suction Waves) */}

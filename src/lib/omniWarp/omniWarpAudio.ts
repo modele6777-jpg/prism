@@ -61,7 +61,7 @@ class OmniWarpAudioEngine {
   }
 
   /**
-   * 웜홀 (Wormhole): 시공간 차원 도약 (*쓔우웅- 팟!*)
+   * 웜홀 (Wormhole): 빛비춤(화이트홀) + 심연(블랙홀) + 사건의 지평선 동시 융합 사운드
    */
   playWormhole(): void {
     const ctx = this.getContext();
@@ -69,28 +69,51 @@ class OmniWarpAudioEngine {
 
     try {
       const now = ctx.currentTime;
-      const osc = ctx.createOscillator();
+
+      // 1. 심연 (Blackhole Abyss): 묵직한 저주파 중력파 서브베이스
+      const subOsc = ctx.createOscillator();
+      const subGain = ctx.createGain();
+      subOsc.type = 'sawtooth';
+      subOsc.frequency.setValueAtTime(80, now);
+      subOsc.frequency.exponentialRampToValueAtTime(36, now + 0.35);
+      subGain.gain.setValueAtTime(0.35, now);
+      subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+      subOsc.connect(subGain);
+      subGain.connect(ctx.destination);
+      subOsc.start(now);
+      subOsc.stop(now + 0.4);
+
+      // 2. 빛비춤 (Whitehole Radiance): 맑고 높은 크리스탈 스타라이트 배음
+      const highOsc = ctx.createOscillator();
+      const highGain = ctx.createGain();
+      highOsc.type = 'sine';
+      highOsc.frequency.setValueAtTime(920, now);
+      highOsc.frequency.exponentialRampToValueAtTime(1480, now + 0.2);
+      highGain.gain.setValueAtTime(0.24, now);
+      highGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+      highOsc.connect(highGain);
+      highGain.connect(ctx.destination);
+      highOsc.start(now);
+      highOsc.stop(now + 0.26);
+
+      // 3. 사건의 지평선 (Event Horizon): 시공간 왜곡 밴드패스 워프 스위프
+      const warpOsc = ctx.createOscillator();
       const filter = ctx.createBiquadFilter();
-      const gain = ctx.createGain();
-
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(180, now);
-      osc.frequency.exponentialRampToValueAtTime(720, now + 0.22);
-
+      const warpGain = ctx.createGain();
+      warpOsc.type = 'triangle';
+      warpOsc.frequency.setValueAtTime(220, now);
+      warpOsc.frequency.exponentialRampToValueAtTime(780, now + 0.28);
       filter.type = 'bandpass';
-      filter.frequency.setValueAtTime(320, now);
-      filter.frequency.exponentialRampToValueAtTime(1400, now + 0.22);
-      filter.Q.value = 2.5;
-
-      gain.gain.setValueAtTime(0.32, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
-
-      osc.connect(filter);
-      filter.connect(gain);
-      gain.connect(ctx.destination);
-
-      osc.start(now);
-      osc.stop(now + 0.3);
+      filter.frequency.setValueAtTime(400, now);
+      filter.frequency.exponentialRampToValueAtTime(1800, now + 0.28);
+      filter.Q.value = 3.0;
+      warpGain.gain.setValueAtTime(0.28, now);
+      warpGain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+      warpOsc.connect(filter);
+      filter.connect(warpGain);
+      warpGain.connect(ctx.destination);
+      warpOsc.start(now);
+      warpOsc.stop(now + 0.34);
     } catch (_) {}
   }
 

@@ -34,19 +34,32 @@ export function BigBangExpansionOverlay() {
         const isWormhole = detail.phase === 'wormhole';
 
         particlesRef.current = [];
-        const count = isWhitehole ? 170 : isBlackhole ? 160 : isWormhole ? 160 : 130;
+        const count = isWormhole ? 220 : isWhitehole ? 170 : isBlackhole ? 160 : 130;
         for (let i = 0; i < count; i++) {
           const angle = Math.random() * Math.PI * 2;
-          const speed = isBlackhole
+          const speed = isWormhole
+            ? (Math.random() * 15 + 5)
+            : isBlackhole
             ? (Math.random() * 14 + 5)
             : isWhitehole
             ? (Math.random() * 12 + 4)
-            : isWormhole
-            ? (Math.random() * 13 + 5)
             : (Math.random() * 8 + 3);
 
           let particleColor = `hsl(${Math.random() * 40 + 190}, 100%, 80%)`;
-          if (isWhitehole) {
+          if (isWormhole) {
+            // ☀️ 빛비춤 + 🕳️ 어두운 심연 + 🌌 사건의 지평선 3원 동시 융합 파티클
+            const pType = Math.random();
+            if (pType < 0.35) {
+              // ☀️ 빛비춤: 눈부신 순백광, 황금빛 광자
+              particleColor = Math.random() < 0.6 ? 'rgba(255, 255, 255, 0.98)' : 'hsl(48, 100%, 82%)';
+            } else if (pType < 0.70) {
+              // 🕳️ 어두운 심연: 딥 바이올렛, 흑요석 암흑 물질
+              particleColor = Math.random() < 0.5 ? 'hsl(275, 100%, 65%)' : 'rgba(12, 6, 26, 0.96)';
+            } else {
+              // 🌌 사건의 지평선: 시안 광륜, 에메랄드 시공간 굴절광
+              particleColor = Math.random() < 0.5 ? 'hsl(192, 100%, 85%)' : 'hsl(155, 100%, 78%)';
+            }
+          } else if (isWhitehole) {
             // ☀️ 화이트홀 빛비춤: 눈부신 순백광, 황금빛, 시안 광자
             const pType = Math.random();
             if (pType < 0.45) {
@@ -65,18 +78,6 @@ export function BigBangExpansionOverlay() {
               particleColor = `hsl(${Math.random() * 30 + 310}, 100%, 60%)`; // 마젠타 특이점
             } else {
               particleColor = `rgba(10, 5, 20, 0.95)`; // 칠흑 같은 암흑 물질
-            }
-          } else if (isWormhole) {
-            // 🌀 웜홀 시공간 도약: 에메랄드, 아쿠아 시안, 네온 바이올렛, 스타더스트
-            const pType = Math.random();
-            if (pType < 0.4) {
-              particleColor = `hsl(${Math.random() * 30 + 145}, 100%, 75%)`; // 에메랄드
-            } else if (pType < 0.75) {
-              particleColor = `hsl(${Math.random() * 25 + 185}, 100%, 80%)`; // 아쿠아 시안
-            } else if (pType < 0.9) {
-              particleColor = `hsl(${Math.random() * 35 + 265}, 100%, 80%)`; // 네온 바이올렛
-            } else {
-              particleColor = `rgba(255, 255, 255, 0.95)`; // 순백 양자 입자
             }
           }
 
@@ -209,18 +210,39 @@ export function BigBangExpansionOverlay() {
           </>
         )}
 
-        {/* 🌀 3. 웜홀 시공간 도약 효과: 에메랄드 & 아쿠아 시공간 소용돌이 왜곡 */}
+        {/* 🌀 3. 웜홀: [빛비춤] + [어두운 심연] 동시 전개 및 [사건의 지평선(Event Horizon)] 효과 */}
         {isWormhole && (
           <>
-            {/* 시공간 워프 터널 필드 */}
+            {/* 🕳️ 1) 심연 효과: 화면 외곽을 집어삼키는 칠흑 같은 암흑 보이드 비네트 */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.6 }}
-              animate={{ opacity: [0, 0.95, 0.7, 0], scale: [0.6, 1.4, 2.2, 2.8] }}
-              transition={{ duration: 0.62, ease: 'easeOut' }}
-              className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,rgba(52,211,153,0.95)_0%,rgba(6,182,212,0.85)_35%,rgba(15,23,42,0.9)_70%,transparent_100%)]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 0.95, 0.88, 0] }}
+              transition={{ duration: 0.72, ease: 'easeInOut' }}
+              className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_20%,rgba(13,4,24,0.92)_55%,rgba(2,1,5,0.98)_100%)]"
             />
-            {/* 회전하는 하이퍼스페이스 웜홀 소용돌이 */}
-            <div className="absolute inset-[-30%] pointer-events-none bigbang-wormhole-vortex opacity-85 bg-[conic-gradient(from_0deg,rgba(52,211,153,0.9)_0deg,transparent_45deg,rgba(6,182,212,0.85)_90deg,transparent_135deg,rgba(167,139,250,0.85)_180deg,transparent_225deg,rgba(52,211,153,0.9)_270deg,transparent_315deg,rgba(6,182,212,0.85)_360deg)] blur-[2px]" />
+            {/* 외곽에서 중심으로 소용돌이치며 빨려들어가는 암흑 흡입 파동 (Darkness Suction Waves) */}
+            <div className="absolute inset-[-20%] pointer-events-none bigbang-suction-wave-1 opacity-80 bg-[radial-gradient(circle_at_center,transparent_15%,rgba(147,51,234,0.45)_52%,rgba(0,0,0,0.95)_88%)]" />
+            <div className="absolute inset-[-20%] pointer-events-none bigbang-suction-wave-2 opacity-75 bg-[radial-gradient(circle_at_center,transparent_10%,rgba(79,70,229,0.4)_45%,rgba(0,0,0,0.92)_82%)]" />
+
+            {/* ☀️ 2) 빛비춤 효과: 중심에서 폭발하는 찬란한 눈부신 백색광 플래시 & 래디언스 */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: [0, 1, 0.5, 0], scale: [0.5, 1.3, 1.8, 2.4] }}
+              transition={{ duration: 0.65, ease: 'easeOut' }}
+              className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.98)_0%,rgba(224,242,254,0.9)_25%,rgba(56,189,248,0.55)_50%,transparent_75%)]"
+            />
+            {/* 회전하는 성스러운 스타라이트 광선 (Starlight Rays) */}
+            <div className="absolute inset-[-40%] pointer-events-none bigbang-rays-spin opacity-85 bg-[conic-gradient(from_0deg,rgba(255,255,255,0.95)_0deg,transparent_45deg,rgba(56,189,248,0.8)_90deg,transparent_135deg,rgba(254,240,138,0.9)_180deg,transparent_225deg,rgba(56,189,248,0.8)_270deg,transparent_315deg,rgba(255,255,255,0.95)_360deg)] blur-[1px]" />
+
+            {/* 🌌 3) 사건의 지평선 효과: 빛과 어둠이 충돌하는 상대론적 강착원반 & 시공간 특이점 왜곡 광륜 */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.4, rotate: 0 }}
+              animate={{ opacity: [0, 1, 0.85, 0], scale: [0.4, 1.25, 1.9, 2.6], rotate: 180 }}
+              transition={{ duration: 0.7, ease: 'easeOut' }}
+              className="absolute inset-[-10%] pointer-events-none rounded-full border-[3px] border-cyan-300 shadow-[0_0_80px_rgba(255,255,255,1),0_0_50px_rgba(56,189,248,0.95),0_0_40px_rgba(168,85,247,0.9),inset_0_0_30px_rgba(255,255,255,0.9)] bg-[conic-gradient(from_0deg,rgba(56,189,248,0.7)_0deg,rgba(255,255,255,0.9)_45deg,rgba(168,85,247,0.8)_90deg,rgba(52,211,153,0.7)_135deg,rgba(254,240,138,0.85)_180deg,rgba(255,255,255,0.9)_225deg,rgba(147,51,234,0.8)_270deg,rgba(56,189,248,0.7)_360deg)] blur-[1.5px]"
+            />
+            {/* 회전하는 웜홀 시공간 특이점 볼텍스 */}
+            <div className="absolute inset-[-25%] pointer-events-none bigbang-wormhole-vortex opacity-80 bg-[radial-gradient(circle_at_center,transparent_25%,rgba(52,211,153,0.4)_50%,rgba(147,51,234,0.45)_70%,transparent_90%)]" />
           </>
         )}
 
@@ -229,19 +251,29 @@ export function BigBangExpansionOverlay() {
 
         {/* Central Shockwave Expansion Ring (순간적인 파동 링) */}
         <motion.div
-          initial={{ scale: 0.15, opacity: 0.95, borderWidth: 10 }}
-          animate={{ scale: 22, opacity: 0, borderWidth: 1 }}
-          transition={{ duration: 0.52, ease: 'easeOut' }}
+          initial={{ scale: 0.15, opacity: 0.98, borderWidth: 12 }}
+          animate={{ scale: 24, opacity: 0, borderWidth: 1 }}
+          transition={{ duration: 0.54, ease: 'easeOut' }}
           className={`absolute w-24 h-24 rounded-full pointer-events-none border ${
-            isWhitehole
+            isWormhole
+              ? 'border-white shadow-[0_0_70px_rgba(255,255,255,1),0_0_50px_rgba(56,189,248,0.95),0_0_35px_rgba(168,85,247,0.9),inset_0_0_30px_rgba(0,0,0,0.95)]'
+              : isWhitehole
               ? 'border-white shadow-[0_0_50px_rgba(255,255,255,1),0_0_30px_rgba(56,189,248,0.9)]'
               : isBlackhole
               ? 'border-violet-500 shadow-[0_0_50px_rgba(168,85,247,0.9),inset_0_0_30px_rgba(0,0,0,0.95)]'
-              : isWormhole
-              ? 'border-emerald-300 shadow-[0_0_55px_rgba(52,211,153,0.95),0_0_30px_rgba(6,182,212,0.9),inset_0_0_20px_rgba(52,211,153,0.8)]'
               : 'border-purple-300 shadow-[0_0_35px_rgba(168,85,247,0.85)]'
           }`}
         />
+
+        {/* 웜홀 발동 시 뒤따라 확장되는 사건의 지평선 암흑 전이 파동 링 */}
+        {isWormhole && (
+          <motion.div
+            initial={{ scale: 0.1, opacity: 0.95, borderWidth: 8 }}
+            animate={{ scale: 21, opacity: 0, borderWidth: 1 }}
+            transition={{ duration: 0.62, ease: 'easeOut', delay: 0.05 }}
+            className="absolute w-24 h-24 rounded-full pointer-events-none border border-violet-400 shadow-[0_0_60px_rgba(168,85,247,1),inset_0_0_30px_rgba(0,0,0,0.95)]"
+          />
+        )}
       </motion.div>
     </AnimatePresence>
   );
