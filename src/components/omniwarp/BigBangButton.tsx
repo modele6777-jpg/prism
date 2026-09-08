@@ -909,11 +909,14 @@ export function BigBangButton() {
                 </>
               )}
 
-              {/* 홀드 시 블랙홀 어두운 심연 흡입 파동 (Suction Waves) */}
+              {/* 홀드 시 블랙홀: 피어오르는 자욱한 검은 연기 소용돌이 (Dense Black Smoke Plumes) */}
               {isPressing && isBlackholeMode && (
                 <>
-                  <div className="absolute inset-0 rounded-full pointer-events-none bigbang-suction-wave-1 opacity-75 bg-[radial-gradient(circle_at_center,transparent_25%,rgba(147,51,234,0.35)_65%,black_100%)]" />
-                  <div className="absolute inset-0 rounded-full pointer-events-none bigbang-suction-wave-2 opacity-65 bg-[radial-gradient(circle_at_center,transparent_15%,rgba(79,70,229,0.3)_60%,black_100%)]" />
+                  {/* 외곽으로 뿜어져 퍼지는 자욱한 검은 연기 베일 */}
+                  <div className="absolute -inset-4 rounded-full pointer-events-none blackhole-smoke-swirl-cw opacity-90 blur-[10px] bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.98)_0%,rgba(15,10,24,0.9)_50%,transparent_80%)]" />
+                  <div className="absolute -inset-6 rounded-full pointer-events-none blackhole-smoke-swirl-ccw opacity-85 blur-[14px] bg-[radial-gradient(circle_at_center,rgba(0,0,0,1)_0%,rgba(24,16,36,0.85)_55%,transparent_85%)]" />
+                  {/* 내부에서 소용돌이치는 칠흑 먹구름 와류 */}
+                  <div className="absolute inset-0 rounded-full pointer-events-none animate-[spin_3s_linear_infinite] opacity-95 bg-[conic-gradient(from_0deg,rgba(0,0,0,1)_0deg,rgba(25,18,36,0.85)_90deg,rgba(0,0,0,1)_180deg,rgba(15,10,24,0.9)_270deg,rgba(0,0,0,1)_360deg)]" />
                 </>
               )}
 

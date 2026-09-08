@@ -11,6 +11,8 @@ interface Particle {
   color: string;
   alpha: number;
   decay: number;
+  growth?: number;
+  isSmoke?: boolean;
 }
 
 export function BigBangExpansionOverlay() {
@@ -34,18 +36,21 @@ export function BigBangExpansionOverlay() {
         const isWormhole = detail.phase === 'wormhole';
 
         particlesRef.current = [];
-        const count = isWormhole ? 220 : isWhitehole ? 170 : isBlackhole ? 160 : 130;
+        const count = isBlackhole ? 240 : isWormhole ? 220 : isWhitehole ? 170 : 130;
         for (let i = 0; i < count; i++) {
           const angle = Math.random() * Math.PI * 2;
           const speed = isWormhole
             ? (Math.random() * 15 + 5)
             : isBlackhole
-            ? (Math.random() * 14 + 5)
+            ? (Math.random() * 8 + 2)
             : isWhitehole
             ? (Math.random() * 12 + 4)
             : (Math.random() * 8 + 3);
 
           let particleColor = `hsl(${Math.random() * 40 + 190}, 100%, 80%)`;
+          let isSmokeParticle = false;
+          let particleGrowth = 0;
+
           if (isWormhole) {
             // ☀️ 빛비춤 + 🕳️ 어두운 심연 + 🌌 사건의 지평선 3원 동시 융합 파티클
             const pType = Math.random();
@@ -70,35 +75,41 @@ export function BigBangExpansionOverlay() {
               particleColor = `hsl(${Math.random() * 30 + 45}, 100%, 80%)`; // 은은한 성스러운 골드
             }
           } else if (isBlackhole) {
-            // 🕳️ 블랙홀 어두운 심연: 딥 바이올렛, 흑요석 암흑, 마젠타 특이점
+            // 💨 블랙홀 검은 연기: 자욱하게 피어오르고 팽창하는 칠흑 먹구름 연무
+            isSmokeParticle = true;
+            particleGrowth = Math.random() * 0.85 + 0.45;
             const pType = Math.random();
-            if (pType < 0.5) {
-              particleColor = `hsl(${Math.random() * 40 + 270}, 100%, 65%)`; // 딥 바이올렛
-            } else if (pType < 0.8) {
-              particleColor = `hsl(${Math.random() * 30 + 310}, 100%, 60%)`; // 마젠타 특이점
+            if (pType < 0.35) {
+              particleColor = 'rgba(5, 5, 8, 0.95)'; // 칠흑 같은 농연(濃煙)
+            } else if (pType < 0.65) {
+              particleColor = 'rgba(15, 11, 22, 0.92)'; // 짙은 목탄빛 흑연
+            } else if (pType < 0.85) {
+              particleColor = 'rgba(25, 18, 35, 0.85)'; // 딥 스모키 바이올렛 연무
             } else {
-              particleColor = `rgba(10, 5, 20, 0.95)`; // 칠흑 같은 암흑 물질
+              particleColor = 'rgba(38, 28, 52, 0.75)'; // 자욱하게 번지는 미세 연기 가장자리
             }
           }
 
           particlesRef.current.push({
-            x: originX,
-            y: originY,
+            x: originX + (isBlackhole ? (Math.random() - 0.5) * 40 : 0),
+            y: originY + (isBlackhole ? (Math.random() - 0.5) * 20 : 0),
             vx: Math.cos(angle) * speed,
             vy: Math.sin(angle) * speed,
             radius: isWhitehole
               ? (Math.random() * 4 + 1.2)
               : isBlackhole
-              ? (Math.random() * 3.8 + 1.0)
+              ? (Math.random() * 22 + 16)
               : isWormhole
               ? (Math.random() * 3.9 + 1.1)
               : (Math.random() * 3.0 + 1.0),
             color: particleColor,
             alpha: 1.0,
+            growth: particleGrowth,
+            isSmoke: isSmokeParticle,
             decay: isWhitehole
               ? (Math.random() * 0.024 + 0.012)
               : isBlackhole
-              ? (Math.random() * 0.02 + 0.015)
+              ? (Math.random() * 0.014 + 0.008)
               : (Math.random() * 0.022 + 0.014),
           });
         }
@@ -106,7 +117,7 @@ export function BigBangExpansionOverlay() {
         // Clear overlay after transition animation completes
         setTimeout(() => {
           setActiveCommit(null);
-        }, 720);
+        }, 820);
       }
     };
 
@@ -136,14 +147,31 @@ export function BigBangExpansionOverlay() {
         p.y += p.vy;
         p.alpha -= p.decay;
 
+        if (p.isSmoke) {
+          p.radius += (p.growth || 0.6);
+          p.vx *= 0.965; // 자욱하게 번지는 공기 저항 감속
+          p.vy *= 0.965;
+        }
+
         if (p.alpha <= 0) {
           particlesRef.current.splice(i, 1);
           continue;
         }
 
         ctx.save();
-        ctx.globalAlpha = p.alpha;
-        ctx.fillStyle = p.color;
+        ctx.globalAlpha = Math.max(0, p.alpha);
+
+        if (p.isSmoke) {
+          // 부드러운 볼륨감을 지닌 검은 연기 방사형 그래디언트
+          const grad = ctx.createRadialGradient(p.x, p.y, p.radius * 0.12, p.x, p.y, p.radius);
+          grad.addColorStop(0, p.color);
+          grad.addColorStop(0.6, p.color);
+          grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          ctx.fillStyle = grad;
+        } else {
+          ctx.fillStyle = p.color;
+        }
+
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
         ctx.fill();
@@ -194,19 +222,30 @@ export function BigBangExpansionOverlay() {
           </>
         )}
 
-        {/* 🕳️ 2. 블랙홀 어두운 심연 효과: 칠흑 같은 암흑 중력장 흡입 & 보이드 왜곡 */}
+        {/* 🕳️ 2. 블랙홀 검은 연기 효과: 화면을 자욱하게 뒤덮는 짙은 흑연(黑煙) & 소용돌이 먹구름 */}
         {isBlackhole && (
           <>
-            {/* 화면 전체를 암전시키는 딥 보이드 비네트 */}
+            {/* 전체 화면을 자욱하게 암전시키는 짙은 흑연 안개 베일 */}
             <motion.div
               initial={{ opacity: 0 }}
-              animate={{ opacity: [0, 0.92, 0.85, 0] }}
-              transition={{ duration: 0.68, ease: 'easeInOut' }}
-              className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.98)_0%,rgba(13,4,24,0.92)_55%,rgba(2,1,5,0.98)_100%)]"
+              animate={{ opacity: [0, 0.96, 0.98, 0] }}
+              transition={{ duration: 0.82, ease: 'easeInOut' }}
+              className="absolute inset-0 pointer-events-none bg-black/92 backdrop-blur-[12px]"
             />
-            {/* 중심으로 빨려들어가는 암흑 흡입 파동 (Darkness Suction Waves) */}
-            <div className="absolute inset-[-20%] pointer-events-none bigbang-suction-wave-1 opacity-80 bg-[radial-gradient(circle_at_center,transparent_20%,rgba(147,51,234,0.4)_55%,rgba(0,0,0,0.95)_90%)]" />
-            <div className="absolute inset-[-20%] pointer-events-none bigbang-suction-wave-2 opacity-70 bg-[radial-gradient(circle_at_center,transparent_10%,rgba(79,70,229,0.35)_45%,rgba(0,0,0,0.9)_85%)]" />
+
+            {/* 시계방향으로 굽이치며 화면을 집어삼키는 거대한 검은 연기 구름 1 */}
+            <div className="absolute -inset-[35%] pointer-events-none blackhole-smoke-swirl-cw opacity-95 blur-3xl bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,1)_0%,rgba(10,8,16,0.96)_40%,rgba(20,15,30,0.85)_65%,transparent_88%)]" />
+
+            {/* 반시계방향으로 팽창하며 뒤엉키는 짙은 먹구름 연무 2 */}
+            <div className="absolute -inset-[40%] pointer-events-none blackhole-smoke-swirl-ccw opacity-92 blur-[48px] bg-[radial-gradient(ellipse_at_45%_55%,rgba(2,1,4,1)_0%,rgba(14,10,22,0.94)_45%,rgba(25,18,36,0.75)_70%,transparent_92%)]" />
+
+            {/* 하단 버튼 위치에서부터 폭발적으로 솟구쳐 피어오르는 자욱한 흑연 기둥 (Dense Black Smoke Plume Column) */}
+            <motion.div
+              initial={{ scale: 0.25, y: 180, opacity: 0 }}
+              animate={{ scale: [0.25, 2.0, 3.6], y: [180, -30, -140], opacity: [0, 1, 0.95, 0] }}
+              transition={{ duration: 0.8, ease: 'easeOut' }}
+              className="absolute w-[640px] h-[640px] rounded-full pointer-events-none blur-[50px] bg-[radial-gradient(circle_at_center,rgba(0,0,0,1)_0%,rgba(8,6,12,0.98)_45%,rgba(22,16,30,0.85)_70%,transparent_96%)]"
+            />
           </>
         )}
 

@@ -1054,5 +1054,47 @@ html.perf-reduced .cosmic-star-flare {
   will-change: transform, opacity;
 }
 
+@keyframes blackhole-smoke-swirl-cw {
+  0% {
+    transform: rotate(0deg) scale(0.92);
+    opacity: 0.75;
+  }
+  50% {
+    transform: rotate(180deg) scale(1.18);
+    opacity: 0.98;
+  }
+  100% {
+    transform: rotate(360deg) scale(0.92);
+    opacity: 0.75;
+  }
+}
+
+@keyframes blackhole-smoke-swirl-ccw {
+  0% {
+    transform: rotate(360deg) scale(1.15);
+    opacity: 0.8;
+  }
+  50% {
+    transform: rotate(180deg) scale(0.95);
+    opacity: 0.96;
+  }
+  100% {
+    transform: rotate(0deg) scale(1.15);
+    opacity: 0.8;
+  }
+}
+
+.blackhole-smoke-swirl-cw {
+  animation: blackhole-smoke-swirl-cw 3.8s ease-in-out infinite;
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+
+.blackhole-smoke-swirl-ccw {
+  animation: blackhole-smoke-swirl-ccw 4.6s ease-in-out infinite;
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+
 
 
