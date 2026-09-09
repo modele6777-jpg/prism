@@ -1,10 +1,11 @@
 {
   "name": "lucy-universe",
-  "version": "1.2.896",
-  "summary": "EFT 음성 가이드 무음 버그 수정",
-  "builtAt": "2026-09-09T12:54:00.000Z",
+  "version": "1.2.897",
+  "summary": "루시 채팅 즉문즉설·오브 즉문즉답 스타일 적용",
+  "builtAt": "2026-09-09T12:59:00.000Z",
   "items": [
-    "🔊 EFT 음성 가이드 무음 버그 수정: playTTS에 sequenceSessionId를 직접 전달할 때 activeSessionId가 null로 남아 abort 조건이 항상 true가 되어 음성이 재생되기 전에 즉시 return되던 버그 수정"
+    "🗣️ 루시 채팅 즉문즉설(卽問卽說) 스타일 전환: 위로 먼저 X, 핵심 진단 먼저 말하고 직접적 처방 제공, 깨달음 촉진 질문 방식으로 페르소나 개편",
+    "🔮 오브 사이트 즉문즉답(卽問卽答) 스타일 전환: 전제·서론·공감 없이 질문에 바로 직구, 진짜 문제 먼저 짚고 단 하나의 행동 처방"
   ],
   "author": "Antigravity AI Agent",
   "buildEnvironment": "cloud-run"
