@@ -93,15 +93,31 @@ export function EpilogueDiaryView() {
 
   // Local & Shared History
   const [entries, setEntries] = useState<EpilogueDiaryEntry[]>(() => {
-    const fromShared = sharedState?.epilogueHistory;
-    if (Array.isArray(fromShared) && fromShared.length > 0) return fromShared as EpilogueDiaryEntry[];
+    let localList: EpilogueDiaryEntry[] = [];
     try {
       const cached = localStorage.getItem('epilogue_diary_history');
-      if (cached) return JSON.parse(cached);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) localList = parsed;
+      }
     } catch {
       // ignore
     }
-    return [];
+    const fromShared = sharedState?.epilogueHistory;
+    if (Array.isArray(fromShared) && fromShared.length > 0) {
+      const map = new Map<string, EpilogueDiaryEntry>();
+      localList.forEach((e) => { if (e?.dateKey) map.set(e.dateKey, e); });
+      (fromShared as EpilogueDiaryEntry[]).forEach((e) => {
+        if (e?.dateKey) {
+          const existing = map.get(e.dateKey);
+          if (!existing || (e.createdAt || 0) >= (existing.createdAt || 0)) {
+            map.set(e.dateKey, e);
+          }
+        }
+      });
+      return Array.from(map.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    }
+    return localList;
   });
 
   // Today's Form State
@@ -110,23 +126,31 @@ export function EpilogueDiaryView() {
     [entries, todayKey]
   );
 
+  const cachedTodayDraft = useMemo(() => {
+    try {
+      const raw = localStorage.getItem(`epilogue_diary_draft_${todayKey}`);
+      if (raw) return JSON.parse(raw) as Partial<EpilogueDiaryEntry>;
+    } catch {}
+    return null;
+  }, [todayKey]);
+
   const [selectedMood, setSelectedMood] = useState<string>(() =>
-    existingTodayEntry?.mood || '평온함'
+    existingTodayEntry?.mood || cachedTodayDraft?.mood || '평온함'
   );
   const [gratitudes, setGratitudes] = useState<string[]>(() =>
-    ensureGratitudes(existingTodayEntry?.gratitudes)
+    ensureGratitudes(existingTodayEntry?.gratitudes || cachedTodayDraft?.gratitudes)
   );
   const [rawNotes, setRawNotes] = useState<string>(() =>
-    existingTodayEntry?.rawNotes || ''
+    existingTodayEntry?.rawNotes || cachedTodayDraft?.rawNotes || ''
   );
   const [mindDiary, setMindDiary] = useState<string>(() =>
-    existingTodayEntry?.mindDiary || existingTodayEntry?.reflection || ''
+    existingTodayEntry?.mindDiary || existingTodayEntry?.reflection || cachedTodayDraft?.mindDiary || (cachedTodayDraft as any)?.reflection || ''
   );
   const [isEditingDiary, setIsEditingDiary] = useState(false);
   const [isGeneratingDiary, setIsGeneratingDiary] = useState(false);
 
   const [aiFeedback, setAiFeedback] = useState<string>(() =>
-    existingTodayEntry?.aiFeedback || ''
+    existingTodayEntry?.aiFeedback || cachedTodayDraft?.aiFeedback || ''
   );
 
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -136,16 +160,46 @@ export function EpilogueDiaryView() {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [expandedEntryId, setExpandedEntryId] = useState<string | null>(null);
 
-  // Sync entries from sharedState and real-time cross-device events
+  // Sync entries from sharedState and real-time cross-device events with safe deduplicating merge
   useEffect(() => {
+    const mergeIntoEntries = (incoming: any[]) => {
+      if (!Array.isArray(incoming) || incoming.length === 0) return;
+      setEntries((prev) => {
+        const map = new Map<string, EpilogueDiaryEntry>();
+        prev.forEach((e) => { if (e?.dateKey) map.set(e.dateKey, e); });
+        try {
+          const cached = localStorage.getItem('epilogue_diary_history');
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed)) parsed.forEach((e: any) => { if (e?.dateKey) map.set(e.dateKey, e); });
+          }
+        } catch {}
+
+        incoming.forEach((e) => {
+          if (e?.dateKey) {
+            const existing = map.get(e.dateKey);
+            if (!existing || (e.createdAt || 0) >= (existing.createdAt || 0)) {
+              map.set(e.dateKey, e);
+            }
+          }
+        });
+
+        const merged = Array.from(map.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        try {
+          localStorage.setItem('epilogue_diary_history', JSON.stringify(merged));
+        } catch {}
+        return merged;
+      });
+    };
+
     if (Array.isArray(sharedState?.epilogueHistory) && sharedState.epilogueHistory.length > 0) {
-      setEntries(sharedState.epilogueHistory as EpilogueDiaryEntry[]);
+      mergeIntoEntries(sharedState.epilogueHistory);
     }
 
     const handleFeatureUpdate = (e: any) => {
       const updatedHistory = e?.detail?.epilogueHistory;
       if (Array.isArray(updatedHistory) && updatedHistory.length > 0) {
-        setEntries(updatedHistory as EpilogueDiaryEntry[]);
+        mergeIntoEntries(updatedHistory);
       }
     };
 
@@ -210,24 +264,37 @@ export function EpilogueDiaryView() {
         },
       };
 
-      const updatedEntries = [
-        newEntry,
-        ...entries.filter((e) => e.dateKey !== todayKey),
-      ];
+      setEntries((prev) => {
+        let diskEntries: EpilogueDiaryEntry[] = [];
+        try {
+          const cached = localStorage.getItem('epilogue_diary_history');
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed)) diskEntries = parsed;
+          }
+        } catch (_) {}
 
-      setEntries(updatedEntries);
-      try {
-        localStorage.setItem('epilogue_diary_history', JSON.stringify(updatedEntries));
-        localStorage.setItem(`epilogue_diary_draft_${todayKey}`, JSON.stringify(newEntry));
-      } catch (_) {}
+        const map = new Map<string, EpilogueDiaryEntry>();
+        diskEntries.forEach((e) => { if (e?.dateKey) map.set(e.dateKey, e); });
+        prev.forEach((e) => { if (e?.dateKey) map.set(e.dateKey, e); });
+        map.set(todayKey, newEntry);
 
-      void updateSharedState(
-        {
-          epilogueHistory: updatedEntries,
-          epilogueMemory: effectiveDiary || aiFeedback || `${todayKey} 성찰 진행 중`,
-        },
-        'epilogue'
-      ).catch(() => {});
+        const merged = Array.from(map.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        try {
+          localStorage.setItem('epilogue_diary_history', JSON.stringify(merged));
+          localStorage.setItem(`epilogue_diary_draft_${todayKey}`, JSON.stringify(newEntry));
+        } catch (_) {}
+
+        void updateSharedState(
+          {
+            epilogueHistory: merged,
+            epilogueMemory: effectiveDiary || aiFeedback || `${todayKey} 성찰 진행 중`,
+          },
+          'epilogue'
+        ).catch(() => {});
+
+        return merged;
+      });
 
       setAutoSaved(true);
       const hideTimer = setTimeout(() => setAutoSaved(false), 2000);
@@ -435,21 +502,34 @@ export function EpilogueDiaryView() {
         },
       };
 
-      const updatedEntries = [
-        newEntry,
-        ...entries.filter((e) => e.dateKey !== todayKey),
-      ];
+      let finalMergedEntries: EpilogueDiaryEntry[] = [];
+      setEntries((prev) => {
+        let diskEntries: EpilogueDiaryEntry[] = [];
+        try {
+          const cached = localStorage.getItem('epilogue_diary_history');
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed)) diskEntries = parsed;
+          }
+        } catch (_) {}
 
-      setEntries(updatedEntries);
-      try {
-        localStorage.setItem('epilogue_diary_history', JSON.stringify(updatedEntries));
-      } catch {
-        // ignore
-      }
+        const map = new Map<string, EpilogueDiaryEntry>();
+        diskEntries.forEach((e) => { if (e?.dateKey) map.set(e.dateKey, e); });
+        prev.forEach((e) => { if (e?.dateKey) map.set(e.dateKey, e); });
+        map.set(todayKey, newEntry);
+
+        const merged = Array.from(map.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        try {
+          localStorage.setItem('epilogue_diary_history', JSON.stringify(merged));
+          localStorage.setItem(`epilogue_diary_draft_${todayKey}`, JSON.stringify(newEntry));
+        } catch (_) {}
+        finalMergedEntries = merged;
+        return merged;
+      });
 
       await updateSharedState(
         {
-          epilogueHistory: updatedEntries,
+          epilogueHistory: finalMergedEntries,
           epilogueMemory: effectiveDiary || aiFeedback || `${todayKey} 성찰 완료`,
         },
         'epilogue'

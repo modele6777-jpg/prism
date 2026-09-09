@@ -754,15 +754,20 @@ function isLikelyMusicText(title = "", artistOrPoet = "") {
     "오케스트라", "녹턴", "칸타타", "오페라", "아리아", "미사곡", "레퀴엠", "볼레로", "달빛", "파반느", "짐노페디",
     "symphony", "sonata", "concerto", "suite", "prelude", "nocturne", "waltz", "opera", "aria",
     "requiem", "bolero", "orchestra", "allegro", "adagio", "op.", "bwv", "kv", "d.",
-    "베토벤", "모차르트", "바흐", "쇼팽", "차이콥스키", "브람스", "드뷔시", "라흐마니노프", "슈베르트", "슈만", "엘가", "파헬벨", "생상스", "포레", "사티", "말러"
+    "베토벤", "모차르트", "바흐", "쇼팽", "차이콥스키", "브람스", "드뷔시", "라흐마니노프", "슈베르트", "슈만", "엘가", "파헬벨", "생상스", "포레", "사티", "말러",
+    "beethoven", "mozart", "bach", "chopin", "tchaikovsky", "brahms", "debussy", "rachmaninoff", "schubert", "schumann", "ravel"
   ];
   return musicKeywords.some((kw) => t.includes(kw));
 }
 
 function isLikelyPoemText(title = "", poetOrArtist = "") {
+  if (isLikelyMusicText(title, poetOrArtist)) {
+    return false;
+  }
   const t = (title + " " + poetOrArtist).toLowerCase();
   const poemKeywords = [
-    "시", "시집", "구절", "서시", "진달래꽃", "풀꽃", "호수", "사평역", "방랑자", "두이노의 비가", "기탄잘리", "젊은 시인",
+    "시인", "시집", "명시", "대표시", "자작시", "서시", "시구절", "시선집", "시편", "운문", "구절",
+    "진달래꽃", "풀꽃", "호수", "사평역", "방랑자", "두이노의 비가", "기탄잘리", "젊은 시인",
     "poem", "poetry", "verse", "stanza", "rhyme", "elegy", "sonnet",
     "윤동주", "김소월", "정지용", "김춘수", "도종환", "곽재구", "나태주", "김용택", "오은",
     "릴케", "헤세", "네루다", "디킨슨", "지브란", "괴테", "보들레르", "휘트먼", "타고르", "페소아", "rilke", "hesse", "neruda", "dickinson", "goethe", "baudelaire", "whitman", "tagore", "pessoa"
@@ -816,17 +821,25 @@ function sanitizeArtRecommendation(raw: ArtRecommendation, offset?: number): Art
       poemSourceName: "세계 명시 컬렉션",
     };
     currentSong = fallbackPair.famousSong;
-  } else if (poemLooksLikeMusic && !isLikelyMusicText(currentSong.title, currentSong.artist)) {
-    currentSong = {
-      title: currentPoem.title,
-      titleOriginal: currentPoem.titleOriginal,
-      artist: currentPoem.poet,
-      artistOriginal: currentPoem.poetOriginal,
-      listeningGuide: currentPoem.excerpt || "영혼을 어루만지는 선율입니다.",
-      youtubeVideoId: fallbackPair.famousSong.youtubeVideoId,
-      appleMusicClassicalUrl: fallbackPair.famousSong.appleMusicClassicalUrl,
-      songSourceName: "Apple Music Classical",
-    };
+  } else if (poemLooksLikeMusic) {
+    // Under NO circumstance should music remain in currentPoem!
+    if (!isLikelyMusicText(currentSong.title, currentSong.artist)) {
+      currentSong = {
+        title: currentPoem.title,
+        titleOriginal: currentPoem.titleOriginal,
+        artist: currentPoem.poet,
+        artistOriginal: currentPoem.poetOriginal,
+        listeningGuide: currentPoem.excerpt || "영혼을 어루만지는 선율입니다.",
+        youtubeVideoId: fallbackPair.famousSong.youtubeVideoId,
+        appleMusicClassicalUrl: fallbackPair.famousSong.appleMusicClassicalUrl,
+        songSourceName: "Apple Music Classical",
+      };
+    }
+    currentPoem = fallbackPair.famousPoem;
+  }
+
+  // Safety guarantee: currentPoem must NEVER be music
+  if (isLikelyMusicText(currentPoem.title, currentPoem.poet)) {
     currentPoem = fallbackPair.famousPoem;
   }
 
@@ -971,7 +984,9 @@ function parseCachedRecommendation(): ArtRecommendation | null {
   if (!cached) return null;
   try {
     const parsed = JSON.parse(cached) as ArtRecommendation;
-    return parsed?.title ? enrichRecommendation(parsed) : null;
+    if (!parsed?.title) return null;
+    const sanitized = sanitizeArtRecommendation(parsed);
+    return enrichRecommendation(sanitized);
   } catch {
     return null;
   }

@@ -118,16 +118,31 @@ export function processDailyChatArchival(
 } {
   const todayKey = getTodayDateKey();
   const lastSessionDate = safeLocalStorage.getItem(MEMORY_STORAGE_KEYS.LAST_SESSION_DATE) || '';
-
-  const userMsgs = Array.isArray(currentMessages)
-    ? currentMessages.filter((m) => m.role === 'user' && m.content)
-    : [];
-
-  // 과거 날짜의 대화 메시지가 섞여 있는지 검사
-  const hasPastUserMsgs = userMsgs.some((m) => m.timestamp && !isTimestampToday(m.timestamp));
   const isDateShifted = Boolean(lastSessionDate && lastSessionDate !== todayKey);
 
-  // 날짜가 바뀌지 않았고 과거 메시지도 없으면 그대로 유지
+  const allMsgs = Array.isArray(currentMessages) ? currentMessages : [];
+  const todayMessages: UnifiedMessage[] = [];
+  const pastMessages: UnifiedMessage[] = [];
+
+  allMsgs.forEach((m) => {
+    if (!m) return;
+    if (m.timestamp && isTimestampToday(m.timestamp)) {
+      todayMessages.push(m);
+    } else if (m.timestamp && !isTimestampToday(m.timestamp)) {
+      pastMessages.push(m);
+    } else {
+      // Message without timestamp: if current session was today, retain in today's messages
+      if (lastSessionDate === todayKey) {
+        todayMessages.push(m);
+      } else {
+        pastMessages.push(m);
+      }
+    }
+  });
+
+  const hasPastUserMsgs = pastMessages.some((m) => m.role === 'user' && m.content);
+
+  // If date hasn't shifted and there are no past messages, keep current messages completely intact
   if (!isDateShifted && !hasPastUserMsgs) {
     if (!lastSessionDate) {
       safeLocalStorage.setItem(MEMORY_STORAGE_KEYS.LAST_SESSION_DATE, todayKey);
@@ -135,19 +150,32 @@ export function processDailyChatArchival(
     return { messages: currentMessages, wasArchived: false };
   }
 
-  // 1. 이전 대화를 영구 기억 아카이브로 기록
-  if (userMsgs.length > 0) {
-    const archiveDate = isDateShifted 
-      ? lastSessionDate 
-      : (userMsgs[0]?.timestamp ? new Date(userMsgs[0].timestamp).toLocaleDateString('sv') : lastSessionDate || '이전 대화');
-    const memoryEntry = buildDailyMemorySummary(archiveDate, currentMessages);
+  // 1. Archive only past days' conversations to Soul Memory
+  if (hasPastUserMsgs) {
+    const archiveDate = isDateShifted
+      ? lastSessionDate
+      : (pastMessages[0]?.timestamp ? new Date(pastMessages[0].timestamp).toLocaleDateString('sv') : lastSessionDate || '이전 대화');
+    const memoryEntry = buildDailyMemorySummary(archiveDate, pastMessages);
     if (memoryEntry) {
       saveDailyMemoryToArchive(memoryEntry);
       console.log(`[ChatMemoryArchive] Archived previous conversation (${archiveDate}) to Soul Memory!`);
     }
   }
 
-  // 2. 새로운 날의 환영 메시지 생성
+  // 2. Update session date to today
+  safeLocalStorage.setItem(MEMORY_STORAGE_KEYS.LAST_SESSION_DATE, todayKey);
+
+  // 3. Keep all of today's conversation! If user already has chat today, preserve it 100%
+  const hasTodayUserMsgs = todayMessages.some((m) => m.role === 'user' && m.content);
+  if (hasTodayUserMsgs || todayMessages.length > 0) {
+    return {
+      messages: todayMessages,
+      wasArchived: hasPastUserMsgs,
+      archivedDate: lastSessionDate,
+    };
+  }
+
+  // 4. If today is a fresh start with no messages yet today, give the daily greeting
   const freshMorningGreeting: UnifiedMessage = {
     id: `greet-${todayKey}`,
     role: 'model',
@@ -155,9 +183,6 @@ export function processDailyChatArchival(
     timestamp: Date.now(),
     persona: 'lucy',
   };
-
-  // 3. 세션 날짜를 오늘로 갱신
-  safeLocalStorage.setItem(MEMORY_STORAGE_KEYS.LAST_SESSION_DATE, todayKey);
 
   return {
     messages: [freshMorningGreeting],

@@ -437,7 +437,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
               })),
               primaryMetadata,
             );
-          }, 650);
+          }, 20);
         }
         return next;
       });
