@@ -1002,13 +1002,15 @@ ${dimensionDescriptions}
       promptInstruction = `[현재 모드: ${app?.name} 단일 차원 모드]
 해당 앱의 핵심 철학(${app?.description}, 룬 의미: ${app?.runeMeaning})에 오롯이 집중하여, 질문/고민에 대해 이 차원의 고유한 렌즈로 명쾌하고 깊이 있는 맞춤형 해답과 실천 가이드를 제시하세요.`;
     } else {
-      // 수다 모드 (아무런 룬도 선택하지 않았을 때)
-      modeTitle = "💬 루시 수다 모드";
+      // 기본 직관 오라클 모드 (아무런 룬도 감지되지 않은 자유 질문)
+      modeTitle = "🔮 직관 오라클 모드";
       modeColor = "#38bdf8";
       modeGlow = "rgba(56, 189, 248, 0.6)";
-      defaultKeyTheme = baseFallback.keyTheme || "다정한 공감";
-      promptInstruction = `[현재 모드: 루시 다정한 수다 모드 (Casual Chat)]
-아무런 룬도 선택되지 않은 편안한 '수다 모드'입니다. 루시처럼 매우 친근하고 다정하며, 공감과 가벼운 위로, 재치 있는 일상 조언을 카페에서 대화하듯 편안하게 건네주세요. 어려운 전문 용어나 카드 상징은 일절 쓰지 마세요.`;
+      defaultKeyTheme = baseFallback.keyTheme || "직관의 해답";
+      defaultAnswer = `당신의 질문은 이미 답을 향해 나아가고 있습니다. 크리스탈 오브가 가장 명료하고 직접적인 통찰을 건네드립니다.`;
+      defaultAction = `지금 가장 선명하게 떠오르는 직감을 행동으로 옮기세요. 망설임이 아닌 실행이 길을 만듭니다.`;
+      promptInstruction = `[현재 모드: 직관 오라클 모드 (Intuitive Oracle)]
+루시 채팅과 달리, 크리스탈 오브는 어떤 질문에든 군더더기 없이 명쾌하고 직접적인 답을 줍니다. 공감보다는 핵심 통찰과 명확한 방향을 제시하세요. 애매한 표현, 과도한 위로, 쉬운 말 돌리기는 금지입니다. 질문의 핵심을 꿰뚫어 가장 유용한 직관적 진실을 전달하세요.`;
     }
 
     let finalResult: ScryingResult = {
@@ -1024,9 +1026,34 @@ ${dimensionDescriptions}
       isMaster: isMasterMode,
     };
 
-    // Call API with strict 3.5s timeout via AbortController to guarantee no infinite hang
+
+    // 자동감지 모드 여부 판별 (더 깊고 신중한 답변을 위한 플래그)
+    const isAutoDetectedMode = effectiveMasterMode || effectiveRuneIds.length > 0;
+
+    // 오브 정체성 시스템 지시 (루시 채팅과 철저히 차별화된 직관 오라클 정체성)
+    const orbSystemInstruction = isAutoDetectedMode
+      ? `당신은 크리스탈 오브(Crystal Orb), 직관적이고 명료한 통찰을 전달하는 신탁 오라클입니다.
+루시 채팅이 심리상담 기반이라면, 크리스탈 오브는 어떤 고민과 질문에도 군더더기 없이 명쾌하게 직접 답을 줍니다.
+[자동 감지된 심층 질문 처리 규칙]
+- 이 질문은 AI가 자동 감지한 심층 고민/고난/전환점과 연관된 질문입니다.
+- 더 신중하고 깊게, 그러나 여전히 명쾌하게 핵심 진실을 전달하세요.
+- 피상적인 위로나 두루뭉술한 말은 절대 금지. 질문자가 가장 듣고 싶은 진짜 답을 직접 말하세요.
+- directAnswer는 3~4문장으로 충분히 깊이 있게, actionSolution은 오늘 당장 실행 가능한 구체적 행동 1가지.
+- 반드시 한국어로만 응답하세요.`
+      : `당신은 크리스탈 오브(Crystal Orb), 직관적이고 명료한 통찰을 전달하는 신탁 오라클입니다.
+루시 채팅이 심리상담 기반이라면, 크리스탈 오브는 어떤 질문에도 명쾌하게 직접 답을 줍니다.
+[일반 오라클 응답 규칙]
+- 애매한 말, 과도한 공감 표현, 말 돌리기는 금지입니다.
+- 질문의 핵심을 꿰뚫어 가장 유용하고 직접적인 진실을 2~3문장으로 전달하세요.
+- actionSolution은 바로 실행 가능한 단 하나의 구체적 행동으로 제시하세요.
+- 반드시 한국어로만 응답하세요.`;
+
+    // API 타임아웃: 자동감지 모드는 더 깊은 답변을 위해 7초, 일반은 4초
+    const apiTimeoutMs = isAutoDetectedMode ? 7000 : 4000;
+
+    // Call API with dynamic timeout via AbortController
     const abortController = new AbortController();
-    const timeoutId = setTimeout(() => abortController.abort(), 3500);
+    const timeoutId = setTimeout(() => abortController.abort(), apiTimeoutMs);
 
     try {
       const resp = await fetch("/api/ai", {
@@ -1034,7 +1061,8 @@ ${dimensionDescriptions}
         headers: { "Content-Type": "application/json" },
         signal: abortController.signal,
         body: JSON.stringify({
-          prompt: `[질문자 정보: ${prismContextBriefing || "자유 탐색자"}]\n사용자의 질문/고민: "${query}"\n\n${promptInstruction}\n\n반드시 다음 순수 JSON 포맷으로만 응답하세요:\n{\n  "keyTheme": "2~4글자의 핵심 키워드",\n  "directAnswer": "고민에 대한 2~3문장의 명쾌하고 직관적인 직접 해답",\n  "actionSolution": "1문장의 구체적이고 현실적인 실천 가이드"\n}`,
+          systemInstruction: orbSystemInstruction,
+          prompt: `[질문자 정보: ${prismContextBriefing || "자유 탐색자"}]\n사용자의 질문/고민: "${query}"\n\n${promptInstruction}\n\n반드시 다음 순수 JSON 포맷으로만 응답하세요:\n{\n  "keyTheme": "2~4글자의 핵심 키워드",\n  "directAnswer": "${isAutoDetectedMode ? '고민에 대한 3~4문장의 신중하고 깊이 있는 직접 해답 (진짜 핵심 진실을 말할 것)' : '고민에 대한 2~3문장의 명쾌하고 직관적인 직접 해답'}",\n  "actionSolution": "오늘 당장 실행 가능한 구체적 행동 1가지"\n}`,
         }),
       });
 

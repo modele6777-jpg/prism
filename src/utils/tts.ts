@@ -337,9 +337,15 @@ export const playTTS = async (
         updateTTSState({ isLoading: true, isSpeaking: false, activeText: cleanText, activeFullText: fullTextReference || cleanText, activeSessionId: mySessionId });
       }
     }
+  } else {
+    // External caller (e.g. EFT cycle) provided a sequenceSessionId directly.
+    // If no session is active yet, register it so abort-checks (activeSessionId !== sessionToVerify) don't fire immediately.
+    if (!ttsState.activeSessionId) {
+      updateTTSState({ isLoading: true, isSpeaking: false, activeText: cleanText, activeFullText: fullTextReference || cleanText, activeSessionId: mySessionId });
+    }
   }
 
-  const sessionToVerify = sequenceSessionId || ttsState.activeSessionId;
+  const sessionToVerify = mySessionId;
 
   // Auto-extract emotion tag if not explicitly provided
   let activeEmotion = emotion;

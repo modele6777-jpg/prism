@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.2.896",
+    "summary": "EFT 음성 가이드 무음 버그 수정",
+    "builtAt": "2026-09-09T12:54:00.000Z",
+    "items": [
+      "🔊 EFT 음성 가이드 무음 버그 수정: playTTS에 sequenceSessionId를 직접 전달할 때 activeSessionId가 null로 남아 abort 조건이 항상 true가 되어 음성이 재생되기 전에 즉시 return되던 버그 수정"
+    ],
+    "author": "Antigravity AI Agent",
+    "buildEnvironment": "cloud-run"
+  },
+
+  {
     "version": "1.2.895",
     "summary": "영혼의 도서관(/library) 웜홀 이동 대상 경로 제거",
     "builtAt": "2026-09-08T13:02:00.000Z",
@@ -9,6 +20,7 @@
     "author": "Antigravity AI Agent",
     "buildEnvironment": "cloud-run"
   },
+
 
   {
     "version": "1.2.894",
