@@ -4,10 +4,8 @@ import { Sparkles, Zap, Radio, CheckCircle, Copy, Check, Volume2, VolumeX, Arrow
 import { useApp, getPersistentUserProfile } from '@/contexts/AppContext';
 import { invokeLLM } from '@/lib/ai';
 import { recordPrismFeature } from '@/lib/prismOmniSync';
-import { saveLocalVerses, getLocalDateKey } from '@/lib/rebibleStorage';
 import { getLocalWishes } from '@/lib/wishingWell';
 import { playTTS, stopTTS, useTTSActive } from '@/utils/tts';
-import type { ReBibleVerse } from '@/types/rebible';
 
 interface QuantumCatalystData {
   title: string;
@@ -53,7 +51,6 @@ export function OrangeSynergySection() {
   const [copied, setCopied] = useState<boolean>(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState<boolean>(false);
   const [dialValue, setDialValue] = useState<number>(528);
-  const [savedToast, setSavedToast] = useState<boolean>(false);
   const [recentWishingWellWish, setRecentWishingWellWish] = useState<string | null>(null);
   const isTTSActive = useTTSActive();
 
@@ -207,34 +204,6 @@ export function OrangeSynergySection() {
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
-  };
-
-  const handleSaveToReBible = () => {
-    try {
-      const dateKey = getLocalDateKey();
-      const verse: ReBibleVerse = {
-        id: `seed-orange-${dateKey}`,
-        bookTitle: '성찰의 서',
-        chapterNumber: 1,
-        verseNumber: 1,
-        reference: `QuantumCatalyst ${dateKey}`,
-        title: catalystData.title,
-        fact: catalystData.sensoryScript,
-        insight: `주파수: ${catalystData.manifestationFrequency}Hz\n실천: ${catalystData.quantumLeapActions.join(' / ')}`,
-        emotions: ['manifestation', 'focus', 'clarity'],
-        tags: ['오렌지', 'QuantumCatalyst', `날짜:${dateKey}`],
-        annotations: [],
-        isSacredFavorite: true,
-        recordedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      saveLocalVerses([verse]);
-      recordPrismFeature({ app: 'orange', featureName: 'Save Orange Catalyst to ReBible', summary: catalystData.title, details: { dateKey } });
-      setSavedToast(true);
-      setTimeout(() => setSavedToast(false), 3000);
-    } catch (e) {
-      console.warn('ReBible save failed', e);
-    }
   };
 
   return (
@@ -416,18 +385,6 @@ export function OrangeSynergySection() {
               >
                 {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
                 <span>{copied ? '복사 완료' : '전체 스크립트 복사'}</span>
-              </button>
-
-              <button
-                onClick={handleSaveToReBible}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                  savedToast
-                    ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/50'
-                    : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/30'
-                }`}
-              >
-                {savedToast ? <Check size={14} className="text-emerald-400" /> : <Award size={14} className="text-amber-300" />}
-                <span>{savedToast ? '성찰의 서 저장 완료!' : 'Re:Bible에 저장'}</span>
               </button>
             </div>
           </div>

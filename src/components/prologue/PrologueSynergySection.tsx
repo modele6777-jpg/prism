@@ -4,9 +4,7 @@ import { Shield, Sparkles, HeartPulse, Compass, RefreshCw, Volume2, VolumeX, Che
 import { useApp, getPersistentUserProfile } from '@/contexts/AppContext';
 import { invokeLLM } from '@/lib/ai';
 import { recordPrismFeature } from '@/lib/prismOmniSync';
-import { saveLocalVerses, getLocalDateKey } from '@/lib/rebibleStorage';
 import { playTTS, stopTTS, useTTSActive } from '@/utils/tts';
-import type { ReBibleVerse } from '@/types/rebible';
 
 interface AegisData {
   title: string;
@@ -66,7 +64,6 @@ export function PrologueSynergySection() {
   const gainRef = useRef<GainNode | null>(null);
 
   const isTTSActive = useTTSActive();
-  const [savedToast, setSavedToast] = useState<boolean>(false);
 
   // Load Section 1 cached daily quote if available
   useEffect(() => {
@@ -272,35 +269,6 @@ export function PrologueSynergySection() {
     setTimeout(() => setCopied(false), 2500);
   };
 
-  // Save the synthesized synergy output into Re:Bible local verses
-  const handleSaveToReBible = () => {
-    try {
-      const dateKey = getLocalDateKey();
-      const verse: ReBibleVerse = {
-        id: `seed-prologue-${dateKey}`,
-        bookTitle: '지혜의 서',
-        chapterNumber: 1,
-        verseNumber: 1,
-        reference: `ResilienceAegis ${dateKey}`,
-        title: aegisData.title,
-        fact: aegisData.resilienceShieldDeclaration,
-        insight: `${aegisData.stoicQuote} — ${aegisData.quoteAuthor}\nCPR: ${aegisData.cprStep1Acknowledge} / ${aegisData.cprStep2ShieldBreath} / ${aegisData.cprStep3Transmute} / ${aegisData.cprStep4RebirthAction}`,
-        emotions: ['resilience', 'calm', 'clarity'],
-        tags: ['프롤로그', 'ResilienceAegis', `날짜:${dateKey}`],
-        annotations: [],
-        isSacredFavorite: true,
-        recordedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      saveLocalVerses([verse]);
-      recordPrismFeature({ app: 'hub', featureName: 'Save Prologue Aegis to ReBible', summary: aegisData.title, details: { dateKey } });
-      setSavedToast(true);
-      setTimeout(() => setSavedToast(false), 3000);
-    } catch (e) {
-      console.warn('ReBible save failed', e);
-    }
-  };
-
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8 pb-12 text-white font-sans">
       {/* Header Banner */}
@@ -444,18 +412,6 @@ export function PrologueSynergySection() {
             >
               {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
               <span>{copied ? '복사 완료' : '선언 복사'}</span>
-            </button>
-
-            <button
-              onClick={handleSaveToReBible}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                savedToast
-                  ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/50'
-                  : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/30'
-              }`}
-            >
-              {savedToast ? <Check size={14} className="text-emerald-400" /> : <Award size={14} className="text-amber-300" />}
-              <span>{savedToast ? '지혜의 서 저장 완료!' : 'Re:Bible에 저장'}</span>
             </button>
           </div>
         </div>

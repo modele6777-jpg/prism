@@ -1047,8 +1047,7 @@ export default function TrinityApp() {
     window.dispatchEvent(new Event("unlock-bgm-audio"));
     setSelectedCardIdx(idx);
     setDailyDrawnCard(card);
-    setIsFlipped(false);
-    setTimeout(() => { setIsFlipped(true); }, 800);
+    setIsFlipped(true);
   };
 
   const computeFanDeckWidth = (
@@ -3613,6 +3612,19 @@ export default function TrinityApp() {
                       type="button"
                       onClick={() => {
                         setShowDailyModal(false);
+                        setActiveMode('tarot');
+                        setTarotConcern('오늘의 타로');
+                        setStage('landing');
+                      }}
+                      className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 hover:text-yellow-200 border border-yellow-400/30 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                    >
+                      <TarotCardIcon size={14} />
+                      <span>오늘의 타로 보기</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowDailyModal(false);
                         handleOracleDeepInsight();
                       }}
                       className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(250,204,21,0.3)] active:scale-95 cursor-pointer"
@@ -3644,14 +3656,15 @@ export default function TrinityApp() {
                     type="button"
                     onClick={() => {
                       setShowDailyModal(false);
+                      setActiveMode('tarot');
                       setTarotConcern('오늘의 타로');
                       setStage('landing');
-                      setTarotModalTab('daily');
+                      setTarotVirtualMode(true);
                     }}
                     className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-bold text-xs flex items-center justify-center gap-2 mx-auto shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer"
                   >
                     <Sparkles size={14} />
-                    <span>오늘의 타로 1장 뽑으러 가기</span>
+                    <span>오늘의 타로 보기 (1장 뽑기)</span>
                   </button>
                 </div>
               )}

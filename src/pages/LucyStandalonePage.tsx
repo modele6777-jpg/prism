@@ -12,11 +12,52 @@ import { calculateDetailedSaju } from '@/lib/sajuAnalysis';
 import { getLocalDateKey } from '@/lib/rebibleStorage';
 import ReactMarkdown from 'react-markdown';
 import { LucyProTypewriter } from '@/components/LucyProTypewriter';
+import { ChatInsightsBoardModal } from '@/components/ChatInsightsBoardModal';
 import remarkGfm from 'remark-gfm';
 import { safeSessionStorage } from '@/utils/safeStorage';
 import { cleanUserMessageDisplay } from '@/utils/cleanMessage';
 import { detectLucyChannelsFromText } from '@/lib/lucyAutoModeDetector';
 import { triggerHaptic } from '@/lib/omniWarp/omniWarpHaptics';
+import { getAndClearPendingSelection } from '@/lib/selectionBridge';
+
+// Helper: Compress uploaded images to prevent UI stutter and huge payload overhead
+function compressImageIfNeeded(file: File): Promise<string> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (loadEvt) => {
+      const src = loadEvt.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 1200;
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.82));
+        } else {
+          resolve(src);
+        }
+      };
+      img.onerror = () => resolve(src);
+      img.src = src;
+    };
+    reader.onerror = () => resolve('');
+    reader.readAsDataURL(file);
+  });
+}
 
 //  5 Specialized Booster Channels (오렌지  -> 트리니티  -> 아우라  -> 블루버드  -> 뮤즈 )
 export type SpecialChannel = 'orange' | 'trinity' | 'aura' | 'bluebird' | 'muse';
@@ -386,6 +427,7 @@ export default function LucyStandalonePage() {
   const [isRecording, setIsRecording] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isInsightsBoardOpen, setIsInsightsBoardOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [resetToast, setResetToast] = useState<string | null>(null);
@@ -620,23 +662,33 @@ export default function LucyStandalonePage() {
     };
   }, []);
 
+  const isAutoScrollingRef = useRef(false);
+  const autoScrollTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   // Smart non-intrusive scroll handling
   const handleScroll = useCallback(() => {
+    if (isAutoScrollingRef.current) return;
     if (!messagesContainerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
     const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
     const isUp = distanceFromBottom > 140;
-    isUserScrolledUpRef.current = isUp;
-    setIsUserScrolledUp(isUp);
+    if (isUserScrolledUpRef.current !== isUp) {
+      isUserScrolledUpRef.current = isUp;
+      setIsUserScrolledUp(isUp);
+    }
   }, []);
 
   const scrollToBottom = useCallback((force = false, smooth = true) => {
     if (!messagesContainerRef.current) return;
     if (!force && isUserScrolledUpRef.current) return;
 
+    isAutoScrollingRef.current = true;
+    if (autoScrollTimerRef.current) clearTimeout(autoScrollTimerRef.current);
+    autoScrollTimerRef.current = setTimeout(() => {
+      isAutoScrollingRef.current = false;
+    }, 200);
+
     const container = messagesContainerRef.current;
-    // Keep scrolling scoped to the chat viewport. scrollIntoView() can scroll a
-    // locked page/root instead of this container, especially after an image loads.
     container.scrollTo({
       top: container.scrollHeight,
       behavior: smooth ? 'smooth' : 'auto',
@@ -648,7 +700,13 @@ export default function LucyStandalonePage() {
     if (!messagesWrapperRef.current || !messagesContainerRef.current) return;
 
     let rafId: number | null = null;
-    const resizeObserver = new ResizeObserver(() => {
+    let lastHeight = 0;
+    const resizeObserver = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      const newHeight = entry ? entry.contentRect.height : 0;
+      if (Math.abs(newHeight - lastHeight) < 8) return;
+      lastHeight = newHeight;
+
       if (rafId) cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
         if (!isUserScrolledUpRef.current) {
@@ -660,8 +718,6 @@ export default function LucyStandalonePage() {
     resizeObserver.observe(messagesWrapperRef.current);
 
     const handleContentResized = () => {
-      // Image layout changes must never take control away from a user
-      // who has started reading an earlier part of the conversation.
       if (!isUserScrolledUpRef.current) {
         scrollToBottom(false, false);
       }
@@ -671,6 +727,7 @@ export default function LucyStandalonePage() {
     return () => {
       if (rafId) cancelAnimationFrame(rafId);
       resizeObserver.disconnect();
+      if (autoScrollTimerRef.current) clearTimeout(autoScrollTimerRef.current);
       window.removeEventListener('lucy-chat-content-resized', handleContentResized);
     };
   }, [scrollToBottom]);
@@ -734,22 +791,26 @@ export default function LucyStandalonePage() {
     }
   };
 
-  // Handle image attachment
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle image attachment with auto-compression (prevents stuttering & infinite scroll)
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 8 * 1024 * 1024) {
-      alert('이미지 크기는 최대 8MB까지 가능합니다.');
+    if (file.size > 15 * 1024 * 1024) {
+      alert('이미지 크기는 최대 15MB까지 가능합니다.');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (loadEvt) => {
-      setAttachedImage(loadEvt.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-    e.target.value = '';
+    try {
+      const compressed = await compressImageIfNeeded(file);
+      if (compressed) {
+        setAttachedImage(compressed);
+      }
+    } catch (err) {
+      console.error('[ImageSelect] Failed to process image:', err);
+    } finally {
+      e.target.value = '';
+    }
   };
 
   // Send message with multi-channel context routing
@@ -783,12 +844,17 @@ export default function LucyStandalonePage() {
       targetPersona = 'lucy';
     } else if (isSingle) {
       targetPersona = SPECIAL_CHANNELS[channels[0]].persona;
+      extraSystemContext = `[${SPECIAL_CHANNELS[channels[0]].name} 전문 모드]
+- ${SPECIAL_CHANNELS[channels[0]].name}의 전문적 통찰을 바탕으로 현실적 대안과 조언을 깊이 있게 설명해 줘.`;
     } else if (isMaster) {
-      extraSystemContext = `[올인원 PRO 마스터 풀가동] 사주 운명, 딥 리즈닝 전략, 마음치유, 신체 웰니스, 창의적 영감을 5대 영역에서 종합 융합하여 최고 수준의 심층 답변을 제공해 줘.`;
+      extraSystemContext = `[올인원 PRO 마스터 풀가동]
+- 5대 채널(사주 운명, 딥 리즈닝 전략, 마음치유, 신체 웰니스, 창의적 영감)을 총동원한 올인원 마스터 지능입니다.
+- 다각도의 지능 엔진 관점을 융합하여 체계적인 분석과 깊이 있고 따뜻한 실천 조언을 제공해 줘.`;
       targetPersona = 'lucy';
     } else if (isSyn) {
       const channelNames = channels.map((c) => SPECIAL_CHANNELS[c].name).join(' + ');
-      extraSystemContext = `[${channelCount}중 융합 시너지 모드: ${channelNames}] 결합된 지능 엔진들의 관점을 다각도로 융합하여 깊이 있는 시너지 답변을 도출해 줘.`;
+      extraSystemContext = `[${channelCount}중 융합 시너지 모드: ${channelNames}]
+- 자동 감지된 결합 지능 엔진들의 관점을 다각도로 융합하여 깊이 있고 유용한 시너지 답변을 도출해 줘.`;
       targetPersona = 'lucy';
     }
 
@@ -823,6 +889,23 @@ export default function LucyStandalonePage() {
         safeSessionStorage.removeItem('lucy_pro_pending_channel');
         targetChannels = parsePendingChannels(pending);
         setActiveChannels(targetChannels);
+      }
+
+      // 🧠 텍스트 드래그(선택) 연동: 앱 어디서든 선택한 내용을 루시 채팅으로 전송한 경우 자동 처리
+      const pendingSelection = getAndClearPendingSelection();
+      if (pendingSelection && pendingSelection.text) {
+        const queryText = `[선택 내용 안내 요청]\n"${pendingSelection.text}"\n\n방금 내가 앱에서 선택한 이 내용에 대해 핵심과 의미, 유용한 조언을 자세히 안내해 줘.`;
+        const finalChannels: SpecialChannel[] = ['orange', 'trinity', 'aura', 'bluebird', 'muse'];
+        setActiveChannels(finalChannels);
+        const runSend = (attempt = 0) => {
+          if (handleSendRef.current) {
+            handleSendRef.current(queryText, finalChannels);
+          } else if (attempt < 5) {
+            setTimeout(() => runSend(attempt + 1), 100);
+          }
+        };
+        setTimeout(() => runSend(0), 200);
+        return;
       }
 
       const autoSendPrompt = sessionStorage.getItem('lucy_injected_auto_send');
@@ -867,9 +950,25 @@ export default function LucyStandalonePage() {
       }
     };
 
+    const handleDynamicSelection = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (detail?.text && detail?.target === 'lucy') {
+        const queryText = `[선택 내용 안내 요청]\n"${detail.text}"\n\n방금 내가 앱에서 선택한 이 내용에 대해 핵심과 의미, 유용한 조언을 자세히 안내해 줘.`;
+        const finalChannels: SpecialChannel[] = ['orange', 'trinity', 'aura', 'bluebird', 'muse'];
+        setActiveChannels(finalChannels);
+        setTimeout(() => {
+          if (handleSendRef.current) {
+            handleSendRef.current(queryText, finalChannels);
+          }
+        }, 150);
+      }
+    };
+
     window.addEventListener('lucy-inject-message', handleDynamicInject);
+    window.addEventListener('prism:selection_saved', handleDynamicSelection);
     return () => {
       window.removeEventListener('lucy-inject-message', handleDynamicInject);
+      window.removeEventListener('prism:selection_saved', handleDynamicSelection);
     };
   }, []);
 
@@ -988,14 +1087,25 @@ export default function LucyStandalonePage() {
                 )}
               </div>
               <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium truncate">
-                {autoDetectedTitle ? `AI가 대화 의도를 분석하여 맞춤 지능으로 실시간 응답합니다.` : '대화 내용과 맥락에 맞춰 최적의 지능 모드가 실시간 자동 감지됩니다.'}
+                {autoDetectedTitle ? `${autoDetectedTitle} · 실시간 맞춤 지능 응답 가동 중` : '대화 내용과 맥락에 맞춰 최적의 지능 모드가 실시간 자동 감지됩니다.'}
               </p>
             </div>
           </div>
 
-          {/* Right Action Tools: 1. 검색 -> 2. 전체듣기 -> 3. 리바이블 -> 4. 초기화 */}
+          {/* Right Action Tools: 1. 인사이트 요약 보드 -> 2. 검색 -> 3. 전체듣기 -> 4. 초기화 */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            {/* 1. 검색 (Search Toggle) */}
+            {/* 1. 인사이트 요약 보드 (Insights Digest Board) */}
+            <button
+              onClick={() => setIsInsightsBoardOpen(true)}
+              className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-purple-500/15 hover:from-amber-500/25 hover:to-purple-500/25 border border-amber-400/40 text-amber-900 font-bold text-xs shadow-xs transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+              title="대화 기록 핵심 통찰 및 인사이트 요약 보드 열기"
+              aria-label="인사이트 요약 보드"
+            >
+              <Sparkles size={14} className="text-amber-600 animate-pulse" />
+              <span className="hidden xs:inline">인사이트 보드</span>
+            </button>
+
+            {/* 2. 검색 (Search Toggle) */}
             <button
               onClick={() => setIsSearchOpen(!isSearchOpen)}
               className={`p-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center ${
@@ -1175,19 +1285,15 @@ export default function LucyStandalonePage() {
                 <div className="relative group max-w-[92%] sm:max-w-[85%] lg:max-w-[80%]">
                   {/* Attached Image Preview (in User Message or Lucy's Card Deep Insight Reply) */}
                   {(() => {
-                    const prevMsg = !isUser && index > 0 ? filteredMessages[index - 1] : null;
-                    const prevImage = prevMsg && Array.isArray(prevMsg.content)
-                      ? (prevMsg.content as any[]).find((item: any) => item.type === 'image_url')?.image_url?.url
-                      : null;
-                    const cardImageToDisplay = imageUrl || prevImage;
+                    const cardImageToDisplay = isUser ? imageUrl : (imageUrl || null);
                     if (!cardImageToDisplay) return null;
                     return (
-                      <div className="mb-2 overflow-hidden rounded-2xl border border-slate-200 shadow-sm max-w-xs bg-slate-100 min-h-[140px]">
+                      <div className="mb-2 overflow-hidden rounded-2xl border border-slate-200 shadow-sm max-w-xs bg-slate-100 min-h-[100px]">
                         <img 
                           src={cardImageToDisplay} 
-                          alt="카드 이미지" 
+                          alt="첨부 이미지" 
+                          loading="lazy"
                           className="w-full h-auto object-cover max-h-64 rounded-2xl" 
-                          onLoad={() => window.dispatchEvent(new CustomEvent('lucy-chat-content-resized'))}
                         />
                       </div>
                     );
@@ -1563,6 +1669,18 @@ export default function LucyStandalonePage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Chat Insights Board Modal */}
+      <ChatInsightsBoardModal
+        isOpen={isInsightsBoardOpen}
+        onClose={() => setIsInsightsBoardOpen(false)}
+        currentMessages={lucyMessages}
+        userName={userDisplayName}
+        onConsultInsight={(prompt) => {
+          setIsInsightsBoardOpen(false);
+          handleSend(prompt);
+        }}
+      />
 
     </div>
   );

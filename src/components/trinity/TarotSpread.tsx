@@ -99,88 +99,107 @@ type DeckWheelCardProps = {
 };
 
 // Ultra-lightweight card memoization with physical drawing lift effect & celestial oracle back design
-const DeckWheelCard = React.memo(function DeckWheelCard({
-  positionIdx,
-  radius,
-  offset,
-  isMobile,
-  totalCards,
-  isPicked = false,
-  isHovered = false,
-}: DeckWheelCardProps) {
-  // Distribute cards evenly along the full 360 degree wheel
-  const step = (2 * Math.PI) / totalCards;
-  const localAngle = positionIdx * step + offset.angleOffset;
-  const liftAmount = isPicked ? (isMobile ? 12 : 18) : isHovered ? (isMobile ? 6 : 10) : 0;
-  const finalRadius = radius + offset.radOffset + liftAmount;
-  const cardRotate = (localAngle * 180) / Math.PI + 90;
-  const x = Math.round(finalRadius * Math.cos(localAngle) * 10) / 10;
-  const y = Math.round(finalRadius * Math.sin(localAngle) * 10) / 10;
+const DeckWheelCard = React.memo(
+  function DeckWheelCard({
+    positionIdx,
+    radius,
+    offset,
+    isMobile,
+    totalCards,
+    isPicked = false,
+    isHovered = false,
+  }: DeckWheelCardProps) {
+    // Distribute cards evenly along the full 360 degree wheel
+    const step = (2 * Math.PI) / totalCards;
+    const localAngle = positionIdx * step + offset.angleOffset;
+    const liftAmount = isHovered ? (isMobile ? 6 : 10) : 0;
+    const finalRadius = radius + offset.radOffset + liftAmount;
+    const cardRotate = (localAngle * 180) / Math.PI + 90;
+    const x = Math.round(finalRadius * Math.cos(localAngle) * 10) / 10;
+    const y = Math.round(finalRadius * Math.sin(localAngle) * 10) / 10;
 
-  return (
-    <div
-      className={`absolute left-1/2 top-1/2 w-16 h-26 sm:w-20 sm:h-32 md:w-28 md:h-44 bg-gradient-to-b from-indigo-950 via-zinc-950 to-black rounded-lg sm:rounded-xl md:rounded-2xl flex items-center justify-center pointer-events-none select-none transition-all duration-200 overflow-hidden shadow-2xl ${
-        isPicked
-          ? 'border-2 border-yellow-300 ring-2 ring-yellow-400/90 shadow-[0_0_30px_rgba(250,204,21,0.8)] z-[200] scale-105'
-          : isHovered
-          ? 'border-2 border-amber-300 ring-1 ring-yellow-400/60 shadow-[0_0_24px_rgba(251,191,36,0.5)] z-[300] scale-[1.03]'
-          : 'border border-amber-500/40 shadow-[0_6px_20px_rgba(0,0,0,0.7)]'
-      }`}
-      style={{
-        transform: `translate3d(-50%, -50%, 0) translate3d(${x}px, ${y}px, 0) rotate(${cardRotate}deg) ${isPicked ? 'translateY(-8px)' : isHovered ? 'translateY(-5px)' : ''}`,
-        transformOrigin: 'center center',
-        zIndex: isPicked ? 200 + positionIdx : isHovered ? 300 : 10 + positionIdx,
-        backfaceVisibility: 'hidden',
-      }}
-    >
-      {/* 1. Subtle cosmic shimmer texture */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(99,102,241,0.15),transparent_70%)] pointer-events-none" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(245,158,11,0.08),transparent_60%)] pointer-events-none" />
+    return (
+      <div
+        className={`absolute left-1/2 top-1/2 w-16 h-26 sm:w-20 sm:h-32 md:w-28 md:h-44 rounded-lg sm:rounded-xl md:rounded-2xl flex items-center justify-center pointer-events-none select-none transition-all duration-200 overflow-hidden ${
+          isPicked
+            ? 'opacity-0 scale-50 pointer-events-none'
+            : isHovered
+            ? 'border-2 border-amber-300 ring-1 ring-yellow-400/60 shadow-[0_0_20px_rgba(251,191,36,0.5)] z-[300] scale-[1.03] bg-gradient-to-b from-indigo-950 via-zinc-950 to-black'
+            : 'border border-amber-500/40 shadow-lg bg-gradient-to-b from-indigo-950 via-zinc-950 to-black'
+        }`}
+        style={{
+          transform: `translate3d(-50%, -50%, 0) translate3d(${x}px, ${y}px, 0) rotate(${cardRotate}deg) ${isHovered ? 'translateY(-5px)' : ''}`,
+          transformOrigin: 'center center',
+          zIndex: isHovered ? 300 : 10 + positionIdx,
+          backfaceVisibility: 'hidden',
+          contain: 'layout style paint',
+          willChange: isHovered ? 'transform' : 'auto',
+        }}
+      >
+        {!isPicked && (
+          <>
+            {/* 1. Subtle cosmic shimmer texture */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(99,102,241,0.15),transparent_70%)] pointer-events-none" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(245,158,11,0.08),transparent_60%)] pointer-events-none" />
 
-      {/* 2. Outer filigree gold border */}
-      <div className={`absolute inset-1 sm:inset-1.5 border rounded-md sm:rounded-lg md:rounded-xl pointer-events-none transition-colors ${isPicked || isHovered ? 'border-yellow-400/80' : 'border-amber-400/30'}`} />
+            {/* 2. Outer filigree gold border */}
+            <div className={`absolute inset-1 sm:inset-1.5 border rounded-md sm:rounded-lg md:rounded-xl pointer-events-none transition-colors ${isHovered ? 'border-yellow-400/80' : 'border-amber-400/30'}`} />
 
-      {/* 3. Inner filigree frame with corner stars */}
-      <div className={`absolute inset-2 sm:inset-2.5 border rounded-sm sm:rounded-md pointer-events-none transition-colors flex flex-col justify-between items-center p-1 sm:p-1.5 ${isPicked || isHovered ? 'border-yellow-300/60 bg-yellow-500/10' : 'border-amber-400/20 bg-black/40'}`}>
-        {/* Top Moon & Star motif */}
-        <div className="flex items-center gap-1 opacity-70 text-[6px] sm:text-[8px] md:text-[9px] text-amber-200">
-          <span>☽</span>
-          <span className="text-[8px] sm:text-[10px] md:text-[11px] text-yellow-300">✧</span>
-          <span>☾</span>
-        </div>
+            {/* 3. Inner filigree frame with corner stars */}
+            <div className={`absolute inset-2 sm:inset-2.5 border rounded-sm sm:rounded-md pointer-events-none transition-colors flex flex-col justify-between items-center p-1 sm:p-1.5 ${isHovered ? 'border-yellow-300/60 bg-yellow-500/10' : 'border-amber-400/20 bg-black/40'}`}>
+              {/* Top Moon & Star motif */}
+              <div className="flex items-center gap-1 opacity-70 text-[6px] sm:text-[8px] md:text-[9px] text-amber-200">
+                <span>☽</span>
+                <span className="text-[8px] sm:text-[10px] md:text-[11px] text-yellow-300">✧</span>
+                <span>☾</span>
+              </div>
 
-        {/* Sacred Geometry / Metatron Cross & Concentric Rings */}
-        <div className="relative w-7 h-7 sm:w-10 sm:h-10 md:w-14 md:h-14 flex items-center justify-center">
-          {/* Diamond rotated frame */}
-          <div className={`absolute inset-0 rotate-45 border transition-all ${isPicked || isHovered ? 'border-yellow-400/60 scale-105' : 'border-amber-500/25'}`} />
-          {/* Circular ring */}
-          <div className={`absolute inset-1 rounded-full border transition-all ${isPicked || isHovered ? 'border-yellow-300/80' : 'border-amber-500/35'}`} />
-          {/* Center core */}
-          <div className={`w-5 h-5 sm:w-7 sm:h-7 md:w-9 md:h-9 rounded-full border flex items-center justify-center shadow-lg relative z-10 transition-all ${
-            isPicked || isHovered
-              ? 'border-yellow-300 bg-gradient-to-tr from-amber-500/40 to-yellow-300/40 scale-110 shadow-[0_0_12px_rgba(250,204,21,0.6)]'
-              : 'border-amber-400/40 bg-zinc-950/90 shadow-inner'
-          }`}>
-            <Sparkles
-              className={isPicked || isHovered ? 'text-yellow-100 drop-shadow-[0_0_10px_rgba(254,240,138,0.9)] animate-spin' : 'text-amber-400 drop-shadow-[0_0_6px_rgba(245,158,11,0.6)]'}
-              size={isMobile ? 10 : 16}
-            />
-          </div>
-        </div>
+              {/* Sacred Geometry / Metatron Cross & Concentric Rings */}
+              <div className="relative w-7 h-7 sm:w-10 sm:h-10 md:w-14 md:h-14 flex items-center justify-center">
+                {/* Diamond rotated frame */}
+                <div className={`absolute inset-0 rotate-45 border transition-all ${isHovered ? 'border-yellow-400/60 scale-105' : 'border-amber-500/25'}`} />
+                {/* Circular ring */}
+                <div className={`absolute inset-1 rounded-full border transition-all ${isHovered ? 'border-yellow-300/80' : 'border-amber-500/35'}`} />
+                {/* Center core */}
+                <div className={`w-5 h-5 sm:w-7 sm:h-7 md:w-9 md:h-9 rounded-full border flex items-center justify-center shadow-lg relative z-10 transition-all ${
+                  isHovered
+                    ? 'border-yellow-300 bg-gradient-to-tr from-amber-500/40 to-yellow-300/40 scale-110 shadow-[0_0_12px_rgba(250,204,21,0.6)]'
+                    : 'border-amber-400/40 bg-zinc-950/90 shadow-inner'
+                }`}>
+                  <Sparkles
+                    className={isHovered ? 'text-yellow-100 drop-shadow-[0_0_10px_rgba(254,240,138,0.9)]' : 'text-amber-400 drop-shadow-[0_0_6px_rgba(245,158,11,0.6)]'}
+                    size={isMobile ? 10 : 16}
+                  />
+                </div>
+              </div>
 
-        {/* Bottom Symmetry Moon & Star motif */}
-        <div className="flex items-center gap-1 opacity-70 text-[6px] sm:text-[8px] md:text-[9px] text-amber-200 rotate-180">
-          <span>☽</span>
-          <span className="text-[8px] sm:text-[10px] md:text-[11px] text-yellow-300">✧</span>
-          <span>☾</span>
-        </div>
+              {/* Bottom Symmetry Moon & Star motif */}
+              <div className="flex items-center gap-1 opacity-70 text-[6px] sm:text-[8px] md:text-[9px] text-amber-200 rotate-180">
+                <span>☽</span>
+                <span className="text-[8px] sm:text-[10px] md:text-[11px] text-yellow-300">✧</span>
+                <span>☾</span>
+              </div>
+            </div>
+
+            {/* 4. Diagonal light-glimmer sweep */}
+            <div className={`absolute -inset-[100%] bg-gradient-to-tr from-transparent via-white/10 to-transparent rotate-45 pointer-events-none transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`} />
+          </>
+        )}
       </div>
-
-      {/* 4. Diagonal light-glimmer sweep */}
-      <div className={`absolute -inset-[100%] bg-gradient-to-tr from-transparent via-white/10 to-transparent rotate-45 pointer-events-none transition-opacity duration-300 ${isPicked || isHovered ? 'opacity-100' : 'opacity-0'}`} />
-    </div>
-  );
-});
+    );
+  },
+  (prev, next) => {
+    return (
+      prev.card.id === next.card.id &&
+      prev.positionIdx === next.positionIdx &&
+      prev.radius === next.radius &&
+      prev.isMobile === next.isMobile &&
+      prev.totalCards === next.totalCards &&
+      prev.isPicked === next.isPicked &&
+      prev.isHovered === next.isHovered
+    );
+  }
+);
 
 interface TarotSpreadProps {
   onComplete: (cards: SelectedTarotCardEntry[], touchMetadata?: TarotPhysicalMetadata | null) => void;
@@ -231,16 +250,17 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
 
   const cardOffsets = useMemo(
     () =>
-      Array.from({ length: deck.length }).map(() => ({
-        radOffset: (Math.random() - 0.5) * 3,
-        angleOffset: (Math.random() - 0.5) * 0.003,
+      Array.from({ length: 78 }).map((_, i) => ({
+        radOffset: ((i % 3) - 1) * 1.5,
+        angleOffset: 0,
       })),
-    [deck.length],
+    [],
   );
 
   const [selectedEntries, setSelectedEntries] = useState<Array<{ card: TarotCard; reversed: boolean; touchMetadata?: TarotPhysicalMetadata | null }>>([]);
   const [touchStatusText, setTouchStatusText] = useState<string | null>(null);
   const touchAnalyzerRef = useRef(new TarotTouchAnalyzer());
+  const touchTimerRef = useRef<number | null>(null);
   const selectedIds = useMemo(
     () => selectedEntries.map((entry) => entry.card.id),
     [selectedEntries],
@@ -358,18 +378,10 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
     }
   }, [wheelReady, applyRotation]);
 
-  const visibleDeck = useMemo(
-    () =>
-      deck
-        .map((card, originalIdx) => ({ card, originalIdx }))
-        .filter(({ card }) => !selectedIds.includes(card.id)),
-    [deck, selectedIds],
-  );
-
-  // Fast and mathematically robust circular tap & hover detection
+  // Fast O(1) candidate lookup with circular unwrapping
   const findTappedCard = useCallback(
     (clientX: number, clientY: number): TarotCard | null => {
-      if (!containerRef.current || visibleDeck.length === 0) return null;
+      if (!containerRef.current || deck.length === 0) return null;
 
       const rect = containerRef.current.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
@@ -380,31 +392,49 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
       const band = isMobile ? 220 : 320;
 
       // Ensure tap / hover is in the broad card ring band
-      if (dist < Math.max(80, radius - band) || dist > radius + band) return null;
+      if (dist < Math.max(60, radius - band) || dist > radius + band) return null;
 
       const pointerAngle = Math.atan2(dy, dx);
       const rotationRad = (rotationRef.current * Math.PI) / 180;
       const currentRelativeAngle = pointerAngle - rotationRad;
 
+      const total = deck.length;
+      const step = (2 * Math.PI) / total;
+
+      // Normalize currentRelativeAngle to [0, 2*PI)
+      let norm = currentRelativeAngle % (2 * Math.PI);
+      if (norm < 0) norm += 2 * Math.PI;
+
+      const centerIdx = Math.round(norm / step) % total;
+
+      // Check centerIdx and nearby neighbors (-2 to +2), pick closest unpicked card within threshold
+      const candidateIndices = [
+        centerIdx,
+        (centerIdx - 1 + total) % total,
+        (centerIdx + 1) % total,
+        (centerIdx - 2 + total) % total,
+        (centerIdx + 2) % total,
+      ];
+
       let bestCard: TarotCard | null = null;
       let bestDiff = Infinity;
-      const step = (2 * Math.PI) / visibleDeck.length;
 
-      for (let posIdx = 0; posIdx < visibleDeck.length; posIdx += 1) {
-        const item = visibleDeck[posIdx];
-        const cardAngle = posIdx * step + (cardOffsets[posIdx % cardOffsets.length]?.angleOffset ?? 0);
-        // Shortest arc circular difference with no boundary glitches
+      for (const idx of candidateIndices) {
+        const card = deck[idx];
+        if (!card || selectedIds.includes(card.id)) continue;
+
+        const cardAngle = idx * step;
         const rawDiff = Math.atan2(Math.sin(currentRelativeAngle - cardAngle), Math.cos(currentRelativeAngle - cardAngle));
         const diff = Math.abs(rawDiff);
         if (diff < bestDiff) {
           bestDiff = diff;
-          bestCard = item.card;
+          bestCard = card;
         }
       }
 
-      return bestDiff < Math.max(0.25, step * 1.5) ? bestCard : null;
+      return bestDiff < Math.max(0.20, step * 1.6) ? bestCard : null;
     },
-    [cardOffsets, isMobile, radius, visibleDeck, yOffset],
+    [deck, isMobile, radius, selectedIds, yOffset],
   );
 
   const handleSelect = useCallback(
@@ -412,13 +442,13 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
       // Tactile haptic vibration on mobile
       try {
         if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-          navigator.vibrate([25, 40, 30]);
+          navigator.vibrate(15);
         }
       } catch (_) {}
 
       if (touchMetadata) {
         setTouchStatusText(
-          `[파동 감지] ${touchMetadata.depthMode.split(' ')[0]} · 체류 ${touchMetadata.durationMs}ms · 떨림 ${touchMetadata.jitterScore}`
+          `[파동 감지] ${touchMetadata.depthMode.split(' ')[0]} · 체류 ${touchMetadata.durationMs}ms`
         );
       }
 
@@ -437,7 +467,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
               })),
               primaryMetadata,
             );
-          }, 650);
+          }, 20);
         }
         return next;
       });
@@ -456,16 +486,18 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
     stopMomentum();
     setDeck((prevDeck) => {
       const remaining = prevDeck.filter((card) => !selectedIds.includes(card.id));
-      return shuffleArray(remaining);
+      const picked = prevDeck.filter((card) => selectedIds.includes(card.id));
+      return [...picked, ...shuffleArray(remaining)];
     });
     startMomentum((Math.random() - 0.5) * 12);
   };
 
   const handleAutoPick = () => {
-    if (visibleDeck.length === 0 || selectedEntries.length >= maxCards) return;
-    const randomItem = visibleDeck[Math.floor(Math.random() * visibleDeck.length)];
-    if (randomItem) {
-      handleSelect(randomItem.card);
+    const unpicked = deck.filter((card) => !selectedIds.includes(card.id));
+    if (unpicked.length === 0 || selectedEntries.length >= maxCards) return;
+    const randomCard = unpicked[Math.floor(Math.random() * unpicked.length)];
+    if (randomCard) {
+      handleSelect(randomCard);
     }
   };
 
@@ -476,21 +508,19 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
 
     // 파동 측정 시작
     touchAnalyzerRef.current.startTracking(e.clientX, e.clientY);
-    setTouchStatusText("파동 측정 중... (손끝을 가만히 얹고 집중하세요)");
+
+    // 160ms 이상 머무르면 파동 측정 상태 문구 표시 (빠른 탭/드래그시에는 불필요한 즉시 리렌더링 회피)
+    if (touchTimerRef.current) window.clearTimeout(touchTimerRef.current);
+    touchTimerRef.current = window.setTimeout(() => {
+      if (activePointerIdRef.current !== null && !isDraggingRef.current) {
+        setTouchStatusText("파동 측정 중... (손끝을 가만히 얹고 집중하세요)");
+      }
+    }, 160);
 
     if (e.pointerType === 'touch') {
       try {
         e.currentTarget.setPointerCapture(e.pointerId);
       } catch (_) {}
-      const touched = findTappedCard(e.clientX, e.clientY);
-      if (touched) {
-        setHoveredCardId(touched.id);
-        try {
-          if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-            navigator.vibrate(15);
-          }
-        } catch (_) {}
-      }
     }
 
     const rect = containerRef.current.getBoundingClientRect();
@@ -513,7 +543,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
     // 파동 지점 기록 (손끝 미세 떨림/망설임 계산용)
     touchAnalyzerRef.current.recordPoint(e.clientX, e.clientY);
 
-    // Hover detection when mouse is moving without dragging
+    // Hover detection when mouse is moving without dragging (Desktop only)
     if (activePointerIdRef.current === null) {
       if (e.pointerType !== 'touch') {
         const hovered = findTappedCard(e.clientX, e.clientY);
@@ -527,18 +557,8 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
 
     if (activePointerIdRef.current !== e.pointerId) return;
 
-    // Mobile touch scrubbing preview while lightly swiping
-    if (e.pointerType === 'touch' && !isDraggingRef.current) {
-      const scrubbed = findTappedCard(e.clientX, e.clientY);
-      if (scrubbed && scrubbed.id !== hoveredCardId) {
-        setHoveredCardId(scrubbed.id);
-        try {
-          if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-            navigator.vibrate(10);
-          }
-        } catch (_) {}
-      }
-    } else if (hoveredCardId) {
+    // During drag, remove any hover highlight
+    if (hoveredCardId) {
       setHoveredCardId(null);
     }
 
@@ -550,6 +570,10 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
     if (!isDraggingRef.current && moveDist > 5) {
       isDraggingRef.current = true;
       hadMovedRef.current = true;
+      if (touchTimerRef.current) {
+        window.clearTimeout(touchTimerRef.current);
+        touchTimerRef.current = null;
+      }
       containerRef.current.classList.add('cursor-grabbing');
       containerRef.current.classList.remove('cursor-grab');
     }
@@ -584,6 +608,11 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     if (activePointerIdRef.current !== e.pointerId) return;
+
+    if (touchTimerRef.current) {
+      window.clearTimeout(touchTimerRef.current);
+      touchTimerRef.current = null;
+    }
 
     const wasDragging = isDraggingRef.current;
     const hadMoved = hadMovedRef.current;
@@ -706,7 +735,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
             }}
           />
 
-          {visibleDeck.map(({ card }, positionIdx) => (
+          {deck.map((card, positionIdx) => (
             <DeckWheelCard
               key={card.id}
               card={card}
@@ -715,8 +744,8 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
               radius={radius}
               offset={cardOffsets[positionIdx % cardOffsets.length] || { radOffset: 0, angleOffset: 0 }}
               isMobile={isMobile}
-              totalCards={visibleDeck.length}
-              isPicked={false}
+              totalCards={deck.length}
+              isPicked={selectedIds.includes(card.id)}
               isHovered={hoveredCardId === card.id}
             />
           ))}
@@ -809,9 +838,13 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
                       <img
                         src={getTarotCardImageUrl(drawnCard!)}
                         alt={drawnCard!.name}
-                        loading="lazy"
+                        loading="eager"
+                        decoding="async"
                         style={{ transform: entry.reversed ? 'rotate(180deg)' : undefined }}
                         className="absolute inset-0 w-full h-full object-cover z-0 rounded-xl md:rounded-2xl opacity-90 transition-opacity duration-300 group-hover:opacity-100"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/70 z-10 pointer-events-none rounded-xl md:rounded-2xl" />
                       <div className="absolute inset-0.5 border border-yellow-500/20 rounded-lg md:rounded-xl pointer-events-none z-20" />
@@ -854,7 +887,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
                 {selectedEntries.length} / {maxCards} 카드를 선택하세요
               </span>
               <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-yellow-500/15 border border-yellow-500/30 text-yellow-300 font-mono font-bold">
-                남은 덱: {visibleDeck.length}장
+                남은 덱: {deck.length - selectedEntries.length}장
               </span>
             </div>
             {touchStatusText ? (
@@ -889,10 +922,10 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
           type="button"
           onClick={handleShuffleDeck}
           className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-yellow-500/20 via-amber-500/20 to-yellow-500/20 border border-yellow-500/40 hover:border-yellow-400 text-yellow-200 text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-all shadow-md cursor-pointer"
-          title={`현재 남은 ${visibleDeck.length}장의 덱을 셔플합니다 (이미 뽑은 카드는 덱에 다시 들어가지 않습니다)`}
+          title={`현재 남은 ${deck.length - selectedEntries.length}장의 덱을 셔플합니다 (이미 뽑은 카드는 덱에 다시 들어가지 않습니다)`}
         >
           <Shuffle size={13} className="text-yellow-400" />
-          <span>남은 덱 셔플 ({visibleDeck.length}장)</span>
+          <span>남은 덱 셔플 ({deck.length - selectedEntries.length}장)</span>
         </button>
 
         <button

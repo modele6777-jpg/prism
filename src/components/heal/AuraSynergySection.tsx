@@ -4,9 +4,7 @@ import { Leaf, Timer, Sparkles, Wind, Volume2, VolumeX, Check, Copy, RefreshCw, 
 import { useApp, getPersistentUserProfile } from '@/contexts/AppContext';
 import { invokeLLM } from '@/lib/ai';
 import { recordPrismFeature } from '@/lib/prismOmniSync';
-import { saveLocalVerses, getLocalDateKey } from '@/lib/rebibleStorage';
 import { playTTS, stopTTS, useTTSActive } from '@/utils/tts';
-import type { ReBibleVerse } from '@/types/rebible';
 
 interface SanctuaryData {
   title: string;
@@ -49,7 +47,6 @@ export function AuraSynergySection() {
   // Initial state is null so result does not appear prematurely before user action
   const [sanctuaryData, setSanctuaryData] = useState<SanctuaryData | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
-  const [savedToast, setSavedToast] = useState<boolean>(false);
   const [isChamberActive, setIsChamberActive] = useState<boolean>(false);
   const [isChamberCompleted, setIsChamberCompleted] = useState<boolean>(false);
   const [chamberTimer, setChamberTimer] = useState<number>(60);
@@ -284,35 +281,6 @@ export function AuraSynergySection() {
     setTimeout(() => setCopied(false), 2500);
   };
 
-  const handleSaveToReBible = () => {
-    if (!sanctuaryData) return;
-    try {
-      const dateKey = getLocalDateKey();
-      const verse: ReBibleVerse = {
-        id: `seed-aura-${dateKey}`,
-        bookTitle: '치유의 서',
-        chapterNumber: 1,
-        verseNumber: 1,
-        reference: `ZeroResistanceSanctuary ${dateKey}`,
-        title: sanctuaryData.title,
-        fact: sanctuaryData.sedonaInquiryAnswer,
-        insight: `영역: ${sanctuaryData.tensionArea}\n선언: ${sanctuaryData.zeroResistanceDeclaration}`,
-        emotions: ['release', 'peace', 'letting-go'],
-        tags: ['오라', '방하착챔버', `날짜:${dateKey}`],
-        annotations: [],
-        isSacredFavorite: true,
-        recordedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      saveLocalVerses([verse]);
-      recordPrismFeature({ app: 'heal', featureName: 'Save Aura Sanctuary to ReBible', summary: sanctuaryData.title, details: { dateKey } });
-      setSavedToast(true);
-      setTimeout(() => setSavedToast(false), 3000);
-    } catch (e) {
-      console.warn('ReBible save failed', e);
-    }
-  };
-
   const currentPhaseIndex = isChamberActive ? getCurrentPhaseIndex(chamberTimer) : -1;
   const phaseNames = ['1단계: 자각', '2단계: 허용', '3단계: 놓아줌', '4단계: 순수 평온'];
 
@@ -449,18 +417,6 @@ export function AuraSynergySection() {
               >
                 {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
                 <span>{copied ? '복사 완료' : '전체 복사'}</span>
-              </button>
-
-              <button
-                onClick={handleSaveToReBible}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                  savedToast
-                    ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/50'
-                    : 'bg-teal-500/20 hover:bg-teal-500/30 text-teal-200 border border-teal-500/30'
-                }`}
-              >
-                {savedToast ? <Check size={14} className="text-emerald-400" /> : <Award size={14} className="text-teal-300" />}
-                <span>{savedToast ? '치유의 서 저장 완료!' : 'Re:Bible에 저장'}</span>
               </button>
             </div>
           </div>

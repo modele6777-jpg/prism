@@ -7,9 +7,7 @@ import {
 import { useApp, getPersistentUserProfile } from '@/contexts/AppContext';
 import { invokeLLM } from '@/lib/ai';
 import { recordPrismFeature } from '@/lib/prismOmniSync';
-import { saveLocalVerses, getLocalDateKey } from '@/lib/rebibleStorage';
 import { playTTS, stopTTS, useTTSActive } from '@/utils/tts';
-import type { ReBibleVerse } from '@/types/rebible';
 
 interface MasterpieceDialogueData {
   title: string;
@@ -113,7 +111,6 @@ export function MuseSynergySection() {
   const [dialogueData, setDialogueData] = useState<MasterpieceDialogueData>(FALLBACK_DIALOGUE);
   const [isSynthesized, setIsSynthesized] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
-  const [savedToast, setSavedToast] = useState<boolean>(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState<boolean>(false);
   const isTTSActive = useTTSActive();
 
@@ -287,34 +284,6 @@ export function MuseSynergySection() {
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
-  };
-
-  const handleSaveToReBible = () => {
-    try {
-      const dateKey = getLocalDateKey();
-      const verse: ReBibleVerse = {
-        id: `seed-inspiration-${dateKey}`,
-        bookTitle: '영감의 서',
-        chapterNumber: 1,
-        verseNumber: 1,
-        reference: `MasterpieceDialogue ${dateKey}`,
-        title: dialogueData.title,
-        fact: dialogueData.masterpieceInsight,
-        insight: dialogueData.masterDirectAdvice,
-        emotions: ['inspiration', 'awe', 'creativity'],
-        tags: ['뮤즈', 'MasterpieceDialogue', `날짜:${dateKey}`],
-        annotations: [],
-        isSacredFavorite: true,
-        recordedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      saveLocalVerses([verse]);
-      recordPrismFeature({ app: 'muse', featureName: 'Save Muse Masterpiece to ReBible', summary: dialogueData.title, details: { dateKey } });
-      setSavedToast(true);
-      setTimeout(() => setSavedToast(false), 3000);
-    } catch (e) {
-      console.warn('ReBible save failed', e);
-    }
   };
 
   return (
