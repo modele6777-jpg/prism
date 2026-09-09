@@ -58,6 +58,7 @@ import { resetAppScroll } from "./utils/scrollToTop";
 import { useAutoPrismSync } from "./hooks/useAutoPrismSync";
 import { useUpdateNotice } from "./hooks/useUpdateNotice";
 import { UpdateNoticeModal } from "./components/UpdateNoticeModal";
+import SelectionBridgeToolbar from "./components/SelectionBridgeToolbar";
 import { PinLockScreen } from "./components/PinLockScreen";
 import { UPDATE_ACK_KEY } from "./lib/updateNotice";
 import { applyServiceWorkerUpdate, forceAppUpgradeAndReload } from "./lib/prismSync";
@@ -466,6 +467,7 @@ function AppContent() {
       <ReloadPrompt />
       <InstallPrompt />
       <GlobalHandbookAudioWidget />
+      <SelectionBridgeToolbar />
       <UpdateNoticeModal
         key={updateNoticeKey}
         isOpen={isUpdateNoticeOpen}

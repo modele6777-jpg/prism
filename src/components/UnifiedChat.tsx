@@ -12,6 +12,7 @@ import { stopTTS, playConversation, subscribeTTS } from "../utils/tts";
 import { getContextAwarePrompts } from "../utils/dynamicContextSuggestions";
 import { calculateDetailedSaju } from "../lib/sajuAnalysis";
 import { cleanUserMessageDisplay } from "../utils/cleanMessage";
+import { ChatInsightsBoardModal } from "./ChatInsightsBoardModal";
 
 const PERSONA_CONFIG: Record<PersonaType, { 
   name: string; 
@@ -316,6 +317,10 @@ export function UnifiedChat() {
 
   const [input, setInput] = useState("");
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+  const [isInsightsBoardOpen, setIsInsightsBoardOpen] = useState(false);
+
+  const rawNickname = sharedState?.userProfile?.basic?.nickname?.trim();
+  const userDisplayName = rawNickname && rawNickname !== '여행자' && rawNickname !== '사용자' ? rawNickname : '쭈';
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -499,6 +504,8 @@ export function UnifiedChat() {
   const currentGenerating = isGenerating.lucy || false;
 
   const isOpeningRef = useRef(false);
+  const isAutoScrollingRef = useRef(false);
+  const autoScrollTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Keep scrolling scoped to the chat viewport. Never use scrollIntoView here:
   // it can move the page/root scroll position and becomes very expensive while
@@ -507,6 +514,13 @@ export function UnifiedChat() {
     const el = chatContainerRef.current || document.getElementById('unified-chat-messages-container');
     if (!el) return;
     const top = Math.max(0, el.scrollHeight - el.clientHeight);
+
+    isAutoScrollingRef.current = true;
+    if (autoScrollTimerRef.current) clearTimeout(autoScrollTimerRef.current);
+    autoScrollTimerRef.current = setTimeout(() => {
+      isAutoScrollingRef.current = false;
+    }, 200);
+
     if (smooth) {
       el.scrollTo({ top, behavior: "smooth" });
     } else if (el.scrollTop !== top) {
@@ -516,8 +530,8 @@ export function UnifiedChat() {
 
   // Check scroll position to display / hide "Scroll to bottom" button and record user scroll intent
   const handleScroll = useCallback(() => {
-    if (isOpeningRef.current) {
-      return; // Do NOT set userScrolledUp while opening!
+    if (isOpeningRef.current || isAutoScrollingRef.current) {
+      return; // Do NOT set userScrolledUp while opening or auto-scrolling!
     }
     const el = chatContainerRef.current || document.getElementById('unified-chat-messages-container');
     if (!el) return;
@@ -585,14 +599,27 @@ export function UnifiedChat() {
     const container = chatContainerRef.current || document.getElementById('unified-chat-messages-container');
     if (!container) return;
 
-    const resizeObserver = new ResizeObserver(() => {
-      if (!userScrolledUpRef.current) {
-        scrollToBottom(false);
-      }
+    let rafId: number | null = null;
+    let lastHeight = 0;
+    const resizeObserver = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      const newHeight = entry ? entry.contentRect.height : 0;
+      if (Math.abs(newHeight - lastHeight) < 8) return;
+      lastHeight = newHeight;
+
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        if (!userScrolledUpRef.current) {
+          scrollToBottom(false);
+        }
+      });
     });
 
     resizeObserver.observe(container);
-    return () => resizeObserver.disconnect();
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      resizeObserver.disconnect();
+    };
   }, [isChatOpen, scrollToBottom]);
   const config = PERSONA_CONFIG[activePersona] || PERSONA_CONFIG.lucy;
   const displayPrompts = shuffledPrompts.length > 0 
@@ -811,8 +838,18 @@ export function UnifiedChat() {
                 </div>
               </div>
 
-              {/* Actions: Standalone Install, Play All TTS, Close */}
+              {/* Actions: Insights Board, Standalone Install, Play All TTS, Close */}
               <div className="flex items-center gap-2 shrink-0">
+                {/* 인사이트 요약 보드 버튼 */}
+                <button
+                  onClick={() => setIsInsightsBoardOpen(true)}
+                  className="px-2.5 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-200 font-bold text-[11px] sm:text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shrink-0"
+                  title="대화 기록 핵심 통찰 및 인사이트 요약 보드"
+                >
+                  <Sparkles size={13} className="text-purple-300 animate-pulse" />
+                  <span className="hidden sm:inline">인사이트</span>
+                </button>
+
                 <button
                   onClick={() => {
                     setIsChatOpen(false);
@@ -937,16 +974,9 @@ export function UnifiedChat() {
                                     key={idx} 
                                     src={p.image_url.url} 
                                     alt="첨부 이미지" 
-                                    className="max-w-full rounded-2xl border border-white/10 max-h-48 object-cover mt-1" 
+                                    loading="lazy"
+                                    className="max-w-full rounded-2xl border border-white/10 max-h-48 object-cover mt-1 min-h-[80px]" 
                                     referrerPolicy="no-referrer"
-                                    onLoad={() => {
-                                      if (isChatOpen && !userScrolledUpRef.current) {
-                                        const el = chatContainerRef.current;
-                                        if (el && el.scrollHeight - el.scrollTop - el.clientHeight < 250) {
-                                          scrollToBottom(false);
-                                        }
-                                      }
-                                    }}
                                   />
                                 );
                               }
@@ -1219,6 +1249,18 @@ export function UnifiedChat() {
                 </div>
               )}
             </AnimatePresence>
+
+            {/* Chat Insights Summary Board Modal */}
+            <ChatInsightsBoardModal
+              isOpen={isInsightsBoardOpen}
+              onClose={() => setIsInsightsBoardOpen(false)}
+              currentMessages={currentMessages}
+              userName={userDisplayName}
+              onConsultInsight={(prompt) => {
+                setIsInsightsBoardOpen(false);
+                sendUnifiedMessage(prompt, activePersona);
+              }}
+            />
           </motion.div>
         </div>
       )}

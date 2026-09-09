@@ -10,6 +10,7 @@
 import { safeLocalStorage } from '../utils/safeStorage';
 import { getTodayDateKey, isTimestampToday } from './dailyCache';
 import { forceResetUnifiedChatHistory, type UnifiedMessage, type PersonaType } from './chatHistorySync';
+import { extractLocalInsights, saveChatInsight } from './chatInsightsEngine';
 
 export const MEMORY_STORAGE_KEYS = {
   SOUL_ARCHIVE: 'lucy_soul_memories_archive',
@@ -159,6 +160,15 @@ export function processDailyChatArchival(
     if (memoryEntry) {
       saveDailyMemoryToArchive(memoryEntry);
       console.log(`[ChatMemoryArchive] Archived previous conversation (${archiveDate}) to Soul Memory!`);
+      // 인사이트 요약 보드에도 히스토리로 보존 연동
+      try {
+        const insight = extractLocalInsights(archiveDate, pastMessages);
+        if (insight) {
+          saveChatInsight(insight);
+        }
+      } catch (insErr) {
+        console.warn('[ChatMemoryArchive] Failed to extract insight during daily archival:', insErr);
+      }
     }
   }
 
@@ -228,6 +238,11 @@ export function archiveAndResetChat(
     const entry = buildDailyMemorySummary(todayKey, messages);
     if (entry) {
       saveDailyMemoryToArchive(entry);
+    }
+    // 인사이트 요약 보드에도 히스토리로 영구 동기화 보존
+    const insight = extractLocalInsights(todayKey, messages);
+    if (insight) {
+      saveChatInsight(insight);
     }
   } catch (e) {
     console.warn('[ChatMemoryArchive] Failed to archive on manual reset:', e);

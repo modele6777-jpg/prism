@@ -27,6 +27,7 @@ import { CrystalOrbIcon } from "@/components/icons/CrystalOrbIcon";
 import { safeLocalStorage } from "@/utils/safeStorage";
 import { useNarrowPhone } from "@/hooks/useNarrowPhone";
 import { detectSeptagramChannelsFromText } from "@/lib/lucyAutoModeDetector";
+import { getAndClearPendingSelection } from "@/lib/selectionBridge";
 
 export interface SeptagramAppDimension {
   id: string;
@@ -313,11 +314,10 @@ export default function OrbGatewayPage() {
   // 실시간 질문 텍스트 분석 및 룬/차원 모드 지능형 자동 감지 (루시 AI 엔진 연동)
   useEffect(() => {
     const text = inquiry.trim();
-    // 🚀 [핵심] 글자를 다 지우거나 2자 미만이면 즉시 수다 모드로 즉각 복귀!
     if (!text || text.length < 2) {
       setIsMasterMode(false);
       setSelectedRuneIds([]);
-      setAutoDetectedTitle("수다 모드");
+      setAutoDetectedTitle(null);
       return;
     }
     const timer = setTimeout(() => {
@@ -342,7 +342,7 @@ export default function OrbGatewayPage() {
       } else {
         setIsMasterMode(false);
         setSelectedRuneIds([]);
-        setAutoDetectedTitle("수다 모드");
+        setAutoDetectedTitle(null);
       }
     }, 180);
     return () => clearTimeout(timer);
@@ -930,85 +930,84 @@ export default function OrbGatewayPage() {
       }
     }
 
-    let modeTitle = "루시 수다 모드";
+    let modeTitle = "🔮 직관 모드";
     let promptInstruction = "";
-    let defaultKeyTheme = "다정한 공감";
-    let defaultAnswer = `그런 생각을 하고 있었군요! 충분히 그럴 수 있고, 그 마음 정말 이해돼요. 너무 무겁게 짊어지지 말고 편안하게 털어놓아 줘서 고마워요.`;
-    let defaultAction = `지금 가볍게 기지개를 켜고, 시원한 물 한 잔 마시면서 마음을 가볍게 환기해 봐요!`;
-    let modeColor = "#38bdf8";
-    let modeGlow = "rgba(56, 189, 248, 0.6)";
+    let defaultKeyTheme = "직관의 답";
+    let defaultAnswer = baseFallback.directAnswer;
+    let defaultAction = baseFallback.actionSolution;
+    let modeColor = "#c084fc";
+    let modeGlow = "rgba(192, 132, 252, 0.7)";
 
     if (effectiveMasterMode || effectiveRuneIds.length === 7) {
-      modeTitle = "👑 7대 차원 통합 마스터 모드";
+      modeTitle = "👑 7대 차원 통합 마스터 신탁";
       modeColor = "#fbbf24";
-      modeGlow = "rgba(251, 191, 36, 0.7)";
-      defaultKeyTheme = "통섭의 지혜";
-      defaultAnswer = `현재 당신이 마주한 고민은 단편적인 문제가 아니라 삶의 흐름이 한 단계 도약하려는 중요한 전환점입니다. 내면의 불안과 집착을 내려놓고 솔직한 감정을 마주할 때, 가장 본질적이고 명료한 길이 비로소 드러납니다.`;
-      defaultAction = `조급한 통제를 멈추고 깊은 심호흡과 함께, 지금 이 순간 할 수 있는 가장 선명한 단 하나의 행동에 온전히 몰입하세요.`;
-      promptInstruction = `[현재 모드: 7대 차원 통합 마스터 모드 (Master Cosmic Synthesis)]
-오브의 7대 차원(프롤로그 운명의 서막, 오렌지 소원의 우물, 트리니티 심층 무의식, 오라 방하착 치유, 파랑새 호오포노포노 정화, 뮤즈 예술처방, 에필로그 삶의 지혜)의 모든 지혜를 집대성한 최고 권위의 7대 차원 '마스터 모드' 답변입니다.
-고민의 근원적 원인을 꿰뚫고, 입체적이며 총체적인 통섭 통찰과 현실적 마스터 액션을 제시하세요.`;
+      modeGlow = "rgba(251, 191, 36, 0.85)";
+      defaultKeyTheme = "우주의 통섭";
+      defaultAnswer = `현재 마주한 질문은 삶의 전체 맥락이 한 단계 도약하려는 중대한 변곡점입니다. 두려움을 내려놓고 내면의 직관을 신뢰할 때, 7대 차원의 에너지가 당신의 길을 가장 밝고 온전하게 비춥니다.`;
+      defaultAction = `조급한 마음을 멈추고 깊은 호흡과 함께, 내면에서 자연스럽게 떠오르는 가장 맑은 첫 번째 결단을 따르세요.`;
+      promptInstruction = `[현재 모드: 7대 차원 통합 마스터 신탁 (Master Cosmic Synthesis)]
+오브의 7대 차원(프롤로그 운명의 서막, 오렌지 소원의 우물, 트리니티 심층 무의식, 오라 방하착 치유, 파랑새 호오포노포노 정화, 뮤즈 예술처방, 에필로그 삶의 지혜)의 모든 지혜를 집대성한 최고 권위의 7대 차원 '올인원 마스터 신탁'입니다.
+고민의 근원적 본질을 꿰뚫고, 입체적이며 총체적인 통찰과 구체적 실천 솔루션을 명쾌하고 깊이 있게 제시하세요.`;
     } else if (effectiveRuneIds.length >= 2) {
       const activeApps = effectiveRuneIds
         .map((id) => SEPTAGRAM_APPS.find((a) => a.id === id))
         .filter(Boolean) as SeptagramAppDimension[];
       const names = activeApps.map((a) => a.shortName).join(" × ");
-      modeTitle = `⚡ ${names} ${activeApps.length}중 연동 모드`;
-      modeColor = activeApps[0]?.color || "#38bdf8";
-      modeGlow = activeApps[0]?.glowColor || "rgba(56, 189, 248, 0.6)";
+      modeTitle = `🔮 ${names} ${activeApps.length}중 연동`;
+      modeColor = activeApps[0]?.color || "#c084fc";
+      modeGlow = activeApps[0]?.glowColor || "rgba(192, 132, 252, 0.7)";
       defaultKeyTheme = activeApps.slice(0, 2).map((a) => a.shortName).join("과 ");
-      defaultAnswer = `[${activeApps.map((a) => a.name).join(", ")}]의 시너지를 결합하면, 지금의 상황은 한 방향의 시각을 넘어 다채로운 가능성으로 풀려나갈 수 있습니다. 각 차원의 지혜가 서로를 보완하며 명쾌한 통찰의 실마리를 제공합니다.`;
-      defaultAction = `${activeApps.length}개 연동 차원의 조화로운 흐름을 신뢰하며, 지금 마음속 가장 선명하게 떠오르는 실천을 시작해 보세요.`;
+      defaultAnswer = `[${activeApps.map((a) => a.name).join(", ")}]의 영적 파동이 공명하며, 보이지 않던 새로운 관점과 치유의 통찰이 열리고 있습니다.`;
+      defaultAction = `${activeApps.length}개 연동 차원의 조화로운 흐름을 신뢰하며, 지금 떠오르는 현실적인 영감을 행동으로 옮겨보세요.`;
       const dimensionDescriptions = activeApps
         .map((a, i) => `- 차원 ${i + 1} (${a.name}): ${a.description} (룬: ${a.runeMeaning})`)
         .join("\n");
-      promptInstruction = `[현재 모드: ${names} ${activeApps.length}중 차원 연동 시너지 모드]
-선택된 ${activeApps.length}개 앱의 고유한 지혜를 유기적으로 융합하여 단일 관점을 뛰어넘는 심화 시너지 답변을 제공하세요.
-${dimensionDescriptions}
-선택된 차원들의 관점이 상호 보완되어 깊어지는 융합 통찰과 결합된 현실적 실천 솔루션을 명쾌하게 제시하세요.`;
+      promptInstruction = `[현재 모드: ${names} ${activeApps.length}중 연동 시너지 신탁]
+선택된 ${activeApps.length}개 차원의 고유한 상징과 지혜를 유기적으로 융합하여, 질문/고민에 대한 깊이 있는 통찰과 실천적 해결책을 제시하세요.
+${dimensionDescriptions}`;
     } else if (effectiveRuneIds.length === 1) {
       const app = SEPTAGRAM_APPS.find((a) => a.id === effectiveRuneIds[0]);
-      modeTitle = `✨ ${app?.name} 모드`;
-      modeColor = app?.color || "#38bdf8";
-      modeGlow = app?.glowColor || "rgba(56, 189, 248, 0.6)";
+      modeTitle = `✨ ${app?.name} 신탁`;
+      modeColor = app?.color || "#c084fc";
+      modeGlow = app?.glowColor || "rgba(192, 132, 252, 0.7)";
       defaultKeyTheme = app?.shortName || "직관의 답";
 
       if (app?.id === "prologue") {
-        defaultAnswer = `새로운 운명의 서막이 열리고 있습니다. 과거의 묵은 틀에 갇히지 말고 모든 가능성이 열려 있는 출발선에 섰음을 자각하세요.`;
-        defaultAction = `오늘 하루 새로운 가능성을 향해 가벼운 마음으로 첫 걸음을 내딛으세요.`;
+        defaultAnswer = `새로운 시작의 서막이 열리고 있습니다. 과거의 망설임을 뒤로하고, 당신 본연의 가능성과 비전을 당당히 펼치세요.`;
+        defaultAction = `마음의 문을 활짝 열고 새로운 기회와 운명의 흐름을 기쁘게 맞아들이세요.`;
       } else if (app?.id === "aura") {
-        defaultAnswer = `잡고 있으려 할수록 손안의 모래처럼 에너지만 소모됩니다. 그 생각과 긴장을 통제하려 하지 말고 '그냥 온전히 놓아주어도 괜찮다'고 스스로에게 허락해 보세요.`;
-        defaultAction = `어깨의 힘을 툭 빼고, 깊은 날숨과 함께 마음에 쥔 집착을 허공으로 흘려보내세요.`;
+        defaultAnswer = `잡고 있으려 할수록 긴장만 더해집니다. 그 상황을 억지로 통제하려 하지 말고 '있는 그대로 내려놓아도 괜찮다'고 스스로를 다독여 주세요.`;
+        defaultAction = `어깨와 가슴의 힘을 툭 빼고, 깊은 날숨과 함께 마음에 쥔 긴장을 허공으로 흘려보내세요.`;
       } else if (app?.id === "bluebird") {
-        defaultAnswer = `이 상황과 감정의 뿌리를 맑게 정화할 때입니다. 내면의 엉킨 매듭을 향해 네 마디 정화의 말(미안합니다, 용서하세요, 감사합니다, 사랑합니다)을 건네며 화해를 이루세요.`;
-        defaultAction = `가슴에 손을 얹고 마음속으로 4마디 정화의 말을 고요히 세 번 읊어보세요.`;
+        defaultAnswer = `기억의 매듭을 정화할 시간입니다. 네 마디 정화의 말(미안합니다, 용서하세요, 감사합니다, 사랑합니다)로 내면의 평화를 회복하세요.`;
+        defaultAction = `가슴에 손을 얹고 마음속으로 4마디 정화의 말을 고요히 속삭여 보세요.`;
       } else if (app?.id === "orange") {
-        defaultAnswer = `솔직하지 못한 감정은 마음속에 앙금으로 남습니다. 지금 느끼는 두려움이나 아쉬움을 솔직히 인정하고, 소원의 우물에 진짜 바라는 소망의 빛을 띄워보세요.`;
-        defaultAction = `내가 진정으로 바라는 소망이 무엇인지 단 한 문장으로 종이에 적어보세요.`;
+        defaultAnswer = `내면의 진솔한 소망은 결코 사라지지 않습니다. 감추어 둔 진짜 갈망을 마주하고, 마음의 우물에 당신만의 소망의 빛을 띄워보세요.`;
+        defaultAction = `마음 깊은 곳에서 진정으로 바라는 소망을 가만히 소리 내어 읊어보세요.`;
       } else if (app?.id === "trinity") {
-        defaultAnswer = `무의식의 거울은 이미 당신이 가야 할 방향을 비추고 있습니다. 불확실성에 휘둘리기보다, 당신의 깊은 직관이 속삭이는 명확한 상징과 선택을 신뢰하세요.`;
-        defaultAction = `타인의 의견보다 당신의 첫 번째 직관적 영감을 나침반 삼아 과감히 한 걸음 나아가세요.`;
+        defaultAnswer = `거울에 비친 운명은 이미 당신이 걸어가야 할 방향을 가리키고 있습니다. 불필요한 의심을 거두고 직관적 통찰을 신뢰하세요.`;
+        defaultAction = `복잡한 계산보다 당신의 순수한 영혼이 속삭이는 첫 번째 감각을 나침반 삼으세요.`;
       } else if (app?.id === "muse") {
-        defaultAnswer = `메마른 생각의 굴레에서 벗어나 감성의 선율에 귀를 기울이세요. 이 고민은 아름다운 시구처럼 당신을 더욱 깊고 풍요롭게 빚어내는 예술적 성장의 과정입니다.`;
-        defaultAction = `좋아하는 음악 한 곡을 눈감고 감상하며 굳어있던 마음에 신선한 영감을 불어넣으세요.`;
+        defaultAnswer = `메마른 생각의 틀을 깨고 감성의 물결에 온전히 젖어드세요. 지금 마주한 과정 또한 삶을 더욱 깊고 풍요롭게 빚어내는 예술입니다.`;
+        defaultAction = `고요한 선율에 귀를 기울이며 굳어있던 마음에 따뜻한 영감의 숨결을 불어넣으세요.`;
       } else if (app?.id === "epilogue") {
-        defaultAnswer = `오늘 하루 마주했던 혼란도 밤의 서재에서는 한 줄의 지혜로운 기록이 됩니다. 지나간 일에 매달리지 말고 오늘 배운 교훈을 품고 평온히 마무리하세요.`;
-        defaultAction = `오늘 나를 성장시킨 감사한 배움 하나를 기록하고 홀가분하게 잠자리에 드세요.`;
+        defaultAnswer = `오늘 마주했던 혼란도 영혼의 서재에서는 아름다운 한 줄의 지혜가 됩니다. 지나간 시간에 미련을 두지 말고 편안한 안식을 누리세요.`;
+        defaultAction = `오늘 나를 성장시킨 소중한 깨달음을 가슴에 품고 홀가분하게 하루를 마무리하세요.`;
       } else {
-        defaultAnswer = `지친 마음을 억지로 다그치지 마세요. 따뜻한 쉼과 자기 연민이 지금 당신에게 가장 필요한 회복의 묘약입니다.`;
-        defaultAction = `따뜻한 차 한 잔을 마시며 오늘은 오직 나 자신만을 위한 온전한 휴식을 선물하세요.`;
+        defaultAnswer = `지친 마음에 온전한 자기 연민을 선물하세요. 따스한 사랑과 수용이야말로 상처를 아물게 하는 가장 위대한 치유의 힘입니다.`;
+        defaultAction = `두 팔로 나 자신을 따뜻하게 감싸 안으며 "지금 그대로도 충분히 잘하고 있다"고 말해주세요.`;
       }
 
-      promptInstruction = `[현재 모드: ${app?.name} 단일 차원 모드]
-해당 앱의 핵심 철학(${app?.description}, 룬 의미: ${app?.runeMeaning})에 오롯이 집중하여, 질문/고민에 대해 이 차원의 고유한 렌즈로 명쾌하고 깊이 있는 맞춤형 해답과 실천 가이드를 제시하세요.`;
+      promptInstruction = `[현재 모드: ${app?.name} 신탁 모드]
+해당 앱의 핵심 철학(${app?.description}, 룬 의미: ${app?.runeMeaning})에 집중하여, 질문/고민에 대해 명쾌하고 영감 넘치는 해답과 실천 가이드를 제시하세요.`;
     } else {
-      // 수다 모드 (아무런 룬도 선택하지 않았을 때)
-      modeTitle = "💬 루시 수다 모드";
-      modeColor = "#38bdf8";
-      modeGlow = "rgba(56, 189, 248, 0.6)";
-      defaultKeyTheme = baseFallback.keyTheme || "다정한 공감";
-      promptInstruction = `[현재 모드: 루시 다정한 수다 모드 (Casual Chat)]
-아무런 룬도 선택되지 않은 편안한 '수다 모드'입니다. 루시처럼 매우 친근하고 다정하며, 공감과 가벼운 위로, 재치 있는 일상 조언을 카페에서 대화하듯 편안하게 건네주세요. 어려운 전문 용어나 카드 상징은 일절 쓰지 마세요.`;
+      modeTitle = "🔮 직관 모드";
+      modeColor = "#c084fc";
+      modeGlow = "rgba(192, 132, 252, 0.7)";
+      defaultKeyTheme = baseFallback.keyTheme || "직관의 답";
+      promptInstruction = `[현재 모드: 크리스탈 오브 직관 모드]
+크리스탈 오브의 맑고 신비로운 직관과 영적 통찰로 내담자의 질문을 비춰주세요.
+질문자가 털어놓은 고민에 대해 명쾌하고 따뜻한 직관적 해답과 현실적인 실천 가이드를 제시하세요.`;
     }
 
     let finalResult: ScryingResult = {
@@ -1182,7 +1181,30 @@ ${dimensionDescriptions}
           }
         }
       }
+
+      // 🔮 텍스트 드래그(선택) 연동: 앱 어디서든 선택한 내용을 직관 오브로 전송한 경우 자동 처리
+      const pendingSel = getAndClearPendingSelection();
+      if (pendingSel && pendingSel.text) {
+        setInquiry(pendingSel.text);
+        setTimeout(() => {
+          executeScrying(pendingSel.text);
+        }, 350);
+      }
     } catch (_) {}
+
+    const handleDynamicSelection = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (detail?.text && detail?.target === "orb") {
+        setInquiry(detail.text);
+        setTimeout(() => {
+          executeScrying(detail.text);
+        }, 300);
+      }
+    };
+    window.addEventListener("prism:selection_saved", handleDynamicSelection);
+    return () => {
+      window.removeEventListener("prism:selection_saved", handleDynamicSelection);
+    };
   }, []);
 
   return (
@@ -1200,17 +1222,17 @@ ${dimensionDescriptions}
         {/* Left: Real-time Prism Sync Status Badge */}
         <div className="flex items-center gap-2 shrink-0">
           <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl text-slate-300 text-xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-            <span className="hidden sm:inline">실시간 연동</span>
-            <span className="sm:hidden text-[11px]">연동됨</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse shrink-0" />
+            <span className="hidden sm:inline">오라클 연동</span>
+            <span className="sm:hidden text-[11px]">오브</span>
           </div>
         </div>
 
         {/* Center Title */}
-        <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl shadow-lg min-w-0 max-w-[135px] xs:max-w-[190px] sm:max-w-none">
-          <CrystalOrbIcon size={15} className="shrink-0" />
-          <span className="text-xs sm:text-sm font-semibold tracking-wider text-slate-200 truncate">
-            {prismUserName ? `${prismUserName}의 직관 오브` : "크리스탈 오브"}
+        <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-purple-500/10 border border-purple-400/30 backdrop-blur-xl shadow-lg min-w-0 max-w-[170px] xs:max-w-[220px] sm:max-w-none">
+          <CrystalOrbIcon size={15} className="shrink-0 text-purple-300 animate-pulse" />
+          <span className="text-xs sm:text-sm font-semibold tracking-wider text-purple-200 truncate">
+            {prismUserName ? `${prismUserName}의 크리스탈 오브` : "크리스탈 오브"}
           </span>
         </div>
 
@@ -2077,9 +2099,9 @@ ${dimensionDescriptions}
             value={inquiry}
             onChange={(e) => setInquiry(e.target.value)}
             placeholder={
-              autoDetectedTitle && autoDetectedTitle !== "수다 모드"
-                ? `[${autoDetectedTitle}] 질문이나 고민을 입력하세요...`
-                : (narrow ? "고민이나 질문을 입력하세요..." : "무엇이든 물어보세요 (AI 자동 감지)...")
+              autoDetectedTitle && autoDetectedTitle !== "직관 모드"
+                ? `[${autoDetectedTitle}] 크리스탈 오브에게 물어보세요...`
+                : (narrow ? "무엇이든 물어보세요..." : "크리스탈 오브에게 무엇이든 말해보세요... 음성 또는 텍스트")
             }
             className="flex-1 bg-transparent px-2.5 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base text-white placeholder-slate-500 outline-none"
           />
