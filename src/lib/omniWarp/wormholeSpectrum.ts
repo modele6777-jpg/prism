@@ -26,8 +26,8 @@ export interface WormholeAppInfo {
   defaultGaugePercent: number;
 }
 
-export const DISALLOWED_WARP_IDS = new Set(['profile', 'handbook', 'library', 'omniwarp']);
-export const DISALLOWED_WARP_PATHS = new Set(['/profile', '/handbook', '/library', '/omniwarp']);
+export const DISALLOWED_WARP_IDS = new Set(['profile', 'handbook', 'library', 'omniwarp', 'hub']);
+export const DISALLOWED_WARP_PATHS = new Set(['/profile', '/handbook', '/library', '/omniwarp', '/', '/universe', '/ecpr', '/synergy', '/aegis']);
 
 /**
  * 라우트 정의를 WormholeAppInfo 규격으로 변환
@@ -76,22 +76,22 @@ export function getRankedWormholeApps(activeRoute: string): WormholeAppInfo[] {
   const norm = (activeRoute || '').replace('/', '').toLowerCase() || 'hub';
   const allActive = getAllActiveWormholeApps();
 
-  // 기본 채널별 시너지 우선순위 템플릿 (profile, handbook, library, omniwarp 전면 배제)
+  // 기본 채널별 시너지 우선순위 템플릿 (profile, handbook, library, omniwarp, hub 전면 배제)
   const priorityOrder: Record<string, string[]> = {
-    trinity: ['muse', 'orb', 'orange', 'lucy', 'epilogue', 'bluebird', 'heal', 'hub'],
-    oracle: ['muse', 'orb', 'orange', 'lucy', 'epilogue', 'bluebird', 'heal', 'hub'],
-    muse: ['orange', 'epilogue', 'trinity', 'lucy', 'bluebird', 'orb', 'heal', 'hub'],
-    orange: ['heal', 'bluebird', 'epilogue', 'muse', 'trinity', 'orb', 'lucy', 'hub'],
-    heal: ['bluebird', 'orange', 'epilogue', 'muse', 'trinity', 'orb', 'lucy', 'hub'],
-    bluebird: ['orange', 'muse', 'heal', 'epilogue', 'trinity', 'orb', 'lucy', 'hub'],
-    epilogue: ['trinity', 'heal', 'bluebird', 'muse', 'orange', 'orb', 'lucy', 'hub'],
-    profile: ['epilogue', 'trinity', 'lucy', 'orb', 'muse', 'orange', 'heal', 'bluebird', 'hub'],
-    orb: ['lucy', 'trinity', 'muse', 'orange', 'heal', 'bluebird', 'epilogue', 'hub'],
-    chat: ['orb', 'trinity', 'muse', 'orange', 'bluebird', 'heal', 'epilogue', 'hub'],
-    lucy: ['orb', 'trinity', 'muse', 'orange', 'bluebird', 'heal', 'epilogue', 'hub'],
-    handbook: ['lucy', 'orb', 'trinity', 'muse', 'epilogue', 'bluebird', 'orange', 'heal', 'hub'],
-    library: ['lucy', 'orb', 'trinity', 'muse', 'epilogue', 'bluebird', 'orange', 'heal', 'hub'],
-    omniwarp: ['orb', 'lucy', 'trinity', 'orange', 'muse', 'heal', 'bluebird', 'epilogue', 'hub'],
+    trinity: ['muse', 'orb', 'orange', 'lucy', 'epilogue', 'bluebird', 'heal'],
+    oracle: ['muse', 'orb', 'orange', 'lucy', 'epilogue', 'bluebird', 'heal'],
+    muse: ['orange', 'epilogue', 'trinity', 'lucy', 'bluebird', 'orb', 'heal'],
+    orange: ['heal', 'bluebird', 'epilogue', 'muse', 'trinity', 'orb', 'lucy'],
+    heal: ['bluebird', 'orange', 'epilogue', 'muse', 'trinity', 'orb', 'lucy'],
+    bluebird: ['orange', 'muse', 'heal', 'epilogue', 'trinity', 'orb', 'lucy'],
+    epilogue: ['trinity', 'heal', 'bluebird', 'muse', 'orange', 'orb', 'lucy'],
+    profile: ['epilogue', 'trinity', 'lucy', 'orb', 'muse', 'orange', 'heal', 'bluebird'],
+    orb: ['lucy', 'trinity', 'muse', 'orange', 'heal', 'bluebird', 'epilogue'],
+    chat: ['orb', 'trinity', 'muse', 'orange', 'bluebird', 'heal', 'epilogue'],
+    lucy: ['orb', 'trinity', 'muse', 'orange', 'bluebird', 'heal', 'epilogue'],
+    handbook: ['lucy', 'orb', 'trinity', 'muse', 'epilogue', 'bluebird', 'orange', 'heal'],
+    library: ['lucy', 'orb', 'trinity', 'muse', 'epilogue', 'bluebird', 'orange', 'heal'],
+    omniwarp: ['orb', 'lucy', 'trinity', 'orange', 'muse', 'heal', 'bluebird', 'epilogue'],
     hub: ['orb', 'lucy', 'trinity', 'muse', 'orange', 'bluebird', 'heal', 'epilogue'],
   };
 
@@ -104,7 +104,6 @@ export function getRankedWormholeApps(activeRoute: string): WormholeAppInfo[] {
     'muse',
     'heal',
     'epilogue',
-    'hub',
   ];
 
   const appMap = new Map(allActive.map((a) => [a.id, a]));

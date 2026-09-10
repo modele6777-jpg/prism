@@ -24,6 +24,7 @@ import { getPendingPrismToss, clearPrismToss } from "@/lib/prismToss";
 import { startBinauralBeat, stopBinauralBeat } from "@/lib/binauralBeats";
 
 import { CrystalOrbIcon } from "@/components/icons/CrystalOrbIcon";
+import { OrbCosmicLoader } from "@/components/OrbCosmicLoader";
 import { safeLocalStorage } from "@/utils/safeStorage";
 import { useNarrowPhone } from "@/hooks/useNarrowPhone";
 import { detectSeptagramChannelsFromText } from "@/lib/lucyAutoModeDetector";
@@ -282,6 +283,15 @@ export default function OrbGatewayPage() {
   const hoveredRuneRef = useRef<HTMLElement | null>(null);
   const narrow = useNarrowPhone();
   const resultCardRef = useRef<HTMLDivElement | null>(null);
+
+  // Dedicated Crystal Orb entrance cosmic loader
+  const [isOrbReady, setIsOrbReady] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsOrbReady(true);
+    }, 750);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Auto-scroll into view when scrying result is revealed on mobile
   useEffect(() => {
@@ -1234,6 +1244,16 @@ ${dimensionDescriptions}`;
       window.removeEventListener("prism:selection_saved", handleDynamicSelection);
     };
   }, []);
+
+  if (!isOrbReady) {
+    return (
+      <OrbCosmicLoader
+        fullScreen
+        message="크리스탈 오브 차원 궤도 동기화 중..."
+        subMessage="ASTRAL SCRYING SPHERE & CONSCIOUSNESS"
+      />
+    );
+  }
 
   return (
     <div

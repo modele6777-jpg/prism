@@ -352,12 +352,23 @@ export function getRandomWormholeDestination(currentLocation?: string): PrismRou
     const rId = route.id.toLowerCase();
     const rPath = route.path.toLowerCase().replace(/\/$/, '') || '/';
 
-    // 1. 루시 채팅 (/chat, /lucy) 원천 배제
+    // 1. 프리즘 홈 (/ , /universe, /ecpr, /synergy, /aegis, hub) 원천 배제
+    if (rId === 'hub' || rPath === '/' || route.category === 'hub' || ['/universe', '/ecpr', '/synergy', '/aegis'].includes(rPath)) {
+      return false;
+    }
+    // 2. 루시 채팅 (/chat, /lucy) 및 크리스탈 오브 사이트 (/orb, /gateway, /crystal) 원천 배제
     if (rId === 'lucy' || rId === 'chat' || rPath.includes('/chat') || rPath.includes('/lucy')) {
       return false;
     }
-    // 2. 크리스탈 오브 사이트 (/orb, /gateway, /crystal) 원천 배제
     if (rId === 'orb' || rId === 'gateway' || rId === 'crystal' || rPath.includes('/orb')) {
+      return false;
+    }
+    // 3. 비존재 및 워프 비대상 페이지 원천 배제 (profile, handbook, library, omniwarp)
+    if (['profile', 'handbook', 'library', 'omniwarp', 'bigbang'].includes(rId)) {
+      return false;
+    }
+    // 4. 실제 유효한 라우트인지 검증
+    if (!isValidPrismPath(route.path)) {
       return false;
     }
     return true;
@@ -375,8 +386,9 @@ export function getRandomWormholeDestination(currentLocation?: string): PrismRou
 
   const pool = differentRoutes.length > 0 ? differentRoutes : eligibleRoutes;
   if (pool.length === 0) {
-    // 안전 폴백 (기본 허브)
-    return INITIAL_PRISM_ROUTES[0];
+    // 안전 폴백 (유효한 오라클 채널 - 프리즘 홈 배제)
+    const oracleFallback = INITIAL_PRISM_ROUTES.find((r) => r.id === 'trinity' && r.isActive);
+    return oracleFallback || INITIAL_PRISM_ROUTES[3];
   }
 
   const randomIndex = Math.floor(Math.random() * pool.length);

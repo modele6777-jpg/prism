@@ -551,9 +551,9 @@ export function BigBangButton() {
       const randomDest = getRandomWormholeDestination(location);
       const safePath = resolveCanonicalPath(randomDest.path);
 
-      // 🛡️ 실존 페이지 검증: 존재하지 않는 경로는 이동 차단 (허브 '/'로만 fallback)
-      if (!isValidPrismPath(safePath)) {
-        console.warn(`[Wormhole] Blocked navigation to non-existent path: ${safePath}`);
+      // 🛡️ 실존 페이지 검증: 존재하지 않는 경로 및 프리즘 홈('/') 이동 원천 차단
+      if (!isValidPrismPath(safePath) || safePath === '/' || safePath === '/universe' || safePath === '/ecpr' || safePath === '/synergy' || safePath === '/aegis') {
+        console.warn(`[Wormhole] Blocked navigation to non-existent or home path: ${safePath}`);
         setActivePhase('idle');
         setGauge(0);
         setDurationMs(0);

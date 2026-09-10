@@ -264,6 +264,7 @@ export function EpilogueDiaryView() {
         },
       };
 
+      let finalMerged: EpilogueDiaryEntry[] = [];
       setEntries((prev) => {
         let diskEntries: EpilogueDiaryEntry[] = [];
         try {
@@ -285,16 +286,19 @@ export function EpilogueDiaryView() {
           localStorage.setItem(`epilogue_diary_draft_${todayKey}`, JSON.stringify(newEntry));
         } catch (_) {}
 
+        finalMerged = merged;
+        return merged;
+      });
+
+      if (finalMerged.length > 0) {
         void updateSharedState(
           {
-            epilogueHistory: merged,
+            epilogueHistory: finalMerged,
             epilogueMemory: effectiveDiary || aiFeedback || `${todayKey} 성찰 진행 중`,
           },
           'epilogue'
         ).catch(() => {});
-
-        return merged;
-      });
+      }
 
       setAutoSaved(true);
       const hideTimer = setTimeout(() => setAutoSaved(false), 2000);

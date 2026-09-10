@@ -16,6 +16,9 @@ import { GlobalHandbookAudioWidget } from "./components/GlobalHandbookAudioWidge
 
 import ProfileModal from "./components/ProfileModal";
 import { PageLoader } from "./components/PageLoader";
+import { PrismRainbowLoader } from "./components/PrismRainbowLoader";
+import { OrbCosmicLoader } from "./components/OrbCosmicLoader";
+import { LucyAuraLoader } from "./components/LucyAuraLoader";
 
 import { BgMusicPlayer } from "./components/trinity/BgMusicPlayer";
 import { initTTSAudioLifecycle, unlockAudioPlayback, getSharedAudioContext } from "./lib/audio";
@@ -134,6 +137,15 @@ function AppContent() {
   const [transitionLocation, setTransitionLocation] = React.useState(location);
   const isFirstMount = React.useRef(true);
   const usePageTransitions = shouldUsePageTransitions();
+
+  // Initial Prism Rainbow entrance splash for a cinematic first impression
+  const [appEntranceDone, setAppEntranceDone] = React.useState(false);
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setAppEntranceDone(true);
+    }, 1300);
+    return () => clearTimeout(timer);
+  }, []);
 
   const [checkingUpdate, setCheckingUpdate] = React.useState(false);
   const [updateMessage, setUpdateMessage] = React.useState<string | null>(null);
@@ -314,11 +326,31 @@ function AppContent() {
     }
   }, [isUnlocked, sharedState?.themeColor]);
 
-  if (!isAuthReady) {
+  if (!isAuthReady || !appEntranceDone) {
+    if (location === '/chat' || location === '/lucy') {
+      return (
+        <LucyAuraLoader
+          fullScreen
+          message="루시와 깊은 교감 조율 중..."
+          subMessage="CONSCIOUSNESS SYNERGY & INTUITION"
+        />
+      );
+    }
+    if (location === '/orb' || location === '/gateway' || location === '/crystal') {
+      return (
+        <OrbCosmicLoader
+          fullScreen
+          message="크리스탈 오브 차원 궤도 동기화 중..."
+          subMessage="ASTRAL SCRYING SPHERE & CONSCIOUSNESS"
+        />
+      );
+    }
     return (
-      <div className="h-dvh bg-[oklch(0.08_0.02_270)] flex items-center justify-center pt-safe pb-safe">
-        <div className="w-8 h-8 border-2 border-white/20 border-t-white/80 rounded-full animate-spin" />
-      </div>
+      <PrismRainbowLoader
+        fullScreen
+        message="프리즘 스펙트럼 조율 중..."
+        subMessage="SPECTRUM OF LIGHT & CONSCIOUSNESS"
+      />
     );
   }
 
@@ -401,7 +433,7 @@ function AppContent() {
           </motion.div>
         </AnimatePresence>
 
-        {/* Rainbow Triangle portal transitional loader */}
+        {/* Dynamic portal transitional loader: Orb, Lucy, or Rainbow Prism */}
         <AnimatePresence>
           {isTransitioning && usePageTransitions && (
             <motion.div
@@ -409,53 +441,27 @@ function AppContent() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25, ease: "easeInOut" }}
-              className="fixed inset-0 z-[1000] flex flex-col items-center justify-center bg-[oklch(0.08_0.02_270)]/90 backdrop-blur-md"
+              className="fixed inset-0 z-[1000] flex flex-col items-center justify-center bg-[#05050a]/92 backdrop-blur-md"
             >
-              <div className="flex flex-col items-center gap-6">
-                <div className="relative w-24 h-24 rounded-full border border-white/10 flex items-center justify-center shadow-[0_0_25px_rgba(255,255,255,0.15)] group backdrop-blur-md bg-white/[0.02]">
-                  {/* Glowing rainbow background layer */}
-                  <div className="absolute inset-0 bg-gradient-to-tr from-[#ff6b6b] via-[#feca57] via-[#1dd1a1] via-[#54a0ff] to-[#5f27cd] opacity-40 mix-blend-screen rounded-full animate-pulse" />
-                  
-                  {/* Rotating dashed border line */}
-                  <motion.div 
-                    animate={{ rotate: 360 }} 
-                    transition={{ duration: 4, repeat: Number.POSITIVE_INFINITY, ease: "linear" }} 
-                    className="absolute inset-0 rounded-full border border-dashed border-white/40" 
-                  />
-                  
-                  {/* Inner container with the glowing triangle */}
-                  <div className="absolute inset-[6px] rounded-full border border-white/5 bg-white/5 flex items-center justify-center">
-                    <motion.div
-                      animate={{ 
-                        scale: [1, 1.15, 1],
-                        rotate: [0, 5, 0, -5, 0]
-                      }}
-                      transition={{ 
-                        duration: 2, 
-                        repeat: Number.POSITIVE_INFINITY, 
-                        ease: "easeInOut" 
-                      }}
-                    >
-                      <Triangle 
-                        className="text-white drop-shadow-[0_0_15px_rgba(255,255,255,1)] -translate-y-[2px]" 
-                        fill="transparent"
-                        strokeWidth={2} 
-                        size={28} 
-                      />
-                    </motion.div>
-                  </div>
-                </div>
-                
-                {/* Subtle text design */}
-                <motion.div
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 0.8, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                  className="text-[10px] font-bold tracking-[0.3em] text-white/60 uppercase font-sans animate-pulse"
-                >
-                  TRANSLATING DIMENSION...
-                </motion.div>
-              </div>
+              {transitionLocation === '/chat' || transitionLocation === '/lucy' ? (
+                <LucyAuraLoader
+                  compact
+                  message="루시 의식 차원으로 전이 중..."
+                  subMessage="TRANSLATING TO LUCY..."
+                />
+              ) : transitionLocation === '/orb' || transitionLocation === '/gateway' || transitionLocation === '/crystal' ? (
+                <OrbCosmicLoader
+                  compact
+                  message="크리스탈 오브 궤도로 도약 중..."
+                  subMessage="WARPING TO ORB..."
+                />
+              ) : (
+                <PrismRainbowLoader
+                  compact
+                  message="차원 스펙트럼 전이 중..."
+                  subMessage="TRANSLATING DIMENSION..."
+                />
+              )}
             </motion.div>
           )}
         </AnimatePresence>

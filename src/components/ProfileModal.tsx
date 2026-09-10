@@ -13,6 +13,12 @@ import { SajuCardView } from './SajuCardView';
 import { db, doc, setDoc, serverTimestamp } from '@/lib/firebase';
 import { cleanFirestoreData, unpackAndHydrateLocalStorage } from '@/lib/sharedStateSync';
 import { generatePairingCode, importWithPairingCode, getPairedVaultId, setPairedVaultId } from '@/lib/serverSyncClient';
+import {
+  isIPhoneXSClass,
+  getDevicePerfOverride,
+  setDevicePerfOverride,
+  getPerfProfile,
+} from '@/lib/perfMode';
 
 const SECTIONS = [
   { id: 'basic', label: '기본 정보', icon: User, color: 'oklch(0.75 0.12 50)', desc: '이름 · 생년월일 · 성별' },
@@ -94,6 +100,7 @@ export default function ProfileModal({ isOpen, onClose }: { isOpen: boolean; onC
   const [inputPairingCode, setInputPairingCode] = useState('');
   const [pairingLoading, setPairingLoading] = useState(false);
   const [pairingStatus, setPairingStatus] = useState<string | null>(null);
+  const [perfOverride, setPerfOverride] = useState<string | null>(getDevicePerfOverride());
 
   const initialProfile = sharedState?.userProfile || getPersistentUserProfile();
 
@@ -623,6 +630,54 @@ export default function ProfileModal({ isOpen, onClose }: { isOpen: boolean; onC
                   {pairingStatus}
                 </p>
               )}
+            </div>
+
+            {/* 📱 기기 성능 최적화 (iPhone XS / A12 Bionic 맞춤형) */}
+            <div className="p-4 rounded-[22px] sm:rounded-[24px] bg-[#141522] border border-white/10 flex flex-col gap-3 mt-1">
+              <div className="flex items-center justify-between flex-wrap gap-1">
+                <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                  📱 기기 성능 최적화 (iPhone XS / A12 Bionic)
+                </span>
+                {isIPhoneXSClass() ? (
+                  <span className="text-[10px] text-emerald-300 bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                    ● iPhone XS 60fps 최적화 활성
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-white/50 bg-white/5 border border-white/10 px-2 py-0.5 rounded-full font-mono">
+                    모드: {getPerfProfile()}
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-white/50 leading-relaxed">
+                iPhone XS (3x Super Retina OLED) 맞춤 설정: GPU 블러 부하를 경량화하고 오라 애니메이션을 고정 60fps로 최적화하여 프레임 드랍과 배터리 발열을 최소화합니다.
+              </p>
+              <div className="flex items-center justify-between pt-1 border-t border-white/5">
+                <div className="flex flex-col">
+                  <span className="text-[11px] text-white/80 font-medium">iPhone XS 전용 최적화 강제 적용</span>
+                  <span className="text-[9px] text-white/40">
+                    {perfOverride === 'iphonexs' ? '수동 강제 켜짐' : isIPhoneXSClass() ? '자동 감지 적용 중' : '자동 감지 모드'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = perfOverride === 'iphonexs' ? 'auto' : 'iphonexs';
+                    setDevicePerfOverride(next);
+                    setPerfOverride(next === 'auto' ? null : next);
+                  }}
+                  className={`text-[11px] font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
+                    perfOverride === 'iphonexs' || isIPhoneXSClass()
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
+                      : 'bg-white/5 text-white/60 border-white/10 hover:text-white'
+                  }`}
+                >
+                  {perfOverride === 'iphonexs'
+                    ? '✓ 강제 활성화 중'
+                    : isIPhoneXSClass()
+                    ? '✓ 자동 활성됨'
+                    : 'iPhone XS 모드 켜기'}
+                </button>
+              </div>
             </div>
 
             {/* 시스템 정보 */}

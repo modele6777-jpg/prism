@@ -116,7 +116,7 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
       try {
         await Promise.race([
           tts.ttsPromise(safeText, tempPath),
-          new Promise((_, reject) => setTimeout(() => reject(new Error("EdgeTTS timeout (15000ms)")), 15000)),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("EdgeTTS timeout (6000ms)")), 6000)),
         ]);
 
         const buf = await fsPromises.readFile(tempPath);
@@ -129,14 +129,14 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
     };
 
     let finalBuffer: Buffer | null = null;
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    for (let attempt = 1; attempt <= 2; attempt++) {
       try {
         finalBuffer = await generateWithEdgeTTS(cleanText);
         if (finalBuffer && finalBuffer.length > 0) break;
       } catch (attemptErr) {
-        console.warn(`[TTS] EdgeTTS attempt ${attempt}/3 warning:`, attemptErr);
-        if (attempt < 3) {
-          await new Promise((r) => setTimeout(r, 250 * attempt));
+        console.warn(`[TTS] EdgeTTS attempt ${attempt}/2 warning:`, attemptErr);
+        if (attempt < 2) {
+          await new Promise((r) => setTimeout(r, 150 * attempt));
         }
       }
     }
@@ -183,7 +183,7 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
             },
           },
         }),
-        new Promise<any>((_, reject) => setTimeout(() => reject(new Error("Gemini TTS timeout (8000ms)")), 8000)),
+        new Promise<any>((_, reject) => setTimeout(() => reject(new Error("Gemini TTS timeout (3500ms)")), 3500)),
       ]);
 
       const candidate = geminiResponse?.candidates?.[0];

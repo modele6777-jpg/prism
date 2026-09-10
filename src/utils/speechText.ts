@@ -27,7 +27,8 @@ export function prepareNaturalSpeechText(text: string): string {
   } catch (_) {
     clean = clean.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}]/gu, " ");
   }
-  clean = clean.replace(/[★☆✦✧♠♣♥♦✿❀❁❂▲▼▶◀►◄◈◇◆●○■□✔✓✗✘※]/g, " ");
+  clean = clean.replace(/[\uFE00-\uFE0F\u200B-\u200D\u200E\u200F\uFEFF]/g, "");
+  clean = clean.replace(/[★☆✦✧♠♣♥♦✿❀❁❂▲▼▶◀►◄◈◇◆●○■□✔✓✗✘※🕯️🔮✨⭐]/g, " ");
 
   // 5. Remove laugh/cry/chatter particles that cause awkward literal pronunciation (히읗히읗, 키윽키윽, 유유)
   clean = clean.replace(/[ㅋㅎㅠㅜ]{1,}/g, " ");
@@ -105,20 +106,17 @@ export function prepareNaturalSpeechText(text: string): string {
     .replace(/~~/g, "")
     .replace(/==/g, "");
 
-  // 11. Convert numbered list headers to natural spoken sequence
-  // e.g. "1. " -> "첫째, ", "2. " -> "둘째, "
-  clean = clean.replace(/(?:^|\n)\s*1\.\s+/g, "\n첫째, ");
-  clean = clean.replace(/(?:^|\n)\s*2\.\s+/g, "\n둘째, ");
-  clean = clean.replace(/(?:^|\n)\s*3\.\s+/g, "\n셋째, ");
-  clean = clean.replace(/(?:^|\n)\s*4\.\s+/g, "\n넷째, ");
-  clean = clean.replace(/(?:^|\n)\s*5\.\s+/g, "\n다섯째, ");
-  clean = clean.replace(/(?:^|\n)\s*(\d+)\.\s+/g, "\n$1번, ");
-
-  // 12. Markdown headers (#, ##, ###) & bold titles (**...**) - PRESERVE QUESTION MARKS
+  // 11. Markdown headers (#, ##, ###) & bold titles (**...**) - PRESERVE QUESTION MARKS
   // (a) Markdown headers: '# Title?' -> 'Title? \n', '# Title' -> 'Title. \n'
   clean = clean.replace(/^#{1,6}\s*(.+)$/gm, (_m, title) => {
     let t = String(title || '').replace(/[*#_~`>|\\]/g, " ").trim();
     if (!t) return "";
+    t = t.replace(/^\s*1\.\s+/, "첫째, ");
+    t = t.replace(/^\s*2\.\s+/, "둘째, ");
+    t = t.replace(/^\s*3\.\s+/, "셋째, ");
+    t = t.replace(/^\s*4\.\s+/, "넷째, ");
+    t = t.replace(/^\s*5\.\s+/, "다섯째, ");
+    t = t.replace(/^\s*(\d+)\.\s+/, "$1번, ");
     const isQuestion = /\?$/.test(t) || /(?:인가요|일까요|할까요|될까요|있을까요|없을까요|어떨까요|아닐까요|맞나요|하나요)\s*$/.test(t);
     t = t.replace(/[.!?…,;:~]+$/, "").trim();
     return isQuestion ? `${t}? \n\n` : `${t}. \n\n`;
@@ -128,10 +126,25 @@ export function prepareNaturalSpeechText(text: string): string {
   clean = clean.replace(/(?:^|\n)\s*\*\*(.+?)\*\*\s*(?::|-)?\s*/gm, (_m, boldText) => {
     let b = String(boldText || '').replace(/[*#_~`>|\\]/g, " ").trim();
     if (!b) return "";
+    b = b.replace(/^\s*1\.\s+/, "첫째, ");
+    b = b.replace(/^\s*2\.\s+/, "둘째, ");
+    b = b.replace(/^\s*3\.\s+/, "셋째, ");
+    b = b.replace(/^\s*4\.\s+/, "넷째, ");
+    b = b.replace(/^\s*5\.\s+/, "다섯째, ");
+    b = b.replace(/^\s*(\d+)\.\s+/, "$1번, ");
     const isQuestion = /\?$/.test(b) || /(?:인가요|일까요|할까요|될까요|있을까요|없을까요|어떨까요|아닐까요|맞나요|하나요)\s*$/.test(b);
     b = b.replace(/[.!?…,;:~]+$/, "").trim();
     return isQuestion ? `\n${b}? \n` : `\n${b}. \n`;
   });
+
+  // 12. Convert numbered list headers to natural spoken sequence
+  // e.g. "1. " -> "첫째, ", "2. " -> "둘째, "
+  clean = clean.replace(/(?:^|\n)\s*1\.\s+/g, "\n첫째, ");
+  clean = clean.replace(/(?:^|\n)\s*2\.\s+/g, "\n둘째, ");
+  clean = clean.replace(/(?:^|\n)\s*3\.\s+/g, "\n셋째, ");
+  clean = clean.replace(/(?:^|\n)\s*4\.\s+/g, "\n넷째, ");
+  clean = clean.replace(/(?:^|\n)\s*5\.\s+/g, "\n다섯째, ");
+  clean = clean.replace(/(?:^|\n)\s*(\d+)\.\s+/g, "\n$1번, ");
 
   // (c) Section indicators: '핵심 지침:' -> '핵심 지침, '
   clean = clean.replace(/(?:^|\n)\s*([가-힣a-zA-Z0-9\s]{2,15})\s*:\s*/gm, (_m, label) => {

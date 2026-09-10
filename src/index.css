@@ -505,6 +505,18 @@
   }
 }
 
+/* ==========================================================================
+   iPhone XS (Apple A12 Bionic, 5.8" Super Retina OLED, 375x812 pt @ 3x DPR)
+   GPU Fill-rate & WebKit Frame-Pacing Optimizations
+   ========================================================================== */
+html.prism-iphone-xs,
+html.perf-iphone-xs {
+  --sat: env(safe-area-inset-top, 44px);
+  --sab: env(safe-area-inset-bottom, 34px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+
 html.prism-iphone-xs .prism-hub-header {
   top: calc(var(--sat) + 0.25rem) !important;
   left: 0.5rem !important;
@@ -514,22 +526,94 @@ html.prism-iphone-xs .prism-xs-hub-title {
   font-size: 1.05rem !important;
 }
 
+/* Touch responsiveness: eliminate 300ms tap delay & highlight box */
 html.prism-iphone-xs button,
-html.prism-iphone-xs a {
+html.prism-iphone-xs a,
+html.prism-iphone-xs [role="button"],
+html.perf-iphone-xs button,
+html.perf-iphone-xs a {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
 
-html.prism-iphone-xs [data-app-scroll-root] {
+/* Scroll root: native iOS momentum scrolling & frame-budget virtual containment */
+html.prism-iphone-xs [data-app-scroll-root],
+html.perf-iphone-xs [data-app-scroll-root] {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 550px;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
+/* Input font-size: strictly 16px to stop iOS Safari auto-zooming the viewport */
 html.prism-iphone-xs input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
 html.prism-iphone-xs textarea,
-html.prism-iphone-xs select {
+html.prism-iphone-xs select,
+html.perf-iphone-xs input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html.perf-iphone-xs textarea,
+html.perf-iphone-xs select {
   font-size: 16px !important;
 }
+
+/* Fixed layers: isolate into dedicated GPU compositor layers to avoid full repaints */
+html.prism-iphone-xs .fixed,
+html.prism-iphone-xs .prism-bottom-nav,
+html.perf-iphone-xs .fixed,
+html.perf-iphone-xs .prism-bottom-nav {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Safe area bottom padding for iPhone XS Home Indicator Bar (34px) */
+html.prism-iphone-xs .prism-bottom-nav,
+html.perf-iphone-xs .prism-bottom-nav {
+  padding-bottom: max(0.6rem, env(safe-area-inset-bottom, 34px)) !important;
+}
+
+/* GPU fill-rate protection: clamp heavy backdrop-filter blurs on 3x Retina buffer */
+html.prism-iphone-xs [class*="backdrop-blur-"],
+html.perf-iphone-xs [class*="backdrop-blur-"] {
+  -webkit-backdrop-filter: blur(6px) !important;
+  backdrop-filter: blur(6px) !important;
+}
+
+/* Clamp excessive CSS filter blurs (e.g. 75px or 48px) to lightweight 14px */
+html.prism-iphone-xs .blur-3xl,
+html.perf-iphone-xs .blur-3xl,
+html.prism-iphone-xs .blur-2xl,
+html.perf-iphone-xs .blur-2xl {
+  filter: blur(14px) !important;
+  -webkit-filter: blur(14px) !important;
+}
+
+/* Avoid expensive SVG drop-shadow filters during animation */
+html.prism-iphone-xs [class*="drop-shadow-"],
+html.perf-iphone-xs [class*="drop-shadow-"] {
+  filter: none !important;
+}
+
+/* Map expensive mix-blend-mode to normal opacity on mobile WebKit */
+html.prism-iphone-xs .mix-blend-screen,
+html.perf-iphone-xs .mix-blend-screen {
+  mix-blend-mode: normal !important;
+  opacity: 0.72 !important;
+}
+
+/* Smooth vector rendering for icons and rings */
+html.prism-iphone-xs svg,
+html.perf-iphone-xs svg {
+  shape-rendering: geometricPrecision;
+}
+
+/* Aurora & background elements lightweight containment */
+html.prism-iphone-xs .prism-aura-bg,
+html.perf-iphone-xs .prism-aura-bg {
+  contain: layout style paint;
+  transform: translateZ(0);
+}
+
 
 /* Galaxy S23: performance-only layer (no layout / sizing changes) */
 html.perf-galaxy [data-app-scroll-root] {
@@ -1094,6 +1178,22 @@ html.perf-reduced .cosmic-star-flare {
   animation: blackhole-smoke-swirl-ccw 4.6s ease-in-out infinite;
   transform-origin: center;
   will-change: transform, opacity;
+}
+
+@keyframes rainbow-wave {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-rainbow-wave {
+  animation: rainbow-wave 4s ease infinite;
 }
 
 

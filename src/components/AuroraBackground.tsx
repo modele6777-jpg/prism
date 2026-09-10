@@ -3,6 +3,7 @@ import {
   getPerfProfile,
   isFoldCoverScreen,
   isGalaxyFoldSeClass,
+  isIPhoneXSClass,
   isLegacyMobile,
 } from '@/lib/perfMode';
 
@@ -411,25 +412,29 @@ export const AuroraBackground: React.FC = () => {
   const { void: voidColor, abyss, nebulaViolet, nebulaBlue, nebulaMagenta, nebulaCyan, galacticGold } =
     COSMOS;
 
-  const legacy = isLegacyMobile();
+  const isXS = isIPhoneXSClass();
+  const legacy = isLegacyMobile() || isXS;
   const foldCover = isGalaxyFoldSeClass() && isFoldCoverScreen();
   const galaxy = profile === 'galaxy';
-  const starDensity = legacy
-    ? 42
-    : foldCover
-      ? 64
-      : profile === 'pwa'
-        ? 58
-        : profile === 'reduced'
-          ? 68
-          : galaxy
-            ? 90
-            : 96;
+  const starDensity = isXS
+    ? 30
+    : legacy
+      ? 42
+      : foldCover
+        ? 64
+        : profile === 'pwa'
+          ? 58
+          : profile === 'reduced'
+            ? 68
+            : galaxy
+              ? 90
+              : 96;
   const minStarSize = legacy ? 2 : 1.5;
-  const nebulaBlur = legacy ? 48 : foldCover ? 82 : profile === 'full' || galaxy ? 104 : 72;
-  const animateOrbs = profile === 'full' || (galaxy && !foldCover);
-  const staticStarCount = legacy ? 32 : foldCover ? 40 : 48;
-  const shootingStarCount = legacy ? 3 : foldCover ? 5 : profile === 'full' ? 9 : galaxy ? 8 : 6;
+  const nebulaBlur = isXS ? 26 : legacy ? 48 : foldCover ? 82 : profile === 'full' || galaxy ? 104 : 72;
+  const animateOrbs = !isXS && (profile === 'full' || (galaxy && !foldCover));
+  const staticStarCount = isXS ? 20 : legacy ? 32 : foldCover ? 40 : 48;
+  const shootingStarCount = isXS ? 1 : legacy ? 3 : foldCover ? 5 : profile === 'full' ? 9 : galaxy ? 8 : 6;
+
 
   return (
     <div className="prism-aura-bg fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden>

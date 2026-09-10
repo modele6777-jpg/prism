@@ -372,7 +372,7 @@ export const playTTS = async (
 
     if (!data) {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
       const response = await fetch('/api/ai/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -496,8 +496,9 @@ export const playTTS = async (
           console.warn(`[TTS] Sequence chunk retry ${retryCount} error:`, retryErr);
         }
       }
-      // Never fall back to native robot speech in sequence mode to prevent abrupt voice change
-      return;
+      // Fall back to native browser speech synthesis to ensure the reading never abruptly cuts off
+      console.warn('[TTS] Sequence chunk API generation failed after retries, falling back to Native Browser Speech to avoid cutoff');
+      return playNativeBrowserSpeech(cleanText, wait, sessionToVerify, isSequenceChunk, voice);
     }
 
     console.warn('[TTS] API generation failed, falling back to Native Browser Speech...', error);
@@ -534,31 +535,15 @@ export const playTTSInChunks = async (
     const s = sentence.trim();
     if (!s) continue;
 
-    // If a single sentence exceeds maxChunkLength, split on commas or spaces
-    if (s.length > maxChunkLength) {
-      if (currentChunk.trim()) {
-        chunks.push(currentChunk.trim());
-        currentChunk = '';
-      }
-      const subClauses = s.split(/,\s*/);
-      let subCurrent = '';
-      for (const clause of subClauses) {
-        const nextSub = subCurrent ? `${subCurrent}, ${clause}` : clause;
-        if (subCurrent && nextSub.length > maxChunkLength) {
-          chunks.push(subCurrent.trim() + (/[.!?]$/.test(subCurrent) ? '' : '.'));
-          subCurrent = clause;
-        } else {
-          subCurrent = nextSub;
-        }
-      }
-      if (subCurrent.trim()) {
-        currentChunk = subCurrent.trim();
-      }
+    // Merge short punctuation or solitary numbers into surrounding text
+    const hasMeaningfulText = /[가-힣a-zA-Z0-9]{2,}/.test(s);
+    if (!hasMeaningfulText) {
+      currentChunk = currentChunk ? `${currentChunk} ${s}` : s;
       continue;
     }
 
     const next = currentChunk ? `${currentChunk} ${s}` : s;
-    if (currentChunk && next.length > maxChunkLength) {
+    if (currentChunk && (next.length > maxChunkLength || (currentChunk.length >= 70 && /[.!?]$/.test(currentChunk)))) {
       chunks.push(currentChunk.trim());
       currentChunk = s;
     } else {
@@ -611,15 +596,22 @@ export const playTTSInChunks = async (
       }
 
       const isLastChunk = i === chunks.length - 1;
-      await playTTS(
-        chunks[i],
-        voice,
-        true,
-        emotion,
-        sequenceSessionId,
-        !isLastChunk, // keep session alive until final chunk
-        cleanText,    // preserve activeFullText for UI synchronization
-      );
+      try {
+        await playTTS(
+          chunks[i],
+          voice,
+          true,
+          emotion,
+          sequenceSessionId,
+          !isLastChunk, // keep session alive until final chunk
+          cleanText,    // preserve activeFullText for UI synchronization
+        );
+      } catch (chunkErr) {
+        console.warn(`[TTS] Sequence chunk ${i + 1}/${chunks.length} error, recovering with fallback:`, chunkErr);
+        if (ttsState.activeSessionId === sequenceSessionId && isPlayingSequence) {
+          await playNativeBrowserSpeech(chunks[i], true, sequenceSessionId, !isLastChunk, voice).catch(() => {});
+        }
+      }
 
       if (ttsState.activeSessionId !== sequenceSessionId || !isPlayingSequence) {
         break;

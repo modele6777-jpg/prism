@@ -118,6 +118,28 @@ export function MuseSynergySection() {
   const [artworkImageUrl, setArtworkImageUrl] = useState<string>(MASTERS_LIST[0].imageUrl);
   const [isGeneratingArtwork, setIsGeneratingArtwork] = useState<boolean>(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState<boolean>(false);
+  const [savedToast, setSavedToast] = useState<boolean>(false);
+
+  const handleSaveToReBible = () => {
+    try {
+      const savedKey = 'lucy_rebible_inspirations';
+      const existing = JSON.parse(localStorage.getItem(savedKey) || '[]');
+      const newEntry = {
+        id: `rebible_${Date.now()}`,
+        master: selectedMaster.name,
+        piece: selectedMaster.piece,
+        insight: dialogueData.masterpieceInsight,
+        advice: dialogueData.masterDirectAdvice,
+        affirmation: dialogueData.inspirationAffirmation,
+        savedAt: new Date().toISOString(),
+      };
+      localStorage.setItem(savedKey, JSON.stringify([newEntry, ...existing].slice(0, 50)));
+      setSavedToast(true);
+      setTimeout(() => setSavedToast(false), 2500);
+    } catch (e) {
+      console.warn('Failed to save to Re:Bible:', e);
+    }
+  };
 
   const audioCtxRef = useRef<AudioContext | null>(null);
   const oscRef = useRef<OscillatorNode | null>(null);

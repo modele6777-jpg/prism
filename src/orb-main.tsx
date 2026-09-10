@@ -1,10 +1,11 @@
-import { StrictMode } from "react";
+import React, { StrictMode, useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";
 import OrbGatewayPage from "./pages/OrbGatewayPage";
 import { BigBangButton } from "./components/omniwarp/BigBangButton";
 import { BigBangExpansionOverlay } from "./components/omniwarp/BigBangExpansionOverlay";
 import InstallPrompt from "./components/InstallPrompt";
+import { OrbCosmicLoader } from "./components/OrbCosmicLoader";
 import "./index.css";
 import { initPerfMode, getSwUpdateIntervalMs } from "./lib/perfMode";
 
@@ -41,14 +42,42 @@ if (typeof window !== "undefined") {
   );
 }
 
-const rootElement = document.getElementById("root");
-if (rootElement) {
-  createRoot(rootElement).render(
-    <StrictMode>
+function OrbApp() {
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsReady(true);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!isReady) {
+    return (
+      <OrbCosmicLoader
+        fullScreen
+        message="크리스탈 오브 차원 궤도 동기화 중..."
+        subMessage="ASTRAL SCRYING SPHERE & CONSCIOUSNESS"
+      />
+    );
+  }
+
+  return (
+    <>
       <OrbGatewayPage />
       <BigBangButton />
       <BigBangExpansionOverlay />
       <InstallPrompt />
+    </>
+  );
+}
+
+const rootElement = document.getElementById("root");
+if (rootElement) {
+  createRoot(rootElement).render(
+    <StrictMode>
+      <OrbApp />
     </StrictMode>
   );
 }
+

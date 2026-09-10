@@ -13,6 +13,7 @@ import { getLocalDateKey } from '@/lib/rebibleStorage';
 import ReactMarkdown from 'react-markdown';
 import { LucyProTypewriter } from '@/components/LucyProTypewriter';
 import { ChatInsightsBoardModal } from '@/components/ChatInsightsBoardModal';
+import { LucyAuraLoader } from '@/components/LucyAuraLoader';
 import remarkGfm from 'remark-gfm';
 import { safeSessionStorage } from '@/utils/safeStorage';
 import { cleanUserMessageDisplay } from '@/utils/cleanMessage';
@@ -445,6 +446,15 @@ export default function LucyStandalonePage() {
   const isTTSActive = useTTSActive();
   const [isUserScrolledUp, setIsUserScrolledUp] = useState(false);
   const isUserScrolledUpRef = useRef(false);
+
+  // Dedicated Lucy entrance aura loader
+  const [isLucyReady, setIsLucyReady] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLucyReady(true);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
 
 
   // Determine User Nickname ('쭈' prioritized)
@@ -1039,6 +1049,16 @@ export default function LucyStandalonePage() {
     link.click();
     URL.revokeObjectURL(url);
   };
+
+  if (!isLucyReady) {
+    return (
+      <LucyAuraLoader
+        fullScreen
+        message="루시와 깊은 교감 조율 중..."
+        subMessage="CONSCIOUSNESS SYNERGY & INTUITION"
+      />
+    );
+  }
 
   return (
     <div className="h-full min-h-0 flex-1 w-full max-w-full overflow-hidden flex flex-col bg-[#FAFAF9] text-slate-800 font-sans select-text relative">

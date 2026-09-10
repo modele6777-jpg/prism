@@ -1013,6 +1013,43 @@ export default function TrinityApp() {
     setShuffledTrinityCards(shuffleCardDeck(TRINITY_CARDS));
   };
 
+// Global cached audio instances for instantaneous, non-blocking daily card chime
+let cachedDailyChimeContext: AudioContext | null = null;
+let cachedDailyChimeBuffer: AudioBuffer | null = null;
+
+function playDailyCardChimeAsync() {
+  if (typeof window === 'undefined') return;
+  // Non-blocking deferred audio playback to keep UI thread 100% fluid
+  setTimeout(() => {
+    try {
+      const AudioCtxClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtxClass) return;
+      if (!cachedDailyChimeContext) {
+        cachedDailyChimeContext = new AudioCtxClass();
+      }
+      if (cachedDailyChimeContext.state === 'suspended') {
+        cachedDailyChimeContext.resume().catch(() => {});
+      }
+      if (!cachedDailyChimeBuffer) {
+        const sampleRate = 8000;
+        const duration = 0.6;
+        const numSamples = Math.floor(sampleRate * duration);
+        const buffer = new Float32Array(numSamples);
+        for (let i = 0; i < numSamples; i++) {
+          const t = i / sampleRate;
+          buffer[i] = (Math.sin(2 * Math.PI * 528 * t) + 0.5 * Math.sin(2 * Math.PI * 792 * t)) * 0.22 * Math.exp(-5 * t);
+        }
+        cachedDailyChimeBuffer = cachedDailyChimeContext.createBuffer(1, numSamples, sampleRate);
+        cachedDailyChimeBuffer.getChannelData(0).set(buffer);
+      }
+      const source = cachedDailyChimeContext.createBufferSource();
+      source.buffer = cachedDailyChimeBuffer;
+      source.connect(cachedDailyChimeContext.destination);
+      source.start();
+    } catch (_) {}
+  }, 0);
+}
+
   const selectDailyTarotCard = (card: TarotCard, idx: number) => {
     const uid = firebaseUser?.uid || "guest";
     const today = getTodayDateKey();
@@ -1027,23 +1064,10 @@ export default function TrinityApp() {
         navigator.vibrate([25, 45, 30]);
       }
     } catch (_) {}
-    try {
-      const sampleRate = 8000;
-      const duration = 0.8;
-      const numSamples = sampleRate * duration;
-      const buffer = new Float32Array(numSamples);
-      for (let i = 0; i < numSamples; i++) {
-        const t = i / sampleRate;
-        buffer[i] = (Math.sin(2 * Math.PI * 528 * t) + 0.5 * Math.sin(2 * Math.PI * 792 * t)) * 0.25 * Math.exp(-4 * t);
-      }
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const audioBuffer = audioCtx.createBuffer(1, buffer.length, sampleRate);
-      audioBuffer.getChannelData(0).set(buffer);
-      const source = audioCtx.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(audioCtx.destination);
-      source.start();
-    } catch (e) {}
+
+    // Instant non-blocking chime execution
+    playDailyCardChimeAsync();
+
     window.dispatchEvent(new Event("unlock-bgm-audio"));
     setSelectedCardIdx(idx);
     setDailyDrawnCard(card);

@@ -1,8 +1,9 @@
-export type PerfProfile = 'full' | 'galaxy' | 'pwa' | 'reduced' | 'legacy';
+export type PerfProfile = 'full' | 'galaxy' | 'iphonexs' | 'pwa' | 'reduced' | 'legacy';
 
 let cachedProfile: PerfProfile | null = null;
 let cachedGalaxyS23: boolean | null = null;
 let cachedGalaxyFoldSe: boolean | null = null;
+let cachedIPhoneXS: boolean | null = null;
 
 export function isIOSDevice(): boolean {
   if (typeof navigator === 'undefined') return false;
@@ -29,6 +30,36 @@ export function isStandalonePWA(): boolean {
     (window.navigator as Navigator & { standalone?: boolean }).standalone === true
   );
 }
+
+export function getDevicePerfOverride(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const paramDev = params.get('device') || params.get('perf');
+    if (paramDev) return paramDev.toLowerCase();
+    if (params.has('iphonexs')) return 'iphonexs';
+    return window.localStorage?.getItem('prism_device_perf_override') || null;
+  } catch {
+    return null;
+  }
+}
+
+export function setDevicePerfOverride(override: 'iphonexs' | 'galaxy' | 'auto' | null): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (override && override !== 'auto') {
+      window.localStorage?.setItem('prism_device_perf_override', override);
+    } else {
+      window.localStorage?.removeItem('prism_device_perf_override');
+    }
+    cachedProfile = null;
+    cachedIPhoneXS = null;
+    cachedGalaxyS23 = null;
+    cachedGalaxyFoldSe = null;
+    initPerfMode();
+  } catch {}
+}
+
 
 function isFoldableInnerScreen(): boolean {
   if (typeof window === 'undefined' || !isAndroidDevice()) return false;
@@ -109,11 +140,25 @@ export function isGalaxyPremiumClass(): boolean {
 }
 
 function resolvePerfProfile(): PerfProfile {
+  if (isIPhoneXSClass()) return 'iphonexs';
   if (isNarrowPhone() && isIOSDevice()) return 'legacy';
   if (isGalaxyFoldSeClass() || isGalaxyS23Class()) return 'galaxy';
   if (isStandalonePWA() && isMobileDevice()) return 'pwa';
   if (isStandalonePWA() || isMobileDevice()) return 'reduced';
   return 'full';
+}
+
+function applyIPhoneXSDeviceFlags(): void {
+  if (typeof document === 'undefined') return;
+
+  const isXS = isIPhoneXSClass();
+  document.documentElement.classList.toggle('perf-iphone-xs', isXS);
+  document.documentElement.classList.toggle('prism-iphone-xs', isXS || isNarrowPhone());
+  if (isXS) {
+    document.documentElement.dataset.device = 'iphone-xs';
+    document.documentElement.dataset.narrow = 'true';
+    document.documentElement.classList.add('perf-reduced');
+  }
 }
 
 function applyGalaxyDeviceFlags(): void {
@@ -131,7 +176,7 @@ function applyGalaxyDeviceFlags(): void {
   } else if (s23) {
     document.documentElement.dataset.device = 'galaxy-s23';
     document.documentElement.dataset.foldCover = '';
-  } else {
+  } else if (!isIPhoneXSClass()) {
     document.documentElement.dataset.device = '';
     document.documentElement.dataset.foldCover = '';
   }
@@ -147,18 +192,23 @@ export function initPerfMode(): PerfProfile {
 
   document.documentElement.dataset.perf = profile;
 
-  if (profile === 'reduced' || profile === 'pwa' || profile === 'legacy') {
+  if (profile === 'reduced' || profile === 'pwa' || profile === 'legacy' || profile === 'iphonexs') {
     document.documentElement.classList.add('perf-reduced');
   }
-  if (profile === 'legacy') {
+  if (profile === 'legacy' || profile === 'iphonexs') {
     document.documentElement.classList.add('perf-legacy');
     document.documentElement.classList.add('prism-iphone-xs');
     document.documentElement.dataset.narrow = 'true';
+  }
+  if (profile === 'iphonexs') {
+    document.documentElement.classList.add('perf-iphone-xs');
+    document.documentElement.dataset.device = 'iphone-xs';
   }
   if (isStandalonePWA()) {
     document.documentElement.classList.add('pwa-standalone');
   }
 
+  applyIPhoneXSDeviceFlags();
   applyGalaxyDeviceFlags();
 
   return profile;
@@ -170,7 +220,7 @@ export function getPerfProfile(): PerfProfile {
 
 export function isPerfReduced(): boolean {
   const profile = getPerfProfile();
-  return profile === 'reduced' || profile === 'pwa' || profile === 'legacy';
+  return profile === 'reduced' || profile === 'pwa' || profile === 'legacy' || profile === 'iphonexs';
 }
 
 export function isPwaStandalone(): boolean {
@@ -178,7 +228,8 @@ export function isPwaStandalone(): boolean {
 }
 
 export function isLegacyMobile(): boolean {
-  return getPerfProfile() === 'legacy';
+  const profile = getPerfProfile();
+  return profile === 'legacy' || profile === 'iphonexs';
 }
 
 export function isGalaxyPerfProfile(): boolean {
@@ -187,7 +238,7 @@ export function isGalaxyPerfProfile(): boolean {
 
 export function getMaxSynthVoices(): number {
   const profile = getPerfProfile();
-  if (profile === 'legacy') return 4;
+  if (profile === 'iphonexs' || profile === 'legacy') return 4;
   if (isGalaxyFoldSeClass()) return isFoldCoverScreen() ? 10 : 18;
   if (isGalaxyS23Class()) return 12;
   if (profile === 'pwa') return 6;
@@ -197,7 +248,7 @@ export function getMaxSynthVoices(): number {
 
 export function getAutoSyncIntervalMs(): number {
   const profile = getPerfProfile();
-  if (profile === 'legacy') return 10 * 60 * 1000;
+  if (profile === 'iphonexs' || profile === 'legacy') return 10 * 60 * 1000;
   if (isGalaxyFoldSeClass()) return isFoldCoverScreen() ? 7 * 60 * 1000 : 5 * 60 * 1000;
   if (isGalaxyS23Class()) return 6 * 60 * 1000;
   if (profile === 'pwa') return 8 * 60 * 1000;
@@ -205,21 +256,21 @@ export function getAutoSyncIntervalMs(): number {
 }
 
 export function getHubMetricsIntervalMs(): number {
-  if (isLegacyMobile()) return 120_000;
+  if (isIPhoneXSClass() || isLegacyMobile()) return 120_000;
   if (isGalaxyFoldSeClass()) return isFoldCoverScreen() ? 105_000 : 75_000;
   if (isGalaxyS23Class()) return 90_000;
   return 60_000;
 }
 
 export function getSyncPendingPollMs(): number {
-  if (isLegacyMobile()) return 10_000;
+  if (isIPhoneXSClass() || isLegacyMobile()) return 10_000;
   if (isGalaxyFoldSeClass()) return isFoldCoverScreen() ? 8_000 : 5_000;
   if (isGalaxyS23Class()) return 7_000;
   return 5_000;
 }
 
 export function getSwUpdateIntervalMs(): number {
-  if (isLegacyMobile()) return 45 * 60 * 1000;
+  if (isIPhoneXSClass() || isLegacyMobile()) return 45 * 60 * 1000;
   if (isGalaxyFoldSeClass()) return isFoldCoverScreen() ? 40 * 60 * 1000 : 30 * 60 * 1000;
   if (isGalaxyS23Class()) return 35 * 60 * 1000;
   if (isPwaStandalone()) return 30 * 60 * 1000;
@@ -228,6 +279,7 @@ export function getSwUpdateIntervalMs(): number {
 
 export function shouldUsePageTransitions(): boolean {
   const profile = getPerfProfile();
+  if (profile === 'iphonexs' || profile === 'legacy') return false;
   if (profile === 'full' || profile === 'galaxy') {
     if (isGalaxyFoldSeClass() && isFoldCoverScreen()) return false;
     return true;
@@ -240,7 +292,7 @@ export function shouldMountBgMusicPlayer(): boolean {
 }
 
 export function shouldPreloadBgmAudio(): boolean {
-  return !isLegacyMobile();
+  return !isIPhoneXSClass() && !isLegacyMobile();
 }
 
 const NARROW_PHONE_MAX_WIDTH = 390;
@@ -252,8 +304,44 @@ export function isNarrowPhone(): boolean {
   return window.innerWidth <= NARROW_PHONE_MAX_WIDTH;
 }
 
+/**
+ * iPhone XS detection (Apple A12 Bionic, 5.8" Super Retina OLED, 375x812 pt @ 3x DPR).
+ * Supports explicit override ('?device=iphonexs', localStorage, or physical dimensions).
+ */
 export function isIPhoneXSClass(): boolean {
-  return isNarrowPhone() && isIOSDevice();
+  if (cachedIPhoneXS !== null) return cachedIPhoneXS;
+  if (typeof window === 'undefined') return false;
+
+  const override = getDevicePerfOverride();
+  if (override === 'iphonexs') {
+    cachedIPhoneXS = true;
+    return true;
+  }
+  if (override && override !== 'iphonexs' && override !== 'auto') {
+    cachedIPhoneXS = false;
+    return false;
+  }
+
+  const isIOS = isIOSDevice();
+  if (!isIOS) {
+    cachedIPhoneXS = false;
+    return false;
+  }
+
+  // Exact screen physical resolution of iPhone XS / X / 11 Pro: 375 x 812 with devicePixelRatio = 3
+  const sw = window.screen?.width || window.innerWidth;
+  const sh = window.screen?.height || window.innerHeight;
+  const dpr = window.devicePixelRatio || 1;
+  const is375x812 = (sw === 375 && sh === 812) || (sw === 812 && sh === 375);
+
+  if (is375x812 && Math.round(dpr) === 3) {
+    cachedIPhoneXS = true;
+    return true;
+  }
+
+  // General iPhone with narrow screen (iPhone XS, 11 Pro, SE 2/3, 12/13 Mini)
+  cachedIPhoneXS = isNarrowPhone();
+  return cachedIPhoneXS;
 }
 
 export function initNarrowPhoneClass(): void {
@@ -262,11 +350,13 @@ export function initNarrowPhoneClass(): void {
   const apply = () => {
     cachedGalaxyS23 = null;
     cachedGalaxyFoldSe = null;
+    cachedIPhoneXS = null;
 
     const narrow = isNarrowPhone();
     document.documentElement.classList.toggle('prism-iphone-xs', narrow);
     document.documentElement.dataset.narrow = narrow ? 'true' : 'false';
 
+    applyIPhoneXSDeviceFlags();
     applyGalaxyDeviceFlags();
   };
 

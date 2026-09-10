@@ -101,6 +101,7 @@ type DeckWheelCardProps = {
 // Ultra-lightweight card memoization with physical drawing lift effect & celestial oracle back design
 const DeckWheelCard = React.memo(
   function DeckWheelCard({
+    card,
     positionIdx,
     radius,
     offset,
@@ -120,12 +121,13 @@ const DeckWheelCard = React.memo(
 
     return (
       <div
-        className={`absolute left-1/2 top-1/2 w-16 h-26 sm:w-20 sm:h-32 md:w-28 md:h-44 rounded-lg sm:rounded-xl md:rounded-2xl flex items-center justify-center pointer-events-none select-none transition-all duration-200 overflow-hidden ${
+        data-card-id={card.id}
+        className={`absolute left-1/2 top-1/2 w-16 h-26 sm:w-20 sm:h-32 md:w-28 md:h-44 rounded-lg sm:rounded-xl md:rounded-2xl flex items-center justify-center select-none transition-[transform,opacity] duration-150 ease-out overflow-hidden cursor-pointer ${
           isPicked
-            ? 'opacity-0 scale-50 pointer-events-none'
+            ? 'opacity-0 scale-75 pointer-events-none'
             : isHovered
-            ? 'border-2 border-amber-300 ring-1 ring-yellow-400/60 shadow-[0_0_20px_rgba(251,191,36,0.5)] z-[300] scale-[1.03] bg-gradient-to-b from-indigo-950 via-zinc-950 to-black'
-            : 'border border-amber-500/40 shadow-lg bg-gradient-to-b from-indigo-950 via-zinc-950 to-black'
+            ? 'pointer-events-auto border-2 border-amber-300 ring-1 ring-yellow-400/60 shadow-lg shadow-amber-500/25 z-[300] scale-[1.04] bg-gradient-to-b from-indigo-950 via-zinc-950 to-black'
+            : 'pointer-events-auto border border-amber-500/40 shadow-md bg-gradient-to-b from-indigo-950 via-zinc-950 to-black'
         }`}
         style={{
           transform: `translate3d(-50%, -50%, 0) translate3d(${x}px, ${y}px, 0) rotate(${cardRotate}deg) ${isHovered ? 'translateY(-5px)' : ''}`,
@@ -140,7 +142,6 @@ const DeckWheelCard = React.memo(
           <>
             {/* 1. Subtle cosmic shimmer texture */}
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(99,102,241,0.15),transparent_70%)] pointer-events-none" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(245,158,11,0.08),transparent_60%)] pointer-events-none" />
 
             {/* 2. Outer filigree gold border */}
             <div className={`absolute inset-1 sm:inset-1.5 border rounded-md sm:rounded-lg md:rounded-xl pointer-events-none transition-colors ${isHovered ? 'border-yellow-400/80' : 'border-amber-400/30'}`} />
@@ -161,15 +162,20 @@ const DeckWheelCard = React.memo(
                 {/* Circular ring */}
                 <div className={`absolute inset-1 rounded-full border transition-all ${isHovered ? 'border-yellow-300/80' : 'border-amber-500/35'}`} />
                 {/* Center core */}
-                <div className={`w-5 h-5 sm:w-7 sm:h-7 md:w-9 md:h-9 rounded-full border flex items-center justify-center shadow-lg relative z-10 transition-all ${
+                <div className={`w-5 h-5 sm:w-7 sm:h-7 md:w-9 md:h-9 rounded-full border flex items-center justify-center relative z-10 transition-all ${
                   isHovered
-                    ? 'border-yellow-300 bg-gradient-to-tr from-amber-500/40 to-yellow-300/40 scale-110 shadow-[0_0_12px_rgba(250,204,21,0.6)]'
+                    ? 'border-yellow-300 bg-gradient-to-tr from-amber-500/40 to-yellow-300/40 scale-110 shadow-[0_0_10px_rgba(250,204,21,0.5)]'
                     : 'border-amber-400/40 bg-zinc-950/90 shadow-inner'
                 }`}>
-                  <Sparkles
-                    className={isHovered ? 'text-yellow-100 drop-shadow-[0_0_10px_rgba(254,240,138,0.9)]' : 'text-amber-400 drop-shadow-[0_0_6px_rgba(245,158,11,0.6)]'}
-                    size={isMobile ? 10 : 16}
-                  />
+                  {/* Ultra-lightweight inline star SVG to eliminate 78 Lucide component overhead */}
+                  <svg
+                    viewBox="0 0 24 24"
+                    className={`transition-colors ${isHovered ? 'text-yellow-100' : 'text-amber-400'}`}
+                    style={{ width: isMobile ? 10 : 14, height: isMobile ? 10 : 14 }}
+                    fill="currentColor"
+                  >
+                    <path d="M12 2l2.4 7.2h7.6l-6.2 4.5 2.4 7.3-6.2-4.5-6.2 4.5 2.4-7.3-6.2-4.5h7.6z" />
+                  </svg>
                 </div>
               </div>
 
@@ -182,7 +188,7 @@ const DeckWheelCard = React.memo(
             </div>
 
             {/* 4. Diagonal light-glimmer sweep */}
-            <div className={`absolute -inset-[100%] bg-gradient-to-tr from-transparent via-white/10 to-transparent rotate-45 pointer-events-none transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`} />
+            <div className={`absolute -inset-[100%] bg-gradient-to-tr from-transparent via-white/10 to-transparent rotate-45 pointer-events-none transition-opacity duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'}`} />
           </>
         )}
       </div>
@@ -259,8 +265,11 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
 
   const [selectedEntries, setSelectedEntries] = useState<Array<{ card: TarotCard; reversed: boolean; touchMetadata?: TarotPhysicalMetadata | null }>>([]);
   const [touchStatusText, setTouchStatusText] = useState<string | null>(null);
+  const [isFinishing, setIsFinishing] = useState(false);
   const touchAnalyzerRef = useRef(new TarotTouchAnalyzer());
   const touchTimerRef = useRef<number | null>(null);
+  const touchedCardIdRef = useRef<string | null>(null);
+  const touchStartTimeRef = useRef<number>(0);
   const selectedIds = useMemo(
     () => selectedEntries.map((entry) => entry.card.id),
     [selectedEntries],
@@ -285,6 +294,23 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
   const rotationRef = useRef(Math.floor(Math.random() * 360));
   const hadMovedRef = useRef(false);
   const momentumRafRef = useRef<number | null>(null);
+
+  // Preload cards in the deck asynchronously to eliminate image decoding lag on card selection
+  useEffect(() => {
+    if (typeof window === 'undefined' || deck.length === 0) return;
+    const urls = deck.slice(0, 24).map((c) => getTarotCardImageUrl(c)).filter(Boolean);
+    const preload = () => {
+      urls.forEach((u) => {
+        const img = new Image();
+        img.src = u;
+      });
+    };
+    if ('requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(preload);
+    } else {
+      setTimeout(preload, 100);
+    }
+  }, [deck]);
 
   const buildWheelTransform = useCallback(
     (deg: number) => `translate3d(-50%, calc(-50% + ${yOffset}px), 0) rotate(${deg}deg)`,
@@ -378,21 +404,35 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
     }
   }, [wheelReady, applyRotation]);
 
-  // Fast O(1) candidate lookup with circular unwrapping
+  // Fast direct hit-test + O(1) candidate lookup with circular unwrapping
   const findTappedCard = useCallback(
     (clientX: number, clientY: number): TarotCard | null => {
       if (!containerRef.current || deck.length === 0) return null;
 
+      // 1. Instant direct DOM hit test
+      try {
+        const el = document.elementFromPoint(clientX, clientY);
+        const cardEl = el?.closest('[data-card-id]');
+        if (cardEl) {
+          const cardId = cardEl.getAttribute('data-card-id');
+          if (cardId && !selectedIds.includes(cardId)) {
+            const found = deck.find((c) => c.id === cardId);
+            if (found) return found;
+          }
+        }
+      } catch (_) {}
+
+      // 2. High-precision geometric fallback
       const rect = containerRef.current.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2 + yOffset;
       const dx = clientX - centerX;
       const dy = clientY - centerY;
       const dist = Math.hypot(dx, dy);
-      const band = isMobile ? 220 : 320;
+      const band = isMobile ? 260 : 360;
 
       // Ensure tap / hover is in the broad card ring band
-      if (dist < Math.max(60, radius - band) || dist > radius + band) return null;
+      if (dist < Math.max(40, radius - band) || dist > radius + band) return null;
 
       const pointerAngle = Math.atan2(dy, dx);
       const rotationRad = (rotationRef.current * Math.PI) / 180;
@@ -407,13 +447,15 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
 
       const centerIdx = Math.round(norm / step) % total;
 
-      // Check centerIdx and nearby neighbors (-2 to +2), pick closest unpicked card within threshold
+      // Check centerIdx and nearby neighbors (-3 to +3)
       const candidateIndices = [
         centerIdx,
         (centerIdx - 1 + total) % total,
         (centerIdx + 1) % total,
         (centerIdx - 2 + total) % total,
         (centerIdx + 2) % total,
+        (centerIdx - 3 + total) % total,
+        (centerIdx + 3) % total,
       ];
 
       let bestCard: TarotCard | null = null;
@@ -432,13 +474,15 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
         }
       }
 
-      return bestDiff < Math.max(0.20, step * 1.6) ? bestCard : null;
+      return bestDiff < Math.max(0.28, step * 2.2) ? bestCard : null;
     },
     [deck, isMobile, radius, selectedIds, yOffset],
   );
 
   const handleSelect = useCallback(
     (cardToSelect: TarotCard, touchMetadata?: TarotPhysicalMetadata | null) => {
+      if (isFinishing || selectedEntries.length >= maxCards) return;
+
       // Tactile haptic vibration on mobile
       try {
         if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
@@ -457,6 +501,8 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
         const isReversed = allowReversed ? rollTarotReversed() : false;
         const next = [...prev, { card: cardToSelect, reversed: isReversed, touchMetadata }];
         if (next.length === maxCards) {
+          setIsFinishing(true);
+          // Allow final card animation to smoothly settle before completing
           window.setTimeout(() => {
             const primaryMetadata = next.find((n) => n.touchMetadata)?.touchMetadata || touchMetadata || null;
             onComplete(
@@ -467,12 +513,12 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
               })),
               primaryMetadata,
             );
-          }, 20);
+          }, 450);
         }
         return next;
       });
     },
-    [allowReversed, maxCards, onComplete],
+    [allowReversed, isFinishing, maxCards, onComplete, selectedEntries.length],
   );
 
   // Quick Spin & Shuffle Controls (Strictly shuffles ONLY remaining unpicked cards)
@@ -494,7 +540,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
 
   const handleAutoPick = () => {
     const unpicked = deck.filter((card) => !selectedIds.includes(card.id));
-    if (unpicked.length === 0 || selectedEntries.length >= maxCards) return;
+    if (unpicked.length === 0 || selectedEntries.length >= maxCards || isFinishing) return;
     const randomCard = unpicked[Math.floor(Math.random() * unpicked.length)];
     if (randomCard) {
       handleSelect(randomCard);
@@ -503,19 +549,26 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
 
   // High performance Pointer & Mobile Touch handling
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isFinishing) return;
     stopMomentum();
     if (!containerRef.current) return;
 
     // 파동 측정 시작
     touchAnalyzerRef.current.startTracking(e.clientX, e.clientY);
+    touchStartTimeRef.current = performance.now();
 
-    // 160ms 이상 머무르면 파동 측정 상태 문구 표시 (빠른 탭/드래그시에는 불필요한 즉시 리렌더링 회피)
+    // Direct card element identification under touch pointer
+    const targetEl = e.target as HTMLElement | null;
+    const cardEl = targetEl?.closest('[data-card-id]');
+    touchedCardIdRef.current = cardEl?.getAttribute('data-card-id') || null;
+
+    // 180ms 이상 머무르면 파동 측정 상태 문구 표시 (빠른 탭/드래그시에는 불필요한 즉시 리렌더링 회피)
     if (touchTimerRef.current) window.clearTimeout(touchTimerRef.current);
     touchTimerRef.current = window.setTimeout(() => {
       if (activePointerIdRef.current !== null && !isDraggingRef.current) {
         setTouchStatusText("파동 측정 중... (손끝을 가만히 얹고 집중하세요)");
       }
-    }, 160);
+    }, 180);
 
     if (e.pointerType === 'touch') {
       try {
@@ -538,7 +591,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || isFinishing) return;
 
     // 파동 지점 기록 (손끝 미세 떨림/망설임 계산용)
     touchAnalyzerRef.current.recordPoint(e.clientX, e.clientY);
@@ -567,9 +620,13 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
       e.clientY - startPointerPosRef.current.y,
     );
 
-    if (!isDraggingRef.current && moveDist > 5) {
+    // Realistic touch drag threshold to prevent micro-jitter during taps from cancelling selection
+    const dragThreshold = e.pointerType === 'touch' ? 14 : 8;
+
+    if (!isDraggingRef.current && moveDist > dragThreshold) {
       isDraggingRef.current = true;
       hadMovedRef.current = true;
+      touchedCardIdRef.current = null;
       if (touchTimerRef.current) {
         window.clearTimeout(touchTimerRef.current);
         touchTimerRef.current = null;
@@ -616,6 +673,12 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
 
     const wasDragging = isDraggingRef.current;
     const hadMoved = hadMovedRef.current;
+    const elapsed = performance.now() - touchStartTimeRef.current;
+    const totalDist = Math.hypot(
+      e.clientX - startPointerPosRef.current.x,
+      e.clientY - startPointerPosRef.current.y,
+    );
+
     isDraggingRef.current = false;
     activePointerIdRef.current = null;
     setHoveredCardId(null);
@@ -630,17 +693,19 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
       } catch (_) {}
     }
 
-    if (wasDragging) {
-      touchAnalyzerRef.current.reset();
-      setTouchStatusText(null);
-      // If user flicked with velocity, apply smooth momentum
-      if (Math.abs(velocityRef.current) > 0.08) {
-        startMomentum(velocityRef.current);
+    // Natural tap detection: if user tapped quickly (< 380ms) and within 18px radius, guarantee tap selection
+    const isIntentionalTap = (!hadMoved && !wasDragging) || (elapsed < 380 && totalDist < 18);
+
+    if (isIntentionalTap && !isFinishing) {
+      let tapped: TarotCard | null = null;
+      if (touchedCardIdRef.current) {
+        tapped = deck.find((c) => c.id === touchedCardIdRef.current) || null;
       }
-    } else if (!hadMoved) {
-      // Direct tap selection
-      const tapped = findTappedCard(e.clientX, e.clientY);
-      if (tapped !== null) {
+      if (!tapped) {
+        tapped = findTappedCard(e.clientX, e.clientY);
+      }
+
+      if (tapped !== null && !selectedIds.includes(tapped.id)) {
         const payload = touchAnalyzerRef.current.endTrackingAndBuildPayload(
           `${tapped.nameKo} (${tapped.name})`
         );
@@ -649,10 +714,15 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
         touchAnalyzerRef.current.reset();
         setTouchStatusText(null);
       }
-    } else {
+    } else if (wasDragging) {
       touchAnalyzerRef.current.reset();
       setTouchStatusText(null);
+      // If user flicked with velocity, apply smooth momentum
+      if (Math.abs(velocityRef.current) > 0.08) {
+        startMomentum(velocityRef.current);
+      }
     }
+    touchedCardIdRef.current = null;
   };
 
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
@@ -830,10 +900,11 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
                     </div>
                   ) : (
                     <motion.div
-                      initial={{ scale: 0.25, y: 90, opacity: 0, rotateZ: i % 2 === 0 ? -12 : 12 }}
+                      initial={{ scale: 0.25, y: 70, opacity: 0, rotateZ: i % 2 === 0 ? -8 : 8 }}
                       animate={{ scale: 1, y: 0, opacity: 1, rotateZ: 0 }}
-                      transition={{ type: 'spring', stiffness: 280, damping: 20 }}
-                      className="absolute inset-0 border-2 border-yellow-400 rounded-xl md:rounded-2xl flex flex-col justify-between p-1.5 sm:p-2 md:p-3 text-center shadow-[0_0_30px_rgba(234,179,8,0.5)] overflow-hidden"
+                      transition={{ type: 'spring', stiffness: 320, damping: 24 }}
+                      className="absolute inset-0 border-2 border-yellow-400 rounded-xl md:rounded-2xl flex flex-col justify-between p-1.5 sm:p-2 md:p-3 text-center shadow-lg shadow-yellow-500/20 overflow-hidden"
+                      style={{ contain: 'layout style paint' }}
                     >
                       <img
                         src={getTarotCardImageUrl(drawnCard!)}
@@ -841,7 +912,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
                         loading="eager"
                         decoding="async"
                         style={{ transform: entry.reversed ? 'rotate(180deg)' : undefined }}
-                        className="absolute inset-0 w-full h-full object-cover z-0 rounded-xl md:rounded-2xl opacity-90 transition-opacity duration-300 group-hover:opacity-100"
+                        className="absolute inset-0 w-full h-full object-cover z-0 rounded-xl md:rounded-2xl opacity-90 transition-opacity duration-200 group-hover:opacity-100"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
                         }}
@@ -861,7 +932,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
                         })}
                       </div>
 
-                      <div className="text-center z-20 flex flex-col gap-0.5 shrink-0 bg-black/70 py-0.5 sm:py-1 rounded-lg border border-yellow-500/20 backdrop-blur-[1px]">
+                      <div className="text-center z-20 flex flex-col gap-0.5 shrink-0 bg-black/80 py-0.5 sm:py-1 rounded-lg border border-yellow-500/20">
                         <span className="text-[8px] sm:text-[9px] md:text-[11px] font-bold text-yellow-300 block leading-tight">
                           {drawnCard!.nameKo}
                         </span>

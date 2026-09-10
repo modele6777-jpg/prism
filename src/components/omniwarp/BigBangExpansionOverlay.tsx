@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { BigBangCommitEventDetail } from '@/lib/omniWarp/types';
+import { isIPhoneXSClass, isPerfReduced } from '@/lib/perfMode';
 
 interface Particle {
   x: number;
@@ -36,7 +37,8 @@ export function BigBangExpansionOverlay() {
         const isWormhole = detail.phase === 'wormhole';
 
         particlesRef.current = [];
-        const count = isBlackhole ? 240 : isWormhole ? 220 : isWhitehole ? 170 : 130;
+        const countScale = isIPhoneXSClass() ? 0.45 : isPerfReduced() ? 0.6 : 1;
+        const count = Math.round((isBlackhole ? 240 : isWormhole ? 220 : isWhitehole ? 170 : 130) * countScale);
         for (let i = 0; i < count; i++) {
           const angle = Math.random() * Math.PI * 2;
           const speed = isWormhole
