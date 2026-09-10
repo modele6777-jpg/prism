@@ -11,6 +11,11 @@ import {
 } from '@/lib/omniWarp/wormholeSpectrum';
 import { getTossRule } from '@/lib/prismTossRegistry';
 import { getRandomWormholeDestination, resolveCanonicalPath, isValidPrismPath } from '@/lib/prismRouteRegistry';
+import {
+  commitShuffledWormholeDestination,
+  peekShuffledWormholeDestination,
+  resetActiveWormholePeek,
+} from '@/lib/omniWarp/wormholeShuffleEngine';
 import { omniWarpAudio } from '@/lib/omniWarp/omniWarpAudio';
 import { triggerHaptic, startBlackHoleContinuousHaptic, stopBlackHoleContinuousHaptic } from '@/lib/omniWarp/omniWarpHaptics';
 import { safeSessionStorage } from '@/utils/safeStorage';
@@ -302,6 +307,9 @@ export function BigBangButton() {
     lastStateUpdateTimeRef.current = now;
     lastHoleRef.current = 'whitehole';
 
+    // 신규 터치 시작 시 웜홀 후보 캐시 초기화
+    resetActiveWormholePeek();
+
     // 터치 시작 시 단 한 번만 직렬화하여 캐싱 (매 16ms마다 I/O 파싱 방지)
     const context = serializeCurrentView(location);
     cachedContextRef.current = context;
@@ -392,6 +400,7 @@ export function BigBangButton() {
       setGauge(0);
       setDurationMs(0);
       setIsAborted(false);
+      resetActiveWormholePeek();
       return;
     }
 
@@ -543,13 +552,12 @@ export function BigBangButton() {
     }
 
     // B. 🌀 만약 사용자가 홀드하다가 버튼영역내(제자리영역 제외, dist >= 20 && isWithinButton)에서 뗀 경우:
-    // -> <웜홀> 발동! 루시채팅과 오브사이트를 제외한 지금 앱 내부 실존 모든 페이지로 임의 도약!
+    // -> <웜홀> 발동! 당일 셔플 순환(하루 1번 자동 초기화, 한 바퀴 완주 시까지 미방문 우선 도약)
     if (dist >= 20 && isWithinButton) {
       triggerHaptic('wormhole');
       omniWarpAudio.playWormhole();
 
-      const randomDest = getRandomWormholeDestination(location);
-      const safePath = resolveCanonicalPath(randomDest.path);
+      const { dest: randomDest, safePath, stats } = commitShuffledWormholeDestination(location);
 
       // 🛡️ 실존 페이지 검증: 존재하지 않는 경로 및 프리즘 홈('/') 이동 원천 차단
       if (!isValidPrismPath(safePath) || safePath === '/' || safePath === '/universe' || safePath === '/ecpr' || safePath === '/synergy' || safePath === '/aegis') {
@@ -573,8 +581,10 @@ export function BigBangButton() {
                 icon: randomDest.icon,
                 runeSymbol: randomDest.runeSymbol,
                 runeName: randomDest.runeName,
-                previewLabel: `[웜홀 임의 도약] 🌀 ${randomDest.runeSymbol} ${randomDest.name}`,
-                previewDescription: `시공간 웜홀을 통과하여 [${randomDest.name} · ${randomDest.subName}]으로 차원 도약합니다.`,
+                previewLabel: `[웜홀 셔플 도약 · ${stats.visitedCount}/${stats.totalCount}] 🌀 ${randomDest.runeSymbol} ${randomDest.name}`,
+                previewDescription: stats.isFullCycleCompleted
+                  ? `시공간 웜홀을 통과하여 [${randomDest.name} · ${randomDest.subName}]으로 도약합니다. (🎉 오늘의 1바퀴 완주! 새로운 셔플 순환)`
+                  : `시공간 웜홀을 통과하여 [${randomDest.name} · ${randomDest.subName}]으로 차원 도약합니다. (오늘 탐험: ${stats.visitedCount}/${stats.totalCount})`,
               },
               context,
               metrics: { ...metrics, phase: 'wormhole' },
@@ -591,6 +601,13 @@ export function BigBangButton() {
           navigate(safePath);
           window.dispatchEvent(new CustomEvent('prism-navigate', { detail: { path: safePath } }));
           window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: safePath } }));
+          if (safePath.includes('?tab=')) {
+            const tabName = safePath.split('?tab=')[1]?.split('&')[0];
+            if (tabName) {
+              sessionStorage.setItem('prism_target_tab', tabName);
+              window.dispatchEvent(new CustomEvent('prism-tab-change', { detail: { tab: tabName } }));
+            }
+          }
         }
       }, 240);
 

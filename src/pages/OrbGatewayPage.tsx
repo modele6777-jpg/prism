@@ -18,10 +18,12 @@ import {
   Download,
 } from "lucide-react";
 import { sacredAudio } from "@/lib/omniWarp/sacredAudio";
+import { omniWarpAudio } from "@/lib/omniWarp/omniWarpAudio";
 import { triggerHaptic } from "@/lib/omniWarp/omniWarpHaptics";
 import { playTTS, stopTTS, useTTSActive } from "@/utils/tts";
-import { getPendingPrismToss, clearPrismToss } from "@/lib/prismToss";
+import { sendPrismToss, getPendingPrismToss, clearPrismToss } from "@/lib/prismToss";
 import { startBinauralBeat, stopBinauralBeat } from "@/lib/binauralBeats";
+import { resolveCanonicalPath } from "@/lib/prismRouteRegistry";
 
 import { CrystalOrbIcon } from "@/components/icons/CrystalOrbIcon";
 import { OrbCosmicLoader } from "@/components/OrbCosmicLoader";
@@ -273,6 +275,7 @@ export default function OrbGatewayPage() {
   const [, navigate] = useLocation();
   const [inquiry, setInquiry] = useState("");
   const [isScrying, setIsScrying] = useState(false);
+  const [isLeaping, setIsLeaping] = useState(false);
   const [scryingResult, setScryingResult] = useState<ScryingResult | null>(null);
   const [hoveredApp, setHoveredApp] = useState<SeptagramAppDimension | null>(null);
   const [hoveredRuneInfo, setHoveredRuneInfo] = useState<{
@@ -570,31 +573,122 @@ export default function OrbGatewayPage() {
     return bestId;
   };
 
-  // 룬 보석 클릭 시 영시 문맥을 품고 해당 차원으로 즉시 도약(Toss)
+  // 🌟 영시 문맥을 품고 추천된 차원으로 시공간 빅뱅 도약 (Toss & OmniWarp Leap)
   const handleTossToDimension = (app: SeptagramAppDimension) => {
+    if (isLeaping) return;
+    setIsLeaping(true);
+
+    const safePath = resolveCanonicalPath(app.path || "/");
+    const targetAppId = app.id === "aura" ? "heal" : app.id === "prologue" ? "hub" : app.id === "trinity" ? "oracle" : app.id;
+    const queryStr = scryingResult?.query || inquiry || "";
+    const keyThemeStr = scryingResult?.keyTheme || "직관의 통찰";
+    const directAnswerStr = scryingResult?.directAnswer || "";
+    const actionSolutionStr = scryingResult?.actionSolution || "";
+
+    // 1. 통합 토스 페이로드 전송 (Prism Cross-App Sync)
     try {
       const tossPayload = {
         source: "orb",
         sourceName: "크리스탈 오브",
         targetAppId: app.id,
         timestamp: Date.now(),
-        query: scryingResult?.query || inquiry || "",
-        keyTheme: scryingResult?.keyTheme || "직관의 통찰",
-        directAnswer: scryingResult?.directAnswer || "",
-        actionSolution: scryingResult?.actionSolution || "",
+        query: queryStr,
+        keyTheme: keyThemeStr,
+        directAnswer: directAnswerStr,
+        actionSolution: actionSolutionStr,
       };
       safeLocalStorage.setItem("prism_toss_context", JSON.stringify(tossPayload));
       safeLocalStorage.setItem("pending_prism_toss", JSON.stringify(tossPayload));
+
+      sendPrismToss({
+        sourceApp: "orb",
+        targetApp: targetAppId,
+        actionType: "smart_toss",
+        contextMessage: `[크리스탈 오브 차원 도약] ${keyThemeStr}`,
+        autoTrigger: true,
+        autoPrompt: `[크리스탈 오브 직관 연동] 질문: "${queryStr}" / 직관 해답: "${directAnswerStr}" / 실천 가이드: "${actionSolutionStr}"`,
+        orbInsight: {
+          query: queryStr,
+          keyTheme: keyThemeStr,
+          directAnswer: directAnswerStr,
+          actionSolution: actionSolutionStr,
+        },
+        tossedAt: Date.now(),
+      });
+    } catch (e) {
+      console.warn("[OrbGateway] Toss payload dispatch error:", e);
+    }
+
+    // 2. 사운드 및 햅틱 임팩트
+    try {
+      triggerHaptic("bigbang");
+      sacredAudio.playSingingBowl(852);
+      omniWarpAudio.playBigBang();
     } catch (_) {}
 
-    triggerHaptic("whitehole");
-    sacredAudio.playSingingBowl(852);
-
-    if (app.id === "hooponopono") {
-      navigate("/bluebird?tab=hooponopono");
-    } else {
-      navigate(app.path);
+    // 3. 빅뱅 시공간 팽창 오버레이(BigBangExpansionOverlay) 이벤트 발화
+    try {
+      const commitDetail = {
+        phase: "whitehole" as const,
+        target: {
+          id: targetAppId,
+          name: app.name,
+          subName: app.subTitle,
+          destinationPath: safePath,
+          phase: "whitehole" as const,
+          color: app.color,
+          glowColor: app.glowColor,
+          gauge: 1,
+          aiTemperature: 0.7,
+          title: app.name,
+          actionType: "dimension_leap",
+          previewLabel: app.name,
+          previewDescription: app.description,
+          themeColor: app.color,
+          accentGlow: app.glowColor,
+        },
+        context: {
+          activeRoute: "/orb",
+          activeTitle: "크리스탈 오브",
+          summary: `${keyThemeStr} - ${directAnswerStr.slice(0, 40)}`,
+          primarySubject: keyThemeStr,
+          capturedAt: Date.now(),
+        },
+        metrics: {
+          hardwarePressure: 0.9,
+          touchArea: 1,
+          durationMs: 400,
+          virtualForce: 1,
+          isAborted: false,
+          phase: "whitehole" as const,
+        },
+        timestamp: Date.now(),
+      };
+      window.dispatchEvent(new CustomEvent("prism:bigbang_commit", { detail: commitDetail }));
+    } catch (e) {
+      console.warn("[OrbGateway] Big bang commit event dispatch error:", e);
     }
+
+    // 4. 프리즘 내비게이션 이벤트 전파
+    try {
+      window.dispatchEvent(new CustomEvent("prism-navigate", { detail: { path: safePath } }));
+      window.dispatchEvent(new CustomEvent("nav-click-active", { detail: { path: safePath } }));
+    } catch (_) {}
+
+    // 5. 시공간 광속 도약 (320ms 딜레이 후 브라우저 이동)
+    setTimeout(() => {
+      try {
+        if (typeof window !== "undefined") {
+          // orb.html 독립 PWA/웹 환경에서 index.html 대상 앱으로 확실한 문서 라우팅
+          window.location.href = safePath;
+        } else {
+          navigate(safePath);
+        }
+      } catch (err) {
+        console.error("[OrbGateway] Navigation error:", err);
+        setIsLeaping(false);
+      }
+    }, 320);
   };
 
   // Prism Sync Info
@@ -1996,13 +2090,15 @@ ${dimensionDescriptions}`;
 
               {/* 🌟 추천 차원 도약 (Recommended Dimension Link Banner) */}
               {scryingResult.recommendedAppId && (() => {
-                const recApp = SEPTAGRAM_APPS.find((a) => a.id === scryingResult.recommendedAppId);
-                if (!recApp) return null;
+                const recApp = SEPTAGRAM_APPS.find((a) => a.id === scryingResult.recommendedAppId) || SEPTAGRAM_APPS[0];
                 return (
                   <motion.div
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-cyan-950/40 via-purple-950/30 to-zinc-900/70 border border-cyan-500/30 flex items-center justify-between gap-3 shadow-lg"
+                    onClick={() => handleTossToDimension(recApp)}
+                    className={`p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-cyan-950/40 via-purple-950/30 to-zinc-900/70 border border-cyan-500/30 flex items-center justify-between gap-3 shadow-lg cursor-pointer transition-all hover:border-cyan-400/50 hover:shadow-[0_0_20px_rgba(6,182,212,0.25)] active:scale-[0.99] ${
+                      isLeaping ? "pointer-events-none ring-2 ring-cyan-400/50" : ""
+                    }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div
@@ -2035,15 +2131,31 @@ ${dimensionDescriptions}`;
 
                     <button
                       type="button"
-                      onClick={() => handleTossToDimension(recApp)}
-                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-black shadow-md hover:brightness-110 active:scale-95 transition-all shrink-0 cursor-pointer"
+                      disabled={isLeaping}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleTossToDimension(recApp);
+                      }}
+                      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-black shadow-md hover:brightness-110 active:scale-95 transition-all shrink-0 cursor-pointer ${
+                        isLeaping ? "opacity-80 cursor-wait animate-pulse" : ""
+                      }`}
                       style={{
                         background: `linear-gradient(135deg, ${recApp.color}, #f59e0b)`,
                         boxShadow: `0 0 15px ${recApp.glowColor}`,
                       }}
+                      title={`${recApp.name} 차원으로 즉시 도약`}
                     >
-                      <span>차원 도약</span>
-                      <ArrowRight size={13} />
+                      {isLeaping ? (
+                        <>
+                          <Sparkles size={13} className="animate-spin text-black" />
+                          <span>도약 중...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>차원 도약</span>
+                          <ArrowRight size={13} />
+                        </>
+                      )}
                     </button>
                   </motion.div>
                 );

@@ -340,57 +340,35 @@ export function getPrismRouteByPathOrId(pathOrId: string): PrismRouteDefinition 
   return undefined;
 }
 
+import {
+  peekShuffledWormholeDestination,
+  commitShuffledWormholeDestination,
+  destinationToPrismRoute,
+  getDailyWormholeStats,
+  resetActiveWormholePeek,
+} from './omniWarp/wormholeShuffleEngine';
+
+export {
+  peekShuffledWormholeDestination,
+  commitShuffledWormholeDestination,
+  destinationToPrismRoute,
+  getDailyWormholeStats,
+  resetActiveWormholePeek,
+};
+
 /**
- * 🌀 웜홀(Wormhole) 전용: 루시 채팅(/chat)과 크리스탈 오브(/orb)를 제외한,
- * 현재 프리즘 앱 내부에 실존하는 모든 유효 페이지 중 임의의 목적지 1곳 무작위 반환
+ * 🌀 웜홀(Wormhole) 전용 데일리 셔플 순환 목적지 반환
+ * - 하루에 한 번 자정(YYYY-MM-DD)을 기준으로 자동 초기화
+ * - 그날 이미 다녀간 기능이나 페이지는 전체 풀을 한 바퀴 완주하기 전까지 다시 나오지 않음
+ * - 안전 캐싱을 통해 홀드 중 프레임 깜빡임 없이 동일 목적지를 안정적으로 유지
  */
 export function getRandomWormholeDestination(currentLocation?: string): PrismRouteDefinition {
-  const normCurrent = (currentLocation || '/').trim().toLowerCase().split('?')[0].split('#')[0].replace(/\/$/, '') || '/';
-
-  const eligibleRoutes = getActivePrismRoutes().filter((route) => {
-    if (!route.isActive) return false;
-    const rId = route.id.toLowerCase();
-    const rPath = route.path.toLowerCase().replace(/\/$/, '') || '/';
-
-    // 1. 프리즘 홈 (/ , /universe, /ecpr, /synergy, /aegis, hub) 원천 배제
-    if (rId === 'hub' || rPath === '/' || route.category === 'hub' || ['/universe', '/ecpr', '/synergy', '/aegis'].includes(rPath)) {
-      return false;
-    }
-    // 2. 루시 채팅 (/chat, /lucy) 및 크리스탈 오브 사이트 (/orb, /gateway, /crystal) 원천 배제
-    if (rId === 'lucy' || rId === 'chat' || rPath.includes('/chat') || rPath.includes('/lucy')) {
-      return false;
-    }
-    if (rId === 'orb' || rId === 'gateway' || rId === 'crystal' || rPath.includes('/orb')) {
-      return false;
-    }
-    // 3. 비존재 및 워프 비대상 페이지 원천 배제 (profile, handbook, library, omniwarp)
-    if (['profile', 'handbook', 'library', 'omniwarp', 'bigbang'].includes(rId)) {
-      return false;
-    }
-    // 4. 실제 유효한 라우트인지 검증
-    if (!isValidPrismPath(route.path)) {
-      return false;
-    }
-    return true;
-  });
-
-  // 현재 있는 페이지와 다른 페이지를 우선 선택하여 신선한 도약 경험 제공
-  const differentRoutes = eligibleRoutes.filter((route) => {
-    const rPath = route.path.toLowerCase().replace(/\/$/, '') || '/';
-    if (rPath === normCurrent) return false;
-    if (route.aliases && route.aliases.some((a) => (a.toLowerCase().replace(/\/$/, '') || '/') === normCurrent)) {
-      return false;
-    }
-    return true;
-  });
-
-  const pool = differentRoutes.length > 0 ? differentRoutes : eligibleRoutes;
-  if (pool.length === 0) {
-    // 안전 폴백 (유효한 오라클 채널 - 프리즘 홈 배제)
+  try {
+    const { dest } = peekShuffledWormholeDestination(currentLocation);
+    return destinationToPrismRoute(dest);
+  } catch (err) {
+    console.warn('[WormholeRegistry] Shuffle peek failed, falling back to static oracle:', err);
     const oracleFallback = INITIAL_PRISM_ROUTES.find((r) => r.id === 'trinity' && r.isActive);
     return oracleFallback || INITIAL_PRISM_ROUTES[3];
   }
-
-  const randomIndex = Math.floor(Math.random() * pool.length);
-  return pool[randomIndex];
 }

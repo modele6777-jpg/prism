@@ -11,6 +11,7 @@ import { TarotPhysicalMetadata } from '@/lib/trinity/tarotTouchAnalyzer';
 import { invokeLLM } from '@/lib/ai';
 import { playTTS, stopTTS, useTTSActive } from '@/utils/tts';
 import { sendPrismToss } from '@/lib/prismToss';
+import { ZezeKakaoChat } from './ZezeKakaoChat';
 
 // Local storage keys
 const STORAGE_HEALING_TREASURES = 'prism_oracle_healing_treasures';
@@ -144,10 +145,6 @@ export function TrinityOracleSection() {
       .map((c, i) => `${i + 1}번 슬롯 [${slotPositions[i]}]: ${c.nameKo} (${c.name}) - 유형: ${c.type}, 핵심 키워드: [${c.keywords.join(', ')}]`)
       .join('\n');
 
-    const touchDirective = touchMetadata
-      ? `\n[사용자 손끝 물리 파동 지표]\n- 심층 모드: ${touchMetadata.depthMode}\n- 체류 시간: ${touchMetadata.durationMs}ms\n- 떨림/망설임 지수: ${touchMetadata.jitterScore}\n- 리딩 톤 지침: ${touchMetadata.tonePrompt}\n(손끝에서 감지된 체류 시간과 떨림의 진동을 첫 문장에 따뜻하게 녹여내어 감동을 더해주세요.)`
-      : '';
-
     try {
       if (oracleMode === 'healing') {
         // [HEALING MODE] Deep card-by-card reflective prompts
@@ -158,6 +155,7 @@ export function TrinityOracleSection() {
 - 조심스럽고 다정하며, 시적이고 따뜻한 반말(해체)을 사용합니다. ("~했어?", "~해볼까?", "~해도 괜찮아", "~일지도 몰라")
 - 인터넷 유행어, 줄임말, 과도한 느낌표는 절대 쓰지 않습니다.
 - 섣부른 훈계나 "힘내" 같은 상투적인 클리셰를 쓰지 말고, 감정을 온전히 알아차려 주는 깊은 호흡의 문장을 씁니다.
+- '화이트홀', '블랙홀', '웜홀', '손끝 물리량', '파동 측정' 등의 인위적/공상과학 용어는 절대 사용하지 않습니다.
 
 # Core Mission Rule: 3장 카드의 고유한 뜻과 상징을 깊이 반영하기
 사용자가 뽑은 3장의 메이저 타로 카드 각각의 본질적인 원형과 상징적 뜻을 깊이 헤아려야 합니다.
@@ -199,7 +197,7 @@ export function TrinityOracleSection() {
   }
 }`;
 
-        const prompt = `사용자가 뽑은 3장의 카드:\n${cardDescriptions}${touchDirective}\n\n위 카드 각각의 상징과 의미를 깊이 반영하여, 3장의 카드별 심층 리딩(card_insights)과 제제의 다정한 마음 처방을 JSON으로 생성해 줘.`;
+        const prompt = `사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 카드 각각의 상징과 의미를 깊이 반영하여, 3장의 카드별 심층 리딩(card_insights)과 제제의 다정한 마음 처방을 JSON으로 생성해 줘.`;
         const res = await invokeLLM({
           messages: [
             { role: 'system', content: systemPrompt },
@@ -214,6 +212,7 @@ export function TrinityOracleSection() {
         // [GROWTH MODE] Deep card-by-card behavioral prompts
         const systemPrompt = `당신은 현대인을 위한 초정밀 멘탈 트레이너이자 라이프 코치 '오라클 루시'입니다.
 우리는 타로를 점술이나 미신으로 소비하지 않으며, 100% 멘탈 피트니스와 실행 자아효능감을 높이는 '행동 마인드셋 툴킷'으로 다룹니다.
+'화이트홀', '블랙홀', '웜홀', '손끝 물리량', '파동 측정' 등의 인위적/공상과학 용어는 절대 언급하지 마십시오.
 
 # Core Mission Rule: 3장 카드의 고유한 뜻과 현실 실행력 연계
 1번 슬롯 [거시적 마인드셋]: 이 카드의 철학과 원형이 오늘 하루 전체의 중심 태도를 어떻게 정립하는지
@@ -255,7 +254,7 @@ export function TrinityOracleSection() {
   "evening_reflection": "오늘 저녁 나의 행동을 돌아보는 1줄 성찰 질문"
 }`;
 
-        const prompt = `사용자가 뽑은 3장의 카드:\n${cardDescriptions}${touchDirective}\n\n위 카드 각각의 상징과 의미를 100% 반영하여, 3장의 카드별 심층 리딩(card_insights)과 마인드셋 브리핑, 1줄 마이크로 미션을 JSON으로 도출해 줘.`;
+        const prompt = `사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 카드 각각의 상징과 의미를 100% 반영하여, 3장의 카드별 심층 리딩(card_insights)과 마인드셋 브리핑, 1줄 마이크로 미션을 JSON으로 도출해 줘.`;
         const res = await invokeLLM({
           messages: [
             { role: 'system', content: systemPrompt },
@@ -470,23 +469,13 @@ export function TrinityOracleSection() {
                     </div>
                   </div>
 
-                  {/* Core Meaning */}
+                  {/* Core Meaning (카드의 고유한 뜻과 상징) */}
                   {insight?.core_meaning && (
                     <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-400/25 text-[11px] text-amber-200/90 leading-relaxed font-sans shadow-inner">
                       <span className="font-bold text-amber-300 block mb-1 font-mono text-[10px] flex items-center gap-1">
                         <span>🏛️</span> 카드의 고유한 뜻
                       </span>
                       {insight.core_meaning}
-                    </div>
-                  )}
-
-                  {/* Personal Interpretation */}
-                  {insight?.personal_interpretation && (
-                    <div className="p-3 rounded-xl bg-white/[0.03] border border-white/10 text-[11px] text-zinc-300 leading-relaxed font-serif shadow-inner">
-                      <span className="font-bold text-indigo-300 block mb-1 font-mono text-[10px] flex items-center gap-1">
-                        <span>💬</span> {oracleMode === 'healing' ? '내면아이 성찰 메시지' : '오늘의 현실 실행 해석'}
-                      </span>
-                      {insight.personal_interpretation}
                     </div>
                   )}
                 </div>
@@ -687,39 +676,17 @@ export function TrinityOracleSection() {
             ) : oracleMode === 'healing' && healingResult ? (
               /* [HEALING RESULT VIEW] */
               <div className="space-y-6">
-                {/* 3 Cards Deep Insights Reading */}
+                {/* 3 Cards Deep Insights Reading (내면아이 성찰 메시지 제외, 카드 고유 뜻과 상징만 표기) */}
                 {renderCardInsightsSection(healingResult.card_insights)}
 
-                {/* 1. Letter from Zezé */}
-                <div className="glass p-6 sm:p-8 rounded-3xl bg-gradient-to-b from-indigo-950/30 to-black/60 border border-indigo-400/30 shadow-2xl relative overflow-hidden">
-                  <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/10">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-full bg-indigo-500/20 border border-indigo-400/40 flex items-center justify-center text-indigo-300">
-                        <Heart size={18} />
-                      </div>
-                      <div>
-                        <h3 className="text-base font-serif font-bold text-indigo-200">내면아이 제제의 편지</h3>
-                        <p className="text-[10px] text-zinc-400 font-mono">INNER CHILD REFLECTION</p>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={handleToggleTTS}
-                      className={`p-2 rounded-xl border transition-all ${
-                        isTTSActive
-                          ? 'bg-amber-500/20 border-amber-400 text-amber-300'
-                          : 'bg-white/5 border-white/10 text-zinc-300 hover:text-white'
-                      }`}
-                      title={isTTSActive ? '음성 멈추기' : '편지 소리로 듣기'}
-                    >
-                      {isTTSActive ? <VolumeX size={16} /> : <Volume2 size={16} />}
-                    </button>
-                  </div>
-
-                  <p className="text-sm sm:text-base leading-relaxed text-zinc-200 font-serif italic whitespace-pre-line">
-                    "{healingResult.message}"
-                  </p>
-                </div>
+                {/* 1. 헬로우봇 카톡 형식 내면아이 제제 1:1 종합상담 대화방 */}
+                <ZezeKakaoChat
+                  oracleMode="healing"
+                  drawnCards={drawnCards}
+                  healingResult={healingResult}
+                  growthResult={null}
+                  slotPositions={slotPositions}
+                />
 
                 {/* 2. Prescribed Art -> Toss to Muse Art Sanctuary */}
                 <div
@@ -820,38 +787,17 @@ export function TrinityOracleSection() {
             ) : oracleMode === 'growth' && growthResult ? (
               /* [GROWTH RESULT VIEW] */
               <div className="space-y-6">
-                {/* 3 Cards Deep Insights Reading */}
+                {/* 3 Cards Deep Insights Reading (내면아이 성찰 메시지 제외, 카드 고유 뜻과 상징만 표기) */}
                 {renderCardInsightsSection(growthResult.card_insights)}
 
-                {/* 1. Macro Mindset Briefing */}
-                <div className="glass p-6 sm:p-8 rounded-3xl bg-gradient-to-b from-amber-950/30 to-black/60 border border-amber-400/30 shadow-2xl relative overflow-hidden">
-                  <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/10">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-full bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300">
-                        <Sun size={18} />
-                      </div>
-                      <div>
-                        <h3 className="text-base font-serif font-bold text-amber-200">오늘의 마인드셋 브리핑</h3>
-                        <p className="text-[10px] text-zinc-400 font-mono">MACRO MINDSET ALIGNMENT</p>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={handleToggleTTS}
-                      className={`p-2 rounded-xl border transition-all ${
-                        isTTSActive
-                          ? 'bg-amber-500/20 border-amber-400 text-amber-300'
-                          : 'bg-white/5 border-white/10 text-zinc-300 hover:text-white'
-                      }`}
-                    >
-                      {isTTSActive ? <VolumeX size={16} /> : <Volume2 size={16} />}
-                    </button>
-                  </div>
-
-                  <p className="text-sm sm:text-base leading-relaxed text-zinc-200 font-serif whitespace-pre-line">
-                    {growthResult.macro_focus}
-                  </p>
-                </div>
+                {/* 1. 헬로우봇 카톡 형식 내면아이 제제 1:1 마인드셋 종합상담 코칭 대화방 */}
+                <ZezeKakaoChat
+                  oracleMode="growth"
+                  drawnCards={drawnCards}
+                  healingResult={null}
+                  growthResult={growthResult}
+                  slotPositions={slotPositions}
+                />
 
                 {/* 2. Dominant Element & Focus Area */}
                 <div className="glass p-5 rounded-3xl bg-white/[0.02] border border-white/10 flex items-center gap-4">

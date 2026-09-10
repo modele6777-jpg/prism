@@ -18,6 +18,7 @@ import {
   getWormholeAppByGauge,
 } from './wormholeSpectrum';
 import { getPrismRouteByPathOrId, resolveCanonicalPath, getRandomWormholeDestination } from '@/lib/prismRouteRegistry';
+import { peekShuffledWormholeDestination } from './wormholeShuffleEngine';
 import {
   extractLatestDialogueContext,
   recordCrossAppDialogue,
@@ -404,13 +405,13 @@ export const CHANNEL_SUBMENUS: Record<
   trinity: {
     whitehole: {
       id: 'trinity-daily',
-      name: '데일리 럭키',
-      subName: '오늘의 운세와 행운 주파수 분석',
-      path: '/trinity?tab=daily',
-      icon: '✨',
+      name: '사주 만세력',
+      subName: '영혼의 설계도 사주 오행 & 만세력 리포트',
+      path: '/trinity?tab=destiny',
+      icon: '🧭',
       themeColor: '#eab308',
       accentGlow: 'rgba(234, 179, 8, 0.95)',
-      description: '사주와 점성학을 결합한 오늘의 행운 에너지와 실천 가이드를 확인합니다.',
+      description: '생년월일시 기반 사주 4주 8자와 5대 오행 밸런스, 2026 세운을 정밀 분석합니다.',
       runeSymbol: 'ᛈ',
       runeName: 'Pertho',
     },
@@ -693,9 +694,9 @@ export function synthesizeWarpTarget(context: OmniWarpContext, metrics: WarpForc
     };
   }
 
-  // 2. 웜홀 (Wormhole: 루시채팅과 오브사이트를 제외한 앱 내 모든 실존 페이지 임의 도약)
+  // 2. 웜홀 (Wormhole: 데일리 셔플 순환 - 당일 미방문 기능/페이지 우선 도약)
   if (metrics.phase === 'wormhole') {
-    const dest = getRandomWormholeDestination(context.activeRoute);
+    const { dest, stats } = peekShuffledWormholeDestination(context.activeRoute);
     const safePath = resolveCanonicalPath(dest.path);
     return {
       id: dest.id,
@@ -704,10 +705,12 @@ export function synthesizeWarpTarget(context: OmniWarpContext, metrics: WarpForc
       gauge: metrics.virtualForce,
       aiTemperature: T,
       title: dest.name,
-      actionType: `wormhole_random_${dest.id}`,
+      actionType: `wormhole_shuffle_${dest.id}`,
       destinationPath: safePath,
-      previewLabel: `[웜홀 도약] 🌀 ${dest.runeSymbol} ${dest.name}`,
-      previewDescription: `시공간 웜홀을 통과하여 [${dest.name} · ${dest.subName}]으로 즉시 도약합니다.`,
+      previewLabel: `[웜홀 셔플 도약 · ${stats.visitedCount + 1}/${stats.totalCount}] 🌀 ${dest.runeSymbol} ${dest.name}`,
+      previewDescription: stats.isRecycled
+        ? `시공간 웜홀을 통과하여 [${dest.name} · ${dest.subName}]으로 도약합니다. (오늘 1바퀴 완주! 신규 셔플)`
+        : `시공간 웜홀을 통과하여 [${dest.name} · ${dest.subName}]으로 차원 도약합니다. (오늘 탐험: ${stats.visitedCount + 1}/${stats.totalCount})`,
       themeColor: dest.themeColor || '#10b981',
       accentGlow: dest.accentGlow || 'rgba(16, 185, 129, 0.75)',
       stageIndex: 1,
