@@ -7,7 +7,6 @@ import {
 } from 'lucide-react';
 import { TAROT_DECK, TarotCard, getTarotCardImageUrl } from '@/data/tarotData';
 import { TarotSpread, SelectedTarotCardEntry } from './TarotSpread';
-import { TarotPhysicalMetadata } from '@/lib/trinity/tarotTouchAnalyzer';
 import { invokeLLM } from '@/lib/ai';
 import { playTTS, stopTTS, useTTSActive } from '@/utils/tts';
 import { sendPrismToss } from '@/lib/prismToss';
@@ -134,7 +133,7 @@ export function TrinityOracleSection() {
   };
 
   // Run AI analysis after 3 cards are drawn (All upright in Oracle section)
-  const handleCardsComplete = async (cards: SelectedTarotCardEntry[], touchMetadata?: TarotPhysicalMetadata | null) => {
+  const handleCardsComplete = async (cards: SelectedTarotCardEntry[]) => {
     const uprightCards = cards.map((c) => ({ ...c, reversed: false }));
     setDrawnCards(uprightCards);
     setStage('result');

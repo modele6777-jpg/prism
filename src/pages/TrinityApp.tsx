@@ -116,8 +116,6 @@ import {
 } from "@/lib/oracleDeepInsight";
 import { DailyOracleLoadingOverlay } from "@/components/DailyOracleLoadingOverlay";
 
-const TAROT_HEALTHY_GUIDE_TEXT = "건강한 타로 활용 안내: 타로는 정해진 미래를 맹신하거나 과도하게 의존하기 위한 도구가 아닌, 현재 내면의 무의식을 비추고 더 나은 선택을 돕는 마음의 나침반입니다. 삶을 창조하는 진정한 힘과 최종 결정권은 언제나 당신 자신의 용기 있는 실천과 자유의지에 있습니다.";
-
 const EnergyAnalysisSchema = z.object({
   luckScore: z
     .union([z.string(), z.number()])
@@ -218,10 +216,6 @@ import {
   type TarotConcernAnalysis,
   type TarotConcernKind,
 } from "@/lib/trinity/utils";
-import {
-  type TarotPhysicalMetadata,
-  defaultTarotTouchAnalyzer,
-} from "@/lib/trinity/tarotTouchAnalyzer";
 import {
   auth,
   db,
@@ -1857,7 +1851,6 @@ function playDailyCardChimeAsync() {
       selectedCards?: TarotCard[];
       selectedCard?: TarotCard;
       autoRun?: boolean;
-      touchMetadata?: TarotPhysicalMetadata | null;
     },
   ) => {
     if (type === "daily") {
@@ -2627,11 +2620,11 @@ function playDailyCardChimeAsync() {
                       spreadReason={tarotSpreadRecommendation.reason}
                       concern={tarotConcern}
                       onCancel={() => setTarotVirtualMode(false)}
-                      onComplete={(cards, touchMetadata) => {
+                      onComplete={(cards) => {
                         setTarotVirtualMode(false);
                         setDrawnCards(cards);
                         setHideTarotPopup(false);
-                        handleUnifiedReading("tarot", { selectedCards: cards, touchMetadata });
+                        handleUnifiedReading("tarot", { selectedCards: cards });
                       }}
                     />
                   )}
@@ -2972,22 +2965,6 @@ function playDailyCardChimeAsync() {
                             {/* Tarot Result Bottom Actions: Deep Insight with Lucy + Redraw */}
                             {tarotResult && !isTarotGenerating && (
                               <div className="pt-3 border-t border-white/10 flex flex-col gap-3 w-full shrink-0">
-                                {/* Tarot Dependency Prevention & Healthy Mindfulness Disclaimer Card */}
-                                <div className="p-3.5 sm:p-4 rounded-2xl bg-white/[0.02] border border-white/10 flex items-start gap-3 text-left">
-                                  <div className="w-7 h-7 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-300 shrink-0 mt-0.5">
-                                    <Compass size={15} />
-                                  </div>
-                                  <div className="space-y-1 flex-1">
-                                    <div className="flex items-center gap-1.5 text-xs font-bold text-amber-300">
-                                      <ShieldCheck size={13} className="text-amber-400" />
-                                      <span>건강한 타로 활용 안내 (Mindful Tarot & Free Will)</span>
-                                    </div>
-                                    <p className="text-[11px] text-white/65 font-sans leading-relaxed">
-                                      타로는 정해진 미래를 맹신하거나 과도하게 의존하기 위한 도구가 아닌, 현재 내면의 무의식을 비추고 더 나은 선택을 돕는 <strong className="text-amber-200/90 font-semibold">‘마음의 나침반’</strong>입니다. 삶을 창조하는 진정한 힘과 최종 결정권은 언제나 당신 자신의 용기 있는 실천과 자유의지(Free Will)에 있습니다.
-                                    </p>
-                                  </div>
-                                </div>
-
                                 {/* Redraw Button */}
                                 <div className="flex justify-center pt-1">
                                   <button
@@ -3614,7 +3591,7 @@ function playDailyCardChimeAsync() {
                         <Sparkles size={13} /> 오늘의 심층 비전 해독
                       </span>
                       <TTSButton
-                        text={`${dailyResult.diagnosis || dailyResult.summary || ''}\n\n${TAROT_HEALTHY_GUIDE_TEXT}`}
+                        text={dailyResult.diagnosis || dailyResult.summary || ''}
                         voice="Kore"
                         className="text-yellow-400 border-yellow-500/20 text-xs py-1 scale-90"
                       />
@@ -3832,11 +3809,11 @@ function playDailyCardChimeAsync() {
                       spreadReason={tarotSpreadRecommendation.reason}
                       concern={tarotConcern}
                       onCancel={() => setTarotVirtualMode(false)}
-                      onComplete={(cards, touchMetadata) => {
+                      onComplete={(cards) => {
                         setTarotVirtualMode(false);
                         setDrawnCards(cards);
                         setHideTarotPopup(false);
-                        handleUnifiedReading("tarot", { selectedCards: cards, touchMetadata });
+                        handleUnifiedReading("tarot", { selectedCards: cards });
                       }}
                     />
                   )}
@@ -4393,22 +4370,6 @@ function playDailyCardChimeAsync() {
                             {/* Modal Tarot Result Bottom Actions: Deep Insight with Lucy + Redraw */}
                             {tarotResult && !isTarotGenerating && (
                               <div className="pt-3 border-t border-white/10 flex flex-col gap-3 w-full shrink-0">
-                                {/* Tarot Dependency Prevention & Healthy Mindfulness Disclaimer Card */}
-                                <div className="p-3.5 sm:p-4 rounded-2xl bg-white/[0.02] border border-white/10 flex items-start gap-3 text-left">
-                                  <div className="w-7 h-7 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-300 shrink-0 mt-0.5">
-                                    <Compass size={15} />
-                                  </div>
-                                  <div className="space-y-1 flex-1">
-                                    <div className="flex items-center gap-1.5 text-xs font-bold text-amber-300">
-                                      <ShieldCheck size={13} className="text-amber-400" />
-                                      <span>건강한 타로 활용 안내 (Mindful Tarot & Free Will)</span>
-                                    </div>
-                                    <p className="text-[11px] text-white/65 font-sans leading-relaxed">
-                                      타로는 정해진 미래를 맹신하거나 과도하게 의존하기 위한 도구가 아닌, 현재 내면의 무의식을 비추고 더 나은 선택을 돕는 <strong className="text-amber-200/90 font-semibold">‘마음의 나침반’</strong>입니다. 삶을 창조하는 진정한 힘과 최종 결정권은 언제나 당신 자신의 용기 있는 실천과 자유의지(Free Will)에 있습니다.
-                                    </p>
-                                  </div>
-                                </div>
-
                                 {/* Redraw Button */}
                                 <div className="flex justify-center pt-1">
                                   <button

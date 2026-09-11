@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Sparkles, Eye, RefreshCw, Sun, Compass,
+  Sparkles, Eye, RefreshCw, Sun, Compass, Activity,
   Flame, Heart, Wind, Coins, ShieldCheck, BookOpen, Zap, Star, Moon,
   ChevronLeft, ChevronRight, Shuffle,
 } from 'lucide-react';
@@ -914,9 +914,6 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
                 남은 덱: {deck.length - selectedEntries.length}장
               </span>
             </div>
-            <span className="text-white/60 text-[10px] sm:text-[11px] tracking-wide font-normal max-w-xs md:max-w-md drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
-              부드럽게 밀어서 회전시키거나 마음에 와닿는 카드를 탭하세요
-            </span>
           </div>
         </div>
       </div>
