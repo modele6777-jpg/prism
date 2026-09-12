@@ -8,6 +8,7 @@ import { useApp, getPersistentUserProfile } from '@/contexts/AppContext';
 import { invokeLLM } from '@/lib/ai';
 import { recordPrismFeature } from '@/lib/prismOmniSync';
 import { playTTS, stopTTS, useTTSActive } from '@/utils/tts';
+import { getSafeArtworkUrl } from '@/utils/artworkImage';
 
 interface MasterpieceDialogueData {
   title: string;
@@ -40,7 +41,7 @@ const MASTERS_LIST: MasterItem[] = [
     piece: '별이 빛나는 밤 (The Starry Night)', 
     medium: '유화 (Oil on Canvas)', 
     icon: '🎨',
-    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/1280px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg'
+    imageUrl: getSafeArtworkUrl('https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/1280px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg')
   },
   { 
     id: 'davinci', 
@@ -49,7 +50,7 @@ const MASTERS_LIST: MasterItem[] = [
     piece: '모나리자 (Mona Lisa)', 
     medium: '유화 및 르네상스 걸작', 
     icon: '📐',
-    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/1200px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg'
+    imageUrl: getSafeArtworkUrl('https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/1200px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg')
   },
   { 
     id: 'monet', 
@@ -58,7 +59,7 @@ const MASTERS_LIST: MasterItem[] = [
     piece: '수련 (Water Lilies)', 
     medium: '인상주의 회화', 
     icon: '🪷',
-    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Claude_Monet_-_Water_Lilies_-_Google_Art_Project.jpg/1280px-Claude_Monet_-_Water_Lilies_-_Google_Art_Project.jpg'
+    imageUrl: getSafeArtworkUrl('https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Claude_Monet_-_Water_Lilies_-_Google_Art_Project.jpg/1280px-Claude_Monet_-_Water_Lilies_-_Google_Art_Project.jpg')
   },
   { 
     id: 'debussy', 

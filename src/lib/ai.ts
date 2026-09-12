@@ -46,11 +46,13 @@ export interface Message {
   content: string | any[];
 }
 
-const KOREAN_ONLY_OUTPUT_RULE = `출력 언어 규칙:
+const KOREAN_ONLY_OUTPUT_RULE = `출력 언어 및 문장 가독성 원칙:
 - 모든 자연어 문장은 현대 한국어 한글로만 작성하세요.
 - 한자 및 중국어 표기(예: 全程, 命運, 靈魂)를 사용하지 마세요.
 - 한자어가 필요하면 반드시 자연스러운 한글 표현(예: 전 과정, 운명, 영혼)으로 바꾸세요.
-- 고유명사에 원문 한자가 있어도 사용자에게는 한글 표기만 보여주세요.`;
+- 고유명사에 원문 한자가 있어도 사용자에게는 한글 표기만 보여주세요.
+- [간결성 & 가독성 원칙]: 불필요하게 길고 늘어지는 만연체 문장은 피하고, 명확하고 산뜻한 단문 위주로 작성하세요.
+- 핵심 인사이트나 실천 조언은 불릿 포인트(•)와 적절한 줄바꿈을 활용하여 한눈에 들어오도록 구조화하세요.`;
 
 function withKoreanOnlyOutput(messages: Array<{ role: "system" | "user" | "assistant"; content: any }>) {
   return [{ role: "system" as const, content: KOREAN_ONLY_OUTPUT_RULE }, ...messages];

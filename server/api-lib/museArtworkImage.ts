@@ -293,6 +293,9 @@ export function isAllowedImageProxyUrl(url: string): boolean {
 const BROWSER_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
+const WIKIMEDIA_USER_AGENT =
+  "PrismUniverse/1.0 (https://github.com/modele6777-jpg/prism; support@prism.app)";
+
 export function normalizeWikimediaUrl(url: string): string {
   if (!url || !url.includes("upload.wikimedia.org")) return url;
   return url.replace(/\/thumb\/([^/]+)\/([^/]+)\/([^/]+)\/\d+px-/i, "/thumb/$1/$2/$3/960px-");
@@ -306,11 +309,13 @@ export function buildArtworkDisplayUrl(url: string, source: ArtworkImageSource):
 
 async function validateImageUrl(url: string): Promise<boolean> {
   const targetUrl = normalizeWikimediaUrl(url);
+  const isWikimedia = targetUrl.includes("wikimedia.org") || targetUrl.includes("wikipedia.org");
+  const userAgent = isWikimedia ? WIKIMEDIA_USER_AGENT : BROWSER_USER_AGENT;
   try {
     let response = await fetch(targetUrl, {
       method: "HEAD",
       headers: {
-        "User-Agent": BROWSER_USER_AGENT,
+        "User-Agent": userAgent,
         "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
       },
       signal: AbortSignal.timeout(6000),
@@ -320,7 +325,7 @@ async function validateImageUrl(url: string): Promise<boolean> {
       response = await fetch(targetUrl, {
         method: "GET",
         headers: {
-          "User-Agent": BROWSER_USER_AGENT,
+          "User-Agent": userAgent,
           "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
         },
         signal: AbortSignal.timeout(8000),
@@ -807,11 +812,12 @@ export async function proxyArtworkImage(rawUrl: string, res: Response): Promise<
   }
 
   const tryFetch = async (targetUrl: string) => {
+    const isWikimedia = targetUrl.includes("wikimedia.org") || targetUrl.includes("wikipedia.org");
     return await fetch(targetUrl, {
       headers: {
-        "User-Agent": BROWSER_USER_AGENT,
+        "User-Agent": isWikimedia ? WIKIMEDIA_USER_AGENT : BROWSER_USER_AGENT,
         "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
-        "Referer": "https://commons.wikimedia.org/",
+        ...(isWikimedia ? {} : { "Referer": "https://commons.wikimedia.org/" }),
       },
       signal: AbortSignal.timeout(12000),
     });

@@ -54,6 +54,17 @@ export function buildFaithfulArtPrompt(art: ArtworkImageInput): string {
   ].join(" ");
 }
 
+export function getSafeArtworkUrl(url?: string | null): string {
+  if (!url) return "";
+  const trimmed = url.trim();
+  if (!trimmed || trimmed === "null" || trimmed === "undefined") return "";
+  if (trimmed.startsWith("/api/muse/artwork-image/proxy")) return trimmed;
+  if (trimmed.includes("wikimedia.org") || trimmed.includes("wikipedia.org")) {
+    return `/api/muse/artwork-image/proxy?url=${encodeURIComponent(trimmed)}`;
+  }
+  return trimmed;
+}
+
 export function buildPollinationsArtUrl(
   art: ArtworkImageInput,
   width = 1024, height = 768,

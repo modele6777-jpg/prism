@@ -277,7 +277,13 @@ export default function OrbGatewayPage() {
   const [inquiry, setInquiry] = useState("");
   const [isScrying, setIsScrying] = useState(false);
   const [isLeaping, setIsLeaping] = useState(false);
-  const [scryingResult, setScryingResult] = useState<ScryingResult | null>(null);
+  const [scryingResult, setScryingResult] = useState<ScryingResult | null>(() => {
+    try {
+      const saved = sessionStorage.getItem("prism_orb_latest_scrying");
+      if (saved) return JSON.parse(saved);
+    } catch (_) {}
+    return null;
+  });
   const [orbHistory, setOrbHistory] = useState<ScryingResultSnapshot[]>([]);
   const [showOrbHistory, setShowOrbHistory] = useState(false);
   const [hoveredApp, setHoveredApp] = useState<SeptagramAppDimension | null>(null);
@@ -298,6 +304,17 @@ export default function OrbGatewayPage() {
     }, 750);
     return () => clearTimeout(timer);
   }, []);
+
+  // Sync scrying result with sessionStorage to prevent loss
+  useEffect(() => {
+    try {
+      if (scryingResult) {
+        sessionStorage.setItem("prism_orb_latest_scrying", JSON.stringify(scryingResult));
+      } else {
+        sessionStorage.removeItem("prism_orb_latest_scrying");
+      }
+    } catch (_) {}
+  }, [scryingResult]);
 
   // Auto-scroll into view when scrying result is revealed on mobile
   useEffect(() => {

@@ -93,7 +93,7 @@ import { TarotSpread } from "@/components/trinity/TarotSpread";
 import { TarotSpreadSelectionModal } from "@/components/trinity/TarotSpreadSelectionModal";
 import { TarotCard, TAROT_DECK, getTarotCardImageUrl } from "@/data/tarotData";
 import { shuffleCardDeck } from "@/lib/cardShuffle";
-import { playTTS, playTTSInChunks, playConversation, stopTTS, useTTSActive } from "@/utils/tts";
+import { playTTS, playTTSInChunks, playConversation, stopTTS, useTTSActive, prefetchTTS } from "@/utils/tts";
 import { z } from "zod";
 import {
   getTodayDateKey,
@@ -785,6 +785,38 @@ function getInitialTrinityDailyResult(uid?: string) {
   return null;
 }
 
+function extractConciseSummary(text: string): string[] {
+  if (!text) return [];
+  const clean = text
+    .replace(/^#+\s.*$/gm, "")
+    .replace(/\[\w+:\s*[^\]]+\]/g, "")
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/\*\*/g, "")
+    .replace(/\*/g, "")
+    .trim();
+
+  const bulletMatches = clean.match(/^[-*•]\s+(.+)$/gm);
+  if (bulletMatches && bulletMatches.length >= 3) {
+    return bulletMatches
+      .map((b) => b.replace(/^[-*•]\s+/, "").trim())
+      .filter((b) => b.length > 6)
+      .slice(0, 3);
+  }
+
+  const sentences = clean
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length >= 12 && !s.startsWith("http"));
+
+  if (sentences.length <= 3) return sentences;
+
+  return [
+    sentences[0],
+    sentences[Math.floor(sentences.length / 2)],
+    sentences[sentences.length - 1],
+  ];
+}
+
 export default function TrinityApp() {
   const [, navigate] = useLocation();
   const isTTSActive = useTTSActive();
@@ -1043,7 +1075,14 @@ function playDailyCardChimeAsync() {
     const today = getTodayDateKey();
     const limitKey = `limit_daily_trinity_${uid}_${today}`;
     const guestLimitKey = `limit_daily_trinity_guest_${today}`;
-    if (localStorage.getItem(limitKey) || localStorage.getItem(guestLimitKey) || dailyResult || dailyDrawnCard) {
+    if (localStorage.getItem(limitKey) || localStorage.getItem(guestLimitKey) || isTrinityDailyLockedToday() || dailyResult || dailyDrawnCard) {
+      restoreTodayDailyResult();
+      setNotice({
+        open: true,
+        title: "오늘의 타로 1일 1회 완료",
+        message: "오늘의 타로는 1일 1회만 진행할 수 있습니다. 오늘 이미 뽑으신 결과를 복원해 드립니다.",
+      });
+      setShowDailyModal(true);
       return;
     }
     // Mobile tactile haptic vibration
@@ -1434,6 +1473,27 @@ function playDailyCardChimeAsync() {
   const tarotSpreadRecommendation = tarotConcernAnalysis.spread;
   const isAutoRecommended = !customSpread;
   const [isTarotGenerating, setIsTarotGenerating] = useState(false);
+
+  // Auto concise 3-bullet summary for long tarot readings
+  const conciseSummaryBullets = useMemo(() => {
+    if (!tarotResult || tarotResult.length < 320) return [];
+    return extractConciseSummary(tarotResult);
+  }, [tarotResult]);
+
+  const summarySpeechText = useMemo(() => {
+    return conciseSummaryBullets.join(". ");
+  }, [conciseSummaryBullets]);
+
+  // Auto-prefetch TTS for long reading & summary when generated
+  useEffect(() => {
+    if (tarotResult && !isTarotGenerating && tarotResult.length > 320) {
+      const summaryText = extractConciseSummary(tarotResult).join(". ");
+      if (summaryText) {
+        prefetchTTS(summaryText, 'Kore');
+      }
+      prefetchTTS(tarotResult.slice(0, 400), 'Kore');
+    }
+  }, [tarotResult, isTarotGenerating]);
   const [chatInput, setChatInput] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1606,8 +1666,30 @@ function playDailyCardChimeAsync() {
   );
 
   const isTrinityDailyLockedToday = useCallback(() => {
+    const uid = firebaseUser?.uid || "guest";
+    const today = getTodayDateKey();
+    const limitKey = `limit_daily_trinity_${uid}_${today}`;
+    const guestLimitKey = `limit_daily_trinity_guest_${today}`;
+    if (localStorage.getItem(limitKey) || localStorage.getItem(guestLimitKey)) {
+      return true;
+    }
+    if (sharedState?.todayOracles?.[today]?.trinity) {
+      return true;
+    }
+    if (sharedState?.latestDailyOracles?.trinity?.dateKey === today) {
+      return true;
+    }
+    try {
+      const cached = localStorage.getItem(getTrinityDailyResultKey(uid)) || localStorage.getItem(getTrinityDailyResultKey("guest"));
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed?.dateKey === today && (parsed?.diagnosis || parsed?.summary || parsed?.drawnCard)) {
+          return true;
+        }
+      }
+    } catch (_) {}
     return false;
-  }, []);
+  }, [firebaseUser?.uid, sharedState?.todayOracles, sharedState?.latestDailyOracles]);
 
   const applyDailyResultState = useCallback((result: any) => {
     if (!result) return;
@@ -1706,9 +1788,9 @@ function playDailyCardChimeAsync() {
     }
   }, [isTrinityDailyLockedToday, restoreTodayDailyResult, firebaseUser?.uid, resetTarotSession]);
 
-  const isDailyOracleAlreadyDone = false;
+  const isDailyOracleAlreadyDone = isTrinityDailyLockedToday();
 
-  const isDailyTarotBlocked = false;
+  const isDailyTarotBlocked = isTrinityDailyLockedToday();
 
   useEffect(() => {
     const todayKey = getTodayDateKey();
@@ -1997,6 +2079,16 @@ function playDailyCardChimeAsync() {
 
       // 🌟 Check if this is the 1-card Daily Oracle flow from Tarot special feature
       if (isDailyTarotConcern(tarotConcern)) {
+        if (isTrinityDailyLockedToday()) {
+          restoreTodayDailyResult();
+          setNotice({
+            open: true,
+            title: "오늘의 타로 1일 1회 완료",
+            message: "오늘의 타로는 하루 1회만 가능합니다. 오늘 이미 뽑으신 결과를 복원해 드립니다.",
+          });
+          setShowDailyModal(true);
+          return;
+        }
         if (!selectedCards || selectedCards.length === 0) {
           setTarotVirtualMode(true);
           return;
@@ -2823,22 +2915,36 @@ function playDailyCardChimeAsync() {
                             )}
 
                             <div className="mt-4 flex flex-col gap-3 w-full">
-                              <button
-                                onClick={() => handleUnifiedReading("tarot")}
-                                disabled={isTarotGenerating || !tarotConcern.trim()}
-                                className="w-full py-3.5 rounded-2xl bg-yellow-600 hover:bg-yellow-500 text-white font-bold tracking-widest flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:hover:bg-yellow-600 shadow-[0_0_30px_rgba(234,179,8,0.3)] cursor-pointer text-xs uppercase"
-                              >
-                                {isTarotGenerating ? (
-                                  <RefreshCw className="animate-spin" size={18} />
-                                ) : (
-                                  <>
-                                    <TarotCardIcon size={18} />
-                                    {tarotSpreadRecommendation.cardCount === 1
-                                      ? "오늘의 타로 1장 뽑기 (DRAW 1 CARD)"
-                                      : `78장 타로 휠 펼치기 (DRAW ${tarotSpreadRecommendation.cardCount} CARDS)`}
-                                  </>
-                                )}
-                              </button>
+                              {isDailyTarotConcern(tarotConcern) && isTrinityDailyLockedToday() ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    restoreTodayDailyResult();
+                                    setShowDailyModal(true);
+                                  }}
+                                  className="w-full py-3.5 rounded-2xl bg-yellow-600/80 hover:bg-yellow-500 text-white font-bold tracking-widest flex items-center justify-center gap-2 transition-all shadow-[0_0_25px_rgba(234,179,8,0.3)] cursor-pointer text-xs uppercase"
+                                >
+                                  <Sparkles size={18} className="text-yellow-300" />
+                                  <span>오늘의 타로 1일 1회 완료 (오늘의 결과 보기)</span>
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleUnifiedReading("tarot")}
+                                  disabled={isTarotGenerating || !tarotConcern.trim()}
+                                  className="w-full py-3.5 rounded-2xl bg-yellow-600 hover:bg-yellow-500 text-white font-bold tracking-widest flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:hover:bg-yellow-600 shadow-[0_0_30px_rgba(234,179,8,0.3)] cursor-pointer text-xs uppercase"
+                                >
+                                  {isTarotGenerating ? (
+                                    <RefreshCw className="animate-spin" size={18} />
+                                  ) : (
+                                    <>
+                                      <TarotCardIcon size={18} />
+                                      {tarotSpreadRecommendation.cardCount === 1
+                                        ? "오늘의 타로 1장 뽑기 (DRAW 1 CARD)"
+                                        : `78장 타로 휠 펼치기 (DRAW ${tarotSpreadRecommendation.cardCount} CARDS)`}
+                                    </>
+                                  )}
+                                </button>
+                              )}
                             </div>
                           </div>
                         ) : (
@@ -2930,8 +3036,47 @@ function playDailyCardChimeAsync() {
                                         </p>
                                       </div>
                                     ) : (
-                                      <div className="space-y-3">
-                                        <Streamdown>{tarotResult || ""}</Streamdown>
+                                      <div className="space-y-4">
+                                          {/* ✨ 핵심 3줄 요약 카드 (글이 길 때 자동 요약 & 원클릭 TTS) */}
+                                          {conciseSummaryBullets.length > 0 && tarotResult && tarotResult.length > 320 && (
+                                            <div className="p-4 rounded-2xl bg-gradient-to-r from-yellow-500/15 via-amber-500/10 to-transparent border border-yellow-500/35 shadow-inner">
+                                              <div className="flex items-center justify-between gap-2 mb-2.5">
+                                                <div className="flex items-center gap-1.5 text-yellow-300 font-bold text-xs">
+                                                  <Sparkles size={13} className="text-yellow-400 animate-pulse" />
+                                                  <span>✨ 핵심 3줄 요약 (Quick Summary)</span>
+                                                </div>
+                                                <button
+                                                  type="button"
+                                                  onClick={async () => {
+                                                    if (isTTSActive) {
+                                                      stopTTS();
+                                                    } else if (summarySpeechText) {
+                                                      await playTTS(summarySpeechText, 'Kore', false, '신비');
+                                                    }
+                                                  }}
+                                                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                                                    isTTSActive
+                                                      ? "bg-yellow-400/25 text-yellow-300 border border-yellow-400/40 animate-pulse"
+                                                      : "bg-white/10 hover:bg-white/20 text-white/90 border border-white/15"
+                                                  }`}
+                                                  title="핵심 3줄 요약 음성 낭독"
+                                                >
+                                                  {isTTSActive ? <VolumeX size={11} /> : <Volume2 size={11} />}
+                                                  <span>{isTTSActive ? "중지" : "요약 듣기"}</span>
+                                                </button>
+                                              </div>
+                                              <ul className="space-y-1.5 text-xs text-white/90 leading-relaxed font-sans">
+                                                {conciseSummaryBullets.map((bullet, bIdx) => (
+                                                  <li key={bIdx} className="flex items-start gap-2">
+                                                    <span className="text-yellow-400 font-bold shrink-0 mt-0.5">•</span>
+                                                    <span>{bullet}</span>
+                                                  </li>
+                                                ))}
+                                              </ul>
+                                            </div>
+                                          )}
+
+                                          <Streamdown>{tarotResult || ""}</Streamdown>
                                         {isTarotGenerating && (
                                           <p className="text-[10px] text-yellow-400/60 uppercase tracking-widest animate-pulse text-center">
                                             리딩 수신 중...
@@ -2950,15 +3095,22 @@ function playDailyCardChimeAsync() {
                               <div className="pt-3 border-t border-white/10 flex flex-col gap-3 w-full shrink-0">
                                 {/* Redraw Button */}
                                 <div className="flex justify-center pt-1">
-                                  <button
-                                    onClick={() => {
-                                      resetTarotSession(false);
-                                    }}
-                                    className="text-yellow-400/85 hover:text-yellow-300 hover:bg-yellow-500/10 transition-all text-[11px] uppercase tracking-widest font-bold flex items-center gap-2 py-2 px-6 rounded-full bg-yellow-500/5 border border-yellow-500/20 hover:border-yellow-500/40 cursor-pointer active:scale-95 duration-200"
-                                  >
-                                    <RefreshCw size={11} />
-                                    <span>새로운 리딩 (Redraw)</span>
-                                  </button>
+                                  {isDailyTarotConcern(tarotConcern) || isTrinityDailyLockedToday() ? (
+                                    <div className="text-[11px] text-yellow-300/80 font-sans py-2 px-5 rounded-full bg-yellow-500/10 border border-yellow-500/25 flex items-center gap-1.5 shadow-sm">
+                                      <Sparkles size={12} className="text-yellow-400" />
+                                      <span>오늘의 타로는 1일 1회 완료되었습니다 (내일 00시 리셋)</span>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      onClick={() => {
+                                        resetTarotSession(false);
+                                      }}
+                                      className="text-yellow-400/85 hover:text-yellow-300 hover:bg-yellow-500/10 transition-all text-[11px] uppercase tracking-widest font-bold flex items-center gap-2 py-2 px-6 rounded-full bg-yellow-500/5 border border-yellow-500/20 hover:border-yellow-500/40 cursor-pointer active:scale-95 duration-200"
+                                    >
+                                      <RefreshCw size={11} />
+                                      <span>새로운 리딩 (Redraw)</span>
+                                    </button>
+                                  )}
                                 </div>
 
                                 {/* Lucy Deep Insight Card */}

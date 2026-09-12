@@ -88,7 +88,8 @@
 
         function isStaleAssetError(value) {
           var msg = String(value?.message || value?.reason?.message || value?.reason || value || '');
-          return /ChunkLoadError|Loading chunk|Failed to fetch dynamically imported module|Importing a module script failed|preload/i.test(msg);
+          // Strictly match only genuine Vite chunk/module dynamic import network errors, never generic audio/font preload warnings
+          return /ChunkLoadError|Loading chunk [\w-]+ failed|Failed to fetch dynamically imported module|Importing a module script failed/i.test(msg);
         }
 
         window.addEventListener('vite:preloadError', function(e) {
@@ -96,12 +97,10 @@
           recoverFromStaleAssets();
         });
         window.addEventListener('unhandledrejection', function(e) {
-          if (isStaleAssetError(e)) recoverFromStaleAssets();
+          if (isStaleAssetError(e)) {
+            recoverFromStaleAssets();
+          }
         });
-        window.addEventListener('error', function(e) {
-          var failedScript = e.target instanceof HTMLScriptElement && e.target.src;
-          if (failedScript || isStaleAssetError(e.error || e.message)) recoverFromStaleAssets();
-        }, true);
       })();
     </script>
     <meta charset="UTF-8" />

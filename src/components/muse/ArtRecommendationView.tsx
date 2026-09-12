@@ -28,6 +28,7 @@ import { recordPrismFeature } from "@/lib/prismOmniSync";
 import {
   resolveArtworkImage,
   buildPollinationsArtUrl,
+  getSafeArtworkUrl,
   type ArtworkImageSource,
 } from "@/utils/artworkImage";
 import { useApp } from "@/contexts/AppContext";
@@ -1618,16 +1619,16 @@ export function ArtRecommendationView() {
   );
 
   const effectiveImage = useMemo(() => {
+    let rawUrl: string | null = null;
     if (nanobananaImage && nanobananaImage !== "null" && nanobananaImage !== "undefined") {
-      return nanobananaImage;
-    }
-    if (recommendation?.imageUrl) {
-      return recommendation.imageUrl;
-    }
-    if (recommendation) {
+      rawUrl = nanobananaImage;
+    } else if (recommendation?.imageUrl) {
+      rawUrl = recommendation.imageUrl;
+    } else if (recommendation) {
       return buildPollinationsArtUrl(recommendation);
     }
-    return null;
+    if (!rawUrl) return null;
+    return getSafeArtworkUrl(rawUrl);
   }, [nanobananaImage, recommendation]);
 
   // Ensure image generation starts immediately whenever recommendation is ready
@@ -2071,15 +2072,18 @@ export function ArtRecommendationView() {
                         alt={`${recommendation.title} — ${recommendation.creator}`}
                         referrerPolicy="no-referrer"
                         onLoad={() => setLoadingImage(false)}
-                        onError={() => {
+                        onError={(e) => {
                           setLoadingImage(false);
-                          if (imageRetryCountRef.current === 0) {
-                            imageRetryCountRef.current += 1;
+                          if (recommendation) {
                             const fallbackUrl = buildPollinationsArtUrl(recommendation);
-                            setNanobananaImage(fallbackUrl);
-                            setArtworkImageSource("pollinations");
-                            localStorage.setItem(ART_CACHE_KEYS.image, fallbackUrl);
-                            localStorage.setItem(ART_CACHE_KEYS.imageSource, "pollinations");
+                            e.currentTarget.src = fallbackUrl;
+                            if (imageRetryCountRef.current === 0) {
+                              imageRetryCountRef.current += 1;
+                              setNanobananaImage(fallbackUrl);
+                              setArtworkImageSource("pollinations");
+                              localStorage.setItem(ART_CACHE_KEYS.image, fallbackUrl);
+                              localStorage.setItem(ART_CACHE_KEYS.imageSource, "pollinations");
+                            }
                           }
                         }}
                         onClick={() => setIsArtImageOpen(true)}

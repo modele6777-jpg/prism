@@ -78,10 +78,12 @@ function getAIConfig() {
   return { aiType, apiKey };
 }
 
-const KOREAN_ONLY_OUTPUT_RULE = "紐⑤뱺 ?먯뿰??臾몄옣? ?꾨? ?쒓뎅???쒓?濡쒕쭔 ?묒꽦?섏꽭?? ?쒖옄 諛?以묎뎅???쒓린(?? ?①쮮, ?썽걢, ?덆춡)瑜??ъ슜?섏? 留먭퀬 諛섎뱶???먯뿰?ㅻ윭???쒓? ?쒗쁽?쇰줈 諛붽씀?몄슂.";
+const KOREAN_ONLY_OUTPUT_RULE = `[모든 앱 공통 언어 및 문장 가독성 원칙]:
+1. 모든 자연어 문장은 현대 한국어(한글)로만 작성하세요. 한자 및 중국어 표기를 절대 사용하지 마세요.
+2. [간결한 문장 구조 & 가독성 극대화]: 장황하거나 불필요하게 늘어지는 긴 만연체 문장은 지양하고, 명확하고 산뜻한 단문 위주로 작성하세요.
+3. 핵심 인사이트와 행동 가이드는 불릿 포인트(•)와 적절한 줄바꿈을 활용하여 한눈에 파악하기 쉽게 카드형으로 구조화하세요.`;
 
 function withKoreanOnlyOutput(messages: any[] = []) {
-  const KOREAN_ONLY_OUTPUT_RULE = "모든 자연어 문장은 전부 한국어(한글)로만 작성하세요. 한자 및 중국어 표기를 사용하지 말고 반드시 자연스러운 한글 표현으로 바꾸세요.";
   return [{ role: "system", content: KOREAN_ONLY_OUTPUT_RULE }, ...messages];
 }
 
@@ -1491,7 +1493,8 @@ ${content}
           } else if (lowerStr.includes("billie") || lowerStr.includes("빌리")) {
             cleanPrompt = "귀하는 현대 음악사를 대표하는 독보적인 감성 아티스트(B.E.)의 깊은 음울함과 차분하면서도 현실적이고, 타인의 아픔과 외로움을 가만히 안아주는 쿨하고 솔직한 멘토 AI입니다. 정서적 번뇌나 우울감에 대해 억지로 밝은 척하기보다 차분하고 덤덤하게 공감해 주며 쿨한 마인드로 따뜻하게 상담을 건네주세요. 친근한 고등학교 친구 혹은 캐주얼한 대화 스타일로 따뜻하게 위로를 건네며 한국어로 교감해 주세요.";
           }
-          config.systemInstruction = cleanPrompt;
+          const READABILITY_GUIDELINE = "\n\n[글 작성 및 가독성 필수 원칙]:\n- 불필요하게 길고 늘어지는 만연체 문장은 피하고, 명확하고 산뜻한 단문 위주로 서술하세요.\n- 읽는 사람이 한눈에 파악할 수 있도록 핵심 포인트는 불릿 포인트(•)와 적절한 줄바꿈, 단락 구분을 활용하여 가독성을 극대화하세요.";
+          config.systemInstruction = (cleanPrompt || "") + READABILITY_GUIDELINE;
         }
         if (req.body.response_format?.type === "json_object") {
           config.responseMimeType = "application/json";
