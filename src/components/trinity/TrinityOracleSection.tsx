@@ -11,7 +11,6 @@ import { TarotSpread, SelectedTarotCardEntry } from './TarotSpread';
 import { invokeLLM } from '@/lib/ai';
 import { playTTS, stopTTS, useTTSActive } from '@/utils/tts';
 import { sendPrismToss } from '@/lib/prismToss';
-import { ZezeKakaoChat } from './ZezeKakaoChat';
 import { useApp, getPersistentUserProfile, setPersistentUserProfile } from '@/contexts/AppContext';
 import {
   calculateDetailedSaju,
@@ -982,7 +981,7 @@ export function TrinityOracleSection() {
                 <div className="w-12 h-12 mx-auto rounded-full border-2 border-amber-400/30 border-t-amber-400 animate-spin" />
                 <p className="text-sm font-serif text-amber-200 animate-pulse">
                   {oracleMode === 'healing'
-                    ? '내면아이 제제가 3장의 마음 조각을 다정하게 엮고 있어요...'
+                    ? '3장의 마음 조각을 다정하게 엮어 오라클을 조율 중입니다...'
                     : '4원소 현실 실행 툴킷과 마인드셋 브리핑을 조율 중입니다...'}
                 </p>
               </div>
@@ -994,16 +993,6 @@ export function TrinityOracleSection() {
 
                 {/* 3 Cards Deep Insights Reading (내면아이 성찰 메시지 제외, 카드 고유 뜻과 상징만 표기) */}
                 {renderCardInsightsSection(healingResult.card_insights)}
-
-                {/* 1. 헬로우봇 카톡 형식 내면아이 제제 1:1 종합상담 대화방 */}
-                <ZezeKakaoChat
-                  oracleMode="healing"
-                  drawnCards={drawnCards}
-                  healingResult={healingResult}
-                  growthResult={null}
-                  slotPositions={slotPositions}
-                  saju={saju}
-                />
 
                 {/* 2. Prescribed Art -> Toss to Muse Art Sanctuary */}
                 <div
@@ -1109,16 +1098,6 @@ export function TrinityOracleSection() {
 
                 {/* 3 Cards Deep Insights Reading (내면아이 성찰 메시지 제외, 카드 고유 뜻과 상징만 표기) */}
                 {renderCardInsightsSection(growthResult.card_insights)}
-
-                {/* 1. 헬로우봇 카톡 형식 내면아이 제제 1:1 마인드셋 종합상담 코칭 대화방 */}
-                <ZezeKakaoChat
-                  oracleMode="growth"
-                  drawnCards={drawnCards}
-                  healingResult={null}
-                  growthResult={growthResult}
-                  slotPositions={slotPositions}
-                  saju={saju}
-                />
 
                 {/* 2. Dominant Element & Focus Area */}
                 <div className="glass p-5 rounded-3xl bg-white/[0.02] border border-white/10 flex items-center gap-4">
