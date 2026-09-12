@@ -11,10 +11,7 @@ import { BigBangExpansionOverlay } from "./components/omniwarp/BigBangExpansionO
 import ErrorBoundary from "./components/ErrorBoundary";
 import ReloadPrompt from "./components/ReloadPrompt";
 import InstallPrompt from "./components/InstallPrompt";
-import { GuideModal } from "./components/GuideModal";
 import { GlobalHandbookAudioWidget } from "./components/GlobalHandbookAudioWidget";
-
-import ProfileModal from "./components/ProfileModal";
 import { PageLoader } from "./components/PageLoader";
 import { PrismRainbowLoader } from "./components/PrismRainbowLoader";
 import { OrbCosmicLoader } from "./components/OrbCosmicLoader";
@@ -129,8 +126,7 @@ function ActivePage({ loc }: { loc: string }) {
 function AppContent() {
   const { firebaseUser, isAuthReady, logout, signInWithGoogle, sharedState, isUnlocked, unlock, isChatOpen, syncPrismDevices } = useApp();
   const [location, navigate] = useLocation();
-  const [isProfileOpen, setIsProfileOpen] = React.useState(false);
-  const [isGuideOpen, setIsGuideOpen] = React.useState(false);
+
 
   // Loading transition state with the rainbow triangle emblem
   const [isTransitioning, setIsTransitioning] = React.useState(false);
@@ -406,15 +402,7 @@ function AppContent() {
         )}
       </AnimatePresence>
 
-      <ProfileModal
-        isOpen={isProfileOpen}
-        onClose={() => setIsProfileOpen(false)}
-      />
 
-      <GuideModal
-        isOpen={isGuideOpen}
-        onClose={() => setIsGuideOpen(false)}
-      />
 
       <main className="flex-1 min-h-0 overflow-hidden flex flex-col relative w-full">
         <AnimatePresence mode="wait">

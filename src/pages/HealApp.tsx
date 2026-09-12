@@ -26,11 +26,8 @@ import { z } from 'zod';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, LineChart, Line, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from 'recharts';
 import { CalendarView } from '@/components/CalendarView';
 import { SedonaBible } from '@/components/heal/SedonaBible';
-import { SedonaHandbookModal } from '@/components/heal/SedonaHandbookModal';
 import { DoctorPrescriptionSlides } from '@/components/heal/DoctorPrescriptionSlides';
 import { shuffleCardDeck } from '@/lib/cardShuffle';
-
-import { SpecialFeatureFabGroup, SpecialFeatureButton, HandbookFabButton } from '@/components/SpecialFeatureFab';
 import {
   SPECIAL_FEATURE_CHROME_HIDDEN_CLASS,
   useSpecialFeatureChromeHidden,
@@ -975,7 +972,6 @@ export default function HealApp() {
         setShowDailyModal(false);
         setShowSoulModal(false);
         setIsChatOpen(false);
-        setShowEmblemModal(false);
         resetAppScroll();
         sessionStorage.removeItem('prism_target_tab');
       }
@@ -1004,7 +1000,6 @@ export default function HealApp() {
           setShowDailyModal(false);
           setShowSoulModal(false);
           setIsChatOpen(false);
-          setShowEmblemModal(false);
           resetAppScroll();
         }
       }
@@ -1112,9 +1107,7 @@ export default function HealApp() {
   const [dailyResult, setDailyResult] = useState<any>(null);
   const [isDailyOracleLoading, setIsDailyOracleLoading] = useState(false);
   const [showDailyModal, setShowDailyModal] = useState(false);
-  const [showEmblemModal, setShowEmblemModal] = useState(false);
   const [limitModalInfo, setLimitModalInfo] = useState<{ open: boolean; type: 'daily' | 'soul'; dapp: string } | null>(null);
-  const [showHandbookModal, setShowHandbookModal] = useState(false);
 
   // States for Daily Tarot Card Picking
   const [dailyDrawnCard, setDailyDrawnCard] = useState<(AuraThemeCard & { isReversed?: boolean }) | null>(null);
@@ -1606,13 +1599,6 @@ export default function HealApp() {
          </div>
       </div>
 
-      <SpecialFeatureFabGroup>
-        <HandbookFabButton
-          theme="aura"
-          tooltipLabel="ReBible"
-        />
-      </SpecialFeatureFabGroup>
-
       {/* Top Navigation */}
       <nav className={`prism-xs-subnav fixed top-safe-nav md:top-safe-nav-md left-1/2 -translate-x-1/2 z-[100] flex items-center gap-1 p-1 rounded-3xl bg-white/5 backdrop-blur-2xl border border-white/10 shadow-2xl max-w-[95vw] overflow-x-auto no-scrollbar md:max-w-fit md:overflow-visible transition-all duration-300 ${isSpecialFeatureChromeHidden ? SPECIAL_FEATURE_CHROME_HIDDEN_CLASS : 'opacity-100'}`}>
          {[
@@ -2073,75 +2059,7 @@ export default function HealApp() {
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {showEmblemModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[2000] bg-black/85 backdrop-blur-xl flex items-center justify-center p-4 overflow-y-auto"
-            onClick={() => setShowEmblemModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              className="glass p-8 md:p-10 max-w-lg w-full rounded-[48px] border border-emerald-500/30 text-center space-y-8 shadow-2xl relative my-8 animate-in fade-in zoom-in-95 duration-200"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                onClick={() => setShowEmblemModal(false)}
-                className="absolute top-6 right-6 text-white/40 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full"
-              >
-                <X size={18} />
-              </button>
 
-              <div className="mx-auto w-20 h-20 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shadow-[0_0_30px_rgba(16,185,129,0.2)]">
-                <Activity className="text-emerald-400 animate-pulse" size={40} />
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="text-2xl font-bold font-sans text-white tracking-tight uppercase">Aura Sanctuary Lore</h3>
-                <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-[0.3em]">마음 돌봄 가이드 & 웰니스</p>
-              </div>
-
-              <p className="text-sm text-emerald-100/70 leading-relaxed font-sans text-left break-keep bg-white/5 p-6 rounded-3xl border border-emerald-500/10">
-                <strong>AURA</strong>는 지친 현대인의 심신을 진단하고, 심도 깊은 정적 힐링을 선사하는 웰니스 코치 공간입니다. 내면에 쌓인 피로와 완벽주의적 스트레스를 완화하고, AURA 1분 명상(60s Micro Healing)과 수호자와의 대화를 통해 온전한 마음의 평화와 오라의 안정성을 다스리도록 안내합니다.
-              </p>
-
-              <div className="space-y-4">
-                {[
-                  { label: 'Wellness ResonanceStability', val: 92, color: 'from-emerald-400 to-teal-500' },
-                  { label: 'Somatic Healing Flow', val: 89, color: 'from-teal-400 to-cyan-400' },
-                  { label: 'Stress Relief Coherence', val: 94, color: 'from-emerald-500 to-green-600' }
-                ].map(spec => (
-                  <div key={spec.label} className="space-y-1 text-left">
-                    <div className="flex justify-between text-xs font-mono">
-                      <span className="text-white/60">{spec.label}</span>
-                      <span className="text-emerald-400 font-bold">{spec.val}%</span>
-                    </div>
-                    <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
-                      <motion.div 
-                        initial={{ width: 0 }} 
-                        animate={{ width: `${spec.val}%` }} 
-                        transition={{ duration: 1.2, ease: "easeOut" }} 
-                        className={`h-full bg-gradient-to-r ${spec.color}`} 
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <button
-                onClick={() => setShowEmblemModal(false)}
-                className="w-full py-4 rounded-[20px] bg-emerald-600 text-white font-black uppercase tracking-[0.2em] shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all text-xs"
-              >
-                Sync Complete 🌀
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       <AnimatePresence>
         {limitModalInfo && limitModalInfo.open && (

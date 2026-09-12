@@ -12,6 +12,8 @@ interface SpecialFeatureFabGroupProps {
 
 export function SpecialFeatureFabGroup({ children, className = "" }: SpecialFeatureFabGroupProps) {
   const isChromeHidden = useSpecialFeatureChromeHidden();
+  const validChildren = React.Children.toArray(children).filter(Boolean);
+  if (validChildren.length === 0) return null;
 
   return (
     <div

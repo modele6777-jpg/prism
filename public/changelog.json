@@ -1,5 +1,20 @@
 [
   {
+    "version": "1.2.917",
+    "summary": "앱 내 중복 버튼 및 미사용 부유식 FAB/데드 모달 전면 정리 및 UI/UX 간결화",
+    "builtAt": "2026-09-12T11:25:00.000Z",
+    "items": [
+      "🧹 미사용 부유식 FAB 그룹(SpecialFeatureFabGroup & HandbookFabButton) 전 채널(Hub, Orange, Trinity, Heal, Bluebird, Muse, Epilogue) 전면 제거하여 고스트 오버레이 제거",
+      "✨ HubHome 상단 헤더의 중복 앱 설치 유도 버튼 제거 및 전역 PWA 설치 프롬프트로 일원화",
+      "🗑️ 채널별 비활성/미호출 데드 모달(Sanctuary Lore Emblem 모달 7종, StatusBarDashboard, Trinity 잔여 타로 모달, Orange Sync Room 등 1,500여 줄) 완전 발본색원",
+      "💎 Lucy 독립 대화 페이지(LucyStandalonePage) 상단 브랜드 로고 클릭 시 허브 홈('/')으로 복귀하도록 UX 일원화",
+      "⚡ 불필요한 미사용 상태 변수 및 이벤트 리스너 정리로 클린 코드베이스 및 앱 렌더링 성능 대폭 향상"
+    ],
+    "author": "Antigravity AI Agent",
+    "buildEnvironment": "cloud-run"
+  },
+
+  {
     "version": "1.2.916",
     "summary": "7대 채널 상단 서브메뉴의 시너지 메뉴를 메뉴 맨 끝(3번째)으로 재배치",
     "builtAt": "2026-09-12T10:55:00.000Z",

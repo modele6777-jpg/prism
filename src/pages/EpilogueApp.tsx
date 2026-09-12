@@ -32,8 +32,6 @@ import { type UserProfile, mergeUserProfiles } from '@/lib/sharedState';
 import { cleanFirestoreData } from '@/lib/sharedStateSync';
 import { SajuCardView } from '@/components/SajuCardView';
 import { db, doc, setDoc, serverTimestamp } from '@/lib/firebase';
-import { SpecialFeatureFabGroup, HandbookFabButton } from '@/components/SpecialFeatureFab';
-import { EpilogueHandbookModal } from '@/components/epilogue/EpilogueHandbookModal';
 import { EpilogueDiaryView } from '@/components/epilogue/EpilogueDiaryView';
 import { EpilogueSynergySection } from '@/components/epilogue/EpilogueSynergySection';
 import { useNarrowPhone } from '@/hooks/useNarrowPhone';
@@ -245,8 +243,6 @@ export default function EpilogueApp() {
   const [currentSection, setCurrentSection] = useState(0);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [showHandbookModal, setShowHandbookModal] = useState(false);
-  const [showEmblemModal, setShowEmblemModal] = useState(false);
   const { isCurrentAppPlaying: isBinauralPlaying, toggle: toggleBinaural } = useBinauralBeat('epilogue');
   const [syncingDevices, setSyncingDevices] = useState(false);
   const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
@@ -1159,88 +1155,6 @@ export default function EpilogueApp() {
         onClose={() => setShowUpdateModal(false)}
       />
 
-      {/* Epilogue Handbook Modal */}
-      
-      {/* Epilogue Sanctuary Lore Modal */}
-      <AnimatePresence>
-        {showEmblemModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[2000] bg-black/85 backdrop-blur-xl flex items-center justify-center p-4 overflow-y-auto z-[9999]"
-            onClick={() => setShowEmblemModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              className="glass p-8 md:p-10 max-w-lg w-full rounded-[48px] border border-purple-500/30 text-center space-y-8 shadow-2xl relative my-8 animate-in fade-in zoom-in-95 duration-200"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                type="button"
-                onClick={() => setShowEmblemModal(false)}
-                className="absolute top-6 right-6 text-white/40 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-
-              <div className="mx-auto w-20 h-20 rounded-full bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shadow-[0_0_30px_rgba(192,132,252,0.25)]">
-                <Moon className="text-purple-400 animate-pulse" size={40} strokeWidth={1.5} />
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="text-2xl font-bold font-sans text-white tracking-tight uppercase">Epilogue Sanctuary Lore</h3>
-                <p className="text-[10px] text-purple-300 font-bold uppercase tracking-[0.3em]">Soul Architect · 소울 프로필 &amp; 마스터 피날레</p>
-              </div>
-
-              <p className="text-sm text-purple-100/75 leading-relaxed font-sans text-left break-keep bg-white/5 p-6 rounded-3xl border border-purple-500/10">
-                <strong>EPILOGUE</strong>는 하루 동안 쌓인 사주, 힐링, 웰니스, 창작의 모든 발자취를 집대성하고 당신의 소울 프로필을 조율하는 마스터 샌추어리입니다. 하루의 여정을 평화롭게 매듭짓고 내일의 새로운 새벽을 밝힙니다.
-              </p>
-
-              <div className="space-y-4">
-                {[
-                  { label: 'Soul Spectrum Coherence (소울 스펙트럼 일치도)', val: 97, color: 'from-purple-400 to-pink-500' },
-                  { label: 'Omniverse Balance Ratio (5대 우주 조화율)', val: 94, color: 'from-pink-400 to-indigo-500' },
-                  { label: 'Circadian Energy Recovery (생체 에너지 회복률)', val: 96, color: 'from-indigo-500 to-purple-600' }
-                ].map(spec => (
-                  <div key={spec.label} className="space-y-1 text-left">
-                    <div className="flex justify-between text-xs font-mono">
-                      <span className="text-white/60">{spec.label}</span>
-                      <span className="text-purple-300 font-bold">{spec.val}%</span>
-                    </div>
-                    <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
-                      <motion.div 
-                        initial={{ width: 0 }} 
-                        animate={{ width: `${spec.val}%` }} 
-                        transition={{ duration: 1.2, ease: "easeOut" }} 
-                        className={`h-full bg-gradient-to-r ${spec.color}`} 
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setShowEmblemModal(false)}
-                className="w-full py-4 rounded-[20px] bg-gradient-to-r from-purple-600 to-pink-600 text-white font-black uppercase tracking-[0.2em] shadow-xl shadow-purple-500/20 hover:scale-[1.02] active:scale-95 transition-all text-xs cursor-pointer"
-              >
-                Sync Complete 🌀
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Special Feature Floating Action Buttons */}
-      <SpecialFeatureFabGroup>
-        <HandbookFabButton
-          theme="epilogue"
-          tooltipLabel="ReBible"
-        />
-      </SpecialFeatureFabGroup>
     </div>
   );
 }

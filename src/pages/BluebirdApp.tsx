@@ -21,7 +21,6 @@ import {
 } from '@/lib/ai';
 import { shuffleCardDeck, quantumSeedShuffle } from '@/lib/cardShuffle';
 import { Streamdown } from '@/components/Streamdown';
-import { StatusBarDashboard } from '@/components/StatusBarDashboard';
 import { CalendarView } from '@/components/CalendarView';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, LineChart, Line, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from 'recharts';
 import NoticeModal from '@/components/NoticeModal';
@@ -32,7 +31,6 @@ import { recordPrismFeature, recordDailyOracleResult } from '@/lib/prismOmniSync
 import { HoponoponoBible } from '@/components/bluebird/HoponoponoBible';
 import { SecretMessage } from '@/components/bluebird/SecretMessage';
 import { BluebirdSynergySection } from '@/components/bluebird/BluebirdSynergySection';
-import { HoponoponoHandbookModal } from '@/components/bluebird/HoponoponoHandbookModal';
 import { HoponoponoToolPicker, HoponoponoToolResultCard } from '@/components/bluebird/HoponoponoToolGenerator';
 import {
   generateHoponoponoTool,
@@ -58,7 +56,6 @@ import { getTodayDateKey, getDailyLockKey, isTimestampToday } from '@/lib/dailyC
 import { PRISM_VOICE_RULES } from '@/lib/copyTone';
 import { useScrollToTopOnChange } from '@/hooks/useScrollToTopOnChange';
 import { resetAppScroll } from '@/utils/scrollToTop';
-import { SpecialFeatureFabGroup, SpecialFeatureButton, HandbookFabButton } from '@/components/SpecialFeatureFab';
 import {
   SPECIAL_FEATURE_CHROME_HIDDEN_CLASS,
   useSpecialFeatureChromeHidden,
@@ -266,10 +263,7 @@ export default function BluebirdApp() {
 
   const [showDailyModal, setShowDailyModal] = useState(false);
   const [showSecretMessageModal, setShowSecretMessageModal] = useState(false);
-  const [showHoponoponoHandbookModal, setShowHoponoponoHandbookModal] = useState(false);
   const [showChat, setShowChat] = useState(false);
-  const [showDashboard, setShowDashboard] = useState(false);
-  const [showEmblemModal, setShowEmblemModal] = useState(false);
   const [limitModalInfo, setLimitModalInfo] = useState<{ open: boolean; type: 'daily' | 'soul'; dapp: string } | null>(null);
 
   const [isBreathingCalibrationActive, setIsBreathingCalibrationActive] = useState(false);
@@ -416,8 +410,6 @@ export default function BluebirdApp() {
         setShowDailyModal(false);
         setShowSecretMessageModal(false);
         setShowChat(false);
-        setShowDashboard(false);
-        setShowEmblemModal(false);
         resetAppScroll();
         sessionStorage.removeItem('prism_target_tab');
       }
@@ -446,8 +438,6 @@ export default function BluebirdApp() {
           setShowDailyModal(false);
           setShowSecretMessageModal(false);
           setShowChat(false);
-          setShowDashboard(false);
-          setShowEmblemModal(false);
           resetAppScroll();
         }
       }
@@ -2454,12 +2444,6 @@ export default function BluebirdApp() {
          </div>
       </div>
 
-      <SpecialFeatureFabGroup>
-        <HandbookFabButton
-          theme="bluebird"
-          tooltipLabel="ReBible"
-        />
-      </SpecialFeatureFabGroup>
 
       <nav className={`prism-xs-subnav fixed top-safe-nav md:top-safe-nav-md left-1/2 -translate-x-1/2 z-[100] flex items-center gap-1 p-1 rounded-3xl bg-white/5 backdrop-blur-2xl border border-white/10 shadow-2xl max-w-[95vw] overflow-x-auto no-scrollbar md:max-w-fit md:overflow-visible transition-all duration-300 ${isSpecialFeatureChromeHidden ? SPECIAL_FEATURE_CHROME_HIDDEN_CLASS : 'opacity-100'}`}>
           {[
@@ -3286,77 +3270,6 @@ export default function BluebirdApp() {
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {showEmblemModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[2000] bg-black/85 backdrop-blur-xl flex items-center justify-center p-4 overflow-y-auto z-[9999]"
-            onClick={() => setShowEmblemModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              className="glass p-8 md:p-10 max-w-lg w-full rounded-[48px] border border-sky-500/30 text-center space-y-8 shadow-2xl relative my-8 animate-in fade-in zoom-in-95 duration-200"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                onClick={() => setShowEmblemModal(false)}
-                className="absolute top-6 right-6 text-white/40 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full"
-              >
-                <X size={18} />
-              </button>
-
-              <div className="mx-auto w-20 h-20 rounded-full bg-sky-500/10 border border-sky-500/20 flex items-center justify-center shadow-[0_0_30px_rgba(14,165,233,0.2)]">
-                <Bird className="text-sky-400 animate-pulse" size={40} />
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="text-2xl font-bold font-sans text-white tracking-tight uppercase">Bluebird Oracle Lore</h3>
-                <p className="text-[10px] text-sky-400 font-bold uppercase tracking-[0.3em]">우주 주파수 메신저</p>
-              </div>
-
-              <p className="text-sm text-sky-100/70 leading-relaxed font-sans text-left break-keep bg-white/5 p-6 rounded-3xl border border-sky-500/10">
-                푸른 빛을 띠는 차원의 전령 <strong>블루버드</strong>는 우주의 미세한 평화 주파수를 수집하여 고독한 방랑자의 영혼을 보듬는 역할을 수행합니다. 수만 광년 너머 깊은 무의식의 수면으로부터 수렴된 지혜를 가공하여, 복잡한 현실에 지친 영혼이 온전한 안식과 내면의 고요를 얻을 수 있도록 돕습니다.
-              </p>
-
-              <div className="space-y-4">
-                {[
-                  { label: 'Harmony Resonance', val: 94, color: 'from-sky-400 to-blue-500' },
-                  { label: 'Sleep Wave Stability', val: 88, color: 'from-teal-400 to-sky-400' },
-                  { label: 'Anxiety Dissolution', val: 92, color: 'from-indigo-400 to-purple-500' }
-                ].map(spec => (
-                  <div key={spec.label} className="space-y-1 text-left">
-                    <div className="flex justify-between text-xs font-mono">
-                      <span className="text-white/60">{spec.label}</span>
-                      <span className="text-sky-400 font-bold">{spec.val}%</span>
-                    </div>
-                    <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
-                      <motion.div 
-                        initial={{ width: 0 }} 
-                        animate={{ width: `${spec.val}%` }} 
-                        transition={{ duration: 1.2, ease: "easeOut" }} 
-                        className={`h-full bg-gradient-to-r ${spec.color}`} 
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <button
-                onClick={() => setShowEmblemModal(false)}
-                className="w-full py-4 rounded-[20px] bg-sky-600 text-white font-black uppercase tracking-[0.2em] shadow-xl shadow-sky-500/20 hover:scale-[1.02] active:scale-95 transition-all text-xs"
-              >
-                Sync Complete 🌀
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <StatusBarDashboard isOpen={showDashboard} onClose={() => setShowDashboard(false)} color={SKY_BLUE} appName="Bluebird" />
     </div>
   );
 }

@@ -18,7 +18,6 @@ import { z } from 'zod';
 import { Streamdown } from '@/components/Streamdown';
 import { TTSButton } from '@/components/TTSButton';
 import { AnimatedText } from '@/components/AnimatedText';
-import { StatusBarDashboard } from '@/components/StatusBarDashboard';
 import { SoulFrequencyChart, EmotionDistribution } from '@/components/SoulCharts';
 import { CalendarView } from '@/components/CalendarView';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, LineChart, Line, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from 'recharts';
@@ -26,13 +25,11 @@ import NoticeModal from '@/components/NoticeModal';
 
 import imageCompression from 'browser-image-compression';
 import { SecretBible } from '@/components/orange/SecretBible';
-import { SecretHandbookModal } from '@/components/orange/SecretHandbookModal';
 import { useBinauralBeat } from '@/hooks/useBinauralBeat';
 import { recordPrismFeature, recordDailyOracleResult } from '@/lib/prismOmniSync';
 import { DailySecret } from '@/components/orange/DailySecret';
 import { WishingWellModal } from '@/components/orange/WishingWellModal';
 import { OrangeSynergySection } from '@/components/orange/OrangeSynergySection';
-import { SpecialFeatureFabGroup, SpecialFeatureButton, HandbookFabButton } from '@/components/SpecialFeatureFab';
 import {
   SPECIAL_FEATURE_CHROME_HIDDEN_CLASS,
   useSpecialFeatureChromeHidden,
@@ -285,13 +282,9 @@ export default function OrangeApp() {
 
   const [notice, setNotice] = useState<{ open: boolean; title: string; message: string }>({ open: false, title: '', message: '' });
   const [dailyResult, setDailyResult] = useState<any>(null);
-  const [showDailyModal, setShowDailyModal] = useState(false);
-  const [showSoulModal, setShowSoulModal] = useState(false);
   const [showSecretModal, setShowSecretModal] = useState(false);
   const [showWishingWellModal, setShowWishingWellModal] = useState(false);
-  const [showEmblemModal, setShowEmblemModal] = useState(false);
   const [limitModalInfo, setLimitModalInfo] = useState<{ open: boolean; type: 'daily' | 'soul'; dapp: string } | null>(null);
-  const [showHandbookModal, setShowHandbookModal] = useState(false);
   const isSpecialFeatureChromeHidden = useSpecialFeatureChromeHidden();
   const [isFlipped, setIsFlipped] = useState(false);
 
@@ -350,11 +343,6 @@ export default function OrangeApp() {
       if (!tab) return;
       if (tab === 'secret' || tab === 'synergy' || tab === 'wishingWell') {
         setActiveMode(tab);
-        setShowDailyModal(false);
-        setShowSoulModal(false);
-        setShowChat(false);
-        setShowDashboard(false);
-        setShowEmblemModal(false);
         resetAppScroll();
         sessionStorage.removeItem('prism_target_tab');
       }
@@ -380,11 +368,6 @@ export default function OrangeApp() {
           applyTargetTab(tab);
         } else if (path === '/orange') {
           setActiveMode('secret');
-          setShowDailyModal(false);
-          setShowSoulModal(false);
-          setShowChat(false);
-          setShowDashboard(false);
-          setShowEmblemModal(false);
           resetAppScroll();
         }
       }
@@ -530,7 +513,6 @@ export default function OrangeApp() {
     ];
   });
 
-  const [showChat, setShowChat] = useState(false);
   const [soulData, setSoulData] = useState({
     coreValue: "혁신적 발상과 실행력",
     unconsciousPattern: "아이디어 과잉과 산만함",
@@ -606,14 +588,10 @@ export default function OrangeApp() {
     "구름 위에서 가만히 별글씨를 적어 내려가는 작은 오렌지 고양이, 동화풍 삽화",
     "마음의 걱정을 태워 주는 은은한 촛불과 그 주위를 맴도는 아늑한 나방들, 수채화"
   ];
-  const [hasUnread, setHasUnread] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [poeInsight, setPoeInsight] = useState<{ insight: string, category: string } | null>(null);
-  const [isInsightCollapsed, setIsInsightCollapsed] = useState(false);
   const [diaryEntries, setDiaryEntries] = useState<DiaryEntry[]>([]);
   const [selectedDiaryEntry, setSelectedDiaryEntry] = useState<DiaryEntry | null>(null);
   const [autoVoice, setAutoVoice] = useState(false);
-  const [showDashboard, setShowDashboard] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
@@ -648,31 +626,6 @@ export default function OrangeApp() {
       console.error(e);
     }
   }, [messages]);
-
-  useEffect(() => {
-    if (showChat) {
-      handleRefreshOrangeSuggestions();
-      const scrollImmediate = () => {
-        if (chatContainerRef?.current) {
-          chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight + 10000;
-        }
-        chatEndRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' });
-      };
-      scrollImmediate();
-      const raf = requestAnimationFrame(scrollImmediate);
-      const t1 = setTimeout(scrollImmediate, 30);
-      const t2 = setTimeout(scrollImmediate, 100);
-      const t3 = setTimeout(scrollImmediate, 250);
-      const t4 = setTimeout(scrollImmediate, 500);
-      return () => {
-        cancelAnimationFrame(raf);
-        clearTimeout(t1);
-        clearTimeout(t2);
-        clearTimeout(t3);
-        clearTimeout(t4);
-      };
-    }
-  }, [showChat]);
 
   useEffect(() => {
     if (!firebaseUser) return;
@@ -821,7 +774,6 @@ export default function OrangeApp() {
         const todayK = getTodayDateKey();
         const finalData = { ...data, drawnCard: sessionCardDrawn, dateKey: todayK };
         setDailyResult(finalData);
-        setShowDailyModal(true);
         
         recordDailyOracleResult({
           app: 'orange',
@@ -982,7 +934,6 @@ export default function OrangeApp() {
     
     isSendingRef.current = true;
     setIsSending(true);
-    if (!showChat) setHasUnread(true);
     setInput('');
     const userImage = selectedImage;
     const userImagePreview = imagePreview;
@@ -994,15 +945,11 @@ export default function OrangeApp() {
 
     // Trigger async insight gathering
     poeQuickInsight(userMsg, newMessages).then((res: any) => {
-      if (res && res.insight) {
-        setPoeInsight({ insight: res.insight, category: res.category });
-        setIsInsightCollapsed(false);
-        if (res.themeColor || res.currentVibe) {
-          updateSharedState({
-            ...(res.themeColor ? { themeColor: res.themeColor } : {}),
-            ...(res.currentVibe ? { currentVibe: res.currentVibe } : {})
-          }, 'ORANGE');
-        }
+      if (res && (res.themeColor || res.currentVibe)) {
+        updateSharedState({
+          ...(res.themeColor ? { themeColor: res.themeColor } : {}),
+          ...(res.currentVibe ? { currentVibe: res.currentVibe } : {})
+        }, 'ORANGE');
       }
     }).catch(console.error);
 
@@ -1301,13 +1248,6 @@ export default function OrangeApp() {
          </div>
       </div>
 
-      <SpecialFeatureFabGroup>
-        <HandbookFabButton
-          theme="orange"
-          tooltipLabel="ReBible"
-        />
-      </SpecialFeatureFabGroup>
-
       {/* Orange Navigation Menu - Moved to Top */}
       <nav className={`prism-xs-subnav fixed top-safe-nav md:top-safe-nav-md left-1/2 -translate-x-1/2 z-[100] flex items-center gap-1 p-1 rounded-3xl bg-white/5 backdrop-blur-2xl border border-white/10 shadow-2xl max-w-[95vw] overflow-x-auto no-scrollbar md:max-w-fit md:overflow-visible transition-all duration-300 ${isSpecialFeatureChromeHidden ? SPECIAL_FEATURE_CHROME_HIDDEN_CLASS : 'opacity-100'}`}>
         {[
@@ -1323,7 +1263,6 @@ export default function OrangeApp() {
                  setActiveMode(item.id as any);
                  setShowWishingWellModal(false);
                  setStage('landing');
-                 setShowChat(false);
                }}
               className={`prism-subnav-btn flex shrink-0 whitespace-nowrap items-center gap-2 md:gap-3 px-4 md:px-6 py-2.5 md:py-3 rounded-2xl transition-all duration-300 group ${isActive ? 'bg-orange-600 text-white shadow-lg shadow-orange-500/20' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
             >
@@ -1335,13 +1274,6 @@ export default function OrangeApp() {
           );
         })}
       </nav>
-
-      <StatusBarDashboard 
-        isOpen={showDashboard} 
-        onClose={() => setShowDashboard(false)} 
-        color={THEME_COLOR} 
-        appName="Orange" 
-      />
 
       <main data-app-scroll-root className="flex-1 w-full pt-page pb-page md:pt-page-md md:pb-page-md flex flex-col relative z-10 overflow-y-auto no-scrollbar scroll-smooth text-white">
         <div className="max-w-5xl w-full mx-auto px-3 sm:px-6 prism-xs-pad flex-1 flex flex-col min-w-0">
@@ -1419,281 +1351,7 @@ export default function OrangeApp() {
               </motion.div>
             )}
           </AnimatePresence>
-          <AnimatePresence>
-            {showChat && (
-              <>
-                {/* Click outside to close */}
-                <div 
-                  className="fixed inset-0 z-[140] bg-black/40 backdrop-blur-sm cursor-pointer"
-                  onClick={() => { setShowChat(false); stopTTS(); }}
-                />
-                <motion.div 
-                  initial={{ opacity: 0, y: 50, scale: 0.95 }} 
-                  animate={{ opacity: 1, y: 0, scale: 1 }} 
-                  exit={{ opacity: 0, y: 20, scale: 0.95 }} 
-                  className="fixed inset-0 md:inset-auto md:bottom-28 md:right-8 md:w-[450px] md:h-[650px] md:max-h-[85vh] z-[150] p-4 flex items-center justify-center md:p-0 pointer-events-none"
-                >
-                  <div 
-                    className="w-full h-full max-h-[80vh] md:max-h-full flex flex-col bg-[#0b0b14]/95 md:bg-[#0c0f1d]/90 md:backdrop-blur-3xl rounded-[32px] md:rounded-[40px] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden pointer-events-auto"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                   
-                   <div className="hidden flex items-center justify-between border-b border-white/10 p-6 shrink-0 bg-orange-900/10 relative z-10">
-                      <div className="flex items-center gap-5">
-                         <div className="w-14 h-14 rounded-[28px] bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400">
-                            <TreeDeciduous size={24} />
-                         </div>
-                         <div className="text-left">
-                            <h3 className="text-2xl font-display font-bold  text-white tracking-tight">Orange Sync Room</h3>
-                            <p className="text-[10px] text-white/40 uppercase tracking-[0.4em] font-sans">아이디어 창조와 융합의 전당</p>
-                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                         <button 
-                           onClick={() => {
-                             playConversation(messages, 'Kore', 'Fenrir');
-                           }} 
-                           title="전체 대화 읽기"
-                           className="relative p-4 rounded-full hover:bg-white/5 text-white/20 hover:text-orange-400 transition-all"
-                         >
-                           <Volume2 size={24}/>
-                         </button>
-                         <button onClick={() => { setShowChat(false); stopTTS(); }} className="relative p-4 rounded-full hover:bg-white/5 text-white/20 transition-all">
-                           <X size={24}/>
-                         </button>
-                      </div>
-                   </div>
-                   
-                   <div ref={chatContainerRef} className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-6 flex flex-col bg-slate-950/20 relative min-h-0 z-10 scroll-smooth premium-scroll">
-                      {messages.length === 0 && (
-                         <div className="h-full flex flex-col items-center justify-center text-center space-y-8 opacity-20">
-                            <TreeDeciduous size={48} className="text-orange-400 animate-pulse" />
-                            <p className="text-lg font-sans text-white">"오렌지가 당신의 아이디어에 귀를 기울이고 있습니다..."</p>
-                         </div>
-                       )}
-                      {messages.map((m, i) => (
-                         <div key={m.id || i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} items-end gap-2`}>
-                            <div className={`max-w-[85%] rounded-[24px] px-6 py-4 ${
-                              m.role === 'user' 
-                                ? 'bg-orange-600 text-white rounded-br-none shadow-lg shadow-orange-500/20' 
-                                : 'bg-white/5 border border-white/10 text-orange-50 rounded-bl-none'
-                            }`}>
-                              {m.role === 'user' ? (
-                                <p className="whitespace-pre-wrap font-sans leading-relaxed text-[15px]">{m.content}</p>
-                              ) : (
-                                <Streamdown>{cleanOrangeChatText(m.content)}</Streamdown>
-                              )}
-                              {m.image && <img src={m.image} className="w-40 mt-4 rounded-xl" />}
-                            </div>
-                            {m.role !== 'user' && (
-                               <TTSButton text={m.content} voice="Kore" className="shrink-0 mb-1" />
-                            )}
-                         </div>
-                      ))}
-                      <div ref={chatEndRef} className="h-4" />
-                   </div>
 
-                   <div className="p-4 border-t border-white/10 shrink-0 bg-white/5 backdrop-blur-md z-50 flex flex-col gap-4 relative">
-                                           <AnimatePresence>
-                                             {poeInsight && (
-                                               <motion.div
-                                                 initial={{ opacity: 0, y: 10 }}
-                                                 animate={{ opacity: 1, y: 0 }}
-                                                 exit={{ opacity: 0, y: 10 }}
-                                                 className="mx-2 bg-orange-900/40 border border-orange-500/20 rounded-2xl overflow-hidden backdrop-blur-md transition-all duration-300"
-                                               >
-                                                 <div 
-                                                   onClick={() => setIsInsightCollapsed(!isInsightCollapsed)}
-                                                   className="p-4 flex items-center justify-between cursor-pointer hover:bg-orange-500/5 active:bg-orange-500/10 transition-colors select-none"
-                                                 >
-                                                   <div className="flex items-center gap-3">
-                                                     <Sparkles size={16} className="text-orange-400 animate-pulse" />
-                                                     <div className="text-[10px] font-bold text-orange-300 uppercase tracking-widest font-mono">
-                                                       {poeInsight.category} • 실시간 창의적 통찰
-                                                     </div>
-                                                   </div>
-                                                   <div className="flex items-center gap-2">
-                                                     <span className="text-[10px] text-orange-300/60 font-sans">
-                                                       {isInsightCollapsed ? "펼치기" : "접기"}
-                                                     </span>
-                                                     <ChevronDown 
-                                                       size={14} 
-                                                       className={`text-orange-400 transition-transform duration-300 ${isInsightCollapsed ? "" : "rotate-180"}`} 
-                                                     />
-                                                   </div>
-                                                 </div>
-                                                 
-                                                 {!isInsightCollapsed && (
-                                                   <div className="px-4 pb-4 pt-0 text-sm text-white/80 leading-relaxed border-t border-orange-500/10 font-sans">
-                                                     {poeInsight.insight}
-                                                   </div>
-                                                 )}
-                                               </motion.div>
-                                             )}
-                                           </AnimatePresence>
-                      <div 
-                        onWheel={(e) => {
-                          if (e.currentTarget) {
-                            const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
-                            e.currentTarget.scrollLeft += delta * 1.5;
-                          }
-                        }}
-                        className="flex items-center gap-2 overflow-x-auto select-none px-2 pb-2 scroll-smooth [scrollbar-width:thin] [scrollbar-color:rgba(249,115,22,0.3)_transparent]"
-                      >
-                        {orangeSuggestions.map((s, i) => (
-                          <button key={i} onClick={() => setInput(s)} className="flex-none px-4 py-2 rounded-2xl bg-white/5 border border-orange-500/15 text-xs text-orange-300/90 hover:text-orange-200 hover:bg-orange-500/20 hover:border-orange-500/30 transition-all font-sans whitespace-nowrap cursor-pointer active:scale-95">
-                             {s}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="relative group p-2 bg-white/10 backdrop-blur-3xl rounded-[32px] border border-white/10 shadow-2xl focus-within:border-orange-500/50 transition-all flex items-center border-white/10 pr-16 pl-3">
-                         <button 
-                           onClick={() => playConversation(messages, 'Kore', 'Fenrir')} 
-                           title={isTTSActive ? "재생 멈추기" : "전체 대화 듣기"}
-                           className="w-10 h-10 rounded-full flex items-center justify-center text-white/50 hover:text-orange-400 hover:bg-white/5 transition-all shrink-0 mr-1"
-                         >
-                           {isTTSActive ? <VolumeX size={18} className="text-orange-400 animate-pulse" /> : <Volume2 size={18} className="text-orange-400" />}
-                         </button>
-                        <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleChat()}
-                          placeholder="ORANGE에게 속마음을 털어놔보세요..." className="w-full h-14 bg-transparent pl-2 pr-16 text-sm text-white focus:outline-none font-sans placeholder:text-white/20" />
-                        <button onClick={() => handleChat()} disabled={isSending} className="absolute right-2 top-2 w-12 h-12 rounded-[24px] bg-orange-600 text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-xl shadow-orange-500/20 disabled:opacity-30">
-                            {isSending ? <RefreshCw className="animate-spin" size={20} /> : <Send size={20} className="translate-x-0.5 -translate-y-0.5" />}
-                        </button>
-                      </div>
-                    </div>
-                 </div>
-               </motion.div></>)}
-          </AnimatePresence>
-        
-
-        {/* Global In-line Container Cleanup (No modal popups for core daily features) */}
-        <AnimatePresence>
-          {null}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {false && showSoulModal && (
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              exit={{ opacity: 0 }} 
-              className="fixed inset-0 z-[200] flex items-center justify-center p-2 sm:p-4 bg-black/95 sm:bg-black/80 backdrop-blur-md font-sans"
-              onClick={() => setShowSoulModal(false)}
-            >
-              <div 
-                onClick={(e) => e.stopPropagation()}
-                className="relative w-full max-w-4xl max-h-[92vh] sm:max-h-[90vh] bg-[#0c0c12] border border-orange-500/30 p-5 sm:p-8 md:p-12 text-left flex flex-col gap-6 overflow-y-auto rounded-[28px] sm:rounded-[48px] shadow-2xl relative z-10 font-sans"
-              >
-                <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/4" />
-                
-                <div className="flex items-center justify-between border-b border-orange-500/10 pb-4 shrink-0">
-                  <div className="flex items-center gap-3">
-                    <User size={22} className="text-orange-400" />
-                    <span className="text-sm font-mono tracking-widest text-orange-400 font-bold uppercase">
-                      Synapse Mirror (시냅스 거울 분석 결과)
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {!isMeasuringInsight && insightResult && (
-                      <TTSButton text={insightResult.guidance} voice="Kore" className="text-orange-400 border-orange-500/20" />
-                    )}
-                    <button onClick={() => setShowSoulModal(false)} className="p-2 hover:bg-white/5 rounded-full text-white/30 hover:text-white transition-all shrink-0">
-                      ✕
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10 space-y-6">
-                  {isMeasuringInsight ? (
-                     <div className="flex flex-col items-center justify-center py-20 gap-4">
-                        <Zap size={32} className="text-orange-500 animate-spin" />
-                        <span className="text-xs text-white/40 font-mono tracking-widest uppercase">Analyzing your energy state...</span>
-                     </div>
-                  ) : insightResult ? (
-                    <div className="space-y-10 px-2 text-white">
-                       <div className="w-full bg-white/[0.01] border border-orange-500/20 p-8 rounded-[40px] shadow-[0_0_50px_rgba(249,115,22,0.05)] text-left">
-                          <div className="flex items-center gap-3 mb-8">
-                             <Zap size={22} className="text-orange-400" />
-                             <span className="text-sm font-bold text-orange-500 tracking-[0.4em] uppercase">The Idea Decree</span>
-                          </div>
-
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                             <StatBar label="Creativity" value={insightResult.luckScore || 0} color="#f97316" />
-                             <StatBar label="Passion" value={insightResult.loveScore || 0} color="#ef4444" />
-                             <StatBar label="Focus" value={insightResult.wealthScore || 0} color="#22c55e" />
-                             <StatBar label="Vitality" value={insightResult.healthScore || 0} color="#eab308" />
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 font-sans font-medium uppercase tracking-tight text-center">
-                            {[
-                               { label: '동기화 상태', v: translateEnglishValue(insightResult.deepSyncLevel || 'OPTIMAL'), c: 'text-orange-400' },
-                               { label: '파워 아이템', v: translateEnglishValue(insightResult.luckyItem), c: 'text-orange-300' },
-                               { label: '집중 색상', v: translateEnglishValue(insightResult.luckyColor), c: 'text-yellow-400' }
-                            ].map(i => (
-                              <div key={i.label} className="p-6 bg-white/[0.03] border border-white/5 rounded-[30px] flex flex-col items-center justify-center">
-                                <span className="text-[10px] text-white/30 uppercase tracking-widest mb-2 font-sans font-bold">{i.label}</span>
-                                <span className={`text-base ${i.c}`}>{i.v}</span>
-                              </div>
-                            ))}
-                          </div>
-
-                          <div className="space-y-6 text-left">
-                            <div className="p-6 md:p-8 bg-orange-500/10 border border-orange-500/20 rounded-[32px] font-sans text-white text-sm">
-                               <div className="flex items-center gap-3 mb-4">
-                                                       <Sparkles size={18} className="text-orange-400 animate-pulse" />
-                                                       <div className="flex flex-col text-left">
-                                                         <span className="text-[10px] text-orange-400 font-bold uppercase tracking-widest leading-none">Master's Guidance</span>
-                                                         <span className="text-[9px] text-white/40 font-sans mt-1 leading-none">오늘 하루의 구체적 행동 지침과 따뜻한 심리 멘토링 조언입니다.</span>
-                                                       </div>
-                                                    </div>
-                               <div className="text-sm sm:text-base text-white/90 font-sans leading-relaxed">
-                                  <Streamdown>{insightResult.guidance}</Streamdown>
-                                </div>
-                            </div>
-                            <div className="p-6 md:p-8 bg-orange-500/5 rounded-[32px] border border-orange-500/20 font-sans text-white/70 leading-relaxed relative overflow-hidden backdrop-blur-md shadow-[0_4px_30px_rgba(249,115,22,0.05)] text-left">
-                                                   <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/5 rounded-full blur-2xl pointer-events-none"></div>
-                                                   <div className="flex items-center gap-2.5 mb-3">
-                                                     <div className="p-1.5 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400">
-                                                       <Coins size={14} className="animate-pulse" />
-                                                     </div>
-                                                     <div className="flex flex-col">
-                                                       <span className="text-[10px] font-bold text-orange-400 uppercase tracking-widest leading-none">Abundance Current & Achievement Alchemy</span>
-                                                       <span className="text-[9px] text-white/40 mt-0.5 font-sans leading-none">풍요의 흐름과 연금술적 성취 분석</span>
-                                                     </div>
-                                                   </div>
-                                                   <p className="text-[10px] text-white/50 bg-white/[0.02] border border-white/5 rounded-xl px-3 py-2 mb-3 leading-relaxed font-sans font-medium">
-                                                     ✨ 물질적인 부의 에너지 순환과 잠재된 아이디어의 금맥을 깨우기 위해 필요한 운명적 흐름과 정렬 상태입니다.
-                                                   </p>
-                                                   <div className="text-xs sm:text-sm text-white/90 font-sans leading-relaxed text-left">
-                                                     <Streamdown>{insightResult.cosmicAspect}</Streamdown>
-                                                   </div>
-                                                 </div>
-                          </div>
-                       </div>
-                    </div>
-                  ) : (
-                    <div className="max-w-2xl mx-auto bg-white/[0.02] border border-white/5 p-16 rounded-[40px] flex flex-col items-center justify-center text-center space-y-8 min-h-[400px]">
-                       <div className="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-orange-500 shadow-inner">
-                          <Sparkles size={32} />
-                       </div>
-                       <div className="space-y-4 max-w-sm">
-                         <h3 className="text-2xl font-display text-white">Initialize Synapse Analysis</h3>
-                         <p className="text-sm font-sans text-white/40 leading-relaxed">자신의 시냅스 거울과 아이디어 심연 분석 결과 데이터를 확인하세요.</p>
-                       </div>
-                       <button onClick={() => handleEnergyAnalysis()} className="px-10 py-4 rounded-[28px] bg-white text-orange-950 font-black uppercase tracking-widest text-sm hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/10">Analyze Synapse Mirror</button>
-                    </div>
-                  )}
-                </div>
-
-                <div className="border-t border-white/5 pt-4 flex justify-end shrink-0 relative z-20">
-                  <button onClick={() => setShowSoulModal(false)} className="px-6 py-2 rounded-full bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold transition-all shadow-lg select-none">
-                    확인
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
                 <AnimatePresence>
           {limitModalInfo && limitModalInfo.open && (
@@ -1748,75 +1406,7 @@ export default function OrangeApp() {
           )}
         </AnimatePresence>
 
-        <AnimatePresence>
-          {showEmblemModal && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[2000] bg-black/85 backdrop-blur-xl flex items-center justify-center p-4 overflow-y-auto z-[9999]"
-              onClick={() => setShowEmblemModal(false)}
-            >
-              <motion.div
-                initial={{ scale: 0.9, y: 20 }}
-                animate={{ scale: 1, y: 0 }}
-                exit={{ scale: 0.9, y: 20 }}
-                className="glass p-8 md:p-10 max-w-lg w-full rounded-[48px] border border-orange-500/30 text-center space-y-8 shadow-2xl relative my-8 animate-in fade-in zoom-in-95 duration-200"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <button
-                  onClick={() => setShowEmblemModal(false)}
-                  className="absolute top-6 right-6 text-white/40 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full"
-                >
-                  <X size={18} />
-                </button>
 
-                <div className="mx-auto w-20 h-20 rounded-full bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shadow-[0_0_30px_rgba(249,115,22,0.2)]">
-                  <TreeDeciduous className="text-orange-400 animate-pulse" size={40} />
-                </div>
-
-                <div className="space-y-2">
-                  <h3 className="text-2xl font-bold font-sans text-white tracking-tight uppercase">Orange Sanctuary Lore</h3>
-                  <p className="text-[10px] text-orange-400 font-bold uppercase tracking-[0.3em]">아이디어 연금술사</p>
-                </div>
-
-                <p className="text-sm text-orange-100/70 leading-relaxed font-sans text-left break-keep bg-white/5 p-6 rounded-3xl border border-orange-500/10">
-                  <strong>ORANGE</strong>는 번득이는 영감의 불꽃을 피워내고, 흩어진 사색의 조각들을 정교하게 결합하는 아이디어 연금술사의 안식처입니다. 당신이 지닌 창조의 원동력과 잠재의식 속 무한한 아이디어 원석을 수렴하여 세상에 단 하나뿐인 혁신적인 가치로 조형해 낼 수 있도록 돕습니다.
-                </p>
-
-                <div className="space-y-4">
-                  {[
-                    { label: 'Creative Synthesis Velocity', val: 95, color: 'from-orange-400 to-amber-500' },
-                    { label: 'Synaptic Flow Density', val: 90, color: 'from-amber-400 to-orange-400' },
-                    { label: 'Conceptual Alchemy Coherence', val: 93, color: 'from-orange-500 to-red-600' }
-                  ].map(spec => (
-                    <div key={spec.label} className="space-y-1 text-left">
-                      <div className="flex justify-between text-xs font-mono">
-                        <span className="text-white/60">{spec.label}</span>
-                        <span className="text-orange-400 font-bold">{spec.val}%</span>
-                      </div>
-                      <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
-                        <motion.div 
-                          initial={{ width: 0 }} 
-                          animate={{ width: `${spec.val}%` }} 
-                          transition={{ duration: 1.2, ease: "easeOut" }} 
-                          className={`h-full bg-gradient-to-r ${spec.color}`} 
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <button
-                  onClick={() => setShowEmblemModal(false)}
-                  className="w-full py-4 rounded-[20px] bg-orange-600 text-white font-black uppercase tracking-[0.2em] shadow-xl shadow-orange-500/20 hover:scale-[1.02] active:scale-95 transition-all text-xs"
-                >
-                  Sync Complete 🌀
-                </button>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         <NoticeModal isOpen={notice.open} onClose={() => setNotice(p => ({ ...p, open: false }))} title={notice.title} message={notice.message} />
     </div>

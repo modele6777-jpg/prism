@@ -1084,7 +1084,14 @@ export default function LucyStandalonePage() {
       >
         <div className="flex items-center justify-between gap-2 min-w-0">
           {/* Brand Logo & Tagline */}
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 sm:gap-3 min-w-0 cursor-pointer group select-none"
+            role="button"
+            tabIndex={0}
+            title="허브 홈으로 이동"
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate('/'); }}
+          >
             <div className="relative group">
               <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-amber-500 via-amber-400 to-yellow-300 flex items-center justify-center text-white shadow-sm font-bold text-base sm:text-lg shrink-0 ring-2 ring-amber-400/30 group-hover:scale-105 transition-transform">
                 <Sparkles size={18} className="text-white" />

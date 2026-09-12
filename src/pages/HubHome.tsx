@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useLocation } from 'wouter';
-import { Sparkles, Music, TreeDeciduous, Bird, Activity, Zap, Moon, Sun, ChevronDown, ChevronUp, Brain, ChevronRight, Play, Pause, Hexagon, Triangle, Download, X, Compass, HeartPulse, Shield } from 'lucide-react';
-import { PrologueHandbookModal } from '@/components/prologue/PrologueHandbookModal';
+import { Sparkles, Music, TreeDeciduous, Bird, Activity, Zap, Moon, Sun, ChevronDown, ChevronUp, Brain, ChevronRight, Play, Pause, Hexagon, Triangle, X, Compass, HeartPulse, Shield } from 'lucide-react';
 import { PrologueECPRView } from '@/components/prologue/PrologueECPRView';
 import { PrologueSynergySection } from '@/components/prologue/PrologueSynergySection';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -183,12 +182,7 @@ export default function HubHome() {
   const legacy = isLegacyMobile();
   const [location, navigate] = useLocation();
   const { firebaseUser, sharedState, logout, updateSharedState, setIsChatOpen, isChatOpen, openLucyChat, sendUnifiedMessage } = useApp();
-  const [showInsights, setShowInsights] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [showHandbookModal, setShowHandbookModal] = useState(false);
-  const [showEmblemModal, setShowEmblemModal] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [isInstallable, setIsInstallable] = useState(false);
 
   const [activeSection, setActiveSection] = useState<'universe' | 'ecpr' | 'synergy'>(() => {
     if (typeof window !== 'undefined' && window.location.pathname.startsWith('/ecpr')) return 'ecpr';
@@ -205,29 +199,6 @@ export default function HubHome() {
       setActiveSection('universe');
     }
   }, [location]);
-
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e: any) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setIsInstallable(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, []);
-
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setIsInstallable(false);
-    }
-    setDeferredPrompt(null);
-  };
 
   // 첫 로그인 시 프로필 미완성이라면 팝업 표시
   useEffect(() => {
@@ -497,18 +468,6 @@ export default function HubHome() {
         </div>
       </div>
 
-      {/* Install Button placed at Top Right (offset to left of Lucy Chat button) */}
-      {isInstallable && (
-        <div className="fixed top-safe-2 right-16 sm:right-20 md:top-safe-4 md:right-24 pointer-events-auto z-[110]">
-          <button 
-            onClick={handleInstallClick}
-            className="h-10 px-4 rounded-[20px] bg-white/[0.03] backdrop-blur-md border border-white/10 flex items-center gap-2.5 hover:bg-white/5 transition-all text-white/90 active:scale-95 group relative overflow-hidden cursor-pointer"
-          >
-            <Download size={14} className="text-white group-hover:scale-125 transition-transform" />
-            <span className="text-[10px] font-bold tracking-[0.15em] uppercase font-sans">App Install</span>
-          </button>
-        </div>
-      )}
 
       {/* Navigation Subnav Menu (Universe, Synergy & eCPR Sections) */}
       <nav className="prism-xs-subnav fixed top-safe-nav md:top-safe-nav-md left-1/2 -translate-x-1/2 z-[100] flex items-center gap-1 p-1 rounded-3xl bg-white/5 backdrop-blur-2xl border border-white/10 shadow-2xl max-w-[95vw] overflow-x-auto no-scrollbar md:max-w-fit md:overflow-visible transition-all duration-300">
@@ -818,78 +777,7 @@ export default function HubHome() {
       </div>
 
       
-      {/* Prologue Sanctuary Lore Modal */}
-      <AnimatePresence>
-        {showEmblemModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[2000] bg-black/85 backdrop-blur-xl flex items-center justify-center p-4 overflow-y-auto z-[9999]"
-            onClick={() => setShowEmblemModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              className="glass p-8 md:p-10 max-w-lg w-full rounded-[48px] border border-red-500/30 text-center space-y-8 shadow-2xl relative my-8 animate-in fade-in zoom-in-95 duration-200"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                type="button"
-                onClick={() => setShowEmblemModal(false)}
-                className="absolute top-6 right-6 text-white/40 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full cursor-pointer"
-              >
-                <X size={18} />
-              </button>
 
-              <div className="mx-auto w-20 h-20 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center shadow-[0_0_30px_rgba(239,68,68,0.25)]">
-                <Sun className="text-red-500 animate-pulse" size={40} strokeWidth={1.5} />
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="text-2xl font-bold font-sans text-white tracking-tight uppercase">Prologue Sanctuary Lore</h3>
-                <p className="text-[10px] text-amber-300 font-bold uppercase tracking-[0.3em]">Traveler of Prologue · 7대 우주의 관문</p>
-              </div>
-
-              <p className="text-sm text-amber-100/75 leading-relaxed font-sans text-left break-keep bg-white/5 p-6 rounded-3xl border border-red-500/10">
-                <strong>PRISM</strong> 프롤로그는 일곱 개의 마음 공간으로 향하는 출발점이자 허브 샌추어리입니다. 오늘의 기분과 생체 에너지를 바탕으로 가장 필요한 여정을 안내하고, 대화·명상·창작·기록이 하나의 흐름으로 이어지도록 돕습니다.
-              </p>
-
-              <div className="space-y-4">
-                {[
-                  { label: 'Cosmic Journey Alignment (우주 여정 정렬도)', val: 96, color: 'from-red-400 to-amber-500' },
-                  { label: 'Multi-Sanctuary Resonance (7대 공간 공명율)', val: 93, color: 'from-amber-400 to-orange-500' },
-                  { label: 'Soul Navigation Coherence (영혼 항법 일치율)', val: 95, color: 'from-orange-500 to-red-600' }
-                ].map(spec => (
-                  <div key={spec.label} className="space-y-1 text-left">
-                    <div className="flex justify-between text-xs font-mono">
-                      <span className="text-white/60">{spec.label}</span>
-                      <span className="text-amber-400 font-bold">{spec.val}%</span>
-                    </div>
-                    <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
-                      <motion.div 
-                        initial={{ width: 0 }} 
-                        animate={{ width: `${spec.val}%` }} 
-                        transition={{ duration: 1.2, ease: "easeOut" }} 
-                        className={`h-full bg-gradient-to-r ${spec.color}`} 
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setShowEmblemModal(false)}
-                className="w-full py-4 rounded-[20px] bg-gradient-to-r from-red-500 to-orange-500 text-white font-black uppercase tracking-[0.2em] shadow-xl shadow-red-500/20 hover:scale-[1.02] active:scale-95 transition-all text-xs cursor-pointer"
-              >
-                Sync Complete 🌀
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
     </div>
   );

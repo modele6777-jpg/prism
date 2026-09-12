@@ -115,7 +115,6 @@ import { ArtRecommendationView } from "@/components/muse/ArtRecommendationView";
 import { MuseSynergySection } from "@/components/muse/MuseSynergySection";
 import { TTSButton } from "@/components/TTSButton";
 import { AnimatedText } from "@/components/AnimatedText";
-import { StatusBarDashboard } from "@/components/StatusBarDashboard";
 import {
   SoulFrequencyChart,
   SpiritualGrowthRadar,
@@ -140,7 +139,6 @@ import NoticeModal from "@/components/NoticeModal";
 
 import { playTTS, playConversation, stopTTS, useTTSActive } from "@/utils/tts";
 
-import { SpecialFeatureFabGroup, SpecialFeatureButton, HandbookFabButton } from "@/components/SpecialFeatureFab";
 import {
   SPECIAL_FEATURE_CHROME_HIDDEN_CLASS,
   useSpecialFeatureChromeHidden,
@@ -1413,8 +1411,6 @@ export default function MuseApp() {
         setActiveMode(tab as any);
         setShowDailyModal(false);
         setShowSoulModal(false);
-        setShowDashboard(false);
-        setShowEmblemModal(false);
         resetAppScroll();
         sessionStorage.removeItem('prism_target_tab');
       }
@@ -1442,8 +1438,6 @@ export default function MuseApp() {
           setActiveMode('artRecommendation');
           setShowDailyModal(false);
           setShowSoulModal(false);
-          setShowDashboard(false);
-          setShowEmblemModal(false);
           resetAppScroll();
         }
       }
@@ -1452,8 +1446,6 @@ export default function MuseApp() {
       setActiveMode("artRecommendation");
       setShowDailyModal(false);
       setShowSoulModal(false);
-      setShowDashboard(false);
-      setShowEmblemModal(false);
       resetAppScroll();
     };
     window.addEventListener("prism-tab-change", handleTabChange);
@@ -1630,9 +1622,6 @@ export default function MuseApp() {
       window.dispatchEvent(new CustomEvent("tarot-inactive"));
     };
   }, []);
-  const [showDashboard, setShowDashboard] = useState(false);
-  const [showEmblemModal, setShowEmblemModal] = useState(false);
-  const [showArtistHandbookModal, setShowArtistHandbookModal] = useState(false);
 
   useEffect(() => {
     if (!firebaseUser) return;
@@ -2157,12 +2146,6 @@ ${concernContext ? `사용자가 들려준 현재 고민과 상황에 100% 공�
         </div>
       </div>
 
-      <SpecialFeatureFabGroup>
-        <HandbookFabButton
-          theme="muse"
-          tooltipLabel="ReBible"
-        />
-      </SpecialFeatureFabGroup>
 
       <nav className={`prism-xs-subnav fixed top-safe-nav md:top-safe-nav-md left-1/2 -translate-x-1/2 z-[100] flex items-center gap-1 p-1 rounded-3xl bg-white/5 backdrop-blur-2xl border border-white/10 shadow-2xl max-w-[95vw] overflow-x-auto no-scrollbar md:max-w-fit md:overflow-visible transition-all duration-300 ${isSpecialFeatureChromeHidden ? SPECIAL_FEATURE_CHROME_HIDDEN_CLASS : 'opacity-100'}`}>
         {[
@@ -2193,12 +2176,6 @@ ${concernContext ? `사용자가 들려준 현재 고민과 상황에 100% 공�
         })}
       </nav>
 
-      <StatusBarDashboard
-        isOpen={showDashboard}
-        onClose={() => setShowDashboard(false)}
-        color={THEME_COLOR}
-        appName="Muse"
-      />
 
       <main data-app-scroll-root className="flex-1 w-full pt-page pb-page md:pt-page-md md:pb-page-md flex flex-col relative z-10 overflow-y-auto no-scrollbar scroll-smooth text-white">
         <div className={`w-full mx-auto px-3 sm:px-6 prism-xs-pad flex-1 flex flex-col ${activeMode === 'roleModel' ? 'max-w-6xl' : 'max-w-5xl'}`}>
@@ -3310,100 +3287,6 @@ ${concernContext ? `사용자가 들려준 현재 고민과 상황에 100% 공�
 
       
 
-      <AnimatePresence>
-        {showEmblemModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] bg-black/95 sm:bg-black/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto font-sans select-none pointer-events-auto"
-            onClick={() => setShowEmblemModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-lg bg-[#0c0c12] border border-blue-500/30 p-6 sm:p-10 text-center flex flex-col gap-6 overflow-y-auto rounded-[28px] sm:rounded-[42px] shadow-2xl relative z-10 no-scrollbar select-none text-white font-sans overflow-hidden pointer-events-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 blur-[100px] -mr-32 -mt-32 rounded-full pointer-events-none" />
-
-              <button
-                onClick={() => setShowEmblemModal(false)}
-                className="absolute top-6 right-6 p-2 hover:bg-white/5 rounded-full text-white/20 hover:text-white transition-all cursor-pointer z-50 unique-close-btn"
-              >
-                <X size={18} />
-              </button>
-
-              <div className="mx-auto w-20 h-20 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shadow-[0_0_30px_rgba(59,130,246,0.2)]">
-                <Music className="text-blue-400 animate-pulse" size={40} />
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="text-2xl font-bold font-sans text-white tracking-tight uppercase">
-                  Muse Sanctuary Lore
-                </h3>
-                <p className="text-[10px] text-blue-400 font-bold uppercase tracking-[0.3em]">
-                  예술적 직관 가이드
-                </p>
-              </div>
-
-              <p className="text-sm text-blue-100/70 leading-relaxed font-sans text-left break-keep bg-white/5 p-6 rounded-3xl border border-blue-500/10">
-                <strong>MUSE</strong>는 예술적 직관과 감성을 극대화하기 위해
-                창조된 영감의 안내 정원입니다. 내면의 무의식적 예술 자아를
-                깨우고 완벽주의의 장벽을 허물어 번뜩이는 아이디어를 하나의
-                아름다운 주파수와 실질적인 기획서로 응축해 낼 수 있도록
-                돕습니다.
-              </p>
-
-              <div className="space-y-4">
-                {[
-                  {
-                    label: "Creative Intuition Coherence",
-                    val: 95,
-                    color: "from-blue-400 to-indigo-500",
-                  },
-                  {
-                    label: "Inspirational Wave Flow",
-                    val: 90,
-                    color: "from-indigo-400 to-purple-400",
-                  },
-                  {
-                    label: "Artistic Alchemy Density",
-                    val: 93,
-                    color: "from-blue-500 to-sky-600",
-                  },
-                ].map((spec) => (
-                  <div key={spec.label} className="space-y-1 text-left">
-                    <div className="flex justify-between text-xs font-mono">
-                      <span className="text-white/60">{spec.label}</span>
-                      <span className="text-blue-400 font-bold">
-                        {spec.val}%
-                      </span>
-                    </div>
-                    <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: spec.val + "%" }}
-                        transition={{ duration: 1.2, ease: "easeOut" }}
-                        className={"h-full bg-gradient-to-r " + spec.color}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <button
-                onClick={() => setShowEmblemModal(false)}
-                className="w-full py-4 rounded-[20px] bg-blue-600 text-white font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-500/20 hover:scale-[1.02] active:scale-95 transition-all text-xs cursor-pointer"
-              >
-                Sync Complete 🌀
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
