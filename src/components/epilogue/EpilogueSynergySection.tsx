@@ -300,7 +300,7 @@ export function EpilogueSynergySection() {
               <span>영혼 연대기 &amp; 마스터 아카이브</span>
             </h2>
             <p className="text-xs sm:text-sm text-purple-100/70 max-w-xl leading-relaxed">
-              <strong>Diary(좌측: 밤의 성찰 일기)</strong>와 <strong>Profile(우측: 영혼 프로필 &amp; 사명)</strong>의 양쪽 메뉴를 융합하여, 오늘의 영혼 진화 등급과 7대 우주 황금 봉인 스탬프, 잠재의식 프라이밍을 완성하는 마스터 아카이브입니다.
+              <strong>Diary(밤의 성찰 일기)</strong>와 <strong>Profile(영혼 프로필 &amp; 사명)</strong>의 양쪽 메뉴를 융합하여, 오늘의 영혼 진화 등급과 7대 우주 황금 봉인 스탬프, 잠재의식 프라이밍을 완성하는 마스터 아카이브입니다.
             </p>
           </div>
 

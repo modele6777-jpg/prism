@@ -244,7 +244,7 @@ export function OrangeSynergySection() {
               <span>양자 현실화 가속기 (Quantum Manifestation Catalyst)</span>
             </h2>
             <p className="text-xs sm:text-sm text-orange-100/70 max-w-xl leading-relaxed">
-              <strong>Secret(좌측: 끌어당김 진동 일치)</strong>과 <strong>WELL(우측: 소원의 우물 투사)</strong>의 양쪽 메뉴 에너지를 융합하여, 바라는 미래를 현재 시점으로 즉각 붕괴시키는 〈양자 현실화 가속기〉입니다.
+              <strong>Secret(끌어당김 진동 일치)</strong>과 <strong>WELL(소원의 우물 투사)</strong>의 양쪽 메뉴 에너지를 융합하여, 바라는 미래를 현재 시점으로 즉각 붕괴시키는 〈양자 현실화 가속기〉입니다.
             </p>
           </div>
 

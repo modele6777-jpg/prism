@@ -514,8 +514,8 @@ export default function HubHome() {
       <nav className="prism-xs-subnav fixed top-safe-nav md:top-safe-nav-md left-1/2 -translate-x-1/2 z-[100] flex items-center gap-1 p-1 rounded-3xl bg-white/5 backdrop-blur-2xl border border-white/10 shadow-2xl max-w-[95vw] overflow-x-auto no-scrollbar md:max-w-fit md:overflow-visible transition-all duration-300">
         {[
           { id: 'universe', icon: Compass, label: 'Universe' },
-          { id: 'synergy', icon: Shield, label: 'AEGIS' },
           { id: 'ecpr', icon: HeartPulse, label: 'eCPR' },
+          { id: 'synergy', icon: Shield, label: 'AEGIS' },
         ].map((item) => {
           const isActive = activeSection === item.id;
           const Icon = item.icon;

@@ -291,7 +291,7 @@ export function PrologueSynergySection() {
               <span>오늘의 감정 부활 선언 & 멘탈 방패 (Resilience Aegis)</span>
             </h2>
             <p className="text-xs sm:text-sm text-red-100/70 max-w-xl leading-relaxed">
-              <strong>Universe(좌측: 우주 통찰 & 바이오리듬)</strong>의 거시적 지혜와 <strong>eCPR(우측: 감정 응급 소생)</strong>의 4단계 회복력을 융합하여, 어떤 심리적 위기에도 부서지지 않는 〈불멸의 멘탈 방패〉를 주조합니다.
+              <strong>Universe(우주 통찰 & 바이오리듬)</strong>의 거시적 지혜와 <strong>eCPR(감정 응급 소생)</strong>의 4단계 회복력을 융합하여, 어떤 심리적 위기에도 부서지지 않는 〈불멸의 멘탈 방패〉를 주조합니다.
             </p>
           </div>
 

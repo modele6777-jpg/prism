@@ -1,17 +1,17 @@
 {
   "name": "lucy-universe",
-  "version": "1.2.915",
-  "summary": "7대 채널 시너지 메뉴의 '양쪽 메뉴(좌측 ✕ 우측) 융합 버전' 전면 고도화",
-  "builtAt": "2026-09-12T10:48:00.000Z",
+  "version": "1.2.916",
+  "summary": "7대 채널 상단 서브메뉴의 시너지 메뉴를 메뉴 맨 끝(3번째)으로 재배치",
+  "builtAt": "2026-09-12T10:55:00.000Z",
   "items": [
-    "🌀 7대 채널 전역 시너지 메뉴를 좌측 메뉴(1번)와 우측 메뉴(3번)의 특성과 데이터가 결합된 완벽한 양쪽 융합(Fusion) 버전으로 고도화",
-    "🌌 프롤로그 (Prologue/HubHome): UNIVERSE(우주 운명 통찰/바이오리듬) ✕ eCPR(4단계 감정 응급 소생) 융합 멘탈 방패 주조",
-    "🌲 오렌지 (OrangeApp): SECRET(시크릿 진동 일치) ✕ WELL(소원의 우물 투사) 융합 양자 현실화 가속기",
-    "✨ 트리니티 (TrinityApp): LUCKY(사주 오행 개운 처방) ✕ TAROT(78장 천상 타로 리딩) 융합 ALCHEMY 운명 개운 솔루션 연동 복원 및 고도화",
-    "🌿 아우라 (HealApp): LETTING GO(세도나 5문답 흘려보내기) ✕ 1-MIN(1분 집중 명상) 융합 저항 0% 완전 해방 방하착 챔버",
-    "🐦 블루버드 (BluebirdApp): HO'OPONOPONO(4대 정화 진언) ✕ LETTER(비밀 편지 고백) 융합 감정 소각 & 순수 백지 환생",
-    "🎨 뮤즈 (MuseApp): ART(데일리 명작 큐레이션) ✕ MATE(역사적 거장 1:1 대화) 융합 창작 돌파 마스터클래스",
-    "🌙 에필로그 (EpilogueApp): DIARY(성찰 일기) ✕ PROFILE(영혼 프로필/비전) 융합 7우주 황금 스탬프 & 영혼 연대기 아카이브"
+    "📍 7대 채널 전역 상단 서브메뉴 순서 개편: 1번 메뉴와 2번 메뉴를 먼저 탐색한 후, 두 메뉴의 정수를 결합하는 시너지 메뉴를 3번째(메뉴 끝)로 정렬하여 직관적인 UX 흐름 완성",
+    "🌌 프롤로그 (HubHome): Universe ➔ eCPR ➔ AEGIS (시너지)",
+    "🌲 오렌지 (OrangeApp): Secret ➔ WELL ➔ CATALYST (시너지)",
+    "✨ 트리니티 (TrinityApp): 사주 만세력 ➔ TAROT ➔ ORACLE (시너지)",
+    "🌿 아우라 (HealApp): Letting Go Method ➔ 1-MIN ➔ SANCTUARY (시너지)",
+    "🐦 블루버드 (BluebirdApp): Ho'oponopono ➔ LETTER ➔ TRANSMUTATION (시너지)",
+    "🎨 뮤즈 (MuseApp): Art ➔ MATE ➔ MASTERCLASS (시너지)",
+    "🌙 에필로그 (EpilogueApp): Diary ➔ Profile ➔ CHRONICLE (시너지)"
   ],
   "author": "Antigravity AI Agent",
   "buildEnvironment": "cloud-run"

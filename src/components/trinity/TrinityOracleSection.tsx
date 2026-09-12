@@ -788,7 +788,7 @@ export function TrinityOracleSection() {
               오라클 타로 <span className="text-amber-400/90 font-light text-lg sm:text-xl">· 사주 명리 ✕ 타로 융합</span>
             </h2>
             <p className="text-xs sm:text-sm text-zinc-300/80 mt-1 font-sans">
-              <strong>사주 만세력(좌측)</strong>의 일간·오행 에너지와 <strong>타로 리딩(우측)</strong>의 천상 상징을 융합한 시너지 오라클
+              <strong>사주 만세력</strong>의 일간·오행 에너지와 <strong>타로 리딩</strong>의 천상 상징을 융합한 시너지 오라클
             </p>
           </div>
 

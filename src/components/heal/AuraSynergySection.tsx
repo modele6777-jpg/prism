@@ -306,7 +306,7 @@ export function AuraSynergySection() {
               <span>완전 해방 방하착 챔버 (Zero-Resistance)</span>
             </h2>
             <p className="text-xs sm:text-sm text-emerald-100/70 max-w-xl leading-relaxed">
-              <strong>Letting Go Method(좌측: 세도나 흘려보내기)</strong>와 <strong>1-MIN(우측: 1분 마이크로 집중 명상)</strong>의 양쪽 메뉴를 융합하여, 몸과 마음에 맺힌 저항을 0%로 증발시키는 방하착 챔버입니다.
+              <strong>Letting Go Method(세도나 흘려보내기)</strong>와 <strong>1-MIN(1분 마이크로 집중 명상)</strong>의 양쪽 메뉴를 융합하여, 몸과 마음에 맺힌 저항을 0%로 증발시키는 방하착 챔버입니다.
             </p>
           </div>
 

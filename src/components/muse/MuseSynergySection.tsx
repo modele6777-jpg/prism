@@ -330,7 +330,7 @@ export function MuseSynergySection() {
               <span>거장의 예술적 영감 마스터클래스</span>
             </h2>
             <p className="text-xs sm:text-sm text-blue-100/70 max-w-xl leading-relaxed">
-              <strong>Art(좌측: 데일리 명작 큐레이션)</strong>과 <strong>MATE(우측: 거장 롤모델 1:1 대화)</strong>의 양쪽 메뉴를 융합하여, 창작의 벽에 부딪힌 당신을 위해 역사적 거장이 건네는 1:1 심층 예술 마스터클래스입니다.
+              <strong>Art(데일리 명작 큐레이션)</strong>과 <strong>MATE(거장 롤모델 1:1 대화)</strong>의 양쪽 메뉴를 융합하여, 창작의 벽에 부딪힌 당신을 위해 역사적 거장이 건네는 1:1 심층 예술 마스터클래스입니다.
             </p>
           </div>
 

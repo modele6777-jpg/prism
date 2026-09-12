@@ -249,7 +249,7 @@ export function BluebirdSynergySection() {
               <span>감정 소각 & 순수 백지 환생 (Pure Zero)</span>
             </h2>
             <p className="text-xs sm:text-sm text-sky-100/70 max-w-xl leading-relaxed">
-              <strong>Ho'oponopono(좌측: 4대 정화 진언)</strong>와 <strong>LETTER(우측: 비밀 편지 고백)</strong>의 양쪽 메뉴를 융합하여, 마음에 맺힌 상처와 응어리를 푸른 불꽃으로 소각하고 완전한 순수 백지로 환생시킵니다.
+              <strong>Ho'oponopono(4대 정화 진언)</strong>와 <strong>LETTER(비밀 편지 고백)</strong>의 양쪽 메뉴를 융합하여, 마음에 맺힌 상처와 응어리를 푸른 불꽃으로 소각하고 완전한 순수 백지로 환생시킵니다.
             </p>
           </div>
 

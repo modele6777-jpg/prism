@@ -764,8 +764,8 @@ export default function EpilogueApp() {
       <nav className={`prism-xs-subnav fixed top-safe-nav md:top-safe-nav-md left-1/2 -translate-x-1/2 z-[100] flex items-center gap-1 p-1 rounded-3xl bg-white/5 backdrop-blur-2xl border border-white/10 shadow-2xl max-w-[95vw] overflow-x-auto no-scrollbar md:max-w-fit md:overflow-visible transition-all duration-300 ${isSpecialFeatureChromeHidden ? SPECIAL_FEATURE_CHROME_HIDDEN_CLASS : 'opacity-100'}`}>
         {[
           { id: 'diary', icon: BookOpen, label: 'Diary' },
-          { id: 'synergy', icon: Sparkles, label: 'CHRONICLE' },
           { id: 'profile', icon: User, label: 'Profile' },
+          { id: 'synergy', icon: Sparkles, label: 'CHRONICLE' },
         ].map((item) => {
           const isActive = activeMode === item.id;
           const Icon = item.icon;

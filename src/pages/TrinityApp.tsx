@@ -2523,8 +2523,8 @@ function playDailyCardChimeAsync() {
       <nav className={`prism-xs-subnav fixed top-safe-nav md:top-safe-nav-md left-1/2 -translate-x-1/2 z-[100] flex items-center gap-1 p-1 rounded-3xl bg-white/5 backdrop-blur-2xl border border-white/10 shadow-2xl max-w-[95vw] overflow-x-auto no-scrollbar md:max-w-fit md:overflow-visible transition-all duration-300 ${isSpecialFeatureChromeHidden ? SPECIAL_FEATURE_CHROME_HIDDEN_CLASS : 'opacity-100'}`}>
         {[
           { id: "destiny", icon: Compass, label: "사주 만세력" },
-          { id: "oracle", icon: Sparkles, label: "ORACLE" },
           { id: "tarot", icon: TarotCardIcon as any, label: "TAROT" },
+          { id: "oracle", icon: Sparkles, label: "ORACLE" },
         ].map((item) => {
           const isActive = activeMode === item.id || (item.id === 'oracle' && activeMode === 'synergy');
           return (
