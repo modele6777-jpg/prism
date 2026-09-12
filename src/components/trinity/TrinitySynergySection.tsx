@@ -147,8 +147,9 @@ export function TrinitySynergySection() {
     }
     setSelectedCard(randomCard);
 
-    const systemPrompt = "당신은 트리니티의 운명 개운 연금술 마스터입니다. 군더더기 장설이나 추상적 표현을 배제하고, 오직 '오늘 하루'에 직접적으로 관련된 간결하고 심플한(Concise & Simple) 맞춤형 개운 솔루션을 제공하세요.";
-    const userPrompt = `[드로우된 타로 카드]: ${randomCard.name} (${randomCard.key})
+    const systemPrompt = "당신은 트리니티의 운명 개운 연금술(Alchemy) 마스터입니다. 좌측 메뉴 [Lucky]의 사주 오행(木火土金水) 결핍 보충 처방과 우측 메뉴 [TAROT]의 78장 타로 아르카나 상징을 완벽히 융합하여, '오늘 하루'에 직결되는 명쾌하고 실천적인 맞춤형 개운 솔루션을 제공하세요.";
+    const userPrompt = `[양쪽 메뉴 융합: LUCKY 사주 오행 ✕ TAROT 타로 리딩]
+[드로우된 타로 카드]: ${randomCard.name} (${randomCard.key})
 [사용자 고민/소망]: "${userQuery.trim() || '오늘 나의 운명을 극대화할 행운 개운 비법'}"
 [사용자 닉네임]: "${userProfile?.basic?.nickname || '구도자'}"
 
@@ -238,7 +239,7 @@ export function TrinitySynergySection() {
             <div className="flex items-center gap-2">
               <span className="px-3 py-1 rounded-full text-[10px] font-bold font-mono tracking-widest uppercase bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 flex items-center gap-1.5">
                 <Sparkles size={12} className="text-yellow-400 animate-pulse" />
-                LUCKY TIPS + TAROT READING FUSION
+                LUCKY ✕ TAROT FUSION
               </span>
               <span className="text-[10px] text-white/40 font-mono">741Hz INTUITION FREQUENCY</span>
             </div>
@@ -247,7 +248,7 @@ export function TrinitySynergySection() {
               <span>운명 개운 타로 솔루션 (Destiny Alchemy Cross)</span>
             </h2>
             <p className="text-xs sm:text-sm text-yellow-100/70 max-w-xl leading-relaxed">
-              <strong>행운 상승 비법(섹션1)</strong>의 사주 오행 개운 처방과 <strong>타로 리딩(섹션2)</strong>의 천상 아르카나 상징을 융합하여, 닫힌 운로를 활짝 열어젖히는 맞춤형 개운 연금술 솔루션입니다.
+              <strong>Lucky(좌측: 사주 오행 개운 처방)</strong>와 <strong>TAROT(우측: 천상 타로 리딩)</strong>의 양쪽 메뉴를 융합하여, 닫힌 운로를 활짝 열어젖히는 맞춤형 개운 연금술 솔루션입니다.
             </p>
           </div>
 

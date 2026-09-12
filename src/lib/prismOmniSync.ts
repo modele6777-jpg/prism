@@ -36,6 +36,92 @@ export interface DailyOracleSummary {
 const STORAGE_KEY = 'prism_omni_feature_history';
 const MAX_ENTRIES = 60;
 
+// ─── 오브 신탁 히스토리 ───────────────────────────────────────────────────────
+export const ORB_HISTORY_KEY = 'prism_orb_scrying_history';
+const MAX_ORB_HISTORY = 20;
+
+export interface ScryingResultSnapshot {
+  query: string;
+  keyTheme: string;
+  directAnswer: string;
+  actionSolution: string;
+  modeTitle?: string;
+  timestamp: number;
+  dateKey: string;
+}
+
+/**
+ * 오브 신탁 결과를 히스토리에 저장합니다 (최대 20개).
+ */
+export function saveOrbScryingToHistory(result: ScryingResultSnapshot): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const raw = localStorage.getItem(ORB_HISTORY_KEY);
+    let history: ScryingResultSnapshot[] = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(history)) history = [];
+    history.unshift(result);
+    if (history.length > MAX_ORB_HISTORY) history = history.slice(0, MAX_ORB_HISTORY);
+    localStorage.setItem(ORB_HISTORY_KEY, JSON.stringify(history));
+  } catch (_) {}
+}
+
+/**
+ * 오브 신탁 히스토리를 반환합니다.
+ */
+export function getOrbScryingHistory(): ScryingResultSnapshot[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(ORB_HISTORY_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+// ─── 루시 채팅 요약 ───────────────────────────────────────────────────────────
+export const LUCY_CHAT_SUMMARY_KEY = 'prism_lucy_chat_summary';
+
+export interface LucyChatSummary {
+  summary: string;
+  persona: string;
+  timestamp: number;
+  dateKey: string;
+}
+
+/**
+ * 루시 채팅 대화 요약을 저장합니다.
+ */
+export function saveLucyChatSummary(summary: string, persona: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const todayKey = getTodayDateKey();
+    const payload: LucyChatSummary = { summary, persona, timestamp: Date.now(), dateKey: todayKey };
+    localStorage.setItem(LUCY_CHAT_SUMMARY_KEY, JSON.stringify(payload));
+    // Cross-tab broadcast
+    if ('BroadcastChannel' in window) {
+      const bc = new BroadcastChannel('prism-cross-app');
+      bc.postMessage({ type: 'PRISM_LUCY_CHAT_SUMMARY', payload });
+      bc.close();
+    }
+  } catch (_) {}
+}
+
+/**
+ * 저장된 루시 채팅 요약을 반환합니다.
+ */
+export function getLucyChatSummary(): LucyChatSummary | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(LUCY_CHAT_SUMMARY_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as LucyChatSummary;
+  } catch (_) {
+    return null;
+  }
+}
+
 function getTodayDateKey(): string {
   const now = new Date();
   const year = now.getFullYear();
@@ -345,17 +431,18 @@ export function buildPrismOmniscientContext(sharedState?: SharedState | null, ui
       dailyBriefingItems.push(`🎨 **[뮤즈 데일리 창작 영감]** 뽑은 카드: ${cardName}\n  - 예술적 비전 요약: ${diag}${rem}`);
     }
 
-    // (6) 크리스탈 오라클 (Crystal Orb) 즉각 신탁 및 직관 계시
-    const orbScrying = tryParse('prism_orb_latest_scrying') ||
-      tryParse(`prism_daily_oracle_orb_${todayKey}`);
-
-    if (orbScrying && (Date.now() - (orbScrying.timestamp || 0) < 24 * 60 * 60 * 1000)) {
-      const cardName = orbScrying.cardName || '크리스탈 오라클 상징';
-      const question = orbScrying.query ? `\n  - 질문: "${orbScrying.query}"` : '';
-      const poem = (orbScrying.revealedText || orbScrying.oraclePoem || '').slice(0, 200).trim();
-      const guidance = orbScrying.guidance ? `\n  - 마음 조언: ${orbScrying.guidance}` : '';
-      dailyBriefingItems.push(`🔮 **[크리스탈 오라클 수정구슬 신탁]** 상징: ${cardName}${question}\n  - 계시: "${poem}"${guidance}`);
-    }
+    // (6) 크리스탈 오브 신탁 히스토리 (오늘의 모든 신탁)
+    try {
+      const orbHistory: ScryingResultSnapshot[] = getOrbScryingHistory();
+      const todayOrbs = orbHistory.filter((h) => h.dateKey === todayKey);
+      if (todayOrbs.length > 0) {
+        const orbLines = todayOrbs.slice(0, 5).map((h) => {
+          const timeStr = new Date(h.timestamp).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+          return `  - [${timeStr}] [${h.keyTheme}] Q: "${h.query.slice(0, 40)}" → ${h.directAnswer.slice(0, 80)}...`;
+        });
+        dailyBriefingItems.push(`🔮 **[크리스탈 오브 오늘의 신탁 ${todayOrbs.length}회]**\n${orbLines.join('\n')}`);
+      }
+    } catch (_) {}
 
     // 종합 브리핑 섹션 추가
     if (dailyBriefingItems.length > 0) {
@@ -497,6 +584,15 @@ export function buildPrismOmniscientContext(sharedState?: SharedState | null, ui
     if (rebibleItems.length > 0) {
       sections.push(`📜 [리바이블(Re:Bible) 인생 경전 서재 & 루시의 관점 지혜 구절]\n${rebibleItems.join('\n')}`);
     }
+
+    // --- 루시 채팅 대화 요약 (루시→오브 역방향 컨텍스트) ---
+    try {
+      const lucySummary = getLucyChatSummary();
+      if (lucySummary && (Date.now() - lucySummary.timestamp < 24 * 60 * 60 * 1000)) {
+        const timeStr = new Date(lucySummary.timestamp).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+        sections.push(`💬 [루시와의 최근 대화 요약 (${timeStr} 기준)]\n${lucySummary.summary}`);
+      }
+    } catch (_) {}
 
     // --- 최근 수행된 실시간 기능 활동 피드 (최신 10건) ---
     try {

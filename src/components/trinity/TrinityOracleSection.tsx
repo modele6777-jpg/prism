@@ -782,15 +782,13 @@ export function TrinityOracleSection() {
           <div className="text-center md:text-left">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-400/30 text-[10px] sm:text-xs font-mono text-amber-300 mb-2 uppercase tracking-widest">
               <Sparkles size={12} className="text-amber-400 animate-pulse" />
-              PRISM CELESTIAL ORACLE
+              DESTINY ✕ TAROT FUSION
             </div>
             <h2 className="text-xl sm:text-2xl md:text-3xl font-serif font-black tracking-tight text-white flex items-center justify-center md:justify-start gap-2">
-              오라클 타로 <span className="text-amber-400/90 font-light text-lg sm:text-xl">· 마인드셋 & 치유</span>
+              오라클 타로 <span className="text-amber-400/90 font-light text-lg sm:text-xl">· 사주 명리 ✕ 타로 융합</span>
             </h2>
             <p className="text-xs sm:text-sm text-zinc-300/80 mt-1 font-sans">
-              {oracleMode === 'healing'
-                ? '내면아이 제제(Zezé)와 함께하는 다정한 1분 쉼과 사주×타로 예술 처방'
-                : '사주 일간의 추진력과 타로 4원소 프레임워크 기반 1일 1실행 멘탈 피트니스'}
+              <strong>사주 만세력(좌측)</strong>의 일간·오행 에너지와 <strong>타로 리딩(우측)</strong>의 천상 상징을 융합한 시너지 오라클
             </p>
           </div>
 

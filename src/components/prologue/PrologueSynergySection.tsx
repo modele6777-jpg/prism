@@ -185,8 +185,9 @@ export function PrologueSynergySection() {
     const triggerLabel = triggerItem ? triggerItem.label : '감정 혼란';
     const combinedConcern = customWorry.trim() ? `${triggerLabel} - ${customWorry.trim()}` : triggerLabel;
 
-    const systemPrompt = "당신은 프롤로그의 멘탈 방패 마스터이자 심리 회복 탄력성(Resilience) 코치입니다. 명언의 심오한 지혜와 감정 CPR의 응급 치유 프로토콜을 융합하여 사용자의 마음에 뚫리지 않는 멘탈 방패 선언문을 생성하세요.";
-    const userPrompt = `[사용자 상태 / 위기 트리거]: "${combinedConcern}"
+    const systemPrompt = "당신은 프롤로그의 멘탈 방패 마스터입니다. 좌측 메뉴 [Universe]의 우주적 운명 통찰/실시간 바이오리듬 회복 지혜와 우측 메뉴 [eCPR]의 4단계 감정 응급 소생 프로토콜을 완벽히 융합하여 사용자의 마음에 뚫리지 않는 불멸의 멘탈 방패(Resilience Aegis) 선언문을 주조하세요.";
+    const userPrompt = `[양쪽 메뉴 융합: UNIVERSE 우주 통찰 ✕ eCPR 응급 소생]
+[사용자 상태 / 위기 트리거]: "${combinedConcern}"
 사용자 닉네임: "${userProfile?.basic?.nickname || '여행자'}"
 
 아래 JSON 스키마로만 정확하게 응답하세요:
@@ -281,7 +282,7 @@ export function PrologueSynergySection() {
             <div className="flex items-center gap-2">
               <span className="px-3 py-1 rounded-full text-[10px] font-bold font-mono tracking-widest uppercase bg-red-500/20 text-red-300 border border-red-500/30 flex items-center gap-1.5">
                 <Sparkles size={12} className="text-amber-400 animate-pulse" />
-                SECTION 1 + SECTION 2 FUSION
+                UNIVERSE ✕ eCPR FUSION
               </span>
               <span className="text-[10px] text-white/40 font-mono">432Hz SOLAR FREQUENCY</span>
             </div>
@@ -290,7 +291,7 @@ export function PrologueSynergySection() {
               <span>오늘의 감정 부활 선언 & 멘탈 방패 (Resilience Aegis)</span>
             </h2>
             <p className="text-xs sm:text-sm text-red-100/70 max-w-xl leading-relaxed">
-              <strong>오늘의 명언(섹션1)</strong>의 철학적 통찰과 <strong>감정 CPR(섹션2)</strong>의 응급 소생력을 융합하여, 어떤 심리적 위기에도 부서지지 않는 〈오늘의 감정 부활 선언 & 멘탈 방패 (Resilience Aegis)〉를 주조합니다.
+              <strong>Universe(좌측: 우주 통찰 & 바이오리듬)</strong>의 거시적 지혜와 <strong>eCPR(우측: 감정 응급 소생)</strong>의 4단계 회복력을 융합하여, 어떤 심리적 위기에도 부서지지 않는 〈불멸의 멘탈 방패〉를 주조합니다.
             </p>
           </div>
 

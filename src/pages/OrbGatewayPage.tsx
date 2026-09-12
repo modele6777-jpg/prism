@@ -31,6 +31,7 @@ import { safeLocalStorage } from "@/utils/safeStorage";
 import { useNarrowPhone } from "@/hooks/useNarrowPhone";
 import { detectSeptagramChannelsFromText } from "@/lib/lucyAutoModeDetector";
 import { getAndClearPendingSelection } from "@/lib/selectionBridge";
+import { saveOrbScryingToHistory, getOrbScryingHistory, getLucyChatSummary, type ScryingResultSnapshot } from "@/lib/prismOmniSync";
 
 export interface SeptagramAppDimension {
   id: string;
@@ -277,6 +278,8 @@ export default function OrbGatewayPage() {
   const [isScrying, setIsScrying] = useState(false);
   const [isLeaping, setIsLeaping] = useState(false);
   const [scryingResult, setScryingResult] = useState<ScryingResult | null>(null);
+  const [orbHistory, setOrbHistory] = useState<ScryingResultSnapshot[]>([]);
+  const [showOrbHistory, setShowOrbHistory] = useState(false);
   const [hoveredApp, setHoveredApp] = useState<SeptagramAppDimension | null>(null);
   const [hoveredRuneInfo, setHoveredRuneInfo] = useState<{
     app: SeptagramAppDimension;
@@ -699,6 +702,11 @@ export default function OrbGatewayPage() {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
 
+  // 마운트 시 오브 신탁 히스토리 초기 로드
+  useEffect(() => {
+    setOrbHistory(getOrbScryingHistory());
+  }, []);
+
   // Dynamic Head & PWA Meta for iPhone Safari "Add to Home Screen"
   useEffect(() => {
     const prevTitle = document.title;
@@ -1004,6 +1012,15 @@ export default function OrbGatewayPage() {
       }
     } catch (_) {}
 
+    // Inject Lucy chat summary as cross-app context (루시→오브 역방향)
+    try {
+      const lucySummary = getLucyChatSummary();
+      if (lucySummary && (Date.now() - lucySummary.timestamp < 24 * 60 * 60 * 1000)) {
+        prismContextBriefing += `루시와의 최근 대화 요약: ${lucySummary.summary} `;
+      }
+    } catch (_) {}
+
+
     // Base fallback oracle solution
     const hash = query.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
     const baseFallback = DEFAULT_ORACLE_SOLUTIONS[Math.abs(hash) % DEFAULT_ORACLE_SOLUTIONS.length];
@@ -1283,6 +1300,18 @@ ${dimensionDescriptions}`;
         // 4. CustomEvents for live reactivity
         window.dispatchEvent(new CustomEvent("prism:orb_scrying_updated", { detail: orbPayload }));
         window.dispatchEvent(new CustomEvent("prism:feature_updated", { detail: orbPayload }));
+
+        // 5. 오브 신탁 히스토리 저장
+        saveOrbScryingToHistory({
+          query: finalResult.query,
+          keyTheme: finalResult.keyTheme,
+          directAnswer: finalResult.directAnswer,
+          actionSolution: finalResult.actionSolution,
+          modeTitle: finalResult.modeTitle,
+          timestamp: finalResult.timestamp,
+          dateKey: todayKey,
+        });
+        setOrbHistory(getOrbScryingHistory());
       } catch (syncErr) {
         console.warn("[OrbGateway] Prism sync error:", syncErr);
       }
@@ -2192,11 +2221,12 @@ ${dimensionDescriptions}`;
 
                   <button
                     type="button"
-                    onClick={() => executeScrying()}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/15 hover:bg-white/20 text-white transition-all active:scale-95 border border-white/15"
+                    onClick={() => executeScrying(scryingResult.query)}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold bg-violet-500/20 hover:bg-violet-500/30 text-violet-200 transition-all active:scale-95 border border-violet-500/30"
+                    title="같은 질문을 다른 각도로 재신탁"
                   >
                     <RotateCcw size={12} />
-                    <span>다시 묻기</span>
+                    <span>재신탁</span>
                   </button>
 
                   <button
@@ -2216,6 +2246,60 @@ ${dimensionDescriptions}`;
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* 🔮 오브 신탁 히스토리 패널 */}
+        {orbHistory.length > 0 && (
+          <div className="w-full max-w-lg mx-auto mt-4 px-1">
+            <button
+              type="button"
+              onClick={() => setShowOrbHistory((v) => !v)}
+              className="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl bg-white/[0.04] hover:bg-white/[0.07] border border-white/10 text-slate-300 text-[12px] font-semibold transition-all active:scale-[0.98]"
+            >
+              <div className="flex items-center gap-2">
+                <RotateCcw size={13} className="text-violet-400" />
+                <span>오늘의 신탁 기록</span>
+                <span className="px-1.5 py-0.5 rounded-full bg-violet-500/20 text-violet-300 text-[10px] font-bold">{orbHistory.filter(h => h.dateKey === new Date().toISOString().slice(0, 10)).length}</span>
+              </div>
+              <span className="text-slate-500 text-[11px]">{showOrbHistory ? '▲ 접기' : '▼ 펼치기'}</span>
+            </button>
+
+            <AnimatePresence>
+              {showOrbHistory && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="mt-2 space-y-2 max-h-64 overflow-y-auto no-scrollbar">
+                    {orbHistory
+                      .filter(h => h.dateKey === new Date().toISOString().slice(0, 10))
+                      .map((h, i) => {
+                        const timeStr = new Date(h.timestamp).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+                        return (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => executeScrying(h.query)}
+                            className="w-full text-left px-4 py-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.08] transition-all active:scale-[0.98] group"
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-[10px] text-violet-400 font-mono">{timeStr}</span>
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 font-semibold">{h.keyTheme}</span>
+                            </div>
+                            <p className="text-[11px] text-slate-400 truncate group-hover:text-slate-300 transition-colors">
+                              {h.query}
+                            </p>
+                          </button>
+                        );
+                      })}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
       </main>
 
       {/* Bottom Divination Inquiry Console */}

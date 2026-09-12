@@ -208,8 +208,9 @@ export function AuraSynergySection() {
     const tensionLabel = item ? item.label : '긴장';
     const combined = customDetail.trim() ? `${tensionLabel} (${customDetail.trim()})` : tensionLabel;
 
-    const systemPrompt = "당신은 오라(AURA)의 완전 해방 방하착 챔버 마스터입니다. 세도나 메서드의 흘려보내기 5문답과 1분 마이크로 명상의 60초 집중 동조를 융합하여 '완전 해방 방하착 챔버' 가이드를 설계하세요.";
-    const userPrompt = `[집착/긴장 상태]: "${combined}"
+    const systemPrompt = "당신은 오라(AURA)의 완전 해방 방하착 챔버 마스터입니다. 좌측 메뉴 [Letting Go Method]의 세도나 메서드 흘려보내기 5문답과 우측 메뉴 [1-MIN]의 60초 마이크로 집중 명상 동조를 완벽히 융합하여 '완전 해방 방하착 챔버' 가이드를 설계하세요.";
+    const userPrompt = `[양쪽 메뉴 융합: LETTING GO 방하착 ✕ 1-MIN 마이크로 호흡]
+[집착/긴장 상태]: "${combined}"
 [사용자 닉네임]: "${userProfile?.basic?.nickname || '치유자'}"
 
 반드시 아래 JSON 스키마로만 엄격하게 응답하세요:
@@ -296,7 +297,7 @@ export function AuraSynergySection() {
             <div className="flex items-center gap-2">
               <span className="px-3 py-1 rounded-full text-[10px] font-bold font-mono tracking-widest uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
                 <Sparkles size={12} className="text-emerald-400 animate-pulse" />
-                SEDONA METHOD + 1-MIN MEDITATION FUSION
+                LETTING GO ✕ 1-MIN FUSION
               </span>
               <span className="text-[10px] text-white/40 font-mono">ZERO RESISTANCE 528Hz</span>
             </div>
@@ -305,7 +306,7 @@ export function AuraSynergySection() {
               <span>완전 해방 방하착 챔버 (Zero-Resistance)</span>
             </h2>
             <p className="text-xs sm:text-sm text-emerald-100/70 max-w-xl leading-relaxed">
-              <strong>세도나 메서드(섹션1)</strong>의 5문답 흘려보내기 원리와 <strong>1분 마이크로 명상(섹션2)</strong>의 60초 집중 동조를 융합하여, 몸과 마음에 맺힌 저항을 0%로 증발시키는 방하착 챔버입니다.
+              <strong>Letting Go Method(좌측: 세도나 흘려보내기)</strong>와 <strong>1-MIN(우측: 1분 마이크로 집중 명상)</strong>의 양쪽 메뉴를 융합하여, 몸과 마음에 맺힌 저항을 0%로 증발시키는 방하착 챔버입니다.
             </p>
           </div>
 

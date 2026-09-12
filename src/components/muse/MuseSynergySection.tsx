@@ -226,8 +226,9 @@ export function MuseSynergySection() {
   const handleStartMasterclass = async () => {
     setIsLoading(true);
 
-    const systemPrompt = "당신은 뮤즈의 예술 거장 마스터클래스 멘토입니다. 데일리 예술 명작 큐레이션과 역사적 롤모델과의 1:1 심층 대화를 융합하여, 사용자의 창작/인생 정체기를 단번에 돌파시키는 거장의 예술적 마스터클래스 조언을 생성하세요.";
-    const userPrompt = `[선택된 거장]: ${selectedMaster.name} (${selectedMaster.title})
+    const systemPrompt = "당신은 뮤즈의 예술 거장 마스터클래스 멘토입니다. 좌측 메뉴 [Art]의 데일리 예술 명작 큐레이션과 우측 메뉴 [MATE]의 역사적 롤모델과의 1:1 심층 대화를 완벽히 융합하여, 사용자의 창작/인생 정체기를 단번에 돌파시키는 거장의 예술적 마스터클래스 조언을 생성하세요.";
+    const userPrompt = `[양쪽 메뉴 융합: ART 명작 큐레이션 ✕ MATE 거장 대화]
+[선택된 거장]: ${selectedMaster.name} (${selectedMaster.title})
 [대표 명작]: ${selectedMaster.piece}
 [사용자의 현재 고민 / 창작 정체기 / 상태]: "${userCreativeDilemma.trim() || '영감의 고갈과 방향성에 대한 고민'}"
 [사용자 닉네임]: "${userProfile?.basic?.nickname || '예술가'}"
@@ -320,7 +321,7 @@ export function MuseSynergySection() {
             <div className="flex items-center gap-2">
               <span className="px-3 py-1 rounded-full text-[10px] font-bold font-mono tracking-widest uppercase bg-blue-500/20 text-blue-300 border border-blue-500/30 flex items-center gap-1.5">
                 <Sparkles size={12} className="text-blue-400 animate-pulse" />
-                DAILY ART + ROLE MODEL DIALOGUE FUSION
+                ART ✕ MATE FUSION
               </span>
               <span className="text-[10px] text-white/40 font-mono">639Hz HARMONY TONE</span>
             </div>
@@ -329,7 +330,7 @@ export function MuseSynergySection() {
               <span>거장의 예술적 영감 마스터클래스</span>
             </h2>
             <p className="text-xs sm:text-sm text-blue-100/70 max-w-xl leading-relaxed">
-              <strong>데일리 예술 추천(섹션1)</strong>의 위대한 명작 큐레이션과 <strong>롤모델과의 대화(섹션2)</strong>를 융합하여, 창작의 벽에 부딪힌 당신을 위해 역사적 거장이 건네는 1:1 심층 예술 마스터클래스입니다.
+              <strong>Art(좌측: 데일리 명작 큐레이션)</strong>과 <strong>MATE(우측: 거장 롤모델 1:1 대화)</strong>의 양쪽 메뉴를 융합하여, 창작의 벽에 부딪힌 당신을 위해 역사적 거장이 건네는 1:1 심층 예술 마스터클래스입니다.
             </p>
           </div>
 

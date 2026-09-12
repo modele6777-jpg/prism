@@ -90,8 +90,6 @@ export function BluebirdSynergySection() {
     setConfessionText(text);
   };
 
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const oscRef = useRef<OscillatorNode | null>(null);
 
   const toggle417Hz = () => {
     if (isAudioPlaying) {
@@ -151,8 +149,9 @@ export function BluebirdSynergySection() {
     if (!confessionText.trim()) return;
     setIsLoading(true);
 
-    const systemPrompt = "당신은 블루버드의 호오포노포노 & 감정 소각 연금술 마스터입니다. 좌측 메뉴의 '호오포노포노 4대 정화 언어(미안합니다, 용서하세요, 고맙습니다, 사랑합니다)'와 우측 메뉴의 '비밀 편지(아픔/후회/상처)'를 완벽히 융합하여 0(Zero State) 순수 백지로 승화시키는 정화의 계시와 융합 매트릭스를 생성하세요.";
-    const userPrompt = `[비밀 편지 내용]: "${confessionText.trim()}"
+    const systemPrompt = "당신은 블루버드의 호오포노포노 & 감정 소각 연금술 마스터입니다. 좌측 메뉴 [Ho'oponopono]의 4대 정화 언어(미안합니다, 용서하세요, 고맙습니다, 사랑합니다)와 우측 메뉴 [LETTER]의 비밀 편지(아픔/후회/상처)를 완벽히 융합하여 완전히 0(Zero State) 순수 백지로 승화시키는 정화의 계시와 융합 매트릭스를 생성하세요.";
+    const userPrompt = `[양쪽 메뉴 융합: HO'OPONOPONO 정화 ✕ LETTER 비밀 편지]
+[비밀 편지 내용]: "${confessionText.trim()}"
 [사용자 닉네임]: "${userProfile?.basic?.nickname || '순수한 영혼'}"
 [현재 호오포노포노 정화 수행 횟수]: 총 ${totalHooponoponoCleansings}회 (미안합니다 ${sorryCount}회, 용서하세요 ${forgiveCount}회, 고맙습니다 ${thankCount}회, 사랑합니다 ${loveCount}회)
 
@@ -241,7 +240,7 @@ export function BluebirdSynergySection() {
             <div className="flex items-center gap-2">
               <span className="px-3 py-1 rounded-full text-[10px] font-bold font-mono tracking-widest uppercase bg-sky-500/20 text-sky-300 border border-sky-500/30 flex items-center gap-1.5">
                 <Sparkles size={12} className="text-sky-400 animate-pulse" />
-                HO'OPONOPONO + SECRET NOTE FUSION
+                HO'OPONOPONO ✕ LETTER FUSION
               </span>
               <span className="text-[10px] text-white/40 font-mono">417Hz PURIFICATION</span>
             </div>
@@ -250,7 +249,7 @@ export function BluebirdSynergySection() {
               <span>감정 소각 & 순수 백지 환생 (Pure Zero)</span>
             </h2>
             <p className="text-xs sm:text-sm text-sky-100/70 max-w-xl leading-relaxed">
-              <strong>호오포노포노(섹션1)</strong>의 4대 치유 언어와 <strong>비밀쪽지(섹션2)</strong>의 솔직한 고백을 융합하여, 마음에 맺힌 상처와 응어리를 푸른 불꽃으로 소각하고 완전한 순수 백지로 환생시킵니다.
+              <strong>Ho'oponopono(좌측: 4대 정화 진언)</strong>와 <strong>LETTER(우측: 비밀 편지 고백)</strong>의 양쪽 메뉴를 융합하여, 마음에 맺힌 상처와 응어리를 푸른 불꽃으로 소각하고 완전한 순수 백지로 환생시킵니다.
             </p>
           </div>
 

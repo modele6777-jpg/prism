@@ -87,6 +87,7 @@ import NoticeModal from "@/components/NoticeModal";
 import { TarotBible } from "@/components/trinity/TarotBible";
 import { TrinityDestinyReportView } from "@/components/trinity/TrinityDestinyReportView";
 import { TrinityOracleSection } from "@/components/trinity/TrinityOracleSection";
+import { TrinitySynergySection } from "@/components/trinity/TrinitySynergySection";
 import { AcimHandbookModal } from "@/components/trinity/AcimHandbookModal";
 import { useBinauralBeat } from "@/hooks/useBinauralBeat";
 import { TarotSpread } from "@/components/trinity/TarotSpread";
@@ -2525,7 +2526,7 @@ function playDailyCardChimeAsync() {
           { id: "oracle", icon: Sparkles, label: "ORACLE" },
           { id: "tarot", icon: TarotCardIcon as any, label: "TAROT" },
         ].map((item) => {
-          const isActive = activeMode === item.id;
+          const isActive = activeMode === item.id || (item.id === 'oracle' && activeMode === 'synergy');
           return (
             <button
                key={item.id}

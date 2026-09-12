@@ -189,9 +189,10 @@ export function EpilogueSynergySection() {
     const nickname = userProfile?.basic?.nickname || '빛의 마스터';
 
     const systemPrompt =
-      '당신은 PRISM 7대 우주 공간을 총괄하는 〈영혼 연대기 & 마스터 아카이브〉 대마스터입니다. 사용자가 선택한 밤의 영혼 진화 도약 포커스, 내면의 깨달음, 그리고 개인 프로필(MBTI, 영혼 비전)을 융합하여 오늘의 영혼 진화 등급과 7대 우주 황금 봉인 스탬프, 그리고 수면 전 잠재의식 프라이밍 선언문을 발행하세요.';
+      '당신은 PRISM 7대 우주 공간을 총괄하는 〈영혼 연대기 & 마스터 아카이브〉 대마스터입니다. 좌측 메뉴 [Diary]의 밤의 내면 성찰 기록과 우측 메뉴 [Profile]의 고유 영혼 프로필(MBTI, 영혼 사명, 비전), 그리고 밤의 영혼 진화 도약 포커스를 완벽히 융합하여 오늘의 영혼 진화 등급과 7대 우주 황금 봉인 스탬프, 그리고 수면 전 잠재의식 프라이밍 선언문을 발행하세요.';
 
-    const userPrompt = `[선택된 밤의 영혼 도약 포커스]: ${focusObj.label} (${focusObj.desc})
+    const userPrompt = `[양쪽 메뉴 융합: DIARY 성찰 일기 ✕ PROFILE 영혼 프로필]
+[선택된 밤의 영혼 도약 포커스]: ${focusObj.label} (${focusObj.desc})
 [오늘 영혼의 깨달음/메아리]: "${customInsight.trim() || '온 우주와 내가 하나임을 자각하는 깊은 현존'}"
 [조율 솔페지오 주파수]: ${activeFrequency}Hz
 [사용자 프로필]: 닉네임(${nickname}), 성향/MBTI(${mbti})
@@ -290,7 +291,7 @@ export function EpilogueSynergySection() {
             <div className="flex items-center gap-2">
               <span className="px-3 py-1 rounded-full text-[10px] font-bold font-mono tracking-widest uppercase bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-1.5">
                 <Sparkles size={12} className="text-purple-400 animate-pulse" />
-                7-PRISM UNIFIED SOUL CHRONICLE
+                DIARY ✕ PROFILE FUSION
               </span>
               <span className="text-[10px] text-white/40 font-mono">{activeFrequency}Hz PINEAL AWAKENING</span>
             </div>
@@ -299,7 +300,7 @@ export function EpilogueSynergySection() {
               <span>영혼 연대기 &amp; 마스터 아카이브</span>
             </h2>
             <p className="text-xs sm:text-sm text-purple-100/70 max-w-xl leading-relaxed">
-              PRISM 7대 우주 공간의 발자취를 하나로 융합하고 오늘 밤 영혼 진화 도약 포커스를 조율하여, 고차원 잠재의식 프라이밍과 영구 황금 봉인 스탬프를 완성합니다.
+              <strong>Diary(좌측: 밤의 성찰 일기)</strong>와 <strong>Profile(우측: 영혼 프로필 &amp; 사명)</strong>의 양쪽 메뉴를 융합하여, 오늘의 영혼 진화 등급과 7대 우주 황금 봉인 스탬프, 잠재의식 프라이밍을 완성하는 마스터 아카이브입니다.
             </p>
           </div>
 

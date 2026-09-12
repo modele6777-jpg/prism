@@ -141,9 +141,10 @@ export function OrangeSynergySection() {
     const catObj = MANIFESTATION_CATEGORIES.find(c => c.id === selectedCategory);
     const categoryName = catObj ? catObj.label : '목표';
 
-    const systemPrompt = "당신은 오렌지 양자 현실화 가속기(Quantum Catalyst) 마스터입니다. 좌측 메뉴 '시크릿 바이블(끌어당김의 법칙 3단계 Ask-Believe-Receive & 528Hz 진동)'과 우측 메뉴 '소원의 우물(소원 투사와 양자 도약)'을 완벽하게 융합하여 이미 실현된 상태의 오감 스크립트와 융합 매트릭스를 생성하세요.";
-    const userPrompt = `[소원 카테고리]: ${categoryName}
-[실현 목표 소원]: "${targetWish}"
+    const systemPrompt = "당신은 오렌지 양자 현실화 가속기(Quantum Catalyst) 마스터입니다. 좌측 메뉴 [Secret]의 내면아이 진동 일치/끌어당김 원리와 우측 메뉴 [WELL]의 소원의 우물 투사 및 즉각적 현실화 에너지를 완벽히 융합하여 이미 실현된 상태의 오감 스크립트와 융합 매트릭스를 생성하세요.";
+    const userPrompt = `[양쪽 메뉴 융합: SECRET 끌어당김 진동 ✕ WELL 소원 투사]
+[소원 카테고리]: ${categoryName}
+[실현 목표]: "${targetWish}"
 [사용자]: "${userProfile?.basic?.nickname || '창조자'}"
 [조율 주파수]: ${dialValue}Hz
 [소원의 우물 최근 연동]: ${recentWishingWellWish ? `"${recentWishingWellWish}"` : '새로운 소원 투사'}
@@ -234,7 +235,7 @@ export function OrangeSynergySection() {
             <div className="flex items-center gap-2">
               <span className="px-3 py-1 rounded-full text-[10px] font-bold font-mono tracking-widest uppercase bg-orange-500/20 text-orange-300 border border-orange-500/30 flex items-center gap-1.5">
                 <Sparkles size={12} className="text-yellow-400 animate-pulse" />
-                SECRET BIBLE + WISHING WELL FUSION
+                SECRET ✕ WELL FUSION
               </span>
               <span className="text-[10px] text-white/40 font-mono">528Hz MIRACLE TONE</span>
             </div>
@@ -243,7 +244,7 @@ export function OrangeSynergySection() {
               <span>양자 현실화 가속기 (Quantum Manifestation Catalyst)</span>
             </h2>
             <p className="text-xs sm:text-sm text-orange-100/70 max-w-xl leading-relaxed">
-              <strong>시크릿 바이블(섹션1)</strong>의 진동 일치 원리와 <strong>소원의 우물(섹션2)</strong>의 실현 에너지를 융합하여, 바라는 미래를 현재 시점으로 즉각 붕괴시키는 〈양자 현실화 가속기 (Quantum Manifestation Catalyst)〉입니다.
+              <strong>Secret(좌측: 끌어당김 진동 일치)</strong>과 <strong>WELL(우측: 소원의 우물 투사)</strong>의 양쪽 메뉴 에너지를 융합하여, 바라는 미래를 현재 시점으로 즉각 붕괴시키는 〈양자 현실화 가속기〉입니다.
             </p>
           </div>
 

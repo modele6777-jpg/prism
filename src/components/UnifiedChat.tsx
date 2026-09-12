@@ -13,6 +13,8 @@ import { getContextAwarePrompts } from "../utils/dynamicContextSuggestions";
 import { calculateDetailedSaju } from "../lib/sajuAnalysis";
 import { cleanUserMessageDisplay } from "../utils/cleanMessage";
 import { ChatInsightsBoardModal } from "./ChatInsightsBoardModal";
+import { saveLucyChatSummary } from "../lib/prismOmniSync";
+import { invokeLLM } from "../lib/ai";
 
 const PERSONA_CONFIG: Record<PersonaType, { 
   name: string; 
@@ -318,6 +320,8 @@ export function UnifiedChat() {
   const [input, setInput] = useState("");
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [isInsightsBoardOpen, setIsInsightsBoardOpen] = useState(false);
+  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [summaryDone, setSummaryDone] = useState(false);
 
   const rawNickname = sharedState?.userProfile?.basic?.nickname?.trim();
   const userDisplayName = rawNickname && rawNickname !== '여행자' && rawNickname !== '사용자' ? rawNickname : '쭈';
@@ -777,6 +781,46 @@ export function UnifiedChat() {
     });
   };
 
+  const handleSummarizeChat = async () => {
+    if (isSummarizing || currentGenerating) return;
+    const msgs = personaMessages[activePersona] || [];
+    if (msgs.length < 2) return;
+
+    setIsSummarizing(true);
+    try {
+      const last10 = msgs.slice(-10);
+      const dialogText = last10
+        .map((m: any) => {
+          const role = m.role === 'user' ? '나' : '루시';
+          const text = typeof m.content === 'string' ? m.content : (Array.isArray(m.content) ? m.content.map((p: any) => p.text || '').join('') : '');
+          return `${role}: ${text.slice(0, 200)}`;
+        })
+        .join('\n');
+
+      const summaryMessages = [
+        {
+          role: 'user' as const,
+          content: `다음 대화를 핵심만 3줄 이내로 요약해줘. 감정 상태, 주요 고민, 결론/처방 순서로. 반드시 반말로:\n\n${dialogText}`,
+        }
+      ];
+      const result = await invokeLLM({ messages: summaryMessages });
+      if (result && typeof result === 'string') {
+        const summaryText = result;
+        saveLucyChatSummary(summaryText, activePersona);
+        // 루시가 요약을 말풍선으로 전달
+        await sendUnifiedMessage(
+          `[대화 요약 결과]\n${summaryText}\n\n(오브 사이트에도 자동으로 공유됐어 ✨)`,
+          activePersona,
+          undefined,
+          { extraSystemContext: '\n\n[지시: 이것은 대화 요약 결과야. 루시는 요약 내용을 자연스럽게 읽어주고, 오브와 데이터가 연결됐다고 간단히 알려줘. 1~2문장만.]' }
+        );
+        setSummaryDone(true);
+        setTimeout(() => setSummaryDone(false), 3000);
+      }
+    } catch (_) {}
+    setIsSummarizing(false);
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -849,6 +893,32 @@ export function UnifiedChat() {
                   <Sparkles size={13} className="text-purple-300 animate-pulse" />
                   <span className="hidden sm:inline">인사이트</span>
                 </button>
+
+                {/* 대화 요약 버튼 (루시→오브 싱크) */}
+                {currentMessages.length >= 2 && (
+                  <button
+                    type="button"
+                    onClick={handleSummarizeChat}
+                    disabled={isSummarizing}
+                    className={`px-2.5 py-1.5 rounded-xl border font-bold text-[11px] sm:text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                      summaryDone
+                        ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                        : 'bg-sky-500/20 hover:bg-sky-500/30 border-sky-500/40 text-sky-200'
+                    }`}
+                    title="대화 요약 → 오브 사이트에 공유"
+                  >
+                    {isSummarizing ? (
+                      <Loader2 size={13} className="animate-spin" />
+                    ) : summaryDone ? (
+                      <Check size={13} className="text-emerald-400" />
+                    ) : (
+                      <FileText size={13} />
+                    )}
+                    <span className="hidden sm:inline">
+                      {summaryDone ? '공유됨' : '요약·공유'}
+                    </span>
+                  </button>
+                )}
 
                 <button
                   onClick={() => {
