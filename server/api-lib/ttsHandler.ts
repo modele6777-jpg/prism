@@ -217,6 +217,17 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
     }
   }
 
+function stripID3Header(buf: Buffer): Buffer {
+  if (buf.length >= 10 && buf[0] === 0x49 && buf[1] === 0x44 && buf[2] === 0x33) { // 'ID3'
+    const size = ((buf[6] & 0x7f) << 21) | ((buf[7] & 0x7f) << 14) | ((buf[8] & 0x7f) << 7) | (buf[9] & 0x7f);
+    const totalHeaderLen = 10 + size;
+    if (buf.length > totalHeaderLen) {
+      return buf.subarray(totalHeaderLen);
+    }
+  }
+  return buf;
+}
+
   // 3. High-speed Direct Fallback: Google TTS (ultra-fast, 100% reliable on Vercel / serverless)
   try {
     const results = await googleTTS.getAllAudioBase64(cleanText, {
@@ -226,7 +237,10 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
       splitPunct: ",.?!;:\n",
     });
 
-    const buffers = results.map((r: any) => Buffer.from(r.base64, "base64"));
+    const buffers = results.map((r: any, idx: number) => {
+      const b = Buffer.from(r.base64, "base64");
+      return idx === 0 ? b : stripID3Header(b);
+    });
     const combinedBuffer = Buffer.concat(buffers);
     const base64 = combinedBuffer.toString("base64");
 
@@ -266,7 +280,9 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
     });
 
     const fetchedBuffers = await Promise.all(bufferPromises);
-    const combined = Buffer.concat(fetchedBuffers.filter((b) => b.length > 0));
+    const validBuffers = fetchedBuffers.filter((b) => b.length > 0);
+    const strippedBuffers = validBuffers.map((b, idx) => (idx === 0 ? b : stripID3Header(b)));
+    const combined = Buffer.concat(strippedBuffers);
     if (combined.length > 500) {
       const base64 = combined.toString("base64");
       ttsServerCache.set(cacheKey, { base64, encoding: "mp3", sampleRate: 24000, timestamp: Date.now() });

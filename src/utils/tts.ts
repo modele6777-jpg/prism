@@ -16,6 +16,7 @@ import {
 import { setTTSSessionActive, clearTTSSession, initTTSSessionHandlers } from '../lib/ttsMediaSession';
 import { acquireScreenWakeLock, releaseScreenWakeLock } from '../lib/wakeLock';
 import { prepareNaturalSpeechText } from './speechText';
+export { prepareNaturalSpeechText };
 import { isIOSDevice } from '../lib/perfMode';
 
 // Pre-warm the browser's speechSynthesis engine to load premium voices asynchronously immediately on load
@@ -719,3 +720,14 @@ export const useTTSActive = () => {
   }, []);
   return active;
 };
+
+export const useTTSState = () => {
+  const [state, setState] = useState<TTSState>(ttsState);
+  useEffect(() => {
+    return subscribeTTS((s) => {
+      setState(s);
+    });
+  }, []);
+  return state;
+};
+

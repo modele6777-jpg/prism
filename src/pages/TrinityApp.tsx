@@ -93,7 +93,7 @@ import { TarotSpread } from "@/components/trinity/TarotSpread";
 import { TarotSpreadSelectionModal } from "@/components/trinity/TarotSpreadSelectionModal";
 import { TarotCard, TAROT_DECK, getTarotCardImageUrl } from "@/data/tarotData";
 import { shuffleCardDeck } from "@/lib/cardShuffle";
-import { playTTS, playTTSInChunks, playConversation, stopTTS, useTTSActive, prefetchTTS } from "@/utils/tts";
+import { playTTS, playTTSInChunks, playConversation, stopTTS, useTTSActive, useTTSState, prefetchTTS, prepareNaturalSpeechText } from "@/utils/tts";
 import { z } from "zod";
 import {
   getTodayDateKey,
@@ -820,6 +820,7 @@ function extractConciseSummary(text: string): string[] {
 export default function TrinityApp() {
   const [, navigate] = useLocation();
   const isTTSActive = useTTSActive();
+  const ttsState = useTTSState();
   const { firebaseUser, sharedState, updateSharedState, isChatOpen, setIsChatOpen, sendUnifiedMessage, openLucyChat, personaMessages, isGenerating } = useApp();
   const lucyMessages = personaMessages.lucy || [];
   const isSpecialFeatureChromeHidden = useSpecialFeatureChromeHidden();
@@ -1481,17 +1482,30 @@ function playDailyCardChimeAsync() {
   }, [tarotResult]);
 
   const summarySpeechText = useMemo(() => {
-    return conciseSummaryBullets.join(". ");
+    if (conciseSummaryBullets.length === 0) return "";
+    return conciseSummaryBullets.map((b) => b.trim().replace(/[.!?\s]+$/, '') + '.').join(' ');
   }, [conciseSummaryBullets]);
+
+  const isSummaryTTSActive = useMemo(() => {
+    if (!isTTSActive || !summarySpeechText) return false;
+    const cleanSummary = prepareNaturalSpeechText(summarySpeechText);
+    return ttsState.activeFullText === cleanSummary;
+  }, [isTTSActive, summarySpeechText, ttsState.activeFullText]);
+
+  const isFullReadingTTSActive = useMemo(() => {
+    if (!isTTSActive || !tarotResult) return false;
+    return !isSummaryTTSActive;
+  }, [isTTSActive, tarotResult, isSummaryTTSActive]);
 
   // Auto-prefetch TTS for long reading & summary when generated
   useEffect(() => {
     if (tarotResult && !isTarotGenerating && tarotResult.length > 320) {
-      const summaryText = extractConciseSummary(tarotResult).join(". ");
-      if (summaryText) {
-        prefetchTTS(summaryText, 'Kore');
+      const summaryBullets = extractConciseSummary(tarotResult);
+      if (summaryBullets.length > 0) {
+        const firstSummaryChunk = summaryBullets[0].trim().replace(/[.!?\s]+$/, '') + '.';
+        prefetchTTS(firstSummaryChunk, 'Kore', '신비');
       }
-      prefetchTTS(tarotResult.slice(0, 400), 'Kore');
+      prefetchTTS(tarotResult.slice(0, 400), 'Kore', '신비');
     }
   }, [tarotResult, isTarotGenerating]);
   const [chatInput, setChatInput] = useState("");
@@ -3007,18 +3021,18 @@ function playDailyCardChimeAsync() {
                                       </h4>
                                     </div>
                                     <button
-                                      onClick={async () => {
-                                        if (isTTSActive) {
-                                          stopTTS();
-                                        } else if (tarotResult) {
-                                          await playTTSInChunks(tarotResult, 'Kore', 420, '신비');
-                                        }
-                                      }}
-                                      className={`p-1.5 rounded-full transition-all ${isTTSActive ? "bg-yellow-500/20 text-yellow-400 animate-pulse" : "bg-white/5 text-white/40 hover:text-white hover:bg-white/10"}`}
-                                      title={isTTSActive ? "낭독 중지하기" : "음성으로 듣기"}
-                                    >
-                                      {isTTSActive ? <VolumeX size={14} /> : <Volume2 size={14} />}
-                                    </button>
+                                        onClick={async () => {
+                                          if (isFullReadingTTSActive) {
+                                            stopTTS();
+                                          } else if (tarotResult) {
+                                            await playTTSInChunks(tarotResult, 'Kore', 420, '신비');
+                                          }
+                                        }}
+                                        className={`p-1.5 rounded-full transition-all ${isFullReadingTTSActive ? "bg-yellow-500/20 text-yellow-400 animate-pulse" : "bg-white/5 text-white/40 hover:text-white hover:bg-white/10"}`}
+                                        title={isFullReadingTTSActive ? "낭독 중지하기" : "음성으로 듣기"}
+                                      >
+                                        {isFullReadingTTSActive ? <VolumeX size={14} /> : <Volume2 size={14} />}
+                                      </button>
                                   </div>
 
                                   <div
@@ -3048,21 +3062,21 @@ function playDailyCardChimeAsync() {
                                                 <button
                                                   type="button"
                                                   onClick={async () => {
-                                                    if (isTTSActive) {
+                                                    if (isSummaryTTSActive) {
                                                       stopTTS();
                                                     } else if (summarySpeechText) {
-                                                      await playTTS(summarySpeechText, 'Kore', false, '신비');
+                                                      await playTTSInChunks(summarySpeechText, 'Kore', 200, '신비');
                                                     }
                                                   }}
                                                   className={`px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
-                                                    isTTSActive
+                                                    isSummaryTTSActive
                                                       ? "bg-yellow-400/25 text-yellow-300 border border-yellow-400/40 animate-pulse"
                                                       : "bg-white/10 hover:bg-white/20 text-white/90 border border-white/15"
                                                   }`}
                                                   title="핵심 3줄 요약 음성 낭독"
                                                 >
-                                                  {isTTSActive ? <VolumeX size={11} /> : <Volume2 size={11} />}
-                                                  <span>{isTTSActive ? "중지" : "요약 듣기"}</span>
+                                                  {isSummaryTTSActive ? <VolumeX size={11} /> : <Volume2 size={11} />}
+                                                  <span>{isSummaryTTSActive ? "중지" : "요약 듣기"}</span>
                                                 </button>
                                               </div>
                                               <ul className="space-y-1.5 text-xs text-white/90 leading-relaxed font-sans">
