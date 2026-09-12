@@ -1,5 +1,18 @@
 [
   {
+    "version": "1.2.918",
+    "summary": "Today's Secret Affirmation 매일 다른 확언 제공 및 다른 확언 뽑기(Shuffle) 기능 추가",
+    "builtAt": "2026-09-12T11:33:00.000Z",
+    "items": [
+      "✨ Today's Secret Affirmation 고정 문구 탈피: 풍요, 성공, 사랑/인연, 건강/생명력, 내면 평온, 기적 등 6개 테마 36종 심층 확언 카탈로그 구축",
+      "📅 날짜 기반 동적 시딩(Date Hashing): 별도 소원 입력이 없어도 매일 날짜에 맞춰 새로운 확언과 시크릿 키트 자동 제공",
+      "🔀 '다른 확언 뽑기' (Shuffle) 버튼 추가: 확언 카드 상단에서 언제든지 새로운 시크릿 확언과 키트를 즉각 재추첨 가능",
+      "🧠 AI 프롬프트 난수 엔트로피 및 다채로운 테마 주입으로 실시간 생성 시에도 매번 고유한 확언 보장"
+    ],
+    "author": "Antigravity AI Agent",
+    "buildEnvironment": "cloud-run"
+  },
+  {
     "version": "1.2.917",
     "summary": "앱 내 중복 버튼 및 미사용 부유식 FAB/데드 모달 전면 정리 및 UI/UX 간결화",
     "builtAt": "2026-09-12T11:25:00.000Z",
