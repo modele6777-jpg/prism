@@ -219,7 +219,7 @@ export function MuseDocentAudio({ artwork }: MuseDocentAudioProps) {
     try {
       // 긴 도슨트 전체를 파이프라인 프리페칭 스트리밍(playTTSInChunks)으로 재생하여
       // 브라우저/모바일 절전 및 중간 끊김 현상을 방지합니다.
-      await playTTSInChunks(narrationText, "Kore", 200, "차분");
+      await playTTSInChunks(narrationText, "Kore", 420, "차분");
       if (playbackRunRef.current === playbackRun && !abortRef.current && !pausedRef.current) {
         setPhase("done");
       }

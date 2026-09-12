@@ -2905,7 +2905,7 @@ function playDailyCardChimeAsync() {
                                         if (isTTSActive) {
                                           stopTTS();
                                         } else if (tarotResult) {
-                                          await playTTSInChunks(tarotResult, 'Kore', 220, '신비');
+                                          await playTTSInChunks(tarotResult, 'Kore', 420, '신비');
                                         }
                                       }}
                                       className={`p-1.5 rounded-full transition-all ${isTTSActive ? "bg-yellow-500/20 text-yellow-400 animate-pulse" : "bg-white/5 text-white/40 hover:text-white hover:bg-white/10"}`}

@@ -220,21 +220,21 @@ export function prefetchTTS(text: string, voice?: string, emotion?: string): Pro
   const cleanText = normalizeTextForSpeech(text);
   if (!cleanText) return Promise.resolve(null);
 
-  const key = getTTSCacheKey(text, voice, emotion);
-  if (ttsCache.has(key)) {
-    return ttsCache.get(key)!;
-  }
-
   let activeEmotion = emotion;
   if (!activeEmotion) {
     const emotionMatch = text.match(/\[EMOTION:\s*([^\]]+)\]/i);
     if (emotionMatch) activeEmotion = emotionMatch[1].trim();
   }
 
+  const key = getTTSCacheKey(text, voice, activeEmotion);
+  if (ttsCache.has(key)) {
+    return ttsCache.get(key)!;
+  }
+
   const promise = (async (): Promise<TTSAudioData | null> => {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
       const response = await fetch('/api/ai/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -469,13 +469,17 @@ export const playTTS = async (
       for (let retryCount = 1; retryCount <= 3; retryCount++) {
         if (sessionToVerify && ttsState.activeSessionId !== sessionToVerify) return;
         try {
-          console.warn(`[TTS] Sequence chunk API call attempt ${retryCount}/3 failed, retrying in ${retryCount * 300}ms...`, error);
-          await new Promise((r) => setTimeout(r, retryCount * 300));
+          console.warn(`[TTS] Sequence chunk API call attempt ${retryCount}/3 failed, retrying in ${retryCount * 500}ms...`, error);
+          await new Promise((r) => setTimeout(r, retryCount * 500));
+          const retryController = new AbortController();
+          const retryTimeoutId = setTimeout(() => retryController.abort(), 20000);
           const retryRes = await fetch('/api/ai/tts', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: cleanText, voice, emotion: activeEmotion }),
+            signal: retryController.signal,
           });
+          clearTimeout(retryTimeoutId);
           if (retryRes.ok) {
             const retryData = await retryRes.json();
             if (retryData?.audioContent) {
@@ -498,6 +502,9 @@ export const playTTS = async (
       }
       // Fall back to native browser speech synthesis to ensure the reading never abruptly cuts off
       console.warn('[TTS] Sequence chunk API generation failed after retries, falling back to Native Browser Speech to avoid cutoff');
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        try { window.speechSynthesis.cancel(); } catch (_) {}
+      }
       return playNativeBrowserSpeech(cleanText, wait, sessionToVerify, isSequenceChunk, voice);
     }
 
@@ -514,7 +521,7 @@ export const playTTS = async (
 export const playTTSInChunks = async (
   text: string,
   voice?: string,
-  maxChunkLength = 220,
+  maxChunkLength = 420,
   emotion?: string,
 ): Promise<void> => {
   // If already speaking or loading this exact sequence, click again stops playback
@@ -542,8 +549,28 @@ export const playTTSInChunks = async (
       continue;
     }
 
+    // If an individual sentence exceeds maxChunkLength, split by commas or clause markers
+    if (s.length > maxChunkLength) {
+      if (currentChunk.trim()) {
+        chunks.push(currentChunk.trim());
+        currentChunk = '';
+      }
+      const clauses = s.match(/[^,，;；]+[,，;；]?/g) || [s];
+      for (const clause of clauses) {
+        const c = clause.trim();
+        if (!c) continue;
+        if (currentChunk && (currentChunk.length + c.length + 1 > maxChunkLength)) {
+          chunks.push(currentChunk.trim());
+          currentChunk = c;
+        } else {
+          currentChunk = currentChunk ? `${currentChunk} ${c}` : c;
+        }
+      }
+      continue;
+    }
+
     const next = currentChunk ? `${currentChunk} ${s}` : s;
-    if (currentChunk && (next.length > maxChunkLength || (currentChunk.length >= 70 && /[.!?]$/.test(currentChunk)))) {
+    if (currentChunk && next.length > maxChunkLength) {
       chunks.push(currentChunk.trim());
       currentChunk = s;
     } else {
@@ -617,9 +644,9 @@ export const playTTSInChunks = async (
         break;
       }
 
-      // Micro-pause between sentences (80ms) for natural human speech rhythm
+      // Micro-pause between chunks (60ms) for natural human speech rhythm
       if (!isLastChunk) {
-        await new Promise((resolve) => setTimeout(resolve, 80));
+        await new Promise((resolve) => setTimeout(resolve, 60));
       }
     }
   } catch (err) {
