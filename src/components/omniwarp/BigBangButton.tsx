@@ -128,36 +128,6 @@ export function BigBangButton() {
   const secondaryDest = sanitizeDest(tossRule.secondary);
   const tertiaryDest = sanitizeDest(tossRule.tertiary);
 
-  // 🎯 도약 목적지가 루시 채팅 또는 크리스탈 오브인지 실시간 판별
-  const targetDestPath = (currentTarget?.destinationPath || (
-    activePhase === 'blackhole' ? blackholeApp.path :
-    activePhase === 'whitehole' ? whiteholeApp.path :
-    activePhase === 'event_horizon' ? secondaryDest.path :
-    whiteholeApp.path
-  )).toLowerCase();
-
-  const targetDestId = (currentTarget?.id || (
-    activePhase === 'blackhole' ? blackholeApp.id :
-    activePhase === 'whitehole' ? whiteholeApp.id :
-    activePhase === 'event_horizon' ? secondaryDest.id :
-    whiteholeApp.id
-  )).toLowerCase();
-
-  const isTargetLucy = (
-    targetDestPath.includes('/chat') ||
-    targetDestPath.includes('/lucy') ||
-    targetDestId === 'lucy' ||
-    targetDestId === 'chat'
-  );
-
-  const isTargetOrb = (
-    targetDestPath.includes('/orb') ||
-    targetDestPath.includes('/crystal') ||
-    targetDestPath.includes('/gateway') ||
-    targetDestId === 'orb' ||
-    targetDestId === 'crystal' ||
-    targetDestId === 'gateway'
-  );
 
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const touchStartRef = useRef<{ time: number; x: number; y: number } | null>(null);
@@ -471,7 +441,7 @@ export function BigBangButton() {
         return;
       }
 
-      // ☀️ 첫 번째 탭: 더블탭 입력 대기 (260ms) 후 싱글탭(루시 채팅 토글) 실행
+      // ☀️ 첫 번째 탭: 더블탭 입력 대기 (260ms) 후 싱글탭(화이트홀 빛비춤 도약) 실행
       lastTapTimeRef.current = nowMs;
 
       if (singleTapTimerRef.current) {
@@ -483,6 +453,9 @@ export function BigBangButton() {
         triggerHaptic('whitehole');
         omniWarpAudio.playWhiteHole();
 
+        const targetWhitehole = whiteholeApp;
+        const safeDestPath = resolveCanonicalPath(targetWhitehole.path);
+
         // ☀️ 제자리 탭: 빛비춤(화이트홀) 화면 이펙트 발동!
         if (typeof window !== 'undefined') {
           window.dispatchEvent(
@@ -490,37 +463,32 @@ export function BigBangButton() {
               detail: {
                 phase: 'whitehole',
                 target: {
-                  id: 'lucy',
-                  name: '루시 1:1 대화',
-                  destinationPath: '/chat',
-                  themeColor: '#fde68a',
+                  id: targetWhitehole.id,
+                  name: targetWhitehole.name,
+                  destinationPath: safeDestPath,
+                  themeColor: targetWhitehole.themeColor || '#fde68a',
                   eventHorizonMode: 'whitehole',
                 },
                 context,
-                metrics,
+                metrics: { ...metrics, phase: 'whitehole' },
                 timestamp: Date.now(),
               },
             })
           );
         }
 
-        if (isChatView) {
-          // 루시 채팅 끄기 (닫기) -> 이전 페이지로 복귀
-          const returnPath = safeSessionStorage.getItem('prism_chat_return_path') || '/';
-          safeSessionStorage.removeItem('prism_chat_return_path');
-          if (returnPath.includes('orb')) {
-            window.location.href = '/orb.html';
-          } else {
-            navigate(returnPath);
-          }
+        if (isOrbSite) {
+          window.location.href = safeDestPath;
         } else {
-          // 루시 채팅 켜기 (열기) -> 현재 경로 저장 후 /chat 이동
-          const currentPath = isOrbSite ? '/orb.html' : (location || '/');
-          safeSessionStorage.setItem('prism_chat_return_path', currentPath);
-          if (isOrbSite) {
-            window.location.href = '/chat';
-          } else {
-            navigate('/chat');
+          navigate(safeDestPath);
+          window.dispatchEvent(new CustomEvent('prism-navigate', { detail: { path: safeDestPath } }));
+          window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: safeDestPath } }));
+          if (safeDestPath.includes('?tab=')) {
+            const tabName = safeDestPath.split('?tab=')[1]?.split('&')[0];
+            if (tabName) {
+              sessionStorage.setItem('prism_target_tab', tabName);
+              window.dispatchEvent(new CustomEvent('prism-tab-change', { detail: { tab: tabName } }));
+            }
           }
         }
       }, 260);
@@ -626,9 +594,12 @@ export function BigBangButton() {
       return;
     }
 
-    // C. 제자리 홀드 후 떼기 (dist < 20): 어두운 심연(블랙홀) 효과 발동 및 크리스탈 오브 들어가기 / 나가기 토글!
+    // C. 제자리 홀드 후 떼기 (dist < 20): 어두운 심연(블랙홀) 차원 도약!
     triggerHaptic('blackhole');
     omniWarpAudio.playBlackHole();
+
+    const targetBlackhole = blackholeApp;
+    const safeDestPath = resolveCanonicalPath(targetBlackhole.path);
 
     // 🕳️ 제자리 홀드 후 떼기: 어두운 심연(블랙홀) 화면 이펙트 발동!
     if (typeof window !== 'undefined') {
@@ -637,14 +608,14 @@ export function BigBangButton() {
           detail: {
             phase: 'blackhole',
             target: {
-              id: 'orb',
-              name: '크리스탈 오브',
-              destinationPath: '/orb',
-              themeColor: '#38bdf8',
+              id: targetBlackhole.id,
+              name: targetBlackhole.name,
+              destinationPath: safeDestPath,
+              themeColor: targetBlackhole.themeColor || '#a855f7',
               eventHorizonMode: 'blackhole',
             },
             context,
-            metrics,
+            metrics: { ...metrics, phase: 'blackhole' },
             timestamp: Date.now(),
           },
         })
@@ -653,23 +624,17 @@ export function BigBangButton() {
 
     setTimeout(() => {
       if (isOrbSite) {
-        // 오브 사이트 나가기 -> 프리즘 귀환
-        const returnPath = safeSessionStorage.getItem('prism_orb_return_path') || '/';
-        safeSessionStorage.removeItem('prism_orb_return_path');
-        const finalDest = returnPath.includes('orb') ? '/' : returnPath;
-        if (typeof window !== 'undefined' && window.location.pathname.includes('orb')) {
-          window.location.href = finalDest;
-        } else {
-          navigate(finalDest);
-        }
+        window.location.href = safeDestPath;
       } else {
-        // 오브 사이트 들어가기 -> /orb.html 입장
-        const currentPath = location || '/';
-        safeSessionStorage.setItem('prism_orb_return_path', currentPath);
-        if (typeof window !== 'undefined') {
-          window.location.href = '/orb.html';
-        } else {
-          navigate('/orb');
+        navigate(safeDestPath);
+        window.dispatchEvent(new CustomEvent('prism-navigate', { detail: { path: safeDestPath } }));
+        window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: safeDestPath } }));
+        if (safeDestPath.includes('?tab=')) {
+          const tabName = safeDestPath.split('?tab=')[1]?.split('&')[0];
+          if (tabName) {
+            sessionStorage.setItem('prism_target_tab', tabName);
+            window.dispatchEvent(new CustomEvent('prism-tab-change', { detail: { tab: tabName } }));
+          }
         }
       }
     }, 240);
@@ -728,8 +693,8 @@ export function BigBangButton() {
     if (radialSectorIndex >= 0) return RADIAL_WARP_APPS[radialSectorIndex]?.id || 'hub';
     // 🪞 제자리 홀드 - 오브 사이트에서는 프리즘 홈 귀환
     if (isOrbSite) return 'hub';
-    // 🔮 제자리 홀드 - 프리즘 페이지에서는 크리스탈 오브 입장
-    return 'orb';
+    // 🕳️ 제자리 홀드 - 블랙홀 추천 채널 아이콘
+    return blackholeApp?.id || 'muse';
   })();
 
   const activeAppName = (() => {
@@ -744,8 +709,8 @@ export function BigBangButton() {
     }
     // 🪞 제자리 홀드 - 오브 사이트에서는 프리즘 귀환
     if (isOrbSite) return '프리즘 귀환 (오브 나가기)';
-    // 🔮 제자리 홀드 - 프리즘 페이지에서는 크리스탈 오브 입장
-    return '크리스탈 오브 (입장)';
+    // 🕳️ 제자리 홀드 - 블랙홀 추천 채널 명칭 표출
+    return `${blackholeApp?.name || '심연 도약'}`;
   })();
 
   return (
@@ -850,18 +815,14 @@ export function BigBangButton() {
                   : 'inset 0 0 22px rgba(56, 189, 248, 0.25), inset -6px -6px 18px rgba(0, 0, 0, 0.9), 0 0 24px rgba(56, 189, 248, 0.3)',
               }}
               aria-label={
-                isChatView
-                  ? '빅뱅 버튼 · 탭: 루시 채팅 끄기, 더블탭: 프리즘 메인, 홀드: 크리스탈 오브'
-                  : isOrbSite
-                  ? '빅뱅 버튼 · 탭: 루시 채팅 켜기, 더블탭: 프리즘 메인, 홀드: 오브 사이트 나가기'
-                  : '빅뱅 버튼 · 탭: 루시 채팅 켜기, 더블탭: 프리즘 메인, 홀드: 크리스탈 오브 들어가기'
+                isOrbSite
+                  ? '빅뱅 버튼 · 탭: 화이트홀 도약, 더블탭: 프리즘 메인, 홀드: 오브 사이트 나가기'
+                  : '빅뱅 버튼 · 탭: 화이트홀 도약, 더블탭: 프리즘 메인, 홀드: 블랙홀 심연 도약'
               }
               title={
-                isChatView
-                  ? '탭: 루시 채팅 끄기 · 더블탭: 프리즘 메인 · 홀드: 크리스탈 오브 · 웜홀: 임의 도약'
-                  : isOrbSite
-                  ? '탭: 루시 채팅 켜기 · 더블탭: 프리즘 메인 · 홀드: 오브 사이트 나가기 · 웜홀: 임의 도약'
-                  : '탭: 루시 채팅 켜기 · 더블탭: 프리즘 메인 · 홀드: 크리스탈 오브 · 웜홀: 임의 도약'
+                isOrbSite
+                  ? '탭: 화이트홀 도약 · 더블탭: 프리즘 메인 · 홀드: 오브 사이트 나가기 · 웜홀: 임의 도약'
+                  : '탭: 화이트홀 도약 · 더블탭: 프리즘 메인 · 홀드: 블랙홀 심연 도약 · 웜홀: 임의 도약'
               }
             >
               {/* 🌀 [웜홀] 빛비춤 + 어두운 심연 + 사건의 지평선 3원 동시 융합 전개 */}

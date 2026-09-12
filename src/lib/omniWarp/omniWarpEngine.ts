@@ -159,34 +159,10 @@ export interface QuantumDestination {
 }
 
 /**
- * 🌌 블랙홀 탭 시 무작위 불시착 가능한 프리즘 우주 실존 장소 및 활성 기능 풀 (9대 차원)
- * (삭제되거나 차단된 profile, handbook, library, omniwarp 등은 엄격 배제)
+ * 🌌 블랙홀 탭 시 무작위 불시착 가능한 프리즘 우주 실존 장소 및 활성 기능 풀 (7대 차원)
+ * (삭제되거나 차단된 profile, handbook, library, omniwarp, orb, lucy/chat 등은 엄격 배제)
  */
 export const QUANTUM_BLACKHOLE_DESTINATIONS: QuantumDestination[] = [
-  {
-    id: 'lucy',
-    name: '루시 심층 상담',
-    subName: '1:1 영혼의 가이드',
-    path: '/chat',
-    icon: '✨',
-    runeSymbol: 'ᛞ',
-    runeName: 'Dagaz',
-    themeColor: '#c084fc',
-    accentGlow: 'rgba(192, 132, 252, 0.85)',
-    description: '루시와의 1:1 심층 대화 및 지혜로운 영혼의 조언',
-  },
-  {
-    id: 'orb',
-    name: '크리스탈 오브',
-    subName: '마음의 질문과 직관 예지',
-    path: '/orb',
-    icon: '🔮',
-    runeSymbol: 'ᛟ',
-    runeName: 'Othala',
-    themeColor: '#38bdf8',
-    accentGlow: 'rgba(56, 189, 248, 0.85)',
-    description: '마음속 깊은 고민을 비추는 3D 크리스탈 오브 직관 점술',
-  },
   {
     id: 'orange',
     name: '오렌지 소원의 우물',
@@ -560,6 +536,18 @@ export const CHANNEL_SUBMENUS: Record<
       runeName: 'Ansuz',
     },
     mirrorhole: {
+      id: 'epilogue-archive',
+      name: '영감 아카이브',
+      subName: '기록된 사유의 보고',
+      path: '/epilogue?tab=diary',
+      icon: '📚',
+      themeColor: '#10b981',
+      accentGlow: 'rgba(16, 185, 129, 0.95)',
+      description: '그동안 쌓아온 사유와 영감의 기록을 차분히 되돌아봅니다.',
+      runeSymbol: 'ᛗ',
+      runeName: 'Mannaz',
+    },
+    blackhole: {
       id: 'epilogue-synergy',
       name: '시너지 연대기',
       subName: '영혼의 발자취와 종합 분석',
@@ -571,25 +559,13 @@ export const CHANNEL_SUBMENUS: Record<
       runeSymbol: 'ᛃ',
       runeName: 'Jera',
     },
-    blackhole: {
-      id: 'epilogue-deep-lucy',
-      name: '루시 심층 상담',
-      subName: '1:1 영혼의 가이드',
-      path: '/chat',
-      icon: '✨',
-      themeColor: '#c084fc',
-      accentGlow: 'rgba(192, 132, 252, 0.95)',
-      description: '밤 서재의 사유를 심화하여 루시와 1:1 심층 대화로 영혼의 지혜를 구합니다.',
-      runeSymbol: 'ᛞ',
-      runeName: 'Dagaz',
-    },
   },
 };
 
 /**
  * 2단계: 터치 압력/온도 기반 온디바이스 SLM 맥락 합성 (<100ms)
  * - 웜홀 (탭): 시공간 특이점에 빨려 들어가 임의의 장소나 기능으로 양자 도약
- * - 제자리 홀드: 화이트홀(루시채팅) ➔ 미러홀(프리즘홈) ➔ 블랙홀(크리스탈오브) 무한 반복 순환
+ * - 제자리 홀드: 화이트홀(빛비춤) ➔ 블랙홀(어두운 심연) 도약
  * - 사건의 지평선 (드래그): 해당 조준 채널의 1번째 메뉴(화이트홀), 2번째 메뉴(미러홀), 3번째 메뉴(블랙홀) 도약
  */
 export function synthesizeWarpTarget(context: OmniWarpContext, metrics: WarpForceMetrics): OmniWarpTarget {
@@ -654,35 +630,27 @@ export function synthesizeWarpTarget(context: OmniWarpContext, metrics: WarpForc
     };
   }
 
-  // 1. 제자리 탭 (가볍게 터치): 화이트홀 (빛비춤) ➔ 루시 채팅 (/chat)
+  // 1. 제자리 탭 (가볍게 터치): 화이트홀 (빛비춤) ➔ 최상위 이성 채널(트리니티 오라클 등)
   if (metrics.phase === 'whitehole') {
-    const dest = sanitizeDest({
-      id: 'lucy',
-      name: '루시 1:1 대화',
-      subName: '영혼의 가이드 루시와의 심층 대화',
-      path: '/chat',
-      icon: '✨',
-      themeColor: '#fde68a',
-      accentGlow: 'rgba(244, 114, 182, 0.95)',
-      description: '영혼의 가이드 루시와 1:1로 마음 깊은 대화와 지혜를 나눕니다.',
-    });
+    const whiteholeApp = getWhiteholeRecommendedApp(context.activeRoute);
+    const dest = sanitizeDest(whiteholeApp);
     const safePath = resolveCanonicalPath(dest.path);
     return {
-      id: 'lucy',
-      icon: '✨',
+      id: dest.id,
+      icon: dest.icon || '☀️',
       phase: 'whitehole',
       gauge: metrics.virtualForce,
       aiTemperature: T,
-      title: '루시 1:1 심층 대화',
-      actionType: 'omniwarp_whitehole_lucy',
+      title: dest.name,
+      actionType: `omniwarp_whitehole_${dest.id}`,
       destinationPath: safePath,
-      previewLabel: `[화이트홀 빛비춤] ✨ ᛞ 루시 1:1 대화`,
-      previewDescription: `화이트홀의 찬란한 빛비춤 에너지를 타고 영혼의 AI 가이드 [루시 1:1 대화]로 즉시 연결됩니다.`,
-      themeColor: '#fde68a',
-      accentGlow: 'rgba(244, 114, 182, 0.95)',
-      stageIndex: 9,
-      runeSymbol: 'ᛞ',
-      runeName: 'Dagaz',
+      previewLabel: `[화이트홀 빛비춤] ☀️ ${dest.runeSymbol || 'ᛞ'} ${dest.name}`,
+      previewDescription: `화이트홀의 찬란한 빛비춤 에너지를 타고 [${dest.name} · ${dest.subName}]으로 즉시 연결됩니다.`,
+      themeColor: dest.themeColor || '#fde68a',
+      accentGlow: dest.accentGlow || 'rgba(244, 114, 182, 0.95)',
+      stageIndex: 1,
+      runeSymbol: dest.runeSymbol || 'ᛞ',
+      runeName: dest.runeName || 'Light',
     };
   }
 
@@ -711,34 +679,26 @@ export function synthesizeWarpTarget(context: OmniWarpContext, metrics: WarpForc
     };
   }
 
-  // 3. 제자리 홀드: 블랙홀 (어두운 심연) ➔ 크리스탈 오브 (/orb)
-  const orbDest = sanitizeDest({
-    id: 'orb',
-    name: '크리스탈 오브',
-    subName: '직관의 예지와 마음 투영 점술',
-    path: '/orb',
-    icon: '🔮',
-    themeColor: '#38bdf8',
-    accentGlow: 'rgba(56, 189, 248, 0.95)',
-    description: '무의식의 질문을 투영하는 3D 크리스탈 오브 직관 점술로 연결됩니다.',
-  });
-  const safeOrbPath = resolveCanonicalPath(orbDest.path);
+  // 3. 제자리 홀드: 블랙홀 (어두운 심연) ➔ 최상위 감성·무의식 채널(뮤즈 예술처방, 오렌지 소원의 우물 등)
+  const blackholeApp = getBlackholeRecommendedApp(context.activeRoute);
+  const dest = sanitizeDest(blackholeApp);
+  const safePath = resolveCanonicalPath(dest.path);
   return {
-    id: 'orb',
-    icon: '🔮',
+    id: dest.id,
+    icon: dest.icon || '🕳️',
     phase: 'blackhole',
     gauge: metrics.virtualForce,
     aiTemperature: T,
-    title: '크리스탈 오브',
-    actionType: 'omniwarp_blackhole_orb',
-    destinationPath: safeOrbPath,
-    previewLabel: `[블랙홀 어두운 심연] 🕳️ ᛟ 크리스탈 오브`,
-    previewDescription: `블랙홀의 어두운 심연 특이점에 이끌려 직관의 성소 [크리스탈 오브]로 연결됩니다.`,
-    themeColor: '#38bdf8',
-    accentGlow: 'rgba(56, 189, 248, 0.95)',
+    title: dest.name,
+    actionType: `omniwarp_blackhole_${dest.id}`,
+    destinationPath: safePath,
+    previewLabel: `[블랙홀 어두운 심연] 🕳️ ${dest.runeSymbol || 'ᛟ'} ${dest.name}`,
+    previewDescription: `블랙홀의 어두운 심연 특이점에 이끌려 [${dest.name} · ${dest.subName}]으로 연결됩니다.`,
+    themeColor: dest.themeColor || '#a855f7',
+    accentGlow: dest.accentGlow || 'rgba(168, 85, 247, 0.95)',
     stageIndex: 2,
-    runeSymbol: 'ᛟ',
-    runeName: 'Othala',
+    runeSymbol: dest.runeSymbol || 'ᛟ',
+    runeName: dest.runeName || 'Deep',
   };
 }
 

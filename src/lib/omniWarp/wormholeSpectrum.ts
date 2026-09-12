@@ -26,7 +26,19 @@ export interface WormholeAppInfo {
   defaultGaugePercent: number;
 }
 
-export const DISALLOWED_WARP_IDS = new Set(['profile', 'epilogue-profile', 'handbook', 'library', 'omniwarp', 'hub']);
+export const DISALLOWED_WARP_IDS = new Set([
+  'profile',
+  'epilogue-profile',
+  'handbook',
+  'library',
+  'omniwarp',
+  'hub',
+  'orb',
+  'crystal',
+  'gateway',
+  'lucy',
+  'chat',
+]);
 export const DISALLOWED_WARP_PATHS = new Set([
   '/profile',
   '/epilogue?tab=profile',
@@ -38,25 +50,55 @@ export const DISALLOWED_WARP_PATHS = new Set([
   '/ecpr',
   '/synergy',
   '/aegis',
+  '/orb',
+  '/orb.html',
+  '/crystal',
+  '/gateway',
+  '/chat',
+  '/chat.html',
+  '/lucy',
 ]);
 
 /**
  * 웜홀/워프 이동 불가 목적지 판별 가드
  * - 프로필(profile, epilogue?tab=profile 등)로 가는 모든 경로 및 ID 전면 배제
  * - 핸드북, 라이브러리, 옴니워프, 허브 등 단독/특수 페이지 배제
+ * - 크리스탈 오브(/orb, /crystal 등) 및 루시 채팅(/chat, /lucy 등) 웜홀 도약 전면 배제
  */
 export function isDisallowedWarpDestination(destIdOrPath: string): boolean {
   if (!destIdOrPath) return true;
   const raw = String(destIdOrPath).toLowerCase().trim();
   const norm = raw.replace('/', '').split('?')[0];
 
-  // 프로필로 향하는 모든 경로 및 ID 엄격 차단
+  // 1. 프로필로 향하는 모든 경로 및 ID 엄격 차단
   if (
     raw === 'profile' ||
     norm === 'profile' ||
     raw.includes('profile') ||
     raw.includes('tab=profile') ||
     raw.startsWith('/profile')
+  ) {
+    return true;
+  }
+
+  // 2. 크리스탈 오브 사이트 및 루시 1:1 채팅으로 향하는 모든 경로 및 ID 엄격 차단
+  if (
+    raw === 'orb' ||
+    norm === 'orb' ||
+    raw.includes('orb') ||
+    raw.startsWith('/orb') ||
+    raw === 'crystal' ||
+    norm === 'crystal' ||
+    raw === 'gateway' ||
+    norm === 'gateway' ||
+    raw === 'chat' ||
+    norm === 'chat' ||
+    raw.includes('chat') ||
+    raw.startsWith('/chat') ||
+    raw === 'lucy' ||
+    norm === 'lucy' ||
+    raw.includes('lucy') ||
+    raw.startsWith('/lucy')
   ) {
     return true;
   }
@@ -95,7 +137,7 @@ function routeToWormholeApp(route: PrismRouteDefinition, defaultPercent: number 
 
 /**
  * 현재 활성화된 모든 프리즘 사이트/기능의 웜홀 앱 목록 반환 (하위 호환성 및 동적 갱신 보장)
- * profile, handbook, library, omniwarp는 워프 이동 금지 대상이므로 제외
+ * profile, handbook, library, omniwarp, orb, lucy/chat은 워프 이동 금지 대상이므로 제외
  */
 export function getAllActiveWormholeApps(): WormholeAppInfo[] {
   try {
@@ -129,37 +171,29 @@ export const ALL_WORMHOLE_APPS: WormholeAppInfo[] = new Proxy([] as WormholeAppI
 /**
  * 현재 페이지 및 맥락에 맞춰 프리즘의 실존 사이트/기능들을 지능형 랭킹하여
  * 웜홀 시공간 스펙트럼에 차례대로 고르게 매핑합니다.
- * (profile, handbook, library, omniwarp는 워프 이동 불가 대상으로 엄격 제외)
+ * (profile, handbook, library, omniwarp, orb, lucy/chat은 워프 이동 불가 대상으로 엄격 제외)
  */
 export function getRankedWormholeApps(activeRoute: string): WormholeAppInfo[] {
   const norm = (activeRoute || '').replace('/', '').toLowerCase() || 'hub';
   const allActive = getAllActiveWormholeApps();
 
-  // 기본 채널별 시너지 우선순위 템플릿 (profile, handbook, library, omniwarp, hub 전면 배제)
+  // 기본 채널별 시너지 우선순위 템플릿 (profile, handbook, library, omniwarp, hub, orb, lucy 전면 배제)
   const priorityOrder: Record<string, string[]> = {
-    trinity: ['muse', 'orb', 'orange', 'lucy', 'epilogue', 'bluebird', 'heal'],
-    oracle: ['muse', 'orb', 'orange', 'lucy', 'epilogue', 'bluebird', 'heal'],
-    muse: ['orange', 'epilogue', 'trinity', 'lucy', 'bluebird', 'orb', 'heal'],
-    orange: ['heal', 'bluebird', 'epilogue', 'muse', 'trinity', 'orb', 'lucy'],
-    heal: ['bluebird', 'orange', 'epilogue', 'muse', 'trinity', 'orb', 'lucy'],
-    bluebird: ['orange', 'muse', 'heal', 'epilogue', 'trinity', 'orb', 'lucy'],
-    epilogue: ['trinity', 'heal', 'bluebird', 'muse', 'orange', 'orb', 'lucy'],
-    orb: ['lucy', 'trinity', 'muse', 'orange', 'heal', 'bluebird', 'epilogue'],
-    chat: ['orb', 'trinity', 'muse', 'orange', 'bluebird', 'heal', 'epilogue'],
-    lucy: ['orb', 'trinity', 'muse', 'orange', 'bluebird', 'heal', 'epilogue'],
-    handbook: ['lucy', 'orb', 'trinity', 'muse', 'epilogue', 'bluebird', 'orange', 'heal'],
-    library: ['lucy', 'orb', 'trinity', 'muse', 'epilogue', 'bluebird', 'orange', 'heal'],
-    omniwarp: ['orb', 'lucy', 'trinity', 'orange', 'muse', 'heal', 'bluebird', 'epilogue'],
-    hub: ['orb', 'lucy', 'trinity', 'muse', 'orange', 'bluebird', 'heal', 'epilogue'],
+    trinity: ['muse', 'orange', 'epilogue', 'bluebird', 'heal'],
+    oracle: ['muse', 'orange', 'epilogue', 'bluebird', 'heal'],
+    muse: ['orange', 'epilogue', 'trinity', 'bluebird', 'heal'],
+    orange: ['heal', 'bluebird', 'epilogue', 'muse', 'trinity'],
+    heal: ['bluebird', 'orange', 'epilogue', 'muse', 'trinity'],
+    bluebird: ['orange', 'muse', 'heal', 'epilogue', 'trinity'],
+    epilogue: ['trinity', 'heal', 'bluebird', 'muse', 'orange'],
+    hub: ['trinity', 'muse', 'orange', 'bluebird', 'heal', 'epilogue'],
   };
 
   const currentOrder = priorityOrder[norm] || [
-    'orb',
-    'lucy',
     'trinity',
+    'muse',
     'orange',
     'bluebird',
-    'muse',
     'heal',
     'epilogue',
   ];
@@ -202,21 +236,17 @@ export const GLOBAL_RATIONAL_PAGE_RANKING = [
   'orange',    // 3위: 감정 성찰과 내면의 생각 정리 (성찰·인지)
   'bluebird',  // 4위: 일상의 감사와 마음의 안식 (평온·정돈)
   'heal',      // 5위: 호오포노포노 & 생체 에너지 정화 (신체·리듬)
-  'lucy',      // 6위: 루시 1:1 심층 교감 대화 (정서적 유대)
-  'muse',      // 7위: 명화·명시·명곡 삼위일체 예술 (예술적 감성)
-  'orb',       // 8위: 크리스탈 오브 직관 점술 (극 무의식·초감각)
+  'muse',      // 6위: 명화·명시·명곡 삼위일체 예술 (예술적 감성)
 ];
 
 // 🎨 전체 페이지 기준 우뇌적·무의식적·감성적 스펙트럼 순위 (블랙홀 100% 축)
 export const GLOBAL_EMOTIONAL_PAGE_RANKING = [
-  'orb',       // 1위: 크리스탈 오브 무의식 비춤과 직관 점술 (극 무의식·초직관)
-  'muse',      // 2위: 뮤즈 예술처방 명화·명시·명곡 감성 공명 (예술·감성 폭발)
-  'lucy',      // 3위: 루시 1:1 심층 감성 대화 (무의식적 감정 토로)
-  'heal',      // 4위: 호오포노포노 & 아우라 생체 에너지 정화 (무의식 신체 이완)
-  'bluebird',  // 5위: 파랑새의 영혼 안식과 온기 (감성적 위로)
-  'orange',    // 6위: 소원의 우물과 감정 투영 (정서적 소망)
-  'epilogue',  // 7위: 밤 서재 회고 (이성적 정리)
-  'trinity',   // 8위: 사주·점성 데이터 분석 (체계적 구조)
+  'muse',      // 1위: 뮤즈 예술처방 명화·명시·명곡 감성 공명 (예술·감성 폭발)
+  'heal',      // 2위: 호오포노포노 & 아우라 생체 에너지 정화 (무의식 신체 이완)
+  'bluebird',  // 3위: 파랑새의 영혼 안식과 온기 (감성적 위로)
+  'orange',    // 4위: 소원의 우물과 감정 투영 (정서적 소망)
+  'epilogue',  // 5위: 밤 서재 회고 (이성적 정리)
+  'trinity',   // 6위: 사주·점성 데이터 분석 (체계적 구조)
 ];
 
 /**

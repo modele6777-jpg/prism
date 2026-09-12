@@ -319,8 +319,26 @@ function shuffleArray<T>(array: T[]): T[] {
  * - 기본 카탈로그 + 동적으로 등록된 추가 라우트 자동 포함
  */
 export function getAllWormholePool(): WormholeDestinationItem[] {
+  const isBanned = (id: string, path: string) => {
+    if (isDisallowedWarpDestination(id) || isDisallowedWarpDestination(path)) return true;
+    const rawId = (id || '').toLowerCase();
+    const rawPath = (path || '').toLowerCase();
+    return (
+      rawId.includes('orb') ||
+      rawId.includes('crystal') ||
+      rawId.includes('gateway') ||
+      rawId.includes('chat') ||
+      rawId.includes('lucy') ||
+      rawPath.includes('orb') ||
+      rawPath.includes('crystal') ||
+      rawPath.includes('gateway') ||
+      rawPath.includes('chat') ||
+      rawPath.includes('lucy')
+    );
+  };
+
   const pool = CORE_WORMHOLE_DESTINATIONS.filter(
-    (item) => item.isActive && !isDisallowedWarpDestination(item.id) && !isDisallowedWarpDestination(item.path)
+    (item) => item.isActive && !isBanned(item.id, item.path)
   );
   const existingPaths = new Set(pool.map((p) => p.path.toLowerCase().split('?')[0]));
 
@@ -332,8 +350,7 @@ export function getAllWormholePool(): WormholeDestinationItem[] {
       if (
         r.isActive &&
         !existingPaths.has(normP) &&
-        !isDisallowedWarpDestination(r.id) &&
-        !isDisallowedWarpDestination(r.path)
+        !isBanned(r.id, r.path)
       ) {
         pool.push({
           id: r.id,
@@ -356,7 +373,7 @@ export function getAllWormholePool(): WormholeDestinationItem[] {
     }
   } catch (_) {}
 
-  return pool.filter((item) => item.isActive && !isDisallowedWarpDestination(item.id) && !isDisallowedWarpDestination(item.path));
+  return pool.filter((item) => item.isActive && !isBanned(item.id, item.path));
 }
 
 /**

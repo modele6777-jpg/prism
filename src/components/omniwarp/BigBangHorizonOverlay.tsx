@@ -16,9 +16,9 @@ export interface BigBangHorizonOverlayProps {
 export const GLOBAL_HORIZON_SCOPE = {
   name: '전체 7대 앱 우주',
   wh: {
-    title: '☀️ 루시 1:1 심층 대화',
-    desc: '좌뇌 · 이성: 영혼의 AI 가이드 루시와의 지혜로운 조언',
-    path: '/chat',
+    title: '☀️ 트리니티 오라클 운명 나침반',
+    desc: '좌뇌 · 이성: 사주와 타로로 마주하는 운명과 무의식 계시',
+    path: '/trinity',
   },
   mh: {
     title: '🪞 프리즘 홈',
@@ -26,9 +26,9 @@ export const GLOBAL_HORIZON_SCOPE = {
     path: '/',
   },
   bh: {
-    title: '🕳️ 크리스탈 오브 직관 점술',
-    desc: '우뇌 · 감성: 크리스탈 오브에 비추는 무의식 직관 점술',
-    path: '/orb',
+    title: '🕳️ 뮤즈 예술처방 심미 공명',
+    desc: '우뇌 · 감성: 명화·명시·명곡 삼위일체 예술적 카타르시스',
+    path: '/muse',
   },
 };
 

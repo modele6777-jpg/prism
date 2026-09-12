@@ -161,23 +161,23 @@ export const CHANNEL_TOSS_RULES: Record<string, ChannelTossRule> = {
   trinity: {
     primary: TOSS_DESTINATIONS.epilogue, // 좌뇌·이성: 사주/타로 메시지를 서재 일기로 정리
     secondary: TOSS_DESTINATIONS.muse,
-    tertiary: TOSS_DESTINATIONS.lucy,
+    tertiary: TOSS_DESTINATIONS.orange,
     whitehole: TOSS_DESTINATIONS.epilogue, // ☀️ 좌뇌적·의식적·이성적 1위: 밤 서재의 체계적 기록과 회고
     blackhole: TOSS_DESTINATIONS.muse,     // 🕳️ 우뇌적·무의식적·감성적 1위: 명화·명시·명곡 삼위일체 예술 공명
   },
   oracle: {
     primary: TOSS_DESTINATIONS.epilogue,
     secondary: TOSS_DESTINATIONS.muse,
-    tertiary: TOSS_DESTINATIONS.lucy,
+    tertiary: TOSS_DESTINATIONS.orange,
     whitehole: TOSS_DESTINATIONS.epilogue, // ☀️ 좌뇌적·의식적·이성적 1위: 밤 서재 회고
     blackhole: TOSS_DESTINATIONS.muse,     // 🕳️ 우뇌적·무의식적·감성적 1위: 예술처방 공명
   },
   muse: {
     primary: TOSS_DESTINATIONS.epilogue,
-    secondary: TOSS_DESTINATIONS.lucy,
+    secondary: TOSS_DESTINATIONS.orange,
     tertiary: TOSS_DESTINATIONS.oracle,
     whitehole: TOSS_DESTINATIONS.epilogue, // ☀️ 좌뇌적·의식적·이성적 1위: 예술적 영감을 언어로 정제하여 서재에 기록
-    blackhole: TOSS_DESTINATIONS.lucy,     // 🕳️ 우뇌적·무의식적·감성적 1위: 예술이 일깨운 무의식 감정을 루시와 1:1 교감
+    blackhole: TOSS_DESTINATIONS.bluebird, // 🕳️ 우뇌적·무의식적·감성적 1위: 예술이 일깨운 감정에 따스한 평온과 위로
   },
   bluebird: {
     primary: TOSS_DESTINATIONS.epilogue,
@@ -189,7 +189,7 @@ export const CHANNEL_TOSS_RULES: Record<string, ChannelTossRule> = {
   heal: {
     primary: TOSS_DESTINATIONS.epilogue,
     secondary: TOSS_DESTINATIONS.bluebird,
-    tertiary: TOSS_DESTINATIONS.lucy,
+    tertiary: TOSS_DESTINATIONS.orange,
     whitehole: TOSS_DESTINATIONS.epilogue, // ☀️ 좌뇌적·의식적·이성적 1위: 정화 후 맑아진 이성으로 삶의 균형과 하루 정리
     blackhole: TOSS_DESTINATIONS.bluebird, // 🕳️ 우뇌적·무의식적·감성적 1위: 정화된 마음에 평온과 행복의 온기를 채우는 안식
   },
@@ -202,24 +202,24 @@ export const CHANNEL_TOSS_RULES: Record<string, ChannelTossRule> = {
   },
   epilogue: {
     primary: TOSS_DESTINATIONS.oracle,
-    secondary: TOSS_DESTINATIONS.orb,
+    secondary: TOSS_DESTINATIONS.muse,
     tertiary: TOSS_DESTINATIONS.orange,
     whitehole: TOSS_DESTINATIONS.oracle,   // ☀️ 좌뇌적·의식적·이성적 1위: 하루 정리 후 내일의 운명을 이성적 사주·점성으로 분석
-    blackhole: TOSS_DESTINATIONS.orb,      // 🕳️ 우뇌적·무의식적·감성적 1위: 서재의 논리를 끄고 무의식 심연의 직관에 몸을 맡기는 오브
+    blackhole: TOSS_DESTINATIONS.muse,     // 🕳️ 우뇌적·무의식적·감성적 1위: 밤 서재의 사유를 심화하는 예술적 공명
   },
   lucy: {
     primary: TOSS_DESTINATIONS.epilogue,
-    secondary: TOSS_DESTINATIONS.orb,
-    tertiary: TOSS_DESTINATIONS.muse,
-    whitehole: TOSS_DESTINATIONS.epilogue, // ☀️ 좌뇌적·의식적·이성적 1위: 루시와 나눈 지혜를 의식적으로 요약·정리하는 회고
-    blackhole: TOSS_DESTINATIONS.orb,      // 🕳️ 우뇌적·무의식적·감성적 1위: 무의식의 핵심 질문을 직관의 구체에 투영
+    secondary: TOSS_DESTINATIONS.muse,
+    tertiary: TOSS_DESTINATIONS.oracle,
+    whitehole: TOSS_DESTINATIONS.epilogue,
+    blackhole: TOSS_DESTINATIONS.muse,
   },
   hub: {
     primary: TOSS_DESTINATIONS.oracle,
-    secondary: TOSS_DESTINATIONS.orb,
+    secondary: TOSS_DESTINATIONS.muse,
     tertiary: TOSS_DESTINATIONS.epilogue,
     whitehole: TOSS_DESTINATIONS.oracle,   // ☀️ 좌뇌적·의식적·이성적 1위: 사주·점성 데이터 분석과 운명 나침반
-    blackhole: TOSS_DESTINATIONS.orb,      // 🕳️ 우뇌적·무의식적·감성적 1위: 즉각적인 무의식 직관 점술과 마음 비춤
+    blackhole: TOSS_DESTINATIONS.muse,     // 🕳️ 우뇌적·무의식적·감성적 1위: 삼위일체 명화·명시·명곡 예술적 공명
   },
   orb: {
     primary: TOSS_DESTINATIONS.oracle,
