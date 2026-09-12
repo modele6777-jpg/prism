@@ -68,27 +68,38 @@ export async function resolveArtworkImage(
   art: ArtworkImageInput,
   options?: { forcePollinations?: boolean },
 ): Promise<ResolvedArtworkImage> {
-  const response = await fetch("/api/muse/artwork-image", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...art, ...options }),
-  });
-
-  const raw = await response.text();
-  let data: { url?: string; displayUrl?: string; source?: ArtworkImageSource; error?: string } = {};
   try {
-    data = JSON.parse(raw);
+    const response = await fetch("/api/muse/artwork-image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...art, ...options }),
+    });
+
+    const raw = await response.text();
+    let data: { url?: string; displayUrl?: string; source?: ArtworkImageSource; error?: string } = {};
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      const fallbackUrl = buildPollinationsArtUrl(art, 1024, 768);
+      return { url: fallbackUrl, displayUrl: fallbackUrl, source: "pollinations" };
+    }
+
+    if (!response.ok || (!data.url && !data.displayUrl)) {
+      const fallbackUrl = buildPollinationsArtUrl(art, 1024, 768);
+      return { url: fallbackUrl, displayUrl: fallbackUrl, source: "pollinations" };
+    }
+
+    return {
+      url: data.url || "",
+      displayUrl: data.displayUrl || data.url || "",
+      source: data.source || "pollinations",
+    };
   } catch {
-    throw new Error(raw.trim().slice(0, 120) || "작품 이미지를 불러오지 못했습니다.");
+    const fallbackUrl = buildPollinationsArtUrl(art, 1024, 768);
+    return {
+      url: fallbackUrl,
+      displayUrl: fallbackUrl,
+      source: "pollinations",
+    };
   }
-
-  if (!response.ok) {
-    throw new Error(data.error || "작품 이미지를 불러오지 못했습니다.");
-  }
-
-  return {
-    url: data.url || "",
-    displayUrl: data.displayUrl || data.url || "",
-    source: data.source || "pollinations",
-  };
 }

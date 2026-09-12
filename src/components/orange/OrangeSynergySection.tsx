@@ -10,6 +10,11 @@ import { playTTS, stopTTS, useTTSActive } from '@/utils/tts';
 interface QuantumCatalystData {
   title: string;
   manifestationFrequency: number;
+  fusionMatrix: {
+    secretElement: string;
+    wishWellElement: string;
+    quantumLeapAlchemy: string;
+  };
   sensoryScript: string;
   quantumLeapActions: string[];
   vibrationalAnchorAffirmation: string;
@@ -18,8 +23,13 @@ interface QuantumCatalystData {
 }
 
 const FALLBACK_CATALYST: QuantumCatalystData = {
-  title: "양자 도약 현실화 가속기 (Quantum Manifestation Catalyst)",
+  title: "시크릿 끌어당김 × 소원우물 양자 도약 융합 매트릭스",
   manifestationFrequency: 528,
+  fusionMatrix: {
+    secretElement: "시크릿 바이블 3단계 (Ask 명확한 파동 방출 ➜ Believe 기정사실화 ➜ Receive 수용)",
+    wishWellElement: "소원의 우물에 투사된 동전의 간절한 소망 에너지",
+    quantumLeapAlchemy: "528Hz 솔페지오 주파수와 결합하여 미래 시점의 성취를 현재 시간대로 즉각 붕괴(Collapse)"
+  },
   sensoryScript: "나는 이미 바라는 풍요와 성취의 중심에 서 있다. 손끝으로 만져지는 성공의 감촉, 가슴 벅찬 안도감과 감사함이 온몸의 세포마다 생생하게 맥동한다. 나는 끌어당기는 자이자 이미 그것이다.",
   quantumLeapActions: [
     "이미 소원이 이루어진 사람의 걸음걸이와 태도로 오늘 하루를 살아보기",
@@ -131,16 +141,22 @@ export function OrangeSynergySection() {
     const catObj = MANIFESTATION_CATEGORIES.find(c => c.id === selectedCategory);
     const categoryName = catObj ? catObj.label : '목표';
 
-    const systemPrompt = "당신은 오렌지 양자 현실화 가속기(Quantum Catalyst) 마스터입니다. 시크릿 바이블(끌어당김의 법칙과 주파수 일치)과 소원의 우물(소원 투사와 즉각적 현실화)의 원리를 융합하여 이미 실현된 상태의 오감 스크립트와 24시간 양자도약 행동을 설계하세요.";
+    const systemPrompt = "당신은 오렌지 양자 현실화 가속기(Quantum Catalyst) 마스터입니다. 좌측 메뉴 '시크릿 바이블(끌어당김의 법칙 3단계 Ask-Believe-Receive & 528Hz 진동)'과 우측 메뉴 '소원의 우물(소원 투사와 양자 도약)'을 완벽하게 융합하여 이미 실현된 상태의 오감 스크립트와 융합 매트릭스를 생성하세요.";
     const userPrompt = `[소원 카테고리]: ${categoryName}
-[실현 목표]: "${targetWish}"
+[실현 목표 소원]: "${targetWish}"
 [사용자]: "${userProfile?.basic?.nickname || '창조자'}"
 [조율 주파수]: ${dialValue}Hz
+[소원의 우물 최근 연동]: ${recentWishingWellWish ? `"${recentWishingWellWish}"` : '새로운 소원 투사'}
 
 반드시 아래 JSON 스키마로만 엄격하게 응답하세요:
 {
   "title": "양자 현실화 고유 명칭 (예: 528Hz 황금 풍요 양자 도약 가속기)",
   "manifestationFrequency": ${dialValue},
+  "fusionMatrix": {
+    "secretElement": "시크릿 바이블의 끌어당김 및 주파수 일치 원리가 이 소원에 작동하는 방식 (1~2문장)",
+    "wishWellElement": "소원의 우물에 던져진 간절한 염원이 양자장에 각인되는 원리 (1~2문장)",
+    "quantumLeapAlchemy": "양쪽 메뉴가 융합되어 즉각적으로 시공간을 접어 현실화하는 양자 도약 결과 (1~2문장)"
+  },
   "sensoryScript": "1인칭 현재형으로 이미 완벽하게 이루어졌을 때의 시각·청각·촉각·감정을 묘사한 생생한 스크립트 (3~4문장)",
   "quantumLeapActions": [
     "24시간 내 즉시 실행할 양자 도약 실천 1 (구체적 행동)",
@@ -242,6 +258,74 @@ export function OrangeSynergySection() {
             {isAudioPlaying ? <Volume2 size={16} /> : <VolumeX size={16} />}
             <span>{isAudioPlaying ? '528Hz 기적 주파수 재생 중' : '528Hz 주파수 켜기'}</span>
           </button>
+        </div>
+      </div>
+
+      {/* Dual-Menu Synergy Status Panel */}
+      <div className="p-5 sm:p-6 rounded-[28px] bg-gradient-to-r from-orange-950/40 via-amber-950/30 to-yellow-950/40 border border-orange-500/20 backdrop-blur-xl">
+        <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
+          <div className="flex items-center gap-2">
+            <Layers className="text-orange-400" size={16} />
+            <span className="text-xs font-bold text-orange-200 font-mono tracking-wider uppercase">
+              DUAL-MENU SYNERGY MATRIX : THE SECRET × WISHING WELL
+            </span>
+          </div>
+          <span className="text-[10px] text-white/50 font-mono">
+            {dialValue}Hz 기적 진동 동조
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Left Menu Status: The Secret 3-Step */}
+          <div className="p-4 rounded-2xl bg-black/30 border border-orange-400/20 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-orange-300 flex items-center gap-1.5">
+                <Zap size={13} className="text-orange-400" />
+                좌측 메뉴 : 시크릿 끌어당김 3단계 공식
+              </span>
+              <span className="text-[10px] text-orange-400 font-mono">진동 일치</span>
+            </div>
+            <div className="grid grid-cols-3 gap-1.5 text-center">
+              <div className="p-2 rounded-xl bg-white/[0.04] border border-white/5">
+                <div className="text-[9px] text-white/50">STEP 1</div>
+                <div className="text-xs font-bold text-orange-200 font-sans">Ask (요청)</div>
+                <div className="text-[9px] text-white/40 mt-0.5">명확한 방출</div>
+              </div>
+              <div className="p-2 rounded-xl bg-orange-500/10 border border-orange-400/30">
+                <div className="text-[9px] text-orange-300">STEP 2</div>
+                <div className="text-xs font-bold text-white font-sans">Believe (믿음)</div>
+                <div className="text-[9px] text-orange-200/60 mt-0.5">기정사실화</div>
+              </div>
+              <div className="p-2 rounded-xl bg-white/[0.04] border border-white/5">
+                <div className="text-[9px] text-white/50">STEP 3</div>
+                <div className="text-xs font-bold text-yellow-200 font-sans">Receive (수용)</div>
+                <div className="text-[9px] text-white/40 mt-0.5">감사의 진동</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Menu Status: Wishing Well */}
+          <div className="p-4 rounded-2xl bg-black/30 border border-amber-400/20 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1.5">
+                <Compass size={13} className="text-amber-400" />
+                우측 메뉴 : 소원의 우물 동전 투사
+              </span>
+              <span className="text-[10px] text-amber-400 font-mono">양자장 각인</span>
+            </div>
+            <div className="text-xs text-white/80 font-sans">
+              {recentWishingWellWish ? (
+                <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-1">
+                  <div className="text-[10px] text-amber-300 font-bold">최근 투사된 우물 소원:</div>
+                  <div className="text-xs text-white line-clamp-1 font-medium">"{recentWishingWellWish}"</div>
+                </div>
+              ) : (
+                <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/5 text-[11px] text-white/50">
+                  우물에 소원을 던져 양자 도약 속도를 배가하세요.
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -388,6 +472,30 @@ export function OrangeSynergySection() {
               </button>
             </div>
           </div>
+
+          {/* Fusion Matrix Report */}
+          {catalystData.fusionMatrix && (
+            <div className="p-5 rounded-3xl bg-orange-950/30 border border-orange-400/30 space-y-3">
+              <div className="flex items-center gap-2 text-orange-300 text-xs font-bold font-mono uppercase tracking-wider">
+                <Layers size={14} className="text-orange-400" />
+                <span>양쪽 메뉴 융합 매트릭스 (Fusion Matrix)</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 space-y-1">
+                  <div className="text-[10px] font-bold text-orange-400">좌측 : 시크릿 끌어당김 진동</div>
+                  <div className="text-xs text-white/80 font-sans leading-relaxed">{catalystData.fusionMatrix.secretElement}</div>
+                </div>
+                <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 space-y-1">
+                  <div className="text-[10px] font-bold text-amber-400">우측 : 소원 우물 투사 각인</div>
+                  <div className="text-xs text-white/80 font-sans leading-relaxed">{catalystData.fusionMatrix.wishWellElement}</div>
+                </div>
+                <div className="p-3.5 rounded-2xl bg-black/40 border border-yellow-500/30 space-y-1">
+                  <div className="text-[10px] font-bold text-yellow-300">융합 : 양자 도약 연금술</div>
+                  <div className="text-xs text-white/80 font-sans leading-relaxed">{catalystData.fusionMatrix.quantumLeapAlchemy}</div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Sensory Script Card */}
           <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-orange-900/30 via-zinc-900/50 to-yellow-900/20 border border-orange-400/40 relative shadow-inner space-y-3">

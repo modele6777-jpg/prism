@@ -124,16 +124,20 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
   const currentThemeRef = useRef<MeditationTheme>(activeTheme);
   currentThemeRef.current = activeTheme;
 
-  // Affirmation Loop Refs & Handlers
+  // Affirmation Continuous Loop Refs & Handlers
   const isRunningRef = useRef(isRunning);
   isRunningRef.current = isRunning;
   const secondsRemainingRef = useRef(secondsRemaining);
   secondsRemainingRef.current = secondsRemaining;
+  const isAffirmationLoopActiveRef = useRef<boolean>(false);
+  const [isAffirmationLooping, setIsAffirmationLooping] = useState<boolean>(false);
   const affirmationLoopSessionIdRef = useRef<number>(0);
   const affirmationLoopTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const stopAffirmationLoop = useCallback(() => {
     affirmationLoopSessionIdRef.current += 1;
+    isAffirmationLoopActiveRef.current = false;
+    setIsAffirmationLooping(false);
     if (affirmationLoopTimeoutRef.current) {
       clearTimeout(affirmationLoopTimeoutRef.current);
       affirmationLoopTimeoutRef.current = null;
@@ -141,29 +145,59 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
     stopTTS();
   }, []);
 
-  const runAffirmationLoop = useCallback(async (affirmation: string, sessionId: number) => {
-    if (!isRunningRef.current || affirmationLoopSessionIdRef.current !== sessionId) return;
-    if (secondsRemainingRef.current <= 5) return;
+  const startAffirmationLoop = useCallback(async (affirmation: string) => {
+    stopAffirmationLoop();
+    const sessionId = ++affirmationLoopSessionIdRef.current;
+    isAffirmationLoopActiveRef.current = true;
+    setIsAffirmationLooping(true);
 
-    try {
-      await playTTS(affirmation, 'Kore', true);
-    } catch (_) {}
+    const loopCycle = async () => {
+      while (
+        isAffirmationLoopActiveRef.current &&
+        affirmationLoopSessionIdRef.current === sessionId
+      ) {
+        try {
+          await playTTS(affirmation, 'Kore', true);
+        } catch (err) {
+          console.warn('[Meditation] Affirmation loop TTS error:', err);
+        }
 
-    // Check if still running in the same session and enough time remains
-    if (!isRunningRef.current || affirmationLoopSessionIdRef.current !== sessionId) return;
-    if (secondsRemainingRef.current <= 6) return;
+        if (
+          !isAffirmationLoopActiveRef.current ||
+          affirmationLoopSessionIdRef.current !== sessionId
+        ) {
+          break;
+        }
 
-    // Small gap (5 seconds) for deep breathing and inner absorption before next repetition
-    affirmationLoopTimeoutRef.current = setTimeout(() => {
-      if (isRunningRef.current && affirmationLoopSessionIdRef.current === sessionId && secondsRemainingRef.current > 5) {
-        void runAffirmationLoop(affirmation, sessionId);
+        // 2.5초 깊은 심호흡과 내면 흡수를 위한 평온한 간격 후 자동 반복 재생
+        await new Promise<void>((resolve) => {
+          affirmationLoopTimeoutRef.current = setTimeout(resolve, 2500);
+        });
       }
-    }, 5000);
-  }, []);
+
+      if (affirmationLoopSessionIdRef.current === sessionId) {
+        isAffirmationLoopActiveRef.current = false;
+        setIsAffirmationLooping(false);
+      }
+    };
+
+    void loopCycle();
+  }, [stopAffirmationLoop]);
+
+  const handleToggleContinuousAffirmation = () => {
+    const text = customPrescription?.completionAffirmation || activeTheme.affirmation;
+    if (isAffirmationLooping) {
+      stopAffirmationLoop();
+    } else {
+      if (text) {
+        void startAffirmationLoop(text);
+      }
+    }
+  };
 
   const handleCompleteSession = useCallback(async () => {
     setIsRunning(false);
-    stopAffirmationLoop();
+    isRunningRef.current = false;
     meditationSound.stopTone();
     if (soundEnabled) {
       meditationSound.playSingingBowlBell();
@@ -182,7 +216,7 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
     );
 
     refreshHistory();
-  }, [soundEnabled, stopAffirmationLoop, customPrescription, activeTheme, uid, conditionInput, refreshHistory]);
+  }, [soundEnabled, customPrescription, activeTheme, uid, conditionInput, refreshHistory]);
 
   useEffect(() => {
     if (isRunning && secondsRemaining > 0) {
@@ -234,6 +268,7 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
         setPhaseSecondsLeft(activeTheme.breathingPattern.inhale);
       }
       setIsRunning(true);
+      isRunningRef.current = true;
       if (soundEnabled) {
         meditationSound.playSingingBowlBell();
         meditationSound.playTone(activeTheme.frequency);
@@ -242,13 +277,12 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
       // Auto-play voice affirmation continuously with breathing gaps
       const affirmationToSpeak = overrideAffirmation || customPrescription?.completionAffirmation || activeTheme.affirmation;
       if (affirmationToSpeak) {
-        stopAffirmationLoop();
-        const sessionId = ++affirmationLoopSessionIdRef.current;
-        void runAffirmationLoop(affirmationToSpeak, sessionId);
+        void startAffirmationLoop(affirmationToSpeak);
       }
     } else {
       // Pausing
       setIsRunning(false);
+      isRunningRef.current = false;
       meditationSound.stopTone();
       stopAffirmationLoop();
     }
@@ -257,9 +291,11 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
   // Reset
   const handleReset = () => {
     setIsRunning(false);
+    isRunningRef.current = false;
     meditationSound.stopTone();
     stopAffirmationLoop();
     setSecondsRemaining(TOTAL_DURATION);
+    secondsRemainingRef.current = TOTAL_DURATION;
     setIsCompleted(false);
     setBreathPhase('inhale');
     setPhaseSecondsLeft(activeTheme.breathingPattern.inhale);
@@ -280,16 +316,22 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
   const handleSelectTheme = (themeId: MeditationThemeId | 'ai_auto') => {
     if (isRunning) {
       setIsRunning(false);
+      isRunningRef.current = false;
       meditationSound.stopTone();
-      stopTTS();
     }
+    const wasLooping = isAffirmationLoopActiveRef.current;
+    stopAffirmationLoop();
     setSelectedThemeId(themeId);
     setSecondsRemaining(TOTAL_DURATION);
+    secondsRemainingRef.current = TOTAL_DURATION;
     setIsCompleted(false);
     if (themeId !== 'ai_auto') {
       const newTheme = MEDITATION_THEMES.find(t => t.id === themeId) || MEDITATION_THEMES[0];
       setBreathPhase('inhale');
       setPhaseSecondsLeft(newTheme.breathingPattern.inhale);
+      if (wasLooping) {
+        void startAffirmationLoop(newTheme.affirmation);
+      }
     }
   };
 
@@ -676,14 +718,37 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
                   "{customPrescription?.completionAffirmation || activeTheme.affirmation}"
                 </p>
 
-                {/* TTS button to listen to affirmation or guide */}
-                <div className="pt-2 flex items-center gap-2">
+                {/* TTS buttons to listen to affirmation or guide */}
+                <div className="pt-2 flex flex-wrap items-center justify-center gap-2">
+                  {/* Continuous Auto-play Loop Toggle Button */}
+                  <button
+                    onClick={handleToggleContinuousAffirmation}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all ${
+                      isAffirmationLooping
+                        ? 'bg-emerald-500/25 border-emerald-400 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.35)]'
+                        : 'bg-white/5 hover:bg-white/10 border-white/10 text-white/80 hover:text-white'
+                    }`}
+                  >
+                    {isAffirmationLooping ? (
+                      <>
+                        <Volume2 size={13} className="text-emerald-400 animate-pulse" />
+                        <span>확언 연속 자동 재생 중</span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                      </>
+                    ) : (
+                      <>
+                        <RotateCcw size={12} className="text-emerald-300" />
+                        <span>확언 연속 자동 재생</span>
+                      </>
+                    )}
+                  </button>
+
                   <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/5 border border-white/10 text-white/70">
                     <TTSButton
                       text={customPrescription?.completionAffirmation || activeTheme.affirmation}
                       voice="Kore"
                     />
-                    <span className="text-[11px] font-sans">확언 음성</span>
+                    <span className="text-[11px] font-sans">1회 듣기</span>
                   </div>
                   <button
                     onClick={() => handleCopyAffirmation(customPrescription?.completionAffirmation || activeTheme.affirmation)}

@@ -16,6 +16,7 @@ import {
   isValidPrismPath,
   resolveCanonicalPath,
 } from '@/lib/prismRouteRegistry';
+import { isDisallowedWarpDestination } from './wormholeSpectrum';
 
 export interface WormholeDestinationItem {
   id: string;
@@ -260,17 +261,17 @@ export const CORE_WORMHOLE_DESTINATIONS: WormholeDestinationItem[] = [
     isActive: true,
   },
   {
-    id: 'epilogue-profile',
-    name: '내면 성향 회고',
-    subName: '나의 고유한 영혼 여정 발자취',
-    path: '/epilogue?tab=profile',
-    icon: '🌌',
-    runeSymbol: 'ᛗ',
-    runeName: 'Mannaz',
-    runeMeaning: '인간과 영혼의 아카이브',
-    description: '오늘의 활동과 성향 변화를 영혼 아카이브에 기록하고 회고합니다.',
-    themeColor: '#10b981',
-    accentGlow: 'rgba(16, 185, 129, 0.95)',
+    id: 'epilogue-synergy',
+    name: '시너지 연대기',
+    subName: '영혼의 발자취와 종합 분석',
+    path: '/epilogue?tab=synergy',
+    icon: '📊',
+    runeSymbol: 'ᛃ',
+    runeName: 'Jera',
+    runeMeaning: '성장과 수확의 연대기',
+    description: '모든 채널에서 축적된 데이터와 영혼의 성장 추이를 종합 분석합니다.',
+    themeColor: '#8b5cf6',
+    accentGlow: 'rgba(139, 92, 246, 0.95)',
     channelId: 'epilogue',
     category: 'channel',
     isActive: true,
@@ -318,7 +319,9 @@ function shuffleArray<T>(array: T[]): T[] {
  * - 기본 카탈로그 + 동적으로 등록된 추가 라우트 자동 포함
  */
 export function getAllWormholePool(): WormholeDestinationItem[] {
-  const pool = [...CORE_WORMHOLE_DESTINATIONS];
+  const pool = CORE_WORMHOLE_DESTINATIONS.filter(
+    (item) => item.isActive && !isDisallowedWarpDestination(item.id) && !isDisallowedWarpDestination(item.path)
+  );
   const existingPaths = new Set(pool.map((p) => p.path.toLowerCase().split('?')[0]));
 
   // 혹시 동적으로 등록된 라우트 중 누락된 유효 채널이 있다면 안전하게 확장
@@ -329,8 +332,8 @@ export function getAllWormholePool(): WormholeDestinationItem[] {
       if (
         r.isActive &&
         !existingPaths.has(normP) &&
-        !['hub', 'lucy', 'chat', 'orb', 'gateway', 'crystal', 'profile', 'handbook', 'library', 'omniwarp', 'bigbang'].includes(r.id) &&
-        !['/', '/universe', '/ecpr', '/synergy', '/aegis', '/profile', '/handbook', '/library', '/omniwarp'].includes(r.path)
+        !isDisallowedWarpDestination(r.id) &&
+        !isDisallowedWarpDestination(r.path)
       ) {
         pool.push({
           id: r.id,
@@ -353,7 +356,7 @@ export function getAllWormholePool(): WormholeDestinationItem[] {
     }
   } catch (_) {}
 
-  return pool.filter((item) => item.isActive);
+  return pool.filter((item) => item.isActive && !isDisallowedWarpDestination(item.id) && !isDisallowedWarpDestination(item.path));
 }
 
 /**
@@ -370,12 +373,20 @@ export function getDailyWormholeShuffleState(): DailyWormholeShuffleState {
       const parsed: DailyWormholeShuffleState = JSON.parse(raw);
       // 당일 날짜가 일치하고 데이터 구조가 유효한 경우 반환
       if (parsed && parsed.date === today && Array.isArray(parsed.visitedIds) && Array.isArray(parsed.shuffledOrder)) {
+        // 프로필 등 삭제/차단된 ID 즉시 정제
+        parsed.shuffledOrder = parsed.shuffledOrder.filter(
+          (id) => allIds.includes(id) && !isDisallowedWarpDestination(id)
+        );
+        parsed.visitedIds = parsed.visitedIds.filter(
+          (id) => allIds.includes(id) && !isDisallowedWarpDestination(id)
+        );
+
         // 혹시 풀이 확장되어 신규 ID가 추가되었다면 셔플 순서에 보완
         const missingIds = allIds.filter((id) => !parsed.shuffledOrder.includes(id));
         if (missingIds.length > 0) {
           parsed.shuffledOrder = [...parsed.shuffledOrder, ...shuffleArray(missingIds)];
-          saveDailyWormholeShuffleState(parsed);
         }
+        saveDailyWormholeShuffleState(parsed);
         return parsed;
       }
     }
@@ -636,3 +647,35 @@ export function getDailyWormholeStats(): {
     visitedList: state.visitedIds,
   };
 }
+
+/**
+ * 🌀 웜홀(Wormhole) 전용 데일리 셔플 순환 목적지 반환
+ * - 하루에 한 번 자정(YYYY-MM-DD)을 기준으로 자동 초기화
+ * - 그날 이미 다녀간 기능이나 페이지는 전체 풀을 한 바퀴 완주하기 전까지 다시 나오지 않음
+ * - 안전 캐싱을 통해 홀드 중 프레임 깜빡임 없이 동일 목적지를 안정적으로 유지
+ */
+export function getRandomWormholeDestination(currentLocation?: string): PrismRouteDefinition {
+  try {
+    const { dest } = peekShuffledWormholeDestination(currentLocation);
+    return destinationToPrismRoute(dest);
+  } catch (err) {
+    console.warn('[WormholeRegistry] Shuffle peek failed, falling back to static oracle:', err);
+    return {
+      id: 'trinity',
+      name: '트리니티 오라클',
+      subName: '사주·점성술·타로 운명 나침반',
+      path: '/trinity',
+      aliases: ['/oracle'],
+      icon: '🔮',
+      runeSymbol: 'ᛈ',
+      runeName: 'Pertho',
+      runeMeaning: '운명과 무의식 비의',
+      description: '3장의 타로 카드와 사주 데이터로 무의식의 상징과 운명 메시지 도출',
+      themeColor: '#c084fc',
+      accentGlow: 'rgba(192, 132, 252, 0.9)',
+      isActive: true,
+      category: 'channel',
+    };
+  }
+}
+

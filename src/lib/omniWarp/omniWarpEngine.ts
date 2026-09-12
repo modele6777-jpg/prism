@@ -16,8 +16,11 @@ import {
   getWhiteholeRecommendedApp,
   getBlackholeRecommendedApp,
   getWormholeAppByGauge,
+  isDisallowedWarpDestination,
 } from './wormholeSpectrum';
-import { getPrismRouteByPathOrId, resolveCanonicalPath, getRandomWormholeDestination } from '@/lib/prismRouteRegistry';
+
+export { isDisallowedWarpDestination };
+import { getPrismRouteByPathOrId, resolveCanonicalPath } from '@/lib/prismRouteRegistry';
 import { peekShuffledWormholeDestination } from './wormholeShuffleEngine';
 import {
   extractLatestDialogueContext,
@@ -140,17 +143,6 @@ export function getOrbRunicSigil(destId: string): { symbol: string; name: string
   }
   const norm = (destId || '').toLowerCase().replace('/', '');
   return ORB_SITE_RUNES[norm] || { symbol: 'ᚲ', name: 'Kenaz', meaning: '프리즘 우주' };
-}
-
-export function isDisallowedWarpDestination(destIdOrPath: string): boolean {
-  const norm = (destIdOrPath || '').toLowerCase().replace('/', '');
-  return (
-    norm === 'profile' ||
-    norm === 'handbook' ||
-    norm === 'library' ||
-    norm === 'omniwarp' ||
-    norm === 'bigbang'
-  );
 }
 
 export interface QuantumDestination {
@@ -580,16 +572,16 @@ export const CHANNEL_SUBMENUS: Record<
       runeName: 'Jera',
     },
     blackhole: {
-      id: 'epilogue-profile',
-      name: '영혼 프로필',
-      subName: '사주·점성·심리 마스터 프로필',
-      path: '/epilogue?tab=profile',
-      icon: '👤',
-      themeColor: '#6366f1',
-      accentGlow: 'rgba(99, 102, 241, 0.95)',
-      description: '나의 사주 원국, 점성 차트, 심리 특성이 집대성된 마스터 영혼 프로필입니다.',
-      runeSymbol: 'ᛗ',
-      runeName: 'Mannaz',
+      id: 'epilogue-deep-lucy',
+      name: '루시 심층 상담',
+      subName: '1:1 영혼의 가이드',
+      path: '/chat',
+      icon: '✨',
+      themeColor: '#c084fc',
+      accentGlow: 'rgba(192, 132, 252, 0.95)',
+      description: '밤 서재의 사유를 심화하여 루시와 1:1 심층 대화로 영혼의 지혜를 구합니다.',
+      runeSymbol: 'ᛞ',
+      runeName: 'Dagaz',
     },
   },
 };
@@ -759,10 +751,10 @@ export function executeBigBangCommit(
   context: OmniWarpContext,
   metrics: WarpForceMetrics
 ): void {
-  // 워프 불가 목적지 가드 (단, 웜홀 임의 도약은 루시/오브 제외 앱 내 모든 실존 페이지 도약 전면 허용)
+  // 워프 불가 목적지 가드 (프로필 및 단독 특수 페이지 차원 도약 원천 차단)
   if (
-    target.phase !== 'wormhole' &&
-    (isDisallowedWarpDestination(target.id || '') || isDisallowedWarpDestination(target.destinationPath || ''))
+    isDisallowedWarpDestination(target.id || '') ||
+    isDisallowedWarpDestination(target.destinationPath || '')
   ) {
     console.warn(`[OmniWarp Guard] Prohibited warp destination blocked: ${target.id} (${target.destinationPath})`);
     omniWarpAudio.playAbort();

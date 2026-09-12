@@ -290,26 +290,38 @@ export function isAllowedImageProxyUrl(url: string): boolean {
   }
 }
 
+const BROWSER_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
+export function normalizeWikimediaUrl(url: string): string {
+  if (!url || !url.includes("upload.wikimedia.org")) return url;
+  return url.replace(/\/thumb\/([^/]+)\/([^/]+)\/([^/]+)\/\d+px-/i, "/thumb/$1/$2/$3/960px-");
+}
+
 export function buildArtworkDisplayUrl(url: string, source: ArtworkImageSource): string {
   if (source === "pollinations" || source === "ai_replica") return url;
-  return `/api/muse/artwork-image/proxy?url=${encodeURIComponent(url)}`;
+  const normalized = normalizeWikimediaUrl(url);
+  return `/api/muse/artwork-image/proxy?url=${encodeURIComponent(normalized)}`;
 }
 
 async function validateImageUrl(url: string): Promise<boolean> {
+  const targetUrl = normalizeWikimediaUrl(url);
   try {
-    let response = await fetch(url, {
+    let response = await fetch(targetUrl, {
       method: "HEAD",
       headers: {
-        "User-Agent": "PRISM-ArtworkBot/1.0 (https://prism-universe.vercel.app)",
+        "User-Agent": BROWSER_USER_AGENT,
+        "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
       },
       signal: AbortSignal.timeout(6000),
     });
 
     if (!response.ok) {
-      response = await fetch(url, {
+      response = await fetch(targetUrl, {
         method: "GET",
         headers: {
-          "User-Agent": "PRISM-ArtworkBot/1.0 (https://prism-universe.vercel.app)",
+          "User-Agent": BROWSER_USER_AGENT,
+          "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
         },
         signal: AbortSignal.timeout(8000),
       });
@@ -506,10 +518,13 @@ async function collectCommonsCandidates(
     const apiUrl =
       `https://commons.wikimedia.org/w/api.php?action=query&generator=search` +
       `&gsrsearch=${encodeURIComponent(q)}&gsrnamespace=6&gsrlimit=16` +
-      `&prop=imageinfo&iiprop=url|mime|thumburl&iiurlwidth=1600&format=json`;
+      `&prop=imageinfo&iiprop=url|mime|thumburl&iiurlwidth=960&format=json`;
 
     const res = await fetch(apiUrl, {
-      headers: { "User-Agent": "PRISM-ArtworkBot/1.0" },
+      headers: {
+        "User-Agent": BROWSER_USER_AGENT,
+        "Accept": "application/json",
+      },
       signal: AbortSignal.timeout(12000),
     });
     if (!res.ok) return [];
@@ -771,26 +786,82 @@ export async function resolveMuseArtworkImage(
   };
 }
 
-export async function proxyArtworkImage(url: string, res: Response): Promise<void> {
-  const upstream = await fetch(url, {
-    headers: {
-      "User-Agent": "PRISM-ArtworkBot/1.0 (https://prism-universe.vercel.app)",
-    },
-    signal: AbortSignal.timeout(20000),
-  });
+interface CachedImage {
+  contentType: string;
+  buffer: Buffer;
+  timestamp: number;
+}
+const imageMemoryCache = new Map<string, CachedImage>();
+const MAX_IMAGE_CACHE_ITEMS = 80;
+const IMAGE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
-  if (!upstream.ok) {
-    res.status(upstream.status).json({ error: "Upstream image fetch failed" });
+export async function proxyArtworkImage(rawUrl: string, res: Response): Promise<void> {
+  let url = normalizeWikimediaUrl(rawUrl);
+
+  const cached = imageMemoryCache.get(url);
+  if (cached && Date.now() - cached.timestamp < IMAGE_CACHE_TTL_MS) {
+    res.setHeader("Content-Type", cached.contentType);
+    res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+    res.send(cached.buffer);
     return;
   }
 
-  const contentType = (upstream.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
-  if (!ALLOWED_MIMES.has(contentType)) {
-    res.status(415).json({ error: "Unsupported image type" });
-    return;
-  }
+  const tryFetch = async (targetUrl: string) => {
+    return await fetch(targetUrl, {
+      headers: {
+        "User-Agent": BROWSER_USER_AGENT,
+        "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+        "Referer": "https://commons.wikimedia.org/",
+      },
+      signal: AbortSignal.timeout(12000),
+    });
+  };
 
-  res.setHeader("Content-Type", contentType);
-  res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
-  res.send(Buffer.from(await upstream.arrayBuffer()));
+  try {
+    let upstream = await tryFetch(url);
+
+    // If 400, 404, or 429 and it's a thumbnail on Wikimedia, try full original file
+    if (!upstream.ok && url.includes("upload.wikimedia.org") && url.includes("/thumb/")) {
+      const match = url.match(/\/wikipedia\/commons\/thumb\/([^/]+)\/([^/]+)\/([^/]+)\//);
+      if (match) {
+        const fullOriginalUrl = `https://upload.wikimedia.org/wikipedia/commons/${match[1]}/${match[2]}/${match[3]}`;
+        const fallbackUpstream = await tryFetch(fullOriginalUrl);
+        if (fallbackUpstream.ok) {
+          upstream = fallbackUpstream;
+          url = fullOriginalUrl;
+        }
+      }
+    }
+
+    if (!upstream.ok) {
+      const filename = decodeURIComponent(url.split("/").pop() || "masterpiece")
+        .replace(/[_-]/g, " ")
+        .replace(/\.[a-z0-9]+$/i, "");
+      const fallbackPrompt = encodeURIComponent(`Masterpiece fine art painting, museum exhibition quality: ${filename}`);
+      res.redirect(302, `https://image.pollinations.ai/prompt/${fallbackPrompt}?width=1024&height=768&nologo=true`);
+      return;
+    }
+
+    const contentType = (upstream.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+    const finalContentType = ALLOWED_MIMES.has(contentType) ? contentType : "image/jpeg";
+
+    const buffer = Buffer.from(await upstream.arrayBuffer());
+
+    if (imageMemoryCache.size >= MAX_IMAGE_CACHE_ITEMS) {
+      const oldestKey = imageMemoryCache.keys().next().value;
+      if (oldestKey) imageMemoryCache.delete(oldestKey);
+    }
+    imageMemoryCache.set(url, { contentType: finalContentType, buffer, timestamp: Date.now() });
+
+    res.setHeader("Content-Type", finalContentType);
+    res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+    res.send(buffer);
+  } catch (err) {
+    console.warn("[proxyArtworkImage] fetch failed, fallback redirect:", err);
+    const filename = decodeURIComponent(url.split("/").pop() || "masterpiece")
+      .replace(/[_-]/g, " ")
+      .replace(/\.[a-z0-9]+$/i, "");
+    const fallbackPrompt = encodeURIComponent(`Masterpiece fine art painting, museum exhibition quality: ${filename}`);
+    res.redirect(302, `https://image.pollinations.ai/prompt/${fallbackPrompt}?width=1024&height=768&nologo=true`);
+  }
 }

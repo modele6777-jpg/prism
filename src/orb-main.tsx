@@ -2,12 +2,13 @@ import React, { StrictMode, useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";
 import OrbGatewayPage from "./pages/OrbGatewayPage";
+import { BgMusicPlayer } from "./components/trinity/BgMusicPlayer";
 import { BigBangButton } from "./components/omniwarp/BigBangButton";
 import { BigBangExpansionOverlay } from "./components/omniwarp/BigBangExpansionOverlay";
 import InstallPrompt from "./components/InstallPrompt";
 import { OrbCosmicLoader } from "./components/OrbCosmicLoader";
 import "./index.css";
-import { initPerfMode, getSwUpdateIntervalMs } from "./lib/perfMode";
+import { initPerfMode, getSwUpdateIntervalMs, shouldMountBgMusicPlayer } from "./lib/perfMode";
 
 // Initialize performance mode
 initPerfMode();
@@ -65,6 +66,12 @@ function OrbApp() {
   return (
     <>
       <OrbGatewayPage />
+      {/* Top-Right Background Music Player (Expands Leftwards) */}
+      {shouldMountBgMusicPlayer() && (
+        <div className="fixed top-safe-2 right-4 sm:right-6 md:top-safe-4 z-[300]">
+          <BgMusicPlayer />
+        </div>
+      )}
       <BigBangButton />
       <BigBangExpansionOverlay />
       <InstallPrompt />

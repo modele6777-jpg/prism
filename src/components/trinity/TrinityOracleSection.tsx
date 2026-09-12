@@ -3,7 +3,8 @@ import { useLocation } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles, Heart, Flame, Wind, Coins, BookOpen, Volume2, VolumeX,
-  CheckCircle2, RotateCcw, Zap, Sun, Moon, Feather, Check, Palette, ArrowRight, Share2
+  CheckCircle2, RotateCcw, Zap, Sun, Moon, Feather, Check, Palette, ArrowRight, Share2,
+  Compass, Shield, User, Calendar, Clock, X
 } from 'lucide-react';
 import { TAROT_DECK, TarotCard, getTarotCardImageUrl } from '@/data/tarotData';
 import { TarotSpread, SelectedTarotCardEntry } from './TarotSpread';
@@ -11,6 +12,13 @@ import { invokeLLM } from '@/lib/ai';
 import { playTTS, stopTTS, useTTSActive } from '@/utils/tts';
 import { sendPrismToss } from '@/lib/prismToss';
 import { ZezeKakaoChat } from './ZezeKakaoChat';
+import { useApp, getPersistentUserProfile, setPersistentUserProfile } from '@/contexts/AppContext';
+import {
+  calculateDetailedSaju,
+  ELEMENT_DETAILS,
+  type SajuAnalysisResult,
+  type FiveElement
+} from '@/lib/sajuAnalysis';
 
 // Local storage keys
 const STORAGE_HEALING_TREASURES = 'prism_oracle_healing_treasures';
@@ -20,11 +28,24 @@ export interface CardInsight {
   card_name: string;
   position_name: string;
   core_meaning: string;
+  saju_resonance?: string;
   personal_interpretation: string;
+  action_guide?: string;
+}
+
+export interface SajuTarotSynergy {
+  day_master_resonance: string;
+  elemental_balance: {
+    dominant_harmony: string;
+    lacking_remedy: string;
+  };
+  destiny_flow_synthesis: string;
+  saju_oracle_verdict: string;
 }
 
 export interface HealingResult {
   message: string;
+  saju_tarot_synergy?: SajuTarotSynergy;
   card_insights?: CardInsight[];
   prescribed_art: {
     artwork_title: string;
@@ -40,6 +61,7 @@ export interface HealingResult {
 
 export interface GrowthResult {
   macro_focus: string;
+  saju_tarot_synergy?: SajuTarotSynergy;
   card_insights?: CardInsight[];
   dominant_element: {
     element: 'Wands' | 'Cups' | 'Swords' | 'Pentacles';
@@ -63,6 +85,49 @@ export interface CollectedTreasure {
 
 export function TrinityOracleSection() {
   const [, setLocation] = useLocation();
+  const { sharedState } = useApp();
+  const userProfile = sharedState?.userProfile || getPersistentUserProfile();
+
+  // 사주 명리 정밀 계산 (기본값 내장으로 미입력 시에도 완벽한 명식 및 오행 분석 보장)
+  const saju = useMemo(() => {
+    if (userProfile?.basic?.birthdate) {
+      return calculateDetailedSaju(userProfile);
+    }
+    return calculateDetailedSaju({
+      basic: {
+        name: userProfile?.basic?.name || '여행자',
+        nickname: userProfile?.basic?.nickname || '여행자',
+        birthdate: '1995-05-15',
+        birthtime: '12:00',
+        gender: (userProfile?.basic?.gender as any) || 'female',
+      },
+    });
+  }, [userProfile]);
+
+  // 사주 정보 빠른 수정 모달 상태
+  const [showSajuModal, setShowSajuModal] = useState<boolean>(false);
+  const [editName, setEditName] = useState(userProfile?.basic?.name || '여행자');
+  const [editBirthdate, setEditBirthdate] = useState(userProfile?.basic?.birthdate || '1995-05-15');
+  const [editBirthtime, setEditBirthtime] = useState(userProfile?.basic?.birthtime || '12:00');
+  const [editGender, setEditGender] = useState<'male' | 'female'>(
+    userProfile?.basic?.gender === 'male' ? 'male' : 'female'
+  );
+
+  const handleSaveSajuProfile = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const updatedProfile = {
+      ...(userProfile || {}),
+      basic: {
+        ...(userProfile?.basic || {}),
+        name: editName.trim() || '여행자',
+        birthdate: editBirthdate,
+        birthtime: editBirthtime,
+        gender: editGender,
+      },
+    };
+    setPersistentUserProfile(updatedProfile);
+    setShowSajuModal(false);
+  };
 
   // 1. Dual Mode State ('healing' | 'growth')
   const [oracleMode, setOracleMode] = useState<'healing' | 'growth'>('healing');
@@ -144,11 +209,27 @@ export function TrinityOracleSection() {
       .map((c, i) => `${i + 1}번 슬롯 [${slotPositions[i]}]: ${c.nameKo} (${c.name}) - 유형: ${c.type}, 핵심 키워드: [${c.keywords.join(', ')}]`)
       .join('\n');
 
+    const sajuContextPrompt = saju
+      ? `
+# 질문자의 사주명리학(四柱命理) 정밀 원국:
+- 이름 및 성별: ${saju.name} (${saju.gender})
+- 일간(Day Master) 본원: ${saju.dayMaster.hanja}(${saju.dayMaster.korean}) — ${saju.dayMaster.symbolName}
+  * 영적 아키타입: ${saju.dayMaster.archetypeTitle}
+  * 핵심 기질 키워드: ${saju.dayMaster.coreKeywords.join(', ')}
+  * 본원 성향: ${saju.dayMaster.personalityEssence}
+- 사주 4주 8자: 년주(${saju.pillars.year.full}) | 월주(${saju.pillars.month.full}) | 일주(${saju.pillars.day.full})${saju.pillars.hour ? ` | 시주(${saju.pillars.hour.full})` : ''}
+- 오행 구성: 목(${saju.elements.counts.목}개) · 화(${saju.elements.counts.화}개) · 토(${saju.elements.counts.토}개) · 금(${saju.elements.counts.금}개) · 수(${saju.elements.counts.수}개)
+- 최강 우세 오행: ${saju.elements.dominant.name} (${saju.elements.dominant.advice})
+- 결핍 오행 및 용신 보약: ${saju.elements.lacking.name} (용신: ${saju.yongsin.name} - ${saju.yongsin.actionTip})
+- 2026 병오년(丙午年) 세운 흐름: ${saju.annual2026.theme} (${saju.annual2026.keyOpportunity})
+`
+      : '';
+
     try {
       if (oracleMode === 'healing') {
-        // [HEALING MODE] Deep card-by-card reflective prompts
+        // [HEALING MODE] Deep Saju-Tarot blended reflective prompts
         const systemPrompt = `당신의 이름은 '제제(Zezé)'입니다.
-당신은 마음 치유 루틴 '파랑새' 안에서 사용자의 무의식을 비추고 함께 쉬어가는 '내면아이(Inner Child)'이자 다정한 비밀 친구입니다.
+당신은 마음 치유 루틴 '파랑새' 안에서 사용자의 사주명리학(四柱) 본원 에너지와 타로(Tarot)의 무의식 상징을 융합하여 보듬어주는 '내면아이(Inner Child)'이자 다정한 비밀 친구입니다.
 
 # Tone & Voice
 - 조심스럽고 다정하며, 시적이고 따뜻한 반말(해체)을 사용합니다. ("~했어?", "~해볼까?", "~해도 괜찮아", "~일지도 몰라")
@@ -156,37 +237,66 @@ export function TrinityOracleSection() {
 - 섣부른 훈계나 "힘내" 같은 상투적인 클리셰를 쓰지 말고, 감정을 온전히 알아차려 주는 깊은 호흡의 문장을 씁니다.
 - '화이트홀', '블랙홀', '웜홀', '손끝 물리량', '파동 측정' 등의 인위적/공상과학 용어는 절대 사용하지 않습니다.
 
-# Core Mission Rule: 3장 카드의 고유한 뜻과 상징을 깊이 반영하기
-사용자가 뽑은 3장의 메이저 타로 카드 각각의 본질적인 원형과 상징적 뜻을 깊이 헤아려야 합니다.
-1번 [내면의 무의식]: 의식하지 못했던 깊은 무의식의 본래 빛과 억눌린 감정의 원형
-2번 [지금의 마음]: 카드의 상징을 통해 오늘 겪고 있는 피로, 긴장, 마찰을 거울처럼 짚어줌
-3번 [치유의 씨앗]: 상처받은 내면아이를 안전하게 보듬고 회복시키는 다정한 전환의 열쇠
+# Core Mission Rule: 사주(四柱)와 타로(Tarot)의 필연적 융합(Synthesis) 리딩
+질문자가 타고난 사주 일간 본원(${saju?.dayMaster.symbolName || '본원 기운'})과 오행 균형, 용신 보약 에너지를 바탕으로, 오늘 뽑은 3장의 메이저 타로 카드가 사주의 흐름과 어떻게 상생·상극 공명하고 조화를 이루는지 깊이 있게 융합(Synthesis)하여 해석해야 합니다.
+
+1. saju_tarot_synergy (사주 × 타로 운명 융합 매트릭스):
+- day_master_resonance: 질문자의 사주 일간 본원(${saju?.dayMaster.hanja || ''} ${saju?.dayMaster.symbolName || ''})과 3장의 타로 카드가 만났을 때 일어나는 기운의 파동과 상생(相生)·상극(相剋) 심층 공명 분석 (3~4문장).
+- elemental_balance:
+  * dominant_harmony: 사주의 강한 ${saju?.elements.dominant.name || '우세'} 기운과 타로 카드가 조화를 이루는 중심축 (2~3문장).
+  * lacking_remedy: 사주에서 결핍된 ${saju?.elements.lacking.name || '부족'} 오행 및 용신(${saju?.yongsin.name || '보약'}) 에너지를 타로 카드가 어떻게 보완하고 처방하는지 (2~3문장).
+- destiny_flow_synthesis: 2026 병오년의 불꽃 같은 흐름 속에서 3장의 카드가 제시하는 내면아이의 쉼과 현실 타이밍 (2~3문장).
+- saju_oracle_verdict: 사주와 타로가 하나로 결합하여 내리는 단 하나의 명쾌하고 울림 있는 최종 오라클 계시 (1~2문장).
+
+2. card_insights (카드별 상세 심층 해설):
+- core_meaning: 정통 타로 도상과 원형 상징 본래 뜻 (2~3문장).
+- saju_resonance: 이 카드가 질문자의 사주 일간(${saju?.dayMaster.hanja || ''}) 및 오행 에너지와 상호작용하는 구체적인 공명 (2~3문장).
+- personal_interpretation: 사주와 타로가 결합된 제제의 다정하고 깊은 1:1 심층 위로 리딩 (3~4문장).
+- action_guide: 오늘 마음에 품을 실천 팁 (1~2문장).
+
+3. message (제제의 편지):
+질문자의 사주 일간 본원 기운(예: ${saju?.dayMaster.symbolName || '따뜻한 온기'})과 3장의 타로 카드를 편지 속에 자연스럽게 녹여내며 마음을 안아주는 제제의 편지 (350~450자 내외).
 
 반드시 마크다운 코드블록 없이 순수 JSON 형식으로만 응답해야 합니다:
 {
+  "saju_tarot_synergy": {
+    "day_master_resonance": "사주 일간 본원과 3장 타로 카드의 상생 공명 분석 (3~4문장)",
+    "elemental_balance": {
+      "dominant_harmony": "사주 우세 오행과 타로 카드의 조화 (2~3문장)",
+      "lacking_remedy": "사주 결핍 오행 및 용신 에너지를 타로 카드가 보완하는 처방 (2~3문장)"
+    },
+    "destiny_flow_synthesis": "2026 병오년 흐름 속 현실 타이밍 및 마음가짐 (2~3문장)",
+    "saju_oracle_verdict": "사주와 타로가 입을 모아 건네는 단 하나의 결정적 오라클 계시 (1~2문장)"
+  },
   "card_insights": [
     {
       "card_name": "카드 한글명 (예: 광대)",
       "position_name": "내면의 무의식",
-      "core_meaning": "이 카드가 정통 타로에서 지닌 본질적 상징과 철학적 뜻 (1~2줄)",
-      "personal_interpretation": "이 카드의 상징이 오늘 나의 무의식에 건네는 다정한 성찰 (2~3문장)"
+      "core_meaning": "이 카드가 정통 타로에서 지닌 본질적 도상과 상징, 철학적 뜻 (2~3문장)",
+      "saju_resonance": "이 카드가 질문자의 사주 일간 본원 및 오행과 빚어내는 구체적인 공명 작용 (2~3문장)",
+      "personal_interpretation": "오늘 내 무의식 속에 숨겨진 감정에 건네는 제제의 깊고 다정한 심층 리딩 (3~4문장)",
+      "action_guide": "이 카드의 빛을 내 것으로 품을 수 있는 오늘 마음가짐 팁 (1~2문장)"
     },
     {
       "card_name": "카드 한글명 (예: 은둔자)",
       "position_name": "지금의 마음",
-      "core_meaning": "이 카드의 본래 상징과 뜻 (1~2줄)",
-      "personal_interpretation": "오늘 지친 내 마음에 이 카드가 비춰주는 공감과 위로 (2~3문장)"
+      "core_meaning": "이 카드의 본래 도상과 상징, 뜻 (2~3문장)",
+      "saju_resonance": "사주 일간 본원과의 상호작용 및 오행적 반응 (2~3문장)",
+      "personal_interpretation": "오늘 지친 내 마음에 이 카드가 비춰주는 공감과 위로의 심층 해설 (3~4문장)",
+      "action_guide": "지금 현실의 피로를 다정하게 흘려보내는 팁 (1~2문장)"
     },
     {
       "card_name": "카드 한글명 (예: 별)",
       "position_name": "치유의 씨앗",
-      "core_meaning": "이 카드의 본래 상징과 뜻 (1~2줄)",
-      "personal_interpretation": "이 카드가 안내하는 가장 안전한 회복의 단서 (2~3문장)"
+      "core_meaning": "이 카드가 안내하는 회복의 도상과 본래 뜻 (2~3문장)",
+      "saju_resonance": "사주 부족 오행(용신)을 치유하는 타로 카드의 보약 기운 (2~3문장)",
+      "personal_interpretation": "이 카드가 안내하는 가장 안전한 회복의 단서와 다정한 제제의 해설 (3~4문장)",
+      "action_guide": "오늘 마음속에 피워낼 작은 희망 실천 가이드 (1~2문장)"
     }
   ],
-  "message": "3장의 카드 이름과 그 뜻을 편지 속에 자연스럽게 녹여내며 마음을 안아주는 제제의 편지 (250자 내외)",
+  "message": "질문자의 사주 일간 기운과 3장의 카드 서사를 따뜻하게 엮어낸 제제의 편지 (350~450자 내외)",
   "prescribed_art": {
-    "artwork_title": "카드들의 에너지와 깊이 공명하는 세계적 미술/회화 명작 (반드시 회화 미술작품만 지정할 것. 음악이나 시는 제외. 예: 빈센트 반 고흐 - 별이 빛나는 밤, 클로드 모네 - 수련, 구스타프 클림트 - 키스, 에드바르 뭉크 - 절규 등)",
+    "artwork_title": "카드들과 사주 기운에 깊이 공명하는 세계적 미술/회화 명작 (반드시 회화 미술작품만 지정)",
     "art_quote": "마음에 울림을 주는 짧은 문학/예술 한 구절 (1~2줄)"
   },
   "micro_action": "3번 치유의 씨앗 카드가 제안하는, 지금 자리에서 1~2분 안에 실천할 수 있는 구체적인 신체/감각 행동 1가지",
@@ -196,7 +306,7 @@ export function TrinityOracleSection() {
   }
 }`;
 
-        const prompt = `사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 카드 각각의 상징과 의미를 깊이 반영하여, 3장의 카드별 심층 리딩(card_insights)과 제제의 다정한 마음 처방을 JSON으로 생성해 줘.`;
+        const prompt = `${sajuContextPrompt}\n\n사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 질문자의 사주 명리학 원국과 뽑힌 3장의 타로 카드 상징을 긴밀하게 '교차 융합'하여, 사주×타로 시너지 매트릭스(saju_tarot_synergy)와 카드별 심층 리딩(card_insights), 제제의 다정한 마음 처방을 JSON으로 생성해 줘.`;
         const res = await invokeLLM({
           messages: [
             { role: 'system', content: systemPrompt },
@@ -208,39 +318,60 @@ export function TrinityOracleSection() {
         const parsed: HealingResult = JSON.parse(clean);
         setHealingResult(parsed);
       } else {
-        // [GROWTH MODE] Deep card-by-card behavioral prompts
+        // [GROWTH MODE] Deep Saju-Tarot behavioral prompts
         const systemPrompt = `당신은 현대인을 위한 초정밀 멘탈 트레이너이자 라이프 코치 '오라클 루시'입니다.
-우리는 타로를 점술이나 미신으로 소비하지 않으며, 100% 멘탈 피트니스와 실행 자아효능감을 높이는 '행동 마인드셋 툴킷'으로 다룹니다.
+우리는 질문자의 사주명리학(四柱) 일간 본원의 추진력과 타로(Tarot) 4원소 프레임워크를 정밀 결합하여, 100% 실행 자아효능감을 높이는 '행동 마인드셋 툴킷'을 도출합니다.
 '화이트홀', '블랙홀', '웜홀', '손끝 물리량', '파동 측정' 등의 인위적/공상과학 용어는 절대 언급하지 마십시오.
 
-# Core Mission Rule: 3장 카드의 고유한 뜻과 현실 실행력 연계
-1번 슬롯 [거시적 마인드셋]: 이 카드의 철학과 원형이 오늘 하루 전체의 중심 태도를 어떻게 정립하는지
-2번 슬롯 [4원소 현실 영역]: 완드(불/커리어), 컵(물/관계·멘탈), 소드(공기/의사결정·메타인지), 펜타클(흙/자산·루틴) 중 오늘 직면한 구체적 상황을 카드의 상징으로 규명
-3번 슬롯 [1줄 마이크로 실행]: 카드의 에너지가 왜 즉각적인 5분 실천 과제로 이어지는지 그 명확한 당위성 제시
+# Core Mission Rule: 사주(四柱)와 타로(Tarot)의 현실 실행력 융합
+질문자의 사주 일간 본원 기질(${saju?.dayMaster.symbolName || ''})과 결핍 오행 보충법을, 4원소 타로 카드의 현실 영역과 직접 결합하여 초정밀 마인드셋과 실행 과제를 도출하세요.
+
+1. saju_tarot_synergy (사주 × 타로 실행 융합 매트릭스):
+- day_master_resonance: 사주 일간 본원의 추진력과 3장의 타로 카드가 맞물려 발휘되는 실행 모멘텀 (3~4문장).
+- elemental_balance: 사주 오행 밸런스와 타로 4원소(완드/컵/소드/펜타클)의 현실 조화 및 결핍 보완 전략 (2~3문장).
+- destiny_flow_synthesis: 2026 병오년 세운의 타이밍과 타로 카드가 가리키는 구체적 현실 기회 (2~3문장).
+- saju_oracle_verdict: 사주와 타로가 일치하여 가리키는 단 하나의 명쾌한 실행 계시 (1~2문장).
+
+2. card_insights:
+- core_meaning: 이 카드가 지닌 본질적 원형과 상징.
+- saju_resonance: 질문자의 사주 본원 기질과 결합하여 발휘되는 구체적 실행 태도 (2~3문장).
+- personal_interpretation: 오늘 하루 현실에서 바로 취해야 할 구체적 마인드셋 (2~3문장).
 
 반드시 순수 JSON 형식으로 응답하세요:
 {
+  "saju_tarot_synergy": {
+    "day_master_resonance": "사주 본원 추진력과 타로 카드의 실행 모멘텀 분석 (3~4문장)",
+    "elemental_balance": {
+      "dominant_harmony": "사주 우세 오행과 타로 4원소의 조화 (2~3문장)",
+      "lacking_remedy": "사주 결핍 오행/용신을 보완하는 현실 루틴 (2~3문장)"
+    },
+    "destiny_flow_synthesis": "2026 세운 흐름 속 결정적 실행 타이밍 (2~3문장)",
+    "saju_oracle_verdict": "사주와 타로가 내리는 단 하나의 핵심 실행 계시 (1~2문장)"
+  },
   "card_insights": [
     {
       "card_name": "카드 한글명 (예: 황제)",
       "position_name": "거시적 마인드셋",
       "core_meaning": "이 카드가 지닌 본질적 원형과 중심 철학 (1~2줄)",
-      "personal_interpretation": "오늘 하루를 주도적으로 이끌기 위해 취해야 할 구체적 태도 (2~3문장)"
+      "saju_resonance": "사주 본원과 결합하여 이끌어내는 주도적 실행 태도 (2~3문장)",
+      "personal_interpretation": "오늘 하루 전체를 통제하기 위해 취해야 할 구체적 태도 (2~3문장)"
     },
     {
       "card_name": "카드 한글명 (예: 지팡이 3)",
       "position_name": "4원소 현실 영역",
       "core_meaning": "이 카드의 슈트와 숫자가 상징하는 본래 의미 (1~2줄)",
+      "saju_resonance": "사주 오행 흐름 속에서 이 카드가 점검하게 하는 영역 (2~3문장)",
       "personal_interpretation": "오늘 내 일상 현실에서 주목하고 점검해야 할 구체적 초점 (2~3문장)"
     },
     {
       "card_name": "카드 한글명 (예: 칼 에이스)",
       "position_name": "1줄 마이크로 실행",
       "core_meaning": "이 카드가 지닌 결단과 돌파의 상징 (1~2줄)",
+      "saju_resonance": "사주 용신 보약 에너지를 행동으로 깨우는 트리거 (2~3문장)",
       "personal_interpretation": "망설임을 걷어내고 즉시 통제권을 잡을 수 있는 행동의 근거 (2~3문장)"
     }
   ],
-  "macro_focus": "3장의 카드가 가리키는 오늘의 거시 마인드셋 및 중심 태도 종합 브리핑 (2~3문장)",
+  "macro_focus": "질문자의 사주 기질과 3장의 카드가 가리키는 오늘의 거시 마인드셋 종합 브리핑 (2~3문장)",
   "dominant_element": {
     "element": "Wands",
     "element_ko": "완드 (불) - 커리어 & 프로젝트 추진력",
@@ -253,7 +384,7 @@ export function TrinityOracleSection() {
   "evening_reflection": "오늘 저녁 나의 행동을 돌아보는 1줄 성찰 질문"
 }`;
 
-        const prompt = `사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 카드 각각의 상징과 의미를 100% 반영하여, 3장의 카드별 심층 리딩(card_insights)과 마인드셋 브리핑, 1줄 마이크로 미션을 JSON으로 도출해 줘.`;
+        const prompt = `${sajuContextPrompt}\n\n사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 질문자의 사주 기질과 타로 3장의 원소적 상징을 융합하여, 사주×타로 시너지 매트릭스(saju_tarot_synergy), 카드별 심층 리딩(card_insights), 마인드셋 브리핑, 1줄 마이크로 미션을 JSON으로 도출해 줘.`;
         const res = await invokeLLM({
           messages: [
             { role: 'system', content: systemPrompt },
@@ -267,16 +398,33 @@ export function TrinityOracleSection() {
       }
     } catch (err) {
       console.error('Oracle AI error:', err);
-      // Fallbacks with rich card-by-card meanings
+      // Fallbacks with rich Saju-Tarot blended meanings
+      const sajuNameStr = saju?.name || '내담자';
+      const dayMasterStr = saju ? `${saju.dayMaster.hanja}(${saju.dayMaster.symbolName})` : '본원 기운';
+      const domElStr = saju?.elements.dominant.name || '우세 오행';
+      const lackElStr = saju?.elements.lacking.name || '결핍 오행';
+      const yongsinStr = saju?.yongsin.name || '용신 보약';
+
       if (oracleMode === 'healing') {
         setHealingResult({
+          saju_tarot_synergy: {
+            day_master_resonance: `${sajuNameStr}님의 타고난 사주 본원인 ${dayMasterStr}의 파동과 오늘 뽑힌 [${cards.map(c => c.nameKo).join(', ')}] 타로 카드가 만나, 억눌렸던 감정을 풀고 고유한 내면의 빛을 회복하는 강력한 치유 공명을 일으킵니다.`,
+            elemental_balance: {
+              dominant_harmony: `사주에서 강한 ${domElStr}의 추진력이 타로 카드의 상징과 결합하여 흔들리지 않는 내면의 중심축을 지탱해 줍니다.`,
+              lacking_remedy: `사주에서 채워주어야 할 ${lackElStr}과 ${yongsinStr}의 에너지를 3번 치유 카드가 따뜻하게 보완해 영혼의 균형을 완성합니다.`
+            },
+            destiny_flow_synthesis: `2026 병오년의 불꽃 같은 변화 속에서, 이번 타로 카드들은 조급함을 내려놓고 자신의 고유한 호흡과 타이밍을 믿으라는 결정적 조언을 건넵니다.`,
+            saju_oracle_verdict: `사주가 타고난 그릇이라면 타로는 지금 당신의 손에 쥐어진 열쇠입니다. 내면의 소리에 귀 기울이세요.`
+          },
           card_insights: cards.map((c, i) => ({
             card_name: c.nameKo,
             position_name: slotPositions[i],
-            core_meaning: `${c.nameKo} 카드는 [${c.keywords.slice(0, 2).join(', ')}]의 원형적 치유 파동을 상징합니다.`,
-            personal_interpretation: `${slotPositions[i]}의 자리에서 당신에게 서두르지 말고 자신만의 리듬을 회복하라는 다정한 메시지를 전합니다.`,
+            core_meaning: `${c.nameKo} 카드는 [${c.keywords.slice(0, 3).join(', ')}]의 원형적 상징과 도상을 품고 있으며, 무의식의 깊은 빛과 치유 에너지를 상징합니다.`,
+            saju_resonance: `질문자의 ${dayMasterStr}과 결합하여, 내면의 불안을 잠재우고 타고난 지혜를 일깨우는 오행적 완충재 역할을 수행합니다.`,
+            personal_interpretation: `${slotPositions[i]}의 자리에서 당신에게 서두르지 말고 자신의 내면아이를 따뜻하게 보듬어주라는 다정한 메시지를 전합니다.`,
+            action_guide: `오늘 하루, ${c.keywords[0] || '평온'}의 마음으로 가슴에 손을 얹고 깊은 심호흡을 3회 반복해보세요.`,
           })),
-          message: `안녕... 오늘 네가 뽑아준 [${cards.map(c => c.nameKo).join(', ')}] 세 카드의 마음 조각을 가만히 모아봤어. 남들 기준에 맞추느라 참 많이 지쳤지? 오늘은 나랑 같이 따뜻한 온기만 챙겨보자.`,
+          message: `안녕 ${sajuNameStr}... 오늘 네가 품은 [${dayMasterStr}]의 기운과 3장의 마음 조각 [${cards.map(c => c.nameKo).join(', ')}]을 가만히 모아봤어. 남들 기준에 맞추느라 참 많이 지쳤지? 오늘은 나랑 같이 따뜻한 온기만 챙겨보자.`,
           prescribed_art: {
             artwork_title: '클로드 모네 - 수련 연못',
             art_quote: '흔들리는 물결 속에서도 수련은 자신만의 고요한 시간대로 피어난다.'
@@ -289,13 +437,23 @@ export function TrinityOracleSection() {
         });
       } else {
         setGrowthResult({
+          saju_tarot_synergy: {
+            day_master_resonance: `${sajuNameStr}님의 사주 본원 [${dayMasterStr}]의 강한 결단력과 오늘 타로 [${cards.map(c => c.nameKo).join(' · ')}]의 현실 원소가 결합하여 즉각적인 실행 착수 동력을 형성합니다.`,
+            elemental_balance: {
+              dominant_harmony: `사주 ${domElStr}의 실행력이 타로 4원소와 정렬되어 불필요한 에너지 소모를 방지합니다.`,
+              lacking_remedy: `부족한 ${lackElStr}과 ${yongsinStr}의 에너지를 1줄 마이크로 루틴으로 채워 지속 가능한 성과를 만듭니다.`
+            },
+            destiny_flow_synthesis: `2026 병오년의 활기찬 모멘텀 속에서, 미뤄왔던 핵심 과제를 바로 착수할 최적의 타이밍입니다.`,
+            saju_oracle_verdict: `생각이 많아질수록 실행은 멀어집니다. 5분 안에 첫 발을 내딛으십시오.`
+          },
           card_insights: cards.map((c, i) => ({
             card_name: c.nameKo,
             position_name: slotPositions[i],
             core_meaning: `${c.nameKo} 카드는 [${c.keywords.slice(0, 2).join(', ')}]의 실행 원리를 상징합니다.`,
+            saju_resonance: `질문자의 ${dayMasterStr}과 상응하여, 주저함을 걷어내고 실행 자아효능감을 즉시 극대화합니다.`,
             personal_interpretation: `${slotPositions[i]}의 축으로서, 불필요한 망설임을 지우고 즉각적인 행동 착수로 연결하는 기준점을 제공합니다.`,
           })),
-          macro_focus: `[${cards.map(c => c.nameKo).join(' · ')}]의 흐름에 따라, 오늘은 불필요한 망설임을 걷어내고 내가 통제할 수 있는 최소 단위의 행동에 집중할 때입니다. 착수는 당신의 몫입니다.`,
+          macro_focus: `[${dayMasterStr}]의 본원 기상과 [${cards.map(c => c.nameKo).join(' · ')}]의 원소 흐름에 따라, 오늘은 불필요한 망설임을 걷어내고 내가 통제할 수 있는 최소 단위의 행동에 집중할 때입니다. 착수는 당신의 몫입니다.`,
           dominant_element: {
             element: 'Wands',
             element_ko: '완드 (불) - 실행력 & 프로젝트 추진력',
@@ -399,6 +557,102 @@ export function TrinityOracleSection() {
     }
   };
 
+  // Render Saju & Tarot Destiny Synergy Matrix Section
+  const renderSajuTarotSynergySection = (synergy?: SajuTarotSynergy) => {
+    if (!synergy) return null;
+
+    return (
+      <div className="glass p-5 sm:p-7 rounded-3xl bg-gradient-to-br from-purple-950/40 via-zinc-950/90 to-amber-950/30 border border-amber-400/40 shadow-2xl space-y-4 relative overflow-hidden backdrop-blur-xl">
+        <div className="absolute top-0 right-0 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-amber-400/20 pb-3.5 relative z-10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500/20 to-purple-500/20 border border-amber-400/50 flex items-center justify-center text-amber-300 shadow-md shrink-0">
+              <Compass size={22} className="text-amber-400 animate-pulse" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono text-amber-400 uppercase tracking-widest block">
+                  SAJU × TAROT ALCHEMY MATRIX
+                </span>
+                <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-200 border border-amber-400/30">
+                  사주 · 타로 융합 공명
+                </span>
+              </div>
+              <h3 className="text-sm sm:text-base md:text-lg font-bold font-serif text-white flex items-center gap-1.5">
+                <span>사주 명리학과 타로 카드의 운명 융합 매트릭스</span>
+              </h3>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+            <span className="text-[11px] px-2.5 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 font-mono">
+              본원: {saju?.dayMaster.hanja}({saju?.dayMaster.korean}) · {saju?.dayMaster.symbolName}
+            </span>
+            <span className="text-[11px] px-2.5 py-1 rounded-full bg-purple-400/10 border border-purple-400/30 text-purple-300 font-mono">
+              용신: {saju?.yongsin.name}
+            </span>
+          </div>
+        </div>
+
+        {/* Synergy Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 relative z-10">
+          {/* 1. Day Master & Tarot Resonance */}
+          <div className="p-4 rounded-2xl bg-white/[0.03] border border-amber-400/25 space-y-2">
+            <div className="flex items-center gap-2 text-amber-300 font-bold text-xs sm:text-sm font-serif">
+              <span>☯️</span>
+              <span>사주 본원(日干)과 타로 카드의 파동 공명</span>
+            </div>
+            <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed font-sans">
+              {synergy.day_master_resonance}
+            </p>
+          </div>
+
+          {/* 2. Elemental Balance & Remedy */}
+          <div className="p-4 rounded-2xl bg-white/[0.03] border border-purple-400/25 space-y-2">
+            <div className="flex items-center gap-2 text-purple-300 font-bold text-xs sm:text-sm font-serif">
+              <span>🌿</span>
+              <span>오행 균형 및 용신(用神) 보약 상생</span>
+            </div>
+            <div className="space-y-1.5 text-xs text-zinc-200 leading-relaxed font-sans">
+              <p>
+                <strong className="text-emerald-300">우세 기운 조화:</strong> {synergy.elemental_balance?.dominant_harmony}
+              </p>
+              <p>
+                <strong className="text-yellow-300">결핍 기운 보약:</strong> {synergy.elemental_balance?.lacking_remedy}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 3. Destiny Flow & Final Verdict */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-purple-500/10 to-transparent border border-amber-400/30 space-y-2 relative z-10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-amber-300 font-bold text-xs sm:text-sm font-serif">
+              <span>🧭</span>
+              <span>2026 병오년(丙午年) 세운 흐름 속 현실 타이밍</span>
+            </div>
+            <span className="text-[10px] font-mono text-amber-300/80">2026 ANNUAL FLOW</span>
+          </div>
+          <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed font-sans">
+            {synergy.destiny_flow_synthesis}
+          </p>
+
+          {synergy.saju_oracle_verdict && (
+            <div className="mt-3 pt-3 border-t border-white/10 flex items-start gap-2.5 text-xs sm:text-sm text-amber-200 font-medium">
+              <span className="text-base shrink-0">✨</span>
+              <div className="leading-relaxed">
+                <strong className="text-yellow-300 mr-1 font-serif">[사주 × 타로 통합 오라클 계시]:</strong>
+                <span>"{synergy.saju_oracle_verdict}"</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   // Render Card-by-Card Deep Reading Section
   const renderCardInsightsSection = (insights?: CardInsight[]) => {
     if (!insights || insights.length === 0) return null;
@@ -468,13 +722,43 @@ export function TrinityOracleSection() {
                     </div>
                   </div>
 
-                  {/* Core Meaning (카드의 고유한 뜻과 상징) */}
+                  {/* Core Meaning (카드의 고유한 뜻과 도상 상징) */}
                   {insight?.core_meaning && (
-                    <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-400/25 text-[11px] text-amber-200/90 leading-relaxed font-sans shadow-inner">
-                      <span className="font-bold text-amber-300 block mb-1 font-mono text-[10px] flex items-center gap-1">
-                        <span>🏛️</span> 카드의 고유한 뜻
+                    <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-400/25 text-[11px] sm:text-xs text-amber-200/90 leading-relaxed font-sans shadow-inner">
+                      <span className="font-bold text-amber-300 block mb-1 font-mono text-[10px] flex items-center gap-1.5">
+                        <span>🏛️</span> 카드의 본질적 도상 & 상징
                       </span>
                       {insight.core_meaning}
+                    </div>
+                  )}
+
+                  {/* Saju Resonance (사주 본원 및 오행과의 상생 공명) */}
+                  {insight?.saju_resonance && (
+                    <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-400/25 text-[11px] sm:text-xs text-purple-200/95 leading-relaxed font-sans shadow-inner">
+                      <span className="font-bold text-purple-300 block mb-1 font-mono text-[10px] flex items-center gap-1.5">
+                        <span>☯️</span> 사주 본원({saju?.dayMaster.hanja || '일간'}) 및 오행 공명
+                      </span>
+                      {insight.saju_resonance}
+                    </div>
+                  )}
+
+                  {/* Personal Interpretation (제제의 심층 맞춤 리딩 & 공감) */}
+                  {insight?.personal_interpretation && (
+                    <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-400/25 text-[11px] sm:text-xs text-emerald-100/90 leading-relaxed font-sans shadow-inner">
+                      <span className="font-bold text-emerald-300 block mb-1 font-mono text-[10px] flex items-center gap-1.5">
+                        <span>🌿</span> {oracleMode === 'healing' ? '제제의 심층 맞춤 리딩' : '마인드셋 심층 분석'}
+                      </span>
+                      {insight.personal_interpretation}
+                    </div>
+                  )}
+
+                  {/* Action Guide (오늘 마음에 품을 실천 가이드) */}
+                  {insight?.action_guide && (
+                    <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/15 text-[10.5px] sm:text-[11px] text-zinc-200 leading-relaxed font-sans">
+                      <span className="font-bold text-yellow-300 block mb-0.5 font-mono text-[9.5px] flex items-center gap-1">
+                        <span>💡</span> 오늘 마음에 품을 실천 팁
+                      </span>
+                      {insight.action_guide}
                     </div>
                   )}
                 </div>
@@ -505,8 +789,8 @@ export function TrinityOracleSection() {
             </h2>
             <p className="text-xs sm:text-sm text-zinc-300/80 mt-1 font-sans">
               {oracleMode === 'healing'
-                ? '내면아이 제제(Zezé)와 함께하는 다정한 1분 쉼과 감성 예술 처방'
-                : '점술을 배제한 4원소 프레임워크 기반 1일 1실행 멘탈 피트니스'}
+                ? '내면아이 제제(Zezé)와 함께하는 다정한 1분 쉼과 사주×타로 예술 처방'
+                : '사주 일간의 추진력과 타로 4원소 프레임워크 기반 1일 1실행 멘탈 피트니스'}
             </p>
           </div>
 
@@ -552,8 +836,40 @@ export function TrinityOracleSection() {
           </div>
         </div>
 
+        {/* Saju Alignment Status Bar */}
+        <div className="relative z-10 mt-4 pt-3.5 border-t border-white/10 flex flex-wrap items-center justify-between gap-2.5 text-xs">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/40 text-amber-300 font-medium shadow-sm">
+              <Compass size={13} className="text-amber-400" />
+              <span>사주 융합 연동:</span>
+              <strong className="text-white font-bold">{saju?.name || '여행자'}</strong>
+              <span className="text-amber-200">[{saju?.dayMaster.hanja}({saju?.dayMaster.korean}) · {saju?.dayMaster.symbolName}]</span>
+            </span>
+            {saju && (
+              <span className="text-[11px] text-zinc-300 hidden sm:inline-flex items-center gap-1.5">
+                <span className="text-zinc-400">오행 분포:</span>
+                <span className="text-emerald-300 font-mono">목({saju.elements.counts.목})</span>
+                <span className="text-rose-300 font-mono">화({saju.elements.counts.화})</span>
+                <span className="text-amber-300 font-mono">토({saju.elements.counts.토})</span>
+                <span className="text-yellow-200 font-mono">금({saju.elements.counts.금})</span>
+                <span className="text-sky-300 font-mono">수({saju.elements.counts.수})</span>
+                <span className="mx-1 text-zinc-600">|</span>
+                <span className="text-purple-300">용신 보약: {saju.yongsin.name}</span>
+              </span>
+            )}
+          </div>
+
+          <button
+            onClick={() => setShowSajuModal(true)}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/15 text-[11px] text-zinc-300 hover:text-white transition-colors"
+          >
+            <User size={12} className="text-amber-400" />
+            <span>생년월일(사주) 수정</span>
+          </button>
+        </div>
+
         {/* Quick Toolbar */}
-        <div className="relative z-10 mt-5 pt-4 border-t border-white/10 flex items-center justify-between text-xs text-zinc-300">
+        <div className="relative z-10 mt-3 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-zinc-300">
           <div className="flex items-center gap-3">
             {oracleMode === 'healing' ? (
               <button
@@ -675,6 +991,9 @@ export function TrinityOracleSection() {
             ) : oracleMode === 'healing' && healingResult ? (
               /* [HEALING RESULT VIEW] */
               <div className="space-y-6">
+                {/* 0. 사주 × 타로 운명 융합 매트릭스 (Saju & Tarot Alchemy Matrix) */}
+                {renderSajuTarotSynergySection(healingResult.saju_tarot_synergy)}
+
                 {/* 3 Cards Deep Insights Reading (내면아이 성찰 메시지 제외, 카드 고유 뜻과 상징만 표기) */}
                 {renderCardInsightsSection(healingResult.card_insights)}
 
@@ -685,6 +1004,7 @@ export function TrinityOracleSection() {
                   healingResult={healingResult}
                   growthResult={null}
                   slotPositions={slotPositions}
+                  saju={saju}
                 />
 
                 {/* 2. Prescribed Art -> Toss to Muse Art Sanctuary */}
@@ -786,6 +1106,9 @@ export function TrinityOracleSection() {
             ) : oracleMode === 'growth' && growthResult ? (
               /* [GROWTH RESULT VIEW] */
               <div className="space-y-6">
+                {/* 0. 사주 × 타로 운명 융합 매트릭스 (Saju & Tarot Alchemy Matrix) */}
+                {renderSajuTarotSynergySection(growthResult.saju_tarot_synergy)}
+
                 {/* 3 Cards Deep Insights Reading (내면아이 성찰 메시지 제외, 카드 고유 뜻과 상징만 표기) */}
                 {renderCardInsightsSection(growthResult.card_insights)}
 
@@ -796,6 +1119,7 @@ export function TrinityOracleSection() {
                   healingResult={null}
                   growthResult={growthResult}
                   slotPositions={slotPositions}
+                  saju={saju}
                 />
 
                 {/* 2. Dominant Element & Focus Area */}
@@ -927,6 +1251,99 @@ export function TrinityOracleSection() {
                   ))}
                 </div>
               )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 4. Saju Profile Edit Modal */}
+      <AnimatePresence>
+        {showSajuModal && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="glass w-full max-w-md p-6 rounded-3xl bg-zinc-950 border border-amber-400/40 shadow-2xl relative"
+            >
+              <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-4">
+                <div className="flex items-center gap-2">
+                  <Compass size={18} className="text-amber-400" />
+                  <h3 className="text-lg font-serif font-bold text-white">사주 명식 정보 설정</h3>
+                </div>
+                <button
+                  onClick={() => setShowSajuModal(false)}
+                  className="text-xs text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-white/10"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveSajuProfile} className="space-y-4 text-xs">
+                <div>
+                  <label className="block text-zinc-300 font-medium mb-1">성명 (호칭)</label>
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/15 text-white focus:border-amber-400 focus:outline-none"
+                    placeholder="이름을 입력하세요"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-zinc-300 font-medium mb-1">생년월일 (양력)</label>
+                  <input
+                    type="date"
+                    value={editBirthdate}
+                    onChange={(e) => setEditBirthdate(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/15 text-white focus:border-amber-400 focus:outline-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-zinc-300 font-medium mb-1">태어난 시간</label>
+                    <input
+                      type="time"
+                      value={editBirthtime}
+                      onChange={(e) => setEditBirthtime(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/15 text-white focus:border-amber-400 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-zinc-300 font-medium mb-1">성별</label>
+                    <select
+                      value={editGender}
+                      onChange={(e) => setEditGender(e.target.value as 'male' | 'female')}
+                      className="w-full px-3 py-2 rounded-xl bg-zinc-900 border border-white/15 text-white focus:border-amber-400 focus:outline-none"
+                    >
+                      <option value="female">여성</option>
+                      <option value="male">남성</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-400/20 text-amber-200/90 text-[11px] leading-relaxed">
+                  💡 사주 정보를 변경하면 타로 카드 뽑기 시 사용자의 사주 일간(본원) 및 오행 구성, 용신 보약 데이터가 타로 해석에 실시간 자동 융합됩니다.
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowSajuModal(false)}
+                    className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300"
+                  >
+                    취소
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-black font-bold hover:brightness-110"
+                  >
+                    저장 및 사주 반영
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}

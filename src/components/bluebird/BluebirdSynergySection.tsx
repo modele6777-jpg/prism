@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Heart, Flame, Sparkles, Mail, Send, Check, Copy, RefreshCw, Volume2, VolumeX, Shield, Award, Feather, Wind } from 'lucide-react';
+import { Heart, Flame, Sparkles, Mail, Send, Check, Copy, RefreshCw, Volume2, VolumeX, Shield, Award, Feather, Wind, Layers, ArrowRight, BookOpen } from 'lucide-react';
 import { useApp, getPersistentUserProfile } from '@/contexts/AppContext';
 import { invokeLLM } from '@/lib/ai';
 import { recordPrismFeature } from '@/lib/prismOmniSync';
@@ -9,6 +9,11 @@ import { playTTS, stopTTS, useTTSActive } from '@/utils/tts';
 interface PureZeroData {
   title: string;
   cleansingCode: string;
+  fusionMatrix: {
+    hooponoponoElement: string;
+    letterElement: string;
+    transmutationAlchemy: string;
+  };
   hoponoponoWhisper: {
     sorry: string;
     forgive: string;
@@ -21,8 +26,13 @@ interface PureZeroData {
 }
 
 const FALLBACK_ZERO: PureZeroData = {
-  title: "감정 소각 & 순수 백지 환생 (Pure Zero Transmutation)",
+  title: "호오포노포노 × 비밀편지 영점 회귀 융합 매트릭스",
   cleansingCode: "HOOPONOPONO-ZERO-LIMIT-BLUEBIRD",
+  fusionMatrix: {
+    hooponoponoElement: "4대 정화 파동 (미안합니다 · 용서하세요 · 고맙습니다 · 사랑합니다)",
+    letterElement: "내면의 상처와 억압된 감정의 고백 편지",
+    transmutationAlchemy: "기억의 매듭을 푸른 417Hz 불꽃으로 승화시켜 0(Zero State) 백지로 재탄생"
+  },
   hoponoponoWhisper: {
     sorry: "나의 무의식 속에 쌓여 있던 기억과 고통의 패턴들에 대해 미안합니다.",
     forgive: "스스로를 자책하고 타인을 원망했던 과거의 마음을 너그럽게 용서합니다.",
@@ -42,9 +52,43 @@ export function BluebirdSynergySection() {
   const [isIncinerated, setIsIncinerated] = useState<boolean>(false);
   const [pureZeroData, setPureZeroData] = useState<PureZeroData>(FALLBACK_ZERO);
   const [copied, setCopied] = useState<boolean>(false);
-  const [savedToast, setSavedToast] = useState<boolean>(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState<boolean>(false);
   const isTTSActive = useTTSActive();
+
+  // Dual Menu State Integration (Left: Ho'oponopono, Right: Letter)
+  const [sorryCount, setSorryCount] = useState<number>(() => Number(localStorage.getItem('hoponopono_sorry_count') || 12));
+  const [forgiveCount, setForgiveCount] = useState<number>(() => Number(localStorage.getItem('hoponopono_forgive_count') || 15));
+  const [thankCount, setThankCount] = useState<number>(() => Number(localStorage.getItem('hoponopono_thank_count') || 28));
+  const [loveCount, setLoveCount] = useState<number>(() => Number(localStorage.getItem('hoponopono_love_count') || 34));
+
+  const totalHooponoponoCleansings = sorryCount + forgiveCount + thankCount + loveCount;
+
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const oscRef = useRef<OscillatorNode | null>(null);
+
+  const incrementWord = (type: 'sorry' | 'forgive' | 'thank' | 'love') => {
+    if (type === 'sorry') {
+      const next = sorryCount + 1;
+      setSorryCount(next);
+      localStorage.setItem('hoponopono_sorry_count', String(next));
+    } else if (type === 'forgive') {
+      const next = forgiveCount + 1;
+      setForgiveCount(next);
+      localStorage.setItem('hoponopono_forgive_count', String(next));
+    } else if (type === 'thank') {
+      const next = thankCount + 1;
+      setThankCount(next);
+      localStorage.setItem('hoponopono_thank_count', String(next));
+    } else if (type === 'love') {
+      const next = loveCount + 1;
+      setLoveCount(next);
+      localStorage.setItem('hoponopono_love_count', String(next));
+    }
+  };
+
+  const handleLoadSampleLetter = (text: string) => {
+    setConfessionText(text);
+  };
 
   const audioCtxRef = useRef<AudioContext | null>(null);
   const oscRef = useRef<OscillatorNode | null>(null);
@@ -107,14 +151,20 @@ export function BluebirdSynergySection() {
     if (!confessionText.trim()) return;
     setIsLoading(true);
 
-    const systemPrompt = "당신은 블루버드의 호오포노포노 & 감정 소각 연금술 마스터입니다. 사용자가 털어놓은 아픔/후회/상처의 비밀쪽지를 호오포노포노 4대 정화 언어(미안합니다, 용서하세요, 고맙습니다, 사랑합니다)와 융합하여 완전히 0(Zero State)으로 승화시키는 정화의 계시를 생성하세요.";
+    const systemPrompt = "당신은 블루버드의 호오포노포노 & 감정 소각 연금술 마스터입니다. 좌측 메뉴의 '호오포노포노 4대 정화 언어(미안합니다, 용서하세요, 고맙습니다, 사랑합니다)'와 우측 메뉴의 '비밀 편지(아픔/후회/상처)'를 완벽히 융합하여 0(Zero State) 순수 백지로 승화시키는 정화의 계시와 융합 매트릭스를 생성하세요.";
     const userPrompt = `[비밀 편지 내용]: "${confessionText.trim()}"
 [사용자 닉네임]: "${userProfile?.basic?.nickname || '순수한 영혼'}"
+[현재 호오포노포노 정화 수행 횟수]: 총 ${totalHooponoponoCleansings}회 (미안합니다 ${sorryCount}회, 용서하세요 ${forgiveCount}회, 고맙습니다 ${thankCount}회, 사랑합니다 ${loveCount}회)
 
 반드시 아래 JSON 스키마로만 엄격하게 응답하세요:
 {
   "title": "감정 소각 정화 명칭 (예: 417Hz 영점 회귀 백지 환생)",
   "cleansingCode": "영문 대문자 시길 코드",
+  "fusionMatrix": {
+    "hooponoponoElement": "호오포노포노 4대 정화 파동이 편지에 미치는 구체적 정화 원리 (1~2문장)",
+    "letterElement": "편지에 담긴 감정의 근원과 얽힘에 대한 진단 (1~2문장)",
+    "transmutationAlchemy": "양쪽 메뉴가 융합되어 영점(Zero)으로 승화된 최종 결과 (1~2문장)"
+  },
   "hoponoponoWhisper": {
     "sorry": "이 상황과 기억에 건네는 '미안합니다' 정화 문장 1개",
     "forgive": "자신과 대상을 감싸안는 '용서하세요' 정화 문장 1개",
@@ -220,40 +270,132 @@ export function BluebirdSynergySection() {
 
       {/* Secret Letter Form */}
       {!isIncinerated ? (
-        <div className="glass p-6 sm:p-8 rounded-[32px] border border-white/10 space-y-6">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-bold text-sky-300 flex items-center gap-2 font-mono uppercase tracking-wider">
-              <Mail size={16} className="text-sky-400" />
-              <span>1. 소각하고 싶은 마음의 짐, 상처, 혹은 비밀스러운 고백 작성</span>
-            </label>
-            <span className="text-[10px] text-white/40 font-sans">작성 후 즉시 정화 소각</span>
+        <div className="space-y-6">
+          {/* Dual Menu Fusion Monitor */}
+          <div className="p-5 sm:p-6 rounded-[28px] bg-gradient-to-r from-sky-950/40 via-blue-950/30 to-indigo-950/40 border border-sky-500/20 backdrop-blur-xl">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <Layers className="text-sky-400" size={16} />
+                <span className="text-xs font-bold text-sky-200 font-mono tracking-wider uppercase">
+                  DUAL-MENU SYNERGY MATRIX : HO'OPONOPONO × SECRET LETTER
+                </span>
+              </div>
+              <span className="text-[10px] text-white/50 font-mono">
+                누적 정화 {totalHooponoponoCleansings}회 연동
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Left Menu Status: Ho'oponopono */}
+              <div className="p-4 rounded-2xl bg-black/30 border border-sky-400/20 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-sky-300 flex items-center gap-1.5">
+                    <Heart size={13} className="text-sky-400" />
+                    좌측 메뉴 : 호오포노포노 4대 정화 실시간 게이지
+                  </span>
+                  <span className="text-[10px] text-sky-400 font-mono">클릭 시 정화 누적</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => incrementWord('sorry')}
+                    className="p-2 rounded-xl bg-white/[0.04] hover:bg-sky-500/20 border border-white/5 hover:border-sky-400/40 text-left transition-all group cursor-pointer"
+                  >
+                    <div className="text-[9px] text-white/50 group-hover:text-sky-300">미안합니다</div>
+                    <div className="text-xs font-bold text-white font-mono">{sorryCount}회</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => incrementWord('forgive')}
+                    className="p-2 rounded-xl bg-white/[0.04] hover:bg-sky-500/20 border border-white/5 hover:border-sky-400/40 text-left transition-all group cursor-pointer"
+                  >
+                    <div className="text-[9px] text-white/50 group-hover:text-sky-300">용서하세요</div>
+                    <div className="text-xs font-bold text-white font-mono">{forgiveCount}회</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => incrementWord('thank')}
+                    className="p-2 rounded-xl bg-white/[0.04] hover:bg-sky-500/20 border border-white/5 hover:border-sky-400/40 text-left transition-all group cursor-pointer"
+                  >
+                    <div className="text-[9px] text-white/50 group-hover:text-sky-300">고맙습니다</div>
+                    <div className="text-xs font-bold text-white font-mono">{thankCount}회</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => incrementWord('love')}
+                    className="p-2 rounded-xl bg-white/[0.04] hover:bg-sky-500/20 border border-white/5 hover:border-sky-400/40 text-left transition-all group cursor-pointer"
+                  >
+                    <div className="text-[9px] text-white/50 group-hover:text-sky-300">사랑합니다</div>
+                    <div className="text-xs font-bold text-white font-mono">{loveCount}회</div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Right Menu Status: Secret Letter Preset */}
+              <div className="p-4 rounded-2xl bg-black/30 border border-indigo-400/20 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-indigo-300 flex items-center gap-1.5">
+                    <Mail size={13} className="text-indigo-400" />
+                    우측 메뉴 : 비밀 편지 고백 프리셋
+                  </span>
+                  <span className="text-[10px] text-indigo-400 font-mono">빠른 선택</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    "지나간 과거에 대한 후회와 자책",
+                    "가까운 관계에서 받은 깊은 서운함",
+                    "미래에 대한 불안과 완벽주의 압박",
+                    "스스로를 인정하지 못했던 미안함"
+                  ].map((preset, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleLoadSampleLetter(preset)}
+                      className="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-indigo-500/20 border border-white/10 hover:border-indigo-400/40 text-[10px] text-white/70 hover:text-white transition-all cursor-pointer"
+                    >
+                      + {preset}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
 
-          <textarea
-            rows={5}
-            value={confessionText}
-            onChange={(e) => setConfessionText(e.target.value)}
-            placeholder="누구에게도 말하지 못했던 마음의 상처, 스스로에 대한 자책, 후회, 원망, 혹은 서운했던 감정을 이곳에 모두 털어놓으세요. 당신이 누르는 순간 푸른 불꽃 속에서 영원히 소각됩니다..."
-            className="w-full p-4 rounded-2xl bg-black/40 border border-white/10 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-sky-400/60 leading-relaxed resize-none font-sans"
-          />
+          <div className="glass p-6 sm:p-8 rounded-[32px] border border-white/10 space-y-6">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-sky-300 flex items-center gap-2 font-mono uppercase tracking-wider">
+                <Mail size={16} className="text-sky-400" />
+                <span>호오포노포노 주문과 융합하여 소각할 마음의 비밀 편지</span>
+              </label>
+              <span className="text-[10px] text-white/40 font-sans">양쪽 메뉴 융합 소각</span>
+            </div>
 
-          <button
-            onClick={handleIncinerateAndTransmute}
-            disabled={isLoading || !confessionText.trim()}
-            className="w-full py-4 rounded-2xl bg-gradient-to-r from-sky-500 via-blue-500 to-indigo-500 hover:from-sky-400 hover:to-indigo-400 text-white font-black text-sm tracking-wider uppercase transition-all shadow-[0_0_30px_rgba(14,165,233,0.4)] hover:shadow-[0_0_40px_rgba(14,165,233,0.6)] active:scale-[0.99] flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50"
-          >
-            {isLoading ? (
-              <>
-                <RefreshCw size={18} className="animate-spin text-white" />
-                <span>푸른 불꽃으로 소각 및 백지 환생 중...</span>
-              </>
-            ) : (
-              <>
-                <Flame size={18} className="text-amber-300 animate-pulse" />
-                <span>〈감정 소각 & 순수 백지 환생〉 단행하기</span>
-              </>
-            )}
-          </button>
+            <textarea
+              rows={5}
+              value={confessionText}
+              onChange={(e) => setConfessionText(e.target.value)}
+              placeholder="누구에게도 말하지 못했던 마음의 상처, 스스로에 대한 자책, 후회, 원망, 혹은 서운했던 감정을 이곳에 모두 털어놓으세요. 호오포노포노 4대 정화 파동과 함께 푸른 불꽃 속에서 영원히 소각됩니다..."
+              className="w-full p-4 rounded-2xl bg-black/40 border border-white/10 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-sky-400/60 leading-relaxed resize-none font-sans"
+            />
+
+            <button
+              onClick={handleIncinerateAndTransmute}
+              disabled={isLoading || !confessionText.trim()}
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-sky-500 via-blue-500 to-indigo-500 hover:from-sky-400 hover:to-indigo-400 text-white font-black text-sm tracking-wider uppercase transition-all shadow-[0_0_30px_rgba(14,165,233,0.4)] hover:shadow-[0_0_40px_rgba(14,165,233,0.6)] active:scale-[0.99] flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50"
+            >
+              {isLoading ? (
+                <>
+                  <RefreshCw size={18} className="animate-spin text-white" />
+                  <span>호오포노포노 4대 파동 × 비밀 편지 융합 소각 중...</span>
+                </>
+              ) : (
+                <>
+                  <Flame size={18} className="text-amber-300 animate-pulse" />
+                  <span>〈호오포노포노 × 비밀 편지 융합 소각〉 단행하기</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       ) : (
         /* Reborn Pure Zero Card */
@@ -307,6 +449,30 @@ export function BluebirdSynergySection() {
               </button>
             </div>
           </div>
+
+          {/* Fusion Matrix Report */}
+          {pureZeroData.fusionMatrix && (
+            <div className="p-5 rounded-3xl bg-sky-950/30 border border-sky-400/30 space-y-3">
+              <div className="flex items-center gap-2 text-sky-300 text-xs font-bold font-mono uppercase tracking-wider">
+                <Layers size={14} className="text-sky-400" />
+                <span>양쪽 메뉴 융합 매트릭스 (Fusion Matrix)</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 space-y-1">
+                  <div className="text-[10px] font-bold text-sky-400">좌측 : 호오포노포노 정화 파동</div>
+                  <div className="text-xs text-white/80 font-sans leading-relaxed">{pureZeroData.fusionMatrix.hooponoponoElement}</div>
+                </div>
+                <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 space-y-1">
+                  <div className="text-[10px] font-bold text-indigo-400">우측 : 비밀 편지 감정 진단</div>
+                  <div className="text-xs text-white/80 font-sans leading-relaxed">{pureZeroData.fusionMatrix.letterElement}</div>
+                </div>
+                <div className="p-3.5 rounded-2xl bg-black/40 border border-sky-500/30 space-y-1">
+                  <div className="text-[10px] font-bold text-teal-400">융합 : 영점 환생 연금술</div>
+                  <div className="text-xs text-white/80 font-sans leading-relaxed">{pureZeroData.fusionMatrix.transmutationAlchemy}</div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Incineration Result Oracle */}
           <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-sky-900/30 via-zinc-900/50 to-blue-900/20 border border-sky-400/40 relative shadow-inner space-y-3">

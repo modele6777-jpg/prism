@@ -230,10 +230,17 @@ export const INITIAL_PRISM_ROUTES: PrismRouteDefinition[] = [
   },
 ];
 
-// 메모리 내 동적 레지스트리
-const registryMap = new Map<string, PrismRouteDefinition>(
-  INITIAL_PRISM_ROUTES.map((r) => [r.id, { ...r }])
-);
+// 메모리 내 동적 레지스트리 (지연 초기화로 모듈 평가 순환 참조 및 TDZ 원천 차단)
+let registryMap: Map<string, PrismRouteDefinition> | null = null;
+
+function getRegistryMap(): Map<string, PrismRouteDefinition> {
+  if (!registryMap) {
+    registryMap = new Map<string, PrismRouteDefinition>(
+      INITIAL_PRISM_ROUTES.map((r) => [r.id, { ...r }])
+    );
+  }
+  return registryMap;
+}
 
 /**
  * 신규 기능 또는 페이지 동적 등록 API
@@ -241,7 +248,7 @@ const registryMap = new Map<string, PrismRouteDefinition>(
  *   빅뱅 버튼과 웜홀 스펙트럼, 룬 매핑, 내비게이션 경로가 자동으로 확장됩니다.
  */
 export function registerPrismRoute(route: PrismRouteDefinition): void {
-  registryMap.set(route.id, { ...route, isActive: route.isActive ?? true });
+  getRegistryMap().set(route.id, { ...route, isActive: route.isActive ?? true });
   // 리스너나 이벤트가 필요한 경우 글로벌 이벤트 발송
   if (typeof window !== 'undefined') {
     window.dispatchEvent(
@@ -255,7 +262,7 @@ export function registerPrismRoute(route: PrismRouteDefinition): void {
  * - 사라진 페이지나 기능의 ID를 비활성화하여 빅뱅 버튼의 도약 대상에서 원천 배제합니다.
  */
 export function deactivatePrismRoute(id: string): void {
-  const existing = registryMap.get(id);
+  const existing = getRegistryMap().get(id);
   if (existing) {
     existing.isActive = false;
   }
@@ -265,7 +272,7 @@ export function deactivatePrismRoute(id: string): void {
  * 현재 활성화된 실존 정식 페이지/기능 목록 반환
  */
 export function getActivePrismRoutes(): PrismRouteDefinition[] {
-  return Array.from(registryMap.values()).filter((r) => r.isActive);
+  return Array.from(getRegistryMap().values()).filter((r) => r.isActive);
 }
 
 /**
@@ -328,7 +335,7 @@ export function getPrismRouteByPathOrId(pathOrId: string): PrismRouteDefinition 
   const activeRoutes = getActivePrismRoutes();
 
   // 1. ID 매칭
-  const byId = registryMap.get(idNorm);
+  const byId = getRegistryMap().get(idNorm);
   if (byId && byId.isActive) return byId;
 
   // 2. 경로 및 별칭 매칭
@@ -340,35 +347,11 @@ export function getPrismRouteByPathOrId(pathOrId: string): PrismRouteDefinition 
   return undefined;
 }
 
-import {
-  peekShuffledWormholeDestination,
-  commitShuffledWormholeDestination,
-  destinationToPrismRoute,
-  getDailyWormholeStats,
-  resetActiveWormholePeek,
-} from './omniWarp/wormholeShuffleEngine';
-
-export {
-  peekShuffledWormholeDestination,
-  commitShuffledWormholeDestination,
-  destinationToPrismRoute,
-  getDailyWormholeStats,
-  resetActiveWormholePeek,
-};
-
 /**
- * 🌀 웜홀(Wormhole) 전용 데일리 셔플 순환 목적지 반환
- * - 하루에 한 번 자정(YYYY-MM-DD)을 기준으로 자동 초기화
- * - 그날 이미 다녀간 기능이나 페이지는 전체 풀을 한 바퀴 완주하기 전까지 다시 나오지 않음
- * - 안전 캐싱을 통해 홀드 중 프레임 깜빡임 없이 동일 목적지를 안정적으로 유지
+ * 🌀 웜홀(Wormhole) 전용 데일리 셔플 순환 목적지 반환 (기본 폴백 어댑터)
  */
 export function getRandomWormholeDestination(currentLocation?: string): PrismRouteDefinition {
-  try {
-    const { dest } = peekShuffledWormholeDestination(currentLocation);
-    return destinationToPrismRoute(dest);
-  } catch (err) {
-    console.warn('[WormholeRegistry] Shuffle peek failed, falling back to static oracle:', err);
-    const oracleFallback = INITIAL_PRISM_ROUTES.find((r) => r.id === 'trinity' && r.isActive);
-    return oracleFallback || INITIAL_PRISM_ROUTES[3];
-  }
+  const routes = getActivePrismRoutes();
+  const oracleFallback = routes.find((r) => r.id === 'trinity' && r.isActive);
+  return oracleFallback || routes[0] || INITIAL_PRISM_ROUTES[3];
 }

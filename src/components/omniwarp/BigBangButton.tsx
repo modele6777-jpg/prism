@@ -10,7 +10,7 @@ import {
   getAllActiveWormholeApps,
 } from '@/lib/omniWarp/wormholeSpectrum';
 import { getTossRule } from '@/lib/prismTossRegistry';
-import { getRandomWormholeDestination, resolveCanonicalPath, isValidPrismPath } from '@/lib/prismRouteRegistry';
+import { resolveCanonicalPath, isValidPrismPath } from '@/lib/prismRouteRegistry';
 import {
   commitShuffledWormholeDestination,
   peekShuffledWormholeDestination,
@@ -559,8 +559,17 @@ export function BigBangButton() {
 
       const { dest: randomDest, safePath, stats } = commitShuffledWormholeDestination(location);
 
-      // 🛡️ 실존 페이지 검증: 존재하지 않는 경로 및 프리즘 홈('/') 이동 원천 차단
-      if (!isValidPrismPath(safePath) || safePath === '/' || safePath === '/universe' || safePath === '/ecpr' || safePath === '/synergy' || safePath === '/aegis') {
+      // 🛡️ 실존 페이지 및 프로필/특수 페이지 검증: 존재하지 않는 경로, 프로필 및 프리즘 홈('/') 이동 원천 차단
+      if (
+        !isValidPrismPath(safePath) ||
+        safePath === '/' ||
+        safePath === '/universe' ||
+        safePath === '/ecpr' ||
+        safePath === '/synergy' ||
+        safePath === '/aegis' ||
+        isDisallowedWarpDestination(randomDest.id) ||
+        isDisallowedWarpDestination(safePath)
+      ) {
         console.warn(`[Wormhole] Blocked navigation to non-existent or home path: ${safePath}`);
         setActivePhase('idle');
         setGauge(0);

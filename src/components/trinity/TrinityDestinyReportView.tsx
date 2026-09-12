@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Compass,
@@ -93,6 +93,14 @@ export function TrinityDestinyReportView({ onConsult }: TrinityDestinyReportView
   const [questionInput, setQuestionInput] = useState('');
   const [aiAnswers, setAiAnswers] = useState<Array<{ q: string; a: string; time: string }>>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // 대화 추가 시 하단 자동 스크롤
+  useEffect(() => {
+    if (aiAnswers.length > 0 || isAiLoading) {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [aiAnswers, isAiLoading]);
 
   // 사주 계산 결과 (메모이제이션)
   const saju = useMemo(() => {
@@ -181,12 +189,12 @@ ${saju.systemPromptSummary}
 
       const cleanReply = reply.replace(/```/g, '').trim();
       setAiAnswers((prev) => [
+        ...prev,
         {
           q,
           a: cleanReply,
           time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: true }),
         },
-        ...prev,
       ]);
     } catch (err) {
       console.error('Failed to get saju AI advice:', err);
@@ -1065,6 +1073,8 @@ ${saju.systemPromptSummary}
               <span>사주 원국과 오행 흐름을 종합하여 통찰을 정리하고 있습니다...</span>
             </div>
           )}
+
+          <div ref={chatEndRef} />
         </div>
 
         {/* 퀵 추천 질문 칩 */}

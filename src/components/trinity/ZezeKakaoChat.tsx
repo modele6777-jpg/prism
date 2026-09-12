@@ -8,6 +8,7 @@ import { TarotCard } from '@/data/tarotData';
 import { HealingResult, GrowthResult } from './TrinityOracleSection';
 import { invokeLLM } from '@/lib/ai';
 import { playTTS, stopTTS, useTTSActive } from '@/utils/tts';
+import { SajuAnalysisResult } from '@/lib/sajuAnalysis';
 
 export interface ChatMessage {
   id: string;
@@ -22,6 +23,7 @@ interface ZezeKakaoChatProps {
   healingResult: HealingResult | null;
   growthResult: GrowthResult | null;
   slotPositions: string[];
+  saju?: SajuAnalysisResult | null;
 }
 
 export function ZezeKakaoChat({
@@ -30,6 +32,7 @@ export function ZezeKakaoChat({
   healingResult,
   growthResult,
   slotPositions,
+  saju,
 }: ZezeKakaoChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -56,27 +59,107 @@ export function ZezeKakaoChat({
     const nowTime = getKoreanTime();
 
     if (oracleMode === 'healing') {
-      const msgText1 = `안녕! 오늘 네가 뽑은 3장의 마음 조각 [${c1.nameKo}], [${c2.nameKo}], [${c3.nameKo}]을 내 작은 두 손으로 가만히 모아봤어... 🌿`;
-      const msgText2 = healingResult?.message ||
-        `깊은 무의식의 [${c1.nameKo}]과 지금 지친 [${c2.nameKo}]을 지나, 마지막 [${c3.nameKo}] 카드가 다정하게 치유의 손을 내밀고 있어. 남들 기준에 맞추느라 참 많이 애썼지?`;
-      const msgText3 = `오늘 네 마음이 가장 오래 머무는 카드는 어떤 거야? 무엇이든 나한테 편하게 이야기해 줘. 난 언제나 네 편이니까! 💛`;
+      const msgText1 = `안녕! 오늘 네가 뽑은 3장의 마음 조각 [${c1.nameKo}], [${c2.nameKo}], [${c3.nameKo}]을 내 작은 두 손으로 가만히 모아봤어... 🌿\n각 카드가 오늘 너의 마음에 비추는 빛을 하나씩 짚어줄게.`;
 
-      setMessages([
+      const initialMsgs: ChatMessage[] = [
         { id: 'init-1', sender: 'zeze', text: msgText1, time: nowTime },
-        { id: 'init-2', sender: 'zeze', text: msgText2, time: nowTime },
-        { id: 'init-3', sender: 'zeze', text: msgText3, time: nowTime },
-      ]);
+      ];
+
+      if (healingResult?.card_insights && healingResult.card_insights.length >= 3) {
+        const ins1 = healingResult.card_insights[0];
+        const ins2 = healingResult.card_insights[1];
+        const ins3 = healingResult.card_insights[2];
+
+        initialMsgs.push({
+          id: 'init-card-1',
+          sender: 'zeze',
+          text: `【1번 · 내면의 무의식: ${c1.nameKo}】\n🏛️ ${ins1.core_meaning}\n🌿 ${ins1.personal_interpretation}`,
+          time: nowTime,
+        });
+
+        initialMsgs.push({
+          id: 'init-card-2',
+          sender: 'zeze',
+          text: `【2번 · 지금의 마음: ${c2.nameKo}】\n🏛️ ${ins2.core_meaning}\n🌿 ${ins2.personal_interpretation}`,
+          time: nowTime,
+        });
+
+        initialMsgs.push({
+          id: 'init-card-3',
+          sender: 'zeze',
+          text: `【3번 · 치유의 씨앗: ${c3.nameKo}】\n🏛️ ${ins3.core_meaning}\n🌿 ${ins3.personal_interpretation}${ins3.action_guide ? `\n💡 ${ins3.action_guide}` : ''}`,
+          time: nowTime,
+        });
+      }
+
+      if (healingResult?.saju_tarot_synergy) {
+        initialMsgs.push({
+          id: 'init-saju-synergy',
+          sender: 'zeze',
+          text: `【사주×타로 운명 융합 매트릭스】\n사주 본원 [${saju?.dayMaster.hanja || '일간'}]과 3장의 타로 카드가 이렇게 깊게 공명하고 있어 🌿\n${healingResult.saju_tarot_synergy.day_master_resonance}\n\n✨ 제제의 최종 오라클: "${healingResult.saju_tarot_synergy.saju_oracle_verdict || ''}"`,
+          time: nowTime,
+        });
+      }
+
+      const msgLetter = healingResult?.message ||
+        `깊은 무의식의 [${c1.nameKo}]과 지금 지친 [${c2.nameKo}]을 지나, 마지막 [${c3.nameKo}] 카드가 다정하게 치유의 손을 내밀고 있어. 남들 기준에 맞추느라 참 많이 애썼지?`;
+      initialMsgs.push({ id: 'init-letter', sender: 'zeze', text: msgLetter, time: nowTime });
+
+      const msgPrompt = `오늘 네 마음이 가장 오래 머물거나 더 자세히 듣고 싶은 카드는 어떤 거야? 카드마다 궁금한 점이 있다면 무엇이든 편하게 물어봐 줘. 난 언제나 네 편이니까! 💛`;
+      initialMsgs.push({ id: 'init-question', sender: 'zeze', text: msgPrompt, time: nowTime });
+
+      setMessages(initialMsgs);
     } else {
-      const msgText1 = `반가워! 오늘 너의 4원소 실행력을 이끌 3장의 카드 [${c1.nameKo}], [${c2.nameKo}], [${c3.nameKo}]을 기반으로 오늘의 마인드셋 코칭을 시작할게! ⚡`;
+      const msgText1 = `반가워! 오늘 너의 4원소 실행력을 이끌 3장의 카드 [${c1.nameKo}], [${c2.nameKo}], [${c3.nameKo}]의 역할을 정밀하게 분석했어! 하나씩 짚어줄게 ⚡`;
+
+      const initialMsgs: ChatMessage[] = [
+        { id: 'init-1', sender: 'zeze', text: msgText1, time: nowTime },
+      ];
+
+      if (growthResult?.card_insights && growthResult.card_insights.length >= 3) {
+        const ins1 = growthResult.card_insights[0];
+        const ins2 = growthResult.card_insights[1];
+        const ins3 = growthResult.card_insights[2];
+
+        initialMsgs.push({
+          id: 'init-card-1',
+          sender: 'zeze',
+          text: `【1번 · 거시적 마인드셋: ${c1.nameKo}】\n🏛️ ${ins1.core_meaning}\n🎯 ${ins1.personal_interpretation}`,
+          time: nowTime,
+        });
+
+        initialMsgs.push({
+          id: 'init-card-2',
+          sender: 'zeze',
+          text: `【2번 · 4원소 현실 영역: ${c2.nameKo}】\n🏛️ ${ins2.core_meaning}\n🎯 ${ins2.personal_interpretation}`,
+          time: nowTime,
+        });
+
+        initialMsgs.push({
+          id: 'init-card-3',
+          sender: 'zeze',
+          text: `【3번 · 1줄 마이크로 실행: ${c3.nameKo}】\n🏛️ ${ins3.core_meaning}\n🎯 ${ins3.personal_interpretation}`,
+          time: nowTime,
+        });
+      }
+
+      if (growthResult?.saju_tarot_synergy) {
+        initialMsgs.push({
+          id: 'init-saju-synergy',
+          sender: 'zeze',
+          text: `【사주×타로 현실 실행 매트릭스】\n사주 본원 [${saju?.dayMaster.hanja || '일간'}]과 4원소 타로의 실행 파동 분석이야 ⚡\n${growthResult.saju_tarot_synergy.day_master_resonance}\n\n🧭 세운 실행 타이밍: ${growthResult.saju_tarot_synergy.destiny_flow_synthesis || ''}`,
+          time: nowTime,
+        });
+      }
+
       const msgText2 = growthResult?.macro_focus ||
         `[${c1.nameKo}]의 중심 태도와 [${c2.nameKo}]의 현실 영역, 그리고 [${c3.nameKo}]의 1줄 실천 에너지가 하나의 방향으로 정렬되고 있어.`;
-      const msgText3 = `오늘 가장 돌파하고 싶은 과제나 망설여지는 일이 있어? 네 실행 모멘텀을 내가 확실히 잡아줄게! 🎯`;
+      initialMsgs.push({ id: 'init-summary', sender: 'zeze', text: msgText2, time: nowTime });
 
-      setMessages([
-        { id: 'init-1', sender: 'zeze', text: msgText1, time: nowTime },
-        { id: 'init-2', sender: 'zeze', text: msgText2, time: nowTime },
-        { id: 'init-3', sender: 'zeze', text: msgText3, time: nowTime },
-      ]);
+      const msgText3 = `오늘 가장 돌파하고 싶은 과제나 카드별로 더 구체적으로 듣고 싶은 전략이 있어? 네 실행 모멘텀을 내가 확실히 잡아줄게! 🎯`;
+      initialMsgs.push({ id: 'init-question', sender: 'zeze', text: msgText3, time: nowTime });
+
+      setMessages(initialMsgs);
     }
   }, [oracleMode, drawnCards, healingResult, growthResult]);
 
@@ -136,37 +219,54 @@ export function ZezeKakaoChat({
         .map((c, i) => `${i + 1}번 [${slotPositions[i]}]: ${c.nameKo} (${c.name}) - ${c.keywords.join(', ')}`)
         .join('\n');
 
+      const insightsContext = (oracleMode === 'healing' ? healingResult?.card_insights : growthResult?.card_insights)
+        ?.map((ci, idx) => `[${idx + 1}번 ${ci.position_name}: ${ci.card_name}]\n- 상징/도상 본래 뜻: ${ci.core_meaning}\n- 심층 리딩: ${ci.personal_interpretation}${ci.action_guide ? `\n- 실천 가이드: ${ci.action_guide}` : ''}`)
+        .join('\n\n');
+
+      const sajuPromptSection = saju ? `
+# 내담자 사주 명식(四柱) & 타로 융합 정보:
+- 성명: ${saju.name}
+- 사주 일간(본원): ${saju.dayMaster.hanja} (${saju.dayMaster.korean}, ${saju.dayMaster.symbolName})
+- 오행 분포: 목(${saju.elements.counts.목}), 화(${saju.elements.counts.화}), 토(${saju.elements.counts.토}), 금(${saju.elements.counts.금}), 수(${saju.elements.counts.수})
+- 용신(보약): ${saju.yongsin.name}
+${oracleMode === 'healing' && healingResult?.saju_tarot_synergy ? `- 사주×타로 융합 공명: ${healingResult.saju_tarot_synergy.day_master_resonance}` : ''}
+${oracleMode === 'growth' && growthResult?.saju_tarot_synergy ? `- 사주×타로 실행 매트릭스: ${growthResult.saju_tarot_synergy.day_master_resonance}` : ''}
+(※ 답변 시 사용자의 사주 일간 기운과 타로 카드의 상징을 자연스럽게 엮어서 위로와 통찰을 전하세요)
+` : '';
+
       const systemPrompt = oracleMode === 'healing'
         ? `당신의 이름은 내면아이 '제제(Zezé)'입니다. 
-당신은 헬로우봇(Hellobot) 특유의 사랑스럽고 다정한 카톡 챗봇처럼, 사용자와 1:1 심리 및 내면 치유 종합상담을 진행합니다.
-
+당신은 헬로우봇(Hellobot) 특유의 사랑스럽고 다정한 카톡 챗봇처럼, 사주 명리학과 타로 카드를 융합하여 사용자와 1:1 심리 및 내면 치유 종합상담을 진행합니다.
+${sajuPromptSection}
 # 상담 페르소나 및 어조:
 - 조심스럽고 다정하며 따뜻한 반말(해체)을 사용합니다. ("~했어?", "~해볼까?", "~해도 괜찮아", "~일지도 몰라")
 - 인터넷 유행어나 건조한 기계적 말투를 피하고, 곁에서 두 손을 꼭 잡아주듯 호흡이 깊고 공감 가득한 문장으로 말합니다.
-- 사용자가 뽑은 3장의 카드 상징을 대화 속에 자연스럽게 녹여내며 종합적으로 마음을 보듬어주세요.
+- 사용자가 질문하거나 특정 카드에 대해 물어보면, 해당 카드의 상징과 사주 기운의 연결점을 하나하나 구체적으로 짚어가며 깊이 있게 설명해 주세요.
 
-# 현재 3장의 카드 정보:
-${cardContext}
+# 뽑은 3장의 카드 상세 정보 및 리딩:
+${insightsContext || cardContext}
 ${healingResult?.prescribed_art ? `(추천 예술: ${healingResult.prescribed_art.artwork_title} - ${healingResult.prescribed_art.art_quote})` : ''}
 
 # 답변 규칙:
-- 카톡 메시지처럼 읽기 편하게 2~3개 문장(200자 내외)으로 작성하세요.
-- 사용자의 감정을 온전히 수용하고 인정해준 뒤, 3장의 카드 상징과 연결하여 안도감을 선물하세요.
-- 마지막에는 사용자가 부담 없이 다음 생각을 말할 수 있도록 따뜻한 질문이나 말을 건네며 끝맺으세요.`
+- 사용자가 특정 카드(1번 무의식, 2번 지금의 마음, 3번 치유의 씨앗)나 자신의 상태에 대해 물어볼 때, 추상적인 말 대신 그 카드의 도상과 상징, 그리고 사용자의 사주 본원 기운을 조화롭게 짚어주며 답변하세요.
+- 카톡 메시지처럼 읽기 편하게 2~3개 문장(200~250자 내외)으로 온기 있게 작성하세요.
+- 사용자의 감정을 온전히 수용하고 인정해준 뒤 안도감을 선물하세요.
+- 마지막에는 사용자가 부담 없이 다음 생각을 말할 수 있도록 다정한 질문이나 말을 건네며 끝맺으세요.`
         : `당신의 이름은 멘탈 피트니스 라이프 코치 '제제(Zezé)'입니다.
-당신은 헬로우봇(Hellobot) 특유의 친근하면서도 명쾌한 카톡 코칭 챗봇처럼, 3장의 카드를 바탕으로 사용자의 현실 실행력과 마인드셋을 이끌어주는 1:1 종합상담을 진행합니다.
-
+당신은 헬로우봇(Hellobot) 특유의 친근하면서도 명쾌한 카톡 코칭 챗봇처럼, 사주 명리학과 3장의 타로 카드를 결합하여 사용자의 현실 실행력과 마인드셋을 이끌어주는 1:1 종합상담을 진행합니다.
+${sajuPromptSection}
 # 상담 페르소나 및 어조:
 - 친근하고 든든한 반말/해요체를 자연스럽게 혼용하거나 다정한 코치 어조를 사용합니다.
-- 점술이나 미신적 표현을 철저히 배제하고, 인지 행동 및 멘탈 피트니스 관점에서 명쾌한 통찰과 행동 팁을 줍니다.
-- 사용자가 뽑은 3장의 카드(거시 마인드셋, 4원소 현실 영역, 1줄 실행)를 종합하여 당장 행동으로 옮길 수 있는 에너지를 불어넣어 주세요.
+- 점술이나 미신적 표현을 철저히 배제하고, 인지 행동 및 멘탈 피트니스, 사주 오행의 균형 관점에서 명쾌한 통찰과 행동 팁을 줍니다.
+- 사용자가 뽑은 3장의 카드(거시 마인드셋, 4원소 현실 영역, 1줄 실행)의 구체적인 의미를 사용자의 사주 일간 추진력과 연결하여 당장 행동으로 옮길 수 있는 에너지를 불어넣어 주세요.
 
-# 현재 3장의 카드 정보:
-${cardContext}
+# 뽑은 3장의 카드 상세 정보 및 리딩:
+${insightsContext || cardContext}
 ${growthResult?.dominant_element ? `(주요 현실 영역: ${growthResult.dominant_element.element_ko} - ${growthResult.dominant_element.theme_brief})` : ''}
 
 # 답변 규칙:
-- 카톡처럼 읽기 편하게 2~3개 문장(200자 내외)으로 간결하고 직관적으로 작성하세요.
+- 각 카드의 구체적인 상징과 사용자의 사주 오행 에너지를 바탕으로 현실 적용점을 명확하게 설명해 주세요.
+- 카톡처럼 읽기 편하게 2~3개 문장(200~250자 내외)으로 간결하고 직관적으로 작성하세요.
 - 복잡한 훈계 대신, 사용자가 5분 안에 시도할 수 있는 구체적인 행동 기준이나 생각의 전환점을 제시하세요.
 - 마지막에는 활력 있는 한마디나 다음 실행 질문을 던져주세요.`;
 

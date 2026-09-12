@@ -26,8 +26,52 @@ export interface WormholeAppInfo {
   defaultGaugePercent: number;
 }
 
-export const DISALLOWED_WARP_IDS = new Set(['profile', 'handbook', 'library', 'omniwarp', 'hub']);
-export const DISALLOWED_WARP_PATHS = new Set(['/profile', '/handbook', '/library', '/omniwarp', '/', '/universe', '/ecpr', '/synergy', '/aegis']);
+export const DISALLOWED_WARP_IDS = new Set(['profile', 'epilogue-profile', 'handbook', 'library', 'omniwarp', 'hub']);
+export const DISALLOWED_WARP_PATHS = new Set([
+  '/profile',
+  '/epilogue?tab=profile',
+  '/handbook',
+  '/library',
+  '/omniwarp',
+  '/',
+  '/universe',
+  '/ecpr',
+  '/synergy',
+  '/aegis',
+]);
+
+/**
+ * 웜홀/워프 이동 불가 목적지 판별 가드
+ * - 프로필(profile, epilogue?tab=profile 등)로 가는 모든 경로 및 ID 전면 배제
+ * - 핸드북, 라이브러리, 옴니워프, 허브 등 단독/특수 페이지 배제
+ */
+export function isDisallowedWarpDestination(destIdOrPath: string): boolean {
+  if (!destIdOrPath) return true;
+  const raw = String(destIdOrPath).toLowerCase().trim();
+  const norm = raw.replace('/', '').split('?')[0];
+
+  // 프로필로 향하는 모든 경로 및 ID 엄격 차단
+  if (
+    raw === 'profile' ||
+    norm === 'profile' ||
+    raw.includes('profile') ||
+    raw.includes('tab=profile') ||
+    raw.startsWith('/profile')
+  ) {
+    return true;
+  }
+
+  return (
+    norm === 'handbook' ||
+    norm === 'library' ||
+    norm === 'omniwarp' ||
+    norm === 'bigbang' ||
+    DISALLOWED_WARP_IDS.has(norm) ||
+    DISALLOWED_WARP_IDS.has(raw) ||
+    DISALLOWED_WARP_PATHS.has(raw) ||
+    DISALLOWED_WARP_PATHS.has(`/${norm}`)
+  );
+}
 
 /**
  * 라우트 정의를 WormholeAppInfo 규격으로 변환
@@ -54,18 +98,33 @@ function routeToWormholeApp(route: PrismRouteDefinition, defaultPercent: number 
  * profile, handbook, library, omniwarp는 워프 이동 금지 대상이므로 제외
  */
 export function getAllActiveWormholeApps(): WormholeAppInfo[] {
-  const activeRoutes = getActivePrismRoutes().filter(
-    (r) => !DISALLOWED_WARP_IDS.has(r.id) && !DISALLOWED_WARP_PATHS.has(r.path)
-  );
-  const total = activeRoutes.length;
-  return activeRoutes.map((r, index) => {
-    const percent = Math.round(15 + (index / Math.max(1, total - 1)) * 70);
-    return routeToWormholeApp(r, percent);
-  });
+  try {
+    const routes = getActivePrismRoutes();
+    const activeRoutes = Array.isArray(routes)
+      ? routes.filter((r) => !isDisallowedWarpDestination(r.id) && !isDisallowedWarpDestination(r.path))
+      : [];
+    const total = activeRoutes.length;
+    return activeRoutes.map((r, index) => {
+      const percent = Math.round(15 + (index / Math.max(1, total - 1)) * 70);
+      return routeToWormholeApp(r, percent);
+    });
+  } catch (err) {
+    console.warn('[WormholeSpectrum] Failed to get active routes:', err);
+    return [];
+  }
 }
 
-/** 하위 호환용 정적 참조 (초기 렌더링용) */
-export const ALL_WORMHOLE_APPS: WormholeAppInfo[] = getAllActiveWormholeApps();
+let _cachedWormholeApps: WormholeAppInfo[] | null = null;
+
+/** 하위 호환용 정적 참조 (지연 프록시로 모듈 로드 시점 조기 평가 방지) */
+export const ALL_WORMHOLE_APPS: WormholeAppInfo[] = new Proxy([] as WormholeAppInfo[], {
+  get(target, prop, receiver) {
+    if (!_cachedWormholeApps || _cachedWormholeApps.length === 0) {
+      _cachedWormholeApps = getAllActiveWormholeApps();
+    }
+    return Reflect.get(_cachedWormholeApps, prop, receiver);
+  },
+});
 
 /**
  * 현재 페이지 및 맥락에 맞춰 프리즘의 실존 사이트/기능들을 지능형 랭킹하여
@@ -85,7 +144,6 @@ export function getRankedWormholeApps(activeRoute: string): WormholeAppInfo[] {
     heal: ['bluebird', 'orange', 'epilogue', 'muse', 'trinity', 'orb', 'lucy'],
     bluebird: ['orange', 'muse', 'heal', 'epilogue', 'trinity', 'orb', 'lucy'],
     epilogue: ['trinity', 'heal', 'bluebird', 'muse', 'orange', 'orb', 'lucy'],
-    profile: ['epilogue', 'trinity', 'lucy', 'orb', 'muse', 'orange', 'heal', 'bluebird'],
     orb: ['lucy', 'trinity', 'muse', 'orange', 'heal', 'bluebird', 'epilogue'],
     chat: ['orb', 'trinity', 'muse', 'orange', 'bluebird', 'heal', 'epilogue'],
     lucy: ['orb', 'trinity', 'muse', 'orange', 'bluebird', 'heal', 'epilogue'],
