@@ -22,7 +22,7 @@ import { auth, db, collection, addDoc, serverTimestamp, query, orderBy, limit, g
 import { getTodayDateKey, getDateSeed, isSameDayString, pickDailySeededItem } from "@/lib/dailyCache";
 import { MuseDocentAudio } from "@/components/muse/MuseDocentAudio";
 import { buildPoemGoogleArtsAndCultureSearchUrl, buildArtworkGoogleArtsAndCultureSearchUrl, buildPoemFullTextSearchQuery, buildPoemGoogleAiSearchUrl } from "@/utils/artSearchQuery";
-import { lookupCatalogDailyArtUrl, resolveArtworkDailyArtUrl } from "@/lib/museDailyArt";
+import { lookupCatalogDailyArtUrl, resolveArtworkDailyArtUrl, MUSE_ART_CATALOG } from "@/lib/museDailyArt";
 import { MuseSongYouTubePlayer } from "@/components/muse/MuseSongYouTubePlayer";
 import { recordPrismFeature } from "@/lib/prismOmniSync";
 import {
@@ -537,6 +537,9 @@ interface ArtFallbackEntry {
   aestheticTone: string;
   quote: string;
   dailyArtUrl?: string;
+  imageUrl?: string;
+  catalogId?: string;
+  sourceName?: string;
 }
 
 const DAILY_ART_FALLBACKS: ArtFallbackEntry[] = [
@@ -712,17 +715,57 @@ function recordArtworkHistory(art: ArtRecommendation): void {
   }
 }
 
+const ALL_POEM_SONG_FALLBACKS: Array<{ famousPoem: FamousPoem; famousSong: FamousSong }> = [
+  ...DAILY_POEM_SONG_FALLBACKS,
+  ...MUSE_ART_CATALOG.map((entry) => ({
+    famousPoem: {
+      ...entry.famousPoem,
+    },
+    famousSong: {
+      ...entry.famousSong,
+    },
+  })).filter(
+    (item) =>
+      !DAILY_POEM_SONG_FALLBACKS.some(
+        (p) => p.famousPoem.title.toLowerCase() === item.famousPoem.title.toLowerCase()
+      )
+  ),
+];
+
+const ALL_ART_FALLBACKS: ArtFallbackEntry[] = [
+  ...MUSE_ART_CATALOG.map((entry) => ({
+    title: entry.title,
+    titleOriginal: entry.titleOriginal,
+    creator: entry.creator,
+    creatorOriginal: entry.creatorOriginal,
+    artworkType: entry.artworkType,
+    era: entry.era,
+    description: entry.description,
+    whyRecommended: entry.defaultWhyRecommended,
+    challenges: [...entry.defaultChallenges],
+    aestheticTone: entry.aestheticTone,
+    quote: entry.quote,
+    dailyArtUrl: entry.dailyArtUrl,
+    imageUrl: entry.imageUrl,
+    catalogId: entry.id,
+    sourceName: "세계 명작 미술관 아카이브",
+  })),
+  ...DAILY_ART_FALLBACKS.filter(
+    (art) => !MUSE_ART_CATALOG.some((m) => m.title.toLowerCase() === art.title.toLowerCase())
+  ),
+];
+
 function getDailyPoemSongFallback(randomOffset?: number): { famousPoem: FamousPoem; famousSong: FamousSong } {
   const excludePoems = getExcludePoemTitles();
   const excludeSongs = getExcludeSongTitles();
 
-  const filtered = DAILY_POEM_SONG_FALLBACKS.filter(
+  const filtered = ALL_POEM_SONG_FALLBACKS.filter(
     (item) =>
       !excludePoems.some((p) => item.famousPoem.title.toLowerCase().includes(p.toLowerCase())) &&
       !excludeSongs.some((s) => item.famousSong.title.toLowerCase().includes(s.toLowerCase()))
   );
 
-  const pool = filtered.length > 0 ? filtered : DAILY_POEM_SONG_FALLBACKS;
+  const pool = filtered.length > 0 ? filtered : ALL_POEM_SONG_FALLBACKS;
   const seed = getDateSeed('muse_poem_song');
   const index = typeof randomOffset === "number" ? (seed + randomOffset) : seed;
   return pool[index % pool.length];
@@ -730,10 +773,10 @@ function getDailyPoemSongFallback(randomOffset?: number): { famousPoem: FamousPo
 
 function getDailyArtFallback(randomOffset?: number): ArtRecommendation {
   const excludeArts = getExcludeCatalogIds();
-  const filtered = DAILY_ART_FALLBACKS.filter(
+  const filtered = ALL_ART_FALLBACKS.filter(
     (art) => !excludeArts.some((ex) => art.title.toLowerCase().includes(ex.toLowerCase()))
   );
-  const pool = filtered.length > 0 ? filtered : DAILY_ART_FALLBACKS;
+  const pool = filtered.length > 0 ? filtered : ALL_ART_FALLBACKS;
 
   const seed = getDateSeed('muse_artwork');
   const index = typeof randomOffset === "number" ? (seed + randomOffset) : seed;
@@ -741,7 +784,7 @@ function getDailyArtFallback(randomOffset?: number): ArtRecommendation {
   const { famousPoem, famousSong } = getDailyPoemSongFallback(randomOffset);
   return {
     ...art,
-    sourceName: "DailyArt Magazine",
+    sourceName: art.sourceName || "세계 명작 미술관 아카이브",
     famousPoem,
     famousSong,
   };

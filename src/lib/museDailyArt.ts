@@ -1,6 +1,8 @@
 import { MUSE_ART_CATALOG } from "../../server/api-lib/museArtCatalog";
 import { buildDailyArtMagazineArtUrl } from "@/utils/artSearchQuery";
 
+export { MUSE_ART_CATALOG };
+
 function normalizeArtworkKey(value: string): string {
   return value
     .toLowerCase()
