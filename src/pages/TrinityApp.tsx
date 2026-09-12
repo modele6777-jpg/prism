@@ -785,6 +785,29 @@ function getInitialTrinityDailyResult(uid?: string) {
   return null;
 }
 
+function deduplicateReadingText(text: string): string {
+  if (!text) return text;
+  const lines = text.split('\n');
+  const result: string[] = [];
+  let lastNonEmpty = '';
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      result.push(line);
+      continue;
+    }
+    // Filter exact consecutive lines or headings
+    if (trimmed === lastNonEmpty) {
+      continue;
+    }
+    result.push(line);
+    lastNonEmpty = trimmed;
+  }
+
+  return result.join('\n');
+}
+
 function extractConciseSummary(text: string): string[] {
   if (!text) return [];
   const clean = text
@@ -795,26 +818,54 @@ function extractConciseSummary(text: string): string[] {
     .replace(/\*/g, "")
     .trim();
 
+  // 1. Try bullet matches with strict deduplication
   const bulletMatches = clean.match(/^[-*•]\s+(.+)$/gm);
-  if (bulletMatches && bulletMatches.length >= 3) {
-    return bulletMatches
-      .map((b) => b.replace(/^[-*•]\s+/, "").trim())
-      .filter((b) => b.length > 6)
-      .slice(0, 3);
+  if (bulletMatches && bulletMatches.length >= 2) {
+    const uniqueBullets: string[] = [];
+    for (const b of bulletMatches) {
+      const cleaned = b.replace(/^[-*•]\s+/, "").trim();
+      if (
+        cleaned.length > 6 &&
+        !uniqueBullets.some(
+          (existing) =>
+            existing === cleaned ||
+            existing.includes(cleaned) ||
+            cleaned.includes(existing) ||
+            existing.slice(0, 15) === cleaned.slice(0, 15)
+        )
+      ) {
+        uniqueBullets.push(cleaned);
+      }
+      if (uniqueBullets.length >= 3) break;
+    }
+    if (uniqueBullets.length >= 2) return uniqueBullets;
   }
 
+  // 2. Try sentence splits with strict deduplication
   const sentences = clean
     .split(/(?<=[.!?])\s+/)
     .map((s) => s.trim())
-    .filter((s) => s.length >= 12 && !s.startsWith("http"));
+    .filter((s) => s.length >= 12 && !s.startsWith("http") && !s.startsWith("·"));
 
-  if (sentences.length <= 3) return sentences;
+  const uniqueSentences: string[] = [];
+  for (const s of sentences) {
+    if (
+      !uniqueSentences.some(
+        (existing) =>
+          existing === s ||
+          existing.includes(s) ||
+          s.includes(existing) ||
+          existing.slice(0, 15) === s.slice(0, 15)
+      )
+    ) {
+      uniqueSentences.push(s);
+    }
+    if (uniqueSentences.length >= 3) break;
+  }
 
-  return [
-    sentences[0],
-    sentences[Math.floor(sentences.length / 2)],
-    sentences[sentences.length - 1],
-  ];
+  if (uniqueSentences.length > 0) return uniqueSentences.slice(0, 3);
+
+  return [];
 }
 
 export default function TrinityApp() {
@@ -2081,6 +2132,7 @@ function playDailyCardChimeAsync() {
       }
     } else {
       // Detailed Tarot Reading Tab
+      if (isTarotGenerating) return;
       const selectedCards = params?.selectedCards;
       if (!tarotConcern.trim()) {
         setNotice({
@@ -2208,6 +2260,10 @@ function playDailyCardChimeAsync() {
 - '손끝 물리량', '터치 체류 시간', '떨림 지수', '파동 측정' 등 인위적인 감지 지표나 수치를 결코 언급하지 마십시오.
 - 오직 78장 타로 카드의 상징과 원형, 그리고 내담자의 삶과 마음에만 온전히 집중하여 진정성 있게 리딩하십시오.
 
+[🚫 내용 중복 및 반복 서술 엄격 금지]
+- 동일한 문장, 동일한 조언, 동일한 표현을 리딩 내에서 절대로 2번 이상 중복하여 서술하지 마십시오.
+- 각 단계(1단계~5단계)는 고유한 통찰과 관점을 담아야 하며, 앞서 언급한 카드의 해석이나 키워드를 다른 단계에서 그대로 복사하듯 반복 나열하지 마십시오.
+
 [🔮 타로 마스터 리딩 원칙 — 보고서형 어투 절대 금지]
 1. **생생한 상담실 대화체**: 딱딱한 기획서·보고서·수치 나열형(예: '성공률 80%, 실패율 20%', '1단계: 진단' 등 사무적 어투)은 절대 지양하십시오. 대신 "카드를 가만히 마주하니...", "가장 먼저 눈에 밟히는 카드는...", "이 카드가 당신께 이렇게 속삭이고 있네요"처럼 실제 타로 마스터의 생동감 넘치는 호흡으로 이야기하듯 서술하십시오.
 2. **깊은 공감과 날카로운 팩트폭행의 조화**: 내담자가 겪고 있는 혼란과 불안을 따뜻하게 안아주되, 카드가 경고하는 현실적 맹점이나 피해야 할 악수는 숨김없이 명쾌하고 솔직하게 짚어주십시오.
@@ -2243,8 +2299,18 @@ function playDailyCardChimeAsync() {
             ],
             timeoutMs: 40000,
             onChunk: (chunk) => {
-              finalResponse += chunk;
-              setTarotResult(finalResponse);
+              if (
+                chunk.startsWith(finalResponse) ||
+                (finalResponse.length > 30 && chunk.length > finalResponse.length && chunk.includes(finalResponse.slice(0, 30)))
+              ) {
+                // Fallback emitted entire text; replace instead of duplicating
+                finalResponse = chunk;
+              } else if (finalResponse.endsWith(chunk)) {
+                // Already included, ignore duplicate chunk
+              } else {
+                finalResponse += chunk;
+              }
+              setTarotResult(deduplicateReadingText(finalResponse));
             },
           });
         } catch (streamErr) {
@@ -2256,6 +2322,7 @@ function playDailyCardChimeAsync() {
             tarotConcern,
             selectedCards,
           );
+          finalResponse = deduplicateReadingText(finalResponse);
           setTarotResult(finalResponse);
         }
 

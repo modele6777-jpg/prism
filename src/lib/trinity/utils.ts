@@ -921,7 +921,26 @@ export function buildLocalTarotReading(concern: string, cards: any[], photoMode?
       const name = c?.nameKo || c?.kr || `카드 ${i + 1}`;
       const orient = c?.reversed ? ' (역방향)' : '';
       const hint = localKeywordHint(c);
-      return `· **${pos} — [${name}${orient}]**\n  ${hint ? `_${hint}_\n  ` : ''}이 카드는 당신이 마주한 상황에서 중요한 전환점을 암시하며, 조급함을 내려놓고 진실된 내면의 소리에 귀 기울이라고 속삭입니다.`;
+      const kws = c?.keywords?.slice(0, 3).join(', ') || '성장과 통찰';
+
+      let storyBody = '';
+      if (i === 0 || pos.includes('현재') || pos.includes('마음') || pos.includes('상태') || pos.includes('원인')) {
+        storyBody = c?.reversed
+          ? `현재 당신의 내면에서는 **${kws}**의 에너지가 일시적인 정체나 저항을 마주하고 있습니다. 조급해하기보다 깊은 호흡으로 마음의 중심을 잡아야 할 때입니다.`
+          : `지금 당신의 현실은 **${kws}**의 맑고 역동적인 파동 위에 놓여 있습니다. 직관이 가리키는 방향을 신뢰하고 차분하게 흐름을 타세요.`;
+      } else if (i === 1 || pos.includes('장애') || pos.includes('과정') || pos.includes('상황') || pos.includes('도전')) {
+        storyBody = c?.reversed
+          ? `상황 속에서 **${kws}**와 관련된 집착이나 불안을 내려놓을 필요가 있습니다. 시야를 넓게 열어두면 막혔던 해답이 자연스럽게 모습을 드러냅니다.`
+          : `당신을 둘러싼 환경은 **${kws}**의 지혜를 통해 새로운 돌파구를 제시하고 있습니다. 유연한 태도가 상황을 당신의 편으로 이끕니다.`;
+      } else if (i === 2 || pos.includes('미래') || pos.includes('결과') || pos.includes('조언') || pos.includes('결실')) {
+        storyBody = c?.reversed
+          ? `앞으로 다가올 전개는 **${kws}**의 균형을 요구합니다. 겉으로 드러나는 결과보다 내실을 충실히 채우면 더 큰 운이 열리게 됩니다.`
+          : `운명의 나침반은 마침내 **${kws}**의 눈부신 성취와 보상을 가리키고 있습니다. 확신을 갖고 한 걸음 더 전진하십시오.`;
+      } else {
+        storyBody = `이 자리는 **${kws}**의 상징을 통해, 삶의 중심을 지키며 유연하게 적응하는 지혜가 당신의 길을 비추는 나침반이 됨을 암시합니다.`;
+      }
+
+      return `· **${pos} — [${name}${orient}]**\n  ${hint ? `_${hint}_\n  ` : ''}${storyBody}`;
     })
     .join('\n\n');
 

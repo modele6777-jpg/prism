@@ -259,6 +259,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
 
   const [selectedEntries, setSelectedEntries] = useState<Array<{ card: TarotCard; reversed: boolean }>>([]);
   const [isFinishing, setIsFinishing] = useState(false);
+  const hasCompletedRef = useRef(false);
   const touchedCardIdRef = useRef<string | null>(null);
   const touchStartTimeRef = useRef<number>(0);
   const selectedIds = useMemo(
@@ -472,7 +473,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
 
   const handleSelect = useCallback(
     (cardToSelect: TarotCard) => {
-      if (isFinishing || selectedEntries.length >= maxCards) return;
+      if (isFinishing || hasCompletedRef.current || selectedEntries.length >= maxCards) return;
 
       // Tactile haptic vibration on mobile
       try {
@@ -486,6 +487,8 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
         const isReversed = allowReversed ? rollTarotReversed() : false;
         const next = [...prev, { card: cardToSelect, reversed: isReversed }];
         if (next.length === maxCards) {
+          if (hasCompletedRef.current) return next;
+          hasCompletedRef.current = true;
           setIsFinishing(true);
           // Allow final card animation to smoothly settle before completing
           window.setTimeout(() => {
@@ -523,7 +526,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
 
   const handleAutoPick = () => {
     const unpicked = deck.filter((card) => !selectedIds.includes(card.id));
-    if (unpicked.length === 0 || selectedEntries.length >= maxCards || isFinishing) return;
+    if (unpicked.length === 0 || selectedEntries.length >= maxCards || isFinishing || hasCompletedRef.current) return;
     const randomCard = unpicked[Math.floor(Math.random() * unpicked.length)];
     if (randomCard) {
       handleSelect(randomCard);
