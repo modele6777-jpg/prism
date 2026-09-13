@@ -820,6 +820,53 @@ export function TrinityOracleSection() {
     }
   };
 
+  // 💌 제제의 사주·타로 융합 다정한 치유 편지 전용 TTS Speech Text
+  const healingLetterSpeechText = useMemo(() => {
+    if (!healingResult?.message) return '';
+    const recipient = saju?.name || '너';
+    const intro = `제제가 ${recipient}에게 보내는 다정한 치유 편지입니다.`;
+    return prepareNaturalSpeechText(`${intro} ${healingResult.message}`);
+  }, [healingResult?.message, saju?.name]);
+
+  const isHealingLetterTTSActive = useMemo(() => {
+    if (!isTTSActive || !healingLetterSpeechText) return false;
+    const cleanSpeech = prepareNaturalSpeechText(healingLetterSpeechText);
+    return ttsState.activeFullText === cleanSpeech;
+  }, [isTTSActive, healingLetterSpeechText, ttsState.activeFullText]);
+
+  const handleToggleHealingLetterTTS = async () => {
+    if (isHealingLetterTTSActive) {
+      stopTTS();
+      return;
+    }
+    if (healingLetterSpeechText) {
+      await playTTSInChunks(healingLetterSpeechText, 'Kore', 250, '따뜻함');
+    }
+  };
+
+  // ⚡ 거시 실행 브리핑 전용 TTS Speech Text
+  const growthMacroSpeechText = useMemo(() => {
+    if (!growthResult?.macro_focus) return '';
+    const intro = '사주 기질과 타로 4원소의 거시 실행 브리핑입니다.';
+    return prepareNaturalSpeechText(`${intro} ${growthResult.macro_focus}`);
+  }, [growthResult?.macro_focus]);
+
+  const isGrowthMacroTTSActive = useMemo(() => {
+    if (!isTTSActive || !growthMacroSpeechText) return false;
+    const cleanSpeech = prepareNaturalSpeechText(growthMacroSpeechText);
+    return ttsState.activeFullText === cleanSpeech;
+  }, [isTTSActive, growthMacroSpeechText, ttsState.activeFullText]);
+
+  const handleToggleGrowthMacroTTS = async () => {
+    if (isGrowthMacroTTSActive) {
+      stopTTS();
+      return;
+    }
+    if (growthMacroSpeechText) {
+      await playTTSInChunks(growthMacroSpeechText, 'Kore', 250, '따뜻함');
+    }
+  };
+
   // Executive Summary Card (Substantial Saju-Tarot Synthesis + TTS Audio Player)
   const renderExecutiveSummaryCard = () => {
     const synergy = oracleMode === 'healing' ? healingResult?.saju_tarot_synergy : growthResult?.saju_tarot_synergy;
@@ -981,7 +1028,7 @@ export function TrinityOracleSection() {
       <div className="glass p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-amber-950/20 via-zinc-950/90 to-purple-950/30 border border-amber-400/35 shadow-2xl relative overflow-hidden backdrop-blur-xl">
         <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="flex items-center justify-between pb-4 border-b border-white/10 relative z-10">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10 relative z-10">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-500/20 to-purple-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300 shadow-md shrink-0">
               <Feather size={22} className="text-amber-400" />
@@ -1001,15 +1048,66 @@ export function TrinityOracleSection() {
             </div>
           </div>
 
-          <span className="text-xs text-amber-300/80 font-serif italic hidden sm:inline-block">
-            "네 마음에 꼭 맞는 온기를 전할게"
-          </span>
+          <div className="flex items-center gap-2.5 self-end sm:self-center">
+            {/* 🔊 제제의 다정한 치유 편지 TTS 버튼 */}
+            {healingLetterSpeechText && (
+              <button
+                type="button"
+                onClick={handleToggleHealingLetterTTS}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-95 ${
+                  isHealingLetterTTSActive
+                    ? "bg-rose-500/30 text-rose-200 border border-rose-400/60 ring-2 ring-rose-400/30 animate-pulse"
+                    : "bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 border border-amber-400/35 hover:border-amber-400/60"
+                }`}
+                title={isHealingLetterTTSActive ? "치유 편지 낭독 중지" : "제제의 다정한 치유 편지 음성으로 듣기"}
+              >
+                {isHealingLetterTTSActive ? (
+                  <>
+                    <VolumeX size={14} className="text-rose-300" />
+                    <span className="text-[11px]">낭독 중지</span>
+                    <span className="flex gap-0.5 ml-0.5">
+                      <span className="w-1 h-2.5 bg-rose-300 rounded-full animate-bounce" />
+                      <span className="w-1 h-3.5 bg-rose-200 rounded-full animate-bounce [animation-delay:0.15s]" />
+                      <span className="w-1 h-2 bg-rose-400 rounded-full animate-bounce [animation-delay:0.3s]" />
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Volume2 size={14} className="text-amber-400" />
+                    <span className="text-[11px]">치유 편지 듣기</span>
+                  </>
+                )}
+              </button>
+            )}
+
+            <span className="text-xs text-amber-300/80 font-serif italic hidden md:inline-block">
+              "네 마음에 꼭 맞는 온기를 전할게"
+            </span>
+          </div>
         </div>
 
         <div className="mt-4 p-5 sm:p-6 rounded-2xl bg-black/40 border border-white/5 relative z-10 space-y-3 shadow-inner">
           <p className="text-xs sm:text-sm text-zinc-200 font-serif leading-relaxed whitespace-pre-line">
             {message}
           </p>
+
+          {/* 하단 빠른 낭독 가이드 */}
+          {healingLetterSpeechText && (
+            <div className="pt-3 border-t border-white/5 flex items-center justify-between text-[11px] text-zinc-400">
+              <span className="flex items-center gap-1 text-amber-300/80">
+                <Heart size={11} className="text-rose-400" />
+                마음을 어루만지는 제제의 온기 어린 음성
+              </span>
+              <button
+                type="button"
+                onClick={handleToggleHealingLetterTTS}
+                className="text-amber-300 hover:text-amber-200 font-medium flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                <Volume2 size={12} />
+                <span>{isHealingLetterTTSActive ? '낭독 중지' : '음성으로 편지 듣기'}</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -1021,22 +1119,56 @@ export function TrinityOracleSection() {
 
     return (
       <div className="glass p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-orange-950/25 via-zinc-950/90 to-amber-950/20 border border-orange-400/35 shadow-2xl relative overflow-hidden backdrop-blur-xl">
-        <div className="flex items-center gap-3 pb-4 border-b border-white/10 relative z-10">
-          <div className="w-11 h-11 rounded-2xl bg-orange-500/20 border border-orange-400/40 flex items-center justify-center text-amber-400 shadow-md shrink-0">
-            <Zap size={22} className="text-amber-400" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-mono text-orange-400 uppercase tracking-widest block">
-                MACRO MINDSET SYNTHESIS
-              </span>
-              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-orange-500/20 text-amber-200 border border-orange-400/30">
-                거시 마인드셋
-              </span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10 relative z-10">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-orange-500/20 border border-orange-400/40 flex items-center justify-center text-amber-400 shadow-md shrink-0">
+              <Zap size={22} className="text-amber-400" />
             </div>
-            <h3 className="text-base sm:text-lg font-bold font-serif text-white mt-0.5">
-              사주 기질과 타로 4원소의 거시 실행 브리핑
-            </h3>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono text-orange-400 uppercase tracking-widest block">
+                  MACRO MINDSET SYNTHESIS
+                </span>
+                <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-orange-500/20 text-amber-200 border border-orange-400/30">
+                  거시 마인드셋
+                </span>
+              </div>
+              <h3 className="text-base sm:text-lg font-bold font-serif text-white mt-0.5">
+                사주 기질과 타로 4원소의 거시 실행 브리핑
+              </h3>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-end sm:self-center">
+            {growthMacroSpeechText && (
+              <button
+                type="button"
+                onClick={handleToggleGrowthMacroTTS}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-95 ${
+                  isGrowthMacroTTSActive
+                    ? "bg-amber-400/30 text-amber-200 border border-amber-400/60 ring-2 ring-amber-400/30 animate-pulse"
+                    : "bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 border border-amber-400/35 hover:border-amber-400/60"
+                }`}
+                title={isGrowthMacroTTSActive ? "브리핑 낭독 중지" : "거시 실행 브리핑 음성으로 듣기"}
+              >
+                {isGrowthMacroTTSActive ? (
+                  <>
+                    <VolumeX size={14} className="text-amber-300" />
+                    <span className="text-[11px]">낭독 중지</span>
+                    <span className="flex gap-0.5 ml-0.5">
+                      <span className="w-1 h-2.5 bg-amber-300 rounded-full animate-bounce" />
+                      <span className="w-1 h-3.5 bg-amber-200 rounded-full animate-bounce [animation-delay:0.15s]" />
+                      <span className="w-1 h-2 bg-amber-400 rounded-full animate-bounce [animation-delay:0.3s]" />
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Volume2 size={14} className="text-amber-400" />
+                    <span className="text-[11px]">브리핑 듣기</span>
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
 
