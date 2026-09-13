@@ -1,12 +1,5 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { useLocation } from 'wouter';
-import { Sparkles, Brain, X, Shuffle, Check, Copy } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import { savePendingSelection, clearPendingSelection } from '../lib/selectionBridge';
-import {
-  getRecommendedMenu,
-  tossSelectionToMenu,
-  type RecommendedMenuResult,
-} from '../lib/selectionContextRecommender';
 
 /**
  * 텍스트 클립보드 즉시 복사 유틸리티 (브라우저 및 보안 컨텍스트 호환)
@@ -28,14 +21,14 @@ const copyToClipboard = async (textToCopy: string): Promise<boolean> => {
     textArea.style.position = 'fixed';
     textArea.style.left = '-999999px';
     textArea.style.top = '-999999px';
-    textArea.style.opacity = '0';
     document.body.appendChild(textArea);
     textArea.focus();
     textArea.select();
     const successful = document.execCommand('copy');
     document.body.removeChild(textArea);
     return successful;
-  } catch (_) {
+  } catch (err) {
+    console.warn('[Clipboard] Failed to copy text:', err);
     return false;
   }
 };
@@ -44,51 +37,14 @@ interface SelectionBridgeToolbarProps {
   currentPath?: string;
 }
 
+/**
+ * 🌟 SelectionBridgeToolbar (선택 텍스트 백그라운드 브릿지)
+ * - 사용자가 텍스트를 스크롤(선택)할 때 글자 위에 시각적 플로팅 배지를 띄우지 않고,
+ *   빅뱅 버튼 토스 연동 및 자동 복사 파이프라인만 안전하게 백그라운드에서 실행합니다.
+ * - 스크롤 취소/해제 시 clearPendingSelection()을 호출하여 대기 토스 모드를 즉각 초기화합니다.
+ */
 export default function SelectionBridgeToolbar({ currentPath }: SelectionBridgeToolbarProps) {
-  let location = '/';
-  let navigate = (to: string) => {
-    if (typeof window !== 'undefined') {
-      window.location.href = to;
-    }
-  };
-
-  try {
-    const [wouterLoc, wouterNav] = useLocation();
-    location = currentPath || wouterLoc;
-    navigate = wouterNav;
-  } catch (_) {
-    if (typeof window !== 'undefined') {
-      location = currentPath || window.location.pathname;
-    }
-  }
-
-  const [selectedText, setSelectedText] = useState('');
-  const [visible, setVisible] = useState(false);
-  const [coords, setCoords] = useState<{ x: number; y: number } | null>(null);
-  const [cycleOffset, setCycleOffset] = useState(0);
-  const [copied, setCopied] = useState(false);
   const lastCopiedTextRef = useRef<string>('');
-  const copyToastTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const toolbarRef = useRef<HTMLDivElement>(null);
-
-  // We only show toolbar if not already on the chat or orb page with the same query
-  const isExcludedPage =
-    location === '/chat' ||
-    location === '/lucy' ||
-    location === '/orb' ||
-    location === '/crystal' ||
-    location === '/gateway';
-
-  // 실시간 맥락 감지 및 20대 메뉴 중 무작위 셔플된 추천 후보군 산출
-  const recommendedResult: RecommendedMenuResult = useMemo(() => {
-    return getRecommendedMenu(selectedText, location, cycleOffset);
-  }, [selectedText, location, cycleOffset]);
-
-  useEffect(() => {
-    return () => {
-      if (copyToastTimerRef.current) clearTimeout(copyToastTimerRef.current);
-    };
-  }, []);
 
   useEffect(() => {
     let debounceTimer: NodeJS.Timeout | null = null;
@@ -103,17 +59,13 @@ export default function SelectionBridgeToolbar({ currentPath }: SelectionBridgeT
         // 선택이 없거나 해제(isCollapsed)되었거나 비어있으면 자동 토스모드 즉시 취소!
         if (!selection || selection.isCollapsed || !selection.toString().trim()) {
           clearPendingSelection();
-          setSelectedText('');
-          setVisible(false);
           return;
         }
 
         const text = selection.toString().trim();
-        // Ignore if text is too short or inside input/textarea
+        // 2글자 미만 또는 인풋/텍스트에어리어 내부일 때도 취소
         if (text.length < 2) {
           clearPendingSelection();
-          setSelectedText('');
-          setVisible(false);
           return;
         }
 
@@ -125,70 +77,32 @@ export default function SelectionBridgeToolbar({ currentPath }: SelectionBridgeT
 
         if (parentElem?.closest('input, textarea, [contenteditable="true"]')) {
           clearPendingSelection();
-          setSelectedText('');
-          setVisible(false);
           return;
         }
 
-        // Always save to pending storage automatically so navigation via header/menu picks it up!
+        // 유효한 선택 텍스트 백그라운드 저장 (빅뱅 버튼 연동용)
         savePendingSelection(text, undefined, window.location.pathname);
-        setSelectedText(text);
 
-        // 📋 스크롤/선택 시 바로 클립보드에 자동 복사
+        // 📋 스크롤/선택 시 클립보드에 자동 복사
         if (text && lastCopiedTextRef.current !== text) {
           lastCopiedTextRef.current = text;
-          copyToClipboard(text).then((ok) => {
-            if (ok) {
-              setCopied(true);
-              if (copyToastTimerRef.current) clearTimeout(copyToastTimerRef.current);
-              copyToastTimerRef.current = setTimeout(() => setCopied(false), 2000);
-            }
-          });
+          copyToClipboard(text);
         }
-
-        if (!isExcludedPage) {
-          try {
-            const range = selection.getRangeAt(0);
-            const rect = range.getBoundingClientRect();
-            if (rect.width > 0 && rect.height > 0) {
-              // Position slightly above selection, or clamp to viewport
-              const toolbarWidth = 440;
-              const x = Math.max(
-                12,
-                Math.min(window.innerWidth - toolbarWidth, rect.left + rect.width / 2 - toolbarWidth / 2)
-              );
-              const y = rect.top > 80 ? rect.top - 54 : rect.bottom + 12;
-              setCoords({ x, y });
-              setVisible(true);
-            }
-          } catch (_) {
-            setCoords(null);
-            setVisible(true);
-          }
-        }
-      }, 120);
+      }, 100);
     };
 
-    const handleDocumentMouseDown = (e: MouseEvent) => {
-      if (toolbarRef.current && toolbarRef.current.contains(e.target as Node)) {
-        return;
-      }
-      // Check if selection is cleared
+    const handleDocumentMouseDown = () => {
       setTimeout(() => {
         const sel = window.getSelection();
         if (!sel || sel.isCollapsed || !sel.toString().trim()) {
           clearPendingSelection();
-          setSelectedText('');
-          setVisible(false);
         }
-      }, 150);
+      }, 120);
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         clearPendingSelection();
-        setSelectedText('');
-        setVisible(false);
       }
     };
 
@@ -204,108 +118,8 @@ export default function SelectionBridgeToolbar({ currentPath }: SelectionBridgeT
       document.removeEventListener('mousedown', handleDocumentMouseDown);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isExcludedPage]);
+  }, []);
 
-  if (!visible || !selectedText || isExcludedPage) return null;
-
-  // 🌟 추천 메뉴 클릭 시 즉각 토스 & 이동 핸들러
-  const handleSelectMenu = (menu: any) => (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    tossSelectionToMenu(selectedText, menu, location, navigate);
-    setVisible(false);
-  };
-
-  // 🔀 다른 추천 경로 순환 (상시 다른 추천경로 즉각 전환)
-  const handleReroll = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    setCycleOffset((prev) => prev + 1);
-  };
-
-  const handleClose = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    setVisible(false);
-  };
-
-  const top3 = recommendedResult.top3 || [];
-
-  return (
-    <div
-      ref={toolbarRef}
-      id="selection-bridge-floating-toolbar"
-      style={
-        coords
-          ? { left: `${coords.x}px`, top: `${coords.y}px` }
-          : { left: '50%', transform: 'translateX(-50%)', bottom: '80px' }
-      }
-      className="fixed z-[9999] flex items-center gap-1.5 p-1.5 rounded-full bg-slate-950/95 backdrop-blur-xl border border-white/20 shadow-[0_12px_40px_rgba(0,0,0,0.6)] transition-all duration-200 animate-in fade-in zoom-in-95 select-none max-w-[96vw] overflow-x-auto no-scrollbar ring-1 ring-white/10"
-    >
-      {/* 🌟 맥락 감지 기반 무작위 셔플된 추천 경로 목록 (순위 표시는 완전히 가림) */}
-      <div className="flex items-center gap-1.5 shrink-0">
-        {top3.map((item, idx) => (
-          <button
-            key={item.menu.id}
-            id={`selection-bridge-btn-opt-${idx}`}
-            onClick={handleSelectMenu(item.menu)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${item.menu.buttonClass} border ${item.menu.borderClass} text-xs font-bold tracking-tight transition-all active:scale-95 shadow-md group shrink-0`}
-            title={`${item.menu.name}: ${item.contextReason} (클릭 시 이동)`}
-          >
-            <span className="text-sm shrink-0 drop-shadow">{item.menu.emoji}</span>
-            <span className="truncate max-w-[110px] sm:max-w-none">{item.menu.name}</span>
-          </button>
-        ))}
-
-        {/* 🔀 상시 다른 추천 경로로 교체 (셔플/순환 버튼) */}
-        <button
-          id="selection-bridge-btn-reroll"
-          onClick={handleReroll}
-          className="w-7 h-7 rounded-full flex items-center justify-center text-slate-300 hover:text-white hover:bg-white/15 border border-white/10 transition-colors shrink-0 active:scale-90"
-          title={`다른 추천 경로로 교체 (${recommendedResult.currentIndex + 1}/${recommendedResult.totalCandidates}) - 프리즘 전체 기능 중 순환`}
-        >
-          <Shuffle size={12} className="opacity-80" />
-        </button>
-      </div>
-
-      {/* 📋 바로 자동 복사 완료 뱃지 피드백 */}
-      {copied && (
-        <div
-          className="flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/25 border border-emerald-400/40 text-[10px] font-bold text-emerald-300 animate-in fade-in shrink-0 shadow-sm"
-          title="선택한 텍스트가 클립보드에 자동으로 복사되었습니다."
-        >
-          <Check size={11} className="text-emerald-400" />
-          <span>복사됨</span>
-        </div>
-      )}
-
-      {/* 세로 구분선 */}
-      <div className="w-px h-4 bg-white/20 mx-0.5 shrink-0" />
-
-      {/* 💡 빅뱅 버튼 연동 가이드 뱃지 (글자 스크롤 후 빅뱅 버튼 탭=루시, 홀드=오브, 드래그=추천 메뉴 토스 안내) */}
-      <div
-        className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.06] border border-white/10 text-[11px] text-slate-300 font-medium shrink-0"
-        title="글자를 스크롤한 상태에서 화면의 빅뱅 버튼을 탭하면 루시 대화, 홀드하면 크리스탈 오브, 드래그하면 1·2·3위 추천 메뉴 중 무작위 순위로 즉시 연결됩니다."
-      >
-        <span className="text-xs">💥</span>
-        <span className="text-white/60">빅뱅:</span>
-        <span className="text-cyan-300 font-semibold">탭➔루시</span>
-        <span className="text-white/30">·</span>
-        <span className="text-purple-300 font-semibold">홀드➔오브</span>
-        <span className="text-white/30">·</span>
-        <span className="text-amber-300 font-semibold">드래그➔추천</span>
-      </div>
-
-      {/* 닫기 버튼 */}
-      <button
-        id="selection-bridge-btn-close"
-        onClick={handleClose}
-        className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors ml-0.5 shrink-0"
-        title="닫기"
-      >
-        <X size={13} />
-      </button>
-    </div>
-  );
+  // 🎯 스크롤할 때 선택 영역 위에 일체의 배지나 툴바를 노출하지 않음
+  return null;
 }
-
