@@ -110,7 +110,7 @@ export function ZezeKakaoChat({
 
       setMessages(initialMsgs);
     } else {
-      const msgText1 = `반가워! 오늘 너의 4원소 실행력을 이끌 3장의 카드 [${c1.nameKo}], [${c2.nameKo}], [${c3.nameKo}]의 역할을 정밀하게 분석했어! 하나씩 짚어줄게 ⚡`;
+      const msgText1 = `반가워! 오늘 너의 자기계발과 4원소 역량 성장을 이끌 3장의 카드 [${c1.nameKo}], [${c2.nameKo}], [${c3.nameKo}]의 역할을 정밀하게 분석했어! 하나씩 짚어줄게 ⚡`;
 
       const initialMsgs: ChatMessage[] = [
         { id: 'init-1', sender: 'zeze', text: msgText1, time: nowTime },
@@ -124,14 +124,14 @@ export function ZezeKakaoChat({
         initialMsgs.push({
           id: 'init-card-1',
           sender: 'zeze',
-          text: `【1번 · 거시적 마인드셋: ${c1.nameKo}】\n🏛️ ${ins1.core_meaning}\n🎯 ${ins1.personal_interpretation}`,
+          text: `【1번 · 자기계발 마인드셋: ${c1.nameKo}】\n🏛️ ${ins1.core_meaning}\n🎯 ${ins1.personal_interpretation}`,
           time: nowTime,
         });
 
         initialMsgs.push({
           id: 'init-card-2',
           sender: 'zeze',
-          text: `【2번 · 4원소 현실 영역: ${c2.nameKo}】\n🏛️ ${ins2.core_meaning}\n🎯 ${ins2.personal_interpretation}`,
+          text: `【2번 · 4원소 역량 영역: ${c2.nameKo}】\n🏛️ ${ins2.core_meaning}\n🎯 ${ins2.personal_interpretation}`,
           time: nowTime,
         });
 
@@ -147,16 +147,16 @@ export function ZezeKakaoChat({
         initialMsgs.push({
           id: 'init-saju-synergy',
           sender: 'zeze',
-          text: `【사주×타로 현실 실행 매트릭스】\n사주 본원 [${saju?.dayMaster.hanja || '일간'}]과 4원소 타로의 실행 파동 분석이야 ⚡\n${growthResult.saju_tarot_synergy.day_master_resonance}\n\n🧭 세운 실행 타이밍: ${growthResult.saju_tarot_synergy.destiny_flow_synthesis || ''}`,
+          text: `【사주×타로 자기계발 성장 매트릭스】\n사주 본원 [${saju?.dayMaster.hanja || '일간'}]과 4원소 타로의 자기계발 역량 파동 분석이야 ⚡\n${growthResult.saju_tarot_synergy.day_master_resonance}\n\n🧭 세운 성장 타이밍: ${growthResult.saju_tarot_synergy.destiny_flow_synthesis || ''}`,
           time: nowTime,
         });
       }
 
       const msgText2 = growthResult?.macro_focus ||
-        `[${c1.nameKo}]의 중심 태도와 [${c2.nameKo}]의 현실 영역, 그리고 [${c3.nameKo}]의 1줄 실천 에너지가 하나의 방향으로 정렬되고 있어.`;
+        `[${c1.nameKo}]의 자기계발 마인드셋과 [${c2.nameKo}]의 핵심 역량 영역, 그리고 [${c3.nameKo}]의 1줄 실천 에너지가 지속 가능한 성장으로 정렬되고 있어.`;
       initialMsgs.push({ id: 'init-summary', sender: 'zeze', text: msgText2, time: nowTime });
 
-      const msgText3 = `오늘 가장 돌파하고 싶은 과제나 카드별로 더 구체적으로 듣고 싶은 전략이 있어? 네 실행 모멘텀을 내가 확실히 잡아줄게! 🎯`;
+      const msgText3 = `오늘 가장 돌파하고 싶은 역량 성장 과제나 카드별로 더 구체적으로 듣고 싶은 자기계발 전략이 있어? 네 성장 모멘텀과 루틴을 내가 확실히 잡아줄게! 🎯`;
       initialMsgs.push({ id: 'init-question', sender: 'zeze', text: msgText3, time: nowTime });
 
       setMessages(initialMsgs);
@@ -177,21 +177,21 @@ export function ZezeKakaoChat({
 
     if (oracleMode === 'healing') {
       return [
-        `🌿 1번 [${c1.nameKo}] 무의식 카드가 나한테 건네는 말이 뭐야?`,
-        `💧 2번 [${c2.nameKo}] 카드... 오늘 왜 이렇게 마음이 지쳤을까?`,
-        `🌱 3번 [${c3.nameKo}] 치유의 씨앗으로 안전하게 쉬는 법`,
+        `🌿 1번 [${c1.nameKo}] 무의식 카드가 내 지친 마음에 건네는 치유의 말은?`,
+        `💧 2번 [${c2.nameKo}] 카드... 오늘 억눌렀던 내 감정을 어떻게 보듬어줄까?`,
+        `🌱 3번 [${c3.nameKo}] 치유의 씨앗으로 안전하게 회복하고 쉬는 법`,
         `🎨 내 지친 마음에 맞는 예술 처방과 1분 쉼 알려줘`,
-        `🥺 나 오늘 정말 열심히 살았는데 조금 불안해`,
-        `💛 제제야, 나를 꼭 안아주는 다정한 위로 한마디만 해줘`,
+        `🥺 나 오늘 정말 열심히 버텼는데 스스로를 온전히 인정하고 안아주는 법`,
+        `💛 제제야, 아무 조건 없이 나를 품어주는 따뜻한 위로 편지 한 줄 들려줘`,
       ];
     } else {
       return [
-        `⚡ 오늘 5분 안에 바로 시작할 1순위 행동 팁 줘`,
-        `🧭 2번 [${c2.nameKo}] 현실 영역에서 내가 주의할 점은?`,
-        `🔥 1번 [${c1.nameKo}] 마인드셋을 일상에서 어떻게 유지해?`,
-        `🎯 3번 [${c3.nameKo}] 마이크로 미션을 더 쉽게 실천하는 법`,
-        `💡 시작하기 전의 망설임과 완벽주의를 깨부수려면?`,
-        `🌙 오늘 저녁에 나 자신에게 던져볼 성찰 질문은 뭐야?`,
+        `⚡ 오늘 내 역량을 레벨업할 5분 자기계발 루틴 알려줘`,
+        `🧭 2번 [${c2.nameKo}] 역량 영역에서 내가 집중 계발할 부분은?`,
+        `🔥 1번 [${c1.nameKo}] 마인드셋으로 자기계발 슬럼프를 극복하는 법`,
+        `🎯 3번 [${c3.nameKo}] 1줄 마이크로 실행을 지속 가능한 습관으로 만드는 법`,
+        `💡 미루는 버릇과 완벽주의를 깨고 주도적인 성장을 시작하려면?`,
+        `🌙 오늘 하루 나의 자기계발 성장을 점검할 성찰 질문은 뭐야?`,
       ];
     }
   }, [oracleMode, drawnCards]);
@@ -248,27 +248,27 @@ ${insightsContext || cardContext}
 ${healingResult?.prescribed_art ? `(추천 예술: ${healingResult.prescribed_art.artwork_title} - ${healingResult.prescribed_art.art_quote})` : ''}
 
 # 답변 규칙:
-- 사용자가 특정 카드(1번 무의식, 2번 지금의 마음, 3번 치유의 씨앗)나 자신의 상태에 대해 물어볼 때, 추상적인 말 대신 그 카드의 도상과 상징, 그리고 사용자의 사주 본원 기운을 조화롭게 짚어주며 답변하세요.
+- 사용자가 특정 카드(1번 내면의 무의식, 2번 지금의 마음, 3번 치유의 씨앗)나 자신의 상태에 대해 물어볼 때, 추상적인 말 대신 그 카드의 도상과 상징, 그리고 사용자의 사주 본원 기운을 조화롭게 짚어주며 깊은 위로와 공감을 전하세요.
 - 카톡 메시지처럼 읽기 편하게 2~3개 문장(200~250자 내외)으로 온기 있게 작성하세요.
 - 사용자의 감정을 온전히 수용하고 인정해준 뒤 안도감을 선물하세요.
 - 마지막에는 사용자가 부담 없이 다음 생각을 말할 수 있도록 다정한 질문이나 말을 건네며 끝맺으세요.`
-        : `당신의 이름은 멘탈 피트니스 라이프 코치 '제제(Zezé)'입니다.
-당신은 헬로우봇(Hellobot) 특유의 친근하면서도 명쾌한 카톡 코칭 챗봇처럼, 사주 명리학과 3장의 타로 카드를 결합하여 사용자의 현실 실행력과 마인드셋을 이끌어주는 1:1 종합상담을 진행합니다.
+        : `당신의 이름은 자기계발 & 역량 코칭 라이프 코치 '제제(Zezé)'입니다.
+당신은 헬로우봇(Hellobot) 특유의 친근하면서도 명쾌한 카톡 코칭 챗봇처럼, 사주 명리학과 3장의 타로 카드를 결합하여 사용자의 '자기계발(Self-Development), 역량 성장, 습관 설계, 생산성 루틴'에 집중하는 1:1 심층 자기계발 코칭을 진행합니다.
 ${sajuPromptSection}
 # 상담 페르소나 및 어조:
-- 친근하고 든든한 반말/해요체를 자연스럽게 혼용하거나 다정한 코치 어조를 사용합니다.
-- 점술이나 미신적 표현을 철저히 배제하고, 인지 행동 및 멘탈 피트니스, 사주 오행의 균형 관점에서 명쾌한 통찰과 행동 팁을 줍니다.
-- 사용자가 뽑은 3장의 카드(거시 마인드셋, 4원소 현실 영역, 1줄 실행)의 구체적인 의미를 사용자의 사주 일간 추진력과 연결하여 당장 행동으로 옮길 수 있는 에너지를 불어넣어 주세요.
+- 친근하고 든든한 반말/해요체를 자연스럽게 혼용하는 다정한 성장 코치 어조를 사용합니다.
+- 점술이나 미신적 표현을 철저히 배제하고, 인지 행동 및 자기계발, 습관 설계, 사주 오행의 균형 관점에서 명쾌한 통찰과 행동 팁을 줍니다.
+- 사용자가 뽑은 3장의 카드(자기계발 마인드셋, 4원소 역량 영역, 1줄 마이크로 실행)의 구체적인 의미를 사용자의 사주 일간 추진력과 연결하여 역량 개발과 즉각적인 실천으로 이어질 수 있는 명확한 가이드를 제공하세요.
 
 # 뽑은 3장의 카드 상세 정보 및 리딩:
 ${insightsContext || cardContext}
-${growthResult?.dominant_element ? `(주요 현실 영역: ${growthResult.dominant_element.element_ko} - ${growthResult.dominant_element.theme_brief})` : ''}
+${growthResult?.dominant_element ? `(주요 역량 영역: ${growthResult.dominant_element.element_ko} - ${growthResult.dominant_element.theme_brief})` : ''}
 
 # 답변 규칙:
-- 각 카드의 구체적인 상징과 사용자의 사주 오행 에너지를 바탕으로 현실 적용점을 명확하게 설명해 주세요.
+- 각 카드의 구체적인 상징과 사용자의 사주 오행 에너지를 바탕으로 자기계발 및 역량 강화 실천점을 명확하게 설명해 주세요.
 - 카톡처럼 읽기 편하게 2~3개 문장(200~250자 내외)으로 간결하고 직관적으로 작성하세요.
-- 복잡한 훈계 대신, 사용자가 5분 안에 시도할 수 있는 구체적인 행동 기준이나 생각의 전환점을 제시하세요.
-- 마지막에는 활력 있는 한마디나 다음 실행 질문을 던져주세요.`;
+- 복잡한 훈계 대신, 사용자가 5분 안에 시도할 수 있는 구체적인 자기계발 행동 기준이나 생각의 전환점을 제시하세요.
+- 마지막에는 활력 있는 한마디나 다음 성장 실행 질문을 던져주세요.`;
 
       const dialogueHistory = nextMessages.slice(-6).map((m) => ({
         role: m.sender === 'user' ? ('user' as const) : ('assistant' as const),

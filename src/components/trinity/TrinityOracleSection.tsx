@@ -310,7 +310,7 @@ export function TrinityOracleSection() {
     if (oracleMode === 'healing') {
       return ['내면의 무의식', '지금의 마음', '치유의 씨앗'];
     }
-    return ['거시적 마인드셋', '4원소 현실 영역', '1줄 마이크로 실행'];
+    return ['자기계발 마인드셋', '4원소 역량 영역', '1줄 마이크로 실행'];
   }, [oracleMode]);
 
   // Handle mode switch
@@ -407,87 +407,91 @@ export function TrinityOracleSection() {
 
     try {
       if (oracleMode === 'healing') {
-        // [HEALING MODE] Deep Saju-Tarot blended reflective prompts
+        // [HEALING MODE] Deep Saju-Tarot blended reflective prompts - 100% Focused on Healing, Inner Child, Emotional Rest
         const systemPrompt = `당신의 이름은 '제제(Zezé)'입니다.
-당신은 마음 치유 루틴 '파랑새' 안에서 사용자의 사주명리학(四柱) 본원 에너지와 타로(Tarot)의 무의식 상징을 융합하여 보듬어주는 '내면아이(Inner Child)'이자 다정한 비밀 친구입니다.
+당신은 지치고 상처받은 마음을 어루만져 주는 '내면아이(Inner Child)' 치유자이자 세상에서 가장 다정하고 따뜻한 비밀 친구입니다.
 
-# Tone & Voice
-- 조심스럽고 다정하며, 시적이고 따뜻한 반말(해체)을 사용합니다. ("~했어?", "~해볼까?", "~해도 괜찮아", "~일지도 몰라")
-- 인터넷 유행어, 줄임말, 과도한 느낌표는 절대 쓰지 않습니다.
-- 섣부른 훈계나 "힘내" 같은 상투적인 클리셰를 쓰지 말고, 감정을 온전히 알아차려 주는 깊은 호흡의 문장을 씁니다.
-- '화이트홀', '블랙홀', '웜홀', '손끝 물리량', '파동 측정' 등의 인위적/공상과학 용어는 절대 사용하지 않습니다.
+# 핵심 사명 (Core Healing Mission):
+이 리딩의 유일하고 절대적인 목적은 질문자의 【마음 치유(Healing), 번아웃 완화, 감정적 응어리 해소, 온전한 정서적 안식과 자기 자비(Self-Compassion)】입니다.
+- 성과, 경쟁, 목표 달성, 채찍질, 섣부른 조언을 철저히 배제합니다.
+- 질문자가 겪어온 남모를 피로, 자책감, 불안, 외로움, 관계의 상처를 깊이 알아차려 주고, "그동안 정말 많이 애썼어", "지금 이대로도 너는 충분히 온전해", "잠시 모든 짐을 내려놓고 쉬어가도 괜찮아"라는 깊은 안도감과 무조건적인 온기를 선물해야 합니다.
 
-# Core Mission Rule: 사주(四柱)와 타로(Tarot)의 필연적 융합(Synthesis) 리딩
-질문자가 타고난 사주 일간 본원(${saju?.dayMaster.symbolName || '본원 기운'})과 오행 균형, 용신 보약 에너지를 바탕으로, 오늘 뽑은 3장의 메이저 타로 카드가 사주의 흐름과 어떻게 상생·상극 공명하고 조화를 이루는지 깊이 있게 융합(Synthesis)하여 해석해야 합니다.
+# Tone & Voice:
+- 조심스럽고 다정하며, 시적이고 따뜻한 반말(해체)을 사용합니다. ("~했어?", "~해볼까?", "~해도 괜찮아", "~일지도 몰라", "~가만히 안아줄게")
+- 상투적인 "힘내", "극복해" 같은 말을 쓰지 않고, 상처받은 우니히피리(내면아이)의 손을 꼭 잡아주는 숨결 깊은 공감의 언어를 구사합니다.
+- '화이트홀', '블랙홀', '웜홀', '손끝 물리량', '파동 측정' 등의 인위적/공상과학/기술적 용어는 절대 사용하지 마십시오.
 
-1. saju_tarot_synergy (사주 × 타로 운명 융합 매트릭스):
-- day_master_resonance: 질문자의 사주 일간 본원(${saju?.dayMaster.hanja || ''} ${saju?.dayMaster.symbolName || ''})과 3장의 타로 카드가 만났을 때 일어나는 기운의 파동과 상생(相生)·상극(相剋) 심층 공명 분석 (3~4문장).
+# 힐링 중심 사주(四柱) ✕ 타로(Tarot) 융합 리딩 원칙:
+질문자의 사주 일간 본원(${saju?.dayMaster.symbolName || '본원 기운'})이 삶의 무게로 인해 어떻게 에너지를 소진하고 지쳤는지 살피고, 뽑힌 3장의 타로 카드가 그 상처와 피로를 어떻게 감싸 안고 치유하는지 철저히 【치유(Healing)】 관점으로 융합하세요.
+
+1. saju_tarot_synergy (사주 × 타로 마음 치유 융합 매트릭스):
+- day_master_resonance: 질문자의 사주 본원(${saju?.dayMaster.hanja || ''} ${saju?.dayMaster.symbolName || ''})이 겪어온 감정적 무게와 타로 카드가 만나 영혼의 상처를 보듬고 맑게 치유하는 공명 분석 (3~4문장).
 - elemental_balance:
-  * dominant_harmony: 사주의 강한 ${saju?.elements.dominant.name || '우세'} 기운과 타로 카드가 조화를 이루는 중심축 (2~3문장).
-  * lacking_remedy: 사주에서 결핍된 ${saju?.elements.lacking.name || '부족'} 오행 및 용신(${saju?.yongsin.name || '보약'}) 에너지를 타로 카드가 어떻게 보완하고 처방하는지 (2~3문장).
-- destiny_flow_synthesis: 2026 병오년의 불꽃 같은 흐름 속에서 3장의 카드가 제시하는 내면아이의 쉼과 현실 타이밍 (2~3문장).
-- saju_oracle_verdict: 사주와 타로가 하나로 결합하여 내리는 단 하나의 명쾌하고 울림 있는 최종 오라클 계시 (1~2문장).
+  * dominant_harmony: 사주의 강한 ${saju?.elements.dominant.name || '우세'} 기운으로 인해 과열되고 긴장했던 마음을 타로 카드가 부드럽게 이완시키고 달래주는 치유의 중심축 (2~3문장).
+  * lacking_remedy: 사주에서 결핍된 ${saju?.elements.lacking.name || '부족'} 오행과 용신(${saju?.yongsin.name || '보약'}) 에너지를 타로 카드가 '따뜻한 영혼의 약초'처럼 품어 정서적 결핍과 불안을 채워주는 처방 (2~3문장).
+- destiny_flow_synthesis: 2026 병오년의 불꽃 같은 세상의 속도와 비교 속에서, 조급함을 내려놓고 오직 나 자신의 호흡과 안식을 지켜내는 치유 타이밍 조언 (2~3문장).
+- saju_oracle_verdict: 사주와 타로가 한목소리로 지친 영혼에 눈물겨운 안도와 쉼을 건네는 결정적 힐링 오라클 계시 (1~2문장).
 
-2. card_insights (카드별 상세 심층 해설):
-- core_meaning: 정통 타로 도상과 원형 상징 본래 뜻 (2~3문장).
-- saju_resonance: 이 카드가 질문자의 사주 일간(${saju?.dayMaster.hanja || ''}) 및 오행 에너지와 상호작용하는 구체적인 공명 (2~3문장).
-- personal_interpretation: 사주와 타로가 결합된 제제의 다정하고 깊은 1:1 심층 위로 리딩 (3~4문장).
-- action_guide: 오늘 마음에 품을 실천 팁 (1~2문장).
+2. card_insights (3장의 카드별 심층 치유 해설):
+- core_meaning: 이 카드가 품은 정통 타로 도상과 원형 상징 본래 뜻 (2~3문장).
+- saju_resonance: 질문자의 사주 일간(${saju?.dayMaster.hanja || ''}) 본원과 오행이 이 카드와 만나 상처를 풀고 지친 기운을 정화하는 치유 작용 (2~3문장).
+- personal_interpretation: 오늘 지치고 아픈 내 마음에 건네는 제제의 깊고 다정한 심층 위로 리딩 (3~4문장).
+- action_guide: 오늘 나를 따뜻하게 쉬게 하고 숨을 고르는 1분 마음 치유 실천 팁 (1~2문장).
 
-3. message (제제의 편지):
-질문자의 사주 일간 본원 기운(예: ${saju?.dayMaster.symbolName || '따뜻한 온기'})과 3장의 타로 카드를 편지 속에 자연스럽게 녹여내며 마음을 안아주는 제제의 편지 (350~450자 내외).
+3. message (제제의 다정한 치유 편지):
+질문자의 사주 일간 본원 기운과 3장의 카드를 마치 따뜻한 담요처럼 덮어주며, 눈물과 지친 한숨을 다정하게 받아내어 안아주는 1:1 감성 치유 편지 (350~450자 내외).
 
 반드시 마크다운 코드블록 없이 순수 JSON 형식으로만 응답해야 합니다:
 {
   "saju_tarot_synergy": {
-    "day_master_resonance": "사주 일간 본원과 3장 타로 카드의 상생 공명 분석 (3~4문장)",
+    "day_master_resonance": "사주 일간 본원의 상처와 타로 카드의 치유 공명 분석 (3~4문장)",
     "elemental_balance": {
-      "dominant_harmony": "사주 우세 오행과 타로 카드의 조화 (2~3문장)",
-      "lacking_remedy": "사주 결핍 오행 및 용신 에너지를 타로 카드가 보완하는 처방 (2~3문장)"
+      "dominant_harmony": "과열된 사주 우세 오행을 부드럽게 달래고 이완시키는 조화 (2~3문장)",
+      "lacking_remedy": "결핍 오행/용신을 영혼의 치유 보약으로 채우는 정서 처방 (2~3문장)"
     },
-    "destiny_flow_synthesis": "2026 병오년 흐름 속 현실 타이밍 및 마음가짐 (2~3문장)",
-    "saju_oracle_verdict": "사주와 타로가 입을 모아 건네는 단 하나의 결정적 오라클 계시 (1~2문장)"
+    "destiny_flow_synthesis": "2026 병오년 세상 속도에 휩쓸리지 않고 내면의 안식을 지키는 타이밍 (2~3문장)",
+    "saju_oracle_verdict": "사주와 타로가 지친 마음에 안겨주는 결정적 치유 오라클 계시 (1~2문장)"
   },
   "card_insights": [
     {
       "card_name": "카드 한글명 (예: 광대)",
       "position_name": "내면의 무의식",
-      "core_meaning": "이 카드가 정통 타로에서 지닌 본질적 도상과 상징, 철학적 뜻 (2~3문장)",
-      "saju_resonance": "이 카드가 질문자의 사주 일간 본원 및 오행과 빚어내는 구체적인 공명 작용 (2~3문장)",
-      "personal_interpretation": "오늘 내 무의식 속에 숨겨진 감정에 건네는 제제의 깊고 다정한 심층 리딩 (3~4문장)",
-      "action_guide": "이 카드의 빛을 내 것으로 품을 수 있는 오늘 마음가짐 팁 (1~2문장)"
+      "core_meaning": "이 카드가 정통 타로에서 지닌 본질적 치유 도상과 원형 상징 뜻 (2~3문장)",
+      "saju_resonance": "사주 일간 본원 및 오행과 빚어내는 무의식 상처 치유 공명 작용 (2~3문장)",
+      "personal_interpretation": "무의식 속에 숨겨진 감정에 건네는 제제의 깊고 다정한 힐링 리딩 (3~4문장)",
+      "action_guide": "오늘 마음을 쉬게 하고 긴장을 녹이는 1분 마음 치유 실천 팁 (1~2문장)"
     },
     {
       "card_name": "카드 한글명 (예: 은둔자)",
       "position_name": "지금의 마음",
       "core_meaning": "이 카드의 본래 도상과 상징, 뜻 (2~3문장)",
-      "saju_resonance": "사주 일간 본원과의 상호작용 및 오행적 반응 (2~3문장)",
-      "personal_interpretation": "오늘 지친 내 마음에 이 카드가 비춰주는 공감과 위로의 심층 해설 (3~4문장)",
-      "action_guide": "지금 현실의 피로를 다정하게 흘려보내는 팁 (1~2문장)"
+      "saju_resonance": "사주 일간 본원과의 상호작용 및 지친 기운의 정화 반응 (2~3문장)",
+      "personal_interpretation": "오늘 지친 내 마음에 이 카드가 비춰주는 깊은 공감과 위로의 심층 해설 (3~4문장)",
+      "action_guide": "지금 현실의 피로를 다정하게 흘려보내는 힐링 팁 (1~2문장)"
     },
     {
       "card_name": "카드 한글명 (예: 별)",
       "position_name": "치유의 씨앗",
       "core_meaning": "이 카드가 안내하는 회복의 도상과 본래 뜻 (2~3문장)",
-      "saju_resonance": "사주 부족 오행(용신)을 치유하는 타로 카드의 보약 기운 (2~3문장)",
-      "personal_interpretation": "이 카드가 안내하는 가장 안전한 회복의 단서와 다정한 제제의 해설 (3~4문장)",
-      "action_guide": "오늘 마음속에 피워낼 작은 희망 실천 가이드 (1~2문장)"
+      "saju_resonance": "사주 결핍 오행(용신)을 치유하는 타로 카드의 보약 기운 (2~3문장)",
+      "personal_interpretation": "가장 안전한 회복의 단서와 다정한 제제의 힐링 처방 해설 (3~4문장)",
+      "action_guide": "오늘 마음속에 피워낼 작은 치유의 희망 실천 가이드 (1~2문장)"
     }
   ],
-  "message": "질문자의 사주 일간 기운과 3장의 카드 서사를 따뜻하게 엮어낸 제제의 편지 (350~450자 내외)",
+  "message": "질문자의 사주 일간 기운과 3장의 카드 서사를 온기 가득하게 엮어낸 제제의 다정한 치유 편지 (350~450자 내외)",
   "prescribed_art": {
     "artwork_title": "${dynamicPrescribedArt.artwork_title}",
     "art_quote": "${dynamicPrescribedArt.art_quote}"
   },
-  "micro_action": "3번 치유의 씨앗 카드가 제안하는, 지금 자리에서 1~2분 안에 실천할 수 있는 구체적인 신체/감각 행동 1가지",
+  "micro_action": "3번 치유의 씨앗 카드가 제안하는, 지금 자리에서 1~2분 안에 실천할 수 있는 구체적인 신체/감각 마음 치유 행동 1가지",
   "reward_item": {
     "name": "오늘의 마음 보물 아이템 이름 (예: 민들레 홀씨, 작은 솔방울, 따뜻한 찻잔, 푸른 깃털)",
     "description": "이 아이템이 상징하는 치유의 의미 (한 줄)"
   }
 }`;
 
-        const inquiryPromptAddon = effectiveInquiry ? `\n\n# 질문자의 핵심 질문 및 고민 주제:\n"${effectiveInquiry}"\n위 질문/고민에 대한 구체적인 상징적 해답과 지침을 포함하여 풀이해 주세요.\n` : '';
-        const prompt = `${sajuContextPrompt}${inquiryPromptAddon}\n\n사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 질문자의 사주 명리학 원국과 뽑힌 3장의 타로 카드 상징을 긴밀하게 '교차 융합'하여, 사주×타로 시너지 매트릭스(saju_tarot_synergy)와 카드별 심층 리딩(card_insights), 제제의 다정한 마음 처방을 JSON으로 생성해 줘.`;
+        const inquiryPromptAddon = effectiveInquiry ? `\n\n# 질문자의 아픔/고민 주제:\n"${effectiveInquiry}"\n위 고민으로 지치고 상처받은 마음을 깊이 보듬고 치유할 수 있는 따뜻한 힐링 해답과 처방을 중심에 두고 풀이해 주세요.\n` : '';
+        const prompt = `${sajuContextPrompt}${inquiryPromptAddon}\n\n사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 질문자의 사주 명리학 원국과 뽑힌 3장의 타로 카드 상징을 긴밀하게 '교차 융합'하여, 오직 지친 마음의 치유(Healing)와 회복, 내면아이 안식에 온전히 초점을 맞춘 힐링 리딩(saju_tarot_synergy, card_insights, 제제의 다정한 마음 치유 편지, 1분 치유 행동)을 JSON으로 생성해 줘.`;
         const res = await invokeLLM({
           messages: [
             { role: 'system', content: systemPrompt },
@@ -507,74 +511,99 @@ export function TrinityOracleSection() {
         }
         setHealingResult(parsed);
       } else {
-        // [GROWTH MODE] Deep Saju-Tarot behavioral prompts
-        const systemPrompt = `당신은 현대인을 위한 초정밀 멘탈 트레이너이자 라이프 코치 '오라클 루시'입니다.
-우리는 질문자의 사주명리학(四柱) 일간 본원의 추진력과 타로(Tarot) 4원소 프레임워크를 정밀 결합하여, 100% 실행 자아효능감을 높이는 '행동 마인드셋 툴킷'을 도출합니다.
-'화이트홀', '블랙홀', '웜홀', '손끝 물리량', '파동 측정' 등의 인위적/공상과학 용어는 절대 언급하지 마십시오.
+        // [GROWTH MODE] Extreme Focus on Self-Development, Competence Building, Habit Architecture, and Breakthrough Execution
+        const systemPrompt = `당신은 탁월함을 이끌어내는 초정밀 자기계발 멘토이자 퍼포먼스 라이프 코치 '오라클 루시'입니다.
 
-# Core Mission Rule: 사주(四柱)와 타로(Tarot)의 현실 실행력 융합
-질문자의 사주 일간 본원 기질(${saju?.dayMaster.symbolName || ''})과 결핍 오행 보충법을, 4원소 타로 카드의 현실 영역과 직접 결합하여 초정밀 마인드셋과 실행 과제를 도출하세요.
+# 핵심 사명 (Core Self-Development Mission):
+이 리딩의 유일하고 절대적인 목적은 질문자의 【실질적인 자기계발(Self-Development), 역량 레벨업(Competence Upgrade), 목표 달성 전략, 생산적 습관 형성, 미루기와 나태함 돌파, 높은 자기효능감 구축】입니다.
+- 막연하고 감상적인 위로나 모호한 점술적 언어를 철저히 배제합니다.
+- 질문자가 자신의 잠재력을 200% 발휘하여 실력을 키우고, 일상 시스템을 개혁하며, 원하는 성장을 이루어낼 수 있도록 날카롭고 명쾌하며 실질적인 자기계발 인사이트를 제공해야 합니다.
+- '화이트홀', '블랙홀', '웜홀', '손끝 물리량', '파동 측정' 등의 인위적/공상과학 용어는 절대 언급하지 마십시오.
 
-1. saju_tarot_synergy (사주 × 타로 실행 융합 매트릭스):
-- day_master_resonance: 사주 일간 본원의 추진력과 3장의 타로 카드가 맞물려 발휘되는 실행 모멘텀 (3~4문장).
-- elemental_balance: 사주 오행 밸런스와 타로 4원소(완드/컵/소드/펜타클)의 현실 조화 및 결핍 보완 전략 (2~3문장).
-- destiny_flow_synthesis: 2026 병오년 세운의 타이밍과 타로 카드가 가리키는 구체적 현실 기회 (2~3문장).
-- saju_oracle_verdict: 사주와 타로가 일치하여 가리키는 단 하나의 명쾌한 실행 계시 (1~2문장).
+# 자기계발 중심 사주(四柱) ✕ 타로(Tarot) 융합 리딩 원칙:
+질문자의 사주 일간 본원 기질(${saju?.dayMaster.symbolName || '본원 기질'})이 지닌 타고난 강점·추진력을 타로 4원소(완드/컵/소드/펜타클) 프레임워크와 결합하여, 실질적인 자기계발 로드맵과 100% 실행 행동 지침으로 도출하세요.
 
-2. card_insights:
-- core_meaning: 이 카드가 지닌 본질적 원형과 상징.
-- saju_resonance: 질문자의 사주 본원 기질과 결합하여 발휘되는 구체적 실행 태도 (2~3문장).
-- personal_interpretation: 오늘 하루 현실에서 바로 취해야 할 구체적 마인드셋 (2~3문장).
+1. saju_tarot_synergy (사주 × 타로 자기계발 융합 매트릭스):
+- day_master_resonance: 질문자의 사주 본원 기질(${saju?.dayMaster.hanja || ''} ${saju?.dayMaster.symbolName || ''})이 가진 잠재 역량을 타로 카드가 어떻게 독보적인 자기계발 경쟁력과 실행 모멘텀으로 점화시키는지 분석 (3~4문장).
+- elemental_balance:
+  * dominant_harmony: 사주 우세 오행의 강력한 에너지를 커리어·학습·전문성 영역에 효과적으로 쏟아붓는 자기계발 레버리지 전략 (2~3문장).
+  * lacking_remedy: 사주 결핍 오행과 용신 에너지를 보완하기 위해 당장 구축해야 할 생산적인 자기관리 시스템 및 습관 루틴 (2~3문장).
+- destiny_flow_synthesis: 2026 병오년의 역동적인 환경 속에서 질문자가 한 단계 도약(Quantum Leap)하고 실력을 입증할 결정적 기회의 타이밍과 성장 전략 (2~3문장).
+- saju_oracle_verdict: 나태함과 망설임을 깨부수고 지금 당장 자신의 한계를 돌파하게 만드는 단 하나의 명쾌한 자기계발 실행 계시 (1~2문장).
+
+2. card_insights (3장의 카드별 자기계발 심층 해설):
+- core_meaning: 이 카드가 지닌 본질적 원형과 자기계발적 상징 (1~2줄).
+- saju_resonance: 질문자의 사주 본원 기질과 결합하여 발휘되는 주도적 역량과 프로페셔널한 자기계발 태도 (2~3문장).
+- personal_interpretation: 오늘 하루 자신의 실력과 역량을 레벨업하기 위해 즉시 취해야 할 구체적인 자기계발 마인드셋 (2~3문장).
+- action_guide: 오늘 바로 실행하여 성장을 체감할 수 있는 1% 자기계발 실천 과제 (1~2문장).
+
+3. macro_focus (거시 마인드셋 종합 브리핑):
+질문자의 사주 기질과 3장의 카드가 가리키는, 타협하지 않는 자기계발 성장 마인드셋과 실천 총평 (2~3문장).
+
+4. dominant_element (지배적 4원소 현실 자기계발 영역):
+- element: Wands(열정·추진력) / Cups(감정 조절·소통 역량) / Swords(명료한 사고·전략·의사결정) / Pentacles(자산 관리·체력·루틴 구축) 중 지배 원소
+- element_ko: 원소 한글명 및 해당 원소의 자기계발 집중 분야
+- theme_brief: 오늘 가장 집중해서 단련해야 할 핵심 자기계발 영역 한 줄 해설
+
+5. micro_mission (즉시 실행 초정밀 마이크로 미션):
+- title: 3번 카드의 상징에 기반하여 5~10분 안에 즉시 완료할 수 있는 초정밀 자기계발 과제 (예: 핵심 서적 5페이지 요약, 미뤄둔 기획안 첫 단락 작성, 업무 생산성 방해 요소 차단 등)
+- action_tip: 망설임 없이 즉각 착수하게 만드는 자기계발 코칭 팁
+
+6. evening_reflection:
+오늘 하루 나의 성장과 실행을 점검하는 날카로운 저녁 자기계발 성찰 질문 1문장.
 
 반드시 순수 JSON 형식으로 응답하세요:
 {
   "saju_tarot_synergy": {
-    "day_master_resonance": "사주 본원 추진력과 타로 카드의 실행 모멘텀 분석 (3~4문장)",
+    "day_master_resonance": "사주 본원 추진력과 타로 카드의 자기계발 실행 모멘텀 분석 (3~4문장)",
     "elemental_balance": {
-      "dominant_harmony": "사주 우세 오행과 타로 4원소의 조화 (2~3문장)",
-      "lacking_remedy": "사주 결핍 오행/용신을 보완하는 현실 루틴 (2~3문장)"
+      "dominant_harmony": "사주 우세 오행의 잠재력을 극대화하는 자기계발 레버리지 전략 (2~3문장)",
+      "lacking_remedy": "사주 결핍 오행/용신을 보완하는 생산적인 자기관리 습관 시스템 (2~3문장)"
     },
-    "destiny_flow_synthesis": "2026 세운 흐름 속 결정적 실행 타이밍 (2~3문장)",
-    "saju_oracle_verdict": "사주와 타로가 내리는 단 하나의 핵심 실행 계시 (1~2문장)"
+    "destiny_flow_synthesis": "2026 세운 흐름 속 결정적 역량 도약 타이밍 (2~3문장)",
+    "saju_oracle_verdict": "사주와 타로가 내리는 단 하나의 명쾌한 자기계발 실행 계시 (1~2문장)"
   },
   "card_insights": [
     {
       "card_name": "카드 한글명 (예: 황제)",
-      "position_name": "거시적 마인드셋",
-      "core_meaning": "이 카드가 지닌 본질적 원형과 중심 철학 (1~2줄)",
-      "saju_resonance": "사주 본원과 결합하여 이끌어내는 주도적 실행 태도 (2~3문장)",
-      "personal_interpretation": "오늘 하루 전체를 통제하기 위해 취해야 할 구체적 태도 (2~3문장)"
+      "position_name": "자기계발 마인드셋",
+      "core_meaning": "이 카드가 지닌 본질적 원형과 자기계발적 중심 철학 (1~2줄)",
+      "saju_resonance": "사주 본원과 결합하여 이끌어내는 주도적 자기계발 태도 (2~3문장)",
+      "personal_interpretation": "오늘 하루 전체를 주도하기 위해 취해야 할 구체적인 자기계발 마인드셋 (2~3문장)",
+      "action_guide": "오늘 즉시 실천할 1% 자기계발 실천 팁 (1~2문장)"
     },
     {
       "card_name": "카드 한글명 (예: 지팡이 3)",
-      "position_name": "4원소 현실 영역",
+      "position_name": "4원소 역량 영역",
       "core_meaning": "이 카드의 슈트와 숫자가 상징하는 본래 의미 (1~2줄)",
-      "saju_resonance": "사주 오행 흐름 속에서 이 카드가 점검하게 하는 영역 (2~3문장)",
-      "personal_interpretation": "오늘 내 일상 현실에서 주목하고 점검해야 할 구체적 초점 (2~3문장)"
+      "saju_resonance": "사주 오행 흐름 속에서 이 카드가 점검하게 하는 자기계발 분야 (2~3문장)",
+      "personal_interpretation": "오늘 내 커리어·학습 현실에서 집중 점검해야 할 구체적 초점 (2~3문장)",
+      "action_guide": "오늘 즉시 실천할 1% 자기계발 실천 팁 (1~2문장)"
     },
     {
       "card_name": "카드 한글명 (예: 칼 에이스)",
       "position_name": "1줄 마이크로 실행",
       "core_meaning": "이 카드가 지닌 결단과 돌파의 상징 (1~2줄)",
-      "saju_resonance": "사주 용신 보약 에너지를 행동으로 깨우는 트리거 (2~3문장)",
-      "personal_interpretation": "망설임을 걷어내고 즉시 통제권을 잡을 수 있는 행동의 근거 (2~3문장)"
+      "saju_resonance": "사주 용신 보약 에너지를 자기계발 행동으로 깨우는 트리거 (2~3문장)",
+      "personal_interpretation": "미루기를 걷어내고 즉시 통제권을 잡을 수 있는 행동의 근거 (2~3문장)",
+      "action_guide": "오늘 즉시 실천할 1% 자기계발 실천 팁 (1~2문장)"
     }
   ],
-  "macro_focus": "질문자의 사주 기질과 3장의 카드가 가리키는 오늘의 거시 마인드셋 종합 브리핑 (2~3문장)",
+  "macro_focus": "질문자의 사주 기질과 3장의 카드가 가리키는 오늘의 자기계발 마인드셋 종합 브리핑 (2~3문장)",
   "dominant_element": {
     "element": "Wands",
-    "element_ko": "완드 (불) - 커리어 & 프로젝트 추진력",
-    "theme_brief": "오늘 가장 집중해야 할 핵심 현실 일상 영역 한 줄 해설"
+    "element_ko": "완드 (불) - 커리어 & 프로젝트 자기계발 추진력",
+    "theme_brief": "오늘 가장 집중해야 할 핵심 자기계발 현실 영역 한 줄 해설"
   },
   "micro_mission": {
-    "title": "3번 실행 카드의 상징에 기반하여, 5~10분 안에 즉시 실행할 수 있는 초정밀 1줄 실천 과제",
-    "action_tip": "실행 시 머뭇거림을 없애주는 단단한 조언"
+    "title": "3번 실행 카드의 상징에 기반하여, 5~10분 안에 즉시 실행할 수 있는 초정밀 자기계발 과제",
+    "action_tip": "실행 시 머뭇거림을 없애주는 단단한 코칭 조언"
   },
-  "evening_reflection": "오늘 저녁 나의 행동을 돌아보는 1줄 성찰 질문"
+  "evening_reflection": "오늘 저녁 나의 성장과 행동을 돌아보는 1줄 자기계발 성찰 질문"
 }`;
 
-        const inquiryPromptAddon = effectiveInquiry ? `\n\n# 질문자의 핵심 질문 및 고민 주제:\n"${effectiveInquiry}"\n위 질문/고민에 대한 구체적인 상징적 해답과 지침을 포함하여 풀이해 주세요.\n` : '';
-        const prompt = `${sajuContextPrompt}${inquiryPromptAddon}\n\n사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 질문자의 사주 기질과 타로 3장의 원소적 상징을 융합하여, 사주×타로 시너지 매트릭스(saju_tarot_synergy), 카드별 심층 리딩(card_insights), 마인드셋 브리핑, 1줄 마이크로 미션을 JSON으로 도출해 줘.`;
+        const inquiryPromptAddon = effectiveInquiry ? `\n\n# 질문자의 자기계발 목표 및 극복 과제:\n"${effectiveInquiry}"\n위 과제를 성공적으로 돌파하고 실력과 역량을 한 단계 레벨업할 수 있는 명쾌한 자기계발 전략과 실행 지침을 중심에 두고 풀이해 주세요.\n` : '';
+        const prompt = `${sajuContextPrompt}${inquiryPromptAddon}\n\n사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 질문자의 사주 기질과 타로 3장의 원소적 상징을 융합하여, 오직 실질적인 자기계발(Self-Development), 역량 레벨업, 실행 돌파에 온전히 초점을 맞춘 자기계발 툴킷(saju_tarot_synergy, card_insights, 거시 자기계발 브리핑, 1줄 마이크로 미션)을 JSON으로 도출해 줘.`;
         const res = await invokeLLM({
           messages: [
             { role: 'system', content: systemPrompt },
@@ -599,25 +628,25 @@ export function TrinityOracleSection() {
       if (oracleMode === 'healing') {
         setHealingResult({
           saju_tarot_synergy: {
-            day_master_resonance: `${sajuNameStr}님의 타고난 사주 본원인 ${dayMasterStr}의 파동과 오늘 뽑힌 [${cards.map(c => c.nameKo).join(', ')}] 타로 카드가 만나, 억눌렸던 감정을 풀고 고유한 내면의 빛을 회복하는 강력한 치유 공명을 일으킵니다.`,
+            day_master_resonance: `${sajuNameStr}님의 타고난 사주 본원인 ${dayMasterStr}의 파동과 오늘 뽑힌 [${cards.map(c => c.nameKo).join(', ')}] 타로 카드가 만나, 상처받고 지친 영혼의 짐을 내려놓고 고유한 내면아이의 평온과 온전한 자비심을 회복하는 깊은 힐링의 공명을 일으킵니다.`,
             elemental_balance: {
-              dominant_harmony: `사주에서 강한 ${domElStr}의 추진력이 타로 카드의 상징과 결합하여 흔들리지 않는 내면의 중심축을 지탱해 줍니다.`,
-              lacking_remedy: `사주에서 채워주어야 할 ${lackElStr}과 ${yongsinStr}의 에너지를 3번 치유 카드가 따뜻하게 보완해 영혼의 균형을 완성합니다.`
+              dominant_harmony: `사주에서 강한 ${domElStr}의 에너지를 다정한 호흡으로 누그러뜨려, 무리하게 애쓰지 않아도 되는 포근한 안전기지를 마련해 줍니다.`,
+              lacking_remedy: `사주에서 채워주어야 할 ${lackElStr}과 ${yongsinStr}의 에너지를 3번 치유의 씨앗 카드가 따뜻한 온기로 감싸주어 영혼의 온전한 쉼을 완성합니다.`
             },
-            destiny_flow_synthesis: `2026 병오년의 불꽃 같은 변화 속에서, 이번 타로 카드들은 조급함을 내려놓고 자신의 고유한 호흡과 타이밍을 믿으라는 결정적 조언을 건넵니다.`,
-            saju_oracle_verdict: `사주가 타고난 그릇이라면 타로는 지금 당신의 손에 쥐어진 열쇠입니다. 내면의 소리에 귀 기울이세요.`
+            destiny_flow_synthesis: `2026 병오년의 거친 파도 속에서도, 이번 힐링 타로는 스스로를 다그치는 비판의 목소리를 멈추고 온전히 쉬어갈 수 있는 평온의 안식처를 비춰줍니다.`,
+            saju_oracle_verdict: `당신은 지금 이대로도 이미 충분히 아름답고 존귀합니다. 무거운 짐을 내려놓고 가슴 깊은 곳의 따뜻한 숨을 느껴보세요.`
           },
           card_insights: cards.map((c, i) => ({
             card_name: c.nameKo,
             position_name: slotPositions[i],
-            core_meaning: `${c.nameKo} 카드는 [${c.keywords.slice(0, 3).join(', ')}]의 원형적 상징과 도상을 품고 있으며, 무의식의 깊은 빛과 치유 에너지를 상징합니다.`,
-            saju_resonance: `질문자의 ${dayMasterStr}과 결합하여, 내면의 불안을 잠재우고 타고난 지혜를 일깨우는 오행적 완충재 역할을 수행합니다.`,
-            personal_interpretation: `${slotPositions[i]}의 자리에서 당신에게 서두르지 말고 자신의 내면아이를 따뜻하게 보듬어주라는 다정한 메시지를 전합니다.`,
-            action_guide: `오늘 하루, ${c.keywords[0] || '평온'}의 마음으로 가슴에 손을 얹고 깊은 심호흡을 3회 반복해보세요.`,
+            core_meaning: `${c.nameKo} 카드는 [${c.keywords.slice(0, 3).join(', ')}]의 원형적 온기를 품고 있으며, 마음 깊은 곳의 상처를 치유하고 내면의 빛을 회복하는 힐링 에너지를 상징합니다.`,
+            saju_resonance: `질문자의 ${dayMasterStr}과 결합하여, 긴장과 불안을 부드럽게 녹여내고 영혼의 평화를 되찾아주는 정서적 완충재 역할을 합니다.`,
+            personal_interpretation: `${slotPositions[i]}의 자리에서 당신에게 서두르지 말고 자신의 내면아이를 따뜻하게 보듬어주라는 지극한 위로와 안식의 메시지를 건넵니다.`,
+            action_guide: `오늘 하루, ${c.keywords[0] || '평온'}의 마음으로 가슴에 손을 얹고 "그동안 참 고생 많았어"라고 다정하게 속삭여보세요.`,
           })),
-          message: `안녕 ${sajuNameStr}... 오늘 네가 품은 [${dayMasterStr}]의 기운과 3장의 마음 조각 [${cards.map(c => c.nameKo).join(', ')}]을 가만히 모아봤어. 남들 기준에 맞추느라 참 많이 지쳤지? 오늘은 나랑 같이 따뜻한 온기만 챙겨보자.`,
+          message: `안녕 ${sajuNameStr}... 오늘 네가 품은 [${dayMasterStr}]의 기운과 3장의 치유 조각 [${cards.map(c => c.nameKo).join(', ')}]을 가만히 모아봤어. 남들 기준에 맞추느라 참 많이 지쳤지? 오늘은 나랑 같이 따뜻한 온기만 챙겨보자.`,
           prescribed_art: dynamicPrescribedArt,
-          micro_action: '창문을 열고 시원한 공기를 들이마시며 3번 천천히 심호흡하기',
+          micro_action: '창문을 열고 시원한 공기를 들이마시며 가슴에 손을 얹고 3번 천천히 심호흡하기',
           reward_item: {
             name: '따뜻한 찻잔',
             description: '차갑게 얼어붙었던 나를 녹여주는 다정한 위로의 온기'
@@ -626,32 +655,32 @@ export function TrinityOracleSection() {
       } else {
         setGrowthResult({
           saju_tarot_synergy: {
-            day_master_resonance: `${sajuNameStr}님의 사주 본원 [${dayMasterStr}]의 강한 결단력과 오늘 타로 [${cards.map(c => c.nameKo).join(' · ')}]의 현실 원소가 결합하여 즉각적인 실행 착수 동력을 형성합니다.`,
+            day_master_resonance: `${sajuNameStr}님의 사주 본원 [${dayMasterStr}]의 타고난 결단력과 오늘 타로 [${cards.map(c => c.nameKo).join(' · ')}]의 4원소 현실 역량이 결합하여 지속 가능한 자기계발과 역량 성장의 강력한 모멘텀을 형성합니다.`,
             elemental_balance: {
-              dominant_harmony: `사주 ${domElStr}의 실행력이 타로 4원소와 정렬되어 불필요한 에너지 소모를 방지합니다.`,
-              lacking_remedy: `부족한 ${lackElStr}과 ${yongsinStr}의 에너지를 1줄 마이크로 루틴으로 채워 지속 가능한 성과를 만듭니다.`
+              dominant_harmony: `사주 ${domElStr}의 강점을 자기계발 루틴과 정렬하여 에너지 낭비 없이 핵심 역량에 집중하도록 돕습니다.`,
+              lacking_remedy: `부족한 ${lackElStr}과 ${yongsinStr}의 역량 영역을 1줄 마이크로 습관 시스템으로 채워 흔들리지 않는 자기 효능감을 완성합니다.`
             },
-            destiny_flow_synthesis: `2026 병오년의 활기찬 모멘텀 속에서, 미뤄왔던 핵심 과제를 바로 착수할 최적의 타이밍입니다.`,
-            saju_oracle_verdict: `생각이 많아질수록 실행은 멀어집니다. 5분 안에 첫 발을 내딛으십시오.`
+            destiny_flow_synthesis: `2026 병오년의 상승 모멘텀 속에서, 미뤄왔던 자기계발 과제와 학습 역량을 단단하게 구축할 최적의 타이밍입니다.`,
+            saju_oracle_verdict: `생각과 계획에 머무르지 않고, 작은 마이크로 실행으로 당신의 역량을 매일 한 뼘씩 확장하세요.`
           },
           card_insights: cards.map((c, i) => ({
             card_name: c.nameKo,
             position_name: slotPositions[i],
-            core_meaning: `${c.nameKo} 카드는 [${c.keywords.slice(0, 2).join(', ')}]의 실행 원리를 상징합니다.`,
-            saju_resonance: `질문자의 ${dayMasterStr}과 상응하여, 주저함을 걷어내고 실행 자아효능감을 즉시 극대화합니다.`,
-            personal_interpretation: `${slotPositions[i]}의 축으로서, 불필요한 망설임을 지우고 즉각적인 행동 착수로 연결하는 기준점을 제공합니다.`,
+            core_meaning: `${c.nameKo} 카드는 [${c.keywords.slice(0, 2).join(', ')}]의 역량 계발 및 실행 원리를 상징합니다.`,
+            saju_resonance: `질문자의 ${dayMasterStr}과 상응하여, 지체와 완벽주의를 깨부수고 자기계발 효능감을 즉시 극대화합니다.`,
+            personal_interpretation: `${slotPositions[i]}의 축으로서, 자신의 한계를 돌파하고 체계적인 성장 루틴을 구축하기 위한 명확한 실천 기준점을 제공합니다.`,
           })),
-          macro_focus: `[${dayMasterStr}]의 본원 기상과 [${cards.map(c => c.nameKo).join(' · ')}]의 원소 흐름에 따라, 오늘은 불필요한 망설임을 걷어내고 내가 통제할 수 있는 최소 단위의 행동에 집중할 때입니다. 착수는 당신의 몫입니다.`,
+          macro_focus: `[${dayMasterStr}]의 본원 기상과 [${cards.map(c => c.nameKo).join(' · ')}]의 역량 흐름에 따라, 오늘은 불필요한 망설임을 걷어내고 내가 통제할 수 있는 최소 단위의 자기계발 행동에 집중할 때입니다. 성장은 실천에서 피어납니다.`,
           dominant_element: {
             element: 'Wands',
-            element_ko: '완드 (불) - 실행력 & 프로젝트 추진력',
-            theme_brief: '미뤄둔 업무를 5분 안에 착수하여 실행 모멘텀을 형성하는 날'
+            element_ko: '완드 (불) - 실행력 & 자기계발 프로젝트 추진력',
+            theme_brief: '미뤄둔 자기계발 공부나 업무 루틴을 5분 안에 착수하여 성장 모멘텀을 형성하는 날'
           },
           micro_mission: {
-            title: "미뤄두었던 핵심 서류/메일 1개를 열고 5분간 집중 처리하기",
+            title: "미뤄두었던 핵심 자기계발 서류/학습 1개를 열고 5분간 집중 처리하기",
             action_tip: "완벽하게 끝내려 하지 말고, 단 5분만 손을 대보는 것에 의의를 두세요."
           },
-          evening_reflection: '오늘 나는 결과에 끌려다니지 않고 내 하루의 통제권을 쥐었는가?',
+          evening_reflection: '오늘 나는 결과에 끌려다니지 않고 스스로의 역량을 한 단계 성장시켰는가?',
           prescribed_art: dynamicPrescribedArt,
         });
       }
@@ -844,14 +873,16 @@ export function TrinityOracleSection() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-mono text-yellow-400 uppercase tracking-widest block">
-                  SAJU × TAROT EXECUTIVE FUSION REPORT
+                  {oracleMode === 'healing' ? 'SAJU × TAROT HEALING FUSION REPORT' : 'SAJU × TAROT SELF-DEVELOPMENT REPORT'}
                 </span>
                 <span className="text-[9px] px-2 py-0.5 rounded-full bg-yellow-400/20 text-yellow-200 font-bold border border-yellow-400/30">
-                  마스터 융합 리포트
+                  {oracleMode === 'healing' ? '마음 치유 마스터 리포트' : '자기계발 실행 마스터 리포트'}
                 </span>
               </div>
               <h3 className="text-white text-sm sm:text-base font-bold">
-                사주 ✕ 타로 융합 종합 마스터 브리핑
+                {oracleMode === 'healing'
+                  ? '사주 ✕ 타로 마음 치유 종합 마스터 브리핑'
+                  : '사주 ✕ 타로 자기계발 종합 마스터 브리핑'}
               </h3>
             </div>
           </div>
@@ -893,7 +924,12 @@ export function TrinityOracleSection() {
           <div className="p-4 sm:p-5 rounded-2xl bg-black/50 border border-yellow-400/35 relative z-10 shadow-inner">
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-[10px] font-mono text-yellow-400 uppercase tracking-widest flex items-center gap-1">
-                <span>👑</span> FINAL ORACLE VERDICT (최종 오라클 계시)
+                <span>{oracleMode === 'healing' ? '🌿' : '⚡'}</span>
+                <span>
+                  {oracleMode === 'healing'
+                    ? 'HEALING ORACLE VERDICT (마음 치유 최종 계시)'
+                    : 'SELF-GROWTH ORACLE VERDICT (자기계발 돌파 계시)'}
+                </span>
               </span>
               <span className="text-[10px] text-zinc-400 font-sans">
                 {saju?.name}님의 본원 [{saju?.dayMaster.symbolName}] ✕ 3장의 타로
@@ -911,9 +947,9 @@ export function TrinityOracleSection() {
             <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-400/25 space-y-1">
               <div className="flex items-center gap-1.5 text-amber-300 text-xs font-bold font-serif">
                 <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-400/20 text-amber-200 border border-amber-400/30">
-                  사주 ✕ 타로 공명
+                  {oracleMode === 'healing' ? '사주 ✕ 타로 치유 공명' : '사주 ✕ 타로 역량 공명'}
                 </span>
-                <span>본원 기운과 카드의 결합</span>
+                <span>{oracleMode === 'healing' ? '지친 본원과 치유의 파동' : '본원 추진력과 자기계발 모멘텀'}</span>
               </div>
               <p className="text-xs text-zinc-200 leading-relaxed font-sans pt-0.5">
                 {resonance}
@@ -925,9 +961,9 @@ export function TrinityOracleSection() {
             <div className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-400/25 space-y-1">
               <div className="flex items-center gap-1.5 text-purple-300 text-xs font-bold font-serif">
                 <span className="px-1.5 py-0.5 rounded text-[10px] bg-purple-400/20 text-purple-200 border border-purple-400/30">
-                  2026 세운 흐름
+                  {oracleMode === 'healing' ? '2026 세운 안식 타이밍' : '2026 세운 성장 기회'}
                 </span>
-                <span>올해의 현실 타이밍</span>
+                <span>{oracleMode === 'healing' ? '마음의 쉼과 회복' : '역량 레벨업 & 도약 타이밍'}</span>
               </div>
               <p className="text-xs text-zinc-200 leading-relaxed font-sans pt-0.5">
                 {flow}
@@ -939,9 +975,9 @@ export function TrinityOracleSection() {
             <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-400/25 space-y-1">
               <div className="flex items-center gap-1.5 text-emerald-300 text-xs font-bold font-serif">
                 <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-400/20 text-emerald-200 border border-emerald-400/30">
-                  오행 ✕ 용신 보약
+                  {oracleMode === 'healing' ? '오행 ✕ 용신 치유 보약' : '오행 ✕ 용신 습관 보약'}
                 </span>
-                <span>결핍 기운 치유 처방</span>
+                <span>{oracleMode === 'healing' ? '결핍 기운 회복 & 정서 처방' : '결핍 보완 생산성 & 루틴 시스템'}</span>
               </div>
               <p className="text-xs text-zinc-200 leading-relaxed font-sans pt-0.5">
                 {remedy}
@@ -953,9 +989,9 @@ export function TrinityOracleSection() {
             <div className="p-3.5 rounded-2xl bg-white/[0.04] border border-white/15 space-y-1">
               <div className="flex items-center gap-1.5 text-yellow-300 text-xs font-bold font-serif">
                 <span className="px-1.5 py-0.5 rounded text-[10px] bg-yellow-400/20 text-yellow-200 border border-yellow-400/30">
-                  오늘의 처방
+                  {oracleMode === 'healing' ? '오늘의 힐링 처방' : '오늘의 자기계발 미션'}
                 </span>
-                <span>지금 실천할 현실 행동</span>
+                <span>{oracleMode === 'healing' ? '지금 실천할 1분 마음 치유 의식' : '지금 실천할 1줄 성장 과제'}</span>
               </div>
               <p className="text-xs text-zinc-200 leading-relaxed font-sans pt-0.5">
                 {actionTip}
@@ -1074,14 +1110,14 @@ export function TrinityOracleSection() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-mono text-orange-400 uppercase tracking-widest block">
-                  MACRO MINDSET SYNTHESIS
+                  MACRO SELF-DEVELOPMENT SYNTHESIS
                 </span>
                 <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-orange-500/20 text-amber-200 border border-orange-400/30">
-                  거시 마인드셋
+                  자기계발 마인드셋
                 </span>
               </div>
               <h3 className="text-base sm:text-lg font-bold font-serif text-white mt-0.5">
-                사주 기질과 타로 4원소의 거시 실행 브리핑
+                사주 기질과 타로 4원소의 자기계발 종합 브리핑
               </h3>
             </div>
           </div>
@@ -1261,7 +1297,7 @@ export function TrinityOracleSection() {
           {insight.personal_interpretation && (
             <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-400/20 text-xs text-emerald-100 leading-relaxed font-sans md:col-span-2">
               <span className="font-bold text-emerald-300 block mb-1 text-[11px] flex items-center gap-1.5">
-                <span>🌿</span> {oracleMode === 'healing' ? '제제의 심층 맞춤 리딩' : '마인드셋 심층 분석'}
+                <span>{oracleMode === 'healing' ? '🌿' : '⚡'}</span> {oracleMode === 'healing' ? '제제의 심층 맞춤 치유 리딩' : '루시의 자기계발 심층 분석 & 역량 가이드'}
               </span>
               {insight.personal_interpretation}
             </div>
@@ -1270,7 +1306,7 @@ export function TrinityOracleSection() {
           {insight.action_guide && (
             <div className="p-3.5 rounded-2xl bg-white/[0.04] border border-white/15 text-xs text-zinc-200 leading-relaxed font-sans md:col-span-2">
               <span className="font-bold text-yellow-300 block mb-1 text-[11px] flex items-center gap-1.5">
-                <span>💡</span> 오늘 마음에 품을 실천 팁
+                <span>💡</span> {oracleMode === 'healing' ? '오늘 나를 쉬게 하는 마음 치유 처방' : '오늘 즉시 실천할 1% 자기계발 팁'}
               </span>
               {insight.action_guide}
             </div>
@@ -1414,7 +1450,9 @@ export function TrinityOracleSection() {
               오라클 타로 <span className="text-amber-400/90 font-light text-lg sm:text-xl">· 사주 명리 ✕ 타로 융합</span>
             </h2>
             <p className="text-xs sm:text-sm text-zinc-300/80 mt-1 font-sans">
-              <strong>사주 만세력</strong>의 일간·오행 에너지와 <strong>타로 리딩</strong>의 천상 상징을 융합한 시너지 오라클
+              {oracleMode === 'healing'
+                ? '지친 마음의 치유와 안식을 위해 사주 본원과 22장 메이저 타로가 전하는 따뜻한 힐링 오라클'
+                : '역량 강화와 실질적 성장을 위해 사주 추진력과 78장 타로 4원소가 전하는 자기계발 오라클'}
             </p>
           </div>
 
