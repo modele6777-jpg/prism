@@ -26,6 +26,7 @@ export interface PrismTossPayload {
   actionType: TossActionType;
   cards?: TossCardInfo[];
   anchorArtworkTitle?: string;
+  anchorArtworkCatalogId?: string;
   anchorArtQuote?: string;
   contextMessage?: string;
   autoTrigger?: boolean;

@@ -11,6 +11,7 @@ import { TarotSpread, SelectedTarotCardEntry } from './TarotSpread';
 import { invokeLLM } from '@/lib/ai';
 import { playTTS, playTTSInChunks, stopTTS, useTTSActive, useTTSState, prepareNaturalSpeechText } from '@/utils/tts';
 import { sendPrismToss } from '@/lib/prismToss';
+import { MUSE_ART_CATALOG } from '@/lib/museDailyArt';
 import { useApp, getPersistentUserProfile, setPersistentUserProfile } from '@/contexts/AppContext';
 import {
   calculateDetailedSaju,
@@ -47,6 +48,7 @@ export interface HealingResult {
   saju_tarot_synergy?: SajuTarotSynergy;
   card_insights?: CardInsight[];
   prescribed_art: {
+    catalog_id?: string;
     artwork_title: string;
     art_quote: string;
   };
@@ -72,6 +74,11 @@ export interface GrowthResult {
     action_tip: string;
   };
   evening_reflection: string;
+  prescribed_art?: {
+    catalog_id?: string;
+    artwork_title: string;
+    art_quote: string;
+  };
 }
 
 export interface CollectedTreasure {
@@ -80,6 +87,122 @@ export interface CollectedTreasure {
   description: string;
   date: string;
   cardNames: string[];
+}
+
+
+// Intelligent dynamic mapping of Tarot cards & Saju elements to MUSE_ART_CATALOG (56 masterpieces)
+export function resolvePrescribedArtForCards(
+  cards: TarotCard[],
+  saju: SajuAnalysisResult | null,
+  mode: 'healing' | 'growth'
+): { artwork_title: string; art_quote: string; catalog_id: string } {
+  if (!cards || cards.length === 0) {
+    return {
+      catalog_id: 'monet_water_lilies',
+      artwork_title: '수련 (Water Lilies, 1916)',
+      art_quote: '내가 수련을 그리는 것은 마음을 편안하게 만들기 위한 유일한 의식이다.',
+    };
+  }
+
+  // Focus on 3rd card (Seed of Healing / Micro Trigger) or 1st card
+  const anchorCard = cards[2] || cards[0];
+  const cardId = (anchorCard.id || '').toLowerCase();
+  const cardName = anchorCard.nameKo || '';
+
+  // Specific Tarot Arcana mapping to MUSE_ART_CATALOG items
+  const TAROT_CATALOG_MAP: Record<string, string> = {
+    '0': 'chagall_paris_through_window', // 광대 -> 샤갈 창 너머의 파리
+    'the_fool': 'chagall_paris_through_window',
+    '1': 'kandinsky_composition_viii', // 마법사 -> 칸딘스키 구성 8
+    'the_magician': 'kandinsky_composition_viii',
+    '2': 'vermeer_girl_pearl_earring', // 여사제 -> 진주 귀걸이를 한 소녀
+    'the_high_priestess': 'vermeer_girl_pearl_earring',
+    '3': 'botticelli_birth_of_venus', // 여황제 -> 비너스의 탄생
+    'the_empress': 'botticelli_birth_of_venus',
+    '4': 'friedrich_wanderer', // 황제 -> 안개 바다 위의 방랑자
+    'the_emperor': 'friedrich_wanderer',
+    '5': 'raphael_school_of_athens', // 교황 -> 아테네 학당
+    'the_hierophant': 'raphael_school_of_athens',
+    '6': 'klimt_the_kiss', // 연인 -> 클림트 키스
+    'the_lovers': 'klimt_the_kiss',
+    '7': 'rosa_bonheur_horse_fair', // 전차 -> 로자 보뉴르 말 시장
+    'the_chariot': 'rosa_bonheur_horse_fair',
+    '8': 'lee_jung_seob_white_ox', // 힘 -> 이중섭 흰 소
+    'strength': 'lee_jung_seob_white_ox',
+    '9': 'hopper_nighthawks', // 은둔자 -> 호퍼 밤을 지새우는 사람들
+    'the_hermit': 'hopper_nighthawks',
+    '10': 'mondrian_composition_red_blue_yellow', // 운명의 수레바퀴 -> 몬드리안 빨강 파랑 노랑 구성
+    'wheel_of_fortune': 'mondrian_composition_red_blue_yellow',
+    '11': 'vermeer_the_milkmaid', // 정의 -> 페르메이르 우유 따르는 여인
+    'justice': 'vermeer_the_milkmaid',
+    '12': 'dali_persistence_of_memory', // 매달린 사람 -> 살바도르 달리 기억의 지속
+    'the_hanged_man': 'dali_persistence_of_memory',
+    '13': 'millais_ophelia', // 죽음 -> 밀레이 오필리아
+    'death': 'millais_ophelia',
+    '14': 'cezanne_mont_sainte_victoire', // 절제 -> 세잔 생트 빅투아르 산
+    'temperance': 'cezanne_mont_sainte_victoire',
+    '15': 'munch_the_scream', // 악마 -> 뭉크 절규
+    'the_devil': 'munch_the_scream',
+    '16': 'turner_rain_steam_speed', // 탑 -> 터너 비 증기 그리고 속도
+    'the_tower': 'turner_rain_steam_speed',
+    '17': 'gogh_starry_night', // 별 -> 반 고흐 별이 빛나는 밤
+    'the_star': 'gogh_starry_night',
+    '18': 'kitty_kielland_summer_night', // 달 -> 키티 킬란트 여름의 밤
+    'the_moon': 'kitty_kielland_summer_night',
+    '19': 'monet_impression_sunrise', // 태양 -> 모네 인상 해돋이
+    'the_sun': 'monet_impression_sunrise',
+    '20': 'caravaggio_calling_saint_matthew', // 심판 -> 카라바조 성 마태오의 소명
+    'judgement': 'caravaggio_calling_saint_matthew',
+    '21': 'matisse_the_dance', // 세계 -> 앙리 마티스 춤
+    'the_world': 'matisse_the_dance',
+  };
+
+  let matchedId = TAROT_CATALOG_MAP[cardId] || TAROT_CATALOG_MAP[anchorCard.name.toLowerCase().replace(/\s+/g, '_')];
+
+  // Minor Suit & Keywords fallback
+  if (!matchedId) {
+    if (cardName.includes('광대') || cardId.includes('fool')) matchedId = 'chagall_paris_through_window';
+    else if (cardName.includes('마법사') || cardId.includes('magician')) matchedId = 'kandinsky_composition_viii';
+    else if (cardName.includes('별') || cardId.includes('star')) matchedId = 'gogh_starry_night';
+    else if (cardName.includes('태양') || cardId.includes('sun')) matchedId = 'monet_impression_sunrise';
+    else if (cardName.includes('달') || cardId.includes('moon')) matchedId = 'kitty_kielland_summer_night';
+    else if (cardName.includes('연인') || cardId.includes('lover')) matchedId = 'klimt_the_kiss';
+    else if (cardName.includes('은둔자') || cardId.includes('hermit')) matchedId = 'hopper_nighthawks';
+    else if (cardName.includes('전차') || cardId.includes('chariot')) matchedId = 'rosa_bonheur_horse_fair';
+    else if (cardName.includes('힘') || cardId.includes('strength')) matchedId = 'lee_jung_seob_white_ox';
+    else if (cardId.includes('wand') || cardName.includes('완드') || cardName.includes('지팡이')) {
+      matchedId = mode === 'growth' ? 'rosa_bonheur_horse_fair' : 'gogh_cafe_terrace_night';
+    } else if (cardId.includes('cup') || cardName.includes('컵')) {
+      matchedId = 'monet_water_lilies';
+    } else if (cardId.includes('sword') || cardName.includes('검') || cardName.includes('칼')) {
+      matchedId = 'edward_hopper_automat';
+    } else if (cardId.includes('pentacle') || cardName.includes('동전')) {
+      matchedId = 'klimt_tree_of_life';
+    }
+  }
+
+  // Saju Element resonance fallback
+  if (!matchedId) {
+    const dominant = saju?.elements?.dominant?.name;
+    if (dominant === '목') matchedId = 'gogh_almond_blossoms';
+    else if (dominant === '화') matchedId = 'monet_impression_sunrise';
+    else if (dominant === '토') matchedId = 'millet_the_gleaners';
+    else if (dominant === '금') matchedId = 'caillebotte_paris_street_rainy_day';
+    else if (dominant === '수') matchedId = 'kroyer_summer_evening_skagen';
+    else {
+      const seed = cards.reduce((acc, c, idx) => acc + (c.nameKo.charCodeAt(0) || idx + 1), 0);
+      const catalogIndex = seed % MUSE_ART_CATALOG.length;
+      matchedId = MUSE_ART_CATALOG[catalogIndex].id;
+    }
+  }
+
+  const catalogEntry = MUSE_ART_CATALOG.find((entry) => entry.id === matchedId) || MUSE_ART_CATALOG[0];
+
+  return {
+    catalog_id: catalogEntry.id,
+    artwork_title: catalogEntry.title,
+    art_quote: catalogEntry.quote,
+  };
 }
 
 export function TrinityOracleSection() {
@@ -216,6 +339,9 @@ export function TrinityOracleSection() {
       .map((c, i) => `${i + 1}번 슬롯 [${slotPositions[i]}]: ${c.nameKo} (${c.name}) - 유형: ${c.type}, 핵심 키워드: [${c.keywords.join(', ')}]`)
       .join('\n');
 
+    // Dynamically determine candidate masterpiece matching these specific 3 cards from MUSE_ART_CATALOG
+    const dynamicPrescribedArt = resolvePrescribedArtForCards(uprightCards, saju, oracleMode);
+
     const sajuContextPrompt = saju
       ? `
 # 질문자의 사주명리학(四柱命理) 정밀 원국:
@@ -303,8 +429,8 @@ export function TrinityOracleSection() {
   ],
   "message": "질문자의 사주 일간 기운과 3장의 카드 서사를 따뜻하게 엮어낸 제제의 편지 (350~450자 내외)",
   "prescribed_art": {
-    "artwork_title": "카드들과 사주 기운에 깊이 공명하는 세계적 미술/회화 명작 (반드시 회화 미술작품만 지정)",
-    "art_quote": "마음에 울림을 주는 짧은 문학/예술 한 구절 (1~2줄)"
+    "artwork_title": "${dynamicPrescribedArt.artwork_title}",
+    "art_quote": "${dynamicPrescribedArt.art_quote}"
   },
   "micro_action": "3번 치유의 씨앗 카드가 제안하는, 지금 자리에서 1~2분 안에 실천할 수 있는 구체적인 신체/감각 행동 1가지",
   "reward_item": {
@@ -323,6 +449,14 @@ export function TrinityOracleSection() {
         });
         const clean = res.replace(/```json/g, '').replace(/```/g, '').trim();
         const parsed: HealingResult = JSON.parse(clean);
+        // Ensure catalog_id is bound
+        if (!parsed.prescribed_art || !parsed.prescribed_art.artwork_title || parsed.prescribed_art.artwork_title.includes('클로드 모네')) {
+          parsed.prescribed_art = dynamicPrescribedArt;
+        } else {
+          // Look up catalog ID from title
+          const cat = MUSE_ART_CATALOG.find(m => m.title.includes(parsed.prescribed_art.artwork_title) || parsed.prescribed_art.artwork_title.includes(m.title));
+          parsed.prescribed_art.catalog_id = cat ? cat.id : dynamicPrescribedArt.catalog_id;
+        }
         setHealingResult(parsed);
       } else {
         // [GROWTH MODE] Deep Saju-Tarot behavioral prompts
@@ -401,6 +535,7 @@ export function TrinityOracleSection() {
         });
         const clean = res.replace(/```json/g, '').replace(/```/g, '').trim();
         const parsed: GrowthResult = JSON.parse(clean);
+        parsed.prescribed_art = dynamicPrescribedArt;
         setGrowthResult(parsed);
       }
     } catch (err) {
@@ -432,10 +567,7 @@ export function TrinityOracleSection() {
             action_guide: `오늘 하루, ${c.keywords[0] || '평온'}의 마음으로 가슴에 손을 얹고 깊은 심호흡을 3회 반복해보세요.`,
           })),
           message: `안녕 ${sajuNameStr}... 오늘 네가 품은 [${dayMasterStr}]의 기운과 3장의 마음 조각 [${cards.map(c => c.nameKo).join(', ')}]을 가만히 모아봤어. 남들 기준에 맞추느라 참 많이 지쳤지? 오늘은 나랑 같이 따뜻한 온기만 챙겨보자.`,
-          prescribed_art: {
-            artwork_title: '클로드 모네 - 수련 연못',
-            art_quote: '흔들리는 물결 속에서도 수련은 자신만의 고요한 시간대로 피어난다.'
-          },
+          prescribed_art: dynamicPrescribedArt,
           micro_action: '창문을 열고 시원한 공기를 들이마시며 3번 천천히 심호흡하기',
           reward_item: {
             name: '따뜻한 찻잔',
@@ -470,7 +602,8 @@ export function TrinityOracleSection() {
             title: "미뤄두었던 핵심 서류/메일 1개를 열고 5분간 집중 처리하기",
             action_tip: "완벽하게 끝내려 하지 말고, 단 5분만 손을 대보는 것에 의의를 두세요."
           },
-          evening_reflection: '오늘 나는 결과에 끌려다니지 않고 내 하루의 통제권을 쥐었는가?'
+          evening_reflection: '오늘 나는 결과에 끌려다니지 않고 내 하루의 통제권을 쥐었는가?',
+          prescribed_art: dynamicPrescribedArt,
         });
       }
     } finally {
@@ -836,15 +969,21 @@ export function TrinityOracleSection() {
     );
   };
 
-  // Toss inspiration to Muse Art Recommendation
+  // Toss inspiration to Muse Art Recommendation (Dynamic Art Prescription)
   const handleTossToMuse = () => {
-    if (!healingResult) return;
+    const activeResult = oracleMode === 'healing' ? healingResult : growthResult;
+    if (!activeResult) return;
+
+    const prescribed =
+      activeResult.prescribed_art ||
+      resolvePrescribedArtForCards(drawnCards, saju, oracleMode);
+
     sendPrismToss({
       sourceApp: 'oracle',
       targetApp: 'muse',
       actionType: 'art_prescription',
       cards: drawnCards.map((c, i) => {
-        const insight = healingResult.card_insights?.[i];
+        const insight = activeResult.card_insights?.[i];
         return {
           id: c.id,
           name: c.name,
@@ -852,14 +991,17 @@ export function TrinityOracleSection() {
           keywords: c.keywords,
           keyword: c.keywords[0],
           cardName: c.nameKo,
+          cardIndex: i,
           description: insight ? `${insight.core_meaning} - ${insight.personal_interpretation}` : c.keywords.join(', '),
         };
       }),
-      anchorArtworkTitle: healingResult.prescribed_art.artwork_title,
-      anchorArtQuote: healingResult.prescribed_art.art_quote,
-      contextMessage: healingResult.message,
+      anchorArtworkTitle: prescribed.artwork_title,
+      anchorArtworkCatalogId: prescribed.catalog_id,
+      anchorArtQuote: prescribed.art_quote,
+      contextMessage: oracleMode === 'healing' ? healingResult?.message : growthResult?.macro_focus,
       tossedAt: Date.now(),
     });
+
     window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: '/muse' } }));
     setLocation('/muse');
     if (typeof window !== 'undefined') {
@@ -1511,6 +1653,46 @@ export function TrinityOracleSection() {
 
                 {/* 거시 마인드셋 종합 브리핑 */}
                 {renderGrowthMacroSection(growthResult.macro_focus)}
+
+                {/* 2. Prescribed Art -> Toss to Muse Art Sanctuary */}
+                {growthResult.prescribed_art && (
+                  <div
+                    onClick={handleTossToMuse}
+                    className="glass p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-purple-950/40 via-indigo-950/30 to-black/60 border border-purple-400/40 hover:border-purple-400/80 shadow-2xl relative overflow-hidden cursor-pointer group transition-all duration-300"
+                  >
+                    <div className="absolute top-0 right-0 w-56 h-56 bg-purple-500/15 rounded-full blur-3xl pointer-events-none group-hover:bg-purple-500/25 transition-all" />
+
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+                      <div className="flex items-start sm:items-center gap-3.5">
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600/30 to-indigo-600/30 border border-purple-400/50 flex items-center justify-center text-purple-200 group-hover:scale-110 transition-transform shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.3)]">
+                          <Palette size={24} className="text-purple-300 animate-pulse" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-[10px] font-mono text-purple-300 uppercase tracking-widest flex items-center gap-1">
+                              <Sparkles size={11} className="text-purple-400" />
+                              PRISM TOSS PIPELINE
+                            </span>
+                            <span className="text-[9px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-200 font-bold border border-purple-400/40 shadow-inner">
+                              뮤즈로 토스(Toss)
+                            </span>
+                          </div>
+                          <h4 className="text-sm sm:text-base font-bold font-serif text-white group-hover:text-purple-200 transition-colors flex items-center gap-1.5">
+                            <span>이 실행 영감을 뮤즈의 예술추천으로 '토스'하기</span>
+                          </h4>
+                          <p className="text-xs text-zinc-300/90 mt-1 font-serif italic">
+                            "{growthResult.prescribed_art.artwork_title}" — {growthResult.prescribed_art.art_quote}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600/40 to-indigo-600/40 group-hover:from-purple-600/60 group-hover:to-indigo-600/60 border border-purple-400/50 text-xs font-bold text-purple-100 shrink-0 transition-all self-end sm:self-center shadow-lg">
+                        <span>뮤즈로 토스</span>
+                        <ArrowRight size={14} className="group-hover:translate-x-1.5 transition-transform text-purple-300" />
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* 2. Dominant Element & Focus Area */}
                 <div className="glass p-5 rounded-3xl bg-white/[0.02] border border-white/10 flex items-center gap-4">

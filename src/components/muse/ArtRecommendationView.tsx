@@ -1351,39 +1351,89 @@ export function ArtRecommendationView() {
     try {
       const cards = toss.cards || [];
       const cardNames = cards.map(c => c.nameKo || c.cardName || c.name).filter(Boolean).join(", ");
-      const anchorTitle = toss.anchorArtworkTitle || "별이 빛나는 밤 (The Starry Night)";
+      const anchorTitle = toss.anchorArtworkTitle || "";
+      const targetCatalogId = toss.anchorArtworkCatalogId || (toss as any).catalogId;
 
-      // Find best matching masterpiece from catalog, or synthesize from anchor title
-      let matchedArt = DAILY_ART_FALLBACKS.find(art => 
-        anchorTitle.toLowerCase().includes(art.title.slice(0, 4).toLowerCase()) ||
-        art.title.toLowerCase().includes(anchorTitle.slice(0, 4).toLowerCase())
-      );
+      // 1. Direct Catalog ID lookup from MUSE_ART_CATALOG (56 curated masterpieces)
+      let catalogMatch = targetCatalogId ? MUSE_ART_CATALOG.find(entry => entry.id === targetCatalogId) : undefined;
 
-      if (!matchedArt) {
+      // 2. Intelligent title & keyword lookup across MUSE_ART_CATALOG
+      if (!catalogMatch && anchorTitle) {
+        const cleanAnchor = anchorTitle.replace(/[^\w\s\uAC00-\uD7A3]/g, ' ').toLowerCase();
+        const anchorWords = cleanAnchor.split(/\s+/).filter(w => w.length >= 2);
+
+        catalogMatch = MUSE_ART_CATALOG.find(entry => {
+          const entryTitle = entry.title.toLowerCase();
+          const origTitle = (entry.titleOriginal || '').toLowerCase();
+          return entryTitle.includes(anchorTitle.toLowerCase()) || 
+                 anchorTitle.toLowerCase().includes(entryTitle) ||
+                 (anchorWords.length > 0 && anchorWords.some(w => entryTitle.includes(w) || origTitle.includes(w)));
+        });
+      }
+
+      // 3. Match from cards sequence if still not found
+      if (!catalogMatch && cards.length > 0) {
+        const cardKeywords = cards.map(c => (c.nameKo || c.name || '').toLowerCase());
+        catalogMatch = MUSE_ART_CATALOG.find(entry => {
+          const t = entry.title.toLowerCase();
+          if (cardKeywords.some(k => k.includes('별'))) return t.includes('별이 빛나는 밤');
+          if (cardKeywords.some(k => k.includes('태양'))) return t.includes('해돋이') || t.includes('해바라기');
+          if (cardKeywords.some(k => k.includes('연인'))) return t.includes('키스');
+          if (cardKeywords.some(k => k.includes('힘'))) return t.includes('흰 소');
+          if (cardKeywords.some(k => k.includes('은둔'))) return t.includes('밤의 매') || t.includes('밤을 지새우는');
+          if (cardKeywords.some(k => k.includes('전차'))) return t.includes('말 시장');
+          if (cardKeywords.some(k => k.includes('광대'))) return t.includes('창 너머의 파리');
+          if (cardKeywords.some(k => k.includes('세계'))) return t.includes('춤');
+          return false;
+        });
+
+        if (!catalogMatch) {
+          const cardHash = cards.reduce((acc, c, i) => acc + ((c.nameKo || c.name || '').charCodeAt(0) || i + 1) * (i + 1), 0);
+          const index = Math.abs(cardHash) % MUSE_ART_CATALOG.length;
+          catalogMatch = MUSE_ART_CATALOG[index];
+        }
+      }
+
+      let matchedArt: ArtRecommendation;
+      if (catalogMatch) {
         matchedArt = {
-          title: anchorTitle,
-          titleOriginal: anchorTitle,
-          creator: "세계의 거장 (오라클 선정 명작)",
-          creatorOriginal: "Master of World Art",
-          artworkType: "미술 (처방 회화)",
-          era: "인류 명작 컬렉션",
-          description: toss.contextMessage || "오라클 타로의 3대 영혼 처방에 공명하여 영혼의 치유와 재창조를 위해 소환된 명작입니다.",
+          title: catalogMatch.title,
+          titleOriginal: catalogMatch.titleOriginal,
+          creator: catalogMatch.creator,
+          creatorOriginal: catalogMatch.creatorOriginal,
+          artworkType: catalogMatch.artworkType,
+          era: catalogMatch.era,
+          description: toss.contextMessage || catalogMatch.description,
+          whyRecommended: `오라클 타로 [${cardNames || '영혼의 3장'}]의 서사적 조합과 완전한 주파수로 공명하는 예술 처방입니다.`,
+          challenges: catalogMatch.defaultChallenges ? [...catalogMatch.defaultChallenges] : [],
+          aestheticTone: catalogMatch.aestheticTone,
+          quote: toss.anchorArtQuote || catalogMatch.quote,
+          catalogId: catalogMatch.id,
+          dailyArtUrl: catalogMatch.dailyArtUrl,
+          imageUrl: catalogMatch.imageUrl,
+          famousPoem: catalogMatch.famousPoem,
+          famousSong: catalogMatch.famousSong,
+        };
+      } else {
+        const fallbackMatch = DAILY_ART_FALLBACKS.find(art => 
+          anchorTitle.toLowerCase().includes(art.title.slice(0, 4).toLowerCase()) ||
+          art.title.toLowerCase().includes(anchorTitle.slice(0, 4).toLowerCase())
+        ) || DAILY_ART_FALLBACKS[0];
+
+        matchedArt = {
+          ...fallbackMatch,
+          title: anchorTitle || fallbackMatch.title,
+          titleOriginal: anchorTitle || fallbackMatch.titleOriginal,
+          quote: toss.anchorArtQuote || fallbackMatch.quote,
+          description: toss.contextMessage || fallbackMatch.description,
           whyRecommended: `오라클 타로에서 도출된 [${cardNames}] 3장의 카드 시퀀스와 완전한 주파수로 공명하는 예술 처방입니다.`,
-          challenges: cards.map((c, i) => {
-            const name = c.nameKo || c.cardName || c.name;
-            const kw = c.keyword || c.keywords?.[0];
-            return `${i + 1}. [${name}]: ${kw ? `"${kw}"의 에너지를 품고 ` : ''}내면을 관조하며 깊은 호흡을 3회 들이쉬고 내쉬어 보세요.`;
-          }),
-          aestheticTone: "신비롭고 몽환적인 코스믹 바이올렛과 앰버 골드의 치유 파동",
-          quote: toss.anchorArtQuote || "예술은 영혼에 묻은 일상의 먼지를 털어내어 본래의 광채를 되찾게 한다.",
         };
       }
 
-      // Select matching world poem & song pair (weighted by first card's index)
-      const seedIndex = cards.length > 0 && cards[0].cardIndex !== undefined 
-        ? Math.abs(cards[0].cardIndex) % DAILY_POEM_SONG_FALLBACKS.length 
-        : 8; // default to Rilke / Fauré
-      const pair = DAILY_POEM_SONG_FALLBACKS[seedIndex] || DAILY_POEM_SONG_FALLBACKS[8];
+      // Select matching world poem & song pair (weighted dynamically by cards seed)
+      const cardSeed = cards.reduce((acc, c, idx) => acc + ((c.nameKo || c.name || '').charCodeAt(0) || idx + 1) * (idx + 1), 0) + (anchorTitle ? anchorTitle.length : 7);
+      const seedIndex = Math.abs(cardSeed) % DAILY_POEM_SONG_FALLBACKS.length;
+      const pair = DAILY_POEM_SONG_FALLBACKS[seedIndex] || DAILY_POEM_SONG_FALLBACKS[0];
 
       const enrichedArt: ArtRecommendation = {
         ...matchedArt,
@@ -1395,8 +1445,8 @@ export function ArtRecommendationView() {
             })
           : matchedArt.challenges,
         whyRecommended: `[오라클 3장 토스] ${cardNames}의 서사적 조합에 따라 조율되었습니다. ${toss.contextMessage || matchedArt.whyRecommended}`,
-        famousPoem: pair.famousPoem,
-        famousSong: pair.famousSong,
+        famousPoem: matchedArt.famousPoem || pair.famousPoem,
+        famousSong: matchedArt.famousSong || pair.famousSong,
       };
 
       // Sanitize to guarantee 100% boundary between Visual Painting, Poem, and Song
