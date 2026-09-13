@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useLocation } from 'wouter';
-import { Sparkles, Brain, X, Shuffle } from 'lucide-react';
+import { Sparkles, Brain, X, Shuffle, Check, Copy } from 'lucide-react';
 import { savePendingSelection } from '../lib/selectionBridge';
 import {
   getRecommendedMenu,
@@ -8,12 +8,47 @@ import {
   type RecommendedMenuResult,
 } from '../lib/selectionContextRecommender';
 
+/**
+ * 텍스트 클립보드 즉시 복사 유틸리티 (브라우저 및 보안 컨텍스트 호환)
+ */
+const copyToClipboard = async (textToCopy: string): Promise<boolean> => {
+  if (!textToCopy) return false;
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(textToCopy);
+      return true;
+    }
+  } catch (_) {
+    // fallback 아래로 진행
+  }
+
+  try {
+    const textArea = document.createElement('textarea');
+    textArea.value = textToCopy;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    textArea.style.opacity = '0';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    return successful;
+  } catch (_) {
+    return false;
+  }
+};
+
 export default function SelectionBridgeToolbar() {
   const [location, navigate] = useLocation();
   const [selectedText, setSelectedText] = useState('');
   const [visible, setVisible] = useState(false);
   const [coords, setCoords] = useState<{ x: number; y: number } | null>(null);
   const [cycleOffset, setCycleOffset] = useState(0);
+  const [copied, setCopied] = useState(false);
+  const lastCopiedTextRef = useRef<string>('');
+  const copyToastTimerRef = useRef<NodeJS.Timeout | null>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
 
   // We only show toolbar if not already on the chat or orb page with the same query
@@ -24,10 +59,16 @@ export default function SelectionBridgeToolbar() {
     location === '/crystal' ||
     location === '/gateway';
 
-  // 실시간 맥락 감지 및 20대 메뉴 중 최적의 추천 경로 산출
+  // 실시간 맥락 감지 및 20대 메뉴 중 무작위 셔플된 추천 후보군 산출
   const recommendedResult: RecommendedMenuResult = useMemo(() => {
     return getRecommendedMenu(selectedText, location, cycleOffset);
   }, [selectedText, location, cycleOffset]);
+
+  useEffect(() => {
+    return () => {
+      if (copyToastTimerRef.current) clearTimeout(copyToastTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     let debounceTimer: NodeJS.Timeout | null = null;
@@ -59,6 +100,18 @@ export default function SelectionBridgeToolbar() {
         // Always save to pending storage automatically so navigation via header/menu picks it up!
         savePendingSelection(text, undefined, window.location.pathname);
         setSelectedText(text);
+
+        // 📋 스크롤/선택 시 바로 클립보드에 자동 복사
+        if (text && lastCopiedTextRef.current !== text) {
+          lastCopiedTextRef.current = text;
+          copyToClipboard(text).then((ok) => {
+            if (ok) {
+              setCopied(true);
+              if (copyToastTimerRef.current) clearTimeout(copyToastTimerRef.current);
+              copyToastTimerRef.current = setTimeout(() => setCopied(false), 2000);
+            }
+          });
+        }
 
         if (!isExcludedPage) {
           try {
@@ -144,32 +197,20 @@ export default function SelectionBridgeToolbar() {
       }
       className="fixed z-[9999] flex items-center gap-1.5 p-1.5 rounded-full bg-slate-950/95 backdrop-blur-xl border border-white/20 shadow-[0_12px_40px_rgba(0,0,0,0.6)] transition-all duration-200 animate-in fade-in zoom-in-95 select-none max-w-[96vw] overflow-x-auto no-scrollbar ring-1 ring-white/10"
     >
-      {/* 🌟 맥락 감지 기반 20대 메뉴 1순위, 2순위, 3순위 추천 버튼 목록 */}
+      {/* 🌟 맥락 감지 기반 무작위 셔플된 추천 경로 목록 (순위 표시는 완전히 가림) */}
       <div className="flex items-center gap-1.5 shrink-0">
-        {top3.map((item, idx) => {
-          const rankColors =
-            idx === 0
-              ? 'bg-amber-400/25 text-amber-200 border-amber-400/40'
-              : idx === 1
-              ? 'bg-sky-400/25 text-sky-200 border-sky-400/40'
-              : 'bg-emerald-400/25 text-emerald-200 border-emerald-400/40';
-
-          return (
-            <button
-              key={item.menu.id}
-              id={`selection-bridge-btn-rank-${item.rank}`}
-              onClick={handleSelectMenu(item.menu)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${item.menu.buttonClass} border ${item.menu.borderClass} text-xs font-bold tracking-tight transition-all active:scale-95 shadow-md group shrink-0`}
-              title={`[추천 ${item.rank}순위] ${item.contextReason} (클릭 시 ${item.menu.name}으로 토스)`}
-            >
-              <span className="text-sm shrink-0 drop-shadow">{item.menu.emoji}</span>
-              <span className="truncate max-w-[110px] sm:max-w-none">{item.menu.name}</span>
-              <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ${rankColors} shrink-0 border shadow-sm`}>
-                {item.rank}순위
-              </span>
-            </button>
-          );
-        })}
+        {top3.map((item, idx) => (
+          <button
+            key={item.menu.id}
+            id={`selection-bridge-btn-opt-${idx}`}
+            onClick={handleSelectMenu(item.menu)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${item.menu.buttonClass} border ${item.menu.borderClass} text-xs font-bold tracking-tight transition-all active:scale-95 shadow-md group shrink-0`}
+            title={`${item.menu.name}: ${item.contextReason} (클릭 시 이동)`}
+          >
+            <span className="text-sm shrink-0 drop-shadow">{item.menu.emoji}</span>
+            <span className="truncate max-w-[110px] sm:max-w-none">{item.menu.name}</span>
+          </button>
+        ))}
 
         {/* 🔀 상시 다른 추천 경로로 교체 (셔플/순환 버튼) */}
         <button
@@ -181,6 +222,17 @@ export default function SelectionBridgeToolbar() {
           <Shuffle size={12} className="opacity-80" />
         </button>
       </div>
+
+      {/* 📋 바로 자동 복사 완료 뱃지 피드백 */}
+      {copied && (
+        <div
+          className="flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/25 border border-emerald-400/40 text-[10px] font-bold text-emerald-300 animate-in fade-in shrink-0 shadow-sm"
+          title="선택한 텍스트가 클립보드에 자동으로 복사되었습니다."
+        >
+          <Check size={11} className="text-emerald-400" />
+          <span>복사됨</span>
+        </div>
+      )}
 
       {/* 세로 구분선 */}
       <div className="w-px h-4 bg-white/20 mx-0.5 shrink-0" />
@@ -209,3 +261,4 @@ export default function SelectionBridgeToolbar() {
     </div>
   );
 }
+

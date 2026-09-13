@@ -541,11 +541,18 @@ export function getRecommendedMenu(
   const secondCandidate = pickCandidate(1);
   const thirdCandidate = pickCandidate(2);
 
-  const top3: TopRankedMenu[] = [
+  const rawTop3: TopRankedMenu[] = [
     { rank: 1, menu: firstCandidate.menu, contextReason: firstCandidate.reason, matchScore: firstCandidate.score },
     { rank: 2, menu: secondCandidate.menu, contextReason: secondCandidate.reason, matchScore: secondCandidate.score },
     { rank: 3, menu: thirdCandidate.menu, contextReason: thirdCandidate.reason, matchScore: thirdCandidate.score },
   ];
+
+  // 🎲 추천 후보 3가지를 무작위로 섞어 배치 (각 순위 노출 없이 동등한 무작위 선택지로 제시)
+  const shuffledTop3 = [...rawTop3];
+  for (let i = shuffledTop3.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffledTop3[i], shuffledTop3[j]] = [shuffledTop3[j], shuffledTop3[i]];
+  }
 
   const chosen = firstCandidate;
 
@@ -556,7 +563,7 @@ export function getRecommendedMenu(
     allRankedMenus: scored,
     currentIndex: candidateIndex,
     totalCandidates: topTier.length,
-    top3,
+    top3: shuffledTop3,
   };
 }
 
