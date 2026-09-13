@@ -373,11 +373,57 @@ export default function OrangeApp() {
       }
     };
 
+    // 🎯 선택 텍스트 토스 즉시 실행: 빅뱅 드래그 토스 수신 시 탭 전환 + 바로 기능 실행
+    const handleSelectionExecute = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (!detail?.autoTrigger) return;
+      const text = (detail?.text || '').trim();
+      const targetMenuId: string = detail?.targetMenuId || '';
+      if (!text || text.length < 2) return;
+      sessionStorage.removeItem('prism_auto_execute_text');
+
+      // 탭 매핑: 오렌지 추천 메뉴 id → 탭 모드
+      const tabMap: Record<string, string> = {
+        orange_well: 'wishingWell',
+        orange_diary: 'secret',
+        orange_release: 'secret',
+        orange_affirmation: 'secret',
+        orange_mind: 'secret',
+      };
+      const targetTab = tabMap[targetMenuId] || 'wishingWell';
+      setActiveMode(targetTab as any);
+      resetAppScroll();
+
+      // 탭 렌더 후 handleChat 자동 실행
+      setTimeout(() => {
+        try { handleChatRef.current(text); } catch (_) {}
+      }, 350);
+    };
+
+    // 마운트 시 세션스토리지 잔여 텍스트 처리
+    const autoText = sessionStorage.getItem('prism_auto_execute_text');
+    const autoTarget = sessionStorage.getItem('prism_auto_execute_target') || '';
+    if (autoText && autoText.trim().length >= 2) {
+      sessionStorage.removeItem('prism_auto_execute_text');
+      const tabMap2: Record<string, string> = {
+        orange_well: 'wishingWell',
+        orange_diary: 'secret',
+        orange_mind: 'secret',
+      };
+      const targetTab2 = tabMap2[autoTarget] || 'wishingWell';
+      setActiveMode(targetTab2 as any);
+      setTimeout(() => {
+        try { handleChatRef.current(autoText.trim()); } catch (_) {}
+      }, 400);
+    }
+
     window.addEventListener('prism-tab-change', handleTabChange);
     window.addEventListener('nav-click-active', handleNavClick);
+    window.addEventListener('prism:selection_execute', handleSelectionExecute);
     return () => {
       window.removeEventListener('prism-tab-change', handleTabChange);
       window.removeEventListener('nav-click-active', handleNavClick);
+      window.removeEventListener('prism:selection_execute', handleSelectionExecute);
     };
   }, []);
   const [shuffledOrangeCards, setShuffledOrangeCards] = useState(() => 

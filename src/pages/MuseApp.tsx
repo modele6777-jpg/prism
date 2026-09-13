@@ -1448,13 +1448,55 @@ export default function MuseApp() {
       setShowSoulModal(false);
       resetAppScroll();
     };
+    // 🎯 선택 텍스트 토스 즉시 실행: 빅뱅 드래그 토스 수신 시 탭 전환 + 기능 즉시 실행
+    const handleSelectionExecute = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (!detail?.autoTrigger) return;
+      const text = (detail?.text || '').trim();
+      if (!text || text.length < 2) return;
+      sessionStorage.removeItem('prism_auto_execute_text');
+
+      // artRecommendation 탭으로 전환 후 고민 텍스트 세팅 + 오라클 자동 실행
+      setActiveMode('artRecommendation');
+      setShowDailyModal(false);
+      setShowSoulModal(false);
+      resetAppScroll();
+      setTimeout(() => {
+        try { setDailyUserConcern(text); } catch (_) {}
+      }, 200);
+      setTimeout(() => {
+        try {
+          window.dispatchEvent(new CustomEvent('prism:muse_auto_execute', { detail: { text, autoTrigger: true } }));
+        } catch (_) {}
+      }, 500);
+    };
+
+    // 마운트 시 세션스토리지 잔여 텍스트 처리
+    const autoText = sessionStorage.getItem('prism_auto_execute_text');
+    if (autoText && autoText.trim().length >= 2) {
+      sessionStorage.removeItem('prism_auto_execute_text');
+      setActiveMode('artRecommendation');
+      setShowDailyModal(false);
+      setShowSoulModal(false);
+      setTimeout(() => {
+        try { setDailyUserConcern(autoText.trim()); } catch (_) {}
+      }, 200);
+      setTimeout(() => {
+        try {
+          window.dispatchEvent(new CustomEvent('prism:muse_auto_execute', { detail: { text: autoText.trim(), autoTrigger: true } }));
+        } catch (_) {}
+      }, 600);
+    }
+
     window.addEventListener("prism-tab-change", handleTabChange);
     window.addEventListener("nav-click-active", handleNavClick);
     window.addEventListener("prism:toss_received", handleToss);
+    window.addEventListener("prism:selection_execute", handleSelectionExecute);
     return () => {
       window.removeEventListener("prism-tab-change", handleTabChange);
       window.removeEventListener("nav-click-active", handleNavClick);
       window.removeEventListener("prism:toss_received", handleToss);
+      window.removeEventListener("prism:selection_execute", handleSelectionExecute);
     };
   }, []);
   const [shuffledMuseCards, setShuffledMuseCards] = useState(() =>
@@ -2016,6 +2058,28 @@ ${concernContext ? `사용자가 들려준 현재 고민과 상황에 100% 공�
       setIsDailyOracleLoading(false);
     }
   };
+
+  // 🎯 toss 즉시 실행 브릿지: handleDailyOracle ref로 항상 최신 클로저 유지
+  const handleDailyOracleRef = useRef(handleDailyOracle);
+  useEffect(() => { handleDailyOracleRef.current = handleDailyOracle; });
+
+  useEffect(() => {
+    const handleAutoExecute = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (!detail?.autoTrigger) return;
+      const text = (detail?.text || '').trim();
+      if (!text || text.length < 2) return;
+      // 뮤즈: 텍스트를 userConcern 옵션으로 전달해 즉시 오라클 실행
+      setTimeout(() => {
+        try {
+          const card = sessionCardDrawn || undefined;
+          handleDailyOracleRef.current(card, { userConcern: text, autoRun: true });
+        } catch (_) {}
+      }, 200);
+    };
+    window.addEventListener('prism:muse_auto_execute', handleAutoExecute);
+    return () => window.removeEventListener('prism:muse_auto_execute', handleAutoExecute);
+  }, [sessionCardDrawn]);
 
   useDailyOracleFirstVisit({
     appPrefix: "muse",

@@ -443,11 +443,65 @@ export default function BluebirdApp() {
       }
     };
 
+    // 🎯 선택 텍스트 토스 즉시 실행: 빅뱅 드래그 토스 수신 시 탭 전환 + handleSend 즉시 실행
+    const handleSelectionExecute = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (!detail?.autoTrigger) return;
+      const text = (detail?.text || '').trim();
+      const targetMenuId: string = detail?.targetMenuId || '';
+      if (!text || text.length < 2) return;
+      sessionStorage.removeItem('prism_auto_execute_text');
+
+      // 파랑새 메뉴 id → 탭 매핑
+      const tabMap: Record<string, string> = {
+        bluebird_sanctuary: 'daily',
+        bluebird_gratitude: 'daily',
+        bluebird_letter: 'secretMessage',
+        bluebird_forest: 'daily',
+      };
+      const targetTab = tabMap[targetMenuId] || 'daily';
+      setActiveMode(targetTab as any);
+      setShowDailyModal(false);
+      setShowSecretMessageModal(false);
+      setShowChat(true);
+      resetAppScroll();
+
+      // handleSend 즉시 실행 (handleSendRef 경유)
+      setTimeout(() => {
+        try {
+          window.dispatchEvent(new CustomEvent('prism:bluebird_auto_execute', { detail: { text, autoTrigger: true } }));
+        } catch (_) {}
+      }, 350);
+    };
+
+    // 마운트 시 세션스토리지 잔여 텍스트 처리
+    const autoText = sessionStorage.getItem('prism_auto_execute_text');
+    const autoTarget = sessionStorage.getItem('prism_auto_execute_target') || '';
+    if (autoText && autoText.trim().length >= 2) {
+      sessionStorage.removeItem('prism_auto_execute_text');
+      const tabMap2: Record<string, string> = {
+        bluebird_sanctuary: 'daily',
+        bluebird_gratitude: 'daily',
+        bluebird_letter: 'secretMessage',
+        bluebird_forest: 'daily',
+      };
+      const targetTab2 = tabMap2[autoTarget] || 'daily';
+      setActiveMode(targetTab2 as any);
+      setShowChat(true);
+      setTimeout(() => {
+        try {
+          window.dispatchEvent(new CustomEvent('prism:bluebird_auto_execute', { detail: { text: autoText.trim(), autoTrigger: true } }));
+        } catch (_) {}
+      }, 500);
+    }
+
     window.addEventListener('prism-tab-change', handleTabChange);
     window.addEventListener('nav-click-active', handleNavClick);
+    window.addEventListener('prism:selection_execute', handleSelectionExecute);
     return () => {
       window.removeEventListener('prism-tab-change', handleTabChange);
       window.removeEventListener('nav-click-active', handleNavClick);
+      window.removeEventListener('prism:selection_execute', handleSelectionExecute);
     };
   }, []);
 
@@ -2297,6 +2351,25 @@ export default function BluebirdApp() {
       chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   };
+
+  // 🎯 toss 즉시 실행 브릿지: handleSend ref로 항상 최신 클로저 유지
+  const handleSendRef = useRef(handleSend);
+  useEffect(() => { handleSendRef.current = handleSend; });
+
+  useEffect(() => {
+    const handleAutoExecute = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (!detail?.autoTrigger) return;
+      const text = (detail?.text || '').trim();
+      if (!text || text.length < 2) return;
+      setShowChat(true);
+      setTimeout(() => {
+        try { handleSendRef.current(text); } catch (_) {}
+      }, 200);
+    };
+    window.addEventListener('prism:bluebird_auto_execute', handleAutoExecute);
+    return () => window.removeEventListener('prism:bluebird_auto_execute', handleAutoExecute);
+  }, []);
 
   const handleDailyOracle = async () => {
     if (isDailyOracleLoading) return;

@@ -1005,11 +1005,65 @@ export default function HealApp() {
       }
     };
 
+    // 🎯 선택 텍스트 토스 즉시 실행: 빅뱅 드래그 토스 수신 시 탭 전환 + handleSend 즉시 실행
+    const handleSelectionExecute = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (!detail?.autoTrigger) return;
+      const text = (detail?.text || '').trim();
+      const targetMenuId: string = detail?.targetMenuId || '';
+      if (!text || text.length < 2) return;
+      sessionStorage.removeItem('prism_auto_execute_text');
+
+      // 힐 메뉴 id → 탭 매핑
+      const tabMap: Record<string, string> = {
+        heal_wellness: 'oneMinute',
+        heal_hoponopono: 'meditation',
+        heal_sedona: 'meditation',
+        heal_breathing: 'oneMinute',
+        heal_chakra: 'oneMinute',
+        heal_frequency: 'oneMinute',
+      };
+      const targetTab = tabMap[targetMenuId] || 'oneMinute';
+      setActiveMode(targetTab as any);
+      setShowDailyModal(false);
+      setShowSoulModal(false);
+      setIsChatOpen(true);
+      resetAppScroll();
+
+      // handleSend 즉시 실행
+      setTimeout(() => {
+        try { handleSend(text); } catch (_) {}
+      }, 350);
+    };
+
+    // 마운트 시 세션스토리지 잔여 텍스트 처리
+    const autoText = sessionStorage.getItem('prism_auto_execute_text');
+    const autoTarget = sessionStorage.getItem('prism_auto_execute_target') || '';
+    if (autoText && autoText.trim().length >= 2) {
+      sessionStorage.removeItem('prism_auto_execute_text');
+      const tabMap2: Record<string, string> = {
+        heal_wellness: 'oneMinute',
+        heal_breathing: 'oneMinute',
+        heal_chakra: 'oneMinute',
+        heal_frequency: 'oneMinute',
+        heal_hoponopono: 'meditation',
+        heal_sedona: 'meditation',
+      };
+      const targetTab2 = tabMap2[autoTarget] || 'oneMinute';
+      setActiveMode(targetTab2 as any);
+      setIsChatOpen(true);
+      setTimeout(() => {
+        try { handleSend(autoText.trim()); } catch (_) {}
+      }, 400);
+    }
+
     window.addEventListener('prism-tab-change', handleTabChange);
     window.addEventListener('nav-click-active', handleNavClick);
+    window.addEventListener('prism:selection_execute', handleSelectionExecute);
     return () => {
       window.removeEventListener('prism-tab-change', handleTabChange);
       window.removeEventListener('nav-click-active', handleNavClick);
+      window.removeEventListener('prism:selection_execute', handleSelectionExecute);
     };
   }, []);
 

@@ -1,5 +1,20 @@
 [
   {
+    "version": "1.2.938",
+    "summary": "빅뱅 토스 즉시 실행: 단순 메뉴 이동이 아닌 토스 후 바로 해당 AI 기능 자동 실행",
+    "builtAt": "2026-09-13T04:12:00.000Z",
+    "items": [
+      "🚀 토스 즉시 실행 아키텍처 완성: OrangeApp·MuseApp·HealApp·BluebirdApp 모두 prism:selection_execute 이벤트 수신",
+      "⚡ OrangeApp: 드래그 토스 수신 시 wishingWell/secret 탭 전환 + handleChat 즉시 실행",
+      "🎨 MuseApp: 토스 텍스트를 userConcern으로 전달 + artRecommendation 탭에서 handleDailyOracle 즉시 실행",
+      "💊 HealApp: oneMinute/meditation 탭 전환 + handleSend 즉시 실행",
+      "🕊️ BluebirdApp: daily 탭 + handleSend 즉시 실행 (handleSendRef 브릿지 패턴)",
+      "🔗 prism:bluebird_auto_execute, prism:muse_auto_execute 이벤트로 함수 정의 후 실행 타이밍 문제 해결",
+      "📦 sessionStorage 잔여 텍스트 마운트 시 자동 소비 - 페이지 새로고침/라우팅 후에도 즉시 실행 보장"
+    ]
+  },
+
+  {
     "version": "1.2.937",
     "summary": "빅뱅 버튼 토스 단순화: 드래그 시 항상 추천 1순위로만 즉시 토스, 스크롤 시 루시/오브/추천1위 세 가지 경로 안내 뱃지 개선",
     "builtAt": "2026-09-13T04:04:00.000Z",

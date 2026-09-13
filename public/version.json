@@ -1,12 +1,16 @@
 {
   "name": "lucy-universe",
-  "version": "1.2.937",
-  "summary": "빅뱅 버튼 토스 단순화: 드래그 시 항상 추천 1순위로만 즉시 토스, 스크롤 시 루시/오브/추천1위 세 가지 경로 안내 뱃지 개선",
-  "builtAt": "2026-09-13T04:04:00.000Z",
+  "version": "1.2.938",
+  "summary": "빅뱅 토스 즉시 실행: 단순 메뉴 이동이 아닌 토스 후 바로 해당 AI 기능 자동 실행",
+  "builtAt": "2026-09-13T04:12:00.000Z",
   "items": [
-    "🎯 빅뱅 버튼 드래그+선택 텍스트 토스: 1·2·3위 무작위 선택 제거 → 항상 추천 1순위 메뉴로만 즉시 토스",
-    "🏷️ 스크롤 감지 안내 뱃지 개선: 탭▸루시 | 홀드▸오브 | 드래그▸추천1위 세 경로를 색상 구분으로 명확히 안내",
-    "✅ 선택 텍스트 드래그 시 top3 무작위 샘플링 로직 완전 제거, 추천 엔진의 1순위(rec.menu) 단독 사용으로 확정적 토스 보장"
+    "🚀 토스 즉시 실행 아키텍처 완성: OrangeApp·MuseApp·HealApp·BluebirdApp 모두 prism:selection_execute 이벤트 수신",
+    "⚡ OrangeApp: 드래그 토스 수신 시 wishingWell/secret 탭 전환 + handleChat 즉시 실행",
+    "🎨 MuseApp: 토스 텍스트를 userConcern으로 전달 + artRecommendation 탭에서 handleDailyOracle 즉시 실행",
+    "💊 HealApp: oneMinute/meditation 탭 전환 + handleSend 즉시 실행",
+    "🕊️ BluebirdApp: daily 탭 + handleSend 즉시 실행 (handleSendRef 브릿지 패턴)",
+    "🔗 prism:bluebird_auto_execute, prism:muse_auto_execute 이벤트로 함수 정의 후 실행 타이밍 문제 해결",
+    "📦 sessionStorage 잔여 텍스트 마운트 시 자동 소비 - 페이지 새로고침/라우팅 후에도 즉시 실행 보장"
   ],
   "author": "Antigravity AI Agent",
   "buildEnvironment": "cloud-run"
