@@ -386,11 +386,9 @@ export function executeSmartToss(
 ): void {
   const normDestId = (destination.id || '').toLowerCase().replace('/', '');
   const normDestPath = (destination.path || '').toLowerCase().replace('/', '');
-  if (
-    normDestId === 'profile' || normDestId.includes('profile') || normDestId === 'handbook' || normDestId === 'library' || normDestId === 'omniwarp' ||
-    normDestPath === 'profile' || normDestPath.includes('profile') || normDestPath === 'handbook' || normDestPath === 'library' || normDestPath === 'omniwarp'
-  ) {
-    console.warn(`[SmartToss Guard] Prohibited toss navigation blocked: ${destination.id}`);
+  // Only block strictly deprecated or inactive destinations
+  if (normDestId === 'library' || normDestPath === 'library') {
+    console.warn(`[SmartToss Guard] Inactive toss navigation blocked: ${destination.id}`);
     return;
   }
 

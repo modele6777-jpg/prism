@@ -7,7 +7,10 @@ export interface DraggedSelectionContext {
   text: string;
   timestamp: number;
   sourcePath?: string;
-  target?: 'lucy' | 'orb';
+  target?: 'lucy' | 'orb' | string;
+  targetMenuId?: string;
+  targetPath?: string;
+  contextReason?: string;
 }
 
 const SELECTION_STORAGE_KEY = 'prism_dragged_selection_context';
@@ -16,14 +19,20 @@ const MAX_VALIDITY_MS = 10 * 60 * 1000; // 10분 유효
 /**
  * 선택된 텍스트를 세션 스토리지에 안전하게 저장
  */
-export function savePendingSelection(text: string, target?: 'lucy' | 'orb', sourcePath?: string): void {
+export function savePendingSelection(
+  text: string,
+  target?: 'lucy' | 'orb' | string,
+  sourcePath?: string,
+  extra?: Partial<DraggedSelectionContext>
+): void {
   if (!text || text.trim().length < 2) return;
   try {
     const payload: DraggedSelectionContext = {
       text: text.trim(),
       timestamp: Date.now(),
       sourcePath: sourcePath || (typeof window !== 'undefined' ? window.location.pathname : undefined),
-      target
+      target,
+      ...(extra || {})
     };
     sessionStorage.setItem(SELECTION_STORAGE_KEY, JSON.stringify(payload));
     if (typeof window !== 'undefined') {
