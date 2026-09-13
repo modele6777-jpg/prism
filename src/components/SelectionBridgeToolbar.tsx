@@ -217,7 +217,7 @@ export default function SelectionBridgeToolbar() {
           id="selection-bridge-btn-reroll"
           onClick={handleReroll}
           className="w-7 h-7 rounded-full flex items-center justify-center text-slate-300 hover:text-white hover:bg-white/15 border border-white/10 transition-colors shrink-0 active:scale-90"
-          title={`다른 추천 경로로 교체 (${recommendedResult.currentIndex + 1}/${recommendedResult.totalCandidates}) - 20가지 메뉴 중 순환`}
+          title={`다른 추천 경로로 교체 (${recommendedResult.currentIndex + 1}/${recommendedResult.totalCandidates}) - 프리즘 전체 기능 중 순환`}
         >
           <Shuffle size={12} className="opacity-80" />
         </button>
