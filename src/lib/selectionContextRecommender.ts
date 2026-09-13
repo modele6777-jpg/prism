@@ -392,6 +392,13 @@ export const PRISM_20_MENU_DESTINATIONS: PrismMenuDestination[] = [
   },
 ];
 
+export interface TopRankedMenu {
+  rank: 1 | 2 | 3;
+  menu: PrismMenuDestination;
+  contextReason: string;
+  matchScore: number;
+}
+
 export interface RecommendedMenuResult {
   menu: PrismMenuDestination;
   contextReason: string;
@@ -399,6 +406,7 @@ export interface RecommendedMenuResult {
   allRankedMenus: Array<{ menu: PrismMenuDestination; score: number; reason: string }>;
   currentIndex: number;
   totalCandidates: number;
+  top3: TopRankedMenu[];
 }
 
 /**
@@ -509,7 +517,37 @@ export function getRecommendedMenu(
   const timeSlot = Math.floor(Date.now() / (1000 * 20)); // 20초마다 주기적 회전 슬라이스
   const candidateIndex = Math.abs(textHash + timeSlot + cycleOffset) % topTier.length;
 
-  const chosen = topTier[candidateIndex] || scored[0];
+  // 🌟 상위 1순위, 2순위, 3순위 고유 추천 경로 산출 (중복 원천 방지)
+  const usedIds = new Set<string>();
+  const pickCandidate = (offset: number) => {
+    for (let i = 0; i < topTier.length; i++) {
+      const idx = (candidateIndex + offset + i) % topTier.length;
+      const candidate = topTier[idx];
+      if (candidate && !usedIds.has(candidate.menu.id)) {
+        usedIds.add(candidate.menu.id);
+        return candidate;
+      }
+    }
+    for (const item of scored) {
+      if (!usedIds.has(item.menu.id)) {
+        usedIds.add(item.menu.id);
+        return item;
+      }
+    }
+    return scored[0];
+  };
+
+  const firstCandidate = pickCandidate(0);
+  const secondCandidate = pickCandidate(1);
+  const thirdCandidate = pickCandidate(2);
+
+  const top3: TopRankedMenu[] = [
+    { rank: 1, menu: firstCandidate.menu, contextReason: firstCandidate.reason, matchScore: firstCandidate.score },
+    { rank: 2, menu: secondCandidate.menu, contextReason: secondCandidate.reason, matchScore: secondCandidate.score },
+    { rank: 3, menu: thirdCandidate.menu, contextReason: thirdCandidate.reason, matchScore: thirdCandidate.score },
+  ];
+
+  const chosen = firstCandidate;
 
   return {
     menu: chosen.menu,
@@ -518,6 +556,7 @@ export function getRecommendedMenu(
     allRankedMenus: scored,
     currentIndex: candidateIndex,
     totalCandidates: topTier.length,
+    top3,
   };
 }
 

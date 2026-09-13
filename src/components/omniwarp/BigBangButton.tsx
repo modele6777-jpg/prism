@@ -19,6 +19,8 @@ import {
 import { omniWarpAudio } from '@/lib/omniWarp/omniWarpAudio';
 import { triggerHaptic, startBlackHoleContinuousHaptic, stopBlackHoleContinuousHaptic } from '@/lib/omniWarp/omniWarpHaptics';
 import { safeSessionStorage } from '@/utils/safeStorage';
+import { peekPendingSelection, savePendingSelection } from '@/lib/selectionBridge';
+import { sendPrismToss } from '@/lib/prismToss';
 import { BigBangCircularMeter } from './BigBangCircularMeter';
 
 export function BigBangButton() {
@@ -81,6 +83,49 @@ export function BigBangButton() {
       if (singleTapTimerRef.current) {
         clearTimeout(singleTapTimerRef.current);
       }
+    };
+  }, []);
+
+  // 🌟 텍스트 드래그(선택) 감지: 탭 시 루시 토스, 홀드 시 오브 토스 지원
+  const [hasSelectionToss, setHasSelectionToss] = useState(false);
+  const [selectionPreviewText, setSelectionPreviewText] = useState('');
+
+  useEffect(() => {
+    const updateSelectionState = () => {
+      if (typeof window === 'undefined') return;
+      const winSel = window.getSelection()?.toString().trim();
+      const pending = peekPendingSelection()?.text?.trim();
+      const text = winSel && winSel.length >= 2 ? winSel : (pending && pending.length >= 2 ? pending : '');
+      if (text) {
+        setHasSelectionToss(true);
+        setSelectionPreviewText(text.slice(0, 24));
+      } else {
+        setHasSelectionToss(false);
+        setSelectionPreviewText('');
+      }
+    };
+
+    const handleSaved = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (detail?.text && detail.text.length >= 2) {
+        setHasSelectionToss(true);
+        setSelectionPreviewText(detail.text.slice(0, 24));
+      }
+    };
+
+    const handleTossed = () => {
+      setHasSelectionToss(false);
+      setSelectionPreviewText('');
+    };
+
+    document.addEventListener('selectionchange', updateSelectionState);
+    window.addEventListener('prism:selection_saved', handleSaved);
+    window.addEventListener('prism:selection_tossed', handleTossed);
+
+    return () => {
+      document.removeEventListener('selectionchange', updateSelectionState);
+      window.removeEventListener('prism:selection_saved', handleSaved);
+      window.removeEventListener('prism:selection_tossed', handleTossed);
     };
   }, []);
 
@@ -453,6 +498,30 @@ export function BigBangButton() {
         triggerHaptic('whitehole');
         omniWarpAudio.playWhiteHole();
 
+        // 🌟 텍스트 드래그(선택) 연동: 글자를 스크롤/선택한 상태에서 빅뱅 탭 ➔ 루시에게 즉시 토스!
+        const winSel = typeof window !== 'undefined' ? window.getSelection()?.toString().trim() : '';
+        const pending = peekPendingSelection()?.text?.trim();
+        const textToToss = winSel && winSel.length >= 2 ? winSel : (pending && pending.length >= 2 ? pending : '');
+
+        if (textToToss) {
+          savePendingSelection(textToToss, 'lucy', location);
+          sendPrismToss({
+            sourceApp: location || 'bigbang_button',
+            targetApp: 'lucy',
+            actionType: 'smart_toss',
+            contextMessage: textToToss,
+            autoPrompt: textToToss,
+            tossedAt: Date.now(),
+          });
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(
+              new CustomEvent('prism:selection_tossed', {
+                detail: { text: textToToss, target: 'lucy', sourcePath: location },
+              })
+            );
+          }
+        }
+
         // ☀️ 제자리 탭: 빛비춤(화이트홀) 화면 이펙트 발동!
         if (typeof window !== 'undefined') {
           window.dispatchEvent(
@@ -474,8 +543,8 @@ export function BigBangButton() {
           );
         }
 
-        if (isChatView) {
-          // 채팅 화면에서는 이전 페이지(또는 홈)로 귀환
+        if (isChatView && !textToToss) {
+          // 채팅 화면에서 선택 텍스트가 없을 때만 이전 페이지로 귀환
           const returnPath = safeSessionStorage.getItem('prism_chat_return_path') || '/';
           safeSessionStorage.removeItem('prism_chat_return_path');
           const finalDest = returnPath.includes('chat') ? '/' : returnPath;
@@ -487,7 +556,7 @@ export function BigBangButton() {
             window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: finalDest } }));
           }
         } else {
-          // 일반 페이지에서는 현재 위치 기억 후 루시 채팅 열기
+          // 일반 페이지(또는 텍스트를 들고 있을 때)는 루시 채팅 열기 & 토스 연계
           const currentPath = location || '/';
           safeSessionStorage.setItem('prism_chat_return_path', currentPath);
           if (isOrbSite) {
@@ -605,6 +674,35 @@ export function BigBangButton() {
     triggerHaptic('blackhole');
     omniWarpAudio.playBlackHole();
 
+    // 🔮 텍스트 드래그(선택) 연동: 글자를 스크롤/선택한 상태에서 빅뱅 홀드 ➔ 오브에게 즉시 토스!
+    const winSel = typeof window !== 'undefined' ? window.getSelection()?.toString().trim() : '';
+    const pending = peekPendingSelection()?.text?.trim();
+    const textToToss = winSel && winSel.length >= 2 ? winSel : (pending && pending.length >= 2 ? pending : '');
+
+    if (textToToss) {
+      savePendingSelection(textToToss, 'orb', location);
+      sendPrismToss({
+        sourceApp: location || 'bigbang_button',
+        targetApp: 'orb',
+        actionType: 'smart_toss',
+        contextMessage: textToToss,
+        autoPrompt: textToToss,
+        tossedAt: Date.now(),
+      });
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('prism:selection_tossed', {
+            detail: { text: textToToss, target: 'orb', sourcePath: location },
+          })
+        );
+        window.dispatchEvent(
+          new CustomEvent('prism:selection_saved', {
+            detail: { text: textToToss, target: 'orb', sourcePath: location },
+          })
+        );
+      }
+    }
+
     if (typeof window !== 'undefined') {
       window.dispatchEvent(
         new CustomEvent('prism:bigbang_commit', {
@@ -626,7 +724,7 @@ export function BigBangButton() {
     }
 
     setTimeout(() => {
-      if (isOrbSite) {
+      if (isOrbSite && !textToToss) {
         // 오브 사이트 나가기 -> 프리즘 귀환
         const returnPath = safeSessionStorage.getItem('prism_orb_return_path') || '/';
         safeSessionStorage.removeItem('prism_orb_return_path');
@@ -639,7 +737,7 @@ export function BigBangButton() {
           window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: finalDest } }));
         }
       } else {
-        // 오브 사이트 들어가기 -> /orb.html 입장
+        // 오브 사이트 들어가기 -> /orb.html 입장 & 토스 수신
         const currentPath = location || '/';
         safeSessionStorage.setItem('prism_orb_return_path', currentPath);
         if (typeof window !== 'undefined') {
@@ -760,6 +858,21 @@ export function BigBangButton() {
               </>
             )}
 
+            {/* 🌟 텍스트 드래그(선택) 연동 가이드 뱃지 (글자 스크롤 감지 시 빅뱅 버튼 상단에 표시) */}
+            <AnimatePresence>
+              {hasSelectionToss && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.85, y: 6 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.85, y: 4 }}
+                  className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap px-3 py-1 rounded-full bg-slate-950/95 backdrop-blur-xl border border-cyan-400/50 text-[10px] font-bold text-cyan-200 shadow-[0_4px_20px_rgba(0,240,255,0.4)] pointer-events-none flex items-center gap-1.5 z-50 animate-pulse ring-1 ring-cyan-400/30"
+                >
+                  <span className="text-xs">✨</span>
+                  <span>탭➔루시 대화 | 홀드➔오브 신탁</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* 🎯 빅뱅 차원 수렴 인터랙션 (군더더기 없는 현대적이고 신비로운 코스믹 아케인 버튼) */}
             <motion.button
               ref={buttonRef}
@@ -826,14 +939,18 @@ export function BigBangButton() {
                   : 'inset 0 0 22px rgba(56, 189, 248, 0.25), inset -6px -6px 18px rgba(0, 0, 0, 0.9), 0 0 24px rgba(56, 189, 248, 0.3)',
               }}
               aria-label={
-                isChatView
+                hasSelectionToss
+                  ? `빅뱅 버튼 · 선택 내용 토스 대기중 ("${selectionPreviewText}...") · 탭: 루시 대화 연계, 홀드: 크리스탈 오브 신탁 연계`
+                  : isChatView
                   ? '빅뱅 버튼 · 탭: 루시 채팅 닫기, 더블탭: 프리즘 메인, 홀드: 크리스탈 오브'
                   : isOrbSite
                   ? '빅뱅 버튼 · 탭: 루시 채팅 열기, 더블탭: 프리즘 메인, 홀드: 오브 사이트 나가기'
                   : '빅뱅 버튼 · 탭: 루시 채팅, 더블탭: 프리즘 메인, 홀드: 크리스탈 오브 들어가기'
               }
               title={
-                isChatView
+                hasSelectionToss
+                  ? `[선택 텍스트 토스 대기: "${selectionPreviewText}..."] 탭: 루시 1:1 대화 연계 · 홀드: 크리스탈 오브 직관 신탁 연계`
+                  : isChatView
                   ? '탭: 루시 채팅 닫기 · 더블탭: 프리즘 메인 · 홀드: 크리스탈 오브 · 웜홀: 임의 도약'
                   : isOrbSite
                   ? '탭: 루시 채팅 열기 · 더블탭: 프리즘 메인 · 홀드: 오브 사이트 나가기 · 웜홀: 임의 도약'

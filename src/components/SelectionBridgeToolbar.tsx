@@ -110,11 +110,11 @@ export default function SelectionBridgeToolbar() {
 
   if (!visible || !selectedText || isExcludedPage) return null;
 
-  // 🌟 20대 메뉴 중 맥락 감지 기반 동적 추천 경로로 즉각 토스 & 이동
-  const handleGoRecommended = (e: React.MouseEvent) => {
+  // 🌟 추천 메뉴 클릭 시 즉각 토스 & 이동 핸들러
+  const handleSelectMenu = (menu: any) => (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    tossSelectionToMenu(selectedText, recommendedResult.menu, location, navigate);
+    tossSelectionToMenu(selectedText, menu, location, navigate);
     setVisible(false);
   };
 
@@ -125,27 +125,13 @@ export default function SelectionBridgeToolbar() {
     setCycleOffset((prev) => prev + 1);
   };
 
-  const handleGoLucy = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    savePendingSelection(selectedText, 'lucy', location);
-    setVisible(false);
-    navigate('/chat');
-  };
-
-  const handleGoOrb = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    savePendingSelection(selectedText, 'orb', location);
-    setVisible(false);
-    navigate('/orb');
-  };
-
   const handleClose = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
     setVisible(false);
   };
+
+  const top3 = recommendedResult.top3 || [];
 
   return (
     <div
@@ -158,20 +144,32 @@ export default function SelectionBridgeToolbar() {
       }
       className="fixed z-[9999] flex items-center gap-1.5 p-1.5 rounded-full bg-slate-950/95 backdrop-blur-xl border border-white/20 shadow-[0_12px_40px_rgba(0,0,0,0.6)] transition-all duration-200 animate-in fade-in zoom-in-95 select-none max-w-[96vw] overflow-x-auto no-scrollbar ring-1 ring-white/10"
     >
-      {/* 1. 맥락 감지 기반 20대 메뉴 동적 추천 버튼 */}
-      <div className="flex items-center gap-1 shrink-0">
-        <button
-          id="selection-bridge-btn-recommended"
-          onClick={handleGoRecommended}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${recommendedResult.menu.buttonClass} border ${recommendedResult.menu.borderClass} text-xs font-bold tracking-tight transition-all active:scale-95 shadow-md group`}
-          title={`${recommendedResult.contextReason} (클릭 시 해당 메뉴로 즉시 토스)`}
-        >
-          <span className="text-sm shrink-0 drop-shadow">{recommendedResult.menu.emoji}</span>
-          <span className="truncate max-w-[125px] sm:max-w-none">{recommendedResult.menu.name}</span>
-          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-white/20 text-white shrink-0 border border-white/25 shadow-sm">
-            ✨ 추천
-          </span>
-        </button>
+      {/* 🌟 맥락 감지 기반 20대 메뉴 1순위, 2순위, 3순위 추천 버튼 목록 */}
+      <div className="flex items-center gap-1.5 shrink-0">
+        {top3.map((item, idx) => {
+          const rankColors =
+            idx === 0
+              ? 'bg-amber-400/25 text-amber-200 border-amber-400/40'
+              : idx === 1
+              ? 'bg-sky-400/25 text-sky-200 border-sky-400/40'
+              : 'bg-emerald-400/25 text-emerald-200 border-emerald-400/40';
+
+          return (
+            <button
+              key={item.menu.id}
+              id={`selection-bridge-btn-rank-${item.rank}`}
+              onClick={handleSelectMenu(item.menu)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${item.menu.buttonClass} border ${item.menu.borderClass} text-xs font-bold tracking-tight transition-all active:scale-95 shadow-md group shrink-0`}
+              title={`[추천 ${item.rank}순위] ${item.contextReason} (클릭 시 ${item.menu.name}으로 토스)`}
+            >
+              <span className="text-sm shrink-0 drop-shadow">{item.menu.emoji}</span>
+              <span className="truncate max-w-[110px] sm:max-w-none">{item.menu.name}</span>
+              <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ${rankColors} shrink-0 border shadow-sm`}>
+                {item.rank}순위
+              </span>
+            </button>
+          );
+        })}
 
         {/* 🔀 상시 다른 추천 경로로 교체 (셔플/순환 버튼) */}
         <button
@@ -187,31 +185,19 @@ export default function SelectionBridgeToolbar() {
       {/* 세로 구분선 */}
       <div className="w-px h-4 bg-white/20 mx-0.5 shrink-0" />
 
-      {/* 2. 루시 이성 분석 버튼 */}
-      <button
-        id="selection-bridge-btn-lucy"
-        onClick={handleGoLucy}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 hover:text-cyan-100 border border-cyan-400/30 text-xs font-semibold tracking-tight transition-all active:scale-95 shrink-0"
-        title="선택한 내용을 루시 채팅으로 보내 이성적·좌뇌적 심층 분석 받기"
+      {/* 💡 빅뱅 버튼 연동 가이드 뱃지 (글자 스크롤 후 빅뱅 버튼 탭=루시, 홀드=오브 안내) */}
+      <div
+        className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.06] border border-white/10 text-[11px] text-slate-300 font-medium shrink-0"
+        title="글자를 스크롤한 상태에서 화면의 빅뱅 버튼을 탭하면 루시 대화로, 홀드하면 크리스탈 오브로 선택 내용이 즉시 연결됩니다."
       >
-        <Brain size={13} className="text-cyan-300 animate-pulse" />
-        <span className="hidden sm:inline">루시 이성 분석</span>
-        <span className="sm:hidden">루시</span>
-      </button>
+        <span className="text-xs">💥</span>
+        <span className="text-white/60">빅뱅:</span>
+        <span className="text-cyan-300 font-semibold">탭➔루시</span>
+        <span className="text-white/30">·</span>
+        <span className="text-purple-300 font-semibold">홀드➔오브</span>
+      </div>
 
-      {/* 3. 오브 감성 신탁 버튼 */}
-      <button
-        id="selection-bridge-btn-orb"
-        onClick={handleGoOrb}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 hover:text-purple-100 border border-purple-400/30 text-xs font-semibold tracking-tight transition-all active:scale-95 shrink-0"
-        title="선택한 내용을 크리스탈 오브로 보내 감성적·우뇌적 무의식 신탁 받기"
-      >
-        <Sparkles size={13} className="text-purple-300 animate-pulse" />
-        <span className="hidden sm:inline">오브 감성 신탁</span>
-        <span className="sm:hidden">오브</span>
-      </button>
-
-      {/* 4. 닫기 버튼 */}
+      {/* 닫기 버튼 */}
       <button
         id="selection-bridge-btn-close"
         onClick={handleClose}
