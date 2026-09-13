@@ -237,16 +237,18 @@ export default function SelectionBridgeToolbar() {
       {/* 세로 구분선 */}
       <div className="w-px h-4 bg-white/20 mx-0.5 shrink-0" />
 
-      {/* 💡 빅뱅 버튼 연동 가이드 뱃지 (글자 스크롤 후 빅뱅 버튼 탭=루시, 홀드=오브 안내) */}
+      {/* 💡 빅뱅 버튼 연동 가이드 뱃지 (글자 스크롤 후 빅뱅 버튼 탭=루시, 홀드=오브, 드래그=추천 메뉴 토스 안내) */}
       <div
         className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.06] border border-white/10 text-[11px] text-slate-300 font-medium shrink-0"
-        title="글자를 스크롤한 상태에서 화면의 빅뱅 버튼을 탭하면 루시 대화로, 홀드하면 크리스탈 오브로 선택 내용이 즉시 연결됩니다."
+        title="글자를 스크롤한 상태에서 화면의 빅뱅 버튼을 탭하면 루시 대화, 홀드하면 크리스탈 오브, 드래그하면 1·2·3위 추천 메뉴 중 무작위 순위로 즉시 연결됩니다."
       >
         <span className="text-xs">💥</span>
         <span className="text-white/60">빅뱅:</span>
         <span className="text-cyan-300 font-semibold">탭➔루시</span>
         <span className="text-white/30">·</span>
         <span className="text-purple-300 font-semibold">홀드➔오브</span>
+        <span className="text-white/30">·</span>
+        <span className="text-amber-300 font-semibold">드래그➔추천</span>
       </div>
 
       {/* 닫기 버튼 */}

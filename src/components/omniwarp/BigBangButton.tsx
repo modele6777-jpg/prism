@@ -21,6 +21,7 @@ import { triggerHaptic, startBlackHoleContinuousHaptic, stopBlackHoleContinuousH
 import { safeSessionStorage } from '@/utils/safeStorage';
 import { peekPendingSelection, savePendingSelection } from '@/lib/selectionBridge';
 import { sendPrismToss } from '@/lib/prismToss';
+import { getRecommendedMenu, tossSelectionToMenu } from '@/lib/selectionContextRecommender';
 import { BigBangCircularMeter } from './BigBangCircularMeter';
 
 export function BigBangButton() {
@@ -583,6 +584,62 @@ export function BigBangButton() {
     lastTapTimeRef.current = 0;
 
     // [2] 홀드 (250ms 이상) 또는 드래그 릴리즈 분기
+    const winSel = typeof window !== 'undefined' ? window.getSelection()?.toString().trim() : '';
+    const pending = peekPendingSelection()?.text?.trim();
+    const textToToss = winSel && winSel.length >= 2 ? winSel : (pending && pending.length >= 2 ? pending : '');
+
+    // 🎯 스크롤(선택)한 상태로 빅뱅 버튼을 드래그하면 (dist >= 20):
+    // 1, 2, 3위 추천 순위 중에 무작위 순위 메뉴로 즉시 토스!
+    if (textToToss && dist >= 20) {
+      const rec = getRecommendedMenu(textToToss, location);
+      const topCandidates = rec.top3 && rec.top3.length > 0 ? rec.top3 : [{ menu: rec.menu }];
+      // 1, 2, 3위 중 무작위 순위 메뉴 1개 선정
+      const randomIdx = Math.floor(Math.random() * topCandidates.length);
+      const chosenCandidate = topCandidates[randomIdx];
+      const targetMenu = chosenCandidate.menu;
+
+      triggerHaptic('wormhole');
+      omniWarpAudio.playWormhole();
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('prism:bigbang_commit', {
+            detail: {
+              phase: 'wormhole',
+              target: {
+                id: targetMenu.id,
+                name: targetMenu.name,
+                destinationPath: targetMenu.path,
+                themeColor: targetMenu.themeColor,
+                icon: targetMenu.emoji,
+                previewLabel: `[글자 추천 토스] ${targetMenu.emoji} ${targetMenu.name}`,
+                previewDescription: `스크롤된 글자를 [${targetMenu.name}]으로 차원 토스합니다.`,
+              },
+              context,
+              metrics: { ...metrics, phase: 'wormhole' },
+              timestamp: Date.now(),
+            },
+          })
+        );
+      }
+
+      // 대상 메뉴로 즉각 토스 & 네비게이션 실행
+      tossSelectionToMenu(textToToss, targetMenu, location, (targetPath) => {
+        if (isOrbSite) {
+          window.location.href = targetPath;
+        } else {
+          navigate(targetPath);
+          window.dispatchEvent(new CustomEvent('prism-navigate', { detail: { path: targetPath } }));
+          window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: targetPath } }));
+        }
+      });
+
+      setActivePhase('idle');
+      setGauge(0);
+      setDurationMs(0);
+      return;
+    }
+
     // A. 만약 사용자가 버튼 바깥으로 드래그하여 특정 7대 룬 노드로 명확히 조준한 경우: 해당 앱으로 워프!
     if (!isWithinButton && radialSectorIndex >= 0 && dist > 44) {
       const target = synthesizeWarpTarget(context, metrics);
@@ -675,10 +732,6 @@ export function BigBangButton() {
     omniWarpAudio.playBlackHole();
 
     // 🔮 텍스트 드래그(선택) 연동: 글자를 스크롤/선택한 상태에서 빅뱅 홀드 ➔ 오브에게 즉시 토스!
-    const winSel = typeof window !== 'undefined' ? window.getSelection()?.toString().trim() : '';
-    const pending = peekPendingSelection()?.text?.trim();
-    const textToToss = winSel && winSel.length >= 2 ? winSel : (pending && pending.length >= 2 ? pending : '');
-
     if (textToToss) {
       savePendingSelection(textToToss, 'orb', location);
       sendPrismToss({
@@ -868,7 +921,7 @@ export function BigBangButton() {
                   className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap px-3 py-1 rounded-full bg-slate-950/95 backdrop-blur-xl border border-cyan-400/50 text-[10px] font-bold text-cyan-200 shadow-[0_4px_20px_rgba(0,240,255,0.4)] pointer-events-none flex items-center gap-1.5 z-50 animate-pulse ring-1 ring-cyan-400/30"
                 >
                   <span className="text-xs">✨</span>
-                  <span>탭➔루시 대화 | 홀드➔오브 신탁</span>
+                  <span>탭➔루시 | 홀드➔오브 | 드래그➔추천 토스</span>
                 </motion.div>
               )}
             </AnimatePresence>
