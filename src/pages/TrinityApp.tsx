@@ -3251,6 +3251,7 @@ function playDailyCardChimeAsync() {
                                       </h4>
                                     </div>
                                     <button
+                                        type="button"
                                         onClick={async () => {
                                           if (isFullReadingTTSActive) {
                                             stopTTS();
@@ -3258,10 +3259,15 @@ function playDailyCardChimeAsync() {
                                             await playTTSInChunks(tarotResult, 'Kore', 420, '신비');
                                           }
                                         }}
-                                        className={`p-1.5 rounded-full transition-all ${isFullReadingTTSActive ? "bg-yellow-500/20 text-yellow-400 animate-pulse" : "bg-white/5 text-white/40 hover:text-white hover:bg-white/10"}`}
-                                        title={isFullReadingTTSActive ? "낭독 중지하기" : "음성으로 듣기"}
+                                        className={`px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                                          isFullReadingTTSActive
+                                            ? "bg-yellow-500/25 text-yellow-300 border border-yellow-400/40 animate-pulse"
+                                            : "bg-white/10 hover:bg-white/20 text-white/90 border border-white/15"
+                                        }`}
+                                        title={isFullReadingTTSActive ? "낭독 중지하기" : "전체 리딩 음성으로 듣기"}
                                       >
-                                        {isFullReadingTTSActive ? <VolumeX size={14} /> : <Volume2 size={14} />}
+                                        {isFullReadingTTSActive ? <VolumeX size={12} /> : <Volume2 size={12} />}
+                                        <span>{isFullReadingTTSActive ? "중지" : "전체 낭독"}</span>
                                       </button>
                                   </div>
 

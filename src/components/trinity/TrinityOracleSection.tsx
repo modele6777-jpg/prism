@@ -4,12 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles, Heart, Flame, Wind, Coins, BookOpen, Volume2, VolumeX,
   CheckCircle2, RotateCcw, Zap, Sun, Moon, Feather, Check, Palette, ArrowRight, Share2,
-  Compass, Shield, User, Calendar, Clock, X
+  Compass, Shield, User, Calendar, Clock, X, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Eye, Layers
 } from 'lucide-react';
 import { TAROT_DECK, TarotCard, getTarotCardImageUrl } from '@/data/tarotData';
 import { TarotSpread, SelectedTarotCardEntry } from './TarotSpread';
 import { invokeLLM } from '@/lib/ai';
-import { playTTS, stopTTS, useTTSActive } from '@/utils/tts';
+import { playTTS, playTTSInChunks, stopTTS, useTTSActive, useTTSState, prepareNaturalSpeechText } from '@/utils/tts';
 import { sendPrismToss } from '@/lib/prismToss';
 import { useApp, getPersistentUserProfile, setPersistentUserProfile } from '@/contexts/AppContext';
 import {
@@ -147,8 +147,14 @@ export function TrinityOracleSection() {
   const [showTreasureModal, setShowTreasureModal] = useState<boolean>(false);
   const [streakCount, setStreakCount] = useState<number>(1);
 
+  // Card tab view state & matrix accordion
+  const [selectedCardIdx, setSelectedCardIdx] = useState<number>(0);
+  const [showAllCardsTogether, setShowAllCardsTogether] = useState<boolean>(false);
+  const [isMatrixOpen, setIsMatrixOpen] = useState<boolean>(false);
+
   // TTS State
   const isTTSActive = useTTSActive();
+  const ttsState = useTTSState();
 
   // Load collected treasures and growth records on mount
   useEffect(() => {
@@ -193,6 +199,8 @@ export function TrinityOracleSection() {
     setHealingResult(null);
     setGrowthResult(null);
     setIsHealingCompleted(false);
+    setSelectedCardIdx(0);
+    setShowAllCardsTogether(false);
     stopTTS();
   };
 
@@ -510,19 +518,134 @@ export function TrinityOracleSection() {
     }
   };
 
-  // TTS handler
-  const handleToggleTTS = () => {
-    if (isTTSActive) {
+  // Oracle TTS Speech Text Generation
+  const oracleSpeechText = useMemo(() => {
+    if (oracleMode === 'healing' && healingResult) {
+      const verdict = healingResult.saju_tarot_synergy?.saju_oracle_verdict || healingResult.message || '';
+      const dayMaster = healingResult.saju_tarot_synergy?.day_master_resonance || '';
+      const action = healingResult.micro_action ? `오늘 나를 위한 1분 쉼 실천 처방은 ${healingResult.micro_action}입니다.` : '';
+      const speech = `오라클 타로의 최종 계시입니다. ${verdict}. 사주와 타로의 기운 조화입니다. ${dayMaster}. ${action}`;
+      return prepareNaturalSpeechText(speech);
+    } else if (oracleMode === 'growth' && growthResult) {
+      const verdict = growthResult.saju_tarot_synergy?.saju_oracle_verdict || growthResult.macro_focus || '';
+      const dayMaster = growthResult.saju_tarot_synergy?.day_master_resonance || '';
+      const mission = growthResult.micro_mission ? `오늘의 1줄 마이크로 미션은 ${growthResult.micro_mission.title}이며, 실행 팁은 ${growthResult.micro_mission.action_tip}입니다.` : '';
+      const speech = `오라클 타로의 현실 성장 브리핑입니다. ${verdict}. 사주와 타로의 기운 조화입니다. ${dayMaster}. ${mission}`;
+      return prepareNaturalSpeechText(speech);
+    }
+    return '';
+  }, [oracleMode, healingResult, growthResult]);
+
+  const isOracleTTSActive = useMemo(() => {
+    if (!isTTSActive || !oracleSpeechText) return false;
+    const cleanSpeech = prepareNaturalSpeechText(oracleSpeechText);
+    return ttsState.activeFullText === cleanSpeech;
+  }, [isTTSActive, oracleSpeechText, ttsState.activeFullText]);
+
+  // TTS Toggle Handler using smooth chunked playback
+  const handleToggleTTS = async () => {
+    if (isOracleTTSActive) {
       stopTTS();
       return;
     }
-    if (oracleMode === 'healing' && healingResult) {
-      const speech = `${healingResult.message} 오늘 제제가 건네는 작은 쉼입니다. ${healingResult.micro_action}. ${healingResult.prescribed_art.artwork_title}. ${healingResult.prescribed_art.art_quote}`;
-      playTTS(speech);
-    } else if (oracleMode === 'growth' && growthResult) {
-      const speech = `오늘의 마인드셋 브리핑입니다. ${growthResult.macro_focus} 집중 영역: ${growthResult.dominant_element.element_ko}. 오늘의 1줄 실행 미션: ${growthResult.micro_mission.title}. ${growthResult.micro_mission.action_tip}`;
-      playTTS(speech);
+    if (oracleSpeechText) {
+      await playTTSInChunks(oracleSpeechText, 'Kore', 250, '신비');
     }
+  };
+
+  // Executive Summary Card (Clean 3-Point Overview + Prominent TTS Button)
+  const renderExecutiveSummaryCard = () => {
+    const verdict =
+      oracleMode === 'healing'
+        ? healingResult?.saju_tarot_synergy?.saju_oracle_verdict || healingResult?.message
+        : growthResult?.saju_tarot_synergy?.saju_oracle_verdict || growthResult?.macro_focus;
+
+    const resonance =
+      oracleMode === 'healing'
+        ? healingResult?.saju_tarot_synergy?.day_master_resonance
+        : growthResult?.saju_tarot_synergy?.day_master_resonance;
+
+    const actionTip =
+      oracleMode === 'healing'
+        ? healingResult?.micro_action
+        : growthResult?.micro_mission
+          ? `${growthResult.micro_mission.title} — ${growthResult.micro_mission.action_tip}`
+          : '';
+
+    if (!verdict && !resonance) return null;
+
+    return (
+      <div className="glass p-5 sm:p-7 rounded-3xl bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-transparent border border-yellow-500/35 shadow-xl space-y-4 backdrop-blur-xl relative overflow-hidden">
+        <div className="flex items-center justify-between gap-3 pb-3 border-b border-yellow-500/20">
+          <div className="flex items-center gap-2 text-yellow-300 font-bold text-xs sm:text-sm">
+            <Sparkles size={16} className="text-yellow-400 animate-pulse" />
+            <span>✨ 오라클 종합 계시 & 핵심 3줄 요약</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleToggleTTS}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-95 ${
+              isOracleTTSActive
+                ? "bg-yellow-400/30 text-yellow-200 border border-yellow-400/50 animate-pulse"
+                : "bg-white/10 hover:bg-white/20 text-white border border-white/20"
+            }`}
+            title={isOracleTTSActive ? "낭독 중지" : "오라클 종합 계시 듣기"}
+          >
+            {isOracleTTSActive ? <VolumeX size={13} /> : <Volume2 size={13} />}
+            <span>{isOracleTTSActive ? "낭독 중지" : "오라클 음성 듣기"}</span>
+          </button>
+        </div>
+
+        {/* Hero Verdict Quote */}
+        {verdict && (
+          <div className="p-4 rounded-2xl bg-black/40 border border-yellow-400/30 text-center sm:text-left">
+            <span className="text-[10px] font-mono text-yellow-400 uppercase tracking-widest block mb-1">
+              FINAL ORACLE VERDICT
+            </span>
+            <p className="text-sm sm:text-base font-serif font-bold text-yellow-200 leading-relaxed">
+              "{verdict}"
+            </p>
+          </div>
+        )}
+
+        {/* 3 Core Points with gold badges */}
+        <ul className="space-y-2 text-xs sm:text-sm text-zinc-200 leading-relaxed font-sans">
+          {verdict && (
+            <li className="flex items-start gap-2">
+              <span className="text-yellow-400 font-bold shrink-0 mt-0.5">•</span>
+              <div className="leading-snug">
+                <span className="inline-block px-1.5 py-0.5 mr-1.5 rounded text-[10px] font-bold bg-yellow-400/20 text-yellow-300 border border-yellow-400/30">
+                  오라클 계시
+                </span>
+                <span>{verdict}</span>
+              </div>
+            </li>
+          )}
+          {resonance && (
+            <li className="flex items-start gap-2">
+              <span className="text-yellow-400 font-bold shrink-0 mt-0.5">•</span>
+              <div className="leading-snug">
+                <span className="inline-block px-1.5 py-0.5 mr-1.5 rounded text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                  사주 ✕ 타로 조화
+                </span>
+                <span>{resonance}</span>
+              </div>
+            </li>
+          )}
+          {actionTip && (
+            <li className="flex items-start gap-2">
+              <span className="text-yellow-400 font-bold shrink-0 mt-0.5">•</span>
+              <div className="leading-snug">
+                <span className="inline-block px-1.5 py-0.5 mr-1.5 rounded text-[10px] font-bold bg-emerald-400/20 text-emerald-300 border border-emerald-400/30">
+                  오늘의 처방
+                </span>
+                <span>{actionTip}</span>
+              </div>
+            </li>
+          )}
+        </ul>
+      </div>
+    );
   };
 
   // Toss inspiration to Muse Art Recommendation
@@ -556,19 +679,21 @@ export function TrinityOracleSection() {
     }
   };
 
-  // Render Saju & Tarot Destiny Synergy Matrix Section
+  // Render Saju & Tarot Destiny Synergy Matrix Section (Collapsible Accordion)
   const renderSajuTarotSynergySection = (synergy?: SajuTarotSynergy) => {
     if (!synergy) return null;
 
     return (
-      <div className="glass p-5 sm:p-7 rounded-3xl bg-gradient-to-br from-purple-950/40 via-zinc-950/90 to-amber-950/30 border border-amber-400/40 shadow-2xl space-y-4 relative overflow-hidden backdrop-blur-xl">
-        <div className="absolute top-0 right-0 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-amber-400/20 pb-3.5 relative z-10">
+      <div className="glass rounded-3xl bg-gradient-to-br from-purple-950/40 via-zinc-950/90 to-amber-950/30 border border-amber-400/30 shadow-xl overflow-hidden backdrop-blur-xl">
+        {/* Accordion Toggle Header */}
+        <button
+          type="button"
+          onClick={() => setIsMatrixOpen(!isMatrixOpen)}
+          className="w-full p-4 sm:p-5 flex items-center justify-between gap-3 text-left transition-colors hover:bg-white/[0.02] cursor-pointer"
+        >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500/20 to-purple-500/20 border border-amber-400/50 flex items-center justify-center text-amber-300 shadow-md shrink-0">
-              <Compass size={22} className="text-amber-400 animate-pulse" />
+            <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-amber-500/20 to-purple-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300 shadow-md shrink-0">
+              <Compass size={18} className="text-amber-400" />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -576,195 +701,257 @@ export function TrinityOracleSection() {
                   SAJU × TAROT ALCHEMY MATRIX
                 </span>
                 <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-200 border border-amber-400/30">
-                  사주 · 타로 융합 공명
+                  심층 융합
                 </span>
               </div>
-              <h3 className="text-sm sm:text-base md:text-lg font-bold font-serif text-white flex items-center gap-1.5">
-                <span>사주 명리학과 타로 카드의 운명 융합 매트릭스</span>
+              <h3 className="text-xs sm:text-sm font-bold font-serif text-white">
+                사주 명리학과 타로 카드의 운명 융합 매트릭스
               </h3>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
-            <span className="text-[11px] px-2.5 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 font-mono">
-              본원: {saju?.dayMaster.hanja}({saju?.dayMaster.korean}) · {saju?.dayMaster.symbolName}
+          <div className="flex items-center gap-2 shrink-0 text-amber-300 text-xs font-sans">
+            <span className="hidden sm:inline-block text-[11px] text-zinc-400">
+              {isMatrixOpen ? '상세 접기' : '상세 펼치기'}
             </span>
-            <span className="text-[11px] px-2.5 py-1 rounded-full bg-purple-400/10 border border-purple-400/30 text-purple-300 font-mono">
-              용신: {saju?.yongsin.name}
-            </span>
+            {isMatrixOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </div>
-        </div>
+        </button>
 
-        {/* Synergy Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 relative z-10">
-          {/* 1. Day Master & Tarot Resonance */}
-          <div className="p-4 rounded-2xl bg-white/[0.03] border border-amber-400/25 space-y-2">
-            <div className="flex items-center gap-2 text-amber-300 font-bold text-xs sm:text-sm font-serif">
-              <span>☯️</span>
-              <span>사주 본원(日干)과 타로 카드의 파동 공명</span>
-            </div>
-            <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed font-sans">
-              {synergy.day_master_resonance}
-            </p>
-          </div>
-
-          {/* 2. Elemental Balance & Remedy */}
-          <div className="p-4 rounded-2xl bg-white/[0.03] border border-purple-400/25 space-y-2">
-            <div className="flex items-center gap-2 text-purple-300 font-bold text-xs sm:text-sm font-serif">
-              <span>🌿</span>
-              <span>오행 균형 및 용신(用神) 보약 상생</span>
-            </div>
-            <div className="space-y-1.5 text-xs text-zinc-200 leading-relaxed font-sans">
-              <p>
-                <strong className="text-emerald-300">우세 기운 조화:</strong> {synergy.elemental_balance?.dominant_harmony}
-              </p>
-              <p>
-                <strong className="text-yellow-300">결핍 기운 보약:</strong> {synergy.elemental_balance?.lacking_remedy}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* 3. Destiny Flow & Final Verdict */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-purple-500/10 to-transparent border border-amber-400/30 space-y-2 relative z-10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-amber-300 font-bold text-xs sm:text-sm font-serif">
-              <span>🧭</span>
-              <span>2026 병오년(丙午年) 세운 흐름 속 현실 타이밍</span>
-            </div>
-            <span className="text-[10px] font-mono text-amber-300/80">2026 ANNUAL FLOW</span>
-          </div>
-          <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed font-sans">
-            {synergy.destiny_flow_synthesis}
-          </p>
-
-          {synergy.saju_oracle_verdict && (
-            <div className="mt-3 pt-3 border-t border-white/10 flex items-start gap-2.5 text-xs sm:text-sm text-amber-200 font-medium">
-              <span className="text-base shrink-0">✨</span>
-              <div className="leading-relaxed">
-                <strong className="text-yellow-300 mr-1 font-serif">[사주 × 타로 통합 오라클 계시]:</strong>
-                <span>"{synergy.saju_oracle_verdict}"</span>
+        {isMatrixOpen && (
+          <div className="p-5 sm:p-6 pt-0 space-y-3.5 border-t border-white/5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3">
+              {/* 1. Day Master & Tarot Resonance */}
+              <div className="p-4 rounded-2xl bg-white/[0.03] border border-amber-400/25 space-y-2">
+                <div className="flex items-center gap-2 text-amber-300 font-bold text-xs sm:text-sm font-serif">
+                  <span>☯️</span>
+                  <span>사주 본원(日干)과 타로 카드의 파동 공명</span>
+                </div>
+                <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed font-sans">
+                  {synergy.day_master_resonance}
+                </p>
               </div>
+
+              {/* 2. Elemental Balance & Remedy */}
+              <div className="p-4 rounded-2xl bg-white/[0.03] border border-purple-400/25 space-y-2">
+                <div className="flex items-center gap-2 text-purple-300 font-bold text-xs sm:text-sm font-serif">
+                  <span>🌿</span>
+                  <span>오행 균형 및 용신(用神) 보약 상생</span>
+                </div>
+                <div className="space-y-1 text-xs text-zinc-200 leading-relaxed font-sans">
+                  <p>
+                    <strong className="text-emerald-300">우세 기운:</strong> {synergy.elemental_balance?.dominant_harmony}
+                  </p>
+                  <p>
+                    <strong className="text-yellow-300">결핍 기운:</strong> {synergy.elemental_balance?.lacking_remedy}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Destiny Flow */}
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-purple-500/10 to-transparent border border-amber-400/25 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-amber-300 font-bold text-xs font-serif">
+                  <span>🧭</span>
+                  <span>2026 병오년(丙午年) 세운 속 현실 타이밍</span>
+                </div>
+                <span className="text-[10px] font-mono text-amber-300/70">2026 ANNUAL FLOW</span>
+              </div>
+              <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed font-sans">
+                {synergy.destiny_flow_synthesis}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Render Card-by-Card Deep Reading Section (Tabbed 1-Card Focus + 3-Cards Unified View)
+  const renderCardInsightsSection = (insights?: CardInsight[]) => {
+    if (!insights || insights.length === 0) return null;
+
+    const currentCard = drawnCards[selectedCardIdx] || drawnCards[0];
+    const currentInsight = insights[selectedCardIdx] || insights[0];
+
+    const renderCardCard = (card: TarotCard, insight: CardInsight, idx: number) => (
+      <div className="p-5 sm:p-6 rounded-3xl bg-white/[0.03] border border-white/10 space-y-4 shadow-lg backdrop-blur-sm">
+        {/* Card Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
+          <div className="flex items-center gap-3.5">
+            <div className="w-14 h-20 rounded-xl overflow-hidden border border-amber-400/40 shadow-md shrink-0">
+              <img
+                src={getTarotCardImageUrl(card)}
+                alt={card.nameKo}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-bold border border-amber-400/30">
+                  #{idx + 1} {slotPositions[idx]}
+                </span>
+                <span className="text-[9px] font-mono text-zinc-400 uppercase">
+                  {card.type === 'major' ? 'MAJOR ARCANA' : card.type.toUpperCase()}
+                </span>
+              </div>
+              <h4 className="text-base sm:text-lg font-bold text-white font-serif mt-1">
+                {card.nameKo} <span className="text-xs text-zinc-400 font-sans font-normal italic">({card.name})</span>
+              </h4>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {card.keywords.slice(0, 3).map((kw) => (
+                  <span key={kw} className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-zinc-300 border border-white/10">
+                    {kw}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 4 Pillars in clean harmonized grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {insight.core_meaning && (
+            <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-400/20 text-xs text-amber-100 leading-relaxed font-sans">
+              <span className="font-bold text-amber-300 block mb-1 text-[11px] flex items-center gap-1.5">
+                <span>🏛️</span> 카드의 본질적 도상 & 상징
+              </span>
+              {insight.core_meaning}
+            </div>
+          )}
+
+          {insight.saju_resonance && (
+            <div className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-400/20 text-xs text-purple-100 leading-relaxed font-sans">
+              <span className="font-bold text-purple-300 block mb-1 text-[11px] flex items-center gap-1.5">
+                <span>☯️</span> 사주 본원 및 오행 공명
+              </span>
+              {insight.saju_resonance}
+            </div>
+          )}
+
+          {insight.personal_interpretation && (
+            <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-400/20 text-xs text-emerald-100 leading-relaxed font-sans md:col-span-2">
+              <span className="font-bold text-emerald-300 block mb-1 text-[11px] flex items-center gap-1.5">
+                <span>🌿</span> {oracleMode === 'healing' ? '제제의 심층 맞춤 리딩' : '마인드셋 심층 분석'}
+              </span>
+              {insight.personal_interpretation}
+            </div>
+          )}
+
+          {insight.action_guide && (
+            <div className="p-3.5 rounded-2xl bg-white/[0.04] border border-white/15 text-xs text-zinc-200 leading-relaxed font-sans md:col-span-2">
+              <span className="font-bold text-yellow-300 block mb-1 text-[11px] flex items-center gap-1.5">
+                <span>💡</span> 오늘 마음에 품을 실천 팁
+              </span>
+              {insight.action_guide}
             </div>
           )}
         </div>
       </div>
     );
-  };
-
-  // Render Card-by-Card Deep Reading Section
-  const renderCardInsightsSection = (insights?: CardInsight[]) => {
-    if (!insights || insights.length === 0) return null;
 
     return (
-      <div className="glass p-5 sm:p-7 rounded-3xl bg-gradient-to-br from-white/[0.04] via-zinc-950/80 to-amber-950/20 border border-amber-400/30 shadow-2xl space-y-4 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-400/20 pb-3 relative z-10">
+      <div className="glass p-5 sm:p-7 rounded-3xl bg-white/[0.02] border border-amber-400/25 shadow-xl space-y-4 backdrop-blur-xl">
+        {/* Header & View Toggle */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300">
               <Sparkles size={16} />
             </div>
             <div>
-              <span className="text-[10px] font-mono text-amber-400 uppercase tracking-widest block">
-                CARD-BY-CARD DEEP READING
-              </span>
               <h3 className="text-sm sm:text-base font-bold font-serif text-white">
                 {oracleMode === 'healing'
-                  ? '3장의 카드별 치유 상징 & 내면의 깊은 뜻'
-                  : '3장의 카드별 현실 실행력 & 마인드셋 상징'}
+                  ? '3장의 카드별 심층 리딩 & 치유'
+                  : '3장의 카드별 현실 실행 툴킷'}
               </h3>
+              <span className="text-[10px] text-zinc-400 font-sans">
+                카드를 하나씩 선택하여 상징과 사주 공명을 집중 탐색해 보세요
+              </span>
             </div>
           </div>
-          <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 self-start sm:self-auto">
-            3 CARDS REVELATION
-          </span>
+
+          <button
+            type="button"
+            onClick={() => setShowAllCardsTogether(!showAllCardsTogether)}
+            className="self-start sm:self-auto px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-[11px] text-amber-300 font-medium flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+          >
+            {showAllCardsTogether ? <Eye size={13} /> : <Layers size={13} />}
+            <span>{showAllCardsTogether ? '카드 한 장씩 집중보기' : '3장 전체 펼쳐보기'}</span>
+          </button>
         </div>
 
-        {/* 3-Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 relative z-10">
-          {drawnCards.map((card, idx) => {
-            const insight = insights[idx];
+        {/* Card Tab Bar */}
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+          {drawnCards.map((c, i) => {
+            const isSelected = !showAllCardsTogether && selectedCardIdx === i;
             return (
-              <div
-                key={card.id}
-                className="p-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-amber-400/40 transition-all space-y-3 flex flex-col justify-between shadow-lg backdrop-blur-sm"
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => {
+                  setShowAllCardsTogether(false);
+                  setSelectedCardIdx(i);
+                }}
+                className={`flex-1 min-w-[130px] px-3 py-2 rounded-2xl border text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 ${
+                  isSelected
+                    ? 'bg-amber-500/25 text-amber-200 border-amber-400/50 shadow-md ring-1 ring-amber-400/30'
+                    : 'bg-white/5 hover:bg-white/10 text-zinc-400 border-white/10 hover:text-white'
+                }`}
               >
-                <div className="space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-bold border border-amber-400/30">
-                      #{idx + 1} {slotPositions[idx]}
-                    </span>
-                    <span className="text-[9px] font-mono text-zinc-400 uppercase">
-                      {card.type === 'major' ? 'MAJOR' : card.type.toUpperCase()}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-18 sm:w-14 sm:h-20 rounded-lg overflow-hidden border border-amber-400/40 shrink-0 shadow-md">
-                      <img
-                        src={getTarotCardImageUrl(card)}
-                        alt={card.nameKo}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div>
-                      <h4 className="text-sm sm:text-base font-bold text-white font-serif">{card.nameKo}</h4>
-                      <span className="text-[10px] text-zinc-400 font-serif italic block">{card.name}</span>
-                      <div className="flex flex-wrap gap-1 mt-1.5">
-                        {card.keywords.slice(0, 3).map((kw) => (
-                          <span key={kw} className="text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-zinc-300 border border-white/10">
-                            {kw}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Core Meaning (카드의 고유한 뜻과 도상 상징) */}
-                  {insight?.core_meaning && (
-                    <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-400/25 text-[11px] sm:text-xs text-amber-200/90 leading-relaxed font-sans shadow-inner">
-                      <span className="font-bold text-amber-300 block mb-1 font-mono text-[10px] flex items-center gap-1.5">
-                        <span>🏛️</span> 카드의 본질적 도상 & 상징
-                      </span>
-                      {insight.core_meaning}
-                    </div>
-                  )}
-
-                  {/* Saju Resonance (사주 본원 및 오행과의 상생 공명) */}
-                  {insight?.saju_resonance && (
-                    <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-400/25 text-[11px] sm:text-xs text-purple-200/95 leading-relaxed font-sans shadow-inner">
-                      <span className="font-bold text-purple-300 block mb-1 font-mono text-[10px] flex items-center gap-1.5">
-                        <span>☯️</span> 사주 본원({saju?.dayMaster.hanja || '일간'}) 및 오행 공명
-                      </span>
-                      {insight.saju_resonance}
-                    </div>
-                  )}
-
-                  {/* Personal Interpretation (제제의 심층 맞춤 리딩 & 공감) */}
-                  {insight?.personal_interpretation && (
-                    <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-400/25 text-[11px] sm:text-xs text-emerald-100/90 leading-relaxed font-sans shadow-inner">
-                      <span className="font-bold text-emerald-300 block mb-1 font-mono text-[10px] flex items-center gap-1.5">
-                        <span>🌿</span> {oracleMode === 'healing' ? '제제의 심층 맞춤 리딩' : '마인드셋 심층 분석'}
-                      </span>
-                      {insight.personal_interpretation}
-                    </div>
-                  )}
-
-                  {/* Action Guide (오늘 마음에 품을 실천 가이드) */}
-                  {insight?.action_guide && (
-                    <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/15 text-[10.5px] sm:text-[11px] text-zinc-200 leading-relaxed font-sans">
-                      <span className="font-bold text-yellow-300 block mb-0.5 font-mono text-[9.5px] flex items-center gap-1">
-                        <span>💡</span> 오늘 마음에 품을 실천 팁
-                      </span>
-                      {insight.action_guide}
-                    </div>
-                  )}
-                </div>
-              </div>
+                <span className="text-[10px] opacity-70 font-mono">#{i + 1}</span>
+                <span className="truncate">{c.nameKo}</span>
+              </button>
             );
           })}
         </div>
+
+        {/* View Mode Switch */}
+        {showAllCardsTogether ? (
+          <div className="space-y-4">
+            {drawnCards.map((c, i) => (
+              <div key={c.id}>
+                {renderCardCard(c, insights[i], i)}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {renderCardCard(currentCard, currentInsight, selectedCardIdx)}
+            {/* Step navigation buttons */}
+            <div className="flex items-center justify-between pt-2">
+              <button
+                type="button"
+                disabled={selectedCardIdx === 0}
+                onClick={() => setSelectedCardIdx(selectedCardIdx - 1)}
+                className={`px-3.5 py-1.5 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-all ${
+                  selectedCardIdx === 0
+                    ? 'opacity-30 border-white/5 cursor-not-allowed text-zinc-500'
+                    : 'bg-white/5 hover:bg-white/10 border-white/15 text-zinc-300 hover:text-white cursor-pointer'
+                }`}
+              >
+                <ChevronLeft size={14} />
+                <span>이전 카드</span>
+              </button>
+              <span className="text-xs text-zinc-500 font-mono">
+                {selectedCardIdx + 1} / {drawnCards.length}
+              </span>
+              <button
+                type="button"
+                disabled={selectedCardIdx === drawnCards.length - 1}
+                onClick={() => setSelectedCardIdx(selectedCardIdx + 1)}
+                className={`px-3.5 py-1.5 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-all ${
+                  selectedCardIdx === drawnCards.length - 1
+                    ? 'opacity-30 border-white/5 cursor-not-allowed text-zinc-500'
+                    : 'bg-white/5 hover:bg-white/10 border-white/15 text-zinc-300 hover:text-white cursor-pointer'
+                }`}
+              >
+                <span>다음 카드</span>
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -842,18 +1029,7 @@ export function TrinityOracleSection() {
               <strong className="text-white font-bold">{saju?.name || '여행자'}</strong>
               <span className="text-amber-200">[{saju?.dayMaster.hanja}({saju?.dayMaster.korean}) · {saju?.dayMaster.symbolName}]</span>
             </span>
-            {saju && (
-              <span className="text-[11px] text-zinc-300 hidden sm:inline-flex items-center gap-1.5">
-                <span className="text-zinc-400">오행 분포:</span>
-                <span className="text-emerald-300 font-mono">목({saju.elements.counts.목})</span>
-                <span className="text-rose-300 font-mono">화({saju.elements.counts.화})</span>
-                <span className="text-amber-300 font-mono">토({saju.elements.counts.토})</span>
-                <span className="text-yellow-200 font-mono">금({saju.elements.counts.금})</span>
-                <span className="text-sky-300 font-mono">수({saju.elements.counts.수})</span>
-                <span className="mx-1 text-zinc-600">|</span>
-                <span className="text-purple-300">용신 보약: {saju.yongsin.name}</span>
-              </span>
-            )}
+            
           </div>
 
           <button
@@ -885,19 +1061,34 @@ export function TrinityOracleSection() {
           </div>
 
           {stage === 'result' && (
-            <button
-              onClick={() => {
-                setStage('spread');
-                setDrawnCards([]);
-                setHealingResult(null);
-                setGrowthResult(null);
-                stopTTS();
-              }}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-200 text-xs font-medium transition-all"
-            >
-              <RotateCcw size={12} />
-              <span>새로운 3장 뽑기</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleToggleTTS}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm ${
+                  isOracleTTSActive
+                    ? 'bg-amber-400/30 text-amber-200 border border-amber-400/50 animate-pulse'
+                    : 'bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/30 text-amber-300'
+                }`}
+                title={isOracleTTSActive ? "오라클 낭독 중지" : "오라클 종합 계시 듣기"}
+              >
+                {isOracleTTSActive ? <VolumeX size={13} /> : <Volume2 size={13} />}
+                <span>{isOracleTTSActive ? '낭독 중지' : '오라클 듣기'}</span>
+              </button>
+              <button
+                onClick={() => {
+                  setStage('spread');
+                  setDrawnCards([]);
+                  setHealingResult(null);
+                  setGrowthResult(null);
+                  stopTTS();
+                }}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-white/90 text-xs font-medium transition-all cursor-pointer"
+              >
+                <RotateCcw size={12} />
+                <span>다시 뽑기</span>
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -988,6 +1179,9 @@ export function TrinityOracleSection() {
             ) : oracleMode === 'healing' && healingResult ? (
               /* [HEALING RESULT VIEW] */
               <div className="space-y-6">
+                {/* 핵심 3줄 요약 & 오라클 TTS */}
+                {renderExecutiveSummaryCard()}
+
                 {/* 0. 사주 × 타로 운명 융합 매트릭스 (Saju & Tarot Alchemy Matrix) */}
                 {renderSajuTarotSynergySection(healingResult.saju_tarot_synergy)}
 
@@ -1093,6 +1287,9 @@ export function TrinityOracleSection() {
             ) : oracleMode === 'growth' && growthResult ? (
               /* [GROWTH RESULT VIEW] */
               <div className="space-y-6">
+                {/* 핵심 3줄 요약 & 오라클 TTS */}
+                {renderExecutiveSummaryCard()}
+
                 {/* 0. 사주 × 타로 운명 융합 매트릭스 (Saju & Tarot Alchemy Matrix) */}
                 {renderSajuTarotSynergySection(growthResult.saju_tarot_synergy)}
 
