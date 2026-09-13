@@ -771,13 +771,45 @@ export function generateDynamicSecretKit(
     const themedKits = SECRET_CATALOG.filter((k) => k.theme === matchedTheme);
     const selectedBase = themedKits[Math.abs(seed) % themedKits.length];
 
-    // Dynamic tailored variations embedding the custom wish
-    const customAffirmationTemplates = [
-      `나는 간절히 염원하던 "${cleanWish}"의 현실을 이미 온전히 살아내고 있으며, 내 삶의 모든 막힘이 시원하게 풀려 상상 이상의 벅찬 결실과 깊은 평온이 지금 여기에 실현되었습니다.`,
-      `나의 소망 "${cleanWish}"은(는) 이미 우주의 완벽한 섭리 안에서 온전히 응답받았으며, 나는 감사와 확신의 주파수로 가장 눈부신 성취의 열매를 기쁘게 누립니다.`,
-      `"${cleanWish}"을(를) 향한 내 안의 모든 저항과 의심은 눈 녹듯 사라졌고, 온 우주의 선한 힘이 나를 도와 가장 아름답고 완벽한 기적을 완성해 냈습니다.`,
-      `나는 이미 "${cleanWish}"의 축복을 손에 쥔 당당하고 평온한 나 자신으로 존재하며, 매 순간 형언할 수 없는 안도감과 충만한 번영을 경험합니다.`,
-    ];
+    // Dynamic tailored variations embedding the custom wish by theme
+    let customAffirmationTemplates: string[] = [];
+
+    if (matchedTheme === 'abundance') {
+      customAffirmationTemplates = [
+        `나는 "${cleanWish}"의 풍요로운 결실을 이미 온전히 손에 쥐었으며, 매일 상상 이상의 번영과 풍성한 부가 기적처럼 쏟아져 들어옵니다.`,
+        `"${cleanWish}"을(를) 향한 우주의 문이 활짝 열렸으며, 나는 감사와 확신의 주파수로 차고 넘치는 재정적 자유와 풍요를 당당히 누립니다.`,
+        `나는 간절히 염원하던 "${cleanWish}"의 현실을 이미 살아가고 있으며, 모든 금전적 막힘이 시원하게 풀려 벅찬 기쁨을 경험합니다.`,
+        `"${cleanWish}"의 축복이 내 삶에 완벽히 채워졌으며, 나는 여유롭고 당당한 풍요 속에서 세상에 선한 영향력을 나눕니다.`
+      ];
+    } else if (matchedTheme === 'success') {
+      customAffirmationTemplates = [
+        `나는 간절히 준비해 온 "${cleanWish}"을(를) 당당히 성취해 냈으며, 나의 탁월한 역량과 열정으로 최고의 자리에서 눈부시게 빛나고 있습니다.`,
+        `"${cleanWish}"의 완벽한 성공이 이미 눈앞의 현실이 되었으며, 모든 길과 인연이 나를 도와 상상 이상의 위대한 도약을 완성했습니다.`,
+        `나는 "${cleanWish}"의 목표를 이미 완벽하게 달성한 주인공으로서, 깊은 자부심과 충만한 확신을 가슴에 품고 살아갑니다.`,
+        `내 안의 무한한 잠재력이 깨어나 "${cleanWish}"의 기적을 완벽히 실현시켰으며, 나의 발걸음마다 승리와 영광이 함께합니다.`
+      ];
+    } else if (matchedTheme === 'love') {
+      customAffirmationTemplates = [
+        `나는 "${cleanWish}"의 따뜻한 축복 속에 살아가고 있으며, 서로를 깊이 아끼고 존중하는 진실한 사랑과 평화로운 행복을 매 순간 만끽합니다.`,
+        `"${cleanWish}"을(를) 향한 내 마음의 주파수가 온 우주와 공명하여, 모든 오해와 갈등은 녹아내리고 깊은 신뢰와 사랑으로 가득 찼습니다.`,
+        `나는 이미 "${cleanWish}"의 조화롭고 다정한 관계 속에서 온전한 사랑을 주고받으며, 매일 깊은 감사와 안도감을 느낍니다.`,
+        `온 우주의 선한 에너지가 나와 소중한 인연을 축복하여, "${cleanWish}"의 기적 같은 사랑과 화해가 지금 여기에 완성되었습니다.`
+      ];
+    } else if (matchedTheme === 'health') {
+      customAffirmationTemplates = [
+        `내 몸과 마음의 모든 세포는 "${cleanWish}"의 온전한 회복과 치유를 이루었으며, 매일 아침 가볍고 맑은 생명력으로 충만합니다.`,
+        `"${cleanWish}"의 눈부신 치유 에너지가 내 온몸 구석구석을 가득 채워, 모든 피로와 통증은 사라지고 깊은 활력과 평온을 누립니다.`,
+        `나는 이미 "${cleanWish}"의 건강하고 균형 잡힌 심신으로 완벽히 거듭났으며, 온몸 가득 넘쳐나는 에너지로 매 순간을 기쁘게 살아갑니다.`,
+        `우주의 무한한 생명력이 내 몸을 감싸 안아 "${cleanWish}"의 기적을 선물하였으며, 나의 숨결마다 완전한 건강과 평화가 깃듭니다.`
+      ];
+    } else {
+      customAffirmationTemplates = [
+        `나는 간절히 염원하던 "${cleanWish}"의 현실을 이미 온전히 살아내고 있으며, 내 삶의 모든 막힘이 시원하게 풀려 상상 이상의 벅찬 결실과 깊은 평온이 지금 여기에 실현되었습니다.`,
+        `"${cleanWish}"을(를) 향한 내 안의 모든 저항과 의심은 완전히 녹아내렸고, 온 우주의 선한 힘이 나를 도와 가장 아름답고 완벽한 기적을 완성해 냈습니다.`,
+        `나는 이미 "${cleanWish}"의 축복을 손에 쥔 당당하고 평온한 나 자신으로 존재하며, 매 순간 형언할 수 없는 안도감과 충만한 번영을 경험합니다.`,
+        `온 우주가 나를 가장 안전하고 완벽한 길로 이끌어 주어, "${cleanWish}"의 아름다운 기적이 내 삶의 모든 순간을 환히 밝힙니다.`
+      ];
+    }
 
     const affIndex = Math.abs(seed + getDailySecretIndex()) % customAffirmationTemplates.length;
 

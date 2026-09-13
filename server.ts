@@ -1428,6 +1428,27 @@ ${content}
           });
         }
 
+        if (wholeStr.includes("affirmation") || wholeStr.includes("시크릿") || wholeStr.includes("dailysecret")) {
+          let wishMatch = wholeStr.match(/소원:\s*"([^"]+)"/) || wholeStr.match(/소원\s*:\s*([^,\n\r]+)/);
+          const wish = wishMatch ? wishMatch[1].trim() : "풍요와 내면의 평온";
+          return JSON.stringify({
+            affirmation: `나는 간절히 염원하던 "${wish}"의 성취를 이미 온전히 이루어냈으며, 온 우주의 축복 속에서 벅찬 감사와 풍요를 누립니다.`,
+            reflection: `"${wish}"을(를) 마음에 품은 순간, 우주는 이미 그것을 완성하기 위해 일사불란하게 움직이기 시작했습니다. 모든 조급함을 내려놓고 이미 이루어진 평온을 느끼세요.`,
+            action: `오늘 하루 "${wish}"을(를) 이미 이룬 사람의 여유로운 태도로 주변 사람들에게 환한 미소를 지어보세요.`,
+            desire: `우주여, "${wish}"의 소망이 내 삶에 가장 눈부시고 아름답게 실현되었음에 깊이 감사합니다.`,
+            visualizationGuide: `조용히 눈을 감고 "${wish}"이(가) 눈앞의 현실이 된 순간을 생생하게 그립니다. 벅차오르는 가슴과 안도의 숨결을 온몸으로 느껴보세요.`,
+            gratitudeSeeds: [
+              `"${wish}"의 기적이 내 삶에 이미 준비되어 있음에 감사합니다.`,
+              "나를 바른길로 인도해 주는 우주의 지혜에 감사합니다.",
+              "오늘 하루 만나는 모든 인연과 평화로운 순간에 감사합니다."
+            ],
+            feelingAnchor: `모든 걱정이 씻은 듯 사라지고 가슴 깊은 곳에서 차오르는 벅찬 안도감과 기쁨`,
+            mirrorPhrase: `너는 "${wish}"의 축복을 누릴 자격이 충분한 위대한 존재다.`,
+            eveningPrompt: `오늘 우주에 띄워 보낸 "${wish}"의 확신이 밤사이 찬란한 현실로 자라남을 믿습니다.`,
+            scriptingStarter: `오늘 마침내 내 마음속 간절했던 "${wish}"의 기적이 현실로 펼쳐졌다.`
+          });
+        }
+
         if (wholeStr.includes("secret") || wholeStr.includes("actionprompt")) {
           return JSON.stringify({
             quote: "작은 일에 집중할 때 커다란 변화가 시작된다.",
@@ -1440,7 +1461,7 @@ ${content}
         return JSON.stringify({
           summary: "오늘의 모든 에너지가 조화롭게 정렬됩니다.",
           author: "PRISM",
-          message: "고요한 파동으로 심신을 정렬합니다."
+          message: "원하는 모든 소망이 우주의 섭리 안에서 기적처럼 현실로 이루어지고 있습니다."
         });
       }
 

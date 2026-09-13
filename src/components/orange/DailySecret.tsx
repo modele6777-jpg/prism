@@ -73,54 +73,65 @@ function ensureFullKit(
   let reflection = raw.reflection?.trim() || fallback.reflection;
   let action = raw.action?.trim() || fallback.action;
 
-  // 🚨 [필수 템플릿 제거 및 자정] 구형 템플릿이나 고정 문구인 경우 신선한 일일 맞춤 확언으로 승격
-  if (
+  // 🚨 [필수 템플릿 제거 및 고정 문구 자정] '고요한 파동으로' 또는 구형 고정 문구 원천 차단
+  const isBogusAffirmation =
     !affirmation ||
+    affirmation.includes('고요한 파동') ||
+    affirmation.includes('심신을 정렬') ||
     affirmation.includes('은(는) 이미 우주의 완벽한 섭리 안에서') ||
     affirmation.startsWith('나의 소원 "') ||
     /[a-zA-Z]{4,}/.test(affirmation) ||
     affirmation === '나의 삶은 언제나 나를 가장 완전하고 조화로운 길로 이끌며, 내 안의 모든 저항과 의심이 녹아내려 찬란한 결실과 깊은 평온이 기적처럼 실현되었습니다.' ||
-    affirmation.length < 12
-  ) {
+    affirmation.length < 10;
+
+  if (isBogusAffirmation) {
     affirmation = fallback.affirmation;
   }
 
-  // 🚨 [필수 중복 방지] affirmation, reflection, action이 서로 같거나 부실한 경우 fallback 고유 문구로 즉시 교정
-  if (!reflection || reflection === affirmation || reflection.length < 15 || reflection === action || /[a-zA-Z]{4,}/.test(reflection)) {
+  // 사용자가 구체적 소원을 입력한 경우, 확언에 소원이 반영되지 않았거나 일반 템플릿이면 소원 맞춤 확언으로 강제 승격
+  if (effectiveWish && effectiveWish.trim()) {
+    const cleanW = effectiveWish.trim();
+    if (isBogusAffirmation || !affirmation.includes(cleanW)) {
+      affirmation = fallback.affirmation;
+    }
+  }
+
+  // 🚨 [필수 중복 방지 및 고정 문구 제거]
+  if (!reflection || reflection.includes('고요한 파동') || reflection.includes('심신을 정렬') || reflection === affirmation || reflection.length < 15 || reflection === action || /[a-zA-Z]{4,}/.test(reflection)) {
     reflection = fallback.reflection;
   }
-  if (!action || action === affirmation || action === reflection || action.length < 8 || /[a-zA-Z]{4,}/.test(action)) {
+  if (!action || action.includes('고요한 파동') || action.includes('심신을 정렬') || action === affirmation || action === reflection || action.length < 8 || /[a-zA-Z]{4,}/.test(action)) {
     action = fallback.action;
   }
 
   let desire = raw.desire?.trim() || fallback.desire;
-  if (!desire || desire === affirmation || desire === reflection || /[a-zA-Z]{4,}/.test(desire)) {
+  if (!desire || desire.includes('고요한 파동') || desire.includes('심신을 정렬') || desire === affirmation || desire === reflection || /[a-zA-Z]{4,}/.test(desire)) {
     desire = fallback.desire;
   }
 
   let visualizationGuide = raw.visualizationGuide?.trim() || fallback.visualizationGuide;
-  if (!visualizationGuide || visualizationGuide === affirmation || visualizationGuide.length < 20 || /[a-zA-Z]{4,}/.test(visualizationGuide)) {
+  if (!visualizationGuide || visualizationGuide.includes('고요한 파동') || visualizationGuide.includes('심신을 정렬') || visualizationGuide === affirmation || visualizationGuide.length < 20 || /[a-zA-Z]{4,}/.test(visualizationGuide)) {
     visualizationGuide = fallback.visualizationGuide;
   }
 
   let feelingAnchor = raw.feelingAnchor?.trim() || fallback.feelingAnchor;
-  if (!feelingAnchor || feelingAnchor === affirmation || /[a-zA-Z]{4,}/.test(feelingAnchor)) {
+  if (!feelingAnchor || feelingAnchor.includes('고요한 파동') || feelingAnchor.includes('심신을 정렬') || feelingAnchor === affirmation || /[a-zA-Z]{4,}/.test(feelingAnchor)) {
     feelingAnchor = fallback.feelingAnchor;
   }
 
   let mirrorPhrase = raw.mirrorPhrase?.trim() || fallback.mirrorPhrase;
-  if (!mirrorPhrase || mirrorPhrase === affirmation || /[a-zA-Z]{4,}/.test(mirrorPhrase)) {
+  if (!mirrorPhrase || mirrorPhrase.includes('고요한 파동') || mirrorPhrase.includes('심신을 정렬') || mirrorPhrase === affirmation || /[a-zA-Z]{4,}/.test(mirrorPhrase)) {
     mirrorPhrase = fallback.mirrorPhrase;
   }
 
   let eveningPrompt = raw.eveningPrompt?.trim() || fallback.eveningPrompt;
-  // 🚨 [필수 언어 점검] 저녁 감사 마무리가 영문이거나 부실하면 한글 fallback으로 즉시 대체
-  if (!eveningPrompt || eveningPrompt === affirmation || eveningPrompt === reflection || eveningPrompt.length < 10 || /[a-zA-Z]{3,}/.test(eveningPrompt)) {
+  // 🚨 [필수 언어 점검 및 고정 문구 제거]
+  if (!eveningPrompt || eveningPrompt.includes('고요한 파동') || eveningPrompt.includes('심신을 정렬') || eveningPrompt === affirmation || eveningPrompt === reflection || eveningPrompt.length < 10 || /[a-zA-Z]{3,}/.test(eveningPrompt)) {
     eveningPrompt = fallback.eveningPrompt;
   }
 
   let scriptingStarter = raw.scriptingStarter?.trim() || fallback.scriptingStarter;
-  if (!scriptingStarter || scriptingStarter === affirmation || /[a-zA-Z]{4,}/.test(scriptingStarter)) {
+  if (!scriptingStarter || scriptingStarter.includes('고요한 파동') || scriptingStarter.includes('심신을 정렬') || scriptingStarter === affirmation || /[a-zA-Z]{4,}/.test(scriptingStarter)) {
     scriptingStarter = fallback.scriptingStarter;
   }
 
@@ -898,6 +909,17 @@ export function DailySecret() {
         });
       } catch (aiErr) {
         console.warn('[DailySecret] AI structured invoke failed, falling back to rich tailored kit:', aiErr);
+        result = generateTailoredSecretFallback(currentWish, name, activeSeed);
+      }
+
+      // If AI returned bogus/mock output with "고요한 파동" or missed wish, immediately fall back to rich tailored kit
+      if (
+        !result ||
+        !result.affirmation ||
+        result.affirmation.includes('고요한 파동') ||
+        result.affirmation.includes('심신을 정렬') ||
+        (hasWish && !result.affirmation.includes(currentWish))
+      ) {
         result = generateTailoredSecretFallback(currentWish, name, activeSeed);
       }
 
