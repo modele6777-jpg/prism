@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'wouter';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { WarpPhase, OmniWarpTarget, OmniWarpContext } from '@/lib/omniWarp/types';
 import { calculateWarpMetrics, forceToAiTemperature, RADIAL_WARP_APPS } from '@/lib/omniWarp/forceSensor';
 import { serializeCurrentView, synthesizeWarpTarget, isDisallowedWarpDestination } from '@/lib/omniWarp/omniWarpEngine';
@@ -941,24 +941,6 @@ export function BigBangButton() {
               </>
             )}
 
-            {/* 🌟 텍스트 드래그(선택) 연동 가이드 뱃지 (글자 스크롤 감지 시 빅뱅 버튼 상단에 표시) */}
-            <AnimatePresence>
-              {hasSelectionToss && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.85, y: 6 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.85, y: 4 }}
-                  className="absolute -top-11 left-1/2 -translate-x-1/2 whitespace-nowrap px-2.5 py-1 rounded-full bg-slate-950/95 backdrop-blur-xl border border-cyan-400/50 text-[9px] font-bold text-cyan-200 shadow-[0_4px_20px_rgba(0,240,255,0.4)] pointer-events-none flex items-center gap-1 z-50 animate-pulse ring-1 ring-cyan-400/30"
-                >
-                  <span className="text-[10px]">✨</span>
-                  <span className="text-yellow-300">탭</span><span className="text-slate-400">▸루시</span>
-                  <span className="text-slate-600">│</span>
-                  <span className="text-cyan-300">홀드</span><span className="text-slate-400">▸오브</span>
-                  <span className="text-slate-600">│</span>
-                  <span className="text-purple-300">드래그</span><span className="text-slate-400">▸추천1위</span>
-                </motion.div>
-              )}
-            </AnimatePresence>
 
             {/* 🎯 빅뱅 차원 수렴 인터랙션 (군더더기 없는 현대적이고 신비로운 코스믹 아케인 버튼) */}
             <motion.button

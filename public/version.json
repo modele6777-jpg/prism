@@ -1,13 +1,11 @@
 {
   "name": "lucy-universe",
-  "version": "1.2.940",
-  "summary": "스크롤(선택) 취소 시 자동 토스모드 즉시 취소 및 정리 연동",
-  "builtAt": "2026-09-13T05:53:00.000Z",
+  "version": "1.2.941",
+  "summary": "글자 스크롤(선택) 시 빅뱅 버튼 상단 가이드 뱃지 표시 제거",
+  "builtAt": "2026-09-13T06:38:00.000Z",
   "items": [
-    "🛑 스크롤(선택) 취소 시 자동 토스모드 즉각 취소: 브라우저 텍스트 선택이 해제되거나 빈 영역 클릭/ESC 시 대기 중인 토스 모드 및 안내 뱃지 완전 정리",
-    "🧹 clearPendingSelection 신규 구현: selectionBridge에 대기 선택 삭제 및 prism:selection_cleared 이벤트 파이프라인 추가",
-    "⚡ BigBangButton 연동 최적화: getActiveSelectionText 헬퍼를 통해 현재 실시간 브라우저 선택이 없는 경우 잔여 스토리지로 인한 토스 모드 오진입 원천 차단",
-    "🏷️ SelectionBridgeToolbar 동기화: 선택 해제/ESC/공백 클릭 시 툴바 숨김과 동시에 pendingSelection 즉시 초기화"
+    "✨ 스크롤 시 빅뱅 버튼 상단 배지 제거: 텍스트 선택 시 빅뱅 버튼 위에 나타나던 안내 뱃지(탭▸루시 | 홀드▸오브 | 드래그▸추천1위) UI 완전 삭제",
+    "🧹 UI 시각적 방해 요소 해소: 본문 화면을 가리거나 시야를 분산시키지 않고 깔끔한 제스처 본연의 인터랙션 제공"
   ],
   "author": "Antigravity AI Agent",
   "buildEnvironment": "cloud-run"
