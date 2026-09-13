@@ -820,29 +820,6 @@ export function TrinityOracleSection() {
     }
   };
 
-  // ⚡ 거시 실행 브리핑 전용 TTS Speech Text
-  const growthMacroSpeechText = useMemo(() => {
-    if (!growthResult?.macro_focus) return '';
-    const intro = '사주 기질과 타로 4원소의 거시 실행 브리핑입니다.';
-    return prepareNaturalSpeechText(`${intro} ${growthResult.macro_focus}`);
-  }, [growthResult?.macro_focus]);
-
-  const isGrowthMacroTTSActive = useMemo(() => {
-    if (!isTTSActive || !growthMacroSpeechText) return false;
-    const cleanSpeech = prepareNaturalSpeechText(growthMacroSpeechText);
-    return ttsState.activeFullText === cleanSpeech;
-  }, [isTTSActive, growthMacroSpeechText, ttsState.activeFullText]);
-
-  const handleToggleGrowthMacroTTS = async () => {
-    if (isGrowthMacroTTSActive) {
-      stopTTS();
-      return;
-    }
-    if (growthMacroSpeechText) {
-      await playTTSInChunks(growthMacroSpeechText, 'Kore', 250, '따뜻함');
-    }
-  };
-
   // Executive Summary Card (Substantial Saju-Tarot Synthesis + TTS Audio Player)
   const renderExecutiveSummaryCard = () => {
     const synergy = oracleMode === 'healing' ? healingResult?.saju_tarot_synergy : growthResult?.saju_tarot_synergy;
@@ -1091,74 +1068,6 @@ export function TrinityOracleSection() {
               </button>
             </div>
           )}
-        </div>
-      </div>
-    );
-  };
-
-  // Render Growth Mode Macro Focus & Reflection
-  const renderGrowthMacroSection = (macroFocus?: string) => {
-    if (!macroFocus) return null;
-
-    return (
-      <div className="glass p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-orange-950/25 via-zinc-950/90 to-amber-950/20 border border-orange-400/35 shadow-2xl relative overflow-hidden backdrop-blur-xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10 relative z-10">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-orange-500/20 border border-orange-400/40 flex items-center justify-center text-amber-400 shadow-md shrink-0">
-              <Zap size={22} className="text-amber-400" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono text-orange-400 uppercase tracking-widest block">
-                  MACRO SELF-DEVELOPMENT SYNTHESIS
-                </span>
-                <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-orange-500/20 text-amber-200 border border-orange-400/30">
-                  자기계발 마인드셋
-                </span>
-              </div>
-              <h3 className="text-base sm:text-lg font-bold font-serif text-white mt-0.5">
-                사주 기질과 타로 4원소의 자기계발 종합 브리핑
-              </h3>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 self-end sm:self-center">
-            {growthMacroSpeechText && (
-              <button
-                type="button"
-                onClick={handleToggleGrowthMacroTTS}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-95 ${
-                  isGrowthMacroTTSActive
-                    ? "bg-amber-400/30 text-amber-200 border border-amber-400/60 ring-2 ring-amber-400/30 animate-pulse"
-                    : "bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 border border-amber-400/35 hover:border-amber-400/60"
-                }`}
-                title={isGrowthMacroTTSActive ? "브리핑 낭독 중지" : "거시 실행 브리핑 음성으로 듣기"}
-              >
-                {isGrowthMacroTTSActive ? (
-                  <>
-                    <VolumeX size={14} className="text-amber-300" />
-                    <span className="text-[11px]">낭독 중지</span>
-                    <span className="flex gap-0.5 ml-0.5">
-                      <span className="w-1 h-2.5 bg-amber-300 rounded-full animate-bounce" />
-                      <span className="w-1 h-3.5 bg-amber-200 rounded-full animate-bounce [animation-delay:0.15s]" />
-                      <span className="w-1 h-2 bg-amber-400 rounded-full animate-bounce [animation-delay:0.3s]" />
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <Volume2 size={14} className="text-amber-400" />
-                    <span className="text-[11px]">브리핑 듣기</span>
-                  </>
-                )}
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-4 p-5 rounded-2xl bg-black/40 border border-white/5 relative z-10 shadow-inner">
-          <p className="text-xs sm:text-sm text-zinc-200 font-sans leading-relaxed">
-            {macroFocus}
-          </p>
         </div>
       </div>
     );
@@ -1791,9 +1700,6 @@ export function TrinityOracleSection() {
 
                 {/* 3 Cards Deep Insights Reading (내면아이 성찰 메시지 제외, 카드 고유 뜻과 상징만 표기) */}
                 {renderCardInsightsSection(growthResult.card_insights)}
-
-                {/* 거시 마인드셋 종합 브리핑 */}
-                {renderGrowthMacroSection(growthResult.macro_focus)}
 
                 {/* 2. Prescribed Art -> Toss to Muse Art Sanctuary */}
                 {growthResult.prescribed_art && (
