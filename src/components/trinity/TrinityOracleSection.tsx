@@ -711,6 +711,9 @@ export function TrinityOracleSection() {
       const resonance = healingResult.saju_tarot_synergy?.day_master_resonance || '';
       if (resonance) parts.push(`사주 본원과 타로의 파동 공명입니다. ${resonance}`);
 
+      const harmony = healingResult.saju_tarot_synergy?.elemental_balance?.dominant_harmony || '';
+      if (harmony) parts.push(`오행 우세 기운의 조화입니다. ${harmony}`);
+
       const remedy = healingResult.saju_tarot_synergy?.elemental_balance?.lacking_remedy || '';
       if (remedy) parts.push(`오행 균형과 용신 보약 처방입니다. ${remedy}`);
 
@@ -728,6 +731,9 @@ export function TrinityOracleSection() {
 
       const resonance = growthResult.saju_tarot_synergy?.day_master_resonance || '';
       if (resonance) parts.push(`사주 본원과 타로의 실행 모멘텀입니다. ${resonance}`);
+
+      const harmony = growthResult.saju_tarot_synergy?.elemental_balance?.dominant_harmony || '';
+      if (harmony) parts.push(`오행 우세 기운의 조화입니다. ${harmony}`);
 
       const remedy = growthResult.saju_tarot_synergy?.elemental_balance?.lacking_remedy || '';
       if (remedy) parts.push(`오행 균형과 용신 보완 전략입니다. ${remedy}`);
@@ -759,6 +765,58 @@ export function TrinityOracleSection() {
     }
     if (oracleSpeechText) {
       await playTTSInChunks(oracleSpeechText, 'Kore', 250, '신비');
+    }
+  };
+
+  // 🔮 Saju & Tarot Synergy (심층 융합) Dedicated TTS Speech Text
+  const synergySpeechText = useMemo(() => {
+    const synergy = oracleMode === 'healing' ? healingResult?.saju_tarot_synergy : growthResult?.saju_tarot_synergy;
+    if (!synergy) return '';
+
+    const parts: string[] = [];
+    parts.push('사주 명리학과 타로 카드의 심층 운명 융합 매트릭스 리딩입니다.');
+
+    if (synergy.day_master_resonance) {
+      parts.push(`사주 본원과 타로 카드의 파동 공명입니다. ${synergy.day_master_resonance}`);
+    }
+
+    if (synergy.elemental_balance) {
+      const { dominant_harmony, lacking_remedy } = synergy.elemental_balance;
+      if (dominant_harmony) {
+        parts.push(`오행의 우세 기운과 조화입니다. ${dominant_harmony}`);
+      }
+      if (lacking_remedy) {
+        parts.push(`오행 결핍 기운과 용신 보약 상생 처방입니다. ${lacking_remedy}`);
+      }
+    }
+
+    if (synergy.destiny_flow_synthesis) {
+      parts.push(`2026년 세운 속 현실 타이밍입니다. ${synergy.destiny_flow_synthesis}`);
+    }
+
+    if (synergy.saju_oracle_verdict) {
+      parts.push(`사주와 타로의 최종 융합 오라클 계시입니다. ${synergy.saju_oracle_verdict}`);
+    }
+
+    return prepareNaturalSpeechText(parts.join('. '));
+  }, [oracleMode, healingResult, growthResult]);
+
+  const isSynergyTTSActive = useMemo(() => {
+    if (!isTTSActive || !synergySpeechText) return false;
+    const cleanSpeech = prepareNaturalSpeechText(synergySpeechText);
+    return ttsState.activeFullText === cleanSpeech;
+  }, [isTTSActive, synergySpeechText, ttsState.activeFullText]);
+
+  // 🔮 심층 융합 전용 TTS 토글 핸들러
+  const handleToggleSynergyTTS = async (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (isSynergyTTSActive) {
+      stopTTS();
+      return;
+    }
+    if (synergySpeechText) {
+      setIsMatrixOpen(true); // 자동 아코디언 오픈
+      await playTTSInChunks(synergySpeechText, 'Kore', 250, '신비');
     }
   };
 
@@ -1066,17 +1124,16 @@ export function TrinityOracleSection() {
     return (
       <div className="glass rounded-3xl bg-gradient-to-br from-purple-950/40 via-zinc-950/90 to-amber-950/30 border border-amber-400/30 shadow-xl overflow-hidden backdrop-blur-xl">
         {/* Accordion Toggle Header */}
-        <button
-          type="button"
-          onClick={() => setIsMatrixOpen(!isMatrixOpen)}
-          className="w-full p-4 sm:p-5 flex items-center justify-between gap-3 text-left transition-colors hover:bg-white/[0.02] cursor-pointer"
-        >
-          <div className="flex items-center gap-3">
+        <div className="w-full p-4 sm:p-5 flex items-center justify-between gap-3 text-left transition-colors hover:bg-white/[0.02]">
+          <div
+            onClick={() => setIsMatrixOpen(!isMatrixOpen)}
+            className="flex items-center gap-3 cursor-pointer flex-1 min-w-0"
+          >
             <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-amber-500/20 to-purple-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300 shadow-md shrink-0">
               <Compass size={18} className="text-amber-400" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[10px] font-mono text-amber-400 uppercase tracking-widest block">
                   SAJU × TAROT ALCHEMY MATRIX
                 </span>
@@ -1084,19 +1141,57 @@ export function TrinityOracleSection() {
                   심층 융합
                 </span>
               </div>
-              <h3 className="text-xs sm:text-sm font-bold font-serif text-white">
+              <h3 className="text-xs sm:text-sm font-bold font-serif text-white truncate sm:whitespace-normal">
                 사주 명리학과 타로 카드의 운명 융합 매트릭스
               </h3>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0 text-amber-300 text-xs font-sans">
-            <span className="hidden sm:inline-block text-[11px] text-zinc-400">
-              {isMatrixOpen ? '상세 접기' : '상세 펼치기'}
-            </span>
-            {isMatrixOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* 🔊 심층 융합 전용 TTS 음성 듣기 버튼 */}
+            {synergySpeechText && (
+              <button
+                type="button"
+                onClick={handleToggleSynergyTTS}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-95 ${
+                  isSynergyTTSActive
+                    ? "bg-amber-400/30 text-amber-200 border border-amber-400/60 ring-2 ring-amber-400/30 animate-pulse"
+                    : "bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 border border-amber-400/35 hover:border-amber-400/60"
+                }`}
+                title={isSynergyTTSActive ? "심층 융합 낭독 중지" : "심층 융합 전체 리딩 음성으로 듣기"}
+              >
+                {isSynergyTTSActive ? (
+                  <>
+                    <VolumeX size={14} className="text-amber-300" />
+                    <span className="hidden xs:inline text-[11px]">낭독 중지</span>
+                    <span className="flex gap-0.5 ml-0.5">
+                      <span className="w-1 h-2.5 bg-amber-300 rounded-full animate-bounce" />
+                      <span className="w-1 h-3.5 bg-amber-200 rounded-full animate-bounce [animation-delay:0.15s]" />
+                      <span className="w-1 h-2 bg-amber-400 rounded-full animate-bounce [animation-delay:0.3s]" />
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Volume2 size={14} className="text-amber-400" />
+                    <span className="text-[11px]">심층 융합 듣기</span>
+                  </>
+                )}
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setIsMatrixOpen(!isMatrixOpen)}
+              className="p-1.5 rounded-lg hover:bg-white/5 text-amber-300 text-xs font-sans flex items-center gap-1 cursor-pointer"
+              title={isMatrixOpen ? "상세 접기" : "상세 펼치기"}
+            >
+              <span className="hidden sm:inline-block text-[11px] text-zinc-400">
+                {isMatrixOpen ? '접기' : '펼치기'}
+              </span>
+              {isMatrixOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
           </div>
-        </button>
+        </div>
 
         {isMatrixOpen && (
           <div className="p-5 sm:p-6 pt-0 space-y-3.5 border-t border-white/5">
@@ -1141,6 +1236,22 @@ export function TrinityOracleSection() {
               <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed font-sans">
                 {synergy.destiny_flow_synthesis}
               </p>
+            </div>
+
+            {/* 4. Bottom TTS guidance bar */}
+            <div className="pt-2 flex items-center justify-between text-[11px] text-zinc-400 border-t border-white/5">
+              <span className="flex items-center gap-1 text-amber-300/80">
+                <Sparkles size={11} className="text-amber-400" />
+                사주 본원과 3장 타로 상징의 입체 공명 분석
+              </span>
+              <button
+                type="button"
+                onClick={handleToggleSynergyTTS}
+                className="text-amber-300 hover:text-amber-200 font-medium flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                <Volume2 size={12} />
+                <span>{isSynergyTTSActive ? '낭독 중지' : '음성으로 전체 듣기'}</span>
+              </button>
             </div>
           </div>
         )}
