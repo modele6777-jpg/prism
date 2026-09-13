@@ -334,12 +334,21 @@ export default function BluebirdApp() {
       if (cloudHoponopono.subject) setCleansingSubject(cloudHoponopono.subject);
       if (cloudHoponopono.toolId) setSelectedHoponoponoToolId(cloudHoponopono.toolId);
       setIsHoponoponoComplete(true);
+    } else if (cloudHoponopono === null) {
+      // Explicitly cleared or reset
+      setCleansingResult(null);
+      setIsHoponoponoComplete(false);
+      setCleansingToolResult(null);
+      setCleansingImage('');
+      setCleansingSubject('');
     } else {
       const saved = localStorage.getItem(hoponoponoStorageKey('result'));
       if (saved) {
         try {
           setCleansingResult(JSON.parse(saved));
           setIsHoponoponoComplete(true);
+          const savedSubject = localStorage.getItem(hoponoponoStorageKey('subject'));
+          if (savedSubject) setCleansingSubject(savedSubject);
         } catch (_) {}
       } else {
         setCleansingResult(null);
@@ -374,6 +383,56 @@ export default function BluebirdApp() {
       localStorage.setItem(hoponoponoStorageKey('tool'), JSON.stringify(toolObj));
     }
   }, [cleansingResult, cleansingToolResult, selectedHoponoponoToolId, cleansingSubject]);
+
+  const handleResetHoponopono = useCallback(() => {
+    setIsHoponoponoComplete(false);
+    setCleansingSubject('');
+    setCleansingResult(null);
+    setCleansingImage('');
+    setCleansingToolResult(null);
+    setSelectedHoponoponoToolId('auto');
+
+    try {
+      localStorage.removeItem(hoponoponoStorageKey('result'));
+      localStorage.removeItem(hoponoponoStorageKey('subject'));
+      localStorage.removeItem(hoponoponoStorageKey('image'));
+      localStorage.removeItem(hoponoponoStorageKey('tool'));
+      localStorage.removeItem(hoponoponoStorageKey('tool_id'));
+      localStorage.removeItem(getDailyLockKey('bluebird_hoponopono', uid));
+      localStorage.removeItem('hoponopono_last_result');
+      localStorage.removeItem('hoponopono_last_image');
+      localStorage.removeItem('hoponopono_last_subject');
+
+      // Also remove guest keys
+      localStorage.removeItem(`bluebird_hoponopono_${todayKey}_${uid}_result`);
+      localStorage.removeItem(`bluebird_hoponopono_${todayKey}_guest_result`);
+      localStorage.removeItem(`bluebird_hoponopono_${todayKey}_${uid}_subject`);
+      localStorage.removeItem(`bluebird_hoponopono_${todayKey}_guest_subject`);
+      localStorage.removeItem(`bluebird_hoponopono_${todayKey}_${uid}_tool`);
+      localStorage.removeItem(`bluebird_hoponopono_${todayKey}_guest_tool`);
+      localStorage.removeItem(`bluebird_hoponopono_${todayKey}_${uid}_tool_id`);
+      localStorage.removeItem(`bluebird_hoponopono_${todayKey}_guest_tool_id`);
+      localStorage.removeItem(`bluebird_hoponopono_${todayKey}_${uid}_image`);
+      localStorage.removeItem(`bluebird_hoponopono_${todayKey}_guest_image`);
+      localStorage.removeItem(`limit_daily_bluebird_hoponopono_${uid}_${todayKey}`);
+      localStorage.removeItem(`limit_daily_bluebird_hoponopono_guest_${todayKey}`);
+    } catch (_) {}
+
+    try {
+      const today = getTodayDateKey();
+      void updateSharedState({
+        hoponoponoDaily: {
+          ...(sharedState?.hoponoponoDaily || {}),
+          [today]: null,
+        },
+        lastBluebirdDailySync: Date.now(),
+      }, 'BLUEBIRD');
+    } catch (_) {}
+
+    try {
+      window.dispatchEvent(new CustomEvent('prism:feature_updated'));
+    } catch (_) {}
+  }, [hoponoponoStorageKey, uid, todayKey, sharedState?.hoponoponoDaily, updateSharedState]);
 
   useEffect(() => {
     const handleDailyOracleUpdated = () => {
@@ -618,12 +677,12 @@ export default function BluebirdApp() {
   };
 
   
-  const generateCleansingImage = (resultData?: any) => {
+  const generateCleansingImage = (resultData?: any, subjectToUse?: string) => {
     setCleansingImageLoading(true);
     try {
       const art = getCuratedArtworkForCleansing(
         resultData?.cleansingSymbol,
-        cleansingSubject,
+        subjectToUse || cleansingSubject,
         Math.floor(Math.random() * 1000)
       );
       setCleansingImage(art.imageUrl);
@@ -719,13 +778,14 @@ export default function BluebirdApp() {
 
       setCleansingResult(res);
       localStorage.setItem('hoponopono_last_result', JSON.stringify(res));
+      localStorage.setItem('hoponopono_last_subject', actualSubject);
       localStorage.setItem(hoponoponoStorageKey('result'), JSON.stringify(res));
       localStorage.setItem(hoponoponoStorageKey('subject'), actualSubject);
       localStorage.setItem(hoponoponoStorageKey('tool_id'), selectedHoponoponoToolId);
       localStorage.setItem(getDailyLockKey('bluebird_hoponopono', uid), 'true');
       setIsHoponoponoComplete(true);
 
-      generateCleansingImage(res);
+      generateCleansingImage(res, actualSubject);
       setCleansingToolResult(tool);
       persistHoponoponoTool(tool);
       localStorage.setItem(hoponoponoStorageKey('tool'), JSON.stringify(tool));
@@ -784,13 +844,14 @@ export default function BluebirdApp() {
 
       setCleansingResult(fallbackRes);
       localStorage.setItem('hoponopono_last_result', JSON.stringify(fallbackRes));
+      localStorage.setItem('hoponopono_last_subject', actualSubject);
       localStorage.setItem(hoponoponoStorageKey('result'), JSON.stringify(fallbackRes));
       localStorage.setItem(hoponoponoStorageKey('subject'), actualSubject);
       localStorage.setItem(hoponoponoStorageKey('tool_id'), selectedHoponoponoToolId);
       localStorage.setItem(getDailyLockKey('bluebird_hoponopono', uid), 'true');
       setIsHoponoponoComplete(true);
 
-      generateCleansingImage(fallbackRes);
+      generateCleansingImage(fallbackRes, actualSubject);
 
       const userState = buildDeepSynapseContext ? buildDeepSynapseContext(sharedState?.userProfile) : '';
       const fallbackTool = await generateHoponoponoTool(selectedHoponoponoToolId, actualSubject, userState);
@@ -824,7 +885,16 @@ export default function BluebirdApp() {
           {isHoponoponoComplete && (
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-400/30 text-emerald-300 text-[11px] font-bold uppercase tracking-widest">
               <Sparkles size={12} />
-              오늘의 데일리 호오포노포노 정화 완료
+              <span>오늘의 데일리 호오포노포노 정화 완료</span>
+              <button
+                type="button"
+                onClick={handleResetHoponopono}
+                className="ml-2 px-2.5 py-0.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-200 text-[10px] font-semibold flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+                title="정화 초기화 후 새 고민으로 다시 정화하기"
+              >
+                <RefreshCw size={10} />
+                <span>초기화</span>
+              </button>
             </div>
           )}
         </div>
@@ -949,14 +1019,26 @@ export default function BluebirdApp() {
           />
 
           <div className="space-y-4">
-            <input
-              type="text"
-              value={cleansingSubject}
-              onChange={(e) => setCleansingSubject(e.target.value)}
-              disabled={isHoponoponoComplete || isCleansingLoading}
-              placeholder={isHoponoponoComplete ? "오늘의 정화 주제가 접수되어 처방이 완료되었습니다." : "비워내고 지우고 싶은 생각, 원망, 미련, 불안감을 자유롭게 적어주세요..."}
-              className="w-full px-6 py-4.5 rounded-2xl bg-black/60 border border-white/5 focus:border-emerald-500/30 text-white placeholder-white/30 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500/20 transition-all font-sans disabled:opacity-60 disabled:cursor-not-allowed"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                value={cleansingSubject}
+                onChange={(e) => setCleansingSubject(e.target.value)}
+                disabled={isHoponoponoComplete || isCleansingLoading}
+                placeholder={isHoponoponoComplete ? "오늘의 정화 주제가 접수되어 처방이 완료되었습니다. (초기화 후 새 주제 입력 가능)" : "비워내고 지우고 싶은 생각, 원망, 미련, 불안감을 자유롭게 적어주세요..."}
+                className="w-full pl-6 pr-12 py-4.5 rounded-2xl bg-black/60 border border-white/5 focus:border-emerald-500/30 text-white placeholder-white/30 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500/20 transition-all font-sans disabled:opacity-60 disabled:cursor-not-allowed"
+              />
+              {!isHoponoponoComplete && cleansingSubject && !isCleansingLoading && (
+                <button
+                  type="button"
+                  onClick={() => setCleansingSubject('')}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white/50 hover:text-white text-xs transition-all cursor-pointer"
+                  title="고민 입력 지우기"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
 
             {!isHoponoponoComplete && (
               <div className="flex flex-wrap gap-2 text-left">
@@ -1032,14 +1114,11 @@ export default function BluebirdApp() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => {
-                      setIsHoponoponoComplete(false);
-                      setCleansingSubject('');
-                    }}
-                    className="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+                    onClick={handleResetHoponopono}
+                    className="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 shadow-sm"
                   >
                     <RefreshCw size={12} className="text-emerald-300" />
-                    <span>다른 주제로 다시 정화하기 (무제한)</span>
+                    <span>고민 초기화 &amp; 새로운 주제로 정화하기</span>
                   </button>
                 </div>
               </div>
@@ -1106,7 +1185,16 @@ export default function BluebirdApp() {
                 </span>
                 <p className="text-xs text-white/40 font-sans">잠재의식 정화 결과와 실제 정화 도구 처방이 함께 도착했습니다.</p>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleResetHoponopono}
+                  className="px-3 py-2 rounded-xl bg-white/5 hover:bg-emerald-500/20 border border-white/10 hover:border-emerald-500/30 text-xs font-bold text-white/70 hover:text-white flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+                  title="현재 정화 결과를 초기화하고 새로운 고민으로 다시 정화합니다"
+                >
+                  <RefreshCw size={12} className="text-emerald-400" />
+                  <span>정화 초기화</span>
+                </button>
                 <div className="px-5 py-3.5 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 flex flex-col items-center">
                   <span className="text-[9px] text-[#56dec0] font-mono tracking-widest uppercase font-bold">Harmony Coherence</span>
                   <span className="text-3xl font-black text-white font-mono mt-0.5">{cleansingResult.harmonyScore}%</span>

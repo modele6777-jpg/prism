@@ -590,9 +590,31 @@ export function unpackAndHydrateLocalStorage(uid: string | null | undefined, sta
           if (hopoData.subject) {
             safeLocalStorage.setItem(`bluebird_hoponopono_${dateKey}_${effectiveUid}_subject`, hopoData.subject);
             safeLocalStorage.setItem(`bluebird_hoponopono_${dateKey}_guest_subject`, hopoData.subject);
+            safeLocalStorage.setItem('hoponopono_last_subject', hopoData.subject);
           }
           safeLocalStorage.setItem(`limit_daily_bluebird_hoponopono_${effectiveUid}_${dateKey}`, 'true');
           safeLocalStorage.setItem(`limit_daily_bluebird_hoponopono_guest_${dateKey}`, 'true');
+        } catch (_) {}
+      } else {
+        // Explicitly cleared or reset
+        try {
+          safeLocalStorage.removeItem(`bluebird_hoponopono_${dateKey}_${effectiveUid}_result`);
+          safeLocalStorage.removeItem(`bluebird_hoponopono_${dateKey}_guest_result`);
+          safeLocalStorage.removeItem(`bluebird_hoponopono_${dateKey}_${effectiveUid}_image`);
+          safeLocalStorage.removeItem(`bluebird_hoponopono_${dateKey}_guest_image`);
+          safeLocalStorage.removeItem(`bluebird_hoponopono_${dateKey}_${effectiveUid}_tool`);
+          safeLocalStorage.removeItem(`bluebird_hoponopono_${dateKey}_guest_tool`);
+          safeLocalStorage.removeItem(`bluebird_hoponopono_${dateKey}_${effectiveUid}_tool_id`);
+          safeLocalStorage.removeItem(`bluebird_hoponopono_${dateKey}_guest_tool_id`);
+          safeLocalStorage.removeItem(`bluebird_hoponopono_${dateKey}_${effectiveUid}_subject`);
+          safeLocalStorage.removeItem(`bluebird_hoponopono_${dateKey}_guest_subject`);
+          safeLocalStorage.removeItem(`limit_daily_bluebird_hoponopono_${effectiveUid}_${dateKey}`);
+          safeLocalStorage.removeItem(`limit_daily_bluebird_hoponopono_guest_${dateKey}`);
+          if (dateKey === getTodayDateKey()) {
+            safeLocalStorage.removeItem('hoponopono_last_result');
+            safeLocalStorage.removeItem('hoponopono_last_image');
+            safeLocalStorage.removeItem('hoponopono_last_subject');
+          }
         } catch (_) {}
       }
     });
@@ -818,10 +840,22 @@ export function mergeSharedState(
   merged.dailySecrets = mergedDailySecrets;
 
   // 3c. Merge Hoponopono Daily Cleansings (Bluebird)
-  merged.hoponoponoDaily = {
-    ...(remote.hoponoponoDaily || {}),
-    ...(local.hoponoponoDaily || {}),
-  };
+  const mergedHoponoponoDaily: Record<string, any> = { ...(remote.hoponoponoDaily || {}) };
+  if (local.hoponoponoDaily) {
+    Object.entries(local.hoponoponoDaily).forEach(([dateKey, localHopo]) => {
+      const remoteHopo = mergedHoponoponoDaily[dateKey];
+      if (localHopo === null) {
+        delete mergedHoponoponoDaily[dateKey];
+      } else if (!remoteHopo) {
+        mergedHoponoponoDaily[dateKey] = localHopo;
+      } else {
+        const localTs = Number(localHopo?.timestamp || 0);
+        const remoteTs = Number(remoteHopo?.timestamp || 0);
+        mergedHoponoponoDaily[dateKey] = localTs >= remoteTs ? localHopo : remoteHopo;
+      }
+    });
+  }
+  merged.hoponoponoDaily = mergedHoponoponoDaily;
 
   // 3d. Merge Daily Arts (Muse)
   const mergedDailyArts: Record<string, any> = { ...(remote.dailyArts || {}) };
