@@ -33,14 +33,16 @@ import {
 import { useApp, getPersistentUserProfile, setPersistentUserProfile } from '@/contexts/AppContext';
 import {
   calculateDetailedSaju,
+  generateDailySajuReport,
   ELEMENT_DETAILS,
   BRANCH_KOREAN,
   STEM_KOREAN,
   type SajuAnalysisResult,
-  type FiveElement
+  type FiveElement,
+  type DailySajuReport
 } from '@/lib/sajuAnalysis';
 import { invokeLLM } from '@/lib/ai';
-import { playTTS, stopTTS, useTTSActive } from '@/utils/tts';
+import { playTTS, playTTSInChunks, stopTTS, useTTSActive } from '@/utils/tts';
 
 // 지장간(支藏干: 각 지지에 숨겨진 천간 기운)
 const JIJANGAN_MAP: Record<string, string[]> = {
@@ -152,14 +154,25 @@ export function TrinityDestinyReportView({ onConsult }: TrinityDestinyReportView
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // TTS 토글
-  const handleToggleTTS = () => {
+  // 오늘의 사주 일진 및 운세 리포트 계산
+  const todayReport = useMemo(() => {
+    if (!saju) return null;
+    return generateDailySajuReport(saju);
+  }, [saju]);
+
+  // TTS 토글: '오늘의 사주 리포트' 음성 낭독 및 중지
+  const handleToggleTTS = async () => {
     if (isTTSActive) {
       stopTTS();
-    } else if (saju) {
-      const summaryText = `${saju.name}님의 사주 본원은 ${saju.dayMaster.hanja}, ${saju.dayMaster.symbolName}입니다. ${saju.dayMaster.personalityEssence} 2026년 병오년은 ${saju.annual2026.theme}입니다.`;
-      playTTS(summaryText);
+      return;
     }
+    if (!saju) return;
+
+    const report = todayReport || generateDailySajuReport(saju);
+    if (!report?.speechText) return;
+
+    // 자연스럽고 끊김 없는 청크 스트리밍 재생 (음성 클릭 시 즉시 중지 가능)
+    await playTTSInChunks(report.speechText, 'Kore', 350, '따뜻함');
   };
 
   // AI 명리 1:1 상담 질문 전송
@@ -348,10 +361,10 @@ ${saju.systemPromptSummary}
               onClick={handleToggleTTS}
               className={`p-2.5 rounded-2xl border transition-all text-xs font-medium flex items-center gap-1.5 ${
                 isTTSActive
-                  ? 'bg-amber-500/20 border-amber-400 text-amber-300 shadow-md shadow-amber-500/20'
-                  : 'bg-white/5 border-white/10 text-zinc-300 hover:text-white hover:bg-white/10'
+                  ? 'bg-amber-500/20 border-amber-400 text-amber-300 shadow-md shadow-amber-500/20 ring-2 ring-amber-400/40 animate-pulse'
+                  : 'bg-amber-500/10 hover:bg-amber-500/20 border-amber-400/30 text-amber-300 hover:text-white'
               }`}
-              title={isTTSActive ? '음성 멈추기' : '사주 요약 음성으로 듣기'}
+              title={isTTSActive ? '음성 멈추기' : '오늘의 사주 리포트 소리로 듣기'}
             >
               {isTTSActive ? <VolumeX size={15} /> : <Volume2 size={15} />}
               <span className="hidden sm:inline">{isTTSActive ? '음성 중지' : '소리로 듣기'}</span>
@@ -474,7 +487,135 @@ ${saju.systemPromptSummary}
         </AnimatePresence>
       </div>
 
-      {/* 2. 사주 4주 8자 만세력 원국표 (Four Pillars Matrix) */}
+      {/* 2. 오늘의 사주 & 일진(日辰) 리포트 배너 카드 */}
+      {todayReport && (
+        <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-amber-950/30 via-[#1c1b22] to-[#121318] border-2 border-amber-500/40 p-6 sm:p-7 shadow-2xl backdrop-blur-xl">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16" />
+
+          <div className="relative z-10 space-y-4">
+            {/* 헤더 행: 뱃지, 날짜, 오디오 컨트롤 */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-amber-500/20">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-[11px] font-mono font-bold flex items-center gap-1.5 shadow-sm">
+                    <Sparkles size={13} className="text-amber-400 animate-pulse" />
+                    TODAY'S DESTINY • 오늘의 사주 리포트
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-white/10 text-amber-200 text-xs font-mono font-semibold">
+                    {todayReport.dateStr}
+                  </span>
+                </div>
+                <h3 className="text-lg sm:text-xl font-serif font-bold text-white flex items-center gap-2 pt-0.5">
+                  <span>오늘의 일진:</span>
+                  <span className="text-amber-300">{todayReport.dayPillar.full}</span>
+                </h3>
+              </div>
+
+              {/* 오디오 재생 버튼 */}
+              <button
+                onClick={handleToggleTTS}
+                className={`px-4 py-2.5 rounded-2xl border transition-all text-xs font-bold flex items-center gap-2 shadow-lg shrink-0 ${
+                  isTTSActive
+                    ? 'bg-amber-500 text-zinc-950 border-amber-300 shadow-amber-500/30 ring-2 ring-amber-400/50'
+                    : 'bg-gradient-to-r from-amber-500/20 via-yellow-500/20 to-amber-500/20 hover:from-amber-500/30 hover:to-yellow-500/30 border-amber-400/50 text-amber-200 hover:text-white'
+                }`}
+              >
+                {isTTSActive ? (
+                  <>
+                    <VolumeX size={16} className="text-zinc-950" />
+                    <span>음성 리포트 중지</span>
+                    {/* 오디오 이퀄라이저 애니메이션 바 */}
+                    <div className="flex items-end gap-0.5 h-3 ml-1">
+                      <span className="w-1 bg-zinc-950 rounded-full animate-bounce [animation-delay:0ms] h-full" />
+                      <span className="w-1 bg-zinc-950 rounded-full animate-bounce [animation-delay:150ms] h-2/3" />
+                      <span className="w-1 bg-zinc-950 rounded-full animate-bounce [animation-delay:300ms] h-4/5" />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <Volume2 size={16} className="text-amber-400" />
+                    <span>오늘의 사주 소리로 듣기</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* 본문 요약 그리드 */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+              {/* 1. 오늘의 십신 기운 */}
+              <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-1.5">
+                <span className="text-[11px] font-bold text-amber-400 flex items-center gap-1 font-mono">
+                  <span>⚡</span> 오늘의 십신(十神) 작용
+                </span>
+                <p className="text-sm font-serif font-bold text-white">
+                  {todayReport.todayTheme}
+                </p>
+                <p className="text-xs text-zinc-300 leading-relaxed">
+                  {todayReport.todayAdvice}
+                </p>
+              </div>
+
+              {/* 2. 내 사주 본원과의 조화 */}
+              <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-1.5">
+                <span className="text-[11px] font-bold text-sky-400 flex items-center gap-1 font-mono">
+                  <span>🌊</span> 오행 조화 & 에너지 흐름
+                </span>
+                <p className="text-sm font-serif font-bold text-white">
+                  {saju.dayMaster.symbolName}와의 상호작용
+                </p>
+                <p className="text-xs text-zinc-300 leading-relaxed">
+                  {todayReport.harmonySummary}
+                </p>
+              </div>
+
+              {/* 3. 오늘의 3대 개운 팁 */}
+              <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-2">
+                <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1 font-mono">
+                  <span>🌿</span> 오늘의 행운 보약 처방
+                </span>
+                <div className="space-y-1.5 text-xs text-zinc-300">
+                  <div className="flex items-center justify-between">
+                    <span className="text-zinc-400">행운 컬러:</span>
+                    <span className="font-bold text-white px-2 py-0.5 rounded bg-white/10">{todayReport.remedy.luckyColor}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-zinc-400">추천 음식:</span>
+                    <span className="font-bold text-white truncate max-w-[140px]">{todayReport.remedy.luckyFood}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-zinc-400">개운 팁:</span>
+                    <span className="font-bold text-amber-300 truncate max-w-[140px]">{todayReport.remedy.actionTip}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 음성 재생 중 상태 알림 배너 */}
+            {isTTSActive && (
+              <motion.div
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="px-4 py-2.5 rounded-xl bg-amber-500/15 border border-amber-400/40 text-xs text-amber-200 flex items-center justify-between gap-3"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping shrink-0" />
+                  <span className="font-medium">
+                    🎙️ 루시가 오늘의 사주 만세력 리포트를 들려드리고 있습니다...
+                  </span>
+                </div>
+                <button
+                  onClick={stopTTS}
+                  className="text-[11px] underline text-amber-300 hover:text-white shrink-0"
+                >
+                  멈추기
+                </button>
+              </motion.div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 3. 사주 4주 8자 만세력 원국표 (Four Pillars Matrix) */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">

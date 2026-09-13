@@ -901,3 +901,152 @@ ${specialStrText || '• 안정적인 오행 순환 구조'}
     return null;
   }
 }
+
+export interface DailySajuReport {
+  dateStr: string;
+  year: number;
+  month: number;
+  day: number;
+  dayOfWeek: string;
+  dayPillar: {
+    gan: string;
+    zhi: string;
+    ganKr: string;
+    zhiKr: string;
+    full: string;
+    animal: string;
+    elGan: FiveElement;
+    elZhi: FiveElement;
+  };
+  tenGodGan: {
+    name: string;
+    category: '비겁' | '식상' | '재성' | '관성' | '인성';
+    desc: string;
+  };
+  tenGodZhi: {
+    name: string;
+    category: '비겁' | '식상' | '재성' | '관성' | '인성';
+    desc: string;
+  };
+  todayTheme: string;
+  todayAdvice: string;
+  harmonySummary: string;
+  remedy: {
+    luckyColor: string;
+    luckyFood: string;
+    luckyActivity: string;
+    actionTip: string;
+  };
+  speechText: string;
+}
+
+/**
+ * 당일의 천문 일진(日辰)과 내담자의 사주 원국(일간 및 오행)을 비교하여
+ * '오늘의 사주 일진 리포트' 및 음성 낭독용 TTS 텍스트를 실시간 계산합니다.
+ */
+export function generateDailySajuReport(saju: SajuAnalysisResult, targetDate: Date = new Date()): DailySajuReport {
+  const y = targetDate.getFullYear();
+  const m = targetDate.getMonth() + 1;
+  const d = targetDate.getDate();
+  const days = ['일', '월', '화', '수', '목', '금', '토'];
+  const dayOfWeek = days[targetDate.getDay()];
+  const dateStr = `${y}년 ${m}월 ${d}일 (${dayOfWeek})`;
+
+  // 율리우스 적일 기준 당일 일주(일진) 산출
+  const a = Math.floor((14 - m) / 12);
+  const yr = y - a;
+  const mo = m + 12 * a - 2;
+  const jd = d + Math.floor((153 * mo + 2) / 5) + 365 * yr + Math.floor(yr / 4) - Math.floor(yr / 100) + Math.floor(yr / 400) - 32045;
+  const di = (jd + 49) % 60;
+  const todayGan = HEAVENLY_STEMS[(di % 10 + 10) % 10];
+  const todayZhi = EARTHLY_BRANCHES[(di % 12 + 12) % 12];
+  const todayGanKr = STEM_KOREAN[todayGan];
+  const todayZhiKr = BRANCH_KOREAN[todayZhi];
+  const todayAnimal = BRANCH_ANIMALS[todayZhi];
+  const todayElGan = STEM_ELEMENT[todayGan];
+  const todayElZhi = BRANCH_ELEMENT[todayZhi];
+
+  const tenGodGan = calculateTenGod(saju.dayMaster.gan, todayGan, false);
+  const tenGodZhi = calculateTenGod(saju.dayMaster.gan, todayZhi, true);
+
+  // 십신 카테고리별 테마 및 조언
+  let theme = '';
+  let categoryAdvice = '';
+  switch (tenGodGan.category) {
+    case '식상':
+      theme = `${tenGodGan.name} — 창의적 표현과 감각의 활력`;
+      categoryAdvice = `창의력과 자기표현이 자연스럽게 빛나는 날입니다. 마음에 담아두었던 아이디어를 솔직하게 표현하거나 새로운 시도를 해보세요. 오감을 깨우는 활동이 행운을 부릅니다.`;
+      break;
+    case '재성':
+      theme = `${tenGodGan.name} — 현실적 성과와 실속의 결실`;
+      categoryAdvice = `노력해온 일에서 구체적인 성과와 기회가 열리는 날입니다. 일의 우선순위를 명확히 세우고 꼼꼼하게 실속을 챙기시면 좋은 결실과 재물 흐름이 따릅니다.`;
+      break;
+    case '관성':
+      theme = `${tenGodGan.name} — 사회적 신뢰와 명예로운 도약`;
+      categoryAdvice = `원칙과 책임감을 바탕으로 자신의 신뢰도를 높이기 좋은 날입니다. 당당하고 바른 태도로 사람들을 대하면 주변의 인정과 협력을 얻게 됩니다.`;
+      break;
+    case '인성':
+      theme = `${tenGodGan.name} — 지혜로운 성찰과 귀인의 조력`;
+      categoryAdvice = `마음을 가라앉히고 배움과 사색에 몰입하기에 가장 좋은 날입니다. 귀인의 따뜻한 도움이나 귀중한 조언을 얻을 수 있으니 열린 마음으로 경청해 보세요.`;
+      break;
+    case '비겁':
+    default:
+      theme = `${tenGodGan.name} — 당당한 주체성과 활발한 추진력`;
+      categoryAdvice = `내면의 자신감과 주체적인 에너지가 가득 차오르는 날입니다. 남의 눈치를 보지 않고 소신껏 내 길을 걸어가거나, 뜻을 같이하는 동료와 연대하면 큰 힘이 됩니다.`;
+      break;
+  }
+
+  // 사용자 오행과의 상호작용
+  let harmonySummary = '';
+  if (todayElGan === saju.elements.lacking.element) {
+    harmonySummary = `특히 오늘 하늘의 기운은 ${saju.name}님에게 부족한 ${saju.elements.lacking.name} 기운을 가득 보충해 주어, 막힌 흐름이 시원하게 풀리는 보약 같은 날입니다.`;
+  } else if (todayElGan === saju.elements.dominant.element) {
+    harmonySummary = `오늘 하늘의 기운은 ${saju.name}님의 중심 기운인 ${saju.elements.dominant.name} 에너지를 강하게 자극하므로, 조급함을 내려놓고 깊은 호흡으로 평정심을 유지하는 것이 지혜입니다.`;
+  } else {
+    harmonySummary = `오늘의 ${todayElGan} 기운은 ${saju.name}님의 본원인 ${saju.dayMaster.symbolName}과 조화롭게 어우러져 편안하고 안정된 리듬을 선사합니다.`;
+  }
+
+  const remedy = {
+    luckyColor: saju.elements.lacking.luckyColor,
+    luckyFood: saju.elements.lacking.luckyFood,
+    luckyActivity: saju.elements.lacking.luckyPlace,
+    actionTip: saju.yongsin.actionTip,
+  };
+
+  // 음성 리포트 대본 생성 (자연스러운 한국어 구어체)
+  const speechText = [
+    `안녕하세요, ${saju.name}님! ${m}월 ${d}일 오늘의 사주 만세력 리포트를 들려드릴게요.`,
+    `오늘의 일진은 ${todayGanKr}${todayZhiKr}일, ${todayAnimal}의 날이며 ${todayElGan}의 기운이 흐르는 날입니다.`,
+    `${saju.name}님의 타고난 사주 본원은 ${saju.dayMaster.symbolName}인 ${saju.dayMaster.korean}입니다.`,
+    `오늘 찾아온 ${tenGodGan.name}의 기운은 ${saju.name}님에게 ${categoryAdvice}`,
+    harmonySummary,
+    `오늘 하루 개운을 돕는 추천 행운 컬러는 ${remedy.luckyColor}이며, 추천 음식은 ${remedy.luckyFood}입니다.`,
+    `${saju.dayMaster.mindsetAdvice}`,
+    `오늘 하루도 ${saju.name}님의 고유한 빛으로 가장 당당하고 행복한 하루를 보내시길 진심으로 축복합니다.`,
+  ].filter(Boolean).join(' ');
+
+  return {
+    dateStr,
+    year: y,
+    month: m,
+    day: d,
+    dayOfWeek,
+    dayPillar: {
+      gan: todayGan,
+      zhi: todayZhi,
+      ganKr: todayGanKr,
+      zhiKr: todayZhiKr,
+      full: `${todayGan}${todayZhi} (${todayGanKr}${todayZhiKr}일, ${todayAnimal}의 날)`,
+      animal: todayAnimal,
+      elGan: todayElGan,
+      elZhi: todayElZhi,
+    },
+    tenGodGan,
+    tenGodZhi,
+    todayTheme: theme,
+    todayAdvice: categoryAdvice,
+    harmonySummary,
+    remedy,
+    speechText,
+  };
+}
