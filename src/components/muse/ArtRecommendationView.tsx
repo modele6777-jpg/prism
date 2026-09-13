@@ -1081,9 +1081,15 @@ export function ArtRecommendationView() {
   // Custom theme & concern state
   const [selectedThemeId, setSelectedThemeId] = useState<string>("creative_spark");
   const [customConcern, setCustomConcern] = useState<string>("");
-  const [savedThemeLabel, setSavedThemeLabel] = useState<string>("");
   const [savedCustomConcern, setSavedCustomConcern] = useState<string>("");
   const [isSelectingNewTheme, setIsSelectingNewTheme] = useState<boolean>(false);
+
+  // 🔮 오라클 결과 토스 유입 여부 판별
+  const isOracleTossed = Boolean(
+    activeToss?.sourceApp === 'oracle' ||
+    (activeToss?.cards && activeToss.cards.length > 0) ||
+    currentMoodLabel.startsWith('오라클 토스')
+  );
 
   // Interactive challenges checklist
   const [completedChallenges, setCompletedChallenges] = useState<Record<number, boolean>>({});
@@ -1454,8 +1460,10 @@ export function ArtRecommendationView() {
 
       setRecommendation(sanitizedArt);
       setCurrentMoodLabel(`오라클 토스: ${cardNames || "영혼의 처방"}`);
-      if (toss.contextMessage) {
+      if (toss.contextMessage && toss.sourceApp !== 'oracle') {
         setSavedCustomConcern(toss.contextMessage);
+      } else {
+        setSavedCustomConcern("");
       }
 
       // Trigger artwork visualization
@@ -1941,8 +1949,8 @@ export function ArtRecommendationView() {
             animate={{ opacity: 1, y: 0 }}
             className="space-y-8"
           >
-            {/* Shared User Concern Banner */}
-            {savedCustomConcern && (
+            {/* Shared User Concern Banner (오라클 토스 시에는 비노출) */}
+            {savedCustomConcern && !isOracleTossed && (
               <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-200 flex items-start gap-2.5 shadow-sm">
                 <span className="text-base">🕊️</span>
                 <div className="space-y-0.5">
@@ -2240,15 +2248,17 @@ export function ArtRecommendationView() {
                   </>
                 )}
 
-                {/* Description */}
-                <div className="space-y-3">
-                  <span className="text-[9px] font-black uppercase tracking-widest text-white/30">
-                    심층 미학 & 미묘한 서사
-                  </span>
-                  <p className="text-sm md:text-base text-white/70 leading-relaxed font-sans tracking-wide">
-                    {recommendation.description}
-                  </p>
-                </div>
+                {/* Description (오라클 토스 시에는 '심층 미학 & 미묘한 서사' 비노출) */}
+                {!isOracleTossed && recommendation.description && (
+                  <div className="space-y-3">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-white/30">
+                      심층 미학 & 미묘한 서사
+                    </span>
+                    <p className="text-sm md:text-base text-white/70 leading-relaxed font-sans tracking-wide">
+                      {recommendation.description}
+                    </p>
+                  </div>
+                )}
 
                 {/* why recommended - insights */}
                 <div className="p-5 md:p-6 rounded-[24px] bg-blue-500/[0.03] border border-blue-500/10 space-y-3 animate-fade-in">
