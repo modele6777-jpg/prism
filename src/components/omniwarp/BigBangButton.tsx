@@ -19,7 +19,7 @@ import {
 import { omniWarpAudio } from '@/lib/omniWarp/omniWarpAudio';
 import { triggerHaptic, startBlackHoleContinuousHaptic, stopBlackHoleContinuousHaptic } from '@/lib/omniWarp/omniWarpHaptics';
 import { safeSessionStorage } from '@/utils/safeStorage';
-import { peekPendingSelection, savePendingSelection, clearPendingSelection } from '@/lib/selectionBridge';
+import { peekPendingSelection, savePendingSelection, clearPendingSelection, getLiveSelectedText } from '@/lib/selectionBridge';
 import { sendPrismToss } from '@/lib/prismToss';
 import { getRecommendedMenu, tossSelectionToMenu } from '@/lib/selectionContextRecommender';
 import { BigBangCircularMeter } from './BigBangCircularMeter';
@@ -88,12 +88,19 @@ export function BigBangButton() {
   }, []);
 
   // 🎯 현재 활성화된 브라우저 텍스트 선택(스크롤) 내용 추출 (취소되었거나 비어있으면 '' 반환)
+  // 일반 본문 노드뿐만 아니라 input/textarea 빈칸 입력창 및 방금 보존된 pending selection까지 완벽 지원
   const getActiveSelectionText = useCallback((): string => {
     if (typeof window === 'undefined') return '';
-    const sel = window.getSelection();
-    if (!sel || sel.isCollapsed) return '';
-    const winSel = sel.toString().trim();
-    return winSel && winSel.length >= 2 ? winSel : '';
+    // 1. 현재 브라우저 실시간 선택 텍스트 (input, textarea 빈칸 및 일반 본문 포함)
+    const live = getLiveSelectedText();
+    if (live && live.length >= 2) return live;
+
+    // 2. 버튼 클릭/터치 시 포커스 이동 등으로 selection이 방금 해제된 경우: 보존된 대기 스토리지 확인
+    const pending = peekPendingSelection();
+    if (pending && pending.text && pending.text.trim().length >= 2) {
+      return pending.text.trim();
+    }
+    return '';
   }, []);
 
   // 🌟 텍스트 드래그(선택) 감지: 탭 시 루시 토스, 홀드 시 오브 토스 지원
@@ -141,6 +148,9 @@ export function BigBangButton() {
     };
 
     document.addEventListener('selectionchange', updateSelectionState);
+    document.addEventListener('select', updateSelectionState, true); // 빈칸(input/textarea) 선택 감지
+    document.addEventListener('mouseup', updateSelectionState);
+    document.addEventListener('touchend', updateSelectionState);
     window.addEventListener('prism:selection_saved', handleSaved);
     window.addEventListener('prism:selection_tossed', handleTossedOrCleared);
     window.addEventListener('prism:selection_cleared', handleTossedOrCleared);
@@ -148,6 +158,9 @@ export function BigBangButton() {
 
     return () => {
       document.removeEventListener('selectionchange', updateSelectionState);
+      document.removeEventListener('select', updateSelectionState, true);
+      document.removeEventListener('mouseup', updateSelectionState);
+      document.removeEventListener('touchend', updateSelectionState);
       window.removeEventListener('prism:selection_saved', handleSaved);
       window.removeEventListener('prism:selection_tossed', handleTossedOrCleared);
       window.removeEventListener('prism:selection_cleared', handleTossedOrCleared);
@@ -945,6 +958,8 @@ export function BigBangButton() {
             {/* 🎯 빅뱅 차원 수렴 인터랙션 (군더더기 없는 현대적이고 신비로운 코스믹 아케인 버튼) */}
             <motion.button
               ref={buttonRef}
+              id="bigbang-omnibutton"
+              data-bigbang="true"
               type="button"
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}

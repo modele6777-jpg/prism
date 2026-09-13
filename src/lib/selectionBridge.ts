@@ -17,6 +17,46 @@ const SELECTION_STORAGE_KEY = 'prism_dragged_selection_context';
 const MAX_VALIDITY_MS = 10 * 60 * 1000; // 10분 유효
 
 /**
+ * 🌟 브라우저 내 현재 선택(스크롤)된 모든 텍스트 추출
+ * - 일반 DOM 텍스트 노드뿐만 아니라 input, textarea (빈칸 입력창) 및 contenteditable 내부 텍스트까지 완벽 지원
+ */
+export function getLiveSelectedText(): string {
+  if (typeof window === 'undefined') return '';
+
+  // 1. 활성화된 폼 입력 요소 (input, textarea 등 빈칸) 내부의 선택 텍스트 확인
+  try {
+    const activeEl = document.activeElement;
+    if (
+      activeEl &&
+      (activeEl instanceof HTMLInputElement || activeEl instanceof HTMLTextAreaElement)
+    ) {
+      const start = activeEl.selectionStart;
+      const end = activeEl.selectionEnd;
+      if (start !== null && end !== null && start !== end) {
+        const inputSelected = activeEl.value.substring(Math.min(start, end), Math.max(start, end)).trim();
+        if (inputSelected.length >= 2) {
+          return inputSelected;
+        }
+      }
+    }
+  } catch (_) {}
+
+  // 2. 일반 DOM 본문 및 contenteditable 영역의 텍스트 선택 확인
+  try {
+    const selection = window.getSelection();
+    if (selection && !selection.isCollapsed) {
+      const domSelected = selection.toString().trim();
+      if (domSelected.length >= 2) {
+        return domSelected;
+      }
+    }
+  } catch (_) {}
+
+  return '';
+}
+
+
+/**
  * 선택된 텍스트를 세션 스토리지에 안전하게 저장
  */
 export function savePendingSelection(

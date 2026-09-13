@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { savePendingSelection, clearPendingSelection } from '../lib/selectionBridge';
+import { savePendingSelection, clearPendingSelection, getLiveSelectedText } from '../lib/selectionBridge';
 
 /**
  * 텍스트 클립보드 즉시 복사 유틸리티 (브라우저 및 보안 컨텍스트 호환)
@@ -39,11 +39,11 @@ interface SelectionBridgeToolbarProps {
 
 /**
  * 🌟 SelectionBridgeToolbar (선택 텍스트 백그라운드 브릿지)
- * - 사용자가 텍스트를 스크롤(선택)할 때 글자 위에 시각적 플로팅 배지를 띄우지 않고,
- *   빅뱅 버튼 토스 연동 및 자동 복사 파이프라인만 안전하게 백그라운드에서 실행합니다.
- * - 스크롤 취소/해제 시 clearPendingSelection()을 호출하여 대기 토스 모드를 즉각 초기화합니다.
+ * - 일반 본문 텍스트뿐만 아니라 input, textarea (빈칸 입력창) 및 모든 텍스트 선택(스크롤)을 포착하여
+ *   빅뱅 버튼 토스 연동 및 자동 복사 파이프라인을 백그라운드에서 안전하게 구동합니다.
+ * - 스크롤 취소/해제 시 clearPendingSelection()을 호출하여 대기 토스 모드를 안전하게 초기화합니다.
  */
-export default function SelectionBridgeToolbar({ currentPath }: SelectionBridgeToolbarProps) {
+export default function SelectionBridgeToolbar({ currentPath: _currentPath }: SelectionBridgeToolbarProps) {
   const lastCopiedTextRef = useRef<string>('');
 
   useEffect(() => {
@@ -53,29 +53,13 @@ export default function SelectionBridgeToolbar({ currentPath }: SelectionBridgeT
       if (debounceTimer) clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
         if (typeof window === 'undefined') return;
-        const selection = window.getSelection();
+
+        // 🌟 일반 본문 및 input/textarea 빈칸 입력창 내부 선택 텍스트까지 포괄 추출
+        const text = getLiveSelectedText();
 
         // 🎯 스크롤(선택) 취소 감지:
-        // 선택이 없거나 해제(isCollapsed)되었거나 비어있으면 자동 토스모드 즉시 취소!
-        if (!selection || selection.isCollapsed || !selection.toString().trim()) {
-          clearPendingSelection();
-          return;
-        }
-
-        const text = selection.toString().trim();
-        // 2글자 미만 또는 인풋/텍스트에어리어 내부일 때도 취소
-        if (text.length < 2) {
-          clearPendingSelection();
-          return;
-        }
-
-        const anchorNode = selection.anchorNode;
-        const parentElem =
-          anchorNode?.nodeType === Node.ELEMENT_NODE
-            ? (anchorNode as Element)
-            : anchorNode?.parentElement;
-
-        if (parentElem?.closest('input, textarea, [contenteditable="true"]')) {
+        // 선택이 없거나 해제되었거나 2글자 미만이면 대기 토스모드 즉시 정리
+        if (!text || text.length < 2) {
           clearPendingSelection();
           return;
         }
@@ -88,13 +72,19 @@ export default function SelectionBridgeToolbar({ currentPath }: SelectionBridgeT
           lastCopiedTextRef.current = text;
           copyToClipboard(text);
         }
-      }, 100);
+      }, 80);
     };
 
-    const handleDocumentMouseDown = () => {
+    const handleDocumentMouseDown = (e: MouseEvent | TouchEvent) => {
+      // 🛡️ 빅뱅 버튼이나 토스 조작 트리거를 클릭/터치할 때는 selection을 지우지 않고 유지!
+      const target = e.target as HTMLElement | null;
+      if (target?.closest?.('#bigbang-omnibutton, [data-bigbang], [data-no-clear-selection]')) {
+        return;
+      }
+
       setTimeout(() => {
-        const sel = window.getSelection();
-        if (!sel || sel.isCollapsed || !sel.toString().trim()) {
+        const text = getLiveSelectedText();
+        if (!text || text.length < 2) {
           clearPendingSelection();
         }
       }, 120);
@@ -106,16 +96,28 @@ export default function SelectionBridgeToolbar({ currentPath }: SelectionBridgeT
       }
     };
 
+    // 브라우저 텍스트 선택 관련 다각도 이벤트 리스너 등록
     document.addEventListener('selectionchange', handleSelectionChange);
     document.addEventListener('mouseup', handleSelectionChange);
+    document.addEventListener('touchend', handleSelectionChange);
+    document.addEventListener('keyup', handleSelectionChange);
+    // 💡 input / textarea 등 빈칸 내부 드래그 선택 시 발생하는 select 이벤트 (capture 모드로 감지)
+    document.addEventListener('select', handleSelectionChange, true);
+
     document.addEventListener('mousedown', handleDocumentMouseDown);
+    document.addEventListener('touchstart', handleDocumentMouseDown);
     document.addEventListener('keydown', handleKeyDown);
 
     return () => {
       if (debounceTimer) clearTimeout(debounceTimer);
       document.removeEventListener('selectionchange', handleSelectionChange);
       document.removeEventListener('mouseup', handleSelectionChange);
+      document.removeEventListener('touchend', handleSelectionChange);
+      document.removeEventListener('keyup', handleSelectionChange);
+      document.removeEventListener('select', handleSelectionChange, true);
+
       document.removeEventListener('mousedown', handleDocumentMouseDown);
+      document.removeEventListener('touchstart', handleDocumentMouseDown);
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
