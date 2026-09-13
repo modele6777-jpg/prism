@@ -3,19 +3,19 @@ import { useLocation } from 'wouter';
 import { motion, AnimatePresence } from 'motion/react';
 import { WarpPhase, OmniWarpTarget, OmniWarpContext } from '@/lib/omniWarp/types';
 import { calculateWarpMetrics, forceToAiTemperature, RADIAL_WARP_APPS } from '@/lib/omniWarp/forceSensor';
-import { serializeCurrentView, synthesizeWarpTarget, executeBigBangCommit, isDisallowedWarpDestination } from '@/lib/omniWarp/omniWarpEngine';
+import { serializeCurrentView, synthesizeWarpTarget, isDisallowedWarpDestination } from '@/lib/omniWarp/omniWarpEngine';
 import {
   getWhiteholeRecommendedApp,
   getBlackholeRecommendedApp,
-  getAllActiveWormholeApps,
 } from '@/lib/omniWarp/wormholeSpectrum';
 import { getTossRule } from '@/lib/prismTossRegistry';
 import { resolveCanonicalPath, isValidPrismPath } from '@/lib/prismRouteRegistry';
+import { resetActiveWormholePeek } from '@/lib/omniWarp/wormholeShuffleEngine';
 import {
-  commitShuffledWormholeDestination,
-  peekShuffledWormholeDestination,
-  resetActiveWormholePeek,
-} from '@/lib/omniWarp/wormholeShuffleEngine';
+  peekNextRecommendedMenuByCycle,
+  commitNextRecommendedMenuByCycle,
+  resetActiveContextPeek,
+} from '@/lib/omniWarp/contextNavCycleEngine';
 import { omniWarpAudio } from '@/lib/omniWarp/omniWarpAudio';
 import { triggerHaptic, startBlackHoleContinuousHaptic, stopBlackHoleContinuousHaptic } from '@/lib/omniWarp/omniWarpHaptics';
 import { safeSessionStorage } from '@/utils/safeStorage';
@@ -203,13 +203,37 @@ export function BigBangButton() {
     );
 
     const context = cachedContextRef.current || serializeCurrentView(location);
-    const target = synthesizeWarpTarget(context, metrics);
+    let target = synthesizeWarpTarget(context, metrics);
     const temp = forceToAiTemperature(metrics.virtualForce);
     const sectorIdx = metrics.radialSectorIndex !== undefined ? metrics.radialSectorIndex : -1;
 
     const deltaX = currentPointer ? currentPointer.clientX - start.x : 0;
     const deltaY = currentPointer ? currentPointer.clientY - start.y : 0;
     const dist = Math.hypot(deltaX, deltaY);
+
+    // 🎯 스크롤(선택 텍스트) 없이 드래그(dist >= 20) 중일 때:
+    // 맥락 감지 사이클 추천 1위 메뉴를 실시간 타깃으로 동기화
+    const winSel = typeof window !== 'undefined' ? window.getSelection()?.toString().trim() : '';
+    const pending = peekPendingSelection()?.text?.trim();
+    const textToToss = winSel && winSel.length >= 2 ? winSel : (pending && pending.length >= 2 ? pending : '');
+
+    if (!textToToss && dist >= 20) {
+      const contextCandidate = peekNextRecommendedMenuByCycle(location);
+      target = {
+        id: contextCandidate.menu.id,
+        icon: contextCandidate.menu.emoji,
+        phase: 'wormhole',
+        gauge: metrics.virtualForce,
+        aiTemperature: temp,
+        title: contextCandidate.menu.name,
+        actionType: 'navigate',
+        previewLabel: `[맥락 추천 1위] ${contextCandidate.menu.emoji} ${contextCandidate.menu.name}`,
+        previewDescription: contextCandidate.reason,
+        destinationPath: contextCandidate.safePath,
+        themeColor: contextCandidate.menu.themeColor,
+        accentGlow: contextCandidate.menu.themeColor || 'rgba(56, 189, 248, 0.85)',
+      };
+    }
 
     // 🪞 미러홀 제거: 250ms 미만은 화이트홀(빛비춤), 250ms 이상 홀드 시 블랙홀(어두운 심연)로 즉시 전환
     const elapsed = now - start.time;
@@ -323,8 +347,9 @@ export function BigBangButton() {
     lastStateUpdateTimeRef.current = now;
     lastHoleRef.current = 'whitehole';
 
-    // 신규 터치 시작 시 웜홀 후보 캐시 초기화
+    // 신규 터치 시작 시 웜홀/맥락 후보 캐시 초기화
     resetActiveWormholePeek();
+    resetActiveContextPeek();
 
     // 터치 시작 시 단 한 번만 직렬화하여 캐싱 (매 16ms마다 I/O 파싱 방지)
     const context = serializeCurrentView(location);
@@ -637,41 +662,29 @@ export function BigBangButton() {
       return;
     }
 
-    // A. 만약 사용자가 버튼 바깥으로 드래그하여 특정 7대 룬 노드로 명확히 조준한 경우: 해당 앱으로 워프!
-    if (!isWithinButton && radialSectorIndex >= 0 && dist > 44) {
-      const target = synthesizeWarpTarget(context, metrics);
-      if (!isDisallowedWarpDestination(target.id || '') && !isDisallowedWarpDestination(target.destinationPath || '')) {
-        executeBigBangCommit(target, context, metrics);
-        setActivePhase('idle');
-        setGauge(0);
-        setDurationMs(0);
-        return;
-      }
-    }
-
-    // B. 🌀 만약 사용자가 홀드하다가 버튼영역내(제자리영역 제외, dist >= 20 && isWithinButton)에서 뗀 경우:
-    // -> <웜홀> 발동! 당일 셔플 순환(하루 1번 자동 초기화, 한 바퀴 완주 시까지 미방문 우선 도약)
-    if (dist >= 20 && isWithinButton) {
+    // 🎯 스크롤(선택 텍스트) 없이 빅뱅 버튼을 드래그하면 (dist >= 20):
+    // 맥락 감지(Context Sensing)를 통해 다음 메뉴가 어디가 좋을지 자동 추천 1위로만 도약!
+    // (단, 이미 들어갔던 메뉴는 한 사이클 동안 배제되며, 전체 메뉴 1바퀴 완주 후 다음 사이클에서 다시 진입)
+    if (dist >= 20) {
       triggerHaptic('wormhole');
       omniWarpAudio.playWormhole();
 
-      const { dest: randomDest, safePath, stats } = commitShuffledWormholeDestination(location);
+      const { menu: targetMenu, reason, stats, safePath } = commitNextRecommendedMenuByCycle(location);
 
-      // 🛡️ 실존 페이지 및 프로필/특수 페이지 검증: 존재하지 않는 경로, 프로필 및 프리즘 홈('/') 이동 원천 차단
+      // 🛡️ 실존 페이지 및 워프 불가 목적지 검증
       if (
         !isValidPrismPath(safePath) ||
         safePath === '/' ||
         safePath === '/universe' ||
-        safePath === '/ecpr' ||
-        safePath === '/synergy' ||
-        safePath === '/aegis' ||
-        isDisallowedWarpDestination(randomDest.id) ||
+        safePath === '/profile' ||
+        isDisallowedWarpDestination(targetMenu.id) ||
         isDisallowedWarpDestination(safePath)
       ) {
-        console.warn(`[Wormhole] Blocked navigation to non-existent or home path: ${safePath}`);
+        console.warn(`[ContextCycle] Blocked navigation to invalid or restricted path: ${safePath}`);
         setActivePhase('idle');
         setGauge(0);
         setDurationMs(0);
+        resetActiveContextPeek();
         return;
       }
 
@@ -681,17 +694,17 @@ export function BigBangButton() {
             detail: {
               phase: 'wormhole',
               target: {
-                id: randomDest.id,
-                name: randomDest.name,
+                id: targetMenu.id,
+                name: targetMenu.name,
                 destinationPath: safePath,
-                themeColor: randomDest.themeColor,
-                icon: randomDest.icon,
-                runeSymbol: randomDest.runeSymbol,
-                runeName: randomDest.runeName,
-                previewLabel: `[웜홀 셔플 도약 · ${stats.visitedCount}/${stats.totalCount}] 🌀 ${randomDest.runeSymbol} ${randomDest.name}`,
+                themeColor: targetMenu.themeColor,
+                icon: targetMenu.emoji,
+                previewLabel: stats.isFullCycleCompleted
+                  ? `[맥락 추천 1위 · 새 사이클] ${targetMenu.emoji} ${targetMenu.name}`
+                  : `[맥락 추천 1위 · ${stats.visitedCount}/${stats.totalCount}] ${targetMenu.emoji} ${targetMenu.name}`,
                 previewDescription: stats.isFullCycleCompleted
-                  ? `시공간 웜홀을 통과하여 [${randomDest.name} · ${randomDest.subName}]으로 도약합니다. (🎉 오늘의 1바퀴 완주! 새로운 셔플 순환)`
-                  : `시공간 웜홀을 통과하여 [${randomDest.name} · ${randomDest.subName}]으로 차원 도약합니다. (오늘 탐험: ${stats.visitedCount}/${stats.totalCount})`,
+                  ? `${reason} (🎉 전체 메뉴 1사이클 완주! 새로운 순환이 시작됩니다.)`
+                  : `${reason} (${stats.cycleIndex}회차 순환 탐험: ${stats.visitedCount}/${stats.totalCount})`,
               },
               context,
               metrics: { ...metrics, phase: 'wormhole' },
@@ -721,6 +734,7 @@ export function BigBangButton() {
       setActivePhase('idle');
       setGauge(0);
       setDurationMs(0);
+      resetActiveContextPeek();
       return;
     }
 
@@ -996,19 +1010,19 @@ export function BigBangButton() {
                 hasSelectionToss
                   ? `빅뱅 버튼 · 선택 내용 토스 대기중 ("${selectionPreviewText}...") · 탭: 루시 대화 연계, 홀드: 크리스탈 오브 신탁 연계`
                   : isChatView
-                  ? '빅뱅 버튼 · 탭: 루시 채팅 닫기, 더블탭: 프리즘 메인, 홀드: 크리스탈 오브'
+                  ? '빅뱅 버튼 · 탭: 루시 채팅 닫기, 더블탭: 프리즘 메인, 홀드: 크리스탈 오브, 드래그: 맥락 추천 1위 이동'
                   : isOrbSite
-                  ? '빅뱅 버튼 · 탭: 루시 채팅 열기, 더블탭: 프리즘 메인, 홀드: 오브 사이트 나가기'
-                  : '빅뱅 버튼 · 탭: 루시 채팅, 더블탭: 프리즘 메인, 홀드: 크리스탈 오브 들어가기'
+                  ? '빅뱅 버튼 · 탭: 루시 채팅 열기, 더블탭: 프리즘 메인, 홀드: 오브 사이트 나가기, 드래그: 맥락 추천 1위 이동'
+                  : '빅뱅 버튼 · 탭: 루시 채팅, 더블탭: 프리즘 메인, 홀드: 크리스탈 오브 들어가기, 드래그: 맥락 추천 1위 이동'
               }
               title={
                 hasSelectionToss
-                  ? `[선택 텍스트 토스 대기: "${selectionPreviewText}..."] 탭: 루시 1:1 대화 연계 · 홀드: 크리스탈 오브 직관 신탁 연계`
+                  ? `[선택 텍스트 토스 대기: "${selectionPreviewText}..."] 탭: 루시 1:1 대화 연계 · 홀드: 크리스탈 오브 직관 신탁 연계 · 드래그: 추천 1위 토스`
                   : isChatView
-                  ? '탭: 루시 채팅 닫기 · 더블탭: 프리즘 메인 · 홀드: 크리스탈 오브 · 웜홀: 임의 도약'
+                  ? '탭: 루시 채팅 닫기 · 더블탭: 프리즘 메인 · 홀드: 크리스탈 오브 · 드래그: 맥락 추천 1위 이동 (사이클 순환)'
                   : isOrbSite
-                  ? '탭: 루시 채팅 열기 · 더블탭: 프리즘 메인 · 홀드: 오브 사이트 나가기 · 웜홀: 임의 도약'
-                  : '탭: 루시 채팅 · 더블탭: 프리즘 메인 · 홀드: 크리스탈 오브 · 웜홀: 임의 도약'
+                  ? '탭: 루시 채팅 열기 · 더블탭: 프리즘 메인 · 홀드: 오브 사이트 나가기 · 드래그: 맥락 추천 1위 이동 (사이클 순환)'
+                  : '탭: 루시 채팅 · 더블탭: 프리즘 메인 · 홀드: 크리스탈 오브 · 드래그: 맥락 추천 1위 이동 (사이클 순환)'
               }
             >
               {/* 🌀 [웜홀] 빛비춤 + 어두운 심연 + 사건의 지평선 3원 동시 융합 전개 */}
