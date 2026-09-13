@@ -767,8 +767,54 @@ function simpleHash(str: string): number {
 }
 
 /**
+ * 🛡️ 주어진 목적지 경로가 현재 사용자가 머무르는 페이지와 실질적으로 동일한 페이지(앱/채널)인지 정밀 판별
+ */
+export function isSameAppOrPage(destPath: string, currentPath: string = ''): boolean {
+  if (!destPath) return false;
+
+  const getCleanPath = (p: string) => {
+    let clean = (p || '').toLowerCase().trim();
+    if (clean.startsWith('http://') || clean.startsWith('https://')) {
+      try {
+        clean = new URL(clean).pathname;
+      } catch (_) {}
+    }
+    return clean.split('?')[0].replace(/\/$/, '') || '/';
+  };
+
+  const currClean = getCleanPath(currentPath);
+  const destClean = getCleanPath(destPath);
+  const winClean = typeof window !== 'undefined' ? getCleanPath(window.location.pathname) : currClean;
+
+  // 1. 둘 중 하나가 메인 허브('/')일 때
+  if (currClean === '/' || winClean === '/') {
+    return destClean === '/';
+  }
+
+  // 2. 기본 경로가 일치할 때 (예: /trinity, /orange, /heal, /muse, /bluebird, /epilogue)
+  if (destClean === currClean || destClean === winClean) {
+    return true;
+  }
+
+  // 3. 서브 경로 일치 (예: /trinity/... vs /trinity)
+  if (currClean !== '/' && (destClean.startsWith(currClean + '/') || currClean.startsWith(destClean + '/'))) {
+    return true;
+  }
+  if (winClean !== '/' && (destClean.startsWith(winClean + '/') || winClean.startsWith(destClean + '/'))) {
+    return true;
+  }
+
+  // 4. 별칭 호환 검사
+  if ((currClean === '/handbook' || winClean === '/handbook') && (destClean === '/rebible' || destClean === '/handbook')) return true;
+  if ((currClean === '/rebible' || winClean === '/rebible') && (destClean === '/handbook' || destClean === '/rebible')) return true;
+  if ((currClean === '/omniwarp' || winClean === '/omniwarp') && (destClean === '/bigbang' || destClean === '/omniwarp')) return true;
+
+  return false;
+}
+
+/**
  * 텍스트 맥락 감지 및 프리즘 전체 앱 기능 중 최적의 동적 추천 경로 도출
- * - 현재 위치한 페이지는 추천 대상에서 자동 배제
+ * - 현재 위치한 페이지는 추천 대상에서 자동 배제 (현재 동일한 페이지 100% 원천 배제)
  * - 텍스트의 키워드, 감정, 의도를 감지하여 가중치 채점
  * - "상시 다른 추천경로": 동일하거나 유사한 텍스트라도 매 세션/시간대/사이클에 따라
  *   상위 적합 후보군 중 다양한 경로를 동적으로 순환 제안
@@ -778,29 +824,19 @@ export function getRecommendedMenu(
   currentPath: string = '',
   cycleOffset: number = 0
 ): RecommendedMenuResult {
-  const normCurrentPath = (currentPath || '').toLowerCase();
   const trimmed = (text || '').trim().toLowerCase();
 
-  // 1. 현재 머무르고 있는 페이지/모듈 제외 (자기 자신으로의 무의미한 토스 원천 방지)
+  // 1. 현재 머무르고 있는 페이지/모듈 완전 제외 (동일 페이지/앱으로의 무의미한 토스 원천 방지)
   const availableMenus = PRISM_ALL_APP_DESTINATIONS.filter((menu) => {
-    const normBase = menu.basePath.toLowerCase();
-    if (normBase === '/' && normCurrentPath === '/') return false;
-    if (normBase !== '/' && normCurrentPath.startsWith(normBase)) {
-      // 탭이 완전히 동일한 경우만 배제 (동일 앱 내 다른 탭으로는 이동 가능하게 허용)
-      if (menu.path.includes('?')) {
-        const urlTab = menu.path.split('?')[1]?.toLowerCase();
-        if (normCurrentPath.includes(urlTab)) return false;
-      } else {
-        return false;
-      }
+    if (isSameAppOrPage(menu.path, currentPath) || isSameAppOrPage(menu.basePath, currentPath)) {
+      return false;
     }
-    // 호환 별칭 경로 배제
-    if (normBase === '/handbook' && normCurrentPath.startsWith('/rebible')) return false;
-    if (normBase === '/omniwarp' && normCurrentPath.startsWith('/bigbang')) return false;
     return true;
   });
 
-  const candidatesToScore = availableMenus.length > 0 ? availableMenus : PRISM_ALL_APP_DESTINATIONS;
+  const candidatesToScore = availableMenus.length > 0
+    ? availableMenus
+    : PRISM_ALL_APP_DESTINATIONS.filter((m) => !isSameAppOrPage(m.path, currentPath) && !isSameAppOrPage(m.basePath, currentPath));
 
   // 2. 맥락 채점 (Keyword + Regex Intent + Sentiment Boosters)
   const scored = candidatesToScore.map((menu) => {

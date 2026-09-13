@@ -17,6 +17,7 @@ import { safeLocalStorage } from '@/utils/safeStorage';
 import {
   PRISM_ALL_APP_DESTINATIONS,
   PrismMenuDestination,
+  isSameAppOrPage,
 } from '@/lib/selectionContextRecommender';
 import { serializeCurrentView } from './omniWarpEngine';
 import { extractLatestDialogueContext } from '@/lib/prismPersonaSync';
@@ -79,6 +80,7 @@ export function extractAutoContextText(currentPath: string): string {
   return parts.join(' ').trim();
 }
 
+
 /**
  * 📊 2. 가용한 목적지 후보군 필터링 및 맥락 점수 산출
  */
@@ -86,10 +88,9 @@ export function rankAvailableMenusByContext(
   contextText: string,
   currentPath: string = ''
 ): Array<{ menu: PrismMenuDestination; score: number; reason: string }> {
-  const normCurrentPath = (currentPath || '').toLowerCase();
   const trimmed = (contextText || '').trim().toLowerCase();
 
-  // (1) 현재 위치 및 워프 불가 목적지 엄격 배제
+  // (1) 현재 위치 및 워프 불가 목적지 엄격 배제 (현재 동일한 페이지는 100% 원천 배제)
   const validDestinations = PRISM_ALL_APP_DESTINATIONS.filter((menu) => {
     // 1) 워프 불가 ID 및 경로 제외 (프로필, 핸드북, 라이브러리, 오브 사이트, 루시 채팅 등)
     if (isDisallowedWarpDestination(menu.id) || isDisallowedWarpDestination(menu.path)) {
@@ -99,21 +100,26 @@ export function rankAvailableMenusByContext(
       return false;
     }
 
-    // 2) 현재 머무르고 있는 페이지/탭 배제 (자기 자신으로의 무의미한 도약 방지)
-    const normBase = menu.basePath.toLowerCase();
-    if (normBase !== '/' && normCurrentPath.startsWith(normBase)) {
-      if (menu.path.includes('?')) {
-        const urlTab = menu.path.split('?')[1]?.toLowerCase();
-        if (normCurrentPath.includes(urlTab)) return false;
-      } else {
-        return false;
-      }
+    // 2) 현재 머무르고 있는 페이지 배제 (자기 자신 및 동일 앱/채널로의 무의미한 재진입 원천 방지)
+    if (isSameAppOrPage(menu.path, currentPath) || isSameAppOrPage(menu.basePath, currentPath)) {
+      return false;
     }
 
     return true;
   });
 
-  const pool = validDestinations.length > 0 ? validDestinations : PRISM_ALL_APP_DESTINATIONS;
+  // 폴백이 필요한 경우에도 현재 동일한 페이지는 철저히 배제
+  const nonCurrentPool = PRISM_ALL_APP_DESTINATIONS.filter(
+    (m) =>
+      !isDisallowedWarpDestination(m.id) &&
+      !isDisallowedWarpDestination(m.path) &&
+      m.path !== '/' &&
+      m.path !== '/universe' &&
+      !isSameAppOrPage(m.path, currentPath) &&
+      !isSameAppOrPage(m.basePath, currentPath)
+  );
+
+  const pool = validDestinations.length > 0 ? validDestinations : nonCurrentPool;
 
   // (2) 맥락 점수 채점 (키워드 매칭 + 정규식 의도 + 감정/주제 시너지 가중치)
   const scored = pool.map((menu) => {
@@ -221,11 +227,16 @@ export function resetActiveContextPeek(): void {
  * - 모든 메뉴를 순회한 경우 자동으로 한 사이클을 완주 처리하여 새 사이클의 1순위를 안내합니다.
  */
 export function peekNextRecommendedMenuByCycle(currentLocation?: string): ContextNextMenuResult {
-  if (activeSessionResult) {
-    return activeSessionResult;
-  }
-
   const curr = currentLocation || (typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/');
+
+  if (activeSessionResult) {
+    // 🛡️ 만약 캐시된 결과가 현재 페이지와 동일하다면 캐시 무효화
+    if (isSameAppOrPage(activeSessionResult.menu.path, curr) || isSameAppOrPage(activeSessionResult.menu.basePath, curr)) {
+      activeSessionResult = null;
+    } else {
+      return activeSessionResult;
+    }
+  }
   const contextText = extractAutoContextText(curr);
   const ranked = rankAvailableMenusByContext(contextText, curr);
   const totalCount = ranked.length;
