@@ -1033,15 +1033,31 @@ export default function TrinityApp() {
     if (typeof window !== 'undefined') {
       const urlTab = new URLSearchParams(window.location.search).get('tab');
       const sessionTab = sessionStorage.getItem('prism_target_tab');
-      const tab = urlTab || sessionTab;
-      if (tab === 'destiny' || tab === 'daily' || tab === 'oracle' || tab === 'tarot' || tab === 'synergy') {
+      const rawTab = urlTab || sessionTab;
+      const tab = rawTab === 'daily' ? 'destiny' :
+                  rawTab === 'fusion' ? 'oracle' :
+                  (rawTab === 'wealth' || rawTab === 'relationship') ? 'tarot' : rawTab;
+      if (tab === 'destiny' || tab === 'oracle' || tab === 'tarot' || tab === 'synergy') {
         sessionStorage.removeItem('prism_target_tab');
-        return (tab === 'daily' ? 'destiny' : tab) as any;
+        return tab as any;
       }
     }
     return 'destiny';
   });
   useScrollToTopOnChange([activeMode]);
+
+  // 🎯 토스된 글자가 있을 경우 타로 고민 입력 및 가상 카드 모드 즉각 활성화
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (activeMode === 'tarot') {
+      const autoText = sessionStorage.getItem('prism_auto_execute_text');
+      if (autoText && autoText.trim().length >= 2) {
+        sessionStorage.removeItem('prism_auto_execute_text');
+        setTarotConcern(autoText.trim());
+        setTarotVirtualMode(true);
+      }
+    }
+  }, [activeMode]);
   const [lastNonTarotMode, setLastNonTarotMode] = useState<string>("destiny");
   useEffect(() => {
     if (activeMode !== "tarot") {
@@ -1057,10 +1073,13 @@ export default function TrinityApp() {
   }, [activeMode]);
 
   useEffect(() => {
-    const applyTargetTab = (tab: string | null | undefined) => {
-      if (!tab) return;
-      if (tab === 'destiny' || tab === 'daily' || tab === 'oracle' || tab === 'tarot' || tab === 'synergy') {
-        setActiveMode((tab === 'daily' ? 'destiny' : tab) as any);
+    const applyTargetTab = (rawTab: string | null | undefined) => {
+      if (!rawTab) return;
+      const tab = rawTab === 'daily' ? 'destiny' :
+                  rawTab === 'fusion' ? 'oracle' :
+                  (rawTab === 'wealth' || rawTab === 'relationship') ? 'tarot' : rawTab;
+      if (tab === 'destiny' || tab === 'oracle' || tab === 'tarot' || tab === 'synergy') {
+        setActiveMode(tab as any);
         setShowDailyModal(false);
         setShowTarot(false);
         resetAppScroll();

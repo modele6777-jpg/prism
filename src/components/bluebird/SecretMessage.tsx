@@ -411,6 +411,39 @@ export function SecretMessage({ isOpen, onClose, isModal }: SecretMessageProps =
     setUnlockedNoteIds((prev) => ({ ...prev, [newNote.id]: true }));
   };
 
+  // 🌟 토스된 비밀 쪽지/감사 수신 및 즉각 작성/위로 분석
+  useEffect(() => {
+    const triggerAutoSecret = (text: string) => {
+      const trimmed = text.trim();
+      if (trimmed.length < 2) return;
+      sessionStorage.removeItem('prism_auto_execute_text');
+      setNoteContent(trimmed);
+      const autoRec = detectMoodFromText(trimmed);
+      if (autoRec) {
+        setSelectedMood(autoRec.tagId);
+      }
+      setTimeout(() => {
+        void handleCreateNote(true);
+      }, 150);
+    };
+
+    if (typeof window !== 'undefined') {
+      const autoText = sessionStorage.getItem('prism_auto_execute_text');
+      if (autoText) {
+        triggerAutoSecret(autoText);
+      }
+    }
+
+    const handleExecute = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (detail && detail.text && (detail.tab === 'secretMessage' || detail.targetMenuId?.includes('bluebird') || detail.targetMenu?.path?.includes('/bluebird'))) {
+        triggerAutoSecret(detail.text);
+      }
+    };
+    window.addEventListener('prism:selection_execute', handleExecute);
+    return () => window.removeEventListener('prism:selection_execute', handleExecute);
+  }, [handleCreateNote]);
+
   const handleToggleSeal = (noteId: string) => {
     if (savedPin && !unlockedNoteIds[noteId]) {
       setPinTargetNoteId(noteId);

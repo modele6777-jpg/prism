@@ -92,7 +92,8 @@ const ROUTES_MAP = [
 ];
 
 function ActivePage({ loc }: { loc: string }) {
-  const [frozenLoc] = React.useState(loc);
+  const cleanLoc = loc ? loc.split('?')[0].split('#')[0] : '/';
+  const [frozenLoc] = React.useState(cleanLoc);
   return (
     <React.Suspense fallback={<PageLoader />}>
       <Switch location={frozenLoc}>
@@ -270,10 +271,11 @@ function AppContent() {
   // Redirect unknown routes
   React.useEffect(() => {
     const validPaths = ROUTES_MAP.map(r => r.path);
-    if (!validPaths.includes(location)) {
+    const cleanCurrent = location ? location.split('?')[0].split('#')[0] : '/';
+    if (!validPaths.includes(cleanCurrent)) {
       navigate("/");
     }
-    if (location === '/orb' || location === '/gateway' || location === '/crystal') {
+    if (cleanCurrent === '/orb' || cleanCurrent === '/gateway' || cleanCurrent === '/crystal') {
       window.location.replace('/orb.html' + window.location.search + window.location.hash);
     }
   }, [location, navigate]);

@@ -96,7 +96,7 @@ export function WishingWellModal({ isOpen = true, onClose, isModal = true }: Wis
   const selectedCategoryMeta =
     WISH_CATEGORIES.find((c) => c.id === selectedCategory) || WISH_CATEGORIES[0];
 
-  const handleCastWish = async () => {
+  const handleCastWish = async (overrideWish?: string | React.MouseEvent<HTMLButtonElement>) => {
     setIsCasting(true);
     setErrorMsg(null);
 
@@ -109,8 +109,11 @@ export function WishingWellModal({ isOpen = true, onClose, isModal = true }: Wis
 
     try {
       const uid = auth.currentUser?.uid || 'guest';
+      const wishStr = typeof overrideWish === 'string' ? overrideWish : undefined;
       const effectiveWish =
-        wishInput.trim() || selectedCategoryMeta.defaultWish || '내면의 평화와 안식을 찾길 소망합니다.';
+        (wishStr !== undefined ? wishStr : wishInput).trim() ||
+        selectedCategoryMeta.defaultWish ||
+        '내면의 평화와 안식을 찾길 소망합니다.';
       const result = await castWishIntoWell(uid, effectiveWish, selectedCategory);
       setLatestResult(result);
       setWishesHistory((prev) => deduplicateWishes([result, ...prev]));
@@ -122,6 +125,35 @@ export function WishingWellModal({ isOpen = true, onClose, isModal = true }: Wis
       setIsCasting(false);
     }
   };
+
+  // 🌟 토스된 소원 텍스트 즉시 수신 및 자동 소원 빌기
+  useEffect(() => {
+    const triggerAutoWish = (text: string) => {
+      const trimmed = text.trim();
+      if (trimmed.length < 2) return;
+      sessionStorage.removeItem('prism_auto_execute_text');
+      setWishInput(trimmed);
+      setTimeout(() => {
+        void handleCastWish(trimmed);
+      }, 150);
+    };
+
+    if (isOpen || !isModal) {
+      const autoText = sessionStorage.getItem('prism_auto_execute_text');
+      if (autoText) {
+        triggerAutoWish(autoText);
+      }
+    }
+
+    const handleExecute = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (detail && detail.text && (detail.tab === 'wishingWell' || detail.targetMenuId?.includes('well') || detail.targetMenu?.path?.includes('wishingWell'))) {
+        triggerAutoWish(detail.text);
+      }
+    };
+    window.addEventListener('prism:selection_execute', handleExecute);
+    return () => window.removeEventListener('prism:selection_execute', handleExecute);
+  }, [isOpen, isModal]);
 
   const handleResetForNewWish = () => {
     setLatestResult(null);

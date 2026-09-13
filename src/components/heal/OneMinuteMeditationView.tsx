@@ -389,13 +389,43 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
     }
   }, [isGeneratingAi, selectedThemeId, conditionInput, uid]);
 
+  // 🌟 토스된 글자 자동 수신 및 1분 명상 AI 처방 즉시 실행
+  useEffect(() => {
+    const triggerAutoMeditation = (text: string) => {
+      const trimmed = text.trim();
+      if (trimmed.length < 2) return;
+      sessionStorage.removeItem('prism_auto_execute_text');
+      setConditionInput(trimmed);
+      setActiveTab('custom');
+      setTimeout(() => {
+        void handleGenerateAiGuide('ai_auto', trimmed);
+      }, 150);
+    };
+
+    if (typeof window !== 'undefined') {
+      const autoText = sessionStorage.getItem('prism_auto_execute_text');
+      if (autoText) {
+        triggerAutoMeditation(autoText);
+      }
+    }
+
+    const handleExecute = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (detail && detail.text && (detail.tab === 'oneMinute' || detail.tab === 'meditation' || detail.targetMenuId?.includes('heal') || detail.targetMenu?.path?.includes('heal'))) {
+        triggerAutoMeditation(detail.text);
+      }
+    };
+    window.addEventListener('prism:selection_execute', handleExecute);
+    return () => window.removeEventListener('prism:selection_execute', handleExecute);
+  }, [handleGenerateAiGuide]);
+
   // Pre-fill worry from profile if available, without auto-generating prescription
   useEffect(() => {
     const worry = sharedState?.userProfile?.fate?.currentWorry;
     if (worry && !conditionInput) {
       setConditionInput(worry);
     }
-  }, [sharedState?.userProfile?.fate?.currentWorry]);
+  }, [sharedState?.userProfile?.fate?.currentWorry, conditionInput]);
 
   // Quick Start with Custom Prescription
   const handleStartWithPrescription = (prescription?: OneMinuteMeditationPrescription) => {

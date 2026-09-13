@@ -937,7 +937,8 @@ export function getRecommendedMenu(
 }
 
 /**
- * 선택된 텍스트를 추천된 메뉴로 즉각 토스(Toss) & 이동
+/**
+ * 선택된 텍스트를 추천된 메뉴로 즉각 토스(Toss) & 해당 기능 바로 실행
  */
 export function tossSelectionToMenu(
   text: string,
@@ -954,49 +955,89 @@ export function tossSelectionToMenu(
     }
   } catch (_) {}
 
-  // 1. 세션 스토리지에 드래그 선택 컨텍스트 저장
+  // 1. 쿼리 파라미터에서 탭 및 모드 파싱
+  let targetTab: string | null = null;
+  let targetMode: string | null = null;
+  if (menu.path.includes('?')) {
+    try {
+      const url = new URL(menu.path, 'http://localhost');
+      targetTab = url.searchParams.get('tab');
+      targetMode = url.searchParams.get('mode');
+    } catch (_) {}
+  }
+  const effectiveTab = targetTab || targetMode || (menu.path.includes('/chat') ? 'chat' : null);
+
+  // 2. 세션 스토리지에 상세 토스 및 즉시 실행 플래그 보존
+  if (typeof window !== 'undefined') {
+    try {
+      if (effectiveTab) {
+        sessionStorage.setItem('prism_target_tab', effectiveTab);
+      }
+      sessionStorage.setItem('prism_auto_execute_text', trimmed);
+      sessionStorage.setItem('prism_auto_execute_target', menu.id);
+      sessionStorage.setItem('prism_auto_execute_path', menu.path);
+      sessionStorage.setItem('prism_auto_execute_timestamp', String(Date.now()));
+    } catch (_) {}
+  }
+
+  // 3. 세션 스토리지에 드래그 선택 컨텍스트 저장
   savePendingSelection(trimmed, menu.id, currentPath, {
     targetMenuId: menu.id,
     targetPath: menu.path,
     contextReason: menu.contextReason,
   });
 
-  // 2. 통합 프리즘 토스 파이프라인 전송 (타깃 앱 수신용)
+  // 4. 통합 프리즘 토스 파이프라인 전송 (타깃 앱 수신 및 autoTrigger 즉시 실행)
   sendPrismToss({
     sourceApp: currentPath || 'selection_bridge',
     targetApp: menu.tossTargetId,
     actionType: 'smart_toss',
     contextMessage: trimmed,
     autoPrompt: trimmed,
+    autoTrigger: true,
     tossedAt: Date.now(),
   });
 
-  // 3. 브라우저 커스텀 이벤트 발행 (탭 전환 등 연동 지원)
+  // 5. 브라우저 커스텀 이벤트 발행 (즉시 실행 및 탭 전환)
   if (typeof window !== 'undefined') {
+    // 탭 변경 이벤트 먼저 발행
+    if (effectiveTab) {
+      window.dispatchEvent(new CustomEvent('prism-tab-change', { detail: { tab: effectiveTab } }));
+    }
+
+    // 토스 이벤트 발행
     window.dispatchEvent(
       new CustomEvent('prism:selection_tossed', {
         detail: {
           text: trimmed,
           targetMenu: menu,
           sourcePath: currentPath,
+          tab: effectiveTab,
+          autoTrigger: true,
         },
       })
     );
 
-    // 쿼리 파라미터가 포함된 경우 tab 이벤트 발생
-    if (menu.path.includes('?')) {
-      try {
-        const url = new URL(menu.path, 'http://localhost');
-        const tab = url.searchParams.get('tab');
-        if (tab) {
-          window.dispatchEvent(new CustomEvent('prism-tab-change', { detail: { tab } }));
-        }
-      } catch (_) {}
-    }
+    // 즉각 기능 실행 전용 이벤트 발행
+    window.dispatchEvent(
+      new CustomEvent('prism:selection_execute', {
+        detail: {
+          text: trimmed,
+          targetMenu: menu,
+          targetMenuId: menu.id,
+          targetPath: menu.path,
+          sourcePath: currentPath,
+          tab: effectiveTab,
+          autoTrigger: true,
+        },
+      })
+    );
 
-    window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: menu.path } }));
+    window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: menu.path, tab: effectiveTab } }));
+    window.dispatchEvent(new CustomEvent('prism-navigate', { detail: { path: menu.path, tab: effectiveTab } }));
   }
 
-  // 4. 경로 이동 실행
+  // 6. 목적지 경로로 즉각 이동 실행
   navigate(menu.path);
 }
+

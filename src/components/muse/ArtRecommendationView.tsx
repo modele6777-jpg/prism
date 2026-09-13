@@ -1634,10 +1634,39 @@ export function ArtRecommendationView() {
       return;
     }
 
-    if (activeTossRef.current) return;
-    if (hydrateStartedRef.current) return;
+    const autoText = sessionStorage.getItem('prism_auto_execute_text');
+    if (autoText && autoText.trim().length >= 2) {
+      sessionStorage.removeItem('prism_auto_execute_text');
+      void handleTossedArtRecommendation({
+        sourceApp: 'selection_bridge',
+        targetApp: 'muse',
+        actionType: 'art_prescription',
+        contextMessage: autoText.trim(),
+        autoTrigger: true,
+        tossedAt: Date.now(),
+      });
+      return;
+    }
+
+    const handleExecute = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (detail && detail.text && (detail.targetMenuId?.includes('muse') || detail.targetMenu?.path?.includes('/muse') || detail.targetMenu?.tossTargetId === 'muse')) {
+        void handleTossedArtRecommendation({
+          sourceApp: detail.sourcePath || 'selection_bridge',
+          targetApp: 'muse',
+          actionType: 'art_prescription',
+          contextMessage: detail.text.trim(),
+          autoTrigger: true,
+          tossedAt: Date.now(),
+        });
+      }
+    };
+    window.addEventListener('prism:selection_execute', handleExecute);
+
+    if (activeTossRef.current) return () => window.removeEventListener('prism:selection_execute', handleExecute);
+    if (hydrateStartedRef.current) return () => window.removeEventListener('prism:selection_execute', handleExecute);
     hydrateStartedRef.current = true;
-    // Do NOT auto-run or display result in advance without user request
+    return () => window.removeEventListener('prism:selection_execute', handleExecute);
   }, [handleTossedArtRecommendation]);
 
   const toggleChallenge = (index: number) => {

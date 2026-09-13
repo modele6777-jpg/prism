@@ -42,6 +42,33 @@ export default function HandbookStandalonePage() {
   const [viewMode, setViewMode] = useState<'timeline' | 'bookshelf'>('timeline');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // 🎯 토스된 검색어 수신 및 즉시 지혜 검색 실행
+  useEffect(() => {
+    const triggerAutoSearch = (text: string) => {
+      const trimmed = text.trim();
+      if (trimmed.length < 2) return;
+      sessionStorage.removeItem('prism_auto_execute_text');
+      setSearchQuery(trimmed);
+      setViewMode('timeline');
+    };
+
+    if (typeof window !== 'undefined') {
+      const autoText = sessionStorage.getItem('prism_auto_execute_text');
+      if (autoText) {
+        triggerAutoSearch(autoText);
+      }
+    }
+
+    const handleExecute = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (detail && detail.text && (detail.tab === 'search' || detail.targetMenuId?.includes('handbook') || detail.targetMenu?.path?.includes('/handbook'))) {
+        triggerAutoSearch(detail.text);
+      }
+    };
+    window.addEventListener('prism:selection_execute', handleExecute);
+    return () => window.removeEventListener('prism:selection_execute', handleExecute);
+  }, []);
+
   // Selected date for day-by-day page view (YYYY-MM-DD)
   const [todayStr, setTodayStr] = useState<string>(() => getLocalDateKey());
   const [selectedDateStr, setSelectedDateStr] = useState<string>(() => getLocalDateKey());

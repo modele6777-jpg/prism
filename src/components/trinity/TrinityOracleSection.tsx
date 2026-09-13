@@ -278,6 +278,7 @@ export function TrinityOracleSection() {
   // TTS State
   const isTTSActive = useTTSActive();
   const ttsState = useTTSState();
+  const [inquiryText, setInquiryText] = useState<string>('');
 
   // Load collected treasures and growth records on mount
   useEffect(() => {
@@ -327,8 +328,55 @@ export function TrinityOracleSection() {
     stopTTS();
   };
 
+  // 🎯 토스된 글자 자동 수신 및 3장 오라클 즉시 실행
+  useEffect(() => {
+    const triggerAutoOracle = (text: string) => {
+      const trimmed = text.trim();
+      if (trimmed.length < 2) return;
+      sessionStorage.removeItem('prism_auto_execute_text');
+      setInquiryText(trimmed);
+
+      const majorCards = TAROT_DECK.filter((c) => c.type === 'major');
+      const seedNum = trimmed.split('').reduce((acc, char, idx) => acc + char.charCodeAt(0) * (idx + 1), 0);
+      const shuffled = [...majorCards].sort((a, b) => {
+        const hashA = (a.id.charCodeAt(0) * 31 + seedNum) % 1000;
+        const hashB = (b.id.charCodeAt(0) * 31 + seedNum) % 1000;
+        return hashA - hashB;
+      });
+      const selected3: SelectedTarotCardEntry[] = shuffled.slice(0, 3).map((c, i) => ({
+        ...c,
+        slotIndex: i,
+        reversed: false,
+      }));
+
+      setTimeout(() => {
+        void handleCardsComplete(selected3, trimmed);
+      }, 120);
+    };
+
+    if (typeof window !== 'undefined') {
+      const autoText = sessionStorage.getItem('prism_auto_execute_text');
+      if (autoText) {
+        triggerAutoOracle(autoText);
+      }
+    }
+
+    const handleExecute = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (detail && detail.text && (detail.tab === 'oracle' || detail.targetMenuId?.includes('trinity') || detail.targetMenu?.path?.includes('oracle'))) {
+        triggerAutoOracle(detail.text);
+      }
+    };
+    window.addEventListener('prism:selection_execute', handleExecute);
+    return () => window.removeEventListener('prism:selection_execute', handleExecute);
+  }, []);
+
   // Run AI analysis after 3 cards are drawn (All upright in Oracle section)
-  const handleCardsComplete = async (cards: SelectedTarotCardEntry[]) => {
+  const handleCardsComplete = async (cards: SelectedTarotCardEntry[], queryInquiry?: string) => {
+    const effectiveInquiry = queryInquiry !== undefined ? queryInquiry : inquiryText;
+    if (effectiveInquiry && effectiveInquiry !== inquiryText) {
+      setInquiryText(effectiveInquiry);
+    }
     const uprightCards = cards.map((c) => ({ ...c, reversed: false }));
     setDrawnCards(uprightCards);
     setStage('result');
@@ -439,7 +487,8 @@ export function TrinityOracleSection() {
   }
 }`;
 
-        const prompt = `${sajuContextPrompt}\n\n사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 질문자의 사주 명리학 원국과 뽑힌 3장의 타로 카드 상징을 긴밀하게 '교차 융합'하여, 사주×타로 시너지 매트릭스(saju_tarot_synergy)와 카드별 심층 리딩(card_insights), 제제의 다정한 마음 처방을 JSON으로 생성해 줘.`;
+        const inquiryPromptAddon = effectiveInquiry ? `\n\n# 질문자의 핵심 질문 및 고민 주제:\n"${effectiveInquiry}"\n위 질문/고민에 대한 구체적인 상징적 해답과 지침을 포함하여 풀이해 주세요.\n` : '';
+        const prompt = `${sajuContextPrompt}${inquiryPromptAddon}\n\n사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 질문자의 사주 명리학 원국과 뽑힌 3장의 타로 카드 상징을 긴밀하게 '교차 융합'하여, 사주×타로 시너지 매트릭스(saju_tarot_synergy)와 카드별 심층 리딩(card_insights), 제제의 다정한 마음 처방을 JSON으로 생성해 줘.`;
         const res = await invokeLLM({
           messages: [
             { role: 'system', content: systemPrompt },
@@ -525,7 +574,8 @@ export function TrinityOracleSection() {
   "evening_reflection": "오늘 저녁 나의 행동을 돌아보는 1줄 성찰 질문"
 }`;
 
-        const prompt = `${sajuContextPrompt}\n\n사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 질문자의 사주 기질과 타로 3장의 원소적 상징을 융합하여, 사주×타로 시너지 매트릭스(saju_tarot_synergy), 카드별 심층 리딩(card_insights), 마인드셋 브리핑, 1줄 마이크로 미션을 JSON으로 도출해 줘.`;
+        const inquiryPromptAddon = effectiveInquiry ? `\n\n# 질문자의 핵심 질문 및 고민 주제:\n"${effectiveInquiry}"\n위 질문/고민에 대한 구체적인 상징적 해답과 지침을 포함하여 풀이해 주세요.\n` : '';
+        const prompt = `${sajuContextPrompt}${inquiryPromptAddon}\n\n사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 질문자의 사주 기질과 타로 3장의 원소적 상징을 융합하여, 사주×타로 시너지 매트릭스(saju_tarot_synergy), 카드별 심층 리딩(card_insights), 마인드셋 브리핑, 1줄 마이크로 미션을 JSON으로 도출해 줘.`;
         const res = await invokeLLM({
           messages: [
             { role: 'system', content: systemPrompt },
@@ -1496,6 +1546,17 @@ export function TrinityOracleSection() {
             exit={{ opacity: 0, y: -20 }}
             className="space-y-6"
           >
+            {/* 🌟 토스된 질문/의제 실시간 표시 배너 */}
+            {inquiryText && (
+              <div className="px-4 py-3 rounded-2xl bg-gradient-to-r from-purple-900/40 via-indigo-900/30 to-purple-900/40 border border-purple-400/40 flex items-center gap-2.5 backdrop-blur-xl shadow-lg">
+                <Sparkles size={16} className="text-purple-400 shrink-0 animate-pulse" />
+                <div className="flex-1 min-w-0">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-purple-300 block">토스된 의제 신탁</span>
+                  <p className="text-xs sm:text-sm font-semibold text-white truncate">"{inquiryText}"</p>
+                </div>
+              </div>
+            )}
+
             {/* 3 Drawn Cards Mini Banner */}
             <div className="glass p-4 sm:p-5 rounded-3xl bg-white/[0.03] border border-amber-400/25 flex flex-wrap items-center justify-around gap-3 backdrop-blur-xl">
               {drawnCards.map((card, idx) => (

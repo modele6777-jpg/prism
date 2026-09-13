@@ -589,14 +589,11 @@ export function BigBangButton() {
     const textToToss = winSel && winSel.length >= 2 ? winSel : (pending && pending.length >= 2 ? pending : '');
 
     // 🎯 스크롤(선택)한 상태로 빅뱅 버튼을 드래그하면 (dist >= 20):
-    // 1, 2, 3위 추천 순위 중에 무작위 순위 메뉴로 즉시 토스!
+    // 항상 추천 1순위 메뉴로만 즉시 토스!
     if (textToToss && dist >= 20) {
       const rec = getRecommendedMenu(textToToss, location);
-      const topCandidates = rec.top3 && rec.top3.length > 0 ? rec.top3 : [{ menu: rec.menu }];
-      // 1, 2, 3위 중 무작위 순위 메뉴 1개 선정
-      const randomIdx = Math.floor(Math.random() * topCandidates.length);
-      const chosenCandidate = topCandidates[randomIdx];
-      const targetMenu = chosenCandidate.menu;
+      // 항상 추천 1순위(rec.menu)로만 토스
+      const targetMenu = rec.menu;
 
       triggerHaptic('wormhole');
       omniWarpAudio.playWormhole();
@@ -918,10 +915,14 @@ export function BigBangButton() {
                   initial={{ opacity: 0, scale: 0.85, y: 6 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.85, y: 4 }}
-                  className="absolute -top-10 left-1/2 -translate-x-1/2 whitespace-nowrap px-3 py-1 rounded-full bg-slate-950/95 backdrop-blur-xl border border-cyan-400/50 text-[10px] font-bold text-cyan-200 shadow-[0_4px_20px_rgba(0,240,255,0.4)] pointer-events-none flex items-center gap-1.5 z-50 animate-pulse ring-1 ring-cyan-400/30"
+                  className="absolute -top-11 left-1/2 -translate-x-1/2 whitespace-nowrap px-2.5 py-1 rounded-full bg-slate-950/95 backdrop-blur-xl border border-cyan-400/50 text-[9px] font-bold text-cyan-200 shadow-[0_4px_20px_rgba(0,240,255,0.4)] pointer-events-none flex items-center gap-1 z-50 animate-pulse ring-1 ring-cyan-400/30"
                 >
-                  <span className="text-xs">✨</span>
-                  <span>탭➔루시 | 홀드➔오브 | 드래그➔추천 토스</span>
+                  <span className="text-[10px]">✨</span>
+                  <span className="text-yellow-300">탭</span><span className="text-slate-400">▸루시</span>
+                  <span className="text-slate-600">│</span>
+                  <span className="text-cyan-300">홀드</span><span className="text-slate-400">▸오브</span>
+                  <span className="text-slate-600">│</span>
+                  <span className="text-purple-300">드래그</span><span className="text-slate-400">▸추천1위</span>
                 </motion.div>
               )}
             </AnimatePresence>
