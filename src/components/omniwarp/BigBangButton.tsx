@@ -19,7 +19,7 @@ import {
 import { omniWarpAudio } from '@/lib/omniWarp/omniWarpAudio';
 import { triggerHaptic, startBlackHoleContinuousHaptic, stopBlackHoleContinuousHaptic } from '@/lib/omniWarp/omniWarpHaptics';
 import { safeSessionStorage } from '@/utils/safeStorage';
-import { peekPendingSelection, savePendingSelection } from '@/lib/selectionBridge';
+import { peekPendingSelection, savePendingSelection, clearPendingSelection } from '@/lib/selectionBridge';
 import { sendPrismToss } from '@/lib/prismToss';
 import { getRecommendedMenu, tossSelectionToMenu } from '@/lib/selectionContextRecommender';
 import { BigBangCircularMeter } from './BigBangCircularMeter';
@@ -87,6 +87,15 @@ export function BigBangButton() {
     };
   }, []);
 
+  // 🎯 현재 활성화된 브라우저 텍스트 선택(스크롤) 내용 추출 (취소되었거나 비어있으면 '' 반환)
+  const getActiveSelectionText = useCallback((): string => {
+    if (typeof window === 'undefined') return '';
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) return '';
+    const winSel = sel.toString().trim();
+    return winSel && winSel.length >= 2 ? winSel : '';
+  }, []);
+
   // 🌟 텍스트 드래그(선택) 감지: 탭 시 루시 토스, 홀드 시 오브 토스 지원
   const [hasSelectionToss, setHasSelectionToss] = useState(false);
   const [selectionPreviewText, setSelectionPreviewText] = useState('');
@@ -94,16 +103,19 @@ export function BigBangButton() {
   useEffect(() => {
     const updateSelectionState = () => {
       if (typeof window === 'undefined') return;
-      const winSel = window.getSelection()?.toString().trim();
-      const pending = peekPendingSelection()?.text?.trim();
-      const text = winSel && winSel.length >= 2 ? winSel : (pending && pending.length >= 2 ? pending : '');
-      if (text) {
-        setHasSelectionToss(true);
-        setSelectionPreviewText(text.slice(0, 24));
-      } else {
+      const text = getActiveSelectionText();
+
+      // 🎯 스크롤(선택) 취소 감지:
+      // 브라우저 텍스트 선택이 해제되거나 비어있으면 토스 모드 및 대기 스토리지 즉각 취소!
+      if (!text) {
+        clearPendingSelection();
         setHasSelectionToss(false);
         setSelectionPreviewText('');
+        return;
       }
+
+      setHasSelectionToss(true);
+      setSelectionPreviewText(text.slice(0, 24));
     };
 
     const handleSaved = (e: Event) => {
@@ -114,21 +126,34 @@ export function BigBangButton() {
       }
     };
 
-    const handleTossed = () => {
+    const handleTossedOrCleared = () => {
+      clearPendingSelection();
       setHasSelectionToss(false);
       setSelectionPreviewText('');
     };
 
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        clearPendingSelection();
+        setHasSelectionToss(false);
+        setSelectionPreviewText('');
+      }
+    };
+
     document.addEventListener('selectionchange', updateSelectionState);
     window.addEventListener('prism:selection_saved', handleSaved);
-    window.addEventListener('prism:selection_tossed', handleTossed);
+    window.addEventListener('prism:selection_tossed', handleTossedOrCleared);
+    window.addEventListener('prism:selection_cleared', handleTossedOrCleared);
+    document.addEventListener('keydown', handleKeyDown);
 
     return () => {
       document.removeEventListener('selectionchange', updateSelectionState);
       window.removeEventListener('prism:selection_saved', handleSaved);
-      window.removeEventListener('prism:selection_tossed', handleTossed);
+      window.removeEventListener('prism:selection_tossed', handleTossedOrCleared);
+      window.removeEventListener('prism:selection_cleared', handleTossedOrCleared);
+      document.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [getActiveSelectionText]);
 
   // Active view context and next destination pre-vision (수정구슬 영시)
   const currentContext = serializeCurrentView(location);
@@ -213,9 +238,7 @@ export function BigBangButton() {
 
     // 🎯 스크롤(선택 텍스트) 없이 드래그(dist >= 20) 중일 때:
     // 맥락 감지 사이클 추천 1위 메뉴를 실시간 타깃으로 동기화
-    const winSel = typeof window !== 'undefined' ? window.getSelection()?.toString().trim() : '';
-    const pending = peekPendingSelection()?.text?.trim();
-    const textToToss = winSel && winSel.length >= 2 ? winSel : (pending && pending.length >= 2 ? pending : '');
+    const textToToss = getActiveSelectionText();
 
     if (!textToToss && dist >= 20) {
       const contextCandidate = peekNextRecommendedMenuByCycle(location);
@@ -525,9 +548,7 @@ export function BigBangButton() {
         omniWarpAudio.playWhiteHole();
 
         // 🌟 텍스트 드래그(선택) 연동: 글자를 스크롤/선택한 상태에서 빅뱅 탭 ➔ 루시에게 즉시 토스!
-        const winSel = typeof window !== 'undefined' ? window.getSelection()?.toString().trim() : '';
-        const pending = peekPendingSelection()?.text?.trim();
-        const textToToss = winSel && winSel.length >= 2 ? winSel : (pending && pending.length >= 2 ? pending : '');
+        const textToToss = getActiveSelectionText();
 
         if (textToToss) {
           savePendingSelection(textToToss, 'lucy', location);
@@ -609,9 +630,7 @@ export function BigBangButton() {
     lastTapTimeRef.current = 0;
 
     // [2] 홀드 (250ms 이상) 또는 드래그 릴리즈 분기
-    const winSel = typeof window !== 'undefined' ? window.getSelection()?.toString().trim() : '';
-    const pending = peekPendingSelection()?.text?.trim();
-    const textToToss = winSel && winSel.length >= 2 ? winSel : (pending && pending.length >= 2 ? pending : '');
+    const textToToss = getActiveSelectionText();
 
     // 🎯 스크롤(선택)한 상태로 빅뱅 버튼을 드래그하면 (dist >= 20):
     // 항상 추천 1순위 메뉴로만 즉시 토스!

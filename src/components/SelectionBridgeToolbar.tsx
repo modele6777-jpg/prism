@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useLocation } from 'wouter';
 import { Sparkles, Brain, X, Shuffle, Check, Copy } from 'lucide-react';
-import { savePendingSelection } from '../lib/selectionBridge';
+import { savePendingSelection, clearPendingSelection } from '../lib/selectionBridge';
 import {
   getRecommendedMenu,
   tossSelectionToMenu,
@@ -40,8 +40,28 @@ const copyToClipboard = async (textToCopy: string): Promise<boolean> => {
   }
 };
 
-export default function SelectionBridgeToolbar() {
-  const [location, navigate] = useLocation();
+interface SelectionBridgeToolbarProps {
+  currentPath?: string;
+}
+
+export default function SelectionBridgeToolbar({ currentPath }: SelectionBridgeToolbarProps) {
+  let location = '/';
+  let navigate = (to: string) => {
+    if (typeof window !== 'undefined') {
+      window.location.href = to;
+    }
+  };
+
+  try {
+    const [wouterLoc, wouterNav] = useLocation();
+    location = currentPath || wouterLoc;
+    navigate = wouterNav;
+  } catch (_) {
+    if (typeof window !== 'undefined') {
+      location = currentPath || window.location.pathname;
+    }
+  }
+
   const [selectedText, setSelectedText] = useState('');
   const [visible, setVisible] = useState(false);
   const [coords, setCoords] = useState<{ x: number; y: number } | null>(null);
@@ -78,14 +98,24 @@ export default function SelectionBridgeToolbar() {
       debounceTimer = setTimeout(() => {
         if (typeof window === 'undefined') return;
         const selection = window.getSelection();
-        if (!selection || selection.isCollapsed) {
-          // If collapsed, don't immediately hide if user is clicking inside our toolbar
+
+        // 🎯 스크롤(선택) 취소 감지:
+        // 선택이 없거나 해제(isCollapsed)되었거나 비어있으면 자동 토스모드 즉시 취소!
+        if (!selection || selection.isCollapsed || !selection.toString().trim()) {
+          clearPendingSelection();
+          setSelectedText('');
+          setVisible(false);
           return;
         }
 
         const text = selection.toString().trim();
         // Ignore if text is too short or inside input/textarea
-        if (text.length < 2) return;
+        if (text.length < 2) {
+          clearPendingSelection();
+          setSelectedText('');
+          setVisible(false);
+          return;
+        }
 
         const anchorNode = selection.anchorNode;
         const parentElem =
@@ -94,6 +124,9 @@ export default function SelectionBridgeToolbar() {
             : anchorNode?.parentElement;
 
         if (parentElem?.closest('input, textarea, [contenteditable="true"]')) {
+          clearPendingSelection();
+          setSelectedText('');
+          setVisible(false);
           return;
         }
 
@@ -144,20 +177,32 @@ export default function SelectionBridgeToolbar() {
       setTimeout(() => {
         const sel = window.getSelection();
         if (!sel || sel.isCollapsed || !sel.toString().trim()) {
+          clearPendingSelection();
+          setSelectedText('');
           setVisible(false);
         }
       }, 150);
     };
 
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        clearPendingSelection();
+        setSelectedText('');
+        setVisible(false);
+      }
+    };
+
     document.addEventListener('selectionchange', handleSelectionChange);
     document.addEventListener('mouseup', handleSelectionChange);
     document.addEventListener('mousedown', handleDocumentMouseDown);
+    document.addEventListener('keydown', handleKeyDown);
 
     return () => {
       if (debounceTimer) clearTimeout(debounceTimer);
       document.removeEventListener('selectionchange', handleSelectionChange);
       document.removeEventListener('mouseup', handleSelectionChange);
       document.removeEventListener('mousedown', handleDocumentMouseDown);
+      document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isExcludedPage]);
 

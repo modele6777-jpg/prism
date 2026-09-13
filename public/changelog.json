@@ -1,5 +1,17 @@
 [
   {
+    "version": "1.2.940",
+    "summary": "스크롤(선택) 취소 시 자동 토스모드 즉시 취소 및 정리 연동",
+    "builtAt": "2026-09-13T05:53:00.000Z",
+    "items": [
+      "🛑 스크롤(선택) 취소 시 자동 토스모드 즉각 취소: 브라우저 텍스트 선택이 해제되거나 빈 영역 클릭/ESC 시 대기 중인 토스 모드 및 안내 뱃지 완전 정리",
+      "🧹 clearPendingSelection 신규 구현: selectionBridge에 대기 선택 삭제 및 prism:selection_cleared 이벤트 파이프라인 추가",
+      "⚡ BigBangButton 연동 최적화: getActiveSelectionText 헬퍼를 통해 현재 실시간 브라우저 선택이 없는 경우 잔여 스토리지로 인한 토스 모드 오진입 원천 차단",
+      "🏷️ SelectionBridgeToolbar 동기화: 선택 해제/ESC/공백 클릭 시 툴바 숨김과 동시에 pendingSelection 즉시 초기화"
+    ]
+  },
+
+  {
     "version": "1.2.939",
     "summary": "빅뱅 드래그 맥락 감지 자동 추천 1위 연동 및 사이클 순환 도약 지원 (한 사이클 완료 후 재진입)",
     "builtAt": "2026-09-13T05:49:00.000Z",

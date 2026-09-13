@@ -80,3 +80,18 @@ export function peekPendingSelection(): DraggedSelectionContext | null {
     return null;
   }
 }
+
+/**
+ * 대기 중인 선택 텍스트를 즉시 삭제하고 토스 모드 취소 이벤트 발행
+ */
+export function clearPendingSelection(): void {
+  try {
+    sessionStorage.removeItem(SELECTION_STORAGE_KEY);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('prism:selection_cleared'));
+    }
+  } catch (e) {
+    console.warn('[SelectionBridge] Failed to clear pending selection:', e);
+  }
+}
+
