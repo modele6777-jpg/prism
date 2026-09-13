@@ -809,63 +809,208 @@ function deduplicateReadingText(text: string): string {
 }
 
 function extractConciseSummary(text: string): string[] {
-  if (!text) return [];
-  const clean = text
-    .replace(/^#+\s.*$/gm, "")
-    .replace(/\[\w+:\s*[^\]]+\]/g, "")
-    .replace(/```[\s\S]*?```/g, "")
-    .replace(/\*\*/g, "")
-    .replace(/\*/g, "")
-    .trim();
+  if (!text || text.trim().length < 80) return [];
 
-  // 1. Try bullet matches with strict deduplication
-  const bulletMatches = clean.match(/^[-*•]\s+(.+)$/gm);
-  if (bulletMatches && bulletMatches.length >= 2) {
-    const uniqueBullets: string[] = [];
-    for (const b of bulletMatches) {
-      const cleaned = b.replace(/^[-*•]\s+/, "").trim();
-      if (
-        cleaned.length > 6 &&
-        !uniqueBullets.some(
-          (existing) =>
-            existing === cleaned ||
-            existing.includes(cleaned) ||
-            cleaned.includes(existing) ||
-            existing.slice(0, 15) === cleaned.slice(0, 15)
-        )
-      ) {
-        uniqueBullets.push(cleaned);
-      }
-      if (uniqueBullets.length >= 3) break;
+  // Priority 1: Explicit [핵심 3줄 요약] block
+  const summaryBlockMatch = text.match(/(?:\[핵심\s*3줄\s*요약\]|###\s*.*핵심\s*3줄\s*요약|###\s*.*핵심\s*요약|\[핵심\s*요약\])([\s\S]*?)(?:$|###)/i);
+  if (summaryBlockMatch) {
+    const rawLines = summaryBlockMatch[1]
+      .split('\n')
+      .map((l) => l.replace(/^[-*•·\d.]+\s*/, '').trim())
+      .filter((l) => l.length > 5 && !l.startsWith('http'));
+
+    if (rawLines.length >= 3) {
+      const defaultLabels = ['현재 에너지', '방향과 결단', '실천 처방'];
+      return rawLines.slice(0, 3).map((line, idx) => {
+        const cleaned = line.replace(/^\[[^\]]+\]\s*/, '').trim();
+        const existingTagMatch = line.match(/^\[([^\]]+)\]/);
+        const tag = existingTagMatch ? existingTagMatch[1] : defaultLabels[idx];
+        return `[${tag}] ${cleaned}`;
+      });
     }
-    if (uniqueBullets.length >= 2) return uniqueBullets;
   }
 
-  // 2. Try sentence splits with strict deduplication
-  const sentences = clean
-    .split(/(?<=[.!?])\s+/)
-    .map((s) => s.trim())
-    .filter((s) => s.length >= 12 && !s.startsWith("http") && !s.startsWith("·"));
+  const cleanSentence = (s: string) => {
+    return s
+      .replace(/\*\*/g, '')
+      .replace(/\*/g, '')
+      .replace(/_{1,2}/g, '')
+      .replace(/^[-*•·\d.]+\s*/, '')
+      .trim();
+  };
 
-  const uniqueSentences: string[] = [];
-  for (const s of sentences) {
+  const isGreetingOrMeta = (s: string) => {
+    return (
+      /^(어서\s*오세요|안녕하세요|반갑습니다|카드를\s*(가만히|조용히)?\s*마주하니|질문자|내담자|적용\s*배열법|펼쳐진\s*카드|내담자\s*고민|상담\s*개요)/.test(
+        s
+      ) ||
+      s.includes('촛불') ||
+      s.includes('대화형 어조') ||
+      s.includes('카드를 한 장씩')
+    );
+  };
+
+  // Priority 2: Structured section parsing (1. 현재 에너지 / 3. 결단 및 방향성 / 4. 실천 처방)
+  const sections = text.split(/(?=^###\s+)/m);
+  let currentInsight = '';
+  let decisionInsight = '';
+  let actionInsight = '';
+
+  for (const sec of sections) {
+    const headerLine = (sec.match(/^###\s+(.+)$/m) || [])[1] || '';
+    const body = sec.replace(/^###\s+.*$/m, '').trim();
+
+    // Section 1 / 2: 마음과 현재 에너지, 카드 상징
     if (
-      !uniqueSentences.some(
-        (existing) =>
-          existing === s ||
-          existing.includes(s) ||
-          s.includes(existing) ||
-          existing.slice(0, 15) === s.slice(0, 15)
-      )
+      !currentInsight &&
+      (headerLine.includes('1.') ||
+        headerLine.includes('마음') ||
+        headerLine.includes('현재') ||
+        headerLine.includes('에너지'))
     ) {
-      uniqueSentences.push(s);
+      const sentences = body
+        .split(/(?:[\n\r]+|(?<=[.!?])\s+)/)
+        .map(cleanSentence)
+        .filter((s) => s.length >= 15 && !isGreetingOrMeta(s));
+
+      const scored = sentences.find((s) =>
+        /현재|에너지|상황|마음|갈림길|파동|상징|지금|내면|모습/.test(s)
+      );
+      currentInsight = scored || sentences[0] || '';
     }
-    if (uniqueSentences.length >= 3) break;
+
+    // Section 3: 트리니티 마스터의 직관적 결단 & 방향성
+    if (
+      !decisionInsight &&
+      (headerLine.includes('3.') ||
+        headerLine.includes('결단') ||
+        headerLine.includes('방향') ||
+        headerLine.includes('판정') ||
+        headerLine.includes('선택'))
+    ) {
+      const rawLines = body
+        .split(/(?:[\n\r]+|(?<=[.!?])\s+)/)
+        .map(cleanSentence)
+        .filter((s) => s.length >= 6 && !isGreetingOrMeta(s));
+
+      const verdictLine = rawLines.find((s) =>
+        /최종\s*(판정|선택)|확실한\s*YES|단호한\s*NO|결단이\s*필요한|신중한\s*전환|마스터의\s*핵심\s*선언/.test(
+          s
+        )
+      );
+      const expLine = rawLines.find(
+        (s) =>
+          s !== verdictLine &&
+          s.length >= 15 &&
+          /긍정|결단|방향|흐름|추진|타이밍|선택|나아가|기회|결실|성취|신뢰|열어/.test(
+            s
+          )
+      );
+
+      if (verdictLine && expLine) {
+        decisionInsight = `${verdictLine} — ${expLine}`;
+      } else {
+        decisionInsight = verdictLine || expLine || rawLines[0] || '';
+      }
+    }
+
+    // Section 4: 실천 처방 (개운 가이드)
+    if (
+      !actionInsight &&
+      (headerLine.includes('4.') ||
+        headerLine.includes('처방') ||
+        headerLine.includes('실천') ||
+        headerLine.includes('개운') ||
+        headerLine.includes('가이드') ||
+        headerLine.includes('조언'))
+    ) {
+      const rawLines = body
+        .split(/(?:[\n\r]+|(?<=[.!?])\s+)/)
+        .map(cleanSentence)
+        .map((s) => s.replace(/^[가-힣\s]{2,10}:\s*/, '')) // Strip label prefix like "마음의 정돈: "
+        .filter((s) => s.length >= 15 && !isGreetingOrMeta(s));
+
+      const actionable = rawLines.filter((s) =>
+        /실천|행동|처방|오늘|마음가짐|집중|작은|메모|대화|시작|추천|피하|차단/.test(
+          s
+        )
+      );
+      if (actionable.length >= 2) {
+        actionInsight = `${actionable[0]} 또한 ${actionable[1]}`;
+      } else {
+        actionInsight = actionable[0] || rawLines[0] || '';
+      }
+    }
   }
 
-  if (uniqueSentences.length > 0) return uniqueSentences.slice(0, 3);
+  // Priority 3: Fallback semantic keyword clustering across text
+  const cleanFull = cleanSentence(text.replace(/^#+\s.*$/gm, ''));
+  const allSentences = cleanFull
+    .split(/(?:[\n\r]+|(?<=[.!?])\s+)/)
+    .map(cleanSentence)
+    .filter((s) => s.length >= 15 && !isGreetingOrMeta(s));
 
-  return [];
+  if (!currentInsight) {
+    currentInsight =
+      allSentences.find((s) =>
+        /현재|지금|마음|에너지|상황|갈림길|파동|내면/.test(s)
+      ) ||
+      allSentences[0] ||
+      '';
+  }
+  if (!decisionInsight) {
+    decisionInsight =
+      allSentences.find(
+        (s) =>
+          s !== currentInsight &&
+          /결단|선택|판정|방향|흐름|YES|NO|기회|타이밍/.test(s)
+      ) ||
+      allSentences[Math.floor(allSentences.length / 2)] ||
+      '';
+  }
+  if (!actionInsight) {
+    actionInsight =
+      allSentences
+        .slice()
+        .reverse()
+        .find(
+          (s) =>
+            s !== currentInsight &&
+            s !== decisionInsight &&
+            /실천|행동|처방|조언|오늘|개운|시작|노력/.test(s)
+        ) ||
+      allSentences[allSentences.length - 1] ||
+      '';
+  }
+
+  const formatItem = (tag: string, str: string) => {
+    let cleaned = str
+      .replace(/^\[[^\]]+\]\s*(:|-|—)?\s*/, '')
+      .replace(/^[-*•·\d.]+\s*/, '')
+      .trim();
+
+    const existingTagMatch = str.match(/^\[([^\]]+)\]/);
+    if (
+      existingTagMatch &&
+      ['현재 에너지', '방향과 결단', '실천 처방'].includes(existingTagMatch[1])
+    ) {
+      cleaned = str.replace(/^\[[^\]]+\]\s*/, '').trim();
+    }
+
+    if (cleaned.length > 160) {
+      const idx = cleaned.lastIndexOf('.', 155);
+      if (idx > 60) cleaned = cleaned.slice(0, idx + 1);
+    }
+    if (!/[.!?]$/.test(cleaned)) cleaned += '.';
+    return `[${tag}] ${cleaned}`;
+  };
+
+  const results: string[] = [];
+  if (currentInsight) results.push(formatItem('현재 에너지', currentInsight));
+  if (decisionInsight) results.push(formatItem('방향과 결단', decisionInsight));
+  if (actionInsight) results.push(formatItem('실천 처방', actionInsight));
+
+  return results.length >= 2 ? results : [];
 }
 
 export default function TrinityApp() {
@@ -1526,15 +1671,27 @@ function playDailyCardChimeAsync() {
   const isAutoRecommended = !customSpread;
   const [isTarotGenerating, setIsTarotGenerating] = useState(false);
 
-  // Auto concise 3-bullet summary for long tarot readings
+  // Auto concise 3-bullet summary for tarot readings
   const conciseSummaryBullets = useMemo(() => {
-    if (!tarotResult || tarotResult.length < 320) return [];
+    if (!tarotResult || tarotResult.trim().length < 120) return [];
     return extractConciseSummary(tarotResult);
+  }, [tarotResult]);
+
+  const displayTarotResult = useMemo(() => {
+    if (!tarotResult) return "";
+    return tarotResult
+      .replace(/(?:\n|^)(?:\[핵심\s*3줄\s*요약\]|###\s*.*핵심\s*3줄\s*요약)[\s\S]*$/, "")
+      .trim();
   }, [tarotResult]);
 
   const summarySpeechText = useMemo(() => {
     if (conciseSummaryBullets.length === 0) return "";
-    return conciseSummaryBullets.map((b) => b.trim().replace(/[.!?\s]+$/, '') + '.').join(' ');
+    return conciseSummaryBullets
+      .map((b) => {
+        const speech = b.replace(/^\[([^\]]+)\]\s*/, "$1. ");
+        return speech.trim().replace(/[.!?\s]+$/, '') + '.';
+      })
+      .join(' ');
   }, [conciseSummaryBullets]);
 
   const isSummaryTTSActive = useMemo(() => {
@@ -1548,12 +1705,12 @@ function playDailyCardChimeAsync() {
     return !isSummaryTTSActive;
   }, [isTTSActive, tarotResult, isSummaryTTSActive]);
 
-  // Auto-prefetch TTS for long reading & summary when generated
+  // Auto-prefetch TTS for reading & summary when generated
   useEffect(() => {
-    if (tarotResult && !isTarotGenerating && tarotResult.length > 320) {
+    if (tarotResult && !isTarotGenerating && tarotResult.trim().length >= 120) {
       const summaryBullets = extractConciseSummary(tarotResult);
       if (summaryBullets.length > 0) {
-        const firstSummaryChunk = summaryBullets[0].trim().replace(/[.!?\s]+$/, '') + '.';
+        const firstSummaryChunk = summaryBullets[0].replace(/^\[([^\]]+)\]\s*/, '$1. ').trim().replace(/[.!?\s]+$/, '') + '.';
         prefetchTTS(firstSummaryChunk, 'Kore', '신비');
       }
       prefetchTTS(tarotResult.slice(0, 400), 'Kore', '신비');
@@ -2287,7 +2444,13 @@ function playDailyCardChimeAsync() {
 - 머리로만 아는 것은 운을 바꾸지 못합니다. 내담자가 오늘부터 즉시 행운을 끌어당기고 액운을 피할 수 있는 현실적이고 구체적인 행동 처방(마음가짐, 소통 방식, 피해야 할 행동, 행운의 행동 등)을 다정하면서도 명확하게 짚어주십시오.
 
 ### ✨ 5. 당신의 길을 축복하는 영혼의 한마디
-- 타로는 정해진 굴레가 아니라 운명을 개척하는 등불입니다. 내담자가 두려움을 떨치고 스스로의 운명을 주도할 수 있도록, 가슴 깊이 간직할 지혜와 따뜻한 용기의 축복을 마스터의 서명처럼 건네며 마무리하십시오.${binaryChoicePromptAddon}${spreadPromptAddon}${contextPromptAddon}`;
+- 타로는 정해진 굴레가 아니라 운명을 개척하는 등불입니다. 내담자가 두려움을 떨치고 스스로의 운명을 주도할 수 있도록, 가슴 깊이 간직할 지혜와 따뜻한 용기의 축복을 마스터의 서명처럼 건네며 마무리하십시오.
+
+[✨ 핵심 3줄 요약 — 리딩 본문 맨 마지막에 반드시 아래 형식으로 3줄 요약을 작성하십시오]
+[핵심 3줄 요약]
+- [현재 에너지] (내담자의 현재 내면 상황과 카드가 비추는 기운 핵심 1문장)
+- [방향과 결단] (마스터의 결정적 판정 및 운의 흐름 핵심 1문장)
+- [실천 처방] (오늘 당장 실행할 수 있는 구체적인 행동 조언 핵심 1문장)${binaryChoicePromptAddon}${spreadPromptAddon}${contextPromptAddon}`;
         }
 
         let finalResponse = "";
@@ -3118,10 +3281,10 @@ function playDailyCardChimeAsync() {
                                       </div>
                                     ) : (
                                       <div className="space-y-4">
-                                          {/* ✨ 핵심 3줄 요약 카드 (글이 길 때 자동 요약 & 원클릭 TTS) */}
-                                          {conciseSummaryBullets.length > 0 && tarotResult && tarotResult.length > 320 && (
+                                          {/* ✨ 핵심 3줄 요약 카드 (상황 진단, 방향성, 실천 처방 & 원클릭 TTS) */}
+                                          {conciseSummaryBullets.length > 0 && tarotResult && (
                                             <div className="p-4 rounded-2xl bg-gradient-to-r from-yellow-500/15 via-amber-500/10 to-transparent border border-yellow-500/35 shadow-inner">
-                                              <div className="flex items-center justify-between gap-2 mb-2.5">
+                                              <div className="flex items-center justify-between gap-2 mb-3">
                                                 <div className="flex items-center gap-1.5 text-yellow-300 font-bold text-xs">
                                                   <Sparkles size={13} className="text-yellow-400 animate-pulse" />
                                                   <span>✨ 핵심 3줄 요약 (Quick Summary)</span>
@@ -3146,18 +3309,30 @@ function playDailyCardChimeAsync() {
                                                   <span>{isSummaryTTSActive ? "중지" : "요약 듣기"}</span>
                                                 </button>
                                               </div>
-                                              <ul className="space-y-1.5 text-xs text-white/90 leading-relaxed font-sans">
-                                                {conciseSummaryBullets.map((bullet, bIdx) => (
-                                                  <li key={bIdx} className="flex items-start gap-2">
-                                                    <span className="text-yellow-400 font-bold shrink-0 mt-0.5">•</span>
-                                                    <span>{bullet}</span>
-                                                  </li>
-                                                ))}
+                                              <ul className="space-y-2 text-xs text-white/90 leading-relaxed font-sans">
+                                                {conciseSummaryBullets.map((bullet, bIdx) => {
+                                                  const match = bullet.match(/^\[([^\]]+)\]\s*(.*)$/);
+                                                  const tag = match ? match[1] : null;
+                                                  const content = match ? match[2] : bullet;
+                                                  return (
+                                                    <li key={bIdx} className="flex items-start gap-2">
+                                                      <span className="text-yellow-400 font-bold shrink-0 mt-0.5">•</span>
+                                                      <div className="leading-snug">
+                                                        {tag && (
+                                                          <span className="inline-block px-1.5 py-0.5 mr-1.5 rounded text-[10px] font-bold bg-yellow-400/20 text-yellow-300 border border-yellow-400/30">
+                                                            {tag}
+                                                          </span>
+                                                        )}
+                                                        <span>{content}</span>
+                                                      </div>
+                                                    </li>
+                                                  );
+                                                })}
                                               </ul>
                                             </div>
                                           )}
 
-                                          <Streamdown>{tarotResult || ""}</Streamdown>
+                                          <Streamdown>{displayTarotResult || tarotResult || ""}</Streamdown>
                                         {isTarotGenerating && (
                                           <p className="text-[10px] text-yellow-400/60 uppercase tracking-widest animate-pulse text-center">
                                             리딩 수신 중...
