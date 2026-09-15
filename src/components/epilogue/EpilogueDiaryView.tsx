@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Moon,
@@ -87,6 +87,29 @@ export function ensureGratitudes(raw?: string[]): string[] {
   return result;
 }
 
+/**
+ * Generates a normalized signature of diary contents.
+ * Used to strictly determine whether the user made any actual modifications.
+ */
+export function getDiaryContentSignature(
+  mood?: string,
+  gratitudes?: string[],
+  rawNotes?: string,
+  mindDiary?: string,
+  aiFeedback?: string
+): string {
+  const cleanGratitudes = (Array.isArray(gratitudes) ? gratitudes : [])
+    .map((g) => (typeof g === 'string' ? g.trim() : ''))
+    .filter(Boolean);
+  return JSON.stringify({
+    mood: (mood || '평온함').trim(),
+    gratitudes: cleanGratitudes,
+    rawNotes: (rawNotes || '').trim(),
+    mindDiary: (mindDiary || '').trim(),
+    aiFeedback: (aiFeedback || '').trim(),
+  });
+}
+
 export function EpilogueDiaryView() {
   const { sharedState, updateSharedState, openLucyChat } = useApp();
   const todayKey = getTodayDateKey();
@@ -160,6 +183,20 @@ export function EpilogueDiaryView() {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [expandedEntryId, setExpandedEntryId] = useState<string | null>(null);
 
+  // Baseline signature tracking: autosave MUST only trigger when contents actually differ from last saved state
+  const initialSignature = useMemo(() => {
+    const initMood = existingTodayEntry?.mood || cachedTodayDraft?.mood || '평온함';
+    const initGrat = existingTodayEntry?.gratitudes || cachedTodayDraft?.gratitudes || [];
+    const initNotes = existingTodayEntry?.rawNotes || cachedTodayDraft?.rawNotes || '';
+    const initDiary = existingTodayEntry?.mindDiary || existingTodayEntry?.reflection || cachedTodayDraft?.mindDiary || (cachedTodayDraft as any)?.reflection || '';
+    const initFeedback = existingTodayEntry?.aiFeedback || cachedTodayDraft?.aiFeedback || '';
+    return getDiaryContentSignature(initMood, initGrat, initNotes, initDiary, initFeedback);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const lastSavedSignatureRef = useRef<string>(initialSignature);
+  const hasUserEditedRef = useRef<boolean>(false);
+
   // Sync entries from sharedState and real-time cross-device events with safe deduplicating merge
   useEffect(() => {
     const mergeIntoEntries = (incoming: any[]) => {
@@ -232,81 +269,19 @@ export function EpilogueDiaryView() {
       if (existingTodayEntry.aiFeedback) {
         setAiFeedback((prev) => (prev.trim() ? prev : existingTodayEntry.aiFeedback || ''));
       }
+
+      // If user has not actively edited yet, align the baseline saved signature with the resolved entry
+      if (!hasUserEditedRef.current) {
+        lastSavedSignatureRef.current = getDiaryContentSignature(
+          existingTodayEntry.mood || '평온함',
+          existingTodayEntry.gratitudes || [],
+          existingTodayEntry.rawNotes || '',
+          existingTodayEntry.mindDiary || existingTodayEntry.reflection || '',
+          existingTodayEntry.aiFeedback || ''
+        );
+      }
     }
   }, [existingTodayEntry]);
-
-  // Real-time Auto-Save Engine: debounced auto-persist on any content change
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const activeMoodObj = MOOD_OPTIONS.find((m) => m.label === selectedMood) || MOOD_OPTIONS[0];
-      const validGratitudes = gratitudes.map((g) => g.trim()).filter(Boolean);
-      const effectiveDiary = mindDiary.trim() || rawNotes.trim();
-
-      // Only auto-save if user has typed something
-      if (!effectiveDiary && validGratitudes.length === 0 && !rawNotes.trim()) return;
-
-      const newEntry: EpilogueDiaryEntry = {
-        id: existingTodayEntry?.id || `epilogue_${todayKey}_${Date.now()}`,
-        dateKey: todayKey,
-        createdAt: existingTodayEntry?.createdAt || Date.now(),
-        mood: selectedMood,
-        moodEmoji: activeMoodObj.emoji,
-        gratitudes: validGratitudes,
-        rawNotes: rawNotes.trim(),
-        mindDiary: effectiveDiary || '오늘 하루를 평온하게 마무리함',
-        aiFeedback: aiFeedback.trim() || undefined,
-        cosmicFootprint: {
-          orange: orangeData ? 'Secret 완료' : undefined,
-          trinity: trinityData ? 'Lucky 완료' : undefined,
-          heal: healData ? 'Letting Go 완료' : undefined,
-          bluebird: hoponoponoData ? 'Ho\'oponopono 완료' : undefined,
-          muse: museData ? 'Art 완료' : undefined,
-        },
-      };
-
-      let finalMerged: EpilogueDiaryEntry[] = [];
-      setEntries((prev) => {
-        let diskEntries: EpilogueDiaryEntry[] = [];
-        try {
-          const cached = localStorage.getItem('epilogue_diary_history');
-          if (cached) {
-            const parsed = JSON.parse(cached);
-            if (Array.isArray(parsed)) diskEntries = parsed;
-          }
-        } catch (_) {}
-
-        const map = new Map<string, EpilogueDiaryEntry>();
-        diskEntries.forEach((e) => { if (e?.dateKey) map.set(e.dateKey, e); });
-        prev.forEach((e) => { if (e?.dateKey) map.set(e.dateKey, e); });
-        map.set(todayKey, newEntry);
-
-        const merged = Array.from(map.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-        try {
-          localStorage.setItem('epilogue_diary_history', JSON.stringify(merged));
-          localStorage.setItem(`epilogue_diary_draft_${todayKey}`, JSON.stringify(newEntry));
-        } catch (_) {}
-
-        finalMerged = merged;
-        return merged;
-      });
-
-      if (finalMerged.length > 0) {
-        void updateSharedState(
-          {
-            epilogueHistory: finalMerged,
-            epilogueMemory: effectiveDiary || aiFeedback || `${todayKey} 성찰 진행 중`,
-          },
-          'epilogue'
-        ).catch(() => {});
-      }
-
-      setAutoSaved(true);
-      const hideTimer = setTimeout(() => setAutoSaved(false), 2000);
-      return () => clearTimeout(hideTimer);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [selectedMood, gratitudes, rawNotes, mindDiary, aiFeedback, todayKey]);
 
   // Today's Cosmic Footprints
   const orangeData = sharedState?.dailySecrets?.[todayKey];
@@ -363,8 +338,141 @@ export function EpilogueDiaryView() {
     },
   ], [orangeData, trinityData, healData, hoponoponoData, museData]);
 
+  // Real-time Auto-Save Engine: debounced auto-persist ONLY when there are actual content changes
+  useEffect(() => {
+    const currentSignature = getDiaryContentSignature(
+      selectedMood,
+      gratitudes,
+      rawNotes,
+      mindDiary,
+      aiFeedback
+    );
+
+    // 1. Strictly bypass auto-save if content matches the last saved state (no changes)
+    if (currentSignature === lastSavedSignatureRef.current) {
+      return;
+    }
+
+    const validGratitudes = gratitudes.map((g) => g.trim()).filter(Boolean);
+    const effectiveDiary = mindDiary.trim() || rawNotes.trim();
+
+    // 2. Only auto-save if user has typed something
+    if (!effectiveDiary && validGratitudes.length === 0 && !rawNotes.trim()) return;
+
+    const timer = setTimeout(() => {
+      const verifySignature = getDiaryContentSignature(
+        selectedMood,
+        gratitudes,
+        rawNotes,
+        mindDiary,
+        aiFeedback
+      );
+
+      // Re-verify that content differs before triggering network/storage writes
+      if (verifySignature === lastSavedSignatureRef.current) {
+        return;
+      }
+
+      const activeMoodObj = MOOD_OPTIONS.find((m) => m.label === selectedMood) || MOOD_OPTIONS[0];
+
+      const newEntry: EpilogueDiaryEntry = {
+        id: existingTodayEntry?.id || `epilogue_${todayKey}_${Date.now()}`,
+        dateKey: todayKey,
+        createdAt: existingTodayEntry?.createdAt || Date.now(),
+        mood: selectedMood,
+        moodEmoji: activeMoodObj.emoji,
+        gratitudes: validGratitudes,
+        rawNotes: rawNotes.trim(),
+        mindDiary: effectiveDiary || '오늘 하루를 평온하게 마무리함',
+        aiFeedback: aiFeedback.trim() || undefined,
+        cosmicFootprint: {
+          orange: orangeData ? 'Secret 완료' : undefined,
+          trinity: trinityData ? 'Lucky 완료' : undefined,
+          heal: healData ? 'Letting Go 완료' : undefined,
+          bluebird: hoponoponoData ? 'Ho\'oponopono 완료' : undefined,
+          muse: museData ? 'Art 완료' : undefined,
+        },
+      };
+
+      let finalMerged: EpilogueDiaryEntry[] = [];
+      setEntries((prev) => {
+        let diskEntries: EpilogueDiaryEntry[] = [];
+        try {
+          const cached = localStorage.getItem('epilogue_diary_history');
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed)) diskEntries = parsed;
+          }
+        } catch (_) {}
+
+        const map = new Map<string, EpilogueDiaryEntry>();
+        diskEntries.forEach((e) => { if (e?.dateKey) map.set(e.dateKey, e); });
+        prev.forEach((e) => { if (e?.dateKey) map.set(e.dateKey, e); });
+        map.set(todayKey, newEntry);
+
+        const merged = Array.from(map.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        try {
+          localStorage.setItem('epilogue_diary_history', JSON.stringify(merged));
+          localStorage.setItem(`epilogue_diary_draft_${todayKey}`, JSON.stringify(newEntry));
+        } catch (_) {}
+
+        finalMerged = merged;
+        return merged;
+      });
+
+      if (finalMerged.length > 0) {
+        void updateSharedState(
+          {
+            epilogueHistory: finalMerged,
+            epilogueMemory: effectiveDiary || aiFeedback || `${todayKey} 성찰 진행 중`,
+          },
+          'epilogue'
+        ).catch(() => {});
+      }
+
+      // Mark this snapshot as saved to prevent redundant writes
+      lastSavedSignatureRef.current = verifySignature;
+
+      setAutoSaved(true);
+      const hideTimer = setTimeout(() => setAutoSaved(false), 2000);
+      return () => clearTimeout(hideTimer);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [
+    selectedMood,
+    gratitudes,
+    rawNotes,
+    mindDiary,
+    aiFeedback,
+    todayKey,
+    existingTodayEntry?.id,
+    existingTodayEntry?.createdAt,
+    orangeData,
+    trinityData,
+    healData,
+    hoponoponoData,
+    museData,
+  ]);
+
+  // Track if there are pending unsaved changes comparing against last saved snapshot
+  const hasUnsavedChanges = useMemo(() => {
+    const currentSig = getDiaryContentSignature(
+      selectedMood,
+      gratitudes,
+      rawNotes,
+      mindDiary,
+      aiFeedback
+    );
+    if (currentSig === lastSavedSignatureRef.current) return false;
+    const validGratitudes = gratitudes.map((g) => g.trim()).filter(Boolean);
+    const effectiveDiary = mindDiary.trim() || rawNotes.trim();
+    return Boolean(effectiveDiary || validGratitudes.length > 0 || rawNotes.trim());
+  }, [selectedMood, gratitudes, rawNotes, mindDiary, aiFeedback]);
+
   // Handle Gratitude Update (maintains at least 3 slots)
   const updateGratitude = (index: number, val: string) => {
+    hasUserEditedRef.current = true;
     setGratitudes((prev) => {
       const updated = [...prev];
       updated[index] = val;
@@ -373,10 +481,12 @@ export function EpilogueDiaryView() {
   };
 
   const addGratitudeField = () => {
+    hasUserEditedRef.current = true;
     setGratitudes((prev) => [...prev, '']);
   };
 
   const removeGratitudeField = (index: number) => {
+    hasUserEditedRef.current = true;
     setGratitudes((prev) => {
       if (prev.length <= 3) {
         const updated = [...prev];
@@ -388,6 +498,7 @@ export function EpilogueDiaryView() {
   };
 
   const addSuggestion = (text: string) => {
+    hasUserEditedRef.current = true;
     setGratitudes((prev) => {
       const emptyIndex = prev.findIndex((g) => !g.trim());
       if (emptyIndex !== -1) {
@@ -400,6 +511,7 @@ export function EpilogueDiaryView() {
   };
 
   const appendNoteIdea = (text: string) => {
+    hasUserEditedRef.current = true;
     setRawNotes((prev) => (prev ? `${prev}\n• ${text}` : text));
   };
 
@@ -426,6 +538,7 @@ export function EpilogueDiaryView() {
       });
 
       if (generated && generated.trim()) {
+        hasUserEditedRef.current = true;
         setMindDiary(generated.trim());
         setIsEditingDiary(false);
       }
@@ -465,6 +578,7 @@ export function EpilogueDiaryView() {
         { role: 'user', content: userContent },
       ]);
 
+      hasUserEditedRef.current = true;
       if (res && res.trim()) {
         setAiFeedback(res.trim());
       } else {
@@ -539,6 +653,15 @@ export function EpilogueDiaryView() {
         'epilogue'
       ).catch(() => {});
 
+      // Immediately sync lastSavedSignatureRef so auto-save won't redundantly fire
+      lastSavedSignatureRef.current = getDiaryContentSignature(
+        selectedMood,
+        gratitudes,
+        rawNotes,
+        mindDiary,
+        aiFeedback
+      );
+      setAutoSaved(false);
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 2500);
     } catch (err) {
@@ -605,12 +728,17 @@ export function EpilogueDiaryView() {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {autoSaved && (
-              <span className="text-[11px] text-emerald-300 font-medium flex items-center gap-1 animate-pulse px-2 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+            {autoSaved ? (
+              <span className="text-[11px] text-emerald-300 font-medium flex items-center gap-1 animate-pulse px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
                 <Check size={12} className="text-emerald-400" />
                 자동 저장됨
               </span>
-            )}
+            ) : hasUnsavedChanges ? (
+              <span className="text-[11px] text-purple-300/90 font-medium flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+                변경 감지 (자동저장 대기)
+              </span>
+            ) : null}
             <button
               type="button"
               onClick={handleSaveDiary}
@@ -684,7 +812,10 @@ export function EpilogueDiaryView() {
                 <button
                   key={mood.label}
                   type="button"
-                  onClick={() => setSelectedMood(mood.label)}
+                  onClick={() => {
+                    hasUserEditedRef.current = true;
+                    setSelectedMood(mood.label);
+                  }}
                   className="px-3 py-2.5 rounded-2xl text-xs font-bold font-sans transition-all flex items-center justify-center gap-1.5 cursor-pointer backdrop-blur-md"
                   style={{
                     background: active ? mood.color : 'rgba(255, 255, 255, 0.03)',
@@ -817,7 +948,10 @@ export function EpilogueDiaryView() {
             <textarea
               rows={3}
               value={rawNotes}
-              onChange={(e) => setRawNotes(e.target.value)}
+              onChange={(e) => {
+                hasUserEditedRef.current = true;
+                setRawNotes(e.target.value);
+              }}
               placeholder="오늘 하루 있었던 일, 스쳐간 감정, 짧은 메모나 키워드를 자유롭게 적어보세요... (예: 오늘 프로젝트 끝내서 홀가분함. 저녁 산책 때 시원한 바람이 좋았음)"
               className="w-full p-4 rounded-2xl text-xs sm:text-sm text-white/95 placeholder-white/20 outline-none transition-all duration-200 bg-white/[0.03] backdrop-blur-md border border-white/10 focus:border-purple-400/60 focus:bg-white/[0.06] resize-none leading-relaxed"
             />
@@ -901,7 +1035,10 @@ export function EpilogueDiaryView() {
                     <textarea
                       rows={5}
                       value={mindDiary}
-                      onChange={(e) => setMindDiary(e.target.value)}
+                      onChange={(e) => {
+                        hasUserEditedRef.current = true;
+                        setMindDiary(e.target.value);
+                      }}
                       className="w-full p-4 rounded-2xl text-xs sm:text-sm text-white/95 placeholder-white/20 outline-none transition-all duration-200 bg-black/40 backdrop-blur-md border border-purple-400/50 focus:bg-black/60 resize-none leading-relaxed font-serif"
                     />
                   ) : (
