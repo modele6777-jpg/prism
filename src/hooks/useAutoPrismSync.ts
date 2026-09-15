@@ -4,12 +4,13 @@ import { APP_VERSION } from '@/lib/appVersion';
 import { getAutoSyncIntervalMs, getSyncPendingPollMs } from '@/lib/perfMode';
 import { getPairedVaultId, PAIRED_SYNC_CHANNEL_NAME } from '@/lib/serverSyncClient';
 
-// Responsive gap: minimum 2~6 seconds between automated sync runs
-const DEFAULT_MIN_SYNC_GAP_MS = 6000;
-const PAIRED_MIN_SYNC_GAP_MS = 2000;
-const STATE_CHANGE_DEBOUNCE_MS = 800;
-const PAIRED_DEBOUNCE_MS = 350;
-const PAIRED_FAST_POLL_MS = 4000; // 4s near real-time polling when PIN paired
+// Responsive gap: minimum 10~15 seconds between automated sync runs
+const DEFAULT_MIN_SYNC_GAP_MS = 15000;
+const PAIRED_MIN_SYNC_GAP_MS = 10000;
+const STATE_CHANGE_DEBOUNCE_MS = 2500;
+const PAIRED_DEBOUNCE_MS = 1500;
+const PAIRED_FAST_POLL_MS = 30000; // 30s background polling when PIN paired (BroadcastChannel provides instant cross-tab sync)
+const RESUME_SYNC_MIN_GAP_MS = 60000; // Only check on tab resume if >60s since last sync
 
 export type UseAutoPrismSyncOptions = {
   enabled: boolean;
@@ -156,7 +157,7 @@ export function useAutoPrismSync({
     void runSyncRef.current({ silent: true, force: true });
   }, [enabled]);
 
-  // Reactive Event-Driven Detection: custom sync events, storage, visibility, and network reconnection
+  // Reactive Event-Driven Detection: custom sync events, visibility, and network reconnection
   useEffect(() => {
     if (!enabled) return;
 
@@ -167,13 +168,16 @@ export function useAutoPrismSync({
 
     const onResume = () => {
       if (document.visibilityState !== 'visible') return;
-      scheduleDebouncedSync(80);
+      const now = Date.now();
+      // Throttle resume checks to avoid thrashing on rapid tab switches
+      if (now - lastSyncAtRef.current >= RESUME_SYNC_MIN_GAP_MS) {
+        scheduleDebouncedSync(1200);
+      }
     };
 
+    // Note: Do NOT listen to 'prism:daily_oracle_updated', 'prism:feature_updated', or 'storage' here!
+    // Those events are dispatched by local unpack and state hydration, which would cause an infinite feedback loop.
     window.addEventListener('prism:state_changed', handleStateEvent);
-    window.addEventListener('prism:daily_oracle_updated', handleStateEvent);
-    window.addEventListener('prism:feature_updated', handleStateEvent);
-    window.addEventListener('storage', handleStateEvent);
     window.addEventListener('online', onResume);
     document.addEventListener('visibilitychange', onResume);
     window.addEventListener('focus', onResume);
@@ -183,15 +187,12 @@ export function useAutoPrismSync({
     try {
       channel = new BroadcastChannel(PAIRED_SYNC_CHANNEL_NAME);
       channel.onmessage = () => {
-        scheduleDebouncedSync(50);
+        scheduleDebouncedSync(800);
       };
     } catch (_) {}
 
     return () => {
       window.removeEventListener('prism:state_changed', handleStateEvent);
-      window.removeEventListener('prism:daily_oracle_updated', handleStateEvent);
-      window.removeEventListener('prism:feature_updated', handleStateEvent);
-      window.removeEventListener('storage', handleStateEvent);
       window.removeEventListener('online', onResume);
       document.removeEventListener('visibilitychange', onResume);
       window.removeEventListener('focus', onResume);
@@ -201,26 +202,17 @@ export function useAutoPrismSync({
     };
   }, [enabled, scheduleDebouncedSync]);
 
-  // Background fallback safety interval (fast 4s polling when paired vault is active)
+  // Background fallback safety interval
   useEffect(() => {
     if (!enabled) return;
 
     const getInterval = () => (getPairedVaultId() ? PAIRED_FAST_POLL_MS : getAutoSyncIntervalMs());
-    let intervalId = window.setInterval(() => {
+    const intervalId = window.setInterval(() => {
       void runSyncRef.current({ silent: true });
     }, getInterval());
 
-    // Check paired status changes and adjust interval
-    const checkPairedInterval = window.setInterval(() => {
-      window.clearInterval(intervalId);
-      intervalId = window.setInterval(() => {
-        void runSyncRef.current({ silent: true });
-      }, getInterval());
-    }, 15000);
-
     return () => {
       window.clearInterval(intervalId);
-      window.clearInterval(checkPairedInterval);
     };
   }, [enabled]);
 

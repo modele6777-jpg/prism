@@ -4,7 +4,7 @@ import { handleFirestoreError, OperationType } from '../lib/firestoreUtils';
 import { mergeUserProfiles, type SharedState, type UserProfile } from '../lib/sharedState';
 import { loadProfileFromAllVaults, saveProfileToAllVaults } from '../lib/profileVault';
 import { syncPrismAcrossDevices, type PrismSyncResult } from '../lib/prismSync';
-import { unpackAndHydrateLocalStorage, cleanFirestoreData, mergeSharedState } from '../lib/sharedStateSync';
+import { unpackAndHydrateLocalStorage, cleanFirestoreData, mergeSharedState, getSharedStateSignature } from '../lib/sharedStateSync';
 import { pushToServerVault, pullFromServerVault, generatePairingCode, importWithPairingCode, pushToPairedVault, pullFromPairedVault, getPairedVaultId } from '../lib/serverSyncClient';
 import { safeLocalStorage, safeSessionStorage } from '../utils/safeStorage';
 import { invokeLLMStream, PERSONAS, type Message, getCrossAppRecentDialogueContext } from '../lib/ai';
@@ -244,6 +244,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const sharedStateRef = useRef(sharedState);
   sharedStateRef.current = sharedState;
   const [isSyncing, setIsSyncing] = useState(false);
+  const isSyncInProgressRef = useRef(false);
   const openLucyChat = useCallback((
     persona?: PersonaType | 'epilogue' | string,
     options?: { autoSendPrompt?: string; draftPrompt?: string; mode?: string }
@@ -416,7 +417,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // Window Focus / Visibility Change Sync & Storage Event Listener (Smart Merge)
   useEffect(() => {
-    const handleSyncFromStorage = () => {
+    const handleSyncFromStorage = (e?: StorageEvent) => {
+      // Only process storage events that specifically affect chat timeline
+      if (e && e.key && !e.key.includes('unified_messages')) {
+        return;
+      }
       const isAnyGenerating = Object.values(isGeneratingRef.current).some(Boolean);
       if (isAnyGenerating) return;
 
@@ -444,17 +449,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    window.addEventListener('storage', handleSyncFromStorage);
-    window.addEventListener('focus', handleSyncFromStorage);
-    document.addEventListener('visibilitychange', () => {
+    const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         handleSyncFromStorage();
       }
-    });
+    };
+
+    window.addEventListener('storage', handleSyncFromStorage);
+    window.addEventListener('focus', handleSyncFromStorage as any);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       window.removeEventListener('storage', handleSyncFromStorage);
-      window.removeEventListener('focus', handleSyncFromStorage);
+      window.removeEventListener('focus', handleSyncFromStorage as any);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 
@@ -464,6 +472,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     const chatDocRef = doc(db, 'chatThreads', firebaseUser.uid);
     const unsub = onSnapshot(chatDocRef, (snap) => {
+      // Skip local write echoes to avoid re-entrant update cycles
+      if (snap.metadata.hasPendingWrites) {
+        return;
+      }
+
       if (snap.exists()) {
         const data = snap.data();
         const raw = data?.unified || data?.messages;
@@ -697,8 +710,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     const ref = doc(db, 'sharedState', firebaseUser.uid);
     const unsub = onSnapshot(ref, (snap) => {
+      // Ignore local write optimistic echoes to prevent loops and frame drops
+      if (snap.metadata.hasPendingWrites) {
+        return;
+      }
+
       if (snap.exists()) {
         const remoteData = snap.data() as SharedState;
+        const currentSig = getSharedStateSignature(sharedStateRef.current);
+        const remoteSig = getSharedStateSignature(remoteData);
+        // If content signature is identical to current state, bypass re-render and re-hydration
+        if (currentSig && remoteSig && currentSig === remoteSig) {
+          return;
+        }
+
         const localCached = loadFromLocal(firebaseUser.uid);
         const persistentProfile = getPersistentUserProfile();
         const mergedProfile = mergeUserProfiles(
@@ -909,11 +934,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [firebaseUser]);
 
   const syncPrismDevices = useCallback(async (): Promise<PrismSyncResult> => {
+    if (isSyncInProgressRef.current) {
+      return {
+        success: true,
+        needsReload: false,
+        message: 'Sync already in progress',
+        localVersion: sharedStateRef.current?.unifiedAppVersion || '',
+        targetVersion: sharedStateRef.current?.unifiedAppVersion || '',
+        mergedState: sharedStateRef.current,
+      };
+    }
     const currentState = sharedStateRef.current;
     if (safeLocalStorage.getItem('developer_bypass') === 'true') {
       return syncPrismAcrossDevices(null, currentState);
     }
 
+    isSyncInProgressRef.current = true;
     setIsSyncing(true);
     try {
       // 1. Tri-pull from Firestore, Server Vault, and Paired PIN-code Vault
@@ -938,24 +974,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (finalMerged) {
-        setSharedState(finalMerged);
-        if (firebaseUser?.uid) {
-          saveToLocal(firebaseUser.uid, finalMerged);
-          pushToServerVault(firebaseUser.uid, finalMerged);
-        } else {
-          saveGuestState(finalMerged);
+        const currentSig = getSharedStateSignature(currentState);
+        const mergedSig = getSharedStateSignature(finalMerged);
+        if (currentSig !== mergedSig) {
+          setSharedState(finalMerged);
+          if (firebaseUser?.uid) {
+            saveToLocal(firebaseUser.uid, finalMerged);
+            pushToServerVault(firebaseUser.uid, finalMerged);
+          } else {
+            saveGuestState(finalMerged);
+          }
+          // Also persist updated state back to paired vault if active
+          if (getPairedVaultId()) {
+            void pushToPairedVault(finalMerged).catch(() => {});
+          }
+          if (finalMerged.userProfile && Object.keys(finalMerged.userProfile).length > 0) {
+            setPersistentUserProfile(finalMerged.userProfile);
+            saveProfileToAllVaults(finalMerged.userProfile);
+          }
+          unpackAndHydrateLocalStorage(firebaseUser?.uid, finalMerged);
+          window.dispatchEvent(new CustomEvent('prism:profile_updated', { detail: finalMerged.userProfile }));
+          window.dispatchEvent(new CustomEvent('prism:feature_updated', { detail: finalMerged }));
         }
-        // Also persist updated state back to paired vault if active
-        if (getPairedVaultId()) {
-          void pushToPairedVault(finalMerged).catch(() => {});
-        }
-        if (finalMerged.userProfile && Object.keys(finalMerged.userProfile).length > 0) {
-          setPersistentUserProfile(finalMerged.userProfile);
-          saveProfileToAllVaults(finalMerged.userProfile);
-        }
-        unpackAndHydrateLocalStorage(firebaseUser?.uid, finalMerged);
-        window.dispatchEvent(new CustomEvent('prism:profile_updated', { detail: finalMerged.userProfile }));
-        window.dispatchEvent(new CustomEvent('prism:feature_updated', { detail: finalMerged }));
       }
 
       // Also trigger chat messages synchronization across devices safely with timeout
@@ -996,6 +1036,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return result;
     } finally {
       setIsSyncing(false);
+      isSyncInProgressRef.current = false;
     }
   }, [firebaseUser]);
 

@@ -413,10 +413,38 @@ export function collectAllLocalActivities(uid?: string | null): Partial<SharedSt
 }
 
 /**
+ * Calculates a concise signature representing the significant content of a SharedState.
+ * Used for dirty-checking to bypass expensive re-hydration, re-persisting, and redundant renders.
+ */
+export function getSharedStateSignature(s: SharedState | null | undefined): string {
+  if (!s) return 'null';
+  const prof = s.userProfile?.basic;
+  const psych = s.userProfile?.psych;
+  const profStr = prof
+    ? `${prof.nickname || ''}_${prof.birthdate || ''}_${prof.birthtime || ''}_${prof.gender || ''}_${prof.lunarSolar || ''}_${psych?.mbti || ''}`
+    : '';
+  const oracleKeys = s.todayOracles ? Object.keys(s.todayOracles).sort().join(',') : '';
+  const secretKeys = s.dailySecrets ? Object.keys(s.dailySecrets).sort().join(',') : '';
+  const artKeys = s.dailyArts ? Object.keys(s.dailyArts).sort().join(',') : '';
+  const luckyKeys = s.trinityDailyLucky ? Object.keys(s.trinityDailyLucky).sort().join(',') : '';
+  const hopoKeys = s.hoponoponoDaily ? Object.keys(s.hoponoponoDaily).sort().join(',') : '';
+  const hLen = `${s.featureHistory?.length || 0}_${s.orangeHistory?.length || 0}_${s.museHistory?.length || 0}_${s.bluebirdHistory?.length || 0}_${s.favoriteInsightIds?.length || 0}_${s.rebibleVerses?.length || 0}_${(s as any).epilogueHistory?.length || 0}`;
+  return `${s.unifiedAppVersion || ''}|${s.lastAppSyncAt || 0}|${profStr}|${s.themeColor || ''}|${s.currentVibe || ''}|${oracleKeys}|${secretKeys}|${artKeys}|${luckyKeys}|${hopoKeys}|${hLen}`;
+}
+
+let lastHydratedSignature = '';
+
+/**
  * Unpacks and restores merged cloud data into the current device's local storage and dispatches UI events.
  */
 export function unpackAndHydrateLocalStorage(uid: string | null | undefined, state: SharedState): void {
   if (typeof window === 'undefined' || !state) return;
+
+  const currentSignature = `${uid || 'guest'}::${getSharedStateSignature(state)}`;
+  if (lastHydratedSignature && lastHydratedSignature === currentSignature) {
+    return;
+  }
+  lastHydratedSignature = currentSignature;
 
   const todayKey = getTodayDateKey();
   const effectiveUid = uid || 'guest';
@@ -670,8 +698,6 @@ export function unpackAndHydrateLocalStorage(uid: string | null | undefined, sta
 
     try {
       window.dispatchEvent(new CustomEvent('prism:daily_art_updated'));
-      window.dispatchEvent(new CustomEvent('prism:daily_oracle_updated'));
-      window.dispatchEvent(new CustomEvent('prism:feature_updated'));
     } catch (_) {}
   }
 

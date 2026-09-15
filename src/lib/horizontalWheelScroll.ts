@@ -13,12 +13,17 @@ function isHorizontallyScrollable(el: HTMLElement | null): boolean {
   if (!el || el === document.body || el === document.documentElement) return false;
   if (el.getAttribute('data-no-horizontal-wheel') === 'true') return false;
 
+  // Fast path: pure geometry check without forcing expensive style recalculations.
+  // For 99% of elements, scrollWidth is <= clientWidth + 4.
+  if (el.scrollWidth <= el.clientWidth + 4) {
+    return false;
+  }
+
   const style = window.getComputedStyle(el);
   const overflowX = style.overflowX;
   const isScrollOverflow = overflowX === 'auto' || overflowX === 'scroll';
   
-  // Must have scrollable horizontal content
-  return isScrollOverflow && (el.scrollWidth > el.clientWidth + 2);
+  return isScrollOverflow;
 }
 
 /**
@@ -27,9 +32,12 @@ function isHorizontallyScrollable(el: HTMLElement | null): boolean {
 function isPrimarilyVertical(el: HTMLElement): boolean {
   if (el.tagName === 'TEXTAREA' || el.isContentEditable) return true;
   
+  // Fast path: if element doesn't have vertical overflow, no need to compute style
+  if (el.scrollHeight <= el.clientHeight + 4) return false;
+
   const style = window.getComputedStyle(el);
   const overflowY = style.overflowY;
-  const hasVerticalScroll = (overflowY === 'auto' || overflowY === 'scroll') && (el.scrollHeight > el.clientHeight + 4);
+  const hasVerticalScroll = (overflowY === 'auto' || overflowY === 'scroll');
   
   // If vertical scroll is large and horizontal scroll is trivial, treat as vertical
   if (hasVerticalScroll && (el.scrollHeight - el.clientHeight > 80) && (el.scrollWidth - el.clientWidth < 10)) {
@@ -38,20 +46,36 @@ function isPrimarilyVertical(el: HTMLElement): boolean {
   return false;
 }
 
+const targetCache = new WeakMap<EventTarget, { container: HTMLElement | null; ts: number }>();
+
 /**
- * Finds the closest ancestor that is horizontally scrollable
+ * Finds the closest ancestor that is horizontally scrollable with short TTL cache & depth limit
  */
 export function findHorizontalScrollContainer(target: EventTarget | null): HTMLElement | null {
-  let curr = target as HTMLElement | null;
-  while (curr && curr !== document.body && curr !== document.documentElement) {
+  if (!target || !(target instanceof HTMLElement)) return null;
+
+  const now = Date.now();
+  const cached = targetCache.get(target);
+  if (cached && now - cached.ts < 250) {
+    return cached.container;
+  }
+
+  let curr: HTMLElement | null = target;
+  let depth = 0;
+  let resolved: HTMLElement | null = null;
+
+  while (curr && curr !== document.body && curr !== document.documentElement && depth++ < 6) {
     if (isHorizontallyScrollable(curr)) {
       if (!isPrimarilyVertical(curr)) {
-        return curr;
+        resolved = curr;
+        break;
       }
     }
     curr = curr.parentElement;
   }
-  return null;
+
+  targetCache.set(target, { container: resolved, ts: now });
+  return resolved;
 }
 
 /**
