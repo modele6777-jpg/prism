@@ -1,7 +1,7 @@
 {
   "name": "lucy-universe",
   "private": true,
-  "version": "1.2.955",
+  "version": "1.2.956",
   "engines": {
     "node": ">=20.0.0"
   },
