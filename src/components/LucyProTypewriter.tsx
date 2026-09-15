@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Download, Maximize2, X, ExternalLink, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
+import { isMobileDevice, isPerfReduced } from '@/lib/perfMode';
 
 interface LucyProTypewriterProps {
   content: string;
@@ -143,10 +144,12 @@ export function LucyProTypewriter({
   content,
   isLatest = false,
   isGenerating = false,
-  typewriterSpeed = 12,
+  typewriterSpeed = 32,
 }: LucyProTypewriterProps) {
-  // If it's an old history message (not the latest or not generating), render directly for instant display
-  const shouldAnimate = isLatest || isGenerating;
+  const isMobile = typeof window !== 'undefined' && (isMobileDevice() || isPerfReduced());
+  // On mobile, render streamed content directly to prevent 80-markdown-parses-per-second CPU lag.
+  // The LLM stream already provides natural live chunking!
+  const shouldAnimate = !isMobile && (isLatest || isGenerating);
   const [displayedLength, setDisplayedLength] = useState<number>(() => {
     return shouldAnimate ? 0 : content.length;
   });
@@ -173,19 +176,19 @@ export function LucyProTypewriter({
         }
       }
 
-      // Adaptive chunk sizing for natural and smooth typing cadence
-      let chunkSize = 1;
+      // Adaptive chunk sizing for smooth typing cadence without CPU bottleneck
+      let chunkSize = 4;
       if (remainder > 300) {
-        chunkSize = 8;
+        chunkSize = 16;
       } else if (remainder > 150) {
-        chunkSize = 4;
+        chunkSize = 8;
       } else if (remainder > 50) {
-        chunkSize = 2;
+        chunkSize = 6;
       }
 
       const timer = setTimeout(() => {
         setDisplayedLength((prev) => Math.min(content.length, prev + chunkSize));
-      }, typewriterSpeed);
+      }, Math.max(typewriterSpeed, 28));
 
       return () => clearTimeout(timer);
     }
@@ -198,7 +201,7 @@ export function LucyProTypewriter({
     return content.slice(0, displayedLength);
   }, [content, displayedLength, shouldAnimate]);
 
-  const isTyping = shouldAnimate && (displayedLength < content.length || isGenerating);
+  const isTyping = isGenerating || (shouldAnimate && displayedLength < content.length);
 
   return (
     <div className="prose prose-slate max-w-none text-slate-800 leading-relaxed font-sans [&_h1]:text-slate-900 [&_h1]:font-bold [&_h1]:text-lg [&_h1]:mb-2 [&_h2]:text-slate-900 [&_h2]:font-bold [&_h2]:text-base [&_h2]:mb-2 [&_h3]:text-slate-900 [&_h3]:font-semibold [&_h3]:text-sm [&_h3]:mb-1.5 [&_strong]:text-amber-900 [&_strong]:font-bold [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2 [&_li]:mb-1 [&_blockquote]:border-l-4 [&_blockquote]:border-amber-400 [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:text-slate-600 [&_blockquote]:my-2 [&_code]:bg-amber-50 [&_code]:text-amber-800 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_pre]:bg-slate-900 [&_pre]:text-slate-100 [&_pre]:p-3.5 [&_pre]:rounded-xl [&_p]:mb-2.5 [&_p:last-child]:mb-0">

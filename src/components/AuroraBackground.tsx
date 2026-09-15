@@ -5,6 +5,8 @@ import {
   isGalaxyFoldSeClass,
   isIPhoneXSClass,
   isLegacyMobile,
+  isMobileDevice,
+  isPerfReduced,
 } from '@/lib/perfMode';
 
 /** Deep-space palette for PRISM cosmic theme */
@@ -414,10 +416,11 @@ export const AuroraBackground: React.FC = () => {
 
   const isXS = isIPhoneXSClass();
   const legacy = isLegacyMobile() || isXS;
+  const isMobile = isMobileDevice() || isPerfReduced() || isXS || legacy;
   const foldCover = isGalaxyFoldSeClass() && isFoldCoverScreen();
   const galaxy = profile === 'galaxy';
-  const starDensity = isXS
-    ? 30
+  const starDensity = isMobile
+    ? 24
     : legacy
       ? 42
       : foldCover
@@ -431,8 +434,8 @@ export const AuroraBackground: React.FC = () => {
               : 96;
   const minStarSize = legacy ? 2 : 1.5;
   const nebulaBlur = isXS ? 26 : legacy ? 48 : foldCover ? 82 : profile === 'full' || galaxy ? 104 : 72;
-  const animateOrbs = !isXS && (profile === 'full' || (galaxy && !foldCover));
-  const staticStarCount = isXS ? 20 : legacy ? 32 : foldCover ? 40 : 48;
+  const animateOrbs = !isMobile && (profile === 'full' || (galaxy && !foldCover));
+  const staticStarCount = isMobile ? 24 : isXS ? 20 : legacy ? 32 : foldCover ? 40 : 48;
   const shootingStarCount = isXS ? 1 : legacy ? 3 : foldCover ? 5 : profile === 'full' ? 9 : galaxy ? 8 : 6;
 
 
@@ -441,8 +444,14 @@ export const AuroraBackground: React.FC = () => {
       <div
         className="absolute inset-0"
         style={{
-          background: isXS
-            ? `radial-gradient(ellipse 90% 50% at 50% 100%, ${withAlpha(nebulaViolet, 0.18)} 0%, transparent 60%), linear-gradient(180deg, ${voidColor} 0%, ${abyss} 45%, oklch(0.03 0.025 280) 100%)`
+          background: isMobile
+            ? [
+                buildStaticStars(staticStarCount),
+                `radial-gradient(ellipse 90% 50% at 50% 100%, ${withAlpha(nebulaViolet, 0.22)} 0%, transparent 60%)`,
+                `radial-gradient(ellipse 70% 45% at 20% 20%, ${withAlpha(nebulaBlue, 0.22)} 0%, transparent 55%)`,
+                `radial-gradient(ellipse 65% 45% at 85% 30%, ${withAlpha(nebulaMagenta, 0.18)} 0%, transparent 50%)`,
+                `linear-gradient(180deg, ${voidColor} 0%, ${abyss} 45%, oklch(0.03 0.025 280) 100%)`,
+              ].join(', ')
             : [
                 buildStaticStars(staticStarCount),
                 `radial-gradient(ellipse 95% 60% at 50% 108%, ${withAlpha(nebulaViolet, 0.28)} 0%, transparent 62%)`,
@@ -455,8 +464,8 @@ export const AuroraBackground: React.FC = () => {
         }}
       />
 
-      {/* Galactic band & Nebula Orbs - Bypassed entirely on iPhone X / XS to eliminate GPU offscreen blur rendering passes */}
-      {!isXS && (
+      {/* Galactic band & Nebula Orbs - Bypassed entirely on mobile to eliminate GPU offscreen blur rendering passes */}
+      {!isMobile && (
         <>
           <div
             className={`absolute left-[-20%] top-[16%] w-[140%] h-[30%] rotate-[-12deg] ${animateOrbs ? 'aura-orb-2' : ''}`}
@@ -513,11 +522,11 @@ export const AuroraBackground: React.FC = () => {
         </>
       )}
 
-      {!isXS && <Starfield density={starDensity} minSize={minStarSize} />}
-      {!isXS && <ConstellationsLayer />}
-      {!isXS && <ShootingStars count={shootingStarCount} />}
+      {!isMobile && <Starfield density={starDensity} minSize={minStarSize} />}
+      {!isMobile && <ConstellationsLayer />}
+      {!isMobile && <ShootingStars count={shootingStarCount} />}
 
-      {!isXS && (
+      {!isMobile && (
         <div
           className="absolute inset-0"
           style={{

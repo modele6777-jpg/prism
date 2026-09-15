@@ -641,26 +641,29 @@ html.perf-iphone-xs .prism-aura-bg {
 }
 
 
-/* Galaxy S23: performance-only layer (no layout / sizing changes) */
-html.perf-galaxy [data-app-scroll-root] {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 600px;
+/* Galaxy S23 & Android Mobile: silky-smooth native touch momentum scrolling (NO layout thrashing content-visibility on scroll root) */
+html.perf-galaxy [data-app-scroll-root],
+html.perf-mobile [data-app-scroll-root] {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
 }
 
 html.perf-galaxy .fixed,
-html.perf-galaxy .prism-bottom-nav {
+html.perf-galaxy .prism-bottom-nav,
+html.perf-mobile .fixed,
+html.perf-mobile .prism-bottom-nav {
   transform: translateZ(0);
   backface-visibility: hidden;
 }
 
-html.perf-galaxy .prism-aura-bg {
+html.perf-galaxy .prism-aura-bg,
+html.perf-mobile .prism-aura-bg {
   contain: layout style paint;
   transform: translateZ(0);
 }
 
-html.perf-galaxy svg {
+html.perf-galaxy svg,
+html.perf-mobile svg {
   shape-rendering: optimizeSpeed;
 }
 
@@ -672,8 +675,6 @@ html.perf-galaxy .aura-orb-3 {
 
 /* Galaxy Z Fold SE: flagship Android foldable tuning */
 html.perf-galaxy-fold [data-app-scroll-root] {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 640px;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
 }
@@ -717,21 +718,27 @@ html.perf-galaxy-fold[data-fold-cover="true"] .aura-orb-3 {
   animation-duration: 22s !important;
 }
 
-/* PWA / mobile: backdrop-blur and heavy motion are the main iOS lag sources */
+/* PWA / mobile: backdrop-blur and heavy motion are the main mobile GPU lag sources */
+html.perf-mobile .glass,
 html.perf-reduced .glass,
 html.pwa-standalone .glass,
+html.perf-mobile .prism-bottom-nav,
 html.perf-reduced .prism-bottom-nav,
 html.pwa-standalone .prism-bottom-nav {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+  background-color: rgba(18, 16, 30, 0.94) !important;
 }
 
+html.perf-mobile [class*="backdrop-blur"],
 html.perf-reduced [class*="backdrop-blur"],
 html.pwa-standalone [class*="backdrop-blur"] {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
 
+html.perf-mobile .prism-rainbow-btn,
+html.perf-mobile .celestial-tarot-btn,
 html.perf-reduced .prism-rainbow-btn,
 html.perf-reduced .celestial-tarot-btn,
 html.pwa-standalone .prism-rainbow-btn,
@@ -740,6 +747,7 @@ html.pwa-standalone .celestial-tarot-btn {
   background-size: 100% 100% !important;
 }
 
+html.perf-mobile .prism-fab-3d,
 html.perf-reduced .prism-fab-3d,
 html.pwa-standalone .prism-fab-3d {
   box-shadow:
@@ -747,6 +755,8 @@ html.pwa-standalone .prism-fab-3d {
     0 4px 10px rgba(0, 0, 0, 0.28) !important;
 }
 
+html.perf-mobile .prism-fab-3d::before,
+html.perf-mobile .prism-fab-3d::after,
 html.perf-reduced .prism-fab-3d::before,
 html.perf-reduced .prism-fab-3d::after,
 html.pwa-standalone .prism-fab-3d::before,
@@ -754,6 +764,7 @@ html.pwa-standalone .prism-fab-3d::after {
   display: none;
 }
 
+html.perf-mobile *,
 html.perf-reduced *,
 html.pwa-standalone * {
   scroll-behavior: auto !important;
@@ -844,6 +855,9 @@ html.perf-legacy svg {
 html.perf-legacy .aura-orb-1,
 html.perf-legacy .aura-orb-2,
 html.perf-legacy .aura-orb-3,
+html.perf-mobile .aura-orb-1,
+html.perf-mobile .aura-orb-2,
+html.perf-mobile .aura-orb-3,
 html.perf-reduced .aura-orb-1,
 html.perf-reduced .aura-orb-2,
 html.perf-reduced .aura-orb-3 {
@@ -860,6 +874,7 @@ html.perf-reduced .aura-orb-3 {
 }
 
 html.perf-legacy .cosmic-star-twinkle,
+html.perf-mobile .cosmic-star-twinkle,
 html.perf-reduced .cosmic-star-twinkle {
   animation: none !important;
 }

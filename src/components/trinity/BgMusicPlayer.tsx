@@ -9,7 +9,7 @@ import {
   BGM_HTML_GAIN_SCALE,
   type NoiseColor,
 } from "@/lib/audio";
-import { getMaxSynthVoices, shouldPreloadBgmAudio } from "@/lib/perfMode";
+import { getMaxSynthVoices, shouldPreloadBgmAudio, isMobileDevice, isPerfReduced } from "@/lib/perfMode";
 import {
   getBgmTrackId,
   hideBgmTrack,
@@ -216,9 +216,11 @@ export function BgMusicPlayer() {
   const [isPlaying, setIsPlaying] = useState(() => {
     try {
       const saved = localStorage.getItem('prism_bgm_playing');
-      return saved === null ? true : saved === 'true';
-    } catch {
+      if (saved !== null) return saved === 'true';
+      if (isMobileDevice() || isPerfReduced()) return false;
       return true;
+    } catch {
+      return false;
     }
   });
   const isPlayingRef = useRef(isPlaying);

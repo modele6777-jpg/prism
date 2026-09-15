@@ -20,7 +20,11 @@ export function isAndroidDevice(): boolean {
 
 export function isMobileDevice(): boolean {
   if (typeof navigator === 'undefined') return false;
-  return isIOSDevice() || isAndroidDevice();
+  if (isIOSDevice() || isAndroidDevice()) return true;
+  if (typeof window !== 'undefined') {
+    return window.innerWidth <= 768 || window.matchMedia('(pointer: coarse)').matches;
+  }
+  return false;
 }
 
 export function isStandalonePWA(): boolean {
@@ -197,6 +201,12 @@ export function initPerfMode(): PerfProfile {
 
   document.documentElement.dataset.perf = profile;
 
+  const isMobile = isMobileDevice();
+  if (isMobile) {
+    document.documentElement.classList.add('perf-mobile');
+    document.documentElement.classList.add('perf-reduced');
+  }
+
   if (profile === 'reduced' || profile === 'pwa' || profile === 'legacy' || profile === 'iphonexs') {
     document.documentElement.classList.add('perf-reduced');
   }
@@ -224,6 +234,7 @@ export function getPerfProfile(): PerfProfile {
 }
 
 export function isPerfReduced(): boolean {
+  if (typeof window !== 'undefined' && isMobileDevice()) return true;
   const profile = getPerfProfile();
   return profile === 'reduced' || profile === 'pwa' || profile === 'legacy' || profile === 'iphonexs';
 }
@@ -283,6 +294,7 @@ export function getSwUpdateIntervalMs(): number {
 }
 
 export function shouldUsePageTransitions(): boolean {
+  if (typeof window !== 'undefined' && isMobileDevice()) return false;
   const profile = getPerfProfile();
   if (profile === 'iphonexs' || profile === 'legacy') return false;
   if (profile === 'full' || profile === 'galaxy') {

@@ -42,7 +42,7 @@ export interface UnifiedMessage {
 export interface SendUnifiedMessageOptions {
   extraSystemContext?: string;
   systemSuffix?: string;
-  onFinish?: (fullText: string, sentText: string) => void | Promise<void>;
+  onFinish?: (fullText: string, sentText: string, messageId?: string) => void | Promise<void>;
   forcePersona?: PersonaType;
   channel?: string;
   channels?: string[];
@@ -1421,7 +1421,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
           if (options?.onFinish) {
             try {
-              await options.onFinish(fullText, text);
+              await options.onFinish(fullText, text, assistMsgId);
             } catch (callbackErr) {
               console.warn("sendUnifiedMessage onFinish callback failed:", callbackErr);
             }

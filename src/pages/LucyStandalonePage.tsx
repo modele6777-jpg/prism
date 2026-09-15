@@ -7,7 +7,8 @@ import {
 } from 'lucide-react';
 import { useApp, PersonaType } from '@/contexts/AppContext';
 import { useLocation } from 'wouter';
-import { playTTS, stopTTS, useTTSActive, playConversation, subscribeTTS, prefetchTTS, normalizeTextForSpeech } from '@/utils/tts';
+import { playTTS, playTTSInChunks, stopTTS, useTTSActive, playConversation, subscribeTTS, prefetchTTS, normalizeTextForSpeech } from '@/utils/tts';
+import { unlockAudioPlayback, primeTTSAudioElement } from '@/lib/audio';
 import { calculateDetailedSaju } from '@/lib/sajuAnalysis';
 import { getLocalDateKey } from '@/lib/rebibleStorage';
 import ReactMarkdown from 'react-markdown';
@@ -301,6 +302,10 @@ export function resolveMessageModeAndChannels(
   badgeColor: string;
   badgeIcon: string;
 } {
+  if (msg && typeof msg === 'object' && (msg as any)._cachedModeInfo) {
+    return (msg as any)._cachedModeInfo;
+  }
+
   let rawChannels: string[] = Array.isArray(msg?.channels) ? msg.channels : [];
   let rawMode: string = msg?.mode || msg?.channel || '';
 
@@ -363,15 +368,31 @@ export function resolveMessageModeAndChannels(
     badgeIcon = '⚡';
   }
 
-  return {
+  const result: {
+    mode: string;
+    channels: SpecialChannel[];
+    isMaster: boolean;
+    isCasual: boolean;
+    badgeLabel: string;
+    badgeColor: string;
+    badgeIcon: string;
+  } = {
     mode: isMaster ? 'master' : (isCasual ? 'casual' : (validChannels.length === 1 ? validChannels[0] : 'synergy')),
-    channels: isMaster ? ['orange', 'trinity', 'aura', 'bluebird', 'muse'] : validChannels,
+    channels: isMaster ? (['orange', 'trinity', 'aura', 'bluebird', 'muse'] as SpecialChannel[]) : validChannels,
     isMaster,
     isCasual,
     badgeLabel,
     badgeColor,
     badgeIcon
   };
+
+  if (msg && typeof msg === 'object') {
+    try {
+      (msg as any)._cachedModeInfo = result;
+    } catch (_) {}
+  }
+
+  return result;
 }
 
 export default function LucyStandalonePage() {
@@ -405,22 +426,29 @@ export default function LucyStandalonePage() {
   // Real-time input text analysis for live dynamic mode switching (항시 AI 자동 감지 고정)
   useEffect(() => {
     if (!input.trim() || input.trim().length < 2) {
-      setAutoDetectedTitle(null);
+      setAutoDetectedTitle((prev) => (prev !== null ? null : prev));
       return;
     }
     const timer = setTimeout(() => {
       const detected = detectLucyChannelsFromText(input);
-      if (detected.isMaster) {
-        setActiveChannels(['orange', 'trinity', 'aura', 'bluebird', 'muse']);
-        setAutoDetectedTitle(detected.modeTitle);
-      } else if (detected.channels.length > 0) {
-        setActiveChannels(detected.channels);
-        setAutoDetectedTitle(detected.modeTitle);
-      } else {
-        setActiveChannels([]);
-        setAutoDetectedTitle('가벼운 일상 수다');
-      }
-    }, 180);
+      const nextChannels: SpecialChannel[] = detected.isMaster
+        ? ['orange', 'trinity', 'aura', 'bluebird', 'muse']
+        : detected.channels.length > 0
+        ? detected.channels
+        : [];
+      const nextTitle = detected.isMaster || detected.channels.length > 0
+        ? detected.modeTitle
+        : '가벼운 일상 수다';
+
+      setActiveChannels((prev) => {
+        if (prev.length === nextChannels.length && prev.every((c, i) => c === nextChannels[i])) {
+          return prev;
+        }
+        return nextChannels;
+      });
+
+      setAutoDetectedTitle((prev) => (prev === nextTitle ? prev : nextTitle));
+    }, 250);
     return () => clearTimeout(timer);
   }, [input]);
 
@@ -437,6 +465,39 @@ export default function LucyStandalonePage() {
   const [playingMsgId, setPlayingMsgId] = useState<string | null>(null);
   const [ttsInfo, setTtsInfo] = useState({ isSpeaking: false, isLoading: false, activeText: null as string | null });
   const [promptSeed, setPromptSeed] = useState<number>(0);
+
+  // 🔊 루시 답변 자동 음성 재생 (Auto-TTS 바로재생) 상태 및 설정 (기본값: ON, localStorage 영구 보존)
+  const [isAutoTts, setIsAutoTts] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('lucy_chat_auto_tts');
+      return saved !== 'false';
+    } catch {
+      return true;
+    }
+  });
+  const isAutoTtsRef = useRef(isAutoTts);
+  useEffect(() => {
+    isAutoTtsRef.current = isAutoTts;
+  }, [isAutoTts]);
+
+  const [autoTtsToast, setAutoTtsToast] = useState<string | null>(null);
+  const lastAutoSpokenMsgIdRef = useRef<string | null>(null);
+
+  const toggleAutoTts = () => {
+    setIsAutoTts((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('lucy_chat_auto_tts', String(next));
+      } catch (_) {}
+      if (!next) {
+        stopTTS();
+        setPlayingMsgId(null);
+      }
+      setAutoTtsToast(next ? '🔊 루시 답변 자동 음성 재생(TTS)이 켜졌습니다.' : '🔇 루시 답변 자동 음성 재생(TTS)이 꺼졌습니다.');
+      setTimeout(() => setAutoTtsToast(null), 2500);
+      return next;
+    });
+  };
   
   const chatEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -615,8 +676,35 @@ export default function LucyStandalonePage() {
   useEffect(() => {
     return subscribeTTS((state) => {
       setTtsInfo({ isSpeaking: state.isSpeaking, isLoading: state.isLoading, activeText: state.activeText });
+      if (!state.isSpeaking && !state.isLoading) {
+        setPlayingMsgId(null);
+      }
     });
   }, []);
+
+  // 🔊 자동 음성 재생(Auto-TTS) 안전 백업 감시자: 새 어시스턴트 메시지 도착 시 바로재생 보장
+  useEffect(() => {
+    if (!isAutoTtsRef.current || isLucyGenerating || lucyMessages.length === 0) return;
+    const lastMsg = lucyMessages[lucyMessages.length - 1];
+    if (!lastMsg || lastMsg.role === 'user' || typeof lastMsg.content !== 'string' || !lastMsg.content.trim()) return;
+
+    // 방금 전송된 메시지이고 아직 음성 재생되지 않은 경우 바로 자동 재생
+    if (lastMsg.id && lastAutoSpokenMsgIdRef.current !== lastMsg.id && !ttsInfo.isSpeaking && !ttsInfo.isLoading) {
+      const msgTime = lastMsg.timestamp || 0;
+      const isRecent = Date.now() - msgTime < 20000;
+      if (isRecent) {
+        lastAutoSpokenMsgIdRef.current = lastMsg.id;
+        const clean = normalizeTextForSpeech(lastMsg.content);
+        if (clean) {
+          setPlayingMsgId(lastMsg.id);
+          stopTTS();
+          playTTSInChunks(clean, 'Kore', 350, '다정').catch((err) => {
+            console.warn('[Auto-TTS Fallback] Play error:', err);
+          });
+        }
+      }
+    }
+  }, [lucyMessages, isLucyGenerating, ttsInfo.isSpeaking, ttsInfo.isLoading]);
 
   const isReadingAll = ttsInfo.isSpeaking && ttsInfo.activeText === '__CONVERSATION__';
   const isReadingAllLoading = ttsInfo.isLoading && ttsInfo.activeText === '__CONVERSATION__';
@@ -765,22 +853,28 @@ export default function LucyStandalonePage() {
     }
 
     try {
+      // 🔊 사용자의 마이크 버튼 클릭 시점에 오디오 컨텍스트 사전 잠금 해제
+      unlockAudioPlayback();
+      primeTTSAudioElement();
+
       const recognition = new SpeechRecognition();
       recognition.lang = 'ko-KR';
       recognition.continuous = true;
       recognition.interimResults = true;
 
+      let baseInput = input;
       recognition.onstart = () => {
         setIsRecording(true);
+        baseInput = input;
       };
 
       recognition.onresult = (event: any) => {
-        let transcript = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          transcript += event.results[i][0].transcript;
+        let currentTranscript = '';
+        for (let i = 0; i < event.results.length; ++i) {
+          currentTranscript += event.results[i][0].transcript;
         }
-        if (transcript) {
-          setInput((prev) => (prev ? prev + ' ' + transcript : transcript));
+        if (currentTranscript) {
+          setInput(baseInput ? `${baseInput.trim()} ${currentTranscript.trim()}` : currentTranscript.trim());
         }
       };
 
@@ -877,11 +971,33 @@ export default function LucyStandalonePage() {
     }
     stopTTS();
 
+    // 🔊 사용자 액션(전송 클릭 또는 Enter 입력) 시 오디오 컨텍스트를 즉시 해제 및 프라이밍
+    // 이를 통해 AI 응답 수신 후 브라우저 오디오 자동 재생 제한 없이 즉시 음성이 나옵니다.
+    unlockAudioPlayback();
+    primeTTSAudioElement();
+
     await sendUnifiedMessage(userCleanText, targetPersona, imgToSend, {
       extraSystemContext,
       channels: channels,
       mode: isMaster ? 'master' : (isCasual ? 'casual' : (isSingle ? channels[0] : 'synergy')),
-      channel: isSingle ? channels[0] : undefined
+      channel: isSingle ? channels[0] : undefined,
+      onFinish: async (fullText, _sentText, replyMsgId) => {
+        if (isAutoTtsRef.current && fullText && fullText.trim()) {
+          try {
+            const clean = normalizeTextForSpeech(fullText);
+            if (clean) {
+              if (replyMsgId) {
+                lastAutoSpokenMsgIdRef.current = replyMsgId;
+                setPlayingMsgId(replyMsgId);
+              }
+              stopTTS();
+              await playTTSInChunks(clean, 'Kore', 350, '다정');
+            }
+          } catch (ttsErr) {
+            console.warn('[Auto-TTS] Immediate voice playback error:', ttsErr);
+          }
+        }
+      }
     });
   }, [input, attachedImage, isLucyGenerating, activeChannels, isAutoDetect, isRecording, sendUnifiedMessage]);
 
@@ -996,7 +1112,7 @@ export default function LucyStandalonePage() {
     } else {
       stopTTS();
       setPlayingMsgId(id);
-      playTTS(clean, voice);
+      playTTSInChunks(clean, voice, 350, '다정');
     }
   };
 
@@ -1005,6 +1121,8 @@ export default function LucyStandalonePage() {
       stopTTS();
       setPlayingMsgId(null);
     } else {
+      unlockAudioPlayback();
+      primeTTSAudioElement();
       const talkMessages = lucyMessages
         .filter((m) => typeof m.content === 'string')
         .map((m) => ({
@@ -1142,6 +1260,31 @@ export default function LucyStandalonePage() {
               aria-label="대화 검색"
             >
               <Search size={16} />
+            </button>
+
+            {/* 🔊 루시 답변 자동 음성 읽기 (Auto-TTS 바로재생 토글 버튼) */}
+            <button
+              type="button"
+              onClick={toggleAutoTts}
+              className={`p-2 rounded-xl transition-all shadow-xs active:scale-95 cursor-pointer shrink-0 flex items-center gap-1.5 ${
+                isAutoTts
+                  ? 'bg-gradient-to-r from-emerald-50 to-teal-100/80 text-emerald-800 border border-emerald-300 shadow-2xs font-semibold'
+                  : 'bg-slate-100/90 text-slate-400 hover:text-slate-600 border border-slate-200/80'
+              }`}
+              title={isAutoTts ? '루시 답변 자동 음성 읽기(TTS 바로재생) 켜짐 - 클릭하여 끄기' : '루시 답변 자동 음성 읽기(TTS 바로재생) 꺼짐 - 클릭하여 켜기'}
+              aria-label={isAutoTts ? '답변 자동 음성 읽기 켜짐' : '답변 자동 음성 읽기 꺼짐'}
+            >
+              {isAutoTts ? (
+                <>
+                  <Volume2 size={16} className="text-emerald-600 animate-pulse" />
+                  <span className="text-[11px] font-bold text-emerald-800 hidden sm:inline">자동 읽기</span>
+                </>
+              ) : (
+                <>
+                  <VolumeX size={16} className="text-slate-400" />
+                  <span className="text-[11px] font-medium text-slate-500 hidden sm:inline">자동 읽기 OFF</span>
+                </>
+              )}
             </button>
 
             {/* 2. 전체듣기 (Play All Conversation TTS - Icon Only) */}
@@ -1492,6 +1635,46 @@ export default function LucyStandalonePage() {
             )}
           </AnimatePresence>
 
+          {/* 🔊 실시간 루시 음성 재생 바 (현재 말하는 중일 때 즉시 멈춤 지원) */}
+          <AnimatePresence>
+            {(ttsInfo.isSpeaking || ttsInfo.isLoading) && (
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 6 }}
+                className="flex items-center justify-between px-3 py-1.5 bg-gradient-to-r from-amber-500/15 via-yellow-500/20 to-amber-500/15 border border-amber-300/80 rounded-xl text-xs text-amber-950 shadow-xs backdrop-blur-xs"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  {ttsInfo.isLoading ? (
+                    <Loader2 size={13} className="animate-spin text-amber-600 shrink-0" />
+                  ) : (
+                    <Volume2 size={13} className="text-amber-600 animate-pulse shrink-0" />
+                  )}
+                  <span className="font-bold text-amber-950 text-[11px] shrink-0">
+                    {ttsInfo.isLoading ? '루시 음성 준비 중...' : '루시 음성 안내 중'}
+                  </span>
+                  {ttsInfo.activeText && ttsInfo.activeText !== '__CONVERSATION__' && (
+                    <span className="text-[10px] text-amber-900/70 truncate max-w-[200px] sm:max-w-[340px]">
+                      "{ttsInfo.activeText.slice(0, 35)}..."
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    stopTTS();
+                    setPlayingMsgId(null);
+                  }}
+                  className="flex items-center gap-1 px-2 py-0.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold text-[10px] cursor-pointer active:scale-95 transition-all shadow-2xs shrink-0 ml-2"
+                  title="음성 즉시 중지"
+                >
+                  <Square size={9} className="fill-current" />
+                  <span>중지</span>
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <div className={`flex items-center gap-1.5 sm:gap-2 bg-slate-50 border rounded-2xl px-2.5 sm:px-3 py-1 sm:py-1.5 transition-all shadow-inner ${
             isRecording 
               ? 'border-rose-400 bg-rose-50/40 ring-2 ring-rose-200' 
@@ -1528,6 +1711,21 @@ export default function LucyStandalonePage() {
               title={isRecording ? '음성 녹음 중지' : '마이크로 음성 말하기 (Speech to Text)'}
             >
               {isRecording ? <MicOff size={16} /> : <Mic size={16} />}
+            </button>
+
+            {/* 🔊 Auto-TTS Quick Toggle Button (입력창 바로 옆 원클릭 토글) */}
+            <button
+              type="button"
+              onClick={toggleAutoTts}
+              className={`p-1.5 rounded-xl transition-all cursor-pointer shrink-0 ${
+                isAutoTts
+                  ? 'text-emerald-600 bg-emerald-100/80 border border-emerald-300 shadow-2xs'
+                  : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/70'
+              }`}
+              title={isAutoTts ? '답변 자동 음성 바로재생 켜짐 (클릭 시 끄기)' : '답변 자동 음성 바로재생 꺼짐 (클릭 시 켜기)'}
+              aria-label={isAutoTts ? '음성 자동 재생 켜짐' : '음성 자동 재생 꺼짐'}
+            >
+              {isAutoTts ? <Volume2 size={16} className="text-emerald-600 animate-pulse" /> : <VolumeX size={16} />}
             </button>
 
             {/* Textarea */}
@@ -1693,6 +1891,21 @@ export default function LucyStandalonePage() {
             className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-slate-900/90 text-white text-xs font-medium shadow-xl backdrop-blur-md flex items-center gap-2 border border-white/10"
           >
             <span>{resetToast}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 🔊 Auto-TTS Feedback Toast */}
+      <AnimatePresence>
+        {autoTtsToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-emerald-950/95 text-emerald-100 text-xs font-semibold shadow-2xl backdrop-blur-md flex items-center gap-2 border border-emerald-500/30"
+          >
+            <Volume2 size={15} className="text-emerald-400 animate-pulse shrink-0" />
+            <span>{autoTtsToast}</span>
           </motion.div>
         )}
       </AnimatePresence>
