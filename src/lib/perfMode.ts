@@ -36,8 +36,12 @@ export function getDevicePerfOverride(): string | null {
   try {
     const params = new URLSearchParams(window.location.search);
     const paramDev = params.get('device') || params.get('perf');
-    if (paramDev) return paramDev.toLowerCase();
-    if (params.has('iphonexs')) return 'iphonexs';
+    if (paramDev) {
+      const lower = paramDev.toLowerCase();
+      if (lower === 'iphonex' || lower === 'iphonexs') return 'iphonexs';
+      return lower;
+    }
+    if (params.has('iphonex') || params.has('iphonexs')) return 'iphonexs';
     return window.localStorage?.getItem('prism_device_perf_override') || null;
   } catch {
     return null;
@@ -158,6 +162,7 @@ function applyIPhoneXSDeviceFlags(): void {
     document.documentElement.dataset.device = 'iphone-xs';
     document.documentElement.dataset.narrow = 'true';
     document.documentElement.classList.add('perf-reduced');
+    document.documentElement.classList.add('perf-legacy');
   }
 }
 
@@ -313,11 +318,11 @@ export function isIPhoneXSClass(): boolean {
   if (typeof window === 'undefined') return false;
 
   const override = getDevicePerfOverride();
-  if (override === 'iphonexs') {
+  if (override === 'iphonexs' || override === 'iphonex') {
     cachedIPhoneXS = true;
     return true;
   }
-  if (override && override !== 'iphonexs' && override !== 'auto') {
+  if (override && override !== 'iphonexs' && override !== 'iphonex' && override !== 'auto') {
     cachedIPhoneXS = false;
     return false;
   }
@@ -328,18 +333,34 @@ export function isIPhoneXSClass(): boolean {
     return false;
   }
 
-  // Exact screen physical resolution of iPhone XS / X / 11 Pro: 375 x 812 with devicePixelRatio = 3
+  const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+
+  // 1. Apple capped iPhone X (A11 Bionic) at iOS 16.7. Any iOS 16 or older device is iPhone X or prior
+  if (/OS (1[0-6])_[0-9]/i.test(ua)) {
+    cachedIPhoneXS = true;
+    return true;
+  }
+
+  // 2. Exact screen physical resolution of iPhone X / XS / 11 Pro: 375 x 812 with DPR >= 2.5
   const sw = window.screen?.width || window.innerWidth;
   const sh = window.screen?.height || window.innerHeight;
   const dpr = window.devicePixelRatio || 1;
   const is375x812 = (sw === 375 && sh === 812) || (sw === 812 && sh === 375);
 
-  if (is375x812 && Math.round(dpr) === 3) {
+  if (is375x812 && dpr >= 2.5) {
     cachedIPhoneXS = true;
     return true;
   }
 
-  // General iPhone with narrow screen (iPhone XS, 11 Pro, SE 2/3, 12/13 Mini)
+  // 3. Compact iPhones in in-app webviews (KakaoTalk, Naver, Instagram)
+  const minDim = Math.min(sw, sh);
+  const maxDim = Math.max(sw, sh);
+  if (minDim <= 390 && maxDim <= 844 && dpr >= 2.5) {
+    cachedIPhoneXS = true;
+    return true;
+  }
+
+  // General iPhone with narrow screen
   cachedIPhoneXS = isNarrowPhone();
   return cachedIPhoneXS;
 }

@@ -441,85 +441,93 @@ export const AuroraBackground: React.FC = () => {
       <div
         className="absolute inset-0"
         style={{
-          background: [
-            buildStaticStars(staticStarCount),
-            `radial-gradient(ellipse 95% 60% at 50% 108%, ${withAlpha(nebulaViolet, 0.28)} 0%, transparent 62%)`,
-            `radial-gradient(ellipse 75% 55% at 6% 20%, ${withAlpha(nebulaBlue, 0.32)} 0%, transparent 58%)`,
-            `radial-gradient(ellipse 70% 52% at 94% 32%, ${withAlpha(nebulaMagenta, 0.26)} 0%, transparent 55%)`,
-            `radial-gradient(ellipse 58% 45% at 74% 80%, ${withAlpha(nebulaCyan, 0.22)} 0%, transparent 52%)`,
-            `radial-gradient(ellipse 42% 34% at 26% 66%, ${withAlpha(galacticGold, 0.14)} 0%, transparent 50%)`,
-            `linear-gradient(180deg, ${voidColor} 0%, ${abyss} 38%, oklch(0.042 0.038 290) 72%, oklch(0.03 0.025 280) 100%)`,
-          ].join(', '),
+          background: isXS
+            ? `radial-gradient(ellipse 90% 50% at 50% 100%, ${withAlpha(nebulaViolet, 0.18)} 0%, transparent 60%), linear-gradient(180deg, ${voidColor} 0%, ${abyss} 45%, oklch(0.03 0.025 280) 100%)`
+            : [
+                buildStaticStars(staticStarCount),
+                `radial-gradient(ellipse 95% 60% at 50% 108%, ${withAlpha(nebulaViolet, 0.28)} 0%, transparent 62%)`,
+                `radial-gradient(ellipse 75% 55% at 6% 20%, ${withAlpha(nebulaBlue, 0.32)} 0%, transparent 58%)`,
+                `radial-gradient(ellipse 70% 52% at 94% 32%, ${withAlpha(nebulaMagenta, 0.26)} 0%, transparent 55%)`,
+                `radial-gradient(ellipse 58% 45% at 74% 80%, ${withAlpha(nebulaCyan, 0.22)} 0%, transparent 52%)`,
+                `radial-gradient(ellipse 42% 34% at 26% 66%, ${withAlpha(galacticGold, 0.14)} 0%, transparent 50%)`,
+                `linear-gradient(180deg, ${voidColor} 0%, ${abyss} 38%, oklch(0.042 0.038 290) 72%, oklch(0.03 0.025 280) 100%)`,
+              ].join(', '),
         }}
       />
 
-      {/* Galactic band */}
-      <div
-        className={`absolute left-[-20%] top-[16%] w-[140%] h-[30%] rotate-[-12deg] ${animateOrbs ? 'aura-orb-2' : ''}`}
-        style={{
-          opacity: legacy ? 0.2 : 0.16,
-          filter: `blur(${Math.round(nebulaBlur * 0.75)}px)`,
-          WebkitFilter: `blur(${Math.round(nebulaBlur * 0.75)}px)`,
-          background: `linear-gradient(90deg, transparent 0%, ${withAlpha(nebulaViolet, 0.85)} 28%, ${withAlpha(nebulaMagenta, 0.8)} 52%, ${withAlpha(nebulaBlue, 0.75)} 78%, transparent 100%)`,
-        }}
-      />
+      {/* Galactic band & Nebula Orbs - Bypassed entirely on iPhone X / XS to eliminate GPU offscreen blur rendering passes */}
+      {!isXS && (
+        <>
+          <div
+            className={`absolute left-[-20%] top-[16%] w-[140%] h-[30%] rotate-[-12deg] ${animateOrbs ? 'aura-orb-2' : ''}`}
+            style={{
+              opacity: legacy ? 0.2 : 0.16,
+              filter: `blur(${Math.round(nebulaBlur * 0.75)}px)`,
+              WebkitFilter: `blur(${Math.round(nebulaBlur * 0.75)}px)`,
+              background: `linear-gradient(90deg, transparent 0%, ${withAlpha(nebulaViolet, 0.85)} 28%, ${withAlpha(nebulaMagenta, 0.8)} 52%, ${withAlpha(nebulaBlue, 0.75)} 78%, transparent 100%)`,
+            }}
+          />
 
-      <NebulaOrb
-        positionClass="-top-[12%] -left-[8%] w-[92vw] h-[72vw]"
-        orbClass="aura-orb-1"
-        color={nebulaBlue}
-        opacity={legacy ? 0.42 : 0.36}
-        blurPx={nebulaBlur}
-        animate={animateOrbs}
-      />
-      <NebulaOrb
-        positionClass="top-[5%] -right-[10%] w-[78vw] h-[65vw]"
-        orbClass="aura-orb-2"
-        color={nebulaViolet}
-        opacity={legacy ? 0.38 : 0.32}
-        blurPx={nebulaBlur}
-        animate={animateOrbs}
-      />
-      <NebulaOrb
-        positionClass="-bottom-[14%] right-[0%] w-[85vw] h-[68vw]"
-        orbClass="aura-orb-3"
-        color={nebulaMagenta}
-        opacity={legacy ? 0.34 : 0.28}
-        blurPx={nebulaBlur}
-        animate={animateOrbs}
-      />
-      <NebulaOrb
-        positionClass="bottom-[8%] left-[5%] w-[58vw] h-[50vw]"
-        orbClass="aura-orb-1"
-        color={nebulaCyan}
-        opacity={legacy ? 0.28 : 0.22}
-        blurPx={Math.round(nebulaBlur * 0.85)}
-        animate={animateOrbs}
-        animationDuration="22s"
-      />
-      <NebulaOrb
-        positionClass="top-[42%] left-[38%] w-[38vw] h-[32vw]"
-        orbClass="aura-orb-3"
-        color={galacticGold}
-        opacity={legacy ? 0.2 : 0.15}
-        blurPx={Math.round(nebulaBlur * 0.7)}
-        animate={animateOrbs}
-        animationDuration="26s"
-      />
+          <NebulaOrb
+            positionClass="-top-[12%] -left-[8%] w-[92vw] h-[72vw]"
+            orbClass="aura-orb-1"
+            color={nebulaBlue}
+            opacity={legacy ? 0.42 : 0.36}
+            blurPx={nebulaBlur}
+            animate={animateOrbs}
+          />
+          <NebulaOrb
+            positionClass="top-[5%] -right-[10%] w-[78vw] h-[65vw]"
+            orbClass="aura-orb-2"
+            color={nebulaViolet}
+            opacity={legacy ? 0.38 : 0.32}
+            blurPx={nebulaBlur}
+            animate={animateOrbs}
+          />
+          <NebulaOrb
+            positionClass="-bottom-[14%] right-[0%] w-[85vw] h-[68vw]"
+            orbClass="aura-orb-3"
+            color={nebulaMagenta}
+            opacity={legacy ? 0.34 : 0.28}
+            blurPx={nebulaBlur}
+            animate={animateOrbs}
+          />
+          <NebulaOrb
+            positionClass="bottom-[8%] left-[5%] w-[58vw] h-[50vw]"
+            orbClass="aura-orb-1"
+            color={nebulaCyan}
+            opacity={legacy ? 0.28 : 0.22}
+            blurPx={Math.round(nebulaBlur * 0.85)}
+            animate={animateOrbs}
+            animationDuration="22s"
+          />
+          <NebulaOrb
+            positionClass="top-[42%] left-[38%] w-[38vw] h-[32vw]"
+            orbClass="aura-orb-3"
+            color={galacticGold}
+            opacity={legacy ? 0.2 : 0.15}
+            blurPx={Math.round(nebulaBlur * 0.7)}
+            animate={animateOrbs}
+            animationDuration="26s"
+          />
+        </>
+      )}
 
-      <Starfield density={starDensity} minSize={minStarSize} />
-      <ConstellationsLayer />
-      <ShootingStars count={shootingStarCount} />
+      {!isXS && <Starfield density={starDensity} minSize={minStarSize} />}
+      {!isXS && <ConstellationsLayer />}
+      {!isXS && <ShootingStars count={shootingStarCount} />}
 
-      <div
-        className="absolute inset-0"
-        style={{
-          opacity: legacy ? 0.08 : 0.06,
-          backgroundImage:
-            'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.95) 0.75px, transparent 0)',
-          backgroundSize: legacy ? '36px 36px' : '42px 42px',
-        }}
-      />
+      {!isXS && (
+        <div
+          className="absolute inset-0"
+          style={{
+            opacity: legacy ? 0.08 : 0.06,
+            backgroundImage:
+              'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.95) 0.75px, transparent 0)',
+            backgroundSize: legacy ? '36px 36px' : '42px 42px',
+          }}
+        />
+      )}
     </div>
   );
 };

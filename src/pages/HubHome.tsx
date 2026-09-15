@@ -522,8 +522,8 @@ export default function HubHome() {
           </div>
         ) : (
           <div className="flex-1 w-full max-w-5xl mx-auto flex flex-col relative text-white font-sans">
-            {/* Background Texture Mask */}
-            <div className="fixed inset-0 pointer-events-none opacity-[0.03]" 
+            {/* Background Texture Mask (desktop only to eliminate mobile GPU fill-rate hit) */}
+            <div className="hidden md:block fixed inset-0 pointer-events-none opacity-[0.03]" 
               style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '40px 40px' }} />
             
             {/* 프로필 설정 유도 모달 */}

@@ -75,6 +75,7 @@ export default function SelectionBridgeToolbar({ currentPath: _currentPath }: Se
       }, 80);
     };
 
+    let clearTimer: NodeJS.Timeout | null = null;
     const handleDocumentMouseDown = (e: MouseEvent | TouchEvent) => {
       // 🛡️ 빅뱅 버튼이나 토스 조작 트리거를 클릭/터치할 때는 selection을 지우지 않고 유지!
       const target = e.target as HTMLElement | null;
@@ -82,12 +83,13 @@ export default function SelectionBridgeToolbar({ currentPath: _currentPath }: Se
         return;
       }
 
-      setTimeout(() => {
+      if (clearTimer) clearTimeout(clearTimer);
+      clearTimer = setTimeout(() => {
         const text = getLiveSelectedText();
         if (!text || text.length < 2) {
           clearPendingSelection();
         }
-      }, 120);
+      }, 140);
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -96,20 +98,21 @@ export default function SelectionBridgeToolbar({ currentPath: _currentPath }: Se
       }
     };
 
-    // 브라우저 텍스트 선택 관련 다각도 이벤트 리스너 등록
-    document.addEventListener('selectionchange', handleSelectionChange);
-    document.addEventListener('mouseup', handleSelectionChange);
-    document.addEventListener('touchend', handleSelectionChange);
-    document.addEventListener('keyup', handleSelectionChange);
+    // 브라우저 텍스트 선택 관련 다각도 이벤트 리스너 등록 (iOS Safari 스크롤 쓰레드 병목 방지를 위해 passive 지정)
+    document.addEventListener('selectionchange', handleSelectionChange, { passive: true });
+    document.addEventListener('mouseup', handleSelectionChange, { passive: true });
+    document.addEventListener('touchend', handleSelectionChange, { passive: true });
+    document.addEventListener('keyup', handleSelectionChange, { passive: true });
     // 💡 input / textarea 등 빈칸 내부 드래그 선택 시 발생하는 select 이벤트 (capture 모드로 감지)
     document.addEventListener('select', handleSelectionChange, true);
 
-    document.addEventListener('mousedown', handleDocumentMouseDown);
-    document.addEventListener('touchstart', handleDocumentMouseDown);
+    document.addEventListener('mousedown', handleDocumentMouseDown, { passive: true });
+    document.addEventListener('touchstart', handleDocumentMouseDown, { passive: true });
     document.addEventListener('keydown', handleKeyDown);
 
     return () => {
       if (debounceTimer) clearTimeout(debounceTimer);
+      if (clearTimer) clearTimeout(clearTimer);
       document.removeEventListener('selectionchange', handleSelectionChange);
       document.removeEventListener('mouseup', handleSelectionChange);
       document.removeEventListener('touchend', handleSelectionChange);

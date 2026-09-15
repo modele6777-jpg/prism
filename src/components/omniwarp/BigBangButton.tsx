@@ -147,20 +147,29 @@ export function BigBangButton() {
       }
     };
 
-    document.addEventListener('selectionchange', updateSelectionState);
-    document.addEventListener('select', updateSelectionState, true); // 빈칸(input/textarea) 선택 감지
-    document.addEventListener('mouseup', updateSelectionState);
-    document.addEventListener('touchend', updateSelectionState);
+    let selDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const debouncedUpdateSelection = () => {
+      if (selDebounceTimer) clearTimeout(selDebounceTimer);
+      selDebounceTimer = setTimeout(() => {
+        updateSelectionState();
+      }, 90);
+    };
+
+    document.addEventListener('selectionchange', debouncedUpdateSelection, { passive: true });
+    document.addEventListener('select', debouncedUpdateSelection, true); // 빈칸(input/textarea) 선택 감지
+    document.addEventListener('mouseup', debouncedUpdateSelection, { passive: true });
+    document.addEventListener('touchend', debouncedUpdateSelection, { passive: true });
     window.addEventListener('prism:selection_saved', handleSaved);
     window.addEventListener('prism:selection_tossed', handleTossedOrCleared);
     window.addEventListener('prism:selection_cleared', handleTossedOrCleared);
     document.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      document.removeEventListener('selectionchange', updateSelectionState);
-      document.removeEventListener('select', updateSelectionState, true);
-      document.removeEventListener('mouseup', updateSelectionState);
-      document.removeEventListener('touchend', updateSelectionState);
+      if (selDebounceTimer) clearTimeout(selDebounceTimer);
+      document.removeEventListener('selectionchange', debouncedUpdateSelection);
+      document.removeEventListener('select', debouncedUpdateSelection, true);
+      document.removeEventListener('mouseup', debouncedUpdateSelection);
+      document.removeEventListener('touchend', debouncedUpdateSelection);
       window.removeEventListener('prism:selection_saved', handleSaved);
       window.removeEventListener('prism:selection_tossed', handleTossedOrCleared);
       window.removeEventListener('prism:selection_cleared', handleTossedOrCleared);
@@ -946,8 +955,8 @@ export function BigBangButton() {
               />
             </div>
 
-            {/* Ambient Gravitational Ripple Waves */}
-            {activePhase === 'idle' && (
+            {/* Ambient Gravitational Ripple Waves - active on hover to prevent continuous mobile composite thrashing */}
+            {activePhase === 'idle' && isHovered && (
               <>
                 <div className="absolute -inset-2.5 rounded-full border border-cyan-400/25 animate-ping opacity-20 pointer-events-none z-0" />
                 <div className="absolute -inset-4 rounded-full border border-purple-400/15 animate-pulse opacity-30 pointer-events-none z-0" />

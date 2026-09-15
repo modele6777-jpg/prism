@@ -103,7 +103,7 @@ export const BigBangCircularMeter = React.memo(function BigBangCircularMeter({
         />
 
         {/* 실시간 타이밍 오로라 아크 진행선 (누를 때 실시간 압력 게이지 연동) */}
-        <g style={{ transformOrigin: `${center}px ${center}px` }} className={isPressing ? 'animate-[spin_2s_linear_infinite]' : 'animate-[spin_3.6s_linear_infinite]'}>
+        <g style={{ transformOrigin: `${center}px ${center}px` }} className={isPressing ? 'animate-[spin_2s_linear_infinite]' : isHovered ? 'animate-[spin_3.6s_linear_infinite]' : ''}>
           <circle
             cx={center}
             cy={center}
@@ -132,7 +132,7 @@ export const BigBangCircularMeter = React.memo(function BigBangCircularMeter({
             ? 'animate-[spin_6s_linear_infinite]'
             : isHovered
             ? 'animate-[spin_12s_linear_infinite]'
-            : 'animate-[spin_24s_linear_infinite]'
+            : ''
         }`}
       >
         <circle
@@ -184,7 +184,7 @@ export const BigBangCircularMeter = React.memo(function BigBangCircularMeter({
             ? 'animate-[spin_8s_linear_infinite_reverse]'
             : isHovered
             ? 'animate-[spin_16s_linear_infinite_reverse]'
-            : 'animate-[spin_28s_linear_infinite_reverse]'
+            : ''
         }`}
       >
         <circle

@@ -636,11 +636,11 @@ export default function ProfileModal({ isOpen, onClose }: { isOpen: boolean; onC
             <div className="p-4 rounded-[22px] sm:rounded-[24px] bg-[#141522] border border-white/10 flex flex-col gap-3 mt-1">
               <div className="flex items-center justify-between flex-wrap gap-1">
                 <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                  📱 기기 성능 최적화 (iPhone XS / A12 Bionic)
+                  📱 기기 성능 최적화 (iPhone X · XS / A11 · A12)
                 </span>
                 {isIPhoneXSClass() ? (
                   <span className="text-[10px] text-emerald-300 bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
-                    ● iPhone XS 60fps 최적화 활성
+                    ● iPhone X/XS 60fps 초경량 활성
                   </span>
                 ) : (
                   <span className="text-[10px] text-white/50 bg-white/5 border border-white/10 px-2 py-0.5 rounded-full font-mono">
@@ -649,11 +649,11 @@ export default function ProfileModal({ isOpen, onClose }: { isOpen: boolean; onC
                 )}
               </div>
               <p className="text-[11px] text-white/50 leading-relaxed">
-                iPhone XS (3x Super Retina OLED) 맞춤 설정: GPU 블러 부하를 경량화하고 오라 애니메이션을 고정 60fps로 최적화하여 프레임 드랍과 배터리 발열을 최소화합니다.
+                iPhone X / XS / 11 Pro (3x Super Retina OLED, A11/A12 Bionic) 맞춤 설정: GPU 블러 부하 0화, 복잡한 배경 파티클 및 스크롤 스터터를 제거하여 렉 없는 부드러운 60fps를 보장합니다.
               </p>
               <div className="flex items-center justify-between pt-1 border-t border-white/5">
                 <div className="flex flex-col">
-                  <span className="text-[11px] text-white/80 font-medium">iPhone XS 전용 최적화 강제 적용</span>
+                  <span className="text-[11px] text-white/80 font-medium">iPhone X/XS 초경량 모드 강제 적용</span>
                   <span className="text-[9px] text-white/40">
                     {perfOverride === 'iphonexs' ? '수동 강제 켜짐' : isIPhoneXSClass() ? '자동 감지 적용 중' : '자동 감지 모드'}
                   </span>
@@ -675,7 +675,7 @@ export default function ProfileModal({ isOpen, onClose }: { isOpen: boolean; onC
                     ? '✓ 강제 활성화 중'
                     : isIPhoneXSClass()
                     ? '✓ 자동 활성됨'
-                    : 'iPhone XS 모드 켜기'}
+                    : 'iPhone X/XS 모드 켜기'}
                 </button>
               </div>
             </div>

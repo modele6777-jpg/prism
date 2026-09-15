@@ -55,7 +55,6 @@
     -webkit-backdrop-filter: blur(10px);
     background-color: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    transform: translateZ(0);
   }
 
   /* GPU-optimized backdrop blurs: caps excessive blur radiuses to prevent GPU fill-rate throttling */
@@ -64,12 +63,10 @@
   .backdrop-blur-xl {
     backdrop-filter: blur(12px) !important;
     -webkit-backdrop-filter: blur(12px) !important;
-    transform: translateZ(0);
   }
   .backdrop-blur-lg {
     backdrop-filter: blur(8px) !important;
     -webkit-backdrop-filter: blur(8px) !important;
-    transform: translateZ(0);
   }
 
   /* Global touch responsiveness & scrolling smoothness */
@@ -77,13 +74,12 @@
     touch-action: manipulation;
   }
 
-  /* GPU acceleration on scroll containers */
+  /* GPU acceleration on scroll containers: pure native momentum scrolling without breaking layer compositing */
   [data-app-scroll-root],
   .overflow-y-auto,
   .overflow-x-auto {
     -webkit-overflow-scrolling: touch;
-    transform: translateZ(0);
-    contain: layout style;
+    overscroll-behavior-y: contain;
   }
   .prism-rainbow-btn {
     background: linear-gradient(135deg, #ff6b6b, #feca57, #1dd1a1, #54a0ff, #5f27cd);
@@ -536,15 +532,11 @@ html.perf-iphone-xs a {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Scroll root: native iOS momentum scrolling & frame-budget virtual containment */
+/* Scroll root: native iOS momentum scrolling (clean native momentum scroll without compositor overrides) */
 html.prism-iphone-xs [data-app-scroll-root],
 html.perf-iphone-xs [data-app-scroll-root] {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 550px;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
-  transform: translateZ(0);
-  backface-visibility: hidden;
 }
 
 /* Input font-size: strictly 16px to stop iOS Safari auto-zooming the viewport */
@@ -557,35 +549,69 @@ html.perf-iphone-xs select {
   font-size: 16px !important;
 }
 
-/* Fixed layers: isolate into dedicated GPU compositor layers to avoid full repaints */
-html.prism-iphone-xs .fixed,
-html.prism-iphone-xs .prism-bottom-nav,
-html.perf-iphone-xs .fixed,
-html.perf-iphone-xs .prism-bottom-nav {
-  transform: translateZ(0);
-  backface-visibility: hidden;
-}
-
-/* Safe area bottom padding for iPhone XS Home Indicator Bar (34px) */
+/* Safe area bottom padding for iPhone X/XS Home Indicator Bar (34px) */
 html.prism-iphone-xs .prism-bottom-nav,
 html.perf-iphone-xs .prism-bottom-nav {
   padding-bottom: max(0.6rem, env(safe-area-inset-bottom, 34px)) !important;
 }
 
-/* GPU fill-rate protection: clamp heavy backdrop-filter blurs on 3x Retina buffer */
-html.prism-iphone-xs [class*="backdrop-blur-"],
-html.perf-iphone-xs [class*="backdrop-blur-"] {
-  -webkit-backdrop-filter: blur(6px) !important;
-  backdrop-filter: blur(6px) !important;
+/* GPU fill-rate protection for iPhone X (Apple A11) & XS (Apple A12):
+   Completely bypass expensive offscreen multi-pass backdrop-filter blurs on 3x Retina buffer.
+   Replaces with lightweight, high-performance cosmic dark surfaces with 0% blur overhead. */
+html.prism-iphone-xs [class*="backdrop-blur"],
+html.perf-iphone-xs [class*="backdrop-blur"],
+html.prism-iphone-xs .glass,
+html.perf-iphone-xs .glass,
+html.perf-legacy [class*="backdrop-blur"],
+html.perf-legacy .glass,
+html.perf-reduced [class*="backdrop-blur"],
+html.perf-reduced .glass {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background-color: rgba(18, 16, 30, 0.88) !important;
 }
 
-/* Clamp excessive CSS filter blurs (e.g. 75px or 48px) to lightweight 14px */
+html.prism-iphone-xs .prism-bottom-nav,
+html.perf-iphone-xs .prism-bottom-nav,
+html.perf-legacy .prism-bottom-nav {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background-color: rgba(14, 12, 24, 0.96) !important;
+}
+
+html.prism-iphone-xs .prism-xs-subnav,
+html.perf-iphone-xs .prism-xs-subnav,
+html.perf-legacy .prism-xs-subnav {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background-color: rgba(22, 20, 36, 0.94) !important;
+}
+
+/* Eliminate continuous ping/pulse animations in viewport to prevent layer invalidations during scroll */
+html.prism-iphone-xs .animate-ping,
+html.perf-iphone-xs .animate-ping {
+  animation: none !important;
+  opacity: 0 !important;
+}
+
+html.prism-iphone-xs .animate-pulse,
+html.perf-iphone-xs .animate-pulse {
+  animation: none !important;
+}
+
+/* Lightweight box-shadow to prevent GPU rasterization thrashing */
+html.prism-iphone-xs .shadow-2xl,
+html.perf-iphone-xs .shadow-2xl {
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Clamp excessive CSS filter blurs (e.g. 75px or 48px) to zero/none */
 html.prism-iphone-xs .blur-3xl,
 html.perf-iphone-xs .blur-3xl,
 html.prism-iphone-xs .blur-2xl,
 html.perf-iphone-xs .blur-2xl {
-  filter: blur(14px) !important;
-  -webkit-filter: blur(14px) !important;
+  filter: none !important;
+  -webkit-filter: none !important;
 }
 
 /* Avoid expensive SVG drop-shadow filters during animation */
@@ -765,13 +791,8 @@ html.perf-legacy .animate-spin {
 }
 
 html.perf-legacy [data-app-scroll-root] {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 500px;
-}
-
-html.perf-legacy .fixed,
-html.perf-legacy .prism-bottom-nav {
-  transform: translateZ(0);
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 
 html.perf-legacy [class*="shadow-"] {
