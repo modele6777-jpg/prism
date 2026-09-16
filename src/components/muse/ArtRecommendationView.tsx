@@ -34,6 +34,8 @@ import {
 import { useApp } from "@/contexts/AppContext";
 import { sendArtRecommendationToLucy } from "@/lib/oracleDeepInsight";
 import { getPendingPrismToss, clearPrismToss, type PrismTossPayload } from "@/lib/prismToss";
+import { KoreanPoemLibraryModal } from "@/components/muse/KoreanPoemLibraryModal";
+import { KOREAN_FAMOUS_POEMS, type KoreanPoemItem } from "@/lib/koreanFamousPoems";
 
 interface FamousPoem {
   title: string;
@@ -716,8 +718,28 @@ function recordArtworkHistory(art: ArtRecommendation): void {
   }
 }
 
+const KOREAN_POEM_FALLBACKS: Array<{ famousPoem: FamousPoem; famousSong: FamousSong }> = KOREAN_FAMOUS_POEMS.map((poem, idx) => {
+  const song = DAILY_POEM_SONG_FALLBACKS[idx % DAILY_POEM_SONG_FALLBACKS.length].famousSong;
+  return {
+    famousPoem: {
+      title: poem.title,
+      titleOriginal: poem.titleOriginal || poem.title,
+      poet: poem.poet,
+      poetOriginal: poem.poetOriginal || poem.poet,
+      excerpt: poem.excerpt,
+      whyRecommended: poem.whyRecommended,
+      siyoilUrl: poem.siyoilUrl,
+      poemSourceName: poem.poemSourceName,
+    },
+    famousSong: song,
+  };
+});
+
 const ALL_POEM_SONG_FALLBACKS: Array<{ famousPoem: FamousPoem; famousSong: FamousSong }> = [
-  ...DAILY_POEM_SONG_FALLBACKS,
+  ...KOREAN_POEM_FALLBACKS,
+  ...DAILY_POEM_SONG_FALLBACKS.filter(
+    (item) => !KOREAN_POEM_FALLBACKS.some((k) => k.famousPoem.title.toLowerCase() === item.famousPoem.title.toLowerCase())
+  ),
   ...MUSE_ART_CATALOG.map((entry) => ({
     famousPoem: {
       ...entry.famousPoem,
@@ -727,6 +749,9 @@ const ALL_POEM_SONG_FALLBACKS: Array<{ famousPoem: FamousPoem; famousSong: Famou
     },
   })).filter(
     (item) =>
+      !KOREAN_POEM_FALLBACKS.some(
+        (p) => p.famousPoem.title.toLowerCase() === item.famousPoem.title.toLowerCase()
+      ) &&
       !DAILY_POEM_SONG_FALLBACKS.some(
         (p) => p.famousPoem.title.toLowerCase() === item.famousPoem.title.toLowerCase()
       )
@@ -1096,7 +1121,73 @@ export function ArtRecommendationView() {
   
   const [copiedQuote, setCopiedQuote] = useState(false);
   const [geminiCopied, setGeminiCopied] = useState(false);
+  const [isPoemLibraryOpen, setIsPoemLibraryOpen] = useState(false);
+  const [poemToastMessage, setPoemToastMessage] = useState<string | null>(null);
   const hydrateStartedRef = useRef(false);
+
+  const handleSelectKoreanPoem = useCallback((poem: KoreanPoemItem) => {
+    setRecommendation((prev) => {
+      if (!prev) return null;
+      const updated: ArtRecommendation = {
+        ...prev,
+        famousPoem: {
+          title: poem.title,
+          titleOriginal: poem.titleOriginal || poem.title,
+          poet: poem.poet,
+          poetOriginal: poem.poetOriginal || poem.poet,
+          excerpt: poem.excerpt,
+          whyRecommended: poem.whyRecommended,
+          siyoilUrl: poem.siyoilUrl,
+          poemSourceName: poem.poemSourceName,
+        },
+      };
+      try {
+        localStorage.setItem(ART_CACHE_KEYS.recommendation, JSON.stringify(updated));
+      } catch (err) {
+        console.warn("Failed to persist updated poem to cache:", err);
+      }
+      return updated;
+    });
+
+    setPoemToastMessage(`《${poem.title}》(${poem.poet})으로 변경되었습니다.`);
+    setTimeout(() => {
+      setPoemToastMessage(null);
+    }, 4000);
+  }, []);
+
+  const handleShuffleKoreanPoem = useCallback(() => {
+    setRecommendation((prev) => {
+      if (!prev) return null;
+      const currentTitle = prev.famousPoem?.title || "";
+      const candidates = KOREAN_FAMOUS_POEMS.filter(
+        (p) => !currentTitle.toLowerCase().includes(p.title.toLowerCase())
+      );
+      const picked = candidates[Math.floor(Math.random() * candidates.length)] || KOREAN_FAMOUS_POEMS[0];
+      const updated: ArtRecommendation = {
+        ...prev,
+        famousPoem: {
+          title: picked.title,
+          titleOriginal: picked.titleOriginal || picked.title,
+          poet: picked.poet,
+          poetOriginal: picked.poetOriginal || picked.poet,
+          excerpt: picked.excerpt,
+          whyRecommended: picked.whyRecommended,
+          siyoilUrl: picked.siyoilUrl,
+          poemSourceName: picked.poemSourceName,
+        },
+      };
+      try {
+        localStorage.setItem(ART_CACHE_KEYS.recommendation, JSON.stringify(updated));
+      } catch (err) {
+        console.warn("Failed to persist updated poem to cache:", err);
+      }
+      setPoemToastMessage(`《${picked.title}》(${picked.poet})으로 변경되었습니다.`);
+      setTimeout(() => {
+        setPoemToastMessage(null);
+      }, 4000);
+      return updated;
+    });
+  }, []);
 
   const restoreDailyArtFromCache = useCallback((): boolean => {
     if (!isArtCacheFresh()) return false;
@@ -2029,9 +2120,26 @@ export function ArtRecommendationView() {
                       </h4>
                     </div>
                   </div>
-                  <span className="text-[10px] font-mono tracking-widest text-emerald-300/80 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl">
-                    POETIC RESONANCE
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleShuffleKoreanPoem}
+                      title="다른 한국 명시 랜덤 추천"
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 px-2.5 py-1.5 rounded-xl transition-all active:scale-95 cursor-pointer"
+                    >
+                      <RefreshCw size={12} />
+                      <span className="hidden sm:inline">다른 시 셔플</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsPoemLibraryOpen(true)}
+                      title="한국 명시 70선 서재 열기"
+                      className="inline-flex items-center gap-1.5 text-[11px] font-bold text-black bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-300 hover:to-teal-300 px-3 py-1.5 rounded-xl transition-all shadow-md shadow-emerald-500/20 active:scale-95 cursor-pointer"
+                    >
+                      <BookOpen size={13} />
+                      <span>한국 명시 서재 (70선)</span>
+                    </button>
+                  </div>
                 </div>
 
                 <p className="text-sm md:text-base text-emerald-300 font-semibold flex items-center gap-1.5">
@@ -2089,8 +2197,33 @@ export function ArtRecommendationView() {
                       Google Arts & Culture 검색
                       <ChevronRight size={12} />
                     </a>
+                    <button
+                      type="button"
+                      onClick={() => setIsPoemLibraryOpen(true)}
+                      className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-emerald-300 hover:text-white transition-colors cursor-pointer"
+                    >
+                      <BookOpen size={12} />
+                      명시 70선 서재
+                    </button>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Poem change notification toast */}
+            {poemToastMessage && (
+              <div className="p-3.5 rounded-2xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-200 text-xs font-medium flex items-center justify-between shadow-xl backdrop-blur-md">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={15} className="text-emerald-400 flex-shrink-0" />
+                  <span>오늘의 명시: {poemToastMessage}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPoemToastMessage(null)}
+                  className="text-emerald-400/70 hover:text-emerald-200 text-xs font-bold ml-3"
+                >
+                  닫기
+                </button>
               </div>
             )}
 
@@ -2463,7 +2596,12 @@ export function ArtRecommendationView() {
         )}
       </AnimatePresence>
 
-      
+      <KoreanPoemLibraryModal
+        isOpen={isPoemLibraryOpen}
+        onClose={() => setIsPoemLibraryOpen(false)}
+        currentPoemTitle={recommendation?.famousPoem?.title}
+        onSelectPoem={handleSelectKoreanPoem}
+      />
     </div>
   );
 }

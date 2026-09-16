@@ -414,7 +414,11 @@ export function buildSpecificTarotDailyOracle(card: TarotCard, mode: string = "o
   const isReversed = !!card.reversed;
   const orientation = isReversed ? "역방향 (Reversed)" : "정방향 (Upright)";
   const keywords = (card.keywords || []).join(", ");
-  const cardTypeStr = card.type === "major" ? "메이저 아르카나 (Major Arcana)" : `${card.type.toUpperCase()} 수트 (Minor Arcana)`;
+  const cardTypeStr = card.type === "major"
+    ? "메이저 아르카나 (Major Arcana)"
+    : card.type
+      ? `${String(card.type).toUpperCase()} 수트 (Minor Arcana)`
+      : "타로 아르카나";
 
   const details = TAROT_DETAILS[card.id] || getSuitDetails(card);
 

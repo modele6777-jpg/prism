@@ -1,7 +1,11 @@
 import { GoogleGenAI } from "@google/genai";
 
 function getGeminiClient(): GoogleGenAI {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY || process.env.AI_API_KEY || "AQ.Ab8RN6LJzmJJ3ExtNix-ERyIkxzPtsV23WdCr71NRGItFPK41A";
+  const envKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY || process.env.AI_API_KEY || "";
+  const apiKey = envKey.includes("AQ.Ab8RN6LJzmJJ3ExtNix-ERyIkxzPtsV23WdCr71NRGItFPK41A") ? "" : envKey;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is not configured or is invalid. Please set GEMINI_API_KEY in AI Studio Settings.");
+  }
   return new GoogleGenAI({ apiKey });
 }
 

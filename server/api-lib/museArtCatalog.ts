@@ -1,3 +1,5 @@
+import { KOREAN_FAMOUS_POEMS } from "./koreanFamousPoems";
+
 export type MuseArtMoodId = "quiet" | "passion" | "refresh" | "planning" | "resurrection";
 
 export const DAILY_ART_MAGAZINE_HOME = "https://www.dailyartmagazine.com/";
@@ -2442,6 +2444,37 @@ export function buildVerifiedArtRecommendation(
     excludePoemTitles,
     excludeSongTitles,
   );
+
+  // Curate a Korean masterpiece poem matching mood from KOREAN_FAMOUS_POEMS
+  const resolvedMood = resolveMoodId(currentMood, moodId);
+  const moodThemeMap: Record<MuseArtMoodId, string[]> = {
+    quiet: ["healing", "reflection", "nature"],
+    passion: ["passion", "hope"],
+    refresh: ["nature", "hope", "love"],
+    planning: ["reflection", "passion"],
+    resurrection: ["hope", "passion", "healing"],
+  };
+
+  const allowedThemes = moodThemeMap[resolvedMood] || ["healing", "love", "hope", "reflection", "nature", "passion"];
+  const themedPoems = KOREAN_FAMOUS_POEMS.filter(
+    (p) => allowedThemes.includes(p.theme) &&
+      (!excludePoemTitles || !excludePoemTitles.some((t) => p.title.toLowerCase().includes(t.toLowerCase())))
+  );
+  const poemPool = themedPoems.length > 0 ? themedPoems : KOREAN_FAMOUS_POEMS;
+  const poemSeed = hashSeed(`${dateKey}_korean_poem_${resolvedMood}`) + (randomOffset || 0);
+  const selectedPoem = poemPool[Math.abs(poemSeed) % poemPool.length];
+
+  const famousPoem: VerifiedPoem = {
+    title: selectedPoem.title,
+    titleOriginal: selectedPoem.titleOriginal || selectedPoem.title,
+    poet: selectedPoem.poet,
+    poetOriginal: selectedPoem.poetOriginal || selectedPoem.poet,
+    excerpt: selectedPoem.excerpt,
+    whyRecommended: selectedPoem.whyRecommended,
+    siyoilUrl: selectedPoem.siyoilUrl,
+    poemSourceName: selectedPoem.poemSourceName,
+  };
+
   return {
     catalogId: entry.id,
     title: entry.title,
@@ -2453,7 +2486,7 @@ export function buildVerifiedArtRecommendation(
     description: entry.description,
     quote: entry.quote,
     aestheticTone: entry.aestheticTone,
-    famousPoem: entry.famousPoem,
+    famousPoem,
     famousSong: entry.famousSong,
     whyRecommended: entry.defaultWhyRecommended,
     challenges: [...entry.defaultChallenges],

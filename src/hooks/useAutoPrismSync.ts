@@ -89,14 +89,12 @@ export function useAutoPrismSync({
       const result = await Promise.race([syncRef.current(), syncTimeoutPromise]);
 
       if (result.needsReload) {
-        if (opts?.deferReload) {
-          pendingReloadResultRef.current = result;
-          if (!silent) {
-            onMessage?.(result.message);
-          }
-          return result;
+        // Never trigger automatic unprompted window.location.reload in background sync
+        pendingReloadResultRef.current = result;
+        if (!silent) {
+          onMessage?.(result.message);
+          window.setTimeout(() => onMessage?.(null), 4000);
         }
-        willReload = await applyReload(result, silent);
         return result;
       }
 
@@ -216,19 +214,8 @@ export function useAutoPrismSync({
     };
   }, [enabled]);
 
-  // Deferred reload queue polling
-  useEffect(() => {
-    if (!enabled) return;
-
-    const pendingPollMs = getSyncPendingPollMs();
-    const intervalId = window.setInterval(() => {
-      if (!pendingReloadRef.current || isSessionBusyRef.current()) return;
-      pendingReloadRef.current = false;
-      void runSyncRef.current({ silent: false, force: true });
-    }, pendingPollMs);
-
-    return () => window.clearInterval(intervalId);
-  }, [enabled]);
+  // Deferred reload queue: Keep pending reload in ref for user-initiated applyDeferredReload
+  // Do NOT poll with force reload to prevent disrupting active user session
 
   // Cleanup pending debounce timer on unmount
   useEffect(() => {

@@ -294,13 +294,6 @@ export function getSwUpdateIntervalMs(): number {
 }
 
 export function shouldUsePageTransitions(): boolean {
-  if (typeof window !== 'undefined' && isMobileDevice()) return false;
-  const profile = getPerfProfile();
-  if (profile === 'iphonexs' || profile === 'legacy') return false;
-  if (profile === 'full' || profile === 'galaxy') {
-    if (isGalaxyFoldSeClass() && isFoldCoverScreen()) return false;
-    return true;
-  }
   return false;
 }
 

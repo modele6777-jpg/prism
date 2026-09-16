@@ -19,12 +19,13 @@ export interface RecommendArtRequest {
 }
 
 function getGeminiApiKey(): string {
-  return (
+  const key = (
     process.env.GEMINI_API_KEY ||
     process.env.GOOGLE_API_KEY ||
     process.env.GOOGLE_GENAI_API_KEY ||
-    "AQ.Ab8RN6LJzmJJ3ExtNix-ERyIkxzPtsV23WdCr71NRGItFPK41A"
+    ""
   ).trim();
+  return key.includes("AQ.Ab8RN6LJzmJJ3ExtNix-ERyIkxzPtsV23WdCr71NRGItFPK41A") ? "" : key;
 }
 
 async function personalizeWithGemini(

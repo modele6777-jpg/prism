@@ -26,7 +26,8 @@ export function parseImageDataUrl(url: string): { mimeType: string; data: string
 }
 
 // @ts-ignore
-const geminiApiKey = import.meta.env?.VITE_GEMINI_API_KEY || import.meta.env?.VITE_AI_API_KEY || 'AQ.Ab8RN6LJzmJJ3ExtNix-ERyIkxzPtsV23WdCr71NRGItFPK41A';
+const rawClientKey = import.meta.env?.VITE_GEMINI_API_KEY || import.meta.env?.VITE_AI_API_KEY || '';
+const geminiApiKey = rawClientKey.includes('AQ.Ab8RN6LJzmJJ3ExtNix-ERyIkxzPtsV23WdCr71NRGItFPK41A') ? '' : rawClientKey;
 // @ts-ignore
 const aiType = (import.meta.env?.VITE_AI_TYPE || "gemini").toLowerCase().trim();
 
@@ -279,7 +280,7 @@ export async function invokeLLM(params: { messages: Message[], responseFormat?: 
 
   if (useOpenAI && openai) {
     try {
-      const createTimeoutPromise = (ms = 35000) =>
+      const createTimeoutPromise = (ms = 9000) =>
         new Promise((_, reject) => setTimeout(() => reject(new Error("AI Request Timeout")), ms));
 
       let response;
@@ -291,19 +292,10 @@ export async function invokeLLM(params: { messages: Message[], responseFormat?: 
             response_format: params.responseFormat?.type === "json_object" ? { type: "json_object" } : undefined,
             temperature: 0.7,
           }),
-          createTimeoutPromise(35000)
+          createTimeoutPromise(9000)
         ]) as any;
       } catch (firstErr) {
-        console.warn("[invokeLLM] API request with response_format failed or timed out, retrying with fresh timeout...", firstErr);
-        // Fallback retry with a fresh timeout promise
-        response = await Promise.race([
-          openai.chat.completions.create({
-            model: modelName,
-            messages: mappedMessages,
-            temperature: 0.7,
-          }),
-          createTimeoutPromise(35000)
-        ]) as any;
+        console.warn("[invokeLLM] Direct client attempt timed out or failed, falling back to server proxy / Gemini:", firstErr);
       }
 
       if (response && response.choices && response.choices[0]) {
@@ -311,7 +303,7 @@ export async function invokeLLM(params: { messages: Message[], responseFormat?: 
         if (text) return text;
       }
     } catch (openAiError) {
-      console.warn(`[invokeLLM] OpenAI client direct attempt failed, falling back to server proxy / Gemini:`, openAiError);
+      console.warn(`[invokeLLM] OpenAI client direct attempt failed:`, openAiError);
     }
   }
 
@@ -327,17 +319,14 @@ export async function invokeLLM(params: { messages: Message[], responseFormat?: 
 
     const modelsToTry = [
       modelName,
-      "gemini-3.7-flash",
-      "gemini-3.1-flash-lite",
-      "gemini-3.5-flash",
-      "gemini-3.6-flash",
       "gemini-flash-latest",
-    ].filter((m, i, arr): m is string => Boolean(m) && arr.indexOf(m) === i);
+      "gemini-3.1-flash-lite",
+    ].filter((m, i, arr): m is string => Boolean(m) && arr.indexOf(m) === i).slice(0, 2);
 
     for (const currentModel of modelsToTry) {
       try {
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error("Gemini API Timeout")), 40000)
+          setTimeout(() => reject(new Error("Gemini API Timeout")), 9000)
         );
 
         const response = await Promise.race([
@@ -365,17 +354,7 @@ export async function invokeLLM(params: { messages: Message[], responseFormat?: 
           return response.text;
         }
       } catch (error: any) {
-        const errStr = (error?.message || "") + JSON.stringify(error);
-        const isRateLimit = errStr.includes('429') || errStr.includes('RESOURCE_EXHAUSTED') || errStr.includes('quota') || errStr.includes('503') || errStr.includes('high demand');
-        const isNotFound = errStr.includes('404') || errStr.includes('NOT_FOUND');
-        
-        if (isNotFound) {
-          console.warn("[invokeLLM] Model not found (404), switching to fallback model:", currentModel);
-        } else if (isRateLimit) {
-          console.warn(`[invokeLLM] Model ${currentModel} rate limit or high demand reached (429/503), switching to next model...`);
-        } else {
-          console.warn(`[invokeLLM] Model ${currentModel} error, switching to fallback...`, error?.message || error);
-        }
+        console.warn(`[invokeLLM] Model ${currentModel} error or timeout, switching...`, error?.message || error);
       }
     }
   }
@@ -384,7 +363,7 @@ export async function invokeLLM(params: { messages: Message[], responseFormat?: 
   try {
     const url = `${getApiBaseUrl()}/api/openai/v1/chat/completions`;
     const controller = new AbortController();
-    const timer = window.setTimeout(() => controller.abort(), 45000);
+    const timer = window.setTimeout(() => controller.abort(), 10000);
     const proxyResponse = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -403,7 +382,6 @@ export async function invokeLLM(params: { messages: Message[], responseFormat?: 
       const data = await proxyResponse.json();
       const cleaned = extractChatCompletionText(data?.choices?.[0]?.message?.content);
       if (cleaned) {
-        console.log("[invokeLLM] Server-side API proxy fallback succeeded!");
         return cleaned;
       }
     }
@@ -1030,7 +1008,7 @@ export async function invokeLLMStructured<T extends z.ZodTypeAny>(params: {
   schema: T,
   maxRetries?: number,
 }): Promise<z.infer<T>> {
-  const maxRetries = params.maxRetries ?? 2;
+  const maxRetries = params.maxRetries ?? 1;
   let lastError: any;
 
   const schemaJson = zodToJsonSchema(params.schema as any);

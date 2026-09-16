@@ -683,13 +683,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setIsAuthReady(true); // Still ready, just not authenticated
     });
     
-    // Safety timeout: if auth hasn't signaled in 8 seconds, assume it's unauthenticated/ready
+    // Safety timeout: if auth hasn't signaled within 1.5 seconds, assume ready so user can use the app without freezing
     const timer = setTimeout(() => {
       setIsAuthReady((prev) => {
         if (!prev) console.warn('[Auth] Initialization timed out, forcing ready state');
         return true;
       });
-    }, 8000);
+    }, 1500);
 
     return () => {
       unsub();
@@ -1438,6 +1438,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       if (errStr.includes('prepayment credits') || errStr.includes('depleted') || errStr.includes('RESOURCE_EXHAUSTED')) {
         errorMsg = "⚠️ [Google AI Studio 크레딧 소진 안내]\n현재 API 키 프로젝트의 선불 크레딧(Prepayment Credits)이 소진되어 Google에서 API 호출을 일시 차단(429 RESOURCE_EXHAUSTED)했습니다.\n\n💡 해결 방법:\n1. Google AI Studio (https://aistudio.google.com/app/apikey)에서 결제 설정이 없는 '무료 티어(Free of charge)' 새 API 키를 발급받아 교체하시거나,\n2. https://ai.studio/projects 에서 선불 크레딧을 충전해 주시면 즉시 정상 대화가 재개됩니다.";
+      } else if (errStr.includes('ACCOUNT_STATE_INVALID') || errStr.includes('deleted or disabled') || errStr.includes('UNAUTHENTICATED') || errStr.includes('401') || errStr.includes('Invalid API Key') || errStr.includes('GEMINI_API_KEY')) {
+        errorMsg = "⚠️ [Google Gemini API 키 갱신 안내]\n현재 등록된 API 키가 만료되었거나 비활성화된 서비스 계정에 연결되어 있습니다 (401 UNAUTHENTICATED).\n\n💡 해결 방법:\n1. Google AI Studio (https://aistudio.google.com/app/apikey)에서 'Create API key'를 눌러 새 무료 API 키를 발급받으세요.\n2. AI Studio 화면 우측 상단의 **Settings > Secrets** 메뉴에서 `GEMINI_API_KEY` 값을 새로 등록해 주시면 즉시 실시간 대화가 재개됩니다.";
       }
 
       setUnifiedMessages(prev => {

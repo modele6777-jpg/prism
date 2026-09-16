@@ -93,10 +93,9 @@ const ROUTES_MAP = [
 
 function ActivePage({ loc }: { loc: string }) {
   const cleanLoc = loc ? loc.split('?')[0].split('#')[0] : '/';
-  const [frozenLoc] = React.useState(cleanLoc);
   return (
     <React.Suspense fallback={<PageLoader />}>
-      <Switch location={frozenLoc}>
+      <Switch location={cleanLoc}>
         <Route path="/"><HubHome /></Route>
         <Route path="/universe"><HubHome /></Route>
         <Route path="/ecpr"><HubHome /></Route>
@@ -128,21 +127,10 @@ function AppContent() {
   const { firebaseUser, isAuthReady, logout, signInWithGoogle, sharedState, isUnlocked, unlock, isChatOpen, syncPrismDevices } = useApp();
   const [location, navigate] = useLocation();
 
-
-  // Loading transition state with the rainbow triangle emblem
-  const [isTransitioning, setIsTransitioning] = React.useState(false);
-  const [transitionLocation, setTransitionLocation] = React.useState(location);
   const isFirstMount = React.useRef(true);
-  const usePageTransitions = shouldUsePageTransitions();
 
-  // Initial Prism Rainbow entrance splash for a cinematic first impression
-  const [appEntranceDone, setAppEntranceDone] = React.useState(false);
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setAppEntranceDone(true);
-    }, 1300);
-    return () => clearTimeout(timer);
-  }, []);
+  // Instant entrance without artificial screen blocking
+  const [appEntranceDone, setAppEntranceDone] = React.useState(true);
 
   const [checkingUpdate, setCheckingUpdate] = React.useState(false);
   const [updateMessage, setUpdateMessage] = React.useState<string | null>(null);
@@ -245,28 +233,9 @@ function AppContent() {
   };
 
   React.useEffect(() => {
-    if (isFirstMount.current) {
-      isFirstMount.current = false;
-      return;
-    }
     setIsTarotActive(false);
-    if (!usePageTransitions) {
-      setTransitionLocation(location);
-      setIsTransitioning(false);
-      return;
-    }
-    setIsTransitioning(true);
-    const timer = setTimeout(() => {
-      setTransitionLocation(location);
-      setIsTransitioning(false);
-    }, 240);
-    return () => clearTimeout(timer);
-  }, [location, usePageTransitions]);
-
-  React.useEffect(() => {
-    if (isTransitioning) return;
     resetAppScroll();
-  }, [transitionLocation, isTransitioning]);
+  }, [location]);
 
   // Redirect unknown routes
   React.useEffect(() => {
@@ -384,7 +353,7 @@ function AppContent() {
     <div className="prism-app-shell relative z-[1] bg-transparent">
       {/* Top-Right Background Music Player (Expands Leftwards) */}
       {shouldMountBgMusicPlayer() && (
-        <div className={`fixed top-safe-2 right-4 sm:right-6 md:top-safe-4 z-[300] transition-opacity duration-200 ${isTransitioning ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
+        <div className="fixed top-safe-2 right-4 sm:right-6 md:top-safe-4 z-[300] transition-opacity duration-200 opacity-100">
           <BgMusicPlayer />
         </div>
       )}
@@ -404,57 +373,16 @@ function AppContent() {
         )}
       </AnimatePresence>
 
-
-
       <main className="flex-1 min-h-0 overflow-hidden flex flex-col relative w-full">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={transitionLocation}
-            initial={{ opacity: 0, scale: 0.98, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.98, y: -12 }}
-            transition={{
-              duration: usePageTransitions ? 0.35 : 0.12,
-              ease: usePageTransitions ? [0.16, 1, 0.3, 1] : 'easeOut',
-            }}
-            className="w-full h-full flex flex-col min-h-0"
-          >
-            <ActivePage loc={transitionLocation} />
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Dynamic portal transitional loader: Orb, Lucy, or Rainbow Prism */}
-        <AnimatePresence>
-          {isTransitioning && usePageTransitions && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.25, ease: "easeInOut" }}
-              className="fixed inset-0 z-[1000] flex flex-col items-center justify-center bg-[#05050a]/92 backdrop-blur-md"
-            >
-              {transitionLocation === '/chat' || transitionLocation === '/lucy' ? (
-                <LucyAuraLoader
-                  compact
-                  message="루시 의식 차원으로 전이 중..."
-                  subMessage="TRANSLATING TO LUCY..."
-                />
-              ) : transitionLocation === '/orb' || transitionLocation === '/gateway' || transitionLocation === '/crystal' ? (
-                <OrbCosmicLoader
-                  compact
-                  message="크리스탈 오브 궤도로 도약 중..."
-                  subMessage="WARPING TO ORB..."
-                />
-              ) : (
-                <PrismRainbowLoader
-                  compact
-                  message="차원 스펙트럼 전이 중..."
-                  subMessage="TRANSLATING DIMENSION..."
-                />
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <motion.div
+          key={location ? location.split('?')[0].split('#')[0] : '/'}
+          initial={{ opacity: 0.88 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.1, ease: 'easeOut' }}
+          className="w-full h-full flex flex-col min-h-0"
+        >
+          <ActivePage loc={location} />
+        </motion.div>
       </main>
       {!isChatOpen && !isStandaloneChat && <BottomNav />}
       <BigBangButton />

@@ -30,9 +30,10 @@ app.use((req, _res, next) => {
 import { GoogleGenAI } from "@google/genai";
 
 app.post([/.*\/chat\/completions$/, "/api/openai/v1/chat/completions", "/openai/v1/chat/completions"], async (req, res) => {
-  const geminiApiKey = process.env.GEMINI_API_KEY || process.env.AI_API_KEY || "AQ.Ab8RN6LJzmJJ3ExtNix-ERyIkxzPtsV23WdCr71NRGItFPK41A";
+  const rawKey = process.env.GEMINI_API_KEY || process.env.AI_API_KEY || "";
+  const geminiApiKey = rawKey.includes("AQ.Ab8RN6LJzmJJ3ExtNix-ERyIkxzPtsV23WdCr71NRGItFPK41A") ? "" : rawKey;
   if (!geminiApiKey) {
-    return res.status(500).json({ error: "GEMINI_API_KEY not configured" });
+    return res.status(500).json({ error: "GEMINI_API_KEY not configured or invalid" });
   }
 
   try {
@@ -138,7 +139,8 @@ ${content}
   "emotions": ["감정태그1", "감정태그2"]
 }`;
 
-  const geminiApiKey = process.env.GEMINI_API_KEY || process.env.AI_API_KEY || "AQ.Ab8RN6LJzmJJ3ExtNix-ERyIkxzPtsV23WdCr71NRGItFPK41A";
+  const rawKey = process.env.GEMINI_API_KEY || process.env.AI_API_KEY || "";
+  const geminiApiKey = rawKey.includes("AQ.Ab8RN6LJzmJJ3ExtNix-ERyIkxzPtsV23WdCr71NRGItFPK41A") ? "" : rawKey;
 
   if (geminiApiKey) {
     try {

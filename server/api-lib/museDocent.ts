@@ -102,13 +102,12 @@ function getGeminiApiKey(): string {
     process.env.GOOGLE_GENAI_API_KEY,
     process.env.AI_API_KEY,
     process.env.API_KEY,
-    "AQ.Ab8RN6LJzmJJ3ExtNix-ERyIkxzPtsV23WdCr71NRGItFPK41A",
   ];
   for (const raw of candidates) {
     const key = normalizeApiKey(raw);
-    if (key && !key.startsWith("sk-") && !key.startsWith("xai-")) return key;
+    if (key && !key.startsWith("sk-") && !key.startsWith("xai-") && !key.includes("AQ.Ab8RN6LJzmJJ3ExtNix-ERyIkxzPtsV23WdCr71NRGItFPK41A")) return key;
   }
-  return "AQ.Ab8RN6LJzmJJ3ExtNix-ERyIkxzPtsV23WdCr71NRGItFPK41A";
+  return "";
 }
 
 function getXaiApiKey(): string {

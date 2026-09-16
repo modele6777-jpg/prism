@@ -394,13 +394,8 @@ export default function HubHome() {
     }
   }, [isSyncingGlobal, sharedState, fatigue, sleep, stress, focus, vibe, updateSharedState]);
 
-  const syncGlobalRef = useRef(false);
-  useEffect(() => {
-    if (sharedState && !syncGlobalRef.current) {
-      syncGlobalRef.current = true;
-      syncGlobal();
-    }
-  }, [sharedState, syncGlobal]);
+  // Avoid unsolicited background AI calls on home mount to prevent quota exhaustion and UI thread freezing
+  // Global insight uses cached data or default presets instantly
 
   const hour = getKstHour();
   const timeSlot = getTimeEnergySlot(hour);

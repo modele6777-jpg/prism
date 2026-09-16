@@ -2,7 +2,13 @@ import dotenv from "dotenv";
 dotenv.config();
 dotenv.config({ path: ".env.local", override: true });
 
-// Prefer explicit env keys; avoid embedding API keys in source.
+// Prefer explicit env keys; clean known revoked/deleted service account keys.
+if (process.env.GEMINI_API_KEY?.includes("AQ.Ab8RN6LJzmJJ3ExtNix-ERyIkxzPtsV23WdCr71NRGItFPK41A")) {
+  delete process.env.GEMINI_API_KEY;
+}
+if (process.env.GOOGLE_GENAI_API_KEY?.includes("AQ.Ab8RN6LJzmJJ3ExtNix-ERyIkxzPtsV23WdCr71NRGItFPK41A")) {
+  delete process.env.GOOGLE_GENAI_API_KEY;
+}
 const activeGeminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY || "";
 if (activeGeminiKey) {
   process.env.GEMINI_API_KEY = activeGeminiKey;
@@ -25,12 +31,12 @@ const _filename = typeof __filename !== "undefined" ? __filename : "";
 const _dirname = typeof __dirname !== "undefined" ? __dirname : process.cwd();
 
 export function getGeminiApiKey(): string {
-  const envKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY || process.env.AI_API_KEY || "";
-  if (envKey) {
+  const envKey = (process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY || process.env.AI_API_KEY || "").trim();
+  if (envKey && !envKey.includes("AQ.Ab8RN6LJzmJJ3ExtNix-ERyIkxzPtsV23WdCr71NRGItFPK41A")) {
     console.log(`[getGeminiApiKey] Returning system environment key: ${envKey.substring(0, 7)}...`);
     return envKey;
   }
-  return "AQ.Ab8RN6LJzmJJ3ExtNix-ERyIkxzPtsV23WdCr71NRGItFPK41A";
+  return "";
 }
 
 function getAIConfig() {
@@ -224,11 +230,9 @@ function isTemporaryUnavailableOrRateLimited(err: any): boolean {
 
 function getPrioritizedGeminiModels(requestedModel?: string): string[] {
   const defaultModels = [
-    "gemini-3.7-flash",
     "gemini-3.1-flash-lite",
-    "gemini-3.5-flash",
-    "gemini-3.6-flash",
     "gemini-flash-latest",
+    "gemini-3.8-flash",
   ];
 
   const uniqueCandidates = [
@@ -1316,9 +1320,17 @@ ${content}
       let errorCategory = "";
       let actionSteps = "";
       
-      if (errStr.includes("no gemini api key available")) {
-        errorCategory = "API 키 미설정 (No API Key)";
-        actionSteps = "1. 설정(Settings > Secrets) 메뉴에서 GEMINI_API_KEY 환경 변수가 올바르게 추가되어 있는지 확인해 주세요.\n2. Google AI Studio(https://aistudio.google.com/)에서 새 API 키를 발급받아 등록해 주세요.";
+      if (
+        errStr.includes("no gemini api key") ||
+        errStr.includes("not configured") ||
+        errStr.includes("account_state_invalid") ||
+        errStr.includes("deleted or disabled") ||
+        errStr.includes("unauthenticated") ||
+        errStr.includes("401") ||
+        errStr.includes("invalid_api_key")
+      ) {
+        errorCategory = "API 키 미설정 또는 만료 (Invalid / Expired API Key)";
+        actionSteps = "1. AI Studio 우측 상단 Settings > Secrets 메뉴에서 GEMINI_API_KEY가 올바르게 등록되어 있는지 확인해 주세요.\n2. Google AI Studio(https://aistudio.google.com/)에서 새 무료 API 키를 발급받아 등록하시면 모든 AI 기능이 정상 작동합니다.";
       } else if (
         errStr.includes("prepayment") ||
         errStr.includes("depleted") ||
@@ -1330,7 +1342,7 @@ ${content}
       ) {
         errorCategory = "API 호출 한도 / 쿼터 초과 (Rate Limit Exceeded)";
         actionSteps = "1. 일시적인 호출 한도에 도달했을 수 있습니다. 잠시 후 다시 시도해 주세요.\n2. 필요 시 Google AI Studio에서 API 쿼터 및 키 상태를 확인해 주세요.";
-      } else if (errStr.includes("api key") || errStr.includes("api_key") || errStr.includes("key not valid") || errStr.includes("invalid key") || errStr.includes("forbidden") || errStr.includes("403") || errStr.includes("invalid_api_key")) {
+      } else if (errStr.includes("api key") || errStr.includes("api_key") || errStr.includes("key not valid") || errStr.includes("invalid key") || errStr.includes("forbidden") || errStr.includes("403")) {
         errorCategory = "유효하지 않은 API 키 (Invalid API Key)";
         actionSteps = "1. GEMINI_API_KEY 환경 변수에 공백이나 오탈자가 없는지 점검해 주세요.\n2. Google AI Studio에서 새로 발급받은 키를 다시 저장해 주세요.";
       } else {
@@ -1465,7 +1477,24 @@ ${content}
         });
       }
 
-      return errMessage;
+      // Conversational chat fallback
+      const personaReplies: Record<string, string> = {
+        lucy: "안녕하세요! 오늘 당신의 마음 상태는 어떠신가요? 작은 생각이나 감정도 편안하게 들려주세요. 온 마음으로 귀 기울이고 있습니다.",
+        muse: "예술과 음악, 그리고 시가 머무는 공간에 오신 것을 환영합니다. 오늘 당신의 감성을 울린 풍경이나 노래가 있다면 편히 나누어 주세요.",
+        orange: "반가워요! 오늘은 어떤 반짝이는 아이디어나 목표가 머릿속을 맴돌고 있나요? 천천히 하나씩 정리해 봐요.",
+        bluebird: "당신의 소중한 마음을 담은 비밀 쪽지를 품고 있어요. 가슴 깊은 곳의 이야기라도 언제든 편히 털어놓으셔도 괜찮아요.",
+        heal: "깊게 숨을 들이마시고, 온몸의 긴장을 천천히 내쉬어 보세요. 지금 이 순간 당신에게 필요한 것은 완전한 이완과 평온입니다.",
+      };
+
+      let baseReply = personaReplies.lucy;
+      if (wholeStr.includes("muse")) baseReply = personaReplies.muse;
+      else if (wholeStr.includes("orange")) baseReply = personaReplies.orange;
+      else if (wholeStr.includes("bluebird") || wholeStr.includes("파랑새")) baseReply = personaReplies.bluebird;
+      else if (wholeStr.includes("heal") || wholeStr.includes("치유")) baseReply = personaReplies.heal;
+
+      const keyGuideNotice = `\n\n---\n💡 **[안내]** Google Gemini API 키가 현재 미설정 또는 만료 상태입니다.\n실시간 AI 생성 기능을 활성화하시려면 **AI Studio 우측 상단 Settings > Secrets**에서 \`GEMINI_API_KEY\`를 새로 등록해 주세요.`;
+
+      return baseReply + keyGuideNotice;
     };
 
     const apiKey = process.env.POE_API_KEY || "sk-poe-FRnvSpccjv6g5J3KPj-P_5LV_9D5ACKOSjBaibibaho";
@@ -1706,7 +1735,7 @@ ${content}
             id: `chatcmpl-${Date.now()}`,
             object: "chat.completion",
             created: Math.floor(Date.now() / 1000),
-            model: req.body.model || "gemini-3.7-flash",
+            model: req.body.model || "gemini-flash-latest",
             choices: [
               {
                 index: 0,
@@ -1749,7 +1778,7 @@ ${content}
             id: `chatcmpl-${Date.now()}`,
             object: "chat.completion.chunk",
             created: Math.floor(Date.now() / 1000),
-            model: req.body.model || "gemini-3.7-flash",
+            model: req.body.model || "gemini-flash-latest",
             choices: [
               {
                 index: 0,
@@ -1769,7 +1798,7 @@ ${content}
             id: `chatcmpl-${Date.now()}`,
             object: "chat.completion",
             created: Math.floor(Date.now() / 1000),
-            model: req.body.model || "gemini-3.7-flash",
+            model: req.body.model || "gemini-flash-latest",
             choices: [
               {
                 index: 0,
