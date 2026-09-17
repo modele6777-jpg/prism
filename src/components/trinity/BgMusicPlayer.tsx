@@ -39,7 +39,7 @@ type BgmTrack = {
 
 type RepeatMode = "off" | "one" | "all";
 
-const SYNTH_SEGMENT_SEC = 60;
+const SYNTH_SEGMENT_SEC = 300;
 
 const REPEAT_MODE_LABEL: Record<RepeatMode, string> = {
   off: "반복 끔",
@@ -3176,41 +3176,25 @@ export function BgMusicPlayer() {
 
   // --- AUTOPLAY UNLOCKER ---
   useEffect(() => {
+    let unlocked = false;
     const unlockAudioContext = () => {
+      if (unlocked) return;
       try {
         const ctx = getSharedAudioContext();
         if (ctx.state === 'suspended') {
-          ctx.resume().then(() => {
-            if (isPlayingRef.current) {
-              const curTrackIndex = shuffledIndicesRef.current[queueIndexRef.current] ?? activeTrackIndexRef.current;
-              try {
-                playTrackDirectly(curTrackIndex, false);
-              } catch (_) {}
-            }
-          }).catch(() => {});
-        } else if (isPlayingRef.current) {
-          const curTrackIndex = shuffledIndicesRef.current[queueIndexRef.current] ?? activeTrackIndexRef.current;
-          const track = tracksRef.current[curTrackIndex];
-          const isSynth = track?.url?.startsWith("synth");
-          const audio = audioRef.current;
-          if (audio && audio.paused && !isSynth) {
-            audio.play().catch(() => {});
-          }
+          ctx.resume().catch(() => {});
         }
+        unlocked = true;
       } catch (_) {}
     };
 
-    window.addEventListener("click", unlockAudioContext, { passive: true });
-    window.addEventListener("touchstart", unlockAudioContext, { passive: true });
-    window.addEventListener("touchend", unlockAudioContext, { passive: true });
-    window.addEventListener("pointerdown", unlockAudioContext, { passive: true });
-    window.addEventListener("keydown", unlockAudioContext, { passive: true });
+    window.addEventListener("click", unlockAudioContext, { passive: true, once: true });
+    window.addEventListener("touchstart", unlockAudioContext, { passive: true, once: true });
+    window.addEventListener("keydown", unlockAudioContext, { passive: true, once: true });
 
     return () => {
       window.removeEventListener("click", unlockAudioContext);
       window.removeEventListener("touchstart", unlockAudioContext);
-      window.removeEventListener("touchend", unlockAudioContext);
-      window.removeEventListener("pointerdown", unlockAudioContext);
       window.removeEventListener("keydown", unlockAudioContext);
     };
   }, []);

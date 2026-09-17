@@ -391,25 +391,23 @@ function NebulaOrb({
   orbClass,
   color,
   opacity,
-  blurPx,
   animate = true,
   animationDuration,
 }: NebulaOrbProps) {
   return (
     <div
-      className={`absolute rounded-full ${positionClass} ${animate && orbClass ? orbClass : ''}`}
+      className={`absolute rounded-full pointer-events-none ${positionClass} ${animate && orbClass ? orbClass : ''}`}
       style={{
-        backgroundColor: color,
-        opacity,
-        filter: `blur(${blurPx}px)`,
-        WebkitFilter: `blur(${blurPx}px)`,
+        background: `radial-gradient(circle closest-side, ${withAlpha(color, opacity)} 0%, transparent 100%)`,
         animationDuration,
+        willChange: animate ? 'transform' : 'auto',
+        transform: 'translateZ(0)',
       }}
     />
   );
 }
 
-export const AuroraBackground: React.FC = () => {
+const AuroraBackgroundComponent: React.FC = () => {
   const profile = getPerfProfile();
   const { void: voidColor, abyss, nebulaViolet, nebulaBlue, nebulaMagenta, nebulaCyan, galacticGold } =
     COSMOS;
@@ -464,16 +462,16 @@ export const AuroraBackground: React.FC = () => {
         }}
       />
 
-      {/* Galactic band & Nebula Orbs - Bypassed entirely on mobile to eliminate GPU offscreen blur rendering passes */}
+      {/* Galactic band & Nebula Orbs - Hardware-accelerated radial gradients to eliminate GPU offscreen blur rendering passes */}
       {!isMobile && (
         <>
           <div
-            className={`absolute left-[-20%] top-[16%] w-[140%] h-[30%] rotate-[-12deg] ${animateOrbs ? 'aura-orb-2' : ''}`}
+            className={`absolute left-[-20%] top-[16%] w-[140%] h-[30%] rotate-[-12deg] pointer-events-none ${animateOrbs ? 'aura-orb-2' : ''}`}
             style={{
               opacity: legacy ? 0.2 : 0.16,
-              filter: `blur(${Math.round(nebulaBlur * 0.75)}px)`,
-              WebkitFilter: `blur(${Math.round(nebulaBlur * 0.75)}px)`,
-              background: `linear-gradient(90deg, transparent 0%, ${withAlpha(nebulaViolet, 0.85)} 28%, ${withAlpha(nebulaMagenta, 0.8)} 52%, ${withAlpha(nebulaBlue, 0.75)} 78%, transparent 100%)`,
+              background: `radial-gradient(ellipse 75% 50% at 50% 50%, ${withAlpha(nebulaViolet, 0.6)} 0%, ${withAlpha(nebulaMagenta, 0.4)} 45%, ${withAlpha(nebulaBlue, 0.25)} 75%, transparent 100%)`,
+              willChange: animateOrbs ? 'transform' : 'auto',
+              transform: 'translateZ(0)',
             }}
           />
 
@@ -528,7 +526,7 @@ export const AuroraBackground: React.FC = () => {
 
       {!isMobile && (
         <div
-          className="absolute inset-0"
+          className="absolute inset-0 pointer-events-none"
           style={{
             opacity: legacy ? 0.08 : 0.06,
             backgroundImage:
@@ -541,4 +539,5 @@ export const AuroraBackground: React.FC = () => {
   );
 };
 
+export const AuroraBackground = React.memo(AuroraBackgroundComponent);
 export default AuroraBackground;

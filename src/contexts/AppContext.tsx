@@ -1324,28 +1324,42 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       })
     ];
     
+    let pendingRaf: number | null = null;
+    let latestCleanReply = '';
+
+    const flushChunk = () => {
+      pendingRaf = null;
+      setUnifiedMessages(prev => {
+        let found = false;
+        const updated = prev.map(m => {
+          if (m.id === assistMsgId) {
+            found = true;
+            return { ...m, content: latestCleanReply, persona: sourcePersona };
+          }
+          return m;
+        });
+        if (!found) {
+          updated.push({ id: assistMsgId, role: 'model' as const, content: latestCleanReply, timestamp: Date.now(), persona: sourcePersona });
+        }
+        return updated;
+      });
+    };
+
     try {
       await invokeLLMStream({
         messages: conversationForAPI,
         onChunk: (chunk: string) => {
           replyText += chunk;
-          const cleanReply = cleanChatDisplayText(replyText);
-          setUnifiedMessages(prev => {
-            let found = false;
-            const updated = prev.map(m => {
-              if (m.id === assistMsgId) {
-                found = true;
-                return { ...m, content: cleanReply, persona: sourcePersona };
-              }
-              return m;
-            });
-            if (!found) {
-              updated.push({ id: assistMsgId, role: 'model' as const, content: cleanReply, timestamp: Date.now(), persona: sourcePersona });
-            }
-            return updated;
-          });
+          latestCleanReply = cleanChatDisplayText(replyText);
+          if (pendingRaf === null) {
+            pendingRaf = requestAnimationFrame(flushChunk);
+          }
         },
         onFinish: async (fullText: string) => {
+          if (pendingRaf !== null) {
+            cancelAnimationFrame(pendingRaf);
+            pendingRaf = null;
+          }
           isGeneratingRef.current[sourcePersona] = false;
           setIsGenerating(prev => ({ ...prev, [sourcePersona]: false }));
 
