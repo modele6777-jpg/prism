@@ -21,6 +21,7 @@ import { cleanUserMessageDisplay } from '@/utils/cleanMessage';
 import { detectLucyChannelsFromText } from '@/lib/lucyAutoModeDetector';
 import { triggerHaptic } from '@/lib/omniWarp/omniWarpHaptics';
 import { getAndClearPendingSelection } from '@/lib/selectionBridge';
+import { LucyResponseRecommendation } from '@/components/LucyResponseRecommendation';
 
 // Helper: Compress uploaded images to prevent UI stutter and huge payload overhead
 function compressImageIfNeeded(file: File): Promise<string> {
@@ -1486,11 +1487,33 @@ export default function LucyStandalonePage() {
                     {isUser ? (
                       <div className="whitespace-pre-wrap">{textContent}</div>
                     ) : (
-                      <LucyProTypewriter 
-                        content={textContent}
-                        isLatest={index === filteredMessages.length - 1}
-                        isGenerating={isLucyGenerating && index === filteredMessages.length - 1}
-                      />
+                      <>
+                        <LucyProTypewriter 
+                          content={textContent}
+                          isLatest={index === filteredMessages.length - 1}
+                          isGenerating={isLucyGenerating && index === filteredMessages.length - 1}
+                        />
+                        {/* 🔮 오브 연계 추천 채널 및 추천 기능 도약 바 */}
+                        {(!isLucyGenerating || index !== filteredMessages.length - 1) && textContent && textContent.trim().length > 10 && (
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <LucyResponseRecommendation
+                              userQuery={(() => {
+                                const prev = filteredMessages.slice(0, index).reverse().find((m: any) => m.role === 'user');
+                                if (!prev) return '';
+                                return typeof prev.content === 'string'
+                                  ? prev.content
+                                  : Array.isArray(prev.content)
+                                  ? prev.content.find((item: any) => item.type === 'text')?.text || ''
+                                  : '';
+                              })()}
+                              lucyAnswer={textContent}
+                              currentChannels={activeChannels}
+                              onSwitchChannel={(channels, isMaster, label) => handleActivateMessageMode(channels, isMaster, label)}
+                              onNavigate={(path) => navigate(path)}
+                            />
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
 
