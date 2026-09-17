@@ -1253,11 +1253,16 @@ ${dimensionDescriptions}`;
 
     // Always finish scrying and present result cleanly
     setTimeout(() => {
-      finalResult.recommendedAppId = determineRecommendedApp(
-        finalResult.query,
-        finalResult.keyTheme,
-        finalResult.directAnswer
-      );
+      const isCasualScrying = !effectiveMasterMode && (!effectiveRuneIds || effectiveRuneIds.length === 0);
+      if (!isCasualScrying) {
+        finalResult.recommendedAppId = determineRecommendedApp(
+          finalResult.query,
+          finalResult.keyTheme,
+          finalResult.directAnswer
+        );
+      } else {
+        finalResult.recommendedAppId = undefined;
+      }
       setIsScrying(false);
       setScryingResult(finalResult);
       setInquiry(""); // 🔮 고민 완료 후 대화창/입력창 확실히 초기화
@@ -1882,8 +1887,8 @@ ${dimensionDescriptions}`;
               })}
             </motion.div>
 
-            {/* 영시 결과 추천 시 에테르 공명 코로나 펄스 */}
-            {scryingResult?.recommendedAppId && (
+            {/* 영시 결과 추천 시 에테르 공명 코로나 펄스 (수다 모드 제외) */}
+            {!(!scryingResult?.isMaster && (!scryingResult?.activeRunes || scryingResult.activeRunes.length === 0)) && scryingResult?.recommendedAppId && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="w-56 h-56 rounded-full border border-amber-400/40 animate-pulse opacity-60" />
                 <div className="w-80 h-80 rounded-full border border-cyan-400/30 animate-pulse" />
@@ -2134,8 +2139,8 @@ ${dimensionDescriptions}`;
                 </div>
               </div>
 
-              {/* 🌟 추천 차원 도약 (Recommended Dimension Link Banner) */}
-              {scryingResult.recommendedAppId && (() => {
+              {/* 🌟 추천 차원 도약 (Recommended Dimension Link Banner - 수다 모드에서는 비노출) */}
+              {!(!scryingResult.isMaster && (!scryingResult.activeRunes || scryingResult.activeRunes.length === 0)) && scryingResult.recommendedAppId && (() => {
                 const recApp = SEPTAGRAM_APPS.find((a) => a.id === scryingResult.recommendedAppId) || SEPTAGRAM_APPS[0];
                 return (
                   <motion.div

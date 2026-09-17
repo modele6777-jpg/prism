@@ -1493,8 +1493,12 @@ export default function LucyStandalonePage() {
                           isLatest={index === filteredMessages.length - 1}
                           isGenerating={isLucyGenerating && index === filteredMessages.length - 1}
                         />
-                        {/* 🔮 오브 연계 추천 채널 및 추천 기능 도약 바 */}
-                        {(!isLucyGenerating || index !== filteredMessages.length - 1) && textContent && textContent.trim().length > 10 && (
+                        {/* 🔮 오브 연계 추천 채널 및 추천 기능 도약 바 (수다 모드에서는 비노출) */}
+                        {(!isLucyGenerating || index !== filteredMessages.length - 1) &&
+                          !msgModeInfo.isCasual &&
+                          activeChannels.length > 0 &&
+                          textContent &&
+                          textContent.trim().length > 10 && (
                           <div onClick={(e) => e.stopPropagation()}>
                             <LucyResponseRecommendation
                               userQuery={(() => {
@@ -1508,6 +1512,7 @@ export default function LucyStandalonePage() {
                               })()}
                               lucyAnswer={textContent}
                               currentChannels={activeChannels}
+                              isCasual={msgModeInfo.isCasual || activeChannels.length === 0}
                               onSwitchChannel={(channels, isMaster, label) => handleActivateMessageMode(channels, isMaster, label)}
                               onNavigate={(path) => navigate(path)}
                             />

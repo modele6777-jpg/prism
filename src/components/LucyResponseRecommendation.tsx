@@ -14,6 +14,7 @@ export interface LucyResponseRecommendationProps {
   userQuery?: string;
   lucyAnswer: string;
   currentChannels: SpecialChannel[];
+  isCasual?: boolean;
   onSwitchChannel: (channels: SpecialChannel[], isMaster: boolean, label: string) => void;
   onNavigate?: (path: string) => void;
 }
@@ -222,10 +223,16 @@ export function LucyResponseRecommendation({
   userQuery = '',
   lucyAnswer,
   currentChannels,
+  isCasual = false,
   onSwitchChannel,
   onNavigate,
 }: LucyResponseRecommendationProps) {
   const [isLeaping, setIsLeaping] = useState(false);
+
+  // 수다 모드에서는 추천 기능(추천 채널 및 추천 차원 도약) 적용하지 않음
+  if (isCasual || currentChannels.length === 0) {
+    return null;
+  }
 
   // 1. 맥락 분석을 통해 최적의 추천 채널 및 추천 기능 도출
   const { recommendedChannel, secondaryChannel, recommendedFeature, themeReason } = useMemo(() => {

@@ -6,5 +6,7 @@
   "firestoreDatabaseId": "ai-studio-cbbdcebe-d278-41b2-9826-3d7e58a0eb1a",
   "storageBucket": "lucyuniverse-fc423.firebasestorage.app",
   "messagingSenderId": "374921003422",
-  "measurementId": ""
+  "measurementId": "",
+  "oAuthClientId": "374921003422-m41057fda6j3op1avvfqhqubpal297uu.apps.googleusercontent.com",
+  "recaptchaSiteKey": ""
 }
