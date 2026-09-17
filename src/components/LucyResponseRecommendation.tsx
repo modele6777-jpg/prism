@@ -366,7 +366,9 @@ export function LucyResponseRecommendation({
         }
       } catch (err) {
         console.error('[LucyRecommendation] Navigation error:', err);
-        setIsLeaping(false);
+      } finally {
+        // Ensure isLeaping resets so buttons never get stuck
+        setTimeout(() => setIsLeaping(false), 800);
       }
     }, 280);
   };

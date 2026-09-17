@@ -706,7 +706,8 @@ export default function OrbGatewayPage() {
         }
       } catch (err) {
         console.error("[OrbGateway] Navigation error:", err);
-        setIsLeaping(false);
+      } finally {
+        setTimeout(() => setIsLeaping(false), 800);
       }
     }, 320);
   };

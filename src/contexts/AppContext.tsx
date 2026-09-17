@@ -70,6 +70,7 @@ interface AppContextValue {
   personaMessages: Record<PersonaType, UnifiedMessage[]>;
   setPersonaMessages: React.Dispatch<React.SetStateAction<Record<PersonaType, UnifiedMessage[]>>>;
   isGenerating: Record<PersonaType, boolean>;
+  abortGenerating: (persona?: PersonaType) => void;
   sendUnifiedMessage: (
     text: string,
     forcePersona?: PersonaType,
@@ -341,6 +342,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const isGeneratingRef = useRef<Record<PersonaType, boolean>>({
     lucy: false, orange: false, trinity: false, aura: false, bluebird: false, muse: false
   });
+  const abortControllersRef = useRef<Record<PersonaType, AbortController | null>>({
+    lucy: null, orange: null, trinity: null, aura: null, bluebird: null, muse: null
+  });
+
+  const abortGenerating = useCallback((persona?: PersonaType) => {
+    const targetPersonas: PersonaType[] = persona ? [persona] : (['lucy', 'orange', 'trinity', 'aura', 'bluebird', 'muse'] as PersonaType[]);
+    targetPersonas.forEach(p => {
+      if (abortControllersRef.current[p]) {
+        try {
+          abortControllersRef.current[p]?.abort();
+        } catch (_) {}
+        abortControllersRef.current[p] = null;
+      }
+      isGeneratingRef.current[p] = false;
+    });
+    setIsGenerating(prev => {
+      const updated = { ...prev };
+      targetPersonas.forEach(p => { updated[p] = false; });
+      return updated;
+    });
+  }, []);
 
   // Broadcast channel for instantaneous cross-tab/PWA chat synchronization
   const chatBroadcastRef = useRef<BroadcastChannel | null>(null);
@@ -1183,9 +1205,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
     ]);
     
-    // 2. Set generating status
+    // 2. Set generating status and register AbortController
+    if (abortControllersRef.current[sourcePersona]) {
+      try { abortControllersRef.current[sourcePersona]?.abort(); } catch (_) {}
+    }
+    const currentAbortController = new AbortController();
+    abortControllersRef.current[sourcePersona] = currentAbortController;
+
     isGeneratingRef.current[sourcePersona] = true;
     setIsGenerating(prev => ({ ...prev, [sourcePersona]: true }));
+
+    // 25-second Safety Watchdog Timer: prevents UI from hanging indefinitely on network loss/stalls
+    const watchdogTimer = setTimeout(() => {
+      if (isGeneratingRef.current[sourcePersona]) {
+        console.warn(`[AppContext] Safety watchdog auto-released isGenerating for ${sourcePersona}`);
+        try { currentAbortController.abort(); } catch (_) {}
+        isGeneratingRef.current[sourcePersona] = false;
+        setIsGenerating(prev => ({ ...prev, [sourcePersona]: false }));
+      }
+    }, 25000);
     
     // 3. Prepare AI Prompt
     const profile = sharedState?.userProfile || getPersistentUserProfile();
@@ -1348,6 +1386,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       await invokeLLMStream({
         messages: conversationForAPI,
+        signal: currentAbortController.signal,
         onChunk: (chunk: string) => {
           replyText += chunk;
           latestCleanReply = cleanChatDisplayText(replyText);
@@ -1485,6 +1524,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         pushChatThreadsToFirestore(updated);
         return updated;
       });
+    } finally {
+      clearTimeout(watchdogTimer);
+      if (abortControllersRef.current[sourcePersona] === currentAbortController) {
+        abortControllersRef.current[sourcePersona] = null;
+      }
+      isGeneratingRef.current[sourcePersona] = false;
+      setIsGenerating(prev => ({ ...prev, [sourcePersona]: false }));
     }
   }, [activePersona, buildPrismOmniscientContext, calculateDetailedSaju, firebaseUser, isGeneratingRef, pushChatThreadsToFirestore, sharedState, unifiedMessages]);
 
@@ -1496,7 +1542,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       isChatOpen, setIsChatOpen,
       activePersona, setActivePersona,
       personaMessages, setPersonaMessages,
-      isGenerating, sendUnifiedMessage, chatSuggestions, openLucyChat,
+      isGenerating, abortGenerating, sendUnifiedMessage, chatSuggestions, openLucyChat,
       openHandbook, clearPersonaMessages,
       generateDevicePairingCode, importDevicePairingCode,
     }}>

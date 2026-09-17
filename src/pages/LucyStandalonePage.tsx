@@ -405,9 +405,17 @@ export default function LucyStandalonePage() {
     sendUnifiedMessage, 
     personaMessages, 
     isGenerating,
+    abortGenerating,
     sharedState,
     clearPersonaMessages
   } = useApp();
+
+  const handleAbortGeneration = useCallback(() => {
+    try {
+      abortGenerating('lucy');
+      triggerHaptic('abort');
+    } catch (_) {}
+  }, [abortGenerating]);
 
   // 🎛️ Multi-select active channels state (Default: [] empty array → Casual Chat, or load pending channel)
   const [activeChannels, setActiveChannels] = useState<SpecialChannel[]>(() => {
@@ -1470,19 +1478,13 @@ export default function LucyStandalonePage() {
                     );
                   })()}
 
-                  {/* Message Bubble (Clicking Lucy message switches to that mode) */}
+                  {/* Message Bubble */}
                   <div 
-                    onClick={() => {
-                      if (!isUser) {
-                        handleActivateMessageMode(msgModeInfo.channels, msgModeInfo.isMaster, msgModeInfo.badgeLabel);
-                      }
-                    }}
-                    className={`p-4 sm:p-5 rounded-2xl sm:rounded-3xl text-sm sm:text-[15px] lg:text-base leading-relaxed shadow-xs ${
+                    className={`p-4 sm:p-5 rounded-2xl sm:rounded-3xl text-sm sm:text-[15px] lg:text-base leading-relaxed shadow-xs select-text ${
                       isUser
                         ? 'bg-slate-900 text-white rounded-tr-xs font-sans'
-                        : 'bg-white border border-slate-200/90 text-slate-800 rounded-tl-xs shadow-sm font-sans cursor-pointer hover:border-amber-300/80 hover:shadow-md transition-all'
+                        : 'bg-white border border-slate-200/90 text-slate-800 rounded-tl-xs shadow-sm font-sans transition-all'
                     }`}
-                    title={!isUser ? `말풍선 클릭 시 [${msgModeInfo.badgeLabel}] 모드가 켜집니다` : undefined}
                   >
                     {isUser ? (
                       <div className="whitespace-pre-wrap">{textContent}</div>
@@ -1493,13 +1495,14 @@ export default function LucyStandalonePage() {
                           isLatest={index === filteredMessages.length - 1}
                           isGenerating={isLucyGenerating && index === filteredMessages.length - 1}
                         />
-                        {/* 🔮 오브 연계 추천 채널 및 추천 기능 도약 바 (수다 모드에서는 비노출) */}
-                        {(!isLucyGenerating || index !== filteredMessages.length - 1) &&
+                        {/* 🔮 오브 연계 추천 채널 및 추천 기능 도약 바: 가장 최신 어시스턴트 메시지에만 단 1개 노출 (수다 모드에서는 비노출) */}
+                        {index === filteredMessages.length - 1 &&
+                          !isLucyGenerating &&
                           !msgModeInfo.isCasual &&
                           activeChannels.length > 0 &&
                           textContent &&
                           textContent.trim().length > 10 && (
-                          <div onClick={(e) => e.stopPropagation()}>
+                          <div className="mt-2.5">
                             <LucyResponseRecommendation
                               userQuery={(() => {
                                 const prev = filteredMessages.slice(0, index).reverse().find((m: any) => m.role === 'user');
@@ -1779,15 +1782,28 @@ export default function LucyStandalonePage() {
               className="flex-1 bg-transparent text-slate-800 placeholder-slate-400 text-xs sm:text-sm resize-none outline-none leading-relaxed min-h-[34px] max-h-[100px] py-1"
             />
 
-            {/* Send Button */}
-            <button
-              onClick={() => handleSend()}
-              disabled={(!input.trim() && !attachedImage) || isLucyGenerating}
-              className="p-2 sm:p-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 disabled:opacity-30 text-slate-950 font-bold rounded-xl transition-all shadow-sm cursor-pointer shrink-0 active:scale-95"
-              title="메시지 전송"
-            >
-              <Send size={15} />
-            </button>
+            {/* Send or Stop Generation Button */}
+            {isLucyGenerating ? (
+              <button
+                type="button"
+                onClick={handleAbortGeneration}
+                className="p-2 sm:p-2.5 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl transition-all shadow-md cursor-pointer shrink-0 active:scale-95 flex items-center justify-center animate-pulse"
+                title="답변 생성 중단 (클릭 시 대기를 즉시 멈추고 입력창이 활성화됩니다)"
+                aria-label="생성 중단"
+              >
+                <Square size={15} className="fill-current text-white" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleSend()}
+                disabled={!input.trim() && !attachedImage}
+                className="p-2 sm:p-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 disabled:opacity-30 text-slate-950 font-bold rounded-xl transition-all shadow-sm cursor-pointer shrink-0 active:scale-95"
+                title="메시지 전송"
+              >
+                <Send size={15} />
+              </button>
+            )}
           </div>
         </div>
       </footer>
@@ -1892,6 +1908,7 @@ export default function LucyStandalonePage() {
                 <button
                   type="button"
                   onClick={() => {
+                    abortGenerating('lucy');
                     stopTTS();
                     clearPersonaMessages('lucy');
                     setIsResetConfirmOpen(false);

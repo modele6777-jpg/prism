@@ -1068,9 +1068,10 @@ async function invokeLLMStreamInner(params: {
   onChunk: (chunk: string) => void,
   onFinish?: (fullText: string) => void,
   timeoutMs?: number,
+  signal?: AbortSignal,
 }) {
-  const requestTimeoutMs = params.timeoutMs ?? 180000;
-  const idleTimeoutMs = 60000;
+  const requestTimeoutMs = params.timeoutMs ?? 45000;
+  const idleTimeoutMs = 18000;
 
   // 1. Direct High-Speed Gemini SDK Streaming (Fastest & Most Reliable)
   if (genAI) {
@@ -1236,6 +1237,11 @@ async function invokeLLMStreamInner(params: {
         let isDone = false;
         try {
           while (!isDone) {
+            if (params.signal?.aborted) {
+              try { await reader.cancel(); } catch (_) {}
+              break;
+            }
+
             if (Date.now() - lastActivity > idleTimeoutMs) {
               console.warn("[invokeLLMStream] Stream idle timeout reached, concluding stream.");
               try {
@@ -1244,7 +1250,22 @@ async function invokeLLMStreamInner(params: {
               break;
             }
 
-            const { done, value } = await reader.read();
+            // Read with 12-second individual chunk timeout to prevent infinite blocking
+            let readResult: ReadableStreamReadResult<Uint8Array>;
+            try {
+              readResult = await Promise.race([
+                reader.read(),
+                new Promise<never>((_, reject) =>
+                  setTimeout(() => reject(new Error("Stream chunk read timeout")), 12000)
+                ),
+              ]);
+            } catch (chunkTimeoutErr) {
+              console.warn("[invokeLLMStream] Chunk read timeout occurred, concluding stream cleanly.");
+              try { await reader.cancel(); } catch (_) {}
+              break;
+            }
+
+            const { done, value } = readResult;
             if (done) break;
             lastActivity = Date.now();
             
@@ -1336,8 +1357,10 @@ export async function invokeLLMStream(params: {
   onChunk: (chunk: string) => void;
   onFinish?: (fullText: string) => void;
   timeoutMs?: number;
+  signal?: AbortSignal;
 }) {
-  const maxDurationMs = params.timeoutMs ?? 180000;
+  const maxDurationMs = params.timeoutMs ?? 45000;
+  const idleTimeoutMs = 18000;
   let lastActivity = Date.now();
 
   const wrappedOnChunk = (chunk: string) => {
@@ -1349,22 +1372,42 @@ export async function invokeLLMStream(params: {
     let isResolved = false;
     const startTime = Date.now();
 
+    const cleanup = () => {
+      if (timer) clearInterval(timer);
+    };
+
     const timer = setInterval(() => {
       if (isResolved) {
-        clearInterval(timer);
+        cleanup();
+        return;
+      }
+      if (params.signal?.aborted) {
+        isResolved = true;
+        cleanup();
+        reject(new Error("LLM stream aborted by user"));
         return;
       }
       const now = Date.now();
       if (now - startTime > maxDurationMs) {
         isResolved = true;
-        clearInterval(timer);
+        cleanup();
         reject(new Error("LLM stream max duration reached"));
-      } else if (now - lastActivity > 60000) {
+      } else if (now - lastActivity > idleTimeoutMs) {
         isResolved = true;
-        clearInterval(timer);
+        cleanup();
         reject(new Error("LLM stream idle timeout"));
       }
-    }, 2000);
+    }, 1000);
+
+    if (params.signal) {
+      params.signal.addEventListener("abort", () => {
+        if (!isResolved) {
+          isResolved = true;
+          cleanup();
+          reject(new Error("LLM stream aborted by user"));
+        }
+      }, { once: true });
+    }
 
     invokeLLMStreamInner({
       ...params,
@@ -1373,14 +1416,14 @@ export async function invokeLLMStream(params: {
       .then((res) => {
         if (!isResolved) {
           isResolved = true;
-          clearInterval(timer);
+          cleanup();
           resolve(res);
         }
       })
       .catch((err) => {
         if (!isResolved) {
           isResolved = true;
-          clearInterval(timer);
+          cleanup();
           reject(err);
         }
       });
