@@ -157,7 +157,7 @@ export default function InstallPrompt() {
                     className="absolute inset-0 rounded-full border border-dashed border-purple-300/30" 
                   />
                   <div className="absolute inset-[3px] rounded-full border border-white/10 bg-[#070510] flex items-center justify-center">
-                    <img src="/orb-icon-192.png" alt="Crystal Orb" className="w-7 h-7 object-contain drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]" />
+                    <img src="/orb-icon-192.png" alt="Crystal Key" className="w-7 h-7 object-contain drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]" />
                   </div>
                 </div>
               ) : (
@@ -251,7 +251,7 @@ export default function InstallPrompt() {
                       className="absolute inset-0 rounded-full border border-dashed border-purple-300/30" 
                     />
                     <div className="absolute inset-[4px] rounded-full border border-white/10 bg-[#070510] flex items-center justify-center">
-                      <img src="/orb-icon-192.png" alt="Crystal Orb" className="w-9 h-9 object-contain drop-shadow-[0_0_10px_rgba(168,85,247,0.9)]" />
+                      <img src="/orb-icon-192.png" alt="Crystal Key" className="w-9 h-9 object-contain drop-shadow-[0_0_10px_rgba(168,85,247,0.9)]" />
                     </div>
                   </div>
                 ) : (
