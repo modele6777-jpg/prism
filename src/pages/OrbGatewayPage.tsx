@@ -16,6 +16,7 @@ import {
   X,
   ArrowRight,
   Download,
+  Key,
 } from "lucide-react";
 import { sacredAudio } from "@/lib/omniWarp/sacredAudio";
 import { omniWarpAudio } from "@/lib/omniWarp/omniWarpAudio";
@@ -32,6 +33,8 @@ import { useNarrowPhone } from "@/hooks/useNarrowPhone";
 import { detectSeptagramChannelsFromText } from "@/lib/lucyAutoModeDetector";
 import { getAndClearPendingSelection } from "@/lib/selectionBridge";
 import { saveOrbScryingToHistory, getOrbScryingHistory, getLucyChatSummary, type ScryingResultSnapshot } from "@/lib/prismOmniSync";
+import { OrbSpecialRitualsBar, type OrbSpecialRitualType } from "@/components/orb/OrbSpecialRitualsBar";
+import { LucyKeyDigestView } from "@/components/orb/LucyKeyDigestView";
 
 export interface SeptagramAppDimension {
   id: string;
@@ -274,9 +277,20 @@ const DEFAULT_ORACLE_SOLUTIONS: Array<{
 
 export default function OrbGatewayPage() {
   const [, navigate] = useLocation();
+  const [keyActiveTab, setKeyActiveTab] = useState<'scrying' | 'digest' | 'rituals'>('scrying');
   const [inquiry, setInquiry] = useState("");
   const [isScrying, setIsScrying] = useState(false);
   const [isLeaping, setIsLeaping] = useState(false);
+
+  const handleNavigateToLucy = (prompt?: string) => {
+    if (prompt) {
+      try {
+        sessionStorage.setItem("prism_pending_prompt", prompt);
+        localStorage.setItem("prism_pending_prompt", prompt);
+      } catch (_) {}
+    }
+    navigate("/chat");
+  };
   const [scryingResult, setScryingResult] = useState<ScryingResult | null>(() => {
     try {
       const saved = sessionStorage.getItem("prism_orb_latest_scrying");
@@ -410,10 +424,10 @@ export default function OrbGatewayPage() {
     setIsStandalone(!!standalone);
   }, []);
 
-  // 크리스탈 오브 단독 PWA 메타데이터 및 매니페스트 동적 설정
+  // 크리스탈 Key 단독 PWA 메타데이터 및 매니페스트 동적 설정
   useEffect(() => {
     const prevTitle = document.title;
-    document.title = "크리스탈 오브 (Crystal Orb)";
+    document.title = "크리스탈 Key (Crystal Key)";
 
     let manifestTag = document.querySelector('link[rel="manifest"]') as HTMLLinkElement | null;
     const prevManifestHref = manifestTag ? manifestTag.getAttribute("href") : null;
@@ -438,7 +452,7 @@ export default function OrbGatewayPage() {
     let appleTitleTag = document.querySelector('meta[name="apple-mobile-web-app-title"]') as HTMLMetaElement | null;
     const prevAppleTitle = appleTitleTag ? appleTitleTag.getAttribute("content") : null;
     if (appleTitleTag) {
-      appleTitleTag.setAttribute("content", "크리스탈 오브");
+      appleTitleTag.setAttribute("content", "크리스탈 Key");
     }
 
     let themeColorTag = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
@@ -728,7 +742,7 @@ export default function OrbGatewayPage() {
   // Dynamic Head & PWA Meta for iPhone Safari "Add to Home Screen"
   useEffect(() => {
     const prevTitle = document.title;
-    document.title = "크리스탈 오브 (Crystal Orb)";
+    document.title = "크리스탈 Key (Crystal Key)";
 
     // 1. Manifest
     let manifestTag = document.querySelector('link[rel="manifest"]') as HTMLLinkElement | null;
@@ -786,11 +800,11 @@ export default function OrbGatewayPage() {
     let appleTitleTag = document.querySelector('meta[name="apple-mobile-web-app-title"]') as HTMLMetaElement | null;
     const prevAppleTitle = appleTitleTag ? appleTitleTag.getAttribute("content") : null;
     if (appleTitleTag) {
-      appleTitleTag.setAttribute("content", "크리스탈 오브");
+      appleTitleTag.setAttribute("content", "크리스탈 Key");
     } else {
       appleTitleTag = document.createElement("meta");
       appleTitleTag.name = "apple-mobile-web-app-title";
-      appleTitleTag.content = "크리스탈 오브";
+      appleTitleTag.content = "크리스탈 Key";
       document.head.appendChild(appleTitleTag);
     }
 
@@ -798,7 +812,7 @@ export default function OrbGatewayPage() {
     let appNameTag = document.querySelector('meta[name="application-name"]') as HTMLMetaElement | null;
     const prevAppName = appNameTag ? appNameTag.getAttribute("content") : null;
     if (appNameTag) {
-      appNameTag.setAttribute("content", "크리스탈 오브");
+      appNameTag.setAttribute("content", "크리스탈 Key");
     }
 
     // 6. Theme Color
@@ -1391,11 +1405,25 @@ ${dimensionDescriptions}`;
     };
   }, []);
 
+  const handleSelectRitual = (type: OrbSpecialRitualType) => {
+    triggerHaptic('whitehole');
+    setKeyActiveTab('scrying');
+    if (type === 'quantum') {
+      executeScrying('내 질문에 대한 양자 결단(Yes/No)과 그 확률적 방향성을 직관적으로 알려줘.');
+    } else if (type === 'aura') {
+      executeScrying('현재 내 마음과 오라의 색채, 주파수 에너지를 직관적으로 스캔해줘.');
+    } else if (type === 'rune') {
+      executeScrying('고대 북유럽 룬의 상징으로 지금 나에게 필요한 직관적 계시를 하나 점지해줘.');
+    } else if (type === 'void_nebula') {
+      executeScrying('마음속에 남아있는 미련과 고민, 소원을 공허의 성운으로 정화하고 태워보내줘.');
+    }
+  };
+
   if (!isOrbReady) {
     return (
       <OrbCosmicLoader
         fullScreen
-        message="크리스탈 오브 차원 궤도 동기화 중..."
+        message="크리스탈 Key 차원 궤도 동기화 중..."
         subMessage="ASTRAL SCRYING SPHERE & CONSCIOUSNESS"
       />
     );
@@ -1416,17 +1444,17 @@ ${dimensionDescriptions}`;
         {/* Left: Real-time Prism Sync Status Badge */}
         <div className="flex items-center gap-2 shrink-0">
           <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl text-slate-300 text-xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse shrink-0" />
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shrink-0" />
             <span className="hidden sm:inline">오라클 연동</span>
-            <span className="sm:hidden text-[11px]">오브</span>
+            <span className="sm:hidden text-[11px]">Key</span>
           </div>
         </div>
 
         {/* Center Title */}
-        <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-purple-500/10 border border-purple-400/30 backdrop-blur-xl shadow-lg min-w-0 max-w-[170px] xs:max-w-[220px] sm:max-w-none">
-          <CrystalOrbIcon size={15} className="shrink-0 text-purple-300 animate-pulse" />
-          <span className="text-xs sm:text-sm font-semibold tracking-wider text-purple-200 truncate">
-            {prismUserName ? `${prismUserName}의 크리스탈 오브` : "크리스탈 오브"}
+        <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-cyan-500/10 border border-cyan-400/30 backdrop-blur-xl shadow-lg min-w-0 max-w-[170px] xs:max-w-[220px] sm:max-w-none">
+          <CrystalOrbIcon size={15} className="shrink-0 text-cyan-300 animate-pulse" />
+          <span className="text-xs sm:text-sm font-semibold tracking-wider text-cyan-200 truncate">
+            {prismUserName ? `${prismUserName}의 크리스탈 Key` : "크리스탈 Key"}
           </span>
         </div>
 
@@ -1436,10 +1464,10 @@ ${dimensionDescriptions}`;
             <button
               type="button"
               onClick={() => window.dispatchEvent(new CustomEvent("trigger-pwa-install"))}
-              className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-medium backdrop-blur-xl border border-purple-400/40 bg-purple-500/15 text-purple-200 hover:bg-purple-500/25 transition-all active:scale-95 shadow-[0_0_12px_rgba(168,85,247,0.25)] touch-manipulation cursor-pointer"
-              title="크리스탈 오브 독립 앱 설치"
+              className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-medium backdrop-blur-xl border border-cyan-400/40 bg-cyan-500/15 text-cyan-200 hover:bg-cyan-500/25 transition-all active:scale-95 shadow-[0_0_12px_rgba(6,182,212,0.25)] touch-manipulation cursor-pointer"
+              title="크리스탈 Key 독립 앱 설치"
             >
-              <Download size={12} className="text-purple-300 shrink-0" />
+              <Download size={12} className="text-cyan-300 shrink-0" />
               <span className="hidden sm:inline">앱 설치</span>
             </button>
           )}
@@ -1474,8 +1502,76 @@ ${dimensionDescriptions}`;
         </div>
       </header>
 
+      {/* 🌟 Key Special Mode Switcher Tabs */}
+      <div className="relative z-40 flex items-center gap-1 p-1 rounded-2xl bg-black/60 border border-white/10 backdrop-blur-xl shadow-xl mt-2 max-w-md w-[92%] sm:w-full justify-between shrink-0">
+        <button
+          type="button"
+          onClick={() => {
+            setKeyActiveTab('scrying');
+            triggerHaptic('whitehole');
+          }}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer ${
+            keyActiveTab === 'scrying'
+              ? 'bg-gradient-to-r from-cyan-500/25 to-blue-500/25 text-cyan-200 border border-cyan-400/40 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+          }`}
+        >
+          <Sparkles size={13} className={keyActiveTab === 'scrying' ? 'text-cyan-300' : ''} />
+          <span>직관 신탁</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setKeyActiveTab('digest');
+            triggerHaptic('whitehole');
+          }}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer ${
+            keyActiveTab === 'digest'
+              ? 'bg-gradient-to-r from-cyan-500/25 to-emerald-500/25 text-cyan-200 border border-cyan-400/40 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+          }`}
+        >
+          <Key size={13} className={keyActiveTab === 'digest' ? 'text-cyan-300' : ''} />
+          <span>루시 대화 Key</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setKeyActiveTab('rituals');
+            triggerHaptic('whitehole');
+          }}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer ${
+            keyActiveTab === 'rituals'
+              ? 'bg-gradient-to-r from-purple-500/25 to-pink-500/25 text-purple-200 border border-purple-400/40 shadow-[0_0_12px_rgba(168,85,247,0.25)]'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+          }`}
+        >
+          <Sparkles size={13} className={keyActiveTab === 'rituals' ? 'text-purple-300' : ''} />
+          <span>특수 의식</span>
+        </button>
+      </div>
+
       {/* Main Stage: Pristine 3D Crystal Ball with Arcane Magic Circle Matrix */}
       <main className="relative z-30 flex-1 flex flex-col items-center justify-center w-full max-w-lg px-2 sm:px-4 my-auto min-h-0">
+        {keyActiveTab === 'digest' ? (
+          <div className="w-full py-2 flex items-center justify-center">
+            <LucyKeyDigestView onNavigateToLucy={handleNavigateToLucy} />
+          </div>
+        ) : keyActiveTab === 'rituals' ? (
+          <div className="w-full py-4 flex flex-col items-center justify-center gap-4">
+            <div className="text-center">
+              <h2 className="text-base font-black text-white flex items-center justify-center gap-1.5">
+                <Sparkles size={16} className="text-purple-400" />
+                <span>Key 4대 특수 신탁 의식</span>
+              </h2>
+              <p className="text-xs text-slate-400 mt-1">양자 결단, 소울 아우라, 고대 룬, 공허 소원의 의식</p>
+            </div>
+            <OrbSpecialRitualsBar onSelectRitual={handleSelectRitual} />
+          </div>
+        ) : (
+          <>
         <div
           className={`relative flex items-center justify-center transition-transform duration-300 origin-center my-1 sm:my-auto shrink-0 ${
             narrow
@@ -2317,11 +2413,18 @@ ${dimensionDescriptions}`;
                           </button>
                         );
                       })}
-                  </div>
+                    </div>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
+        )}
+
+        {/* 하단 미니 특수 의식 바 (직관 신탁 모드에서도 빠른 도약 지원) */}
+        <div className="w-full max-w-lg mx-auto mt-3 px-1">
+          <OrbSpecialRitualsBar onSelectRitual={handleSelectRitual} />
+        </div>
+        </>
         )}
       </main>
 
@@ -2367,8 +2470,8 @@ ${dimensionDescriptions}`;
             onChange={(e) => setInquiry(e.target.value)}
             placeholder={
               autoDetectedTitle && autoDetectedTitle !== "직관 모드"
-                ? `[${autoDetectedTitle}] 크리스탈 오브에게 물어보세요...`
-                : (narrow ? "무엇이든 물어보세요..." : "크리스탈 오브에게 무엇이든 말해보세요... 음성 또는 텍스트")
+                ? `[${autoDetectedTitle}] 크리스탈 Key에게 물어보세요...`
+                : (narrow ? "무엇이든 물어보세요..." : "크리스탈 Key에게 무엇이든 말해보세요... 음성 또는 텍스트")
             }
             className="flex-1 bg-transparent px-2.5 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base text-white placeholder-slate-500 outline-none"
           />

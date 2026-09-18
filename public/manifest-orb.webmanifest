@@ -1,8 +1,8 @@
 {
   "id": "/orb",
-  "name": "크리스탈 오브 (Crystal Orb)",
-  "short_name": "크리스탈오브",
-  "description": "필요할 때 언제든 마주하는 직관과 통찰의 크리스탈 오브",
+  "name": "크리스탈 Key (Crystal Key)",
+  "short_name": "크리스탈Key",
+  "description": "루시 대화 키포인트 요약 및 직관 신탁의 크리스탈 Key",
   "start_url": "/orb",
   "scope": "/orb",
   "display": "standalone",

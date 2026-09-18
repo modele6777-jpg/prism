@@ -113,9 +113,9 @@ export default function InstallPrompt() {
 
   const appConfig = isOrbSite
     ? {
-        title: "크리스탈 오브 앱 설치",
-        desc: "홈 화면에 독립 앱으로 추가하여 온전한 영시와 7대 차원 몰입을 경험해 보세요.",
-        guideTitle: "크리스탈 오브 완전한 앱 설치 방법",
+        title: "크리스탈 Key 앱 설치",
+        desc: "홈 화면에 독립 앱으로 추가하여 루시 대화 요약과 직관 신탁 몰입을 경험해 보세요.",
+        guideTitle: "크리스탈 Key 완전한 앱 설치 방법",
         guideSubtitle: "아래 순서에 따라 홈 화면에 독립 앱으로 안전하고 신속하게 설치해 보세요.",
         iconSrc: "/orb-icon-192.png",
       }

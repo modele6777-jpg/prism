@@ -16,7 +16,7 @@ interface OrbCosmicLoaderProps {
  * pulsing singularity core, and celestial starlight nebulae.
  */
 export function OrbCosmicLoader({
-  message = "크리스탈 오브 차원 궤도 동기화 중...",
+  message = "크리스탈 Key 차원 궤도 동기화 중...",
   subMessage = "ASTRAL SCRYING SPHERE & CONSCIOUSNESS",
   fullScreen = false,
   compact = false,
