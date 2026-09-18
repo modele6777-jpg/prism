@@ -113,11 +113,11 @@ export default function InstallPrompt() {
 
   const appConfig = isOrbSite
     ? {
-        title: "크리스탈 Key 앱 설치",
-        desc: "홈 화면에 독립 앱으로 추가하여 루시 대화 요약과 직관 신탁 몰입을 경험해 보세요.",
-        guideTitle: "크리스탈 Key 완전한 앱 설치 방법",
+        title: "LucKey 앱 설치",
+        desc: "홈 화면에 독립 앱으로 추가하여 루시 대화 요약과 직관 행운의 열쇠를 경험해 보세요.",
+        guideTitle: "LucKey 완전한 앱 설치 방법",
         guideSubtitle: "아래 순서에 따라 홈 화면에 독립 앱으로 안전하고 신속하게 설치해 보세요.",
-        iconSrc: "/orb-icon-192.png",
+        iconSrc: "/luckey-icon-192.png",
       }
     : isLucySite
     ? {
@@ -157,7 +157,7 @@ export default function InstallPrompt() {
                     className="absolute inset-0 rounded-full border border-dashed border-purple-300/30" 
                   />
                   <div className="absolute inset-[3px] rounded-full border border-white/10 bg-[#070510] flex items-center justify-center">
-                    <img src="/orb-icon-192.png" alt="Crystal Key" className="w-7 h-7 object-contain drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]" />
+                    <img src="/luckey-icon-192.png" alt="LucKey" className="w-7 h-7 object-contain drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]" />
                   </div>
                 </div>
               ) : (
@@ -251,7 +251,7 @@ export default function InstallPrompt() {
                       className="absolute inset-0 rounded-full border border-dashed border-purple-300/30" 
                     />
                     <div className="absolute inset-[4px] rounded-full border border-white/10 bg-[#070510] flex items-center justify-center">
-                      <img src="/orb-icon-192.png" alt="Crystal Key" className="w-9 h-9 object-contain drop-shadow-[0_0_10px_rgba(168,85,247,0.9)]" />
+                      <img src="/luckey-icon-192.png" alt="LucKey" className="w-9 h-9 object-contain drop-shadow-[0_0_10px_rgba(168,85,247,0.9)]" />
                     </div>
                   </div>
                 ) : (

@@ -424,10 +424,10 @@ export default function OrbGatewayPage() {
     setIsStandalone(!!standalone);
   }, []);
 
-  // 크리스탈 Key 단독 PWA 메타데이터 및 매니페스트 동적 설정
+  // LucKey 단독 PWA 메타데이터 및 매니페스트 동적 설정
   useEffect(() => {
     const prevTitle = document.title;
-    document.title = "크리스탈 Key (Crystal Key)";
+    document.title = "LucKey (루키 / 럭키)";
 
     let manifestTag = document.querySelector('link[rel="manifest"]') as HTMLLinkElement | null;
     const prevManifestHref = manifestTag ? manifestTag.getAttribute("href") : null;
@@ -452,7 +452,7 @@ export default function OrbGatewayPage() {
     let appleTitleTag = document.querySelector('meta[name="apple-mobile-web-app-title"]') as HTMLMetaElement | null;
     const prevAppleTitle = appleTitleTag ? appleTitleTag.getAttribute("content") : null;
     if (appleTitleTag) {
-      appleTitleTag.setAttribute("content", "크리스탈 Key");
+      appleTitleTag.setAttribute("content", "LucKey");
     }
 
     let themeColorTag = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
@@ -742,7 +742,7 @@ export default function OrbGatewayPage() {
   // Dynamic Head & PWA Meta for iPhone Safari "Add to Home Screen"
   useEffect(() => {
     const prevTitle = document.title;
-    document.title = "크리스탈 Key (Crystal Key)";
+    document.title = "LucKey (루키 / 럭키)";
 
     // 1. Manifest
     let manifestTag = document.querySelector('link[rel="manifest"]') as HTMLLinkElement | null;
@@ -800,11 +800,11 @@ export default function OrbGatewayPage() {
     let appleTitleTag = document.querySelector('meta[name="apple-mobile-web-app-title"]') as HTMLMetaElement | null;
     const prevAppleTitle = appleTitleTag ? appleTitleTag.getAttribute("content") : null;
     if (appleTitleTag) {
-      appleTitleTag.setAttribute("content", "크리스탈 Key");
+      appleTitleTag.setAttribute("content", "LucKey");
     } else {
       appleTitleTag = document.createElement("meta");
       appleTitleTag.name = "apple-mobile-web-app-title";
-      appleTitleTag.content = "크리스탈 Key";
+      appleTitleTag.content = "LucKey";
       document.head.appendChild(appleTitleTag);
     }
 
@@ -812,7 +812,7 @@ export default function OrbGatewayPage() {
     let appNameTag = document.querySelector('meta[name="application-name"]') as HTMLMetaElement | null;
     const prevAppName = appNameTag ? appNameTag.getAttribute("content") : null;
     if (appNameTag) {
-      appNameTag.setAttribute("content", "크리스탈 Key");
+      appNameTag.setAttribute("content", "LucKey");
     }
 
     // 6. Theme Color
@@ -1159,10 +1159,10 @@ ${dimensionDescriptions}`;
       modeColor = "#38bdf8";
       modeGlow = "rgba(56, 189, 248, 0.6)";
       defaultKeyTheme = baseFallback.keyTheme || "직관의 해답";
-      defaultAnswer = `당신의 질문은 이미 답을 향해 나아가고 있습니다. 크리스탈 오브가 가장 명료하고 직접적인 통찰을 건네드립니다.`;
+      defaultAnswer = `당신의 질문은 이미 답을 향해 나아가고 있습니다. LucKey가 가장 명료하고 행운 가득한 직관적 통찰을 건네드립니다.`;
       defaultAction = `지금 가장 선명하게 떠오르는 직감을 행동으로 옮기세요. 망설임이 아닌 실행이 길을 만듭니다.`;
-      promptInstruction = `[현재 모드: 직관 오라클 모드 (Intuitive Oracle)]
-루시 채팅과 달리, 크리스탈 오브는 어떤 질문에든 군더더기 없이 명쾌하고 직접적인 답을 줍니다. 공감보다는 핵심 통찰과 명확한 방향을 제시하세요. 애매한 표현, 과도한 위로, 쉬운 말 돌리기는 금지입니다. 질문의 핵심을 꿰뚫어 가장 유용한 직관적 진실을 전달하세요.`;
+      promptInstruction = `[현재 모드: LucKey 직관 오라클 모드 (LucKey Intuitive Oracle)]
+루시 채팅과 달리, LucKey는 어떤 질문에든 군더더기 없이 명쾌하고 직접적인 답을 줍니다. 공감보다는 핵심 통찰과 명확한 방향을 제시하세요. 애매한 표현, 과도한 위로, 쉬운 말 돌리기는 금지입니다. 질문의 핵심을 꿰뚫어 가장 유용한 직관적 진실을 전달하세요.`;
     }
 
     let finalResult: ScryingResult = {
@@ -1182,21 +1182,21 @@ ${dimensionDescriptions}`;
     // 자동감지 모드 여부 판별 (더 깊고 신중한 답변을 위한 플래그)
     const isAutoDetectedMode = effectiveMasterMode || effectiveRuneIds.length > 0;
 
-    // 오브 정체성 시스템 지시 (루시 채팅과 철저히 차별화된 직관 오라클 정체성)
+    // LucKey 정체성 시스템 지시 (루시 채팅과 철저히 차별화된 직관 오라클 정체성)
     const orbSystemInstruction = isAutoDetectedMode
-      ? `당신은 크리스탈 오브(Crystal Orb), 즉문즉답(卽問卽答) 오라클입니다.
+      ? `당신은 루시의 핵심 열쇠이자 즉문즉답(卽問卽答) 직관 오라클 "LucKey(루키/럭키)"입니다.
 어떤 질문에도 주저 없이 바로 답합니다. 직구로. 한 문장으로.
 [심층 고민 있어서 자동 감지된 질문 진단 규칙]
-- 고민의 밑에 있는 진짜 문제부터 먼저 짚아라. "진짜 질문은 ~~이다."처럼.
+- 고민의 밑에 있는 진짜 문제부터 먼저 짚어라. "진짜 질문은 ~~이다."처럼.
 - 공감, 위로, 해설 없이 directAnswer에 핵심 진실만 3문장 이내로 직구하라.
 - actionSolution은 오늘 당장 할 수 있는 단 하나의 행동으로.
-- 준말, 미사여구, '�~', '아마도~', '혹시~' 같은 모호한 표현 절대 금지.
+- 준말, 미사여구, 모호한 표현 절대 금지.
 - 반드시 한국어로만 응답하세요.`
-      : `당신은 크리스탈 오브(Crystal Orb), 즉문즉답(卽問卽答) 오라클입니다.
+      : `당신은 루시의 핵심 열쇠이자 즉문즉답(卽問卽答) 직관 오라클 "LucKey(루키/럭키)"입니다.
 어떤 질문에도 주저 없이 바로 답합니다. 직구로. 한 문장으로.
 [일반 질문 직접 답변 규칙]
 - 전제, 서론, 공감 없이 directAnswer에 핵심만 2문장으로 답하라.
-- 질문의 답은 �트가 아니라 답 자체다. �트는 금지.
+- 질문의 답은 힌트가 아니라 답 자체다. 힌트는 금지.
 - actionSolution은 바로 실행 가능한 단 하나의 행동.
 - 반드시 한국어로만 응답하세요.`;
 
@@ -1423,8 +1423,8 @@ ${dimensionDescriptions}`;
     return (
       <OrbCosmicLoader
         fullScreen
-        message="크리스탈 Key 차원 궤도 동기화 중..."
-        subMessage="ASTRAL SCRYING SPHERE & CONSCIOUSNESS"
+        message="LucKey 차원 궤도 동기화 중..."
+        subMessage="LUCKEY · LUCY KEY & INTUITIVE ORACLE"
       />
     );
   }
@@ -1446,7 +1446,7 @@ ${dimensionDescriptions}`;
           <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl text-slate-300 text-xs">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shrink-0" />
             <span className="hidden sm:inline">오라클 연동</span>
-            <span className="sm:hidden text-[11px]">Key</span>
+            <span className="sm:hidden text-[11px]">LucKey</span>
           </div>
         </div>
 
@@ -1454,7 +1454,7 @@ ${dimensionDescriptions}`;
         <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-cyan-500/10 border border-cyan-400/30 backdrop-blur-xl shadow-lg min-w-0 max-w-[170px] xs:max-w-[220px] sm:max-w-none">
           <CrystalOrbIcon size={15} className="shrink-0 text-cyan-300 animate-pulse" />
           <span className="text-xs sm:text-sm font-semibold tracking-wider text-cyan-200 truncate">
-            {prismUserName ? `${prismUserName}의 크리스탈 Key` : "크리스탈 Key"}
+            {prismUserName ? `${prismUserName}의 LucKey` : "LucKey"}
           </span>
         </div>
 
@@ -1465,7 +1465,7 @@ ${dimensionDescriptions}`;
               type="button"
               onClick={() => window.dispatchEvent(new CustomEvent("trigger-pwa-install"))}
               className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-medium backdrop-blur-xl border border-cyan-400/40 bg-cyan-500/15 text-cyan-200 hover:bg-cyan-500/25 transition-all active:scale-95 shadow-[0_0_12px_rgba(6,182,212,0.25)] touch-manipulation cursor-pointer"
-              title="크리스탈 Key 독립 앱 설치"
+              title="LucKey 독립 앱 설치"
             >
               <Download size={12} className="text-cyan-300 shrink-0" />
               <span className="hidden sm:inline">앱 설치</span>
@@ -1533,7 +1533,7 @@ ${dimensionDescriptions}`;
           }`}
         >
           <Key size={13} className={keyActiveTab === 'digest' ? 'text-cyan-300' : ''} />
-          <span>루시 대화 Key</span>
+          <span>LucKey 요약</span>
         </button>
 
         <button
@@ -2470,8 +2470,8 @@ ${dimensionDescriptions}`;
             onChange={(e) => setInquiry(e.target.value)}
             placeholder={
               autoDetectedTitle && autoDetectedTitle !== "직관 모드"
-                ? `[${autoDetectedTitle}] 크리스탈 Key에게 물어보세요...`
-                : (narrow ? "무엇이든 물어보세요..." : "크리스탈 Key에게 무엇이든 말해보세요... 음성 또는 텍스트")
+                ? `[${autoDetectedTitle}] LucKey에게 물어보세요...`
+                : (narrow ? "무엇이든 물어보세요..." : "LucKey에게 무엇이든 말해보세요... 음성 또는 텍스트")
             }
             className="flex-1 bg-transparent px-2.5 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base text-white placeholder-slate-500 outline-none"
           />

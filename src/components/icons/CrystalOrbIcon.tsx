@@ -34,8 +34,9 @@ export function CrystalKeyIcon({ size = 24, className = "" }: CrystalOrbIconProp
         {/* Crystal Ring & Accent Gradient */}
         <linearGradient id={keyGradId} x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
-          <stop offset="25%" stopColor="#67e8f9" stopOpacity="0.9" />
-          <stop offset="65%" stopColor="#38bdf8" stopOpacity="0.75" />
+          <stop offset="22%" stopColor="#67e8f9" stopOpacity="0.9" />
+          <stop offset="50%" stopColor="#34d399" stopOpacity="0.85" />
+          <stop offset="78%" stopColor="#38bdf8" stopOpacity="0.8" />
           <stop offset="100%" stopColor="#a855f7" stopOpacity="0.85" />
         </linearGradient>
 
@@ -91,6 +92,12 @@ export function CrystalKeyIcon({ size = 24, className = "" }: CrystalOrbIconProp
       {/* Inner Scrying Cavity */}
       <circle cx="12" cy="7" r="2.8" fill="#050716" />
       <circle cx="12" cy="7" r="2.5" fill={`url(#${coreGradId})`} />
+
+      {/* 🍀 4-Leaf Clover Crystal Petals */}
+      <path d="M 12 7 C 11.2 5.8 11.2 4.6 12 4.4 C 12.8 4.6 12.8 5.8 12 7 Z" fill="#34d399" opacity="0.8" />
+      <path d="M 12 7 C 11.2 8.2 11.2 9.4 12 9.6 C 12.8 9.4 12.8 8.2 12 7 Z" fill="#c084fc" opacity="0.8" />
+      <path d="M 12 7 C 10.8 6.2 9.6 6.2 9.4 7 C 9.6 7.8 10.8 7.8 12 7 Z" fill="#67e8f9" opacity="0.8" />
+      <path d="M 12 7 C 13.2 6.2 14.4 6.2 14.6 7 C 14.4 7.8 13.2 7.8 12 7 Z" fill="#34d399" opacity="0.8" />
 
       {/* Center 4-Point Starlight Singularity */}
       <path
@@ -153,5 +160,6 @@ export function CrystalKeyIcon({ size = 24, className = "" }: CrystalOrbIconProp
   );
 }
 
-// Backward compatibility export
+// LucKey and backward compatibility exports
+export const LucKeyIcon = CrystalKeyIcon;
 export const CrystalOrbIcon = CrystalKeyIcon;

@@ -204,8 +204,8 @@ const FEATURE_APPS: FeatureAppMeta[] = [
   },
   {
     id: 'orb',
-    name: 'KEY (CRYSTAL KEY)',
-    shortName: '크리스탈 Key',
+    name: 'LUCKEY (LUCY KEY)',
+    shortName: 'LucKey',
     featureTitle: '대화 Key 응축 & 직관 신탁',
     path: '/orb',
     iconText: '🔑',
@@ -214,8 +214,8 @@ const FEATURE_APPS: FeatureAppMeta[] = [
     color: '#38bdf8',
     glowColor: 'rgba(56, 189, 248, 0.9)',
     description: '루시와의 대화 속 3대 핵심 키포인트를 응축하고 직관적 해답을 비춥니다',
-    actionLabel: '크리스탈 Key 도약',
-    keywords: ['즉문즉답', '키', 'key', '오브', '신탁', '결정', '궁금', '답', '예스', '노', '직관', '오라클', '요약', '키포인트'],
+    actionLabel: 'LucKey 도약',
+    keywords: ['즉문즉답', '루키', '럭키', 'luckey', '키', 'key', '오브', '신탁', '결정', '궁금', '답', '예스', '노', '직관', '오라클', '요약', '키포인트'],
   },
 ];
 

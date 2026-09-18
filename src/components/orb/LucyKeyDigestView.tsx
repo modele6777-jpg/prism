@@ -57,7 +57,7 @@ export function LucyKeyDigestView({
 
   const handleCopy = () => {
     if (!digest) return;
-    const text = `[Key: 루시 대화 3대 핵심 키포인트]\n\n🎯 핵심 주제: ${digest.coreTheme}\n\n${digest.keyPoints.join(
+    const text = `[LucKey: 루시 대화 3대 핵심 키포인트]\n\n🎯 핵심 주제: ${digest.coreTheme}\n\n${digest.keyPoints.join(
       '\n'
     )}\n\n⚡ 오늘 1가지 실천 액션: ${digest.microAction}\n\n🏷️ ${digest.mindKeywords.join(' ')}`;
 
@@ -71,7 +71,7 @@ export function LucyKeyDigestView({
       onNavigateToLucy();
       return;
     }
-    const prompt = `루시야, 방금 Key에서 우리 대화의 핵심 키포인트를 정리해 봤어:\n• 핵심 주제: "${digest.coreTheme}"\n• 실천 과제: "${digest.microAction}"\n\n이 실천 과제를 오늘 바로 행동으로 옮기기 위해 구체적인 팁을 좀 더 들려줄 수 있어?`;
+    const prompt = `루시야, 방금 LucKey에서 우리 대화의 핵심 키포인트를 정리해 봤어:\n• 핵심 주제: "${digest.coreTheme}"\n• 실천 과제: "${digest.microAction}"\n\n이 실천 과제를 오늘 바로 행동으로 옮기기 위해 구체적인 팁을 좀 더 들려줄 수 있어?`;
     onNavigateToLucy(prompt);
   };
 
@@ -92,10 +92,10 @@ export function LucyKeyDigestView({
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-base font-black tracking-tight text-white flex items-center gap-1">
-                루시 대화 Key 응축
+                LucKey 대화 응축
               </h3>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-400/20 text-cyan-300 border border-cyan-400/40 font-bold">
-                Key Insights
+                LucKey Insights
               </span>
             </div>
             <p className="text-[11px] text-slate-400">

@@ -1,13 +1,13 @@
 {
   "name": "lucy-universe",
-  "version": "1.2.967",
-  "summary": "PWA 및 애플 터치 아이콘을 신비로운 '크리스탈 열쇠(Crystal Key)' 형상으로 전면 교체",
-  "builtAt": "2026-09-17T22:15:00.000Z",
+  "version": "1.2.969",
+  "summary": "LucKey (루키 / 럭키) 전용 4엽 클로버 크리스탈 열쇠 PWA 및 모바일 아이콘 전면 개편",
+  "builtAt": "2026-09-18T10:54:00.000Z",
   "items": [
-    "🗝️ PWA 전용 크리스탈 열쇠(Crystal Key) 아이콘 신규 제작: 기존 구체(Orb) 형태의 아이콘을 신비로운 3D 프리즘 크리스탈 열쇠 벡터 그래픽 및 고해상도 PNG(512x512, 192x192, 180x180, 64x64)로 전면 교체",
-    "✨ 정밀한 아케인 오라클 열쇠 디자인: 상단 오라클 크리스탈 젬 보우(Bow)와 성운 코어, 프리즘 샤프트, 3단 크리스탈 톱니(Teeth) 및 하단 스파이어 팁을 담아 시각적 상징성 완성",
-    "📱 iOS & Android PWA 세이프존 100% 최적화: Apple Touch Icon 불투명 캔버스 규격과 마스커블(Maskable) 아이콘 80% 안전 구역을 충족하여 홈 화면 설치 시 완벽한 비례로 렌더링",
-    "💎 앱 내부 CrystalKeyIcon 컴포넌트 동기화: 앱 상단 헤더, 설치 안내 다이얼로그, 로더 등 UI 전반의 크리스탈 키 아이콘도 열쇠 형태로 통일 적용"
+    "🍀 LucKey 시그니처 4엽 클로버 크리스탈 열쇠 벡터 디자인 구축: 행운의 4엽 클로버(Arcane 4-Leaf Clover) 헤드와 영롱한 스텔라 루키 다이아몬드 코어, 프리즘 크리스탈 기둥 및 아케인 룬 톱니를 결합한 독창적 PWA 아이콘 제작",
+    "📱 PWA & iOS Safari 전 규격 마스커블 아이콘 렌더링: 100% 불투명 딥 코스믹 캔버스(#02030a) 및 80% 세이프존을 엄격 준수하여 512x512, 192x192, 180x180(apple-touch-icon), 64x64(favicon) 고해상도 에셋 재생성 및 배치",
+    "✨ 매니페스트 및 PWA 링크 태그 정밀 동기화: /manifest-orb.webmanifest, manifest-orb.json, orb.html 내 아이콘 및 타이틀을 luckey-icon 및 LucKey로 완전 동기화",
+    "🔑 인앱 벡터 아이콘 & 설치 프롬프트 연동: CrystalKeyIcon 내부 4엽 클로버 크리스탈 잎사귀 및 에메랄드 프리즘 광채 반영, PWA 설치 유도 모달 및 토스트 이미지 일관화"
   ],
   "author": "Antigravity AI Agent",
   "buildEnvironment": "cloud-run"

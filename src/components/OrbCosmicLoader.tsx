@@ -16,8 +16,8 @@ interface OrbCosmicLoaderProps {
  * pulsing singularity core, and celestial starlight nebulae.
  */
 export function OrbCosmicLoader({
-  message = "크리스탈 Key 차원 궤도 동기화 중...",
-  subMessage = "ASTRAL SCRYING SPHERE & CONSCIOUSNESS",
+  message = "LucKey 차원 궤도 동기화 중...",
+  subMessage = "LUCKEY · LUCY KEY & INTUITIVE ORACLE",
   fullScreen = false,
   compact = false,
 }: OrbCosmicLoaderProps) {
@@ -239,7 +239,7 @@ export function OrbCosmicLoader({
           transition={{ duration: 0.5 }}
           className="text-xl sm:text-2xl font-black tracking-[0.32em] uppercase font-sans bg-gradient-to-r from-cyan-200 via-sky-300 via-purple-300 to-indigo-300 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(56,189,248,0.5)]"
         >
-          CRYSTAL ORB
+          LUCKEY
         </motion.div>
 
         {/* Dynamic Status Message */}
