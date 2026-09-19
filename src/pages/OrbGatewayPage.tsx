@@ -585,22 +585,22 @@ export default function OrbGatewayPage() {
     }
   };
 
-  // 🪐 칠요 성진 앱으로 양피지 즉시 토스 (정렬 모션 + 광선 발사 + 스마트 토스)
+  // 🪐 칠요 성진 앱으로 즉시 이동 & 양피지 영시 토스 (지체 없이 바로 이동)
   const handleTossToApp = useCallback(
     (app: SeptagramAppDimension) => {
-      if (isTossing) return;
-      setIsTossing(true);
       setSelectedRuneIds([app.id]);
       setHoveredApp(null);
       setHoveredRuneInfo(null);
-      setIsParchmentRolled(true); // Automatically ensure rolled scroll state for the soaring toss
+      setIsParchmentRolled(true);
 
-      // Sound & tactile feedback
+      // 1. 즉각 햅틱 및 사운드 재생
       triggerHaptic("wormhole");
-      omniWarpAudio.playWormhole();
-      sacredAudio.playSingingBowl(639);
+      try {
+        omniWarpAudio.playWormhole();
+        sacredAudio.playSingingBowl(639);
+      } catch (_) {}
 
-      // Extract current memory text
+      // 2. 현재 양피지 영시 본문 추출 (토스 페이로드)
       const title = currentMemory?.title || "Key 크리스탈 오브 영시";
       const keypoint = currentMemory?.keypoint || "";
       const guidance = currentMemory?.actionGuidance || "";
@@ -627,19 +627,31 @@ export default function OrbGatewayPage() {
           themeColor: app.color,
         };
 
-      setTossNotice(`✨ [${app.shortName}] 행성으로 양피지 영시를 토스하는 중...`);
+      // 3. 지체 없이 즉각 스마트 토스 실행 (sessionStorage/localStorage 저장 및 이벤트 디스패치)
+      executeSmartToss("key", dest, {
+        text: tossMessage,
+        contextMessage: tossMessage,
+        autoPrompt: tossMessage,
+      });
 
-      // 600ms 동안 정렬 모션(0.38s)과 공명 레이저 빔을 관조한 뒤 토스 도약
-      setTimeout(() => {
-        executeSmartToss("key", dest, {
-          text: tossMessage,
-          contextMessage: tossMessage,
-          autoPrompt: tossMessage,
-        });
-        setIsTossing(false);
-      }, 600);
+      // 4. SPA wouter 네비게이트 및 location.href를 통한 100% 즉시 이동 보장
+      const safePath = dest.path;
+      try {
+        navigate(safePath);
+      } catch (_) {}
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("prism-navigate", { detail: { path: safePath } }));
+        window.dispatchEvent(new CustomEvent("nav-click-active", { detail: { path: safePath } }));
+        window.scrollTo({ top: 0, behavior: "smooth" });
+
+        // 독립 PWA(orb.html) 또는 라우트 미반영 시 즉시 location.href 이동
+        if (window.location.pathname.includes("orb") || !window.location.pathname.includes(safePath.replace("/", ""))) {
+          window.location.href = safePath;
+        }
+      }
     },
-    [currentMemory, isTossing]
+    [currentMemory, navigate]
   );
 
   return (
