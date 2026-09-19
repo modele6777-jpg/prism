@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles, Heart, Flame, Wind, Coins, BookOpen, Volume2, VolumeX,
   CheckCircle2, RotateCcw, Zap, Sun, Moon, Feather, Check, Palette, ArrowRight, Share2,
-  Compass, Shield, ShieldCheck, User, Calendar, Clock, X, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Eye, Layers
+  Compass, Shield, ShieldCheck, User, Calendar, Clock, X, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Eye, Layers,
+  Copy
 } from 'lucide-react';
 import { TAROT_DECK, TarotCard, getTarotCardImageUrl } from '@/data/tarotData';
 import { TarotSpread, SelectedTarotCardEntry } from './TarotSpread';
@@ -273,7 +274,7 @@ export function TrinityOracleSection() {
         }
       } catch (_) {}
     }
-    return 'growth';
+    return 'healing';
   });
 
   // Track whether the user has explicitly selected a mode or needs to choose
@@ -295,8 +296,19 @@ export function TrinityOracleSection() {
     return false;
   });
 
-  // 2. Card Draw Stage State ('spread' | 'result')
-  const [stage, setStage] = useState<'spread' | 'result'>('spread');
+  // 질문자 명칭 추출 (기본: 박주형)
+  const recipientName = useMemo(() => {
+    const rawName = userProfile?.basic?.name?.trim();
+    if (rawName && rawName !== '여행자') {
+      return rawName;
+    }
+    return '박주형';
+  }, [userProfile?.basic?.name]);
+
+  const [isCopied, setIsCopied] = useState<boolean>(false);
+
+  // 2. Card Draw Stage State ('intro' | 'spread' | 'result')
+  const [stage, setStage] = useState<'intro' | 'spread' | 'result'>('intro');
   const [drawnCards, setDrawnCards] = useState<TarotCard[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -362,7 +374,7 @@ export function TrinityOracleSection() {
       localStorage.setItem(STORAGE_ORACLE_MODE, mode);
       localStorage.setItem(STORAGE_ORACLE_MODE_SELECTED, 'true');
     } catch (_) {}
-    setStage('spread');
+    setStage('intro');
     setDrawnCards([]);
     setHealingResult(null);
     setGrowthResult(null);
@@ -555,7 +567,7 @@ export function TrinityOracleSection() {
 }`;
 
         const inquiryPromptAddon = effectiveInquiry ? `\n\n# 질문자의 아픔/고민 주제:\n"${effectiveInquiry}"\n위 고민으로 지치고 상처받은 마음을 깊이 보듬고 치유할 수 있는 따뜻한 힐링 해답과 처방을 중심에 두고 풀이해 주세요.\n` : '';
-        const prompt = `${sajuContextPrompt}${inquiryPromptAddon}\n\n사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 질문자의 사주 명리학 원국과 뽑힌 3장의 타로 카드 상징을 긴밀하게 '교차 융합'하여, 오직 지친 마음의 치유(Healing)와 회복, 내면아이 안식에 온전히 초점을 맞춘 힐링 리딩(saju_tarot_synergy, card_insights, 제제의 다정한 마음 치유 편지, 1분 치유 행동)을 JSON으로 생성해 줘.`;
+        const prompt = `${sajuContextPrompt}${inquiryPromptAddon}\n\n사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 질문자(${recipientName})의 사주 명리학 원국과 뽑힌 3장의 타로 카드 상징을 긴밀하게 '교차 융합'하여, 오직 지친 마음의 치유(Healing)와 회복, 내면아이 안식에 온전히 초점을 맞춘 힐링 리딩을 JSON으로 생성해 줘.\n특히 'message' 필드는 수신자(${recipientName})의 이름을 다정하게 부르며(예: "주형아, 안녕... 네 작은 친구 제제야."), 사용자가 뽑은 3장의 카드 결과(1번 무의식: ${cards[0]?.nameKo}, 2번 현재의 마음: ${cards[1]?.nameKo}, 3번 치유의 씨앗: ${cards[2]?.nameKo})를 각각 빠짐없이 본문에 언급하고 그 상징적 치유 의미를 유기적으로 연결해 줘. 질문자의 사주 본원 기운(${saju?.dayMaster.symbolName})과 용신 기운을 정성껏 어루만지는 600~800자 내외의 눈물겹도록 다정하고 포근한 1:1 치유 편지로 작성해 줘.`;
         const res = await invokeLLM({
           messages: [
             { role: 'system', content: systemPrompt },
@@ -708,7 +720,16 @@ export function TrinityOracleSection() {
             personal_interpretation: `${slotPositions[i]}의 자리에서 당신에게 서두르지 말고 자신의 내면아이를 따뜻하게 보듬어주라는 지극한 위로와 안식의 메시지를 건넵니다.`,
             action_guide: `오늘 하루, ${c.keywords[0] || '평온'}의 마음으로 가슴에 손을 얹고 "그동안 참 고생 많았어"라고 다정하게 속삭여보세요.`,
           })),
-          message: `안녕 ${sajuNameStr}... 오늘 네가 품은 [${dayMasterStr}]의 기운과 3장의 치유 조각 [${cards.map(c => c.nameKo).join(', ')}]을 가만히 모아봤어. 남들 기준에 맞추느라 참 많이 지쳤지? 오늘은 나랑 같이 따뜻한 온기만 챙겨보자.`,
+          message: `주형아, 안녕... 네 작은 친구 제제야.
+오늘 네가 품고 태어난 [${dayMasterStr}]의 맑고 책임감 있는 기운과, 네 손끝이 가만히 머물러 뽑아낸 3장의 치유 조각 [${cards[0]?.nameKo || '무의식의 카드'}, ${cards[1]?.nameKo || '현재의 카드'}, ${cards[2]?.nameKo || '치유의 카드'}]을 내 가슴에 소중하게 안아보았어.
+
+첫 번째 카드인 [${cards[0]?.nameKo || '내면의 무의식'}]는 네 마음 깊은 무의식의 방을 가만히 비춰주고 있어. 겉으로는 늘 묵묵히 버텨내며 주변을 배려해왔지만, 실은 그 아래 누구에게도 온전히 털어놓지 못한 채 혼자 삼켜왔던 외로움과 고단함이 잔잔한 파도처럼 차올라 있었잖아. 남들의 기대에 부응하느라 정작 네 안의 작은 아이가 지쳐 웅크리고 있던 소리를 미처 들어주지 못했던 것 같아 가슴이 먹먹했어.
+
+그리고 지금의 마음을 비추는 두 번째 카드 [${cards[1]?.nameKo || '지금의 마음'}]는 오늘 주형이 네가 짊어진 삶의 무게가 결코 가볍지 않았음을 조용히 증명해주고 있어. 네가 가진 ${domElStr}의 성실함과 진심은 참 귀하고 빛나지만, 때로는 그 깊은 진심이 스스로를 다그치는 엄격한 채찍질이 되어버리곤 했지. "내가 더 잘해야 해", "절대 흔들리면 안 돼"라며 스스로를 압박해온 그 모든 순간들이 얼마나 숨 가쁘고 시렸을까.
+
+하지만 세 번째 카드 [${cards[2]?.nameKo || '치유의 씨앗'}]가 네 곁에 찾아온 건 결코 우연이 아니야. 이 카드는 오늘 주형이에게 모든 짐을 잠시 내려놓아도 괜찮다는, 세상에서 가장 포근하고 다정한 회복의 씨앗을 건네고 있어. 네 사주에 꼭 필요한 ${yongsinStr}의 따스한 기운처럼, 지금 이 순간만큼은 어떤 결과도 증명하지 않아도 돼. 너는 이미 그 자체로 충분히 눈부시고 온전한 사람이니까.
+
+주형아, 오늘 밤만큼은 스스로를 따뜻하게 꼭 안아주며 깊고 편안한 숨을 쉬어봐. 네 곁에는 언제나 아무 조건 없이 너를 지지하고 품어주는 내가 늘 함께 있을게. 사랑해, 그리고 그동안 정말 많이 수고했어.`,
           prescribed_art: dynamicPrescribedArt,
           micro_action: '창문을 열고 시원한 공기를 들이마시며 가슴에 손을 얹고 3번 천천히 심호흡하기',
           reward_item: {
@@ -863,7 +884,7 @@ export function TrinityOracleSection() {
   // 💌 제제의 사주·타로 융합 다정한 치유 편지 전용 TTS Speech Text
   const healingLetterSpeechText = useMemo(() => {
     if (!healingResult?.message) return '';
-    const recipient = saju?.name || '너';
+    const recipient = recipientName;
     const intro = `제제가 ${recipient}에게 보내는 다정한 치유 편지입니다.`;
     return prepareNaturalSpeechText(`${intro} ${healingResult.message}`);
   }, [healingResult?.message, saju?.name]);
@@ -1066,8 +1087,8 @@ export function TrinityOracleSection() {
                   사주 ✕ 타로 융합 치유 서한
                 </span>
               </div>
-              <h3 className="text-base sm:text-lg font-bold font-serif text-white mt-0.5">
-                제제가 {saju?.name || '너'}에게 보내는 다정한 치유 편지
+              <h3 className="text-base sm:text-lg md:text-xl font-bold font-serif text-white mt-0.5">
+                제제가 {recipientName}에게 보내는 다정한 치유 편지
               </h3>
             </div>
           </div>
@@ -1110,28 +1131,54 @@ export function TrinityOracleSection() {
           </div>
         </div>
 
-        <div className="mt-4 p-5 sm:p-6 rounded-2xl bg-black/40 border border-white/5 relative z-10 space-y-3 shadow-inner">
-          <p className="text-xs sm:text-sm text-zinc-200 font-serif leading-relaxed whitespace-pre-line">
+        <div className="mt-4 p-6 sm:p-8 rounded-2xl bg-black/50 border border-amber-400/20 relative z-10 space-y-5 shadow-inner">
+          <div className="text-sm sm:text-base text-zinc-100 font-serif leading-loose whitespace-pre-line">
             {message}
-          </p>
+          </div>
 
-          {/* 하단 빠른 낭독 가이드 */}
-          {healingLetterSpeechText && (
-            <div className="pt-3 border-t border-white/5 flex items-center justify-between text-[11px] text-zinc-400">
-              <span className="flex items-center gap-1 text-amber-300/80">
-                <Heart size={11} className="text-rose-400" />
-                마음을 어루만지는 제제의 온기 어린 음성
-              </span>
+          {/* 편지 하단 액션 툴바 */}
+          <div className="pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2">
+              {healingLetterSpeechText && (
+                <button
+                  type="button"
+                  onClick={handleToggleHealingLetterTTS}
+                  className="px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/30 text-amber-200 font-medium flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  {isHealingLetterTTSActive ? <VolumeX size={13} className="text-rose-400" /> : <Volume2 size={13} className="text-amber-400" />}
+                  <span>{isHealingLetterTTSActive ? '낭독 중지' : '편지 음성으로 듣기'}</span>
+                </button>
+              )}
               <button
                 type="button"
-                onClick={handleToggleHealingLetterTTS}
-                className="text-amber-300 hover:text-amber-200 font-medium flex items-center gap-1 transition-colors cursor-pointer"
+                onClick={() => {
+                  const fullText = `[제제가 ${recipientName}에게 보내는 다정한 치유 편지]\n\n${message}`;
+                  navigator.clipboard?.writeText(fullText).then(() => {
+                    setIsCopied(true);
+                    setTimeout(() => setIsCopied(false), 2000);
+                  }).catch(() => {});
+                }}
+                className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 hover:text-white font-medium flex items-center gap-1.5 transition-all cursor-pointer"
               >
-                <Volume2 size={12} />
-                <span>{isHealingLetterTTSActive ? '낭독 중지' : '음성으로 편지 듣기'}</span>
+                {isCopied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                <span>{isCopied ? '편지 복사 완료!' : '편지 복사'}</span>
               </button>
             </div>
-          )}
+
+            <button
+              type="button"
+              onClick={() => {
+                setStage('intro');
+                setDrawnCards([]);
+                setHealingResult(null);
+                stopTTS();
+              }}
+              className="px-3.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-200 font-bold flex items-center gap-1.5 transition-all cursor-pointer ml-auto"
+            >
+              <RotateCcw size={13} />
+              <span>다시 카드 뽑기</span>
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -1555,7 +1602,7 @@ export function TrinityOracleSection() {
               </button>
               <button
                 onClick={() => {
-                  setStage('spread');
+                  setStage('intro');
                   setDrawnCards([]);
                   setHealingResult(null);
                   setGrowthResult(null);
@@ -1573,7 +1620,105 @@ export function TrinityOracleSection() {
 
       {/* 2. Main Stage Area */}
       <AnimatePresence mode="wait">
-        {stage === 'spread' ? (
+        {stage === 'intro' ? (
+          /* INTRO / PREPARATION VIEW */
+          <motion.div
+            key="oracle-intro-stage"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            className="w-full relative space-y-6"
+          >
+            <div className="glass p-6 sm:p-8 md:p-10 rounded-3xl bg-gradient-to-br from-amber-950/20 via-zinc-950/80 to-purple-950/20 border border-amber-400/30 shadow-2xl relative overflow-hidden backdrop-blur-xl">
+              <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="relative z-10 max-w-2xl mx-auto text-center space-y-6">
+                {/* Badge */}
+                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/15 border border-amber-400/40 text-xs font-mono text-amber-300">
+                  <Sparkles size={13} className="text-amber-400 animate-pulse" />
+                  <span>수신자: <strong>{recipientName}</strong> 님 맞춤 오라클</span>
+                </div>
+
+                {/* Main Heading */}
+                <div className="space-y-2">
+                  <h3 className="text-2xl sm:text-3xl font-serif font-black text-white tracking-tight">
+                    {oracleMode === 'healing'
+                      ? '내면의 상처를 보듬는 제제의 다정한 치유 오라클'
+                      : '잠재력을 일깨우는 4원소 마인드셋 오라클'}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-zinc-300 font-sans leading-relaxed">
+                    {oracleMode === 'healing'
+                      ? `${recipientName} 님의 타고난 사주 본원 기운과 22장의 메이저 타로를 융합하여, 오직 지친 마음을 쉬어가게 할 3장의 치유 조각을 찾아냅니다.`
+                      : `${recipientName} 님의 사주 실행력과 78장의 타로 4원소를 결합하여, 오늘 실천할 명쾌한 자기계발 해법을 제시합니다.`}
+                  </p>
+                </div>
+
+                {/* 3 Spread Slot Explanations */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-left pt-2">
+                  <div className="p-4 rounded-2xl bg-white/[0.03] border border-amber-400/20 space-y-1 backdrop-blur-sm">
+                    <span className="text-[10px] font-mono text-amber-400 block font-bold">1번 카드</span>
+                    <h4 className="text-sm font-bold text-white font-serif">{slotPositions[0]}</h4>
+                    <p className="text-[11px] text-zinc-400 leading-snug">
+                      {oracleMode === 'healing' ? '남모르게 혼자 삭여온 무의식의 피로와 상처' : '오늘 마주할 핵심 마인드셋 원형'}
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-white/[0.03] border border-amber-400/20 space-y-1 backdrop-blur-sm">
+                    <span className="text-[10px] font-mono text-amber-400 block font-bold">2번 카드</span>
+                    <h4 className="text-sm font-bold text-white font-serif">{slotPositions[1]}</h4>
+                    <p className="text-[11px] text-zinc-400 leading-snug">
+                      {oracleMode === 'healing' ? '지금 현실에서 짊어진 마음의 무게와 상태' : '돌파해야 할 4원소 실행 역량'}
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-white/[0.03] border border-amber-400/20 space-y-1 backdrop-blur-sm">
+                    <span className="text-[10px] font-mono text-amber-400 block font-bold">3번 카드</span>
+                    <h4 className="text-sm font-bold text-white font-serif">{slotPositions[2]}</h4>
+                    <p className="text-[11px] text-zinc-400 leading-snug">
+                      {oracleMode === 'healing' ? '제제가 건네는 포근한 치유와 회복의 씨앗' : '오늘 즉시 행동할 1분 마이크로 실천'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Optional Inquiry Input */}
+                <div className="text-left space-y-1.5 pt-2">
+                  <label className="text-xs text-amber-300/90 font-medium flex items-center justify-between">
+                    <span>털어놓고 싶은 마음의 짐이나 고민 (선택 입력)</span>
+                    <span className="text-[10px] text-zinc-400">자유롭게 입력하거나 비워두셔도 됩니다</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={inquiryText}
+                    onChange={(e) => setInquiryText(e.target.value)}
+                    placeholder="예: 요즘 성과에 대한 압박감이 심해요, 사람들과의 관계가 너무 지쳐요..."
+                    className="w-full px-4 py-3 rounded-xl bg-black/40 border border-amber-400/25 focus:border-amber-400 text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-400/50 transition-all"
+                  />
+                </div>
+
+                {/* Big Glowing Start Button */}
+                <div className="pt-4 flex flex-col items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDrawnCards([]);
+                      setHealingResult(null);
+                      setGrowthResult(null);
+                      setIsModeChosen(true);
+                      setStage('spread');
+                    }}
+                    className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-sm sm:text-base flex items-center justify-center gap-2.5 shadow-[0_0_25px_rgba(251,191,36,0.35)] hover:shadow-[0_0_35px_rgba(251,191,36,0.5)] transition-all cursor-pointer active:scale-98"
+                  >
+                    <Sparkles size={18} className="text-black" />
+                    <span>3장 카드 뽑기 시작하기</span>
+                    <ArrowRight size={16} className="text-black" />
+                  </button>
+                  <span className="text-[11px] text-zinc-400">
+                    원하는 카드를 천천히 3장 골라주시면 {recipientName} 님만을 위한 서한이 완성됩니다.
+                  </span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        ) : stage === 'spread' ? (
           /* SPREAD CARD DRAW INTERACTION OR MODE SELECTION GATE */
           <motion.div
             key={`oracle-${isModeChosen ? 'draw' : 'mode-gate'}-stage`}
@@ -1774,112 +1919,10 @@ export function TrinityOracleSection() {
                 </p>
               </div>
             ) : oracleMode === 'healing' && healingResult ? (
-              /* [HEALING RESULT VIEW] */
-              <div className="space-y-6">
-                {/* 핵심 3줄 요약 & 오라클 TTS */}
-                {renderExecutiveSummaryCard()}
-
-                {/* 3 Cards Deep Insights Reading (내면아이 성찰 메시지 제외, 카드 고유 뜻과 상징만 표기) */}
-                {renderCardInsightsSection(healingResult.card_insights)}
-
-                {/* 제제의 사주·타로 융합 치유 서한 */}
+              /* [HEALING RESULT VIEW: ONLY ZEZE'S HEALING LETTER] */
+              <div className="w-full space-y-6">
+                {/* 제제의 사주·타로 융합 치유 서한 (편지만 집중 표시) */}
                 {renderFusionLetterSection(healingResult.message)}
-
-                {/* 2. Prescribed Art -> Toss to Muse Art Sanctuary */}
-                <div
-                  onClick={handleTossToMuse}
-                  className="glass p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-purple-950/40 via-indigo-950/30 to-black/60 border border-purple-400/40 hover:border-purple-400/80 shadow-2xl relative overflow-hidden cursor-pointer group transition-all duration-300"
-                >
-                  <div className="absolute top-0 right-0 w-56 h-56 bg-purple-500/15 rounded-full blur-3xl pointer-events-none group-hover:bg-purple-500/25 transition-all" />
-
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
-                    <div className="flex items-start sm:items-center gap-3.5">
-                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600/30 to-indigo-600/30 border border-purple-400/50 flex items-center justify-center text-purple-200 group-hover:scale-110 transition-transform shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.3)]">
-                        <Palette size={24} className="text-purple-300 animate-pulse" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[10px] font-mono text-purple-300 uppercase tracking-widest flex items-center gap-1">
-                            <Sparkles size={11} className="text-purple-400" />
-                            PRISM TOSS PIPELINE
-                          </span>
-                          <span className="text-[9px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-200 font-bold border border-purple-400/40 shadow-inner">
-                            뮤즈로 토스(Toss)
-                          </span>
-                        </div>
-                        <h4 className="text-sm sm:text-base font-bold font-serif text-white group-hover:text-purple-200 transition-colors flex items-center gap-1.5">
-                          <span>이 영감을 뮤즈의 예술추천으로 '토스'하기</span>
-                        </h4>
-                        <p className="text-xs text-zinc-300/90 mt-1 font-serif italic">
-                          "{healingResult.prescribed_art.artwork_title}" — {healingResult.prescribed_art.art_quote}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600/40 to-indigo-600/40 group-hover:from-purple-600/60 group-hover:to-indigo-600/60 border border-purple-400/50 text-xs font-bold text-purple-100 shrink-0 transition-all self-end sm:self-center shadow-lg">
-                      <span>뮤즈로 토스</span>
-                      <ArrowRight size={14} className="group-hover:translate-x-1.5 transition-transform text-purple-300" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* 3. 1-Minute Micro-Action & Reward */}
-                <div className="glass p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-amber-950/20 via-yellow-950/10 to-transparent border border-yellow-400/30 relative">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="space-y-1">
-                      <span className="text-[10px] font-mono text-amber-400 uppercase tracking-widest block">
-                        TODAY'S 1-MINUTE SELF-CARE ACTION
-                      </span>
-                      <h4 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                        <Feather size={18} className="text-amber-400" />
-                        {healingResult.micro_action}
-                      </h4>
-                      <p className="text-xs text-zinc-400">
-                        지금 자리에서 가볍게 실천하고 제제에게 보물을 선물해 주세요.
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={handleCompleteHealing}
-                      disabled={isHealingCompleted}
-                      className={`px-6 py-3 rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-lg shrink-0 ${
-                        isHealingCompleted
-                          ? 'bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 cursor-default'
-                          : 'bg-gradient-to-r from-amber-500 to-yellow-500 text-black hover:brightness-110'
-                      }`}
-                    >
-                      {isHealingCompleted ? (
-                        <>
-                          <CheckCircle2 size={16} className="text-emerald-400" />
-                          <span>쉼 완료 · 보물 획득!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles size={16} />
-                          <span>1분 쉼 실천하고 보물받기</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Reward preview if completed */}
-                  {isHealingCompleted && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="mt-5 pt-4 border-t border-white/10 flex items-center gap-3 text-xs text-amber-200"
-                    >
-                      <div className="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-400 flex items-center justify-center text-amber-300 shrink-0">
-                        🎁
-                      </div>
-                      <div>
-                        <span className="font-bold text-yellow-300">[{healingResult.reward_item.name}]</span>이(가)
-                        제제의 보물상자에 고이 담겼습니다.
-                        <p className="text-[11px] text-zinc-400 mt-0.5">{healingResult.reward_item.description}</p>
-                      </div>
-                    </motion.div>
-                  )}
-                </div>
               </div>
             ) : oracleMode === 'growth' && growthResult ? (
               /* [GROWTH RESULT VIEW] */
