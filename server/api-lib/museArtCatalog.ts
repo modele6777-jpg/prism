@@ -17,6 +17,8 @@ export interface VerifiedPoem {
   whyRecommended: string;
   siyoilUrl: string;
   poemSourceName: string;
+  origin?: string;
+  country?: string;
 }
 
 export function buildSiyoilPoemUrl(contentid: number, subcontentid: number): string {
@@ -2473,6 +2475,8 @@ export function buildVerifiedArtRecommendation(
     whyRecommended: selectedPoem.whyRecommended,
     siyoilUrl: selectedPoem.siyoilUrl,
     poemSourceName: selectedPoem.poemSourceName,
+    origin: selectedPoem.origin,
+    country: selectedPoem.country,
   };
 
   return {

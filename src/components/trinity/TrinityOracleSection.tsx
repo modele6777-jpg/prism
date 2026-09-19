@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLocation } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -10,7 +10,7 @@ import {
 import { TAROT_DECK, TarotCard, getTarotCardImageUrl } from '@/data/tarotData';
 import { TarotSpread, SelectedTarotCardEntry } from './TarotSpread';
 import { invokeLLM } from '@/lib/ai';
-import { playTTS, playTTSInChunks, stopTTS, useTTSActive, useTTSState, prepareNaturalSpeechText } from '@/utils/tts';
+import { playTTS, playTTSInChunks, prefetchTTS, stopTTS, useTTSActive, useTTSState, prepareNaturalSpeechText } from '@/utils/tts';
 import { sendPrismToss } from '@/lib/prismToss';
 import { MUSE_ART_CATALOG } from '@/lib/museDailyArt';
 import { useApp, getPersistentUserProfile, setPersistentUserProfile } from '@/contexts/AppContext';
@@ -814,73 +814,6 @@ export function TrinityOracleSection() {
     }
   };
 
-  // Oracle TTS Speech Text Generation (Full Substantial Saju-Tarot Fusion)
-  const oracleSpeechText = useMemo(() => {
-    if (oracleMode === 'healing' && healingResult) {
-      const parts: string[] = [];
-      const verdict = healingResult.saju_tarot_synergy?.saju_oracle_verdict || '';
-      if (verdict) parts.push(`오라클 타로의 최종 계시입니다. ${verdict}`);
-
-      const resonance = healingResult.saju_tarot_synergy?.day_master_resonance || '';
-      if (resonance) parts.push(`사주 본원과 타로의 파동 공명입니다. ${resonance}`);
-
-      const harmony = healingResult.saju_tarot_synergy?.elemental_balance?.dominant_harmony || '';
-      if (harmony) parts.push(`오행 우세 기운의 조화입니다. ${harmony}`);
-
-      const remedy = healingResult.saju_tarot_synergy?.elemental_balance?.lacking_remedy || '';
-      if (remedy) parts.push(`오행 균형과 용신 보약 처방입니다. ${remedy}`);
-
-      const flow = healingResult.saju_tarot_synergy?.destiny_flow_synthesis || '';
-      if (flow) parts.push(`2026년 세운의 흐름입니다. ${flow}`);
-
-      const action = healingResult.micro_action ? `오늘 나를 위한 1분 실천 처방은 ${healingResult.micro_action}입니다.` : '';
-      if (action) parts.push(action);
-
-      return prepareNaturalSpeechText(parts.join('. '));
-    } else if (oracleMode === 'growth' && growthResult) {
-      const parts: string[] = [];
-      const verdict = growthResult.saju_tarot_synergy?.saju_oracle_verdict || growthResult.macro_focus || '';
-      if (verdict) parts.push(`오라클 타로의 현실 실행 브리핑입니다. ${verdict}`);
-
-      const resonance = growthResult.saju_tarot_synergy?.day_master_resonance || '';
-      if (resonance) parts.push(`사주 본원과 타로의 실행 모멘텀입니다. ${resonance}`);
-
-      const harmony = growthResult.saju_tarot_synergy?.elemental_balance?.dominant_harmony || '';
-      if (harmony) parts.push(`오행 우세 기운의 조화입니다. ${harmony}`);
-
-      const remedy = growthResult.saju_tarot_synergy?.elemental_balance?.lacking_remedy || '';
-      if (remedy) parts.push(`오행 균형과 용신 보완 전략입니다. ${remedy}`);
-
-      const flow = growthResult.saju_tarot_synergy?.destiny_flow_synthesis || '';
-      if (flow) parts.push(`2026년 세운 속 실행 타이밍입니다. ${flow}`);
-
-      const mission = growthResult.micro_mission
-        ? `오늘의 1줄 실행 미션은 ${growthResult.micro_mission.title}이며, 실행 팁은 ${growthResult.micro_mission.action_tip}입니다.`
-        : '';
-      if (mission) parts.push(mission);
-
-      return prepareNaturalSpeechText(parts.join('. '));
-    }
-    return '';
-  }, [oracleMode, healingResult, growthResult]);
-
-  const isOracleTTSActive = useMemo(() => {
-    if (!isTTSActive || !oracleSpeechText) return false;
-    const cleanSpeech = prepareNaturalSpeechText(oracleSpeechText);
-    return ttsState.activeFullText === cleanSpeech;
-  }, [isTTSActive, oracleSpeechText, ttsState.activeFullText]);
-
-  // TTS Toggle Handler using smooth chunked playback
-  const handleToggleTTS = async () => {
-    if (isOracleTTSActive) {
-      stopTTS();
-      return;
-    }
-    if (oracleSpeechText) {
-      await playTTSInChunks(oracleSpeechText, 'Kore', 250, '신비');
-    }
-  };
-
   // 💌 제제의 사주·타로 융합 다정한 치유 편지 전용 TTS Speech Text
   const healingLetterSpeechText = useMemo(() => {
     if (!healingResult?.message) return '';
@@ -905,7 +838,58 @@ export function TrinityOracleSection() {
     }
   };
 
-  // Executive Summary Card (Substantial Saju-Tarot Synthesis + TTS Audio Player)
+  // 🎴 개별 카드 심층 해설 전용 음성 생성기 및 토글 핸들러
+  const [activeCardTTSKey, setActiveCardTTSKey] = useState<string | null>(null);
+
+  const getCardSpeechText = useCallback((card: TarotCard, insight: CardInsight, idx: number) => {
+    const parts: string[] = [];
+    const slotName = slotPositions[idx] || `${idx + 1}번 위치`;
+    parts.push(`${idx + 1}번째 슬롯, ${slotName}의 ${card.nameKo} 카드 심층 해설입니다.`);
+    if (insight.core_meaning) {
+      parts.push(`카드의 본질적 도상과 상징입니다. ${insight.core_meaning}`);
+    }
+    if (insight.saju_resonance) {
+      parts.push(`사주 본원 및 오행 공명입니다. ${insight.saju_resonance}`);
+    }
+    if (insight.personal_interpretation) {
+      const readerTitle = oracleMode === 'healing' ? '제제의 맞춤 치유 리딩입니다.' : '루시의 역량 분석 리딩입니다.';
+      parts.push(`${readerTitle} ${insight.personal_interpretation}`);
+    }
+    if (insight.action_guide) {
+      const actionTitle = oracleMode === 'healing' ? '오늘의 마음 치유 처방입니다.' : '오늘의 1% 실행 팁입니다.';
+      parts.push(`${actionTitle} ${insight.action_guide}`);
+    }
+    return prepareNaturalSpeechText(parts.join(' '));
+  }, [oracleMode, slotPositions]);
+
+  const isCardTTSActive = useCallback((cardId: string, speechText: string) => {
+    if (!isTTSActive || !speechText) return false;
+    const cleanSpeech = prepareNaturalSpeechText(speechText);
+    return ttsState.activeFullText === cleanSpeech;
+  }, [isTTSActive, ttsState.activeFullText]);
+
+  const handleToggleCardTTS = async (card: TarotCard, insight: CardInsight, idx: number) => {
+    const speechText = getCardSpeechText(card, insight, idx);
+    const key = `${card.id}-${idx}`;
+    if (isCardTTSActive(card.id, speechText)) {
+      stopTTS();
+      setActiveCardTTSKey(null);
+      return;
+    }
+    setActiveCardTTSKey(key);
+    await playTTSInChunks(speechText, 'Kore', 250, '신비');
+  };
+
+  // Auto-prefetch TTS for Jeje's healing letter
+  useEffect(() => {
+    if (stage === 'result') {
+      if (healingLetterSpeechText && healingLetterSpeechText.length >= 20) {
+        prefetchTTS(healingLetterSpeechText.slice(0, 350), 'Kore', '따뜻함');
+      }
+    }
+  }, [stage, healingLetterSpeechText]);
+
+  // Executive Summary Card (Substantial Saju-Tarot Synthesis Report)
   const renderExecutiveSummaryCard = () => {
     const synergy = oracleMode === 'healing' ? healingResult?.saju_tarot_synergy : growthResult?.saju_tarot_synergy;
     const verdict = synergy?.saju_oracle_verdict || (oracleMode === 'healing' ? healingResult?.message : growthResult?.macro_focus);
@@ -926,7 +910,7 @@ export function TrinityOracleSection() {
         {/* Ambient Glow */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Top Bar: Title & TTS Button */}
+        {/* Top Bar: Title */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-yellow-500/20 relative z-10">
           <div className="flex items-center gap-2.5 text-yellow-300 font-bold text-sm sm:text-base font-serif">
             <div className="w-8 h-8 rounded-xl bg-yellow-400/20 border border-yellow-400/40 flex items-center justify-center text-yellow-300 shadow-sm shrink-0">
@@ -943,41 +927,10 @@ export function TrinityOracleSection() {
               </div>
               <h3 className="text-white text-sm sm:text-base font-bold">
                 {oracleMode === 'healing'
-                  ? '사주 ✕ 타로 마음 치유 종합 마스터 브리핑'
-                  : '사주 ✕ 타로 자기계발 종합 마스터 브리핑'}
+                  ? '사주 ✕ 타로 마음 치유 종합 마스터 리포트'
+                  : '사주 ✕ 타로 자기계발 종합 마스터 리포트'}
               </h3>
             </div>
-          </div>
-
-          <div className="flex items-center gap-2 self-start sm:self-auto">
-            <button
-              type="button"
-              onClick={handleToggleTTS}
-              className={`px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-lg active:scale-95 ${
-                isOracleTTSActive
-                  ? "bg-yellow-400/30 text-yellow-200 border border-yellow-400/60 ring-2 ring-yellow-400/30 animate-pulse"
-                  : "bg-gradient-to-r from-yellow-500/20 to-amber-500/20 hover:from-yellow-500/30 hover:to-amber-500/30 text-yellow-200 border border-yellow-400/40"
-              }`}
-              title={isOracleTTSActive ? "낭독 중지" : "사주 융합 오라클 전체 계시 음성으로 듣기"}
-            >
-              {isOracleTTSActive ? (
-                <>
-                  <VolumeX size={15} className="text-yellow-300" />
-                  <span>낭독 중지</span>
-                  <span className="flex gap-0.5 ml-1">
-                    <span className="w-1 h-3 bg-yellow-300 rounded-full animate-bounce" />
-                    <span className="w-1 h-4 bg-yellow-200 rounded-full animate-bounce [animation-delay:0.15s]" />
-                    <span className="w-1 h-2 bg-yellow-400 rounded-full animate-bounce [animation-delay:0.3s]" />
-                  </span>
-                </>
-              ) : (
-                <>
-                  <Volume2 size={15} className="text-yellow-400" />
-                  <span>오라클 음성 듣기</span>
-                  <span className="text-[10px] opacity-75 font-mono">(약 1분)</span>
-                </>
-              )}
-            </button>
           </div>
         </div>
 
@@ -1587,19 +1540,6 @@ export function TrinityOracleSection() {
 
           {stage === 'result' && (
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleToggleTTS}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm ${
-                  isOracleTTSActive
-                    ? 'bg-amber-400/30 text-amber-200 border border-amber-400/50 animate-pulse'
-                    : 'bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/30 text-amber-300'
-                }`}
-                title={isOracleTTSActive ? "오라클 낭독 중지" : "오라클 종합 계시 듣기"}
-              >
-                {isOracleTTSActive ? <VolumeX size={13} /> : <Volume2 size={13} />}
-                <span>{isOracleTTSActive ? '낭독 중지' : '오라클 듣기'}</span>
-              </button>
               <button
                 onClick={() => {
                   setStage('intro');

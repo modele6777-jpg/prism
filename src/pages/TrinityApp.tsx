@@ -1705,13 +1705,26 @@ function playDailyCardChimeAsync() {
 
   const summarySpeechText = useMemo(() => {
     if (conciseSummaryBullets.length === 0) return "";
-    return conciseSummaryBullets
+    const intro = "타로 리딩의 핵심 3줄 요약입니다.";
+    const bullets = conciseSummaryBullets
       .map((b) => {
         const speech = b.replace(/^\[([^\]]+)\]\s*/, "$1. ");
         return speech.trim().replace(/[.!?\s]+$/, '') + '.';
       })
       .join(' ');
+    return `${intro} ${bullets}`;
   }, [conciseSummaryBullets]);
+
+  // 타로 결과 낭독 시 핵심 요약은 읽지 않고 본문 상세 리딩만 깨끗하게 낭독
+  const fullReadingSpeechText = useMemo(() => {
+    if (!tarotResult) return "";
+    const cleanBody =
+      displayTarotResult ||
+      tarotResult
+        .replace(/(?:\n|^)(?:\[핵심\s*3줄\s*요약\]|###\s*.*핵심\s*3줄\s*요약|###\s*.*핵심\s*요약|\[핵심\s*요약\])[\s\S]*$/i, "")
+        .trim();
+    return cleanBody;
+  }, [tarotResult, displayTarotResult]);
 
   const isSummaryTTSActive = useMemo(() => {
     if (!isTTSActive || !summarySpeechText) return false;
@@ -1720,21 +1733,22 @@ function playDailyCardChimeAsync() {
   }, [isTTSActive, summarySpeechText, ttsState.activeFullText]);
 
   const isFullReadingTTSActive = useMemo(() => {
-    if (!isTTSActive || !tarotResult) return false;
-    return !isSummaryTTSActive;
-  }, [isTTSActive, tarotResult, isSummaryTTSActive]);
+    if (!isTTSActive || !fullReadingSpeechText) return false;
+    const cleanFullReading = prepareNaturalSpeechText(fullReadingSpeechText);
+    return ttsState.activeFullText === cleanFullReading;
+  }, [isTTSActive, fullReadingSpeechText, ttsState.activeFullText]);
 
   // Auto-prefetch TTS for reading & summary when generated
   useEffect(() => {
     if (tarotResult && !isTarotGenerating && tarotResult.trim().length >= 120) {
-      const summaryBullets = extractConciseSummary(tarotResult);
-      if (summaryBullets.length > 0) {
-        const firstSummaryChunk = summaryBullets[0].replace(/^\[([^\]]+)\]\s*/, '$1. ').trim().replace(/[.!?\s]+$/, '') + '.';
-        prefetchTTS(firstSummaryChunk, 'Kore', '신비');
+      if (summarySpeechText) {
+        prefetchTTS(summarySpeechText.slice(0, 300), 'Kore', '신비');
       }
-      prefetchTTS(tarotResult.slice(0, 400), 'Kore', '신비');
+      if (fullReadingSpeechText) {
+        prefetchTTS(fullReadingSpeechText.slice(0, 400), 'Kore', '신비');
+      }
     }
-  }, [tarotResult, isTarotGenerating]);
+  }, [tarotResult, isTarotGenerating, summarySpeechText, fullReadingSpeechText]);
   const [chatInput, setChatInput] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -3274,8 +3288,8 @@ function playDailyCardChimeAsync() {
                                         onClick={async () => {
                                           if (isFullReadingTTSActive) {
                                             stopTTS();
-                                          } else if (tarotResult) {
-                                            await playTTSInChunks(tarotResult, 'Kore', 420, '신비');
+                                          } else if (fullReadingSpeechText) {
+                                            await playTTSInChunks(fullReadingSpeechText, 'Kore', 400, '신비');
                                           }
                                         }}
                                         className={`px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
