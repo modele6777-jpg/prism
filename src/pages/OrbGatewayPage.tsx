@@ -56,6 +56,13 @@ import {
 import { getAndClearPendingSelection } from "@/lib/selectionBridge";
 import { getTodayDateKey } from "@/lib/dailyCache";
 
+import {
+  recommendPrescriptionForParchment,
+  getDailyRecommendedPrescription,
+  type CalmPrescription,
+} from "@/lib/calmPharmacopeia";
+import { CalmTechniquePracticeModal } from "@/components/orb/CalmTechniquePracticeModal";
+
 interface StardustParticle {
   x: number;
   y: number;
@@ -90,26 +97,34 @@ export interface SeptagramAppDimension {
 /**
  * 🪐 칠요 성진 기본 벡터 아이콘 렌더러 (이모지 대신 기본 Lucide 벡터 아이콘 적용)
  */
-export function PlanetIcon({ id, className = "w-3.5 h-3.5" }: { id: string; className?: string }) {
+export function PlanetIcon({
+  id,
+  className = "w-3.5 h-3.5",
+  style,
+}: {
+  id: string;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
   switch (id) {
     case "prologue":
-      return <Sun className={className} />;
+      return <Sun className={className} style={style} />;
     case "lucy":
-      return <MessageCircle className={className} />;
+      return <MessageCircle className={className} style={style} />;
     case "orange":
-      return <TreeDeciduous className={className} />;
+      return <TreeDeciduous className={className} style={style} />;
     case "trinity":
-      return <Compass className={className} />;
+      return <Compass className={className} style={style} />;
     case "heal":
-      return <Activity className={className} />;
+      return <Activity className={className} style={style} />;
     case "bluebird":
-      return <Bird className={className} />;
+      return <Bird className={className} style={style} />;
     case "muse":
-      return <Palette className={className} />;
+      return <Palette className={className} style={style} />;
     case "epilogue":
-      return <Moon className={className} />;
+      return <Moon className={className} style={style} />;
     default:
-      return <Sparkles className={className} />;
+      return <Sparkles className={className} style={style} />;
   }
 }
 
@@ -293,6 +308,10 @@ export default function OrbGatewayPage() {
   const [activeFilter, setActiveFilter] = useState<KeyArchiveCategory>("all");
   const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // 💊 40대 마음 기법 실천 모달 상태
+  const [isPracticeModalOpen, setIsPracticeModalOpen] = useState(false);
+  const [activePracticePrescription, setActivePracticePrescription] = useState<CalmPrescription | null>(null);
 
   // Cross-App Toss Notification State (when receiving tossed text into Key)
   const [tossNotice, setTossNotice] = useState<string | null>(null);
@@ -480,6 +499,20 @@ export default function OrbGatewayPage() {
     return filteredItems[safeIndex] || filteredItems[0];
   }, [filteredItems, currentIndex, archiveItems]);
 
+  // 💊 현재 양피지 영시에 맞는 40대 마음 처방약 실시간 추천
+  const recommendedPrescription: CalmPrescription = useMemo(() => {
+    if (!currentMemory) return getDailyRecommendedPrescription();
+    return recommendPrescriptionForParchment({
+      id: currentMemory.id,
+      title: currentMemory.title,
+      keypoint: currentMemory.keypoint,
+      tags: currentMemory.tags,
+      category: currentMemory.category,
+      fullText: currentMemory.fullText,
+      actionGuidance: currentMemory.actionGuidance,
+    });
+  }, [currentMemory]);
+
   // 🔮 마음의 고민·상황 텍스트 기반 7대 행성(Septagram) 자동 감지 모드 (루시채팅의 지능형 오토모드 감지 연동)
   const autoDetectResult: SeptagramAutoDetectResult = useMemo(() => {
     return detectSeptagramChannelsFromText(concernQuery);
@@ -593,19 +626,13 @@ export default function OrbGatewayPage() {
     }, 900);
   };
 
-  // Navigation handlers
+  // 🔒 기법 다른 것으로 임의 변경 차단 (현재 처방된 기법에 온전히 몰입)
   const handleNextMemory = (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    if (filteredItems.length === 0) return;
-    triggerHaptic("wormhole");
-    setCurrentIndex((prev) => (prev + 1) % filteredItems.length);
   };
 
   const handlePrevMemory = (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    if (filteredItems.length === 0) return;
-    triggerHaptic("wormhole");
-    setCurrentIndex((prev) => (prev - 1 + filteredItems.length) % filteredItems.length);
   };
 
   // Select memory from modal list
@@ -717,23 +744,27 @@ export default function OrbGatewayPage() {
     }
   };
 
-  // 🪐 아이콘 클릭 시 해당 앱 모드 선택 활성화 (이동/토스 없음)
+  // 🪐 아이콘 클릭 시 해당 앱 모드 즉시 활성화 및 전환
   const handleSelectApp = useCallback(
     (app: SeptagramAppDimension) => {
-      // 이미 선택된 앱이면 선택 해제, 아니면 해당 앱 선택
-      setSelectedRuneIds((prev) =>
-        prev.includes(app.id) ? [] : [app.id]
-      );
+      setSelectedRuneIds([app.id]);
       setHoveredApp(null);
       setHoveredRuneInfo(null);
 
       // 선택 피드백 햅틱 & 사운드
-      triggerHaptic("wormhole");
+      triggerHaptic("whitehole");
       try {
+        omniWarpAudio.playWormhole();
         sacredAudio.playSingingBowl(528);
       } catch (_) {}
+
+      // 해당 모드 즉시 활성화 및 라우팅 이동
+      setTimeout(() => {
+        navigate(app.path);
+        window.dispatchEvent(new CustomEvent("prism-navigate", { detail: { path: app.path } }));
+      }, 200);
     },
-    []
+    [navigate]
   );
 
   // 🚀 두루마리 토스: 롤드 상태에서 행성 그리드 버튼 클릭 시 앱으로 이동 (기존 토스 기능)
@@ -1182,22 +1213,26 @@ export default function OrbGatewayPage() {
                         }}
                         className={`group/rune relative flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full transition-all duration-300 active:scale-90 cursor-pointer touch-manipulation ${
                           isSelected
-                            ? "scale-125 ring-2 ring-cyan-300 shadow-[0_0_25px_rgba(6,182,212,0.95)] z-40"
+                            ? "scale-125 ring-2 ring-white shadow-[0_0_25px_rgba(255,255,255,0.95)] z-40"
                             : isHovered
-                            ? "scale-110 shadow-[0_0_18px_rgba(6,182,212,0.85)] z-40"
-                            : "hover:scale-110 opacity-75 hover:opacity-100"
+                            ? "scale-110 z-40"
+                            : "hover:scale-110 opacity-85 hover:opacity-100"
                         }`}
                         style={{
                           background: isSelected
-                            ? `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.45) 0%, rgba(6,182,212,0.9) 85%)`
-                            : `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.15) 0%, rgba(6,20,40,0.95) 75%)`,
-                          border: `1.5px solid ${isSelected ? "rgba(6,182,212,1)" : "rgba(6,182,212,0.5)"}`,
+                            ? `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.75) 0%, ${app.color} 80%)`
+                            : isHovered
+                            ? `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.45) 0%, ${app.color}cc 65%, rgba(6,10,22,0.95) 100%)`
+                            : `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.25) 0%, ${app.color}44 45%, rgba(5,8,18,0.95) 95%)`,
+                          border: `1.5px solid ${isSelected ? "#ffffff" : isHovered ? "#ffffff" : app.color}`,
                           boxShadow: isSelected
-                            ? `0 0 22px rgba(6,182,212,0.8), inset 0 0 8px rgba(255,255,255,0.6)`
-                            : `0 0 8px rgba(6,182,212,0.35)`,
+                            ? `0 0 24px ${app.glowColor || app.color}, inset 0 0 10px rgba(255,255,255,0.8)`
+                            : isHovered
+                            ? `0 0 20px ${app.glowColor || app.color}, inset 0 0 8px rgba(255,255,255,0.4)`
+                            : `0 0 12px ${app.glowColor || app.color}, inset 0 0 4px rgba(255,255,255,0.2)`,
                         }}
-                        aria-label={`${app.name} (${app.shortName}) 모드 선택`}
-                        title={app.name}
+                        aria-label={`${app.name} (${app.shortName}) 모드 활성화`}
+                        title={app.shortName}
                       >
                         {/* 정방향 자전 보정 (Counter-rotation so icon stays upright) */}
                         <motion.div
@@ -1217,18 +1252,22 @@ export default function OrbGatewayPage() {
                             }}
                             className="flex items-center justify-center select-none"
                           >
-                            <PlanetIcon id={app.id} className="w-3.5 h-3.5 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.9)]" />
+                            <PlanetIcon
+                              id={app.id}
+                              className="w-3.5 h-3.5 drop-shadow-[0_0_8px_rgba(255,255,255,0.9)]"
+                              style={{ color: isSelected ? "#ffffff" : app.color }}
+                            />
                           </motion.span>
                         </motion.div>
 
-                        {/* Subtle Counter-Rotated Planetary Name Tag - 마우스 오버 시에만 노출 */}
+                        {/* 🌟 마우스 오버 시 오직 이름만 노출 */}
                         <motion.div
                           animate={{ rotate: -alignmentDelta }}
                           transition={{
                             duration: 0.38,
                             ease: [0.2, 0.8, 0.2, 1],
                           }}
-                          className="pointer-events-none absolute top-[108%] left-1/2 -translate-x-1/2 opacity-0 group-hover/rune:opacity-100 transition-opacity duration-200 z-50"
+                          className="pointer-events-none absolute top-[115%] left-1/2 -translate-x-1/2 opacity-0 group-hover/rune:opacity-100 transition-opacity duration-200 z-50"
                         >
                           <motion.span
                             animate={{ rotate: -360 }}
@@ -1237,14 +1276,10 @@ export default function OrbGatewayPage() {
                               repeat: Infinity,
                               ease: "linear",
                             }}
-                            className="inline-flex items-center gap-1 text-[8.5px] sm:text-[9px] font-sans font-bold px-1.5 py-0.5 rounded-full bg-black/90 border border-white/20 text-slate-200 whitespace-nowrap shadow-[0_2px_8px_rgba(0,0,0,0.9)] backdrop-blur-md"
+                            className="inline-flex items-center text-[10px] font-sans font-bold px-2 py-0.5 rounded-full bg-black/95 border border-white/30 text-white whitespace-nowrap shadow-[0_4px_12px_rgba(0,0,0,0.95)] backdrop-blur-md tracking-wider"
+                            style={{ color: app.color, borderColor: `${app.color}88` }}
                           >
-                            <span>{app.shortName}</span>
-                            {isAutoMatched && (
-                              <span className="text-[7.5px] text-amber-300 font-mono">
-                                {app.id === "prologue" ? "수다" : "자동감지"}
-                              </span>
-                            )}
+                            {app.shortName}
                           </motion.span>
                         </motion.div>
                       </button>
@@ -1292,9 +1327,9 @@ export default function OrbGatewayPage() {
                 : "inset 0 0 32px rgba(255, 255, 255, 0.25), inset -10px -10px 25px rgba(0, 0, 0, 0.9), 0 0 35px rgba(56, 189, 248, 0.3)",
             }}
             title={
-              concernQuery.trim()
-                ? "터치: 입력한 고민에 맞는 기법 두루마리 조제"
-                : "터치: 오늘의 기법 두루마리 열기"
+              isParchmentRolled
+                ? "터치: 치유 기법 두루마리 열기"
+                : "터치: 치유 기법 두루마리 닫기"
             }
           >
             {/* Swirling Stardust Particle Simulation Canvas */}
@@ -1355,11 +1390,11 @@ export default function OrbGatewayPage() {
                       <span>·</span>
                       {isParchmentRolled ? (
                         <span className="text-amber-300 font-sans font-bold animate-pulse">
-                          {concernQuery.trim() ? "터치 시 맞춤 조제 ✧" : "오늘의 두루마리 ✧"}
+                          {concernQuery.trim() ? "터치 시 두루마리 열기 ✧" : "오늘의 두루마리 ✧"}
                         </span>
                       ) : (
                         <span className="text-amber-200/90 font-sans">
-                          {activeConcern ? "맞춤 기법 발현 ✧" : "기법 발현 중 ✧"}
+                          {activeConcern ? "맞춤 기법 발현 ✧" : "두루마리 열림 ✧"}
                         </span>
                       )}
                     </div>
@@ -1436,7 +1471,7 @@ export default function OrbGatewayPage() {
                               {currentIndex === 0 ? "오늘의 두루마리" : "기법 두루마리"}
                             </span>
                             <span className="text-[9px] font-mono text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-400/40">
-                              {currentIndex === 0 ? "오늘의 추천" : `${currentIndex + 1} / ${filteredItems.length}`}
+                              치유 기법 두루마리
                             </span>
                           </div>
                           <p className="text-[11px] text-amber-200/85 truncate mt-0.5 font-serif">
@@ -1445,117 +1480,99 @@ export default function OrbGatewayPage() {
                         </div>
                       </div>
 
-                    {/* Unroll Button */}
+                      {/* Unroll Indicator Badge */}
+                      <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/20 border border-amber-400/45 text-amber-200 text-xs font-semibold shadow-sm shrink-0">
+                        <Scroll size={12} className="text-amber-300" />
+                        <span>펼치기</span>
+                      </div>
+                    </div>
+
+                    {/* Right Wooden Knob */}
+                    <div className="w-2.5 h-11 rounded-r-md bg-gradient-to-b from-amber-600 via-amber-400 to-amber-900 border-r border-amber-300/60 shadow-inner shrink-0" />
+                  </div>
+
+                  {/* 🪐 Prompt Banner & 7 Planetary Toss Targets when Rolled */}
+                  <div className="w-full mt-2.5 p-2.5 rounded-2xl bg-[#0a0f1d]/90 border border-cyan-500/35 backdrop-blur-xl shadow-xl">
+                    <div className="flex items-center justify-between mb-2 px-1">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-cyan-200">
+                        <Sparkles size={12} className="text-amber-300 animate-spin" />
+                        <span>행성 아이콘을 터치하여 두루마리를 토스하세요</span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-7 gap-1">
+                      {SEPTAGRAM_APPS.map((app) => {
+                        const isSelected = selectedRuneIds.includes(app.id);
+                        return (
+                          <button
+                            key={`rolled-parchment-toss-${app.id}`}
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleTossToApp(app);
+                            }}
+                            className={`flex flex-col items-center justify-center py-2 px-0.5 rounded-xl border transition-all active:scale-95 cursor-pointer touch-manipulation ${
+                              isSelected
+                                ? "bg-cyan-500/35 border-cyan-300 text-white shadow-[0_0_15px_rgba(6,182,212,0.8)] scale-105"
+                                : "bg-white/[0.04] hover:bg-white/[0.12] border-white/10 text-slate-300 hover:text-white"
+                            }`}
+                            style={{
+                              borderColor: isSelected ? app.color : undefined,
+                              boxShadow: isSelected ? `0 0 15px ${app.glowColor || app.color}` : undefined,
+                            }}
+                            title={`${app.shortName}에 토스`}
+                          >
+                            <PlanetIcon id={app.id} className="w-3.5 h-3.5" style={{ color: app.color }} />
+                            <span className="text-[9.5px] mt-1 font-bold truncate max-w-full text-center">
+                              {app.shortName}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 💊 40대 마음 처방약 맞춤 추천 카드 (탭하면 가이드 열람) */}
+                  {recommendedPrescription && (
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleToggleRoll();
+                        setActivePracticePrescription(recommendedPrescription);
+                        setIsPracticeModalOpen(true);
+                        triggerHaptic("whitehole");
+                        try { sacredAudio.playSingingBowl(528); } catch (_) {}
                       }}
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/45 text-amber-200 text-xs font-semibold active:scale-95 transition-all shadow-sm cursor-pointer shrink-0"
-                      title="양피지 다시 펼쳐보기"
+                      className="w-full p-3 rounded-2xl bg-gradient-to-r from-emerald-950/70 via-[#0d221a]/80 to-emerald-950/70 border border-emerald-500/45 shadow-lg select-none text-left active:scale-99 transition-all cursor-pointer hover:border-emerald-400/60 group"
+                      title="탭하여 처방 기법 전체 가이드 보기"
                     >
-                      <Scroll size={12} className="text-amber-300" />
-                      <span>펼치기</span>
-                    </button>
-                  </div>
-
-                  {/* Right Wooden Knob */}
-                  <div className="w-2.5 h-11 rounded-r-md bg-gradient-to-b from-amber-600 via-amber-400 to-amber-900 border-r border-amber-300/60 shadow-inner shrink-0" />
-                </div>
-
-                {/* 🪐 Prompt Banner & 7 Planetary Toss Targets when Rolled */}
-                <div className="w-full mt-2.5 p-2.5 rounded-2xl bg-[#0a0f1d]/90 border border-cyan-500/35 backdrop-blur-xl shadow-xl">
-                  <div className="flex items-center justify-between mb-2 px-1">
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-cyan-200">
-                      <Sparkles size={12} className="text-amber-300 animate-spin" />
-                      <span>행성 아이콘을 터치하여 두루마리를 토스하세요</span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-7 gap-1">
-                    {SEPTAGRAM_APPS.map((app) => {
-                      const isSelected = selectedRuneIds.includes(app.id);
-                      return (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePrevMemory();
-                          }}
-                          className="p-1.5 rounded-full hover:bg-amber-400/10 active:scale-90 text-amber-300/80 hover:text-amber-200 transition-all cursor-pointer"
-                          title="이전 기법 두루마리"
-                        >
-                          <ChevronLeft size={16} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleNextMemory();
-                          }}
-                          className="p-1.5 rounded-full hover:bg-amber-400/10 active:scale-90 text-amber-300/80 hover:text-amber-200 transition-all cursor-pointer"
-                          title="다음 기법 두루마리"
-                        >
-                          <ChevronRight size={16} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleToggleRoll();
-                          }}
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500/25 via-amber-400/35 to-amber-500/25 hover:from-amber-500/40 hover:to-amber-400/45 border border-amber-300/60 text-amber-100 text-xs font-serif font-bold active:scale-95 transition-all shadow-[0_0_12px_rgba(251,191,36,0.3)] cursor-pointer shrink-0"
-                          title="양피지 두루마리 펼치기"
-                        >
-                          <Scroll size={13} className="text-amber-300" />
-                          <span>펼치기</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* 💊 40대 마음 처방약 맞춤 추천 카드 (탭하면 가이드 열람) */}
-                    {recommendedPrescription && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActivePracticePrescription(recommendedPrescription);
-                          setIsPracticeModalOpen(true);
-                          triggerHaptic("whitehole");
-                          try { sacredAudio.playSingingBowl(528); } catch (_) {}
-                        }}
-                        className="w-full p-3 rounded-2xl bg-gradient-to-r from-emerald-950/70 via-[#0d221a]/80 to-emerald-950/70 border border-emerald-500/45 shadow-lg select-none text-left active:scale-99 transition-all cursor-pointer hover:border-emerald-400/60 group"
-                        title="탭하여 처방 기법 전체 가이드 보기"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="text-base shrink-0 p-1.5 rounded-xl bg-emerald-500/25 border border-emerald-400/50">
-                            {recommendedPrescription.icon}
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/30 text-emerald-200 font-mono">
-                                추천 상비약 제{recommendedPrescription.globalIndex}호
-                              </span>
-                              <span className="text-[9.5px] text-emerald-300/80 font-mono">
-                                {recommendedPrescription.timeEstimate}
-                              </span>
-                            </div>
-                            <h4 className="text-xs sm:text-[13px] font-bold text-emerald-50 truncate mt-0.5">
-                              {recommendedPrescription.title}
-                              <span className="text-[10.5px] font-normal text-emerald-300/80 ml-1">
-                                ({recommendedPrescription.subtitle})
-                              </span>
-                            </h4>
+                      <div className="flex items-center gap-2">
+                        <span className="text-base shrink-0 p-1.5 rounded-xl bg-emerald-500/25 border border-emerald-400/50">
+                          {recommendedPrescription.icon}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/30 text-emerald-200 font-mono">
+                              추천 기법 제{recommendedPrescription.globalIndex}호
+                            </span>
+                            <span className="text-[9.5px] text-emerald-300/80 font-mono">
+                              {recommendedPrescription.timeEstimate}
+                            </span>
                           </div>
-                          <Sparkles size={13} className="text-emerald-400/60 group-hover:text-emerald-300 shrink-0 transition-colors" />
+                          <h4 className="text-xs sm:text-[13px] font-bold text-emerald-50 truncate mt-0.5">
+                            {recommendedPrescription.title}
+                            <span className="text-[10.5px] font-normal text-emerald-300/80 ml-1">
+                              ({recommendedPrescription.subtitle})
+                            </span>
+                          </h4>
                         </div>
-                        <p className="text-[11.5px] text-emerald-100/85 mt-2 pl-2.5 border-l-2 border-emerald-400/45 leading-relaxed text-left line-clamp-2">
-                          "{recommendedPrescription.affirmation}"
-                        </p>
-                      </button>
-                    )}
-                  </div>
+                        <Sparkles size={13} className="text-emerald-400/60 group-hover:text-emerald-300 shrink-0 transition-colors" />
+                      </div>
+                      <p className="text-[11.5px] text-emerald-100/85 mt-2 pl-2.5 border-l-2 border-emerald-400/45 leading-relaxed text-left line-clamp-2">
+                        "{recommendedPrescription.affirmation}"
+                      </p>
+                    </button>
+                  )}
                 </motion.div>
               ) : (
                 /* 📜 [상태 2] 두루마리가 펼쳐졌을 때: 대화창은 완전히 숨겨지고, 진짜 고서 두루마리 본문만 위엄 있게 펼쳐짐! */
@@ -1612,35 +1629,15 @@ export default function OrbGatewayPage() {
                           className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/35 text-amber-200 text-xs font-medium active:scale-95 transition-all cursor-pointer shadow-sm"
                         />
 
-                        {/* 📜 돌돌 말기 Button in Header (터치 시 다시 대화창이 있는 말린 두루마리로 복귀) */}
+                        {/* 📜 두루마리 말기 Button in Header */}
                         <button
                           type="button"
                           onClick={handleToggleRoll}
                           className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-500/30 to-amber-600/30 hover:from-amber-500/45 hover:to-amber-600/45 border border-amber-400/50 text-amber-100 text-xs font-bold active:scale-95 transition-all shadow-[0_0_12px_rgba(251,191,36,0.3)] cursor-pointer"
-                          title="양피지를 두루마리로 돌돌 말아 토스 준비"
+                          title="양피지를 두루마리로 돌돌 말기"
                         >
                           <Scroll size={12} className="text-amber-300" />
-                          <span>돌돌 말기</span>
-                        </button>
-
-                        {/* Previous Memory */}
-                        <button
-                          type="button"
-                          onClick={handlePrevMemory}
-                          className="p-1 rounded-full hover:bg-white/10 active:scale-90 text-amber-300 transition-all cursor-pointer"
-                          title="이전 영시"
-                        >
-                          <ChevronLeft size={16} />
-                        </button>
-
-                        {/* Next Memory */}
-                        <button
-                          type="button"
-                          onClick={handleNextMemory}
-                          className="p-1 rounded-full hover:bg-white/10 active:scale-90 text-amber-300 transition-all cursor-pointer"
-                          title="다음 영시"
-                        >
-                          <ChevronRight size={16} />
+                          <span>두루마리 말기</span>
                         </button>
                       </div>
                     </div>
@@ -1710,6 +1707,20 @@ export default function OrbGatewayPage() {
                       </div>
                     </div>
                   </div>
+
+                    {/* 📜 Bottom Turned Wooden Roller Rod with Gilded Brass End-Caps */}
+                    <div className="w-full flex items-center justify-center mt-[-6px] z-20 relative select-none">
+                      <div className="w-3 h-5 rounded-l-md bg-gradient-to-r from-[#92400e] to-[#d97706] border border-amber-300 shadow-md" />
+                      <div className="flex-1 h-3.5 bg-gradient-to-b from-[#5c2e0b] via-[#8c4b1a] via-[#5c2e0b] to-[#3a1d07] rounded-full border-y border-amber-500/60 shadow-[0_2px_8px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.3)]" />
+                      <div className="w-3 h-5 rounded-r-md bg-gradient-to-l from-[#92400e] to-[#d97706] border border-amber-300 shadow-md" />
+                    </div>
+                  </motion.div>
+                )
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      </main>
 
       {/* 🌿 Minimal Bottom Guidance Banner */}
       <footer className="relative z-40 w-full max-w-lg px-4 pb-[calc(var(--sab)+1.5rem)] flex flex-col items-center shrink-0 text-center select-none">
@@ -1944,6 +1955,21 @@ export default function OrbGatewayPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* 🧘 CALM 40대 마음 기법 전체 가이드 럭셔리 실천 스튜디오 모달 */}
+      <CalmTechniquePracticeModal
+        isOpen={isPracticeModalOpen}
+        onClose={() => setIsPracticeModalOpen(false)}
+        prescription={activePracticePrescription || recommendedPrescription}
+        sourceParchmentTitle={currentMemory?.title}
+        onNavigateToLucy={(prompt) => {
+          sessionStorage.setItem("prism_toss_payload", JSON.stringify({ message: prompt, source: "key" }));
+          navigate("/lucy");
+        }}
+        onNavigateToHeal={() => {
+          navigate("/heal");
+        }}
+      />
     </div>
   );
 }
