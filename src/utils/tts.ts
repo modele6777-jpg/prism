@@ -522,7 +522,7 @@ export const playTTS = async (
 export const playTTSInChunks = async (
   text: string,
   voice?: string,
-  maxChunkLength = 420,
+  maxChunkLength = 150,
   emotion?: string,
 ): Promise<void> => {
   // If already speaking or loading this exact sequence, click again stops playback
@@ -544,7 +544,7 @@ export const playTTSInChunks = async (
     if (!s) continue;
 
     // Merge short punctuation or solitary numbers into surrounding text
-    const hasMeaningfulText = /[가-힣a-zA-Z0-9]{2,}/.test(s);
+    const hasMeaningfulText = /[가-힣a-zA-Z0-9]/.test(s);
     if (!hasMeaningfulText) {
       currentChunk = currentChunk ? `${currentChunk} ${s}` : s;
       continue;
@@ -608,9 +608,12 @@ export const playTTSInChunks = async (
       primeTTSAudioElement();
     } catch (_) {}
 
-    // Pre-fetch the very next upcoming chunk ahead of playback
+    // Pre-fetch the upcoming 2 chunks ahead of playback
     if (chunks.length > 1) {
       prefetchTTS(chunks[1], voice, emotion).catch(() => {});
+    }
+    if (chunks.length > 2) {
+      prefetchTTS(chunks[2], voice, emotion).catch(() => {});
     }
 
     for (let i = 0; i < chunks.length; i++) {
@@ -618,9 +621,12 @@ export const playTTSInChunks = async (
         break;
       }
 
-      // Proactively pre-fetch next upcoming chunk in advance
+      // Proactively pre-fetch next upcoming 2 chunks in advance
       if (i + 1 < chunks.length) {
         prefetchTTS(chunks[i + 1], voice, emotion).catch(() => {});
+      }
+      if (i + 2 < chunks.length) {
+        prefetchTTS(chunks[i + 2], voice, emotion).catch(() => {});
       }
 
       const isLastChunk = i === chunks.length - 1;

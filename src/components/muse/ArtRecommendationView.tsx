@@ -21,6 +21,7 @@ import { ImageOutputActions, downloadImage } from "@/components/ImageOutputActio
 import { auth, db, collection, addDoc, serverTimestamp, query, orderBy, limit, getDocs } from "@/lib/firebase";
 import { getTodayDateKey, getDateSeed, isSameDayString, pickDailySeededItem } from "@/lib/dailyCache";
 import { MuseDocentAudio } from "@/components/muse/MuseDocentAudio";
+import { TTSButton } from "@/components/TTSButton";
 import { buildPoemGoogleArtsAndCultureSearchUrl, buildArtworkGoogleArtsAndCultureSearchUrl, buildPoemFullTextSearchQuery, buildPoemGoogleAiSearchUrl } from "@/utils/artSearchQuery";
 import { lookupCatalogDailyArtUrl, resolveArtworkDailyArtUrl, MUSE_ART_CATALOG } from "@/lib/museDailyArt";
 import { MuseSongYouTubePlayer } from "@/components/muse/MuseSongYouTubePlayer";
@@ -2089,7 +2090,11 @@ export function ArtRecommendationView() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-
+                    <TTSButton
+                      text={`${recommendation.famousPoem.poet}의 시, ${recommendation.famousPoem.title}.\n\n${recommendation.famousPoem.excerpt}`}
+                      voice="Kore"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/35 text-emerald-200 text-[11px] font-bold active:scale-95 transition-all shadow-sm cursor-pointer"
+                    />
                     <button
                       type="button"
                       onClick={() => setIsPoemLibraryOpen(true)}

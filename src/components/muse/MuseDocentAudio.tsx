@@ -217,9 +217,9 @@ export function MuseDocentAudio({ artwork }: MuseDocentAudioProps) {
     setPhase("speaking");
 
     try {
-      // 긴 도슨트 전체를 파이프라인 프리페칭 스트리밍(playTTSInChunks)으로 재생하여
-      // 브라우저/모바일 절전 및 중간 끊김 현상을 방지합니다.
-      await playTTSInChunks(narrationText, "Kore", 420, "차분");
+      // 긴 도슨트 전체를 자연스러운 문장 단위(150자) 파이프라인 프리페칭 스트리밍으로 재생하여
+      // 브라우저/모바일 절전 및 중간 끊김 현상을 원천 방지합니다.
+      await playTTSInChunks(narrationText, "Kore", 150, "차분");
       if (playbackRunRef.current === playbackRun && !abortRef.current && !pausedRef.current) {
         setPhase("done");
       }

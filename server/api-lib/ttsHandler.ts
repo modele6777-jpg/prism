@@ -116,7 +116,7 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
       try {
         await Promise.race([
           tts.ttsPromise(safeText, tempPath),
-          new Promise((_, reject) => setTimeout(() => reject(new Error("EdgeTTS timeout (15000ms)")), 15000)),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("EdgeTTS timeout (20000ms)")), 20000)),
         ]);
 
         const buf = await fsPromises.readFile(tempPath);

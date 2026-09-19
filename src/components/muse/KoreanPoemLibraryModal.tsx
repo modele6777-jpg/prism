@@ -20,6 +20,7 @@ import {
   type KoreanPoemTheme,
 } from "@/lib/koreanFamousPoems";
 import { buildPoemGoogleAiSearchUrl, buildPoemGoogleArtsAndCultureSearchUrl } from "@/utils/artSearchQuery";
+import { TTSButton } from "@/components/TTSButton";
 
 interface KoreanPoemLibraryModalProps {
   isOpen: boolean;
@@ -234,16 +235,23 @@ export const KoreanPoemLibraryModal: React.FC<KoreanPoemLibraryModalProps> = ({
                       </h2>
                     </div>
 
-                    <button
-                      onClick={() => {
-                        onSelectPoem(activePoem);
-                        onClose();
-                      }}
-                      className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black font-bold text-xs md:text-sm flex items-center gap-2 shadow-lg shadow-emerald-500/20 active:scale-95 transition-all"
-                    >
-                      <Sparkles size={16} />
-                      오늘의 명시로 지정하기
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <TTSButton
+                        text={`${activePoem.poet}의 시, ${activePoem.title}.\n\n${activePoem.excerpt}`}
+                        voice="Kore"
+                        className="px-3 py-2 rounded-2xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/35 text-emerald-200 text-xs font-bold active:scale-95 transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+                      />
+                      <button
+                        onClick={() => {
+                          onSelectPoem(activePoem);
+                          onClose();
+                        }}
+                        className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black font-bold text-xs md:text-sm flex items-center gap-2 shadow-lg shadow-emerald-500/20 active:scale-95 transition-all cursor-pointer"
+                      >
+                        <Sparkles size={16} />
+                        오늘의 명시로 지정하기
+                      </button>
+                    </div>
                   </div>
 
                   {/* Poet info */}

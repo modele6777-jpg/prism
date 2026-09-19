@@ -59,7 +59,7 @@ export const TTSButton: React.FC<TTSButtonProps> = ({ text, voice = 'Kore', clas
     // If the text is long (e.g. Tarot results, comprehensive guide, multi-sentence reading),
     // stream smoothly in chunked sentences to prevent browser cutoffs, skips, and API timeouts.
     if (cleanText.length > 130 || cleanText.includes('\n')) {
-      playTTSInChunks(cleanText, voice);
+      playTTSInChunks(cleanText, voice, 140);
     } else {
       playTTS(cleanText, voice);
     }

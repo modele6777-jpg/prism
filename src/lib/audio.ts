@@ -258,13 +258,25 @@ export async function playRawPCM(base64: string, sampleRate: number = 24000): Pr
     activePCMSource = source;
     
     return new Promise((resolve) => {
-      source.onended = () => {
+      let settled = false;
+      const onEnded = () => {
+        if (settled) return;
+        settled = true;
         if (activePCMSource === source) {
           activePCMSource = null;
         }
-        // Do not close the shared context, just resolve
         resolve();
       };
+      source.onended = onEnded;
+
+      // Safety timeout: If browser drops onended event, resolve cleanly after buffer duration
+      const durationMs = ((float32Array.length / sampleRate) * 1000) + 250;
+      setTimeout(() => {
+        if (!settled) {
+          onEnded();
+        }
+      }, durationMs);
+
       source.start();
     });
   } catch (error) {
@@ -354,12 +366,25 @@ export async function playCompressedAudio(base64: string, playbackRate: number =
     activePCMSource = source;
 
     return new Promise((resolve) => {
-      source.onended = () => {
+      let settled = false;
+      const onEnded = () => {
+        if (settled) return;
+        settled = true;
         if (activePCMSource === source) {
           activePCMSource = null;
         }
         resolve();
       };
+      source.onended = onEnded;
+
+      // Safety timeout: If browser drops onended event, resolve cleanly after buffer duration
+      const durationMs = (((decodedBuffer.duration || 1) * 1000) / (playbackRate || 1.0)) + 250;
+      setTimeout(() => {
+        if (!settled) {
+          onEnded();
+        }
+      }, durationMs);
+
       source.start(0);
     });
   } catch (error) {
