@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Send, Trash2, Search, X, ChevronDown, Check, Volume2, VolumeX, Square,
   Download, User, Sparkles, Sun, TreeDeciduous, Activity, Bird, Music, Zap, Flame, Compass,
-  Loader2, Copy, RefreshCw, Camera, MicOff, Mic, BookOpen, BookMarked
+  Loader2, Copy, RefreshCw, Camera, MicOff, Mic, BookOpen, BookMarked, KeyRound
 } from 'lucide-react';
 import { useApp, PersonaType } from '@/contexts/AppContext';
 import { useLocation } from 'wouter';
@@ -14,6 +14,7 @@ import { getLocalDateKey } from '@/lib/rebibleStorage';
 import ReactMarkdown from 'react-markdown';
 import { LucyProTypewriter } from '@/components/LucyProTypewriter';
 import { ChatInsightsBoardModal } from '@/components/ChatInsightsBoardModal';
+import { KeyRolledScrollModal } from '@/components/KeyRolledScrollModal';
 import { LucyAuraLoader } from '@/components/LucyAuraLoader';
 import remarkGfm from 'remark-gfm';
 import { safeSessionStorage } from '@/utils/safeStorage';
@@ -465,7 +466,7 @@ export default function LucyStandalonePage() {
   const [isRecording, setIsRecording] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isInsightsBoardOpen, setIsInsightsBoardOpen] = useState(false);
+  const [isKeyScrollModalOpen, setIsKeyScrollModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [resetToast, setResetToast] = useState<string | null>(null);
@@ -1181,8 +1182,8 @@ export default function LucyStandalonePage() {
     return (
       <LucyAuraLoader
         fullScreen
-        message="루시와 깊은 교감 조율 중..."
-        subMessage="CONSCIOUSNESS SYNERGY & INTUITION"
+        message="루시와 행운의 깊은 교감 조율 중..."
+        subMessage="FOUR-LEAF CLOVER · FORTUNE & INTUITION"
       />
     );
   }
@@ -1246,17 +1247,17 @@ export default function LucyStandalonePage() {
             </div>
           </div>
 
-          {/* Right Action Tools: 1. 인사이트 요약 보드 -> 2. 검색 -> 3. 전체듣기 -> 4. 초기화 */}
+          {/* Right Action Tools: 1. Key 40기법 맞춤 두루마리 -> 2. 검색 -> 3. 전체듣기 -> 4. 초기화 */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            {/* 1. 인사이트 요약 보드 (Insights Digest Board) */}
+            {/* 1. 🗝️ Key 모양 버튼: 루시 대화 고민 맞춤 40기법 두루마리 직통 발현 */}
             <button
-              onClick={() => setIsInsightsBoardOpen(true)}
-              className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-purple-500/15 hover:from-amber-500/25 hover:to-purple-500/25 border border-amber-400/40 text-amber-900 font-bold text-xs shadow-xs transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
-              title="대화 기록 핵심 통찰 및 인사이트 요약 보드 열기"
-              aria-label="인사이트 요약 보드"
+              onClick={() => setIsKeyScrollModalOpen(true)}
+              className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 via-yellow-500/15 to-amber-600/20 hover:from-amber-500/30 hover:to-amber-600/30 border border-amber-500/50 text-amber-900 font-bold text-xs shadow-xs transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+              title="루시 대화 고민 맞춤 40기법 Key 신탁 두루마리 조제"
+              aria-label="Key 두루마리"
             >
-              <Sparkles size={14} className="text-amber-600 animate-pulse" />
-              <span className="hidden xs:inline">인사이트 보드</span>
+              <KeyRound size={14} className="text-amber-700 animate-pulse" />
+              <span className="font-serif font-bold tracking-wider">Key</span>
             </button>
 
             {/* 2. 검색 (Search Toggle) */}
@@ -1564,11 +1565,14 @@ export default function LucyStandalonePage() {
           })}
 
           {isLucyGenerating && (
-            <div className="flex items-center gap-2.5 p-3.5 bg-white border border-slate-200 rounded-2xl w-fit shadow-xs animate-pulse">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-bounce" />
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-bounce delay-100" />
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-bounce delay-200" />
-              <span className="text-xs sm:text-sm text-amber-900 font-bold ml-1">
+            <div className="flex items-center gap-2.5 p-3.5 bg-white/95 border border-emerald-200/80 rounded-2xl w-fit shadow-xs animate-pulse">
+              <span className="text-base select-none animate-bounce">🍀</span>
+              <div className="flex gap-1 items-center">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-bounce" />
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-bounce delay-100" />
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-bounce delay-200" />
+              </div>
+              <span className="text-xs sm:text-sm text-emerald-950 font-bold ml-1">
                 Lucy가 답변을 작성하고 있습니다...
               </span>
             </div>
@@ -1955,15 +1959,15 @@ export default function LucyStandalonePage() {
         )}
       </AnimatePresence>
 
-      {/* Chat Insights Board Modal */}
-      <ChatInsightsBoardModal
-        isOpen={isInsightsBoardOpen}
-        onClose={() => setIsInsightsBoardOpen(false)}
-        currentMessages={lucyMessages}
-        userName={userDisplayName}
-        onConsultInsight={(prompt) => {
-          setIsInsightsBoardOpen(false);
-          handleSend(prompt);
+      {/* 🗝️ Key 40기법 맞춤 두루마리 모달 */}
+      <KeyRolledScrollModal
+        isOpen={isKeyScrollModalOpen}
+        onClose={() => setIsKeyScrollModalOpen(false)}
+        messages={lucyMessages}
+        onNavigateToKey={() => {
+          setIsKeyScrollModalOpen(false);
+          stopTTS();
+          navigate('/key');
         }}
       />
 

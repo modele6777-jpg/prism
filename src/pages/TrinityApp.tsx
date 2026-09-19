@@ -108,6 +108,7 @@ import {
 } from "@/lib/dailyCache";
 import { useScrollToTopOnChange } from "@/hooks/useScrollToTopOnChange";
 import { resetAppScroll } from "@/utils/scrollToTop";
+import { LucKeyLogoText } from "@/components/LucKeyLogoText";
 import { useDailyOracleFirstVisit } from "@/hooks/useDailyOracleFirstVisit";
 import {
   buildOracleDeepInsightSystemContext,
@@ -1736,13 +1737,26 @@ function playDailyCardChimeAsync() {
 
   const summarySpeechText = useMemo(() => {
     if (conciseSummaryBullets.length === 0) return "";
-    return conciseSummaryBullets
+    const intro = "타로 리딩의 핵심 3줄 요약입니다.";
+    const bullets = conciseSummaryBullets
       .map((b) => {
         const speech = b.replace(/^\[([^\]]+)\]\s*/, "$1. ");
         return speech.trim().replace(/[.!?\s]+$/, '') + '.';
       })
       .join(' ');
+    return `${intro} ${bullets}`;
   }, [conciseSummaryBullets]);
+
+  // 타로 결과 낭독 시 핵심 요약은 읽지 않고 본문 상세 리딩만 깨끗하게 낭독
+  const fullReadingSpeechText = useMemo(() => {
+    if (!tarotResult) return "";
+    const cleanBody =
+      displayTarotResult ||
+      tarotResult
+        .replace(/(?:\n|^)(?:\[핵심\s*3줄\s*요약\]|###\s*.*핵심\s*3줄\s*요약|###\s*.*핵심\s*요약|\[핵심\s*요약\])[\s\S]*$/i, "")
+        .trim();
+    return cleanBody;
+  }, [tarotResult, displayTarotResult]);
 
   const isSummaryTTSActive = useMemo(() => {
     if (!isTTSActive || !summarySpeechText) return false;
@@ -2882,7 +2896,7 @@ function playDailyCardChimeAsync() {
                </div>
             </div>
             <div className="cursor-pointer flex flex-col justify-center select-none" onClick={() => navigate('/')}>
-               <h1 className="text-lg md:text-xl font-display font-black text-white uppercase tracking-tighter leading-tight">LUCKEY</h1>
+               <h1><LucKeyLogoText /></h1>
                <p className="text-[8px] md:text-[9px] text-white/40 uppercase tracking-widest font-bold font-sans leading-none mt-0.5">TRINITY • CELESTIAL ORACLE</p>
             </div>
          </div>

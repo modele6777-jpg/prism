@@ -57,9 +57,9 @@ export function LucyKeyDigestView({
 
   const handleCopy = () => {
     if (!digest) return;
-    const text = `[LucKey: 루시 대화 3대 핵심 키포인트]\n\n🎯 핵심 주제: ${digest.coreTheme}\n\n${digest.keyPoints.join(
+    const text = `[LucKey: 루시 대화 3대 핵심 키포인트]\n\n[핵심 주제] ${digest.coreTheme}\n\n${digest.keyPoints.join(
       '\n'
-    )}\n\n⚡ 오늘 1가지 실천 액션: ${digest.microAction}\n\n🏷️ ${digest.mindKeywords.join(' ')}`;
+    )}\n\n[오늘 1가지 실천 액션] ${digest.microAction}\n\n[키워드] ${digest.mindKeywords.join(' ')}`;
 
     navigator.clipboard.writeText(text).catch(() => {});
     setIsCopied(true);

@@ -42,6 +42,7 @@ import { resetAppScroll } from '@/utils/scrollToTop';
 import { parseSuggestions, SUGGESTIONS_SYSTEM_SUFFIX } from '@/utils/suggestions';
 import { getPendingPrismToss, clearPrismToss } from '@/lib/prismToss';
 import { getContextAwarePrompts } from '@/utils/dynamicContextSuggestions';
+import { LucKeyLogoText } from '@/components/LucKeyLogoText';
 
 const THEME_COLOR = 'oklch(0.72 0.18 55)';
 const BG = 'oklch(0.10 0.02 55)';
@@ -1288,7 +1289,7 @@ export default function OrangeApp() {
                </div>
             </div>
             <div className="cursor-pointer flex flex-col justify-center select-none" onClick={() => navigate('/')}>
-               <h1 className="text-lg md:text-xl font-display font-black text-white uppercase tracking-tighter leading-tight">LUCKEY</h1>
+               <h1><LucKeyLogoText /></h1>
                <p className="text-[8px] md:text-[9px] text-white/40 uppercase tracking-widest font-bold font-sans leading-none mt-0.5">ORANGE • IDEA SANCTUARY</p>
             </div>
          </div>

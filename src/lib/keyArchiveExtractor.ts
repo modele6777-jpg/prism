@@ -10,6 +10,9 @@ import { loadAllPermanentMemories } from './chatMemoryArchive';
 import { getOrbScryingHistory } from './prismOmniSync';
 import { getTodayDateKey } from './dailyCache';
 import { CALM_PRESCRIPTIONS, getDailyRecommendedPrescription } from './calmPharmacopeia';
+import { get40TechniqueScrolls, searchPrescriptionsByConcern } from './calmTechniqueCycle';
+
+export { get40TechniqueScrolls, searchPrescriptionsByConcern };
 
 export type KeyArchiveCategory = 'all' | 'pharmacy' | 'lucy' | 'tarot' | 'saju' | 'healing' | 'muse' | 'oracle';
 
@@ -75,9 +78,18 @@ function tryParse(key: string): any {
 }
 
 /**
- * LucKey 전역 활동 및 루시와의 대화에서 키포인트 아카이브 추출
+ * Key (크리스탈 오브) 전용 두루마리 추출 엔진:
+ * 루시 대화 통찰 대신 오직 40개의 기법 두루마리만 제공하며,
+ * 매일 하루 한 번 40일 셔플 주기로 '오늘의 두루마리'를 선두에 추천합니다.
  */
 export function extractAllKeyArchiveItems(): KeyArchiveItem[] {
+  return get40TechniqueScrolls();
+}
+
+/**
+ * (선택적) 전역 통합 아카이브가 필요할 경우를 위한 백업 추출기
+ */
+export function extractLegacyAllKeyArchiveItems(): KeyArchiveItem[] {
   const items: KeyArchiveItem[] = [];
   const todayKey = getTodayDateKey();
 
@@ -100,7 +112,7 @@ export function extractAllKeyArchiveItems(): KeyArchiveItem[] {
       timeStr: `약효 ${dailyPill.timeEstimate}`,
       timestamp: Date.now() + 100000, // 최상단 노출
       sourceLabel: `CALM 40대 상비약 (제${dailyPill.globalIndex}호)`,
-      actionGuidance: `[1분 복약 실천] ${dailyPill.prescriptionGuide}`,
+      actionGuidance: `[처방 가이드] ${dailyPill.prescriptionGuide}`,
       tags: ['#오늘의처방약', `#${dailyPill.tag}`, '#CALM마음연습'],
     });
 

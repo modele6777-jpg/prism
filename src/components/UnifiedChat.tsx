@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { 
   X, Send, Sparkles, TreeDeciduous, Moon, Activity, Bird, Music, Trash2, ChevronRight, ChevronLeft, ChevronDown, HelpCircle, AlertCircle,
-  Volume2, VolumeX, Loader2, Sun, Camera, Paperclip, Copy, Check, FileText, FileCode
+  Volume2, VolumeX, Loader2, Sun, Camera, Paperclip, Copy, Check, FileText, FileCode, KeyRound
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useApp, PersonaType } from "../contexts/AppContext";
@@ -13,6 +13,7 @@ import { getContextAwarePrompts } from "../utils/dynamicContextSuggestions";
 import { calculateDetailedSaju } from "../lib/sajuAnalysis";
 import { cleanUserMessageDisplay } from "../utils/cleanMessage";
 import { ChatInsightsBoardModal } from "./ChatInsightsBoardModal";
+import { KeyRolledScrollModal } from "./KeyRolledScrollModal";
 import { saveLucyChatSummary } from "../lib/prismOmniSync";
 import { invokeLLM } from "../lib/ai";
 
@@ -319,7 +320,7 @@ export function UnifiedChat() {
 
   const [input, setInput] = useState("");
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
-  const [isInsightsBoardOpen, setIsInsightsBoardOpen] = useState(false);
+  const [isKeyScrollModalOpen, setIsKeyScrollModalOpen] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [summaryDone, setSummaryDone] = useState(false);
 
@@ -882,16 +883,17 @@ export function UnifiedChat() {
                 </div>
               </div>
 
-              {/* Actions: Insights Board, Standalone Install, Play All TTS, Close */}
+              {/* Actions: Key 40-Technique Scroll, Standalone Install, Play All TTS, Close */}
               <div className="flex items-center gap-2 shrink-0">
-                {/* 인사이트 요약 보드 버튼 */}
+                {/* 🗝️ Key 모양 버튼: 고민 맞춤 40기법 두루마리 직통 발현 */}
                 <button
-                  onClick={() => setIsInsightsBoardOpen(true)}
-                  className="px-2.5 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-200 font-bold text-[11px] sm:text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shrink-0"
-                  title="대화 기록 핵심 통찰 및 인사이트 요약 보드"
+                  type="button"
+                  onClick={() => setIsKeyScrollModalOpen(true)}
+                  className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/25 to-yellow-500/25 hover:from-amber-500/35 hover:to-yellow-500/35 border border-amber-400/50 text-amber-200 font-bold text-[11px] sm:text-xs shadow-[0_0_15px_rgba(251,191,36,0.2)] transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shrink-0"
+                  title="루시 대화 고민 맞춤 40기법 Key 신탁 두루마리 조제"
                 >
-                  <Sparkles size={13} className="text-purple-300 animate-pulse" />
-                  <span className="hidden sm:inline">인사이트</span>
+                  <KeyRound size={13} className="text-amber-300 animate-pulse" />
+                  <span className="font-serif tracking-wider font-bold">Key</span>
                 </button>
 
                 {/* 대화 요약 버튼 (루시→오브 싱크) */}
@@ -1085,13 +1087,14 @@ export function UnifiedChat() {
 
               {currentGenerating && (
                 <div className="flex justify-start items-center gap-2.5">
-                  <div className="bg-white/[0.02] border border-white/5 text-white/40 text-[11px] px-4 py-2.5 rounded-3xl rounded-bl-none flex items-center gap-2">
+                  <div className="bg-emerald-950/20 border border-emerald-500/20 text-emerald-200/80 text-[11px] px-4 py-2.5 rounded-3xl rounded-bl-none flex items-center gap-2 shadow-sm">
+                    <span className="text-xs select-none animate-bounce">🍀</span>
                     <div className="flex gap-1 items-center shrink-0">
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: "0ms" }} />
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: "150ms" }} />
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: "300ms" }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: "0ms" }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: "150ms" }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: "300ms" }} />
                     </div>
-                    <span className="text-[10px] font-semibold text-white/50 tracking-wider">루시가 생각하고 있어...</span>
+                    <span className="text-[10px] font-semibold text-emerald-300/80 tracking-wider">루시가 생각하고 있어...</span>
                   </div>
                 </div>
               )}
@@ -1320,15 +1323,16 @@ export function UnifiedChat() {
               )}
             </AnimatePresence>
 
-            {/* Chat Insights Summary Board Modal */}
-            <ChatInsightsBoardModal
-              isOpen={isInsightsBoardOpen}
-              onClose={() => setIsInsightsBoardOpen(false)}
-              currentMessages={currentMessages}
-              userName={userDisplayName}
-              onConsultInsight={(prompt) => {
-                setIsInsightsBoardOpen(false);
-                sendUnifiedMessage(prompt, activePersona);
+            {/* 🗝️ Key 40기법 맞춤 두루마리 모달 */}
+            <KeyRolledScrollModal
+              isOpen={isKeyScrollModalOpen}
+              onClose={() => setIsKeyScrollModalOpen(false)}
+              messages={currentMessages}
+              onNavigateToKey={() => {
+                setIsKeyScrollModalOpen(false);
+                setIsChatOpen(false);
+                stopTTS();
+                navigate('/key');
               }}
             />
           </motion.div>

@@ -108,6 +108,7 @@ import { DailyOracleLoadingOverlay } from "@/components/DailyOracleLoadingOverla
 import { z } from "zod";
 import { Streamdown } from "@/components/Streamdown";
 import { useBinauralBeat } from "@/hooks/useBinauralBeat";
+import { LucKeyLogoText } from "@/components/LucKeyLogoText";
 import { ArtistWayBible } from "@/components/muse/ArtistWayBible";
 import { ArtistWayHandbookModal } from "@/components/muse/ArtistWayHandbookModal";
 import { RoleModelModal } from "@/components/muse/RoleModelModal";
@@ -2200,8 +2201,8 @@ ${concernContext ? `사용자가 들려준 현재 고민과 상황에 100% 공�
             </div>
           </div>
           <div className="cursor-pointer flex flex-col justify-center select-none" onClick={() => navigate('/')}>
-            <h1 className="text-lg md:text-xl font-display font-black text-white uppercase tracking-tighter leading-tight">
-              PRISM
+            <h1>
+              <LucKeyLogoText />
             </h1>
             <p className="text-[8px] md:text-[9px] text-white/40 uppercase tracking-widest font-bold font-sans leading-none mt-0.5">
               MUSE • CREATIVE SANCTUARY

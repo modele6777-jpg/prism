@@ -294,8 +294,8 @@ function AppContent() {
       return (
         <LucyAuraLoader
           fullScreen
-          message="루시와 깊은 교감 조율 중..."
-          subMessage="CONSCIOUSNESS SYNERGY & INTUITION"
+          message="루시와 행운의 깊은 교감 조율 중..."
+          subMessage="FOUR-LEAF CLOVER · FORTUNE & INTUITION"
         />
       );
     }

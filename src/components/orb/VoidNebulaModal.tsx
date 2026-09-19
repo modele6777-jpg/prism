@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Sparkles, Flame, Send, ArrowRight, Check, History } from 'lucide-react';
+import { X, Sparkles, Flame, Send, ArrowRight, Check, History, CircleDot, Sun, Disc } from 'lucide-react';
 import { saveCosmicRecord, getCosmicRecords, type CosmicWishRecord } from '@/lib/orbRituals';
 import { triggerHaptic } from '@/lib/omniWarp/omniWarpHaptics';
 import { sacredAudio } from '@/lib/omniWarp/sacredAudio';
@@ -169,8 +169,8 @@ export function VoidNebulaModal({
                     key={item.id}
                     className="p-2.5 rounded-xl bg-white/5 border border-white/10 flex items-start gap-2"
                   >
-                    <span className="text-sm shrink-0 mt-0.5">
-                      {item.type === 'void_purge' ? '🌑' : '✨'}
+                    <span className="shrink-0 mt-0.5 text-slate-300">
+                      {item.type === 'void_purge' ? <CircleDot size={14} className="text-rose-400" /> : <Sparkles size={14} className="text-amber-300" />}
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="text-xs text-slate-200 break-words">{item.text}</p>
@@ -196,11 +196,11 @@ export function VoidNebulaModal({
                 <div
                   className={`w-20 h-20 rounded-full flex items-center justify-center text-3xl shadow-2xl border ${
                     completedType === 'void'
-                      ? 'bg-black border-rose-500/50 shadow-[0_0_35px_rgba(244,63,94,0.6)]'
-                      : 'bg-amber-400/20 border-amber-400 shadow-[0_0_35px_rgba(251,191,36,0.6)]'
+                      ? 'bg-black border-rose-500/50 shadow-[0_0_35px_rgba(244,63,94,0.6)] text-rose-400'
+                      : 'bg-amber-400/20 border-amber-400 shadow-[0_0_35px_rgba(251,191,36,0.6)] text-amber-300'
                   }`}
                 >
-                  {completedType === 'void' ? '🕳️' : '🌟'}
+                  {completedType === 'void' ? <CircleDot size={36} /> : <Sparkles size={36} />}
                 </div>
 
                 <div>
@@ -260,14 +260,14 @@ export function VoidNebulaModal({
                           : `0 0 35px rgba(251,191,36,0.4), inset 0 0 25px rgba(251,191,36,0.5)`,
                     }}
                   >
-                    <span className="text-2xl select-none pointer-events-none">
-                      {isProcessing
-                        ? activeTab === 'void'
-                          ? '🌀'
-                          : '💫'
-                        : activeTab === 'void'
-                        ? '🕳️'
-                        : '✨'}
+                    <span className="select-none pointer-events-none">
+                      {isProcessing ? (
+                        <Disc size={30} className={`animate-spin ${activeTab === 'void' ? 'text-rose-400' : 'text-amber-300'}`} />
+                      ) : activeTab === 'void' ? (
+                        <CircleDot size={28} className="text-rose-400" />
+                      ) : (
+                        <Sparkles size={28} className="text-amber-300" />
+                      )}
                     </span>
                   </div>
 
