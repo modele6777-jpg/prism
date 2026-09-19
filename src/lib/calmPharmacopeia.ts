@@ -3853,11 +3853,19 @@ export function recommendPrescriptionForParchment(parchment?: {
 }): CalmPrescription {
   if (!parchment) return CALM_PRESCRIPTIONS[0];
 
-  // 1. 이미 특정 처방약 ID가 부여된 경우 (예: 'pharmacy-14')
+  // 1. 이미 특정 처방약 ID가 부여된 경우 (예: 'pharmacy-14', 'technique-today-14', 'technique-scroll-14')
   if (parchment.id?.startsWith('pharmacy-')) {
     const num = parseInt(parchment.id.replace('pharmacy-', ''), 10);
     const found = getCalmPrescription(num);
     if (found) return found;
+  }
+  if (parchment.id?.startsWith('technique-')) {
+    const match = parchment.id.match(/^technique-(?:today-|scroll-)?(\d+)/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      const found = getCalmPrescription(num);
+      if (found) return found;
+    }
   }
 
   // 2. 텍스트 키워드 기반 코사인 유사도/키워드 매칭

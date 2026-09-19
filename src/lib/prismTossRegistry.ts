@@ -147,6 +147,15 @@ export const TOSS_DESTINATIONS: Record<string, TossDestination> = {
     description: '모든 차원의 영감과 가능성이 수렴하는 우주의 시초 허브',
     themeColor: '#00f0ff',
   },
+  prologue: {
+    id: 'prologue',
+    name: '프롤로그 (수다모드)',
+    subName: '가벼운 수다 & 오늘의 두루마리',
+    icon: '📖',
+    path: '/prologue',
+    description: '가벼운 일상 수다와 함께 새로운 시작, 오늘의 두루마리를 읽는 성소',
+    themeColor: '#38bdf8',
+  },
 };
 
 export interface ChannelTossRule {

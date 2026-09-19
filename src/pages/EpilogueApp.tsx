@@ -28,6 +28,7 @@ import { useBinauralBeat } from '@/hooks/useBinauralBeat';
 import { useScrollToTopOnChange } from '@/hooks/useScrollToTopOnChange';
 import { useSpecialFeatureChromeHidden, SPECIAL_FEATURE_CHROME_HIDDEN_CLASS } from '@/components/SpecialFeaturePanel';
 import { loadProfileFromAllVaults, saveProfileToAllVaults } from '@/lib/profileVault';
+import { LucKeyLogoText } from '@/components/LucKeyLogoText';
 import { type UserProfile, mergeUserProfiles } from '@/lib/sharedState';
 import { cleanFirestoreData } from '@/lib/sharedStateSync';
 import { SajuCardView } from '@/components/SajuCardView';
@@ -746,8 +747,8 @@ export default function EpilogueApp() {
             </div>
           </div>
           <div className="cursor-pointer flex flex-col justify-center select-none" onClick={() => navigate('/')}>
-            <h1 className="text-lg md:text-xl font-display font-black text-white uppercase tracking-tighter leading-tight">
-              PRISM
+            <h1>
+              <LucKeyLogoText />
             </h1>
             <p className="text-[8px] md:text-[9px] text-purple-300/60 uppercase tracking-widest font-bold font-sans leading-none mt-0.5">
               EPILOGUE • SOUL SANCTUARY

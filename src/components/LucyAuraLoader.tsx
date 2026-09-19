@@ -10,15 +10,14 @@ interface LucyAuraLoaderProps {
 }
 
 /**
- * ✨ LucyAuraLoader
- * Dedicated loading screen for Lucy (루시 / AI 페르소나 챗 & 지혜의 교감)
- * Features warm golden-amber and rose-pink consciousness aura,
- * central 8-pointed luminous Stella, counter-rotating intuition rings,
- * and brainwave synaptic pulse waves.
+ * 🍀 LucyAuraLoader
+ * Dedicated four-leaf clover (네잎클로버) loading screen for Lucy Chat (루시 AI 챗 & 교감)
+ * Features glowing emerald & golden aura, four organic heart-shaped clover leaves,
+ * luminous golden dewdrops, rotating celestial luck orbits, and ambient fortune sparkles.
  */
 export function LucyAuraLoader({
-  message = "루시와 깊은 교감 조율 중...",
-  subMessage = "CONSCIOUSNESS SYNERGY & INTUITION",
+  message = "루시와 행운의 깊은 교감 조율 중...",
+  subMessage = "FOUR-LEAF CLOVER · FORTUNE & INTUITION",
   fullScreen = false,
   compact = false,
 }: LucyAuraLoaderProps) {
@@ -27,103 +26,153 @@ export function LucyAuraLoader({
 
   const sparklesList = isXS
     ? [
-        { top: "28%", left: "28%", delay: 0 },
-        { top: "76%", left: "70%", delay: 1.1 },
+        { top: "25%", left: "26%", delay: 0 },
+        { top: "75%", left: "72%", delay: 1.1 },
       ]
     : [
-        { top: "28%", left: "28%", delay: 0 },
-        { top: "68%", left: "24%", delay: 0.9 },
-        { top: "32%", left: "72%", delay: 0.4 },
-        { top: "76%", left: "70%", delay: 1.3 },
-        { top: "18%", left: "54%", delay: 0.7 },
+        { top: "22%", left: "28%", delay: 0 },
+        { top: "68%", left: "22%", delay: 0.9 },
+        { top: "30%", left: "74%", delay: 0.4 },
+        { top: "76%", left: "68%", delay: 1.3 },
+        { top: "16%", left: "52%", delay: 0.7 },
+      ];
+
+  // Ambient floating micro-clovers
+  const floatingClovers = isXS
+    ? [
+        { top: "35%", left: "18%", delay: 0.2, scale: 0.8 },
+        { top: "62%", left: "80%", delay: 1.4, scale: 0.9 },
+      ]
+    : [
+        { top: "28%", left: "16%", delay: 0.2, scale: 0.85 },
+        { top: "65%", left: "18%", delay: 1.0, scale: 0.75 },
+        { top: "34%", left: "82%", delay: 0.6, scale: 0.9 },
+        { top: "72%", left: "78%", delay: 1.6, scale: 0.8 },
       ];
 
   return (
     <div
       className={`flex flex-col items-center justify-center select-none text-slate-100 overflow-hidden ${
         fullScreen
-          ? "fixed inset-0 z-[9999] bg-[#0c0c12] min-h-[100dvh] w-screen px-4"
+          ? "fixed inset-0 z-[9999] bg-[#070d0a] min-h-[100dvh] w-screen px-4"
           : "relative py-12 px-4 w-full"
       }`}
     >
-      {/* Warm Golden & Rose Consciousness Halo Background */}
+      {/* 🌿 Luminous Forest Emerald & Golden Halo Background */}
       <div
-        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] sm:w-[480px] sm:h-[480px] rounded-full bg-gradient-to-tr from-amber-500/15 via-rose-500/15 to-purple-600/15 pointer-events-none ${
-          isXS ? "blur-xl opacity-25" : "blur-3xl animate-pulse"
+        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] sm:w-[500px] sm:h-[500px] rounded-full bg-gradient-to-tr from-emerald-600/20 via-teal-500/15 to-amber-400/15 pointer-events-none ${
+          isXS ? "blur-xl opacity-30" : "blur-3xl animate-pulse"
         }`}
       />
 
       {/* Floating Gentle Sparkles */}
-      <div className="absolute inset-0 pointer-events-none opacity-40 overflow-hidden">
+      <div className="absolute inset-0 pointer-events-none opacity-50 overflow-hidden">
         {sparklesList.map((sparkle, i) => (
           <motion.div
-            key={i}
+            key={`sparkle-${i}`}
             animate={{
-              opacity: [0.15, 0.9, 0.15],
-              scale: [0.7, 1.35, 0.7],
+              opacity: [0.2, 1, 0.2],
+              scale: [0.7, 1.4, 0.7],
+              y: [-6, 6, -6],
             }}
             transition={{
-              duration: 2.2 + i * 0.35,
+              duration: 2.4 + i * 0.35,
               repeat: Number.POSITIVE_INFINITY,
               delay: sparkle.delay,
               ease: "easeInOut",
             }}
-            className="absolute w-1.5 h-1.5 bg-amber-200 rounded-full shadow-[0_0_10px_#f59e0b]"
+            className="absolute w-1.5 h-1.5 bg-emerald-200 rounded-full shadow-[0_0_12px_#34d399]"
             style={{ top: sparkle.top, left: sparkle.left }}
           />
         ))}
+
+        {/* Ambient floating lucky mini-clovers */}
+        {floatingClovers.map((clover, i) => (
+          <motion.div
+            key={`clover-${i}`}
+            animate={{
+              opacity: [0.15, 0.55, 0.15],
+              y: [-12, 12, -12],
+              rotate: [0, 15, -15, 0],
+            }}
+            transition={{
+              duration: 4 + i * 0.5,
+              repeat: Number.POSITIVE_INFINITY,
+              delay: clover.delay,
+              ease: "easeInOut",
+            }}
+            className="absolute text-sm text-emerald-300/60 pointer-events-none select-none drop-shadow-[0_0_8px_rgba(52,211,153,0.4)]"
+            style={{ top: clover.top, left: clover.left, transform: `scale(${clover.scale})` }}
+          >
+            🍀
+          </motion.div>
+        ))}
       </div>
 
-      {/* Central Lucy Sacred Consciousness Emblem */}
+      {/* 🍀 Central Sacred Four-Leaf Clover Emblem */}
       <div className="relative flex items-center justify-center">
         <svg
           viewBox="0 0 280 280"
           style={{ width: emblemSize * 1.5, height: emblemSize * 1.5 }}
-          className={`overflow-visible ${isXS ? "" : "filter drop-shadow-[0_0_35px_rgba(245,158,11,0.3)]"}`}
+          className={`overflow-visible ${isXS ? "" : "filter drop-shadow-[0_0_35px_rgba(16,185,129,0.35)]"}`}
         >
-
           <defs>
-            {/* Core Stella Golden Star Gradient */}
-            <radialGradient id="lucy_stella_grad" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
-              <stop offset="25%" stopColor="#fef08a" stopOpacity="0.95" />
-              <stop offset="55%" stopColor="#fbbf24" stopOpacity="0.85" />
-              <stop offset="82%" stopColor="#f43f5e" stopOpacity="0.7" />
-              <stop offset="100%" stopColor="#9333ea" stopOpacity="0" />
+            {/* Emerald Leaf Deep Gradient */}
+            <radialGradient id="lucy_clover_leaf_grad" cx="45%" cy="40%" r="65%">
+              <stop offset="0%" stopColor="#a7f3d0" stopOpacity="0.98" />
+              <stop offset="28%" stopColor="#34d399" stopOpacity="0.95" />
+              <stop offset="60%" stopColor="#10b981" stopOpacity="0.92" />
+              <stop offset="85%" stopColor="#047857" stopOpacity="0.95" />
+              <stop offset="100%" stopColor="#064e3b" stopOpacity="1" />
             </radialGradient>
 
-            {/* Inner Core Heart Glow */}
-            <radialGradient id="lucy_heart_core" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
-              <stop offset="45%" stopColor="#fef08a" stopOpacity="0.9" />
-              <stop offset="100%" stopColor="#f472b6" stopOpacity="0" />
-            </radialGradient>
-
-            {/* Intuition Ring 1 Gradient (Amber to Rose) */}
-            <linearGradient id="lucy_ring_1" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.9" />
-              <stop offset="50%" stopColor="#f472b6" stopOpacity="0.8" />
-              <stop offset="100%" stopColor="#e879f9" stopOpacity="0.2" />
+            {/* Golden Edge Leaf Highlight Gradient */}
+            <linearGradient id="lucy_clover_edge_gold" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#fef08a" stopOpacity="0.9" />
+              <stop offset="45%" stopColor="#6ee7b7" stopOpacity="0.8" />
+              <stop offset="100%" stopColor="#059669" stopOpacity="0.4" />
             </linearGradient>
 
-            {/* Wisdom Ring 2 Gradient (Rose to Violet) */}
-            <linearGradient id="lucy_ring_2" x1="100%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.8" />
-              <stop offset="60%" stopColor="#c084fc" stopOpacity="0.85" />
-              <stop offset="100%" stopColor="#fbbf24" stopOpacity="0.25" />
+            {/* Radiant Clover Center Dewdrop Core */}
+            <radialGradient id="lucy_clover_dew_core" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
+              <stop offset="35%" stopColor="#fef08a" stopOpacity="0.95" />
+              <stop offset="70%" stopColor="#34d399" stopOpacity="0.9" />
+              <stop offset="100%" stopColor="#065f46" stopOpacity="0" />
+            </radialGradient>
+
+            {/* Orbit Ring 1 (Emerald to Gold) */}
+            <linearGradient id="lucy_clover_ring_1" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#34d399" stopOpacity="0.9" />
+              <stop offset="50%" stopColor="#fef08a" stopOpacity="0.85" />
+              <stop offset="100%" stopColor="#059669" stopOpacity="0.25" />
+            </linearGradient>
+
+            {/* Orbit Ring 2 (Mint to Teal) */}
+            <linearGradient id="lucy_clover_ring_2" x1="100%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#10b981" stopOpacity="0.8" />
+              <stop offset="60%" stopColor="#67e8f9" stopOpacity="0.8" />
+              <stop offset="100%" stopColor="#fef08a" stopOpacity="0.2" />
+            </linearGradient>
+
+            {/* Stem Gradient */}
+            <linearGradient id="lucy_clover_stem" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#047857" />
+              <stop offset="60%" stopColor="#10b981" />
+              <stop offset="100%" stopColor="#064e3b" />
             </linearGradient>
           </defs>
 
-          {/* 🌟 Synaptic Brainwave Ripple 1 */}
+          {/* 🌟 Radiant Forest Spring Ripple 1 */}
           <motion.circle
             cx="140"
             cy="140"
             r="82"
             fill="none"
-            stroke="rgba(251, 191, 36, 0.25)"
+            stroke="rgba(52, 211, 153, 0.28)"
             strokeWidth="1.2"
             animate={{
-              r: [74, 98, 74],
+              r: [74, 102, 74],
               opacity: [0.1, 0.45, 0.1],
             }}
             transition={{
@@ -133,182 +182,268 @@ export function LucyAuraLoader({
             }}
           />
 
-          {/* 🌟 Synaptic Brainwave Ripple 2 */}
+          {/* 🌟 Radiant Forest Spring Ripple 2 */}
           <motion.circle
             cx="140"
             cy="140"
-            r="104"
+            r="108"
             fill="none"
-            stroke="rgba(244, 114, 182, 0.2)"
+            stroke="rgba(254, 240, 138, 0.2)"
             strokeWidth="1"
             strokeDasharray="4 6"
             animate={{
-              r: [96, 120, 96],
+              r: [98, 126, 98],
               opacity: [0.08, 0.35, 0.08],
             }}
             transition={{
-              duration: 3.5,
+              duration: 3.6,
               repeat: Number.POSITIVE_INFINITY,
               delay: 0.5,
               ease: "easeInOut",
             }}
           />
 
-          {/* Rotating Intuition Orbit Ring 1 (Amber, Clockwise) */}
+          {/* Rotating Celestial Orbit Ring 1 (Emerald/Gold, Clockwise) */}
           <g transform="translate(140, 140)">
             <motion.g
               animate={{ rotate: 360 }}
-              transition={{ duration: 7, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+              transition={{ duration: 8, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
             >
               <ellipse
                 cx="0"
                 cy="0"
-                rx="110"
-                ry="42"
+                rx="115"
+                ry="44"
                 fill="none"
-                stroke="url(#lucy_ring_1)"
+                stroke="url(#lucy_clover_ring_1)"
                 strokeWidth="1.6"
                 strokeDasharray="6 3 10 3"
-                transform="rotate(-22)"
-                className="opacity-80 filter drop-shadow-[0_0_8px_#fbbf24]"
+                transform="rotate(-20)"
+                className="opacity-80 filter drop-shadow-[0_0_8px_#34d399]"
               />
-              {/* Consciousness Orb Node */}
-              <circle cx="92" cy="-20" r="3.5" fill="#fef08a" className="shadow-[0_0_10px_#fff]" />
-              <circle cx="-92" cy="20" r="2.5" fill="#f472b6" />
+              {/* Luminous Golden Dew Node */}
+              <circle cx="96" cy="-22" r="3.5" fill="#fef08a" className="shadow-[0_0_10px_#fff]" />
+              <circle cx="-96" cy="22" r="2.5" fill="#6ee7b7" />
             </motion.g>
           </g>
 
-          {/* Rotating Wisdom Orbit Ring 2 (Rose/Violet, Counter-Clockwise) */}
+          {/* Rotating Celestial Orbit Ring 2 (Mint/Teal, Counter-Clockwise) */}
           <g transform="translate(140, 140)">
             <motion.g
               animate={{ rotate: -360 }}
-              transition={{ duration: 10, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+              transition={{ duration: 11, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
             >
               <ellipse
                 cx="0"
                 cy="0"
-                rx="118"
+                rx="122"
                 ry="38"
                 fill="none"
-                stroke="url(#lucy_ring_2)"
+                stroke="url(#lucy_clover_ring_2)"
                 strokeWidth="1.2"
                 strokeDasharray="4 5"
                 transform="rotate(28)"
-                className="opacity-75 filter drop-shadow-[0_0_8px_#c084fc]"
+                className="opacity-75 filter drop-shadow-[0_0_8px_#10b981]"
               />
-              <circle cx="-98" cy="-18" r="3" fill="#fbcfe8" />
+              <circle cx="-102" cy="-18" r="3" fill="#a7f3d0" />
             </motion.g>
           </g>
 
-          {/* Glowing Aura Halo Backplate */}
+          {/* Glowing Backplate Aura */}
           <circle
             cx="140"
             cy="140"
-            r="60"
-            fill="url(#lucy_stella_grad)"
-            className="filter blur-[10px] opacity-60 mix-blend-screen"
+            r="65"
+            fill="url(#lucy_clover_dew_core)"
+            className="filter blur-[12px] opacity-60 mix-blend-screen"
           />
 
-          {/* ✨ 8-Pointed Consciousness Stella (루시의 영혼 별) */}
+          {/* 🍀 THE FOUR-LEAF CLOVER BODY */}
           <g transform="translate(140, 140)">
-            {/* Pulsing Core Star */}
+            {/* Graceful Curved Stem */}
             <motion.path
-              d="M 0 -58 Q 6 -12 58 0 Q 6 12 0 58 Q -6 12 -58 0 Q -6 -12 0 -58 Z"
-              fill="url(#lucy_stella_grad)"
-              stroke="rgba(255, 255, 255, 0.85)"
-              strokeWidth="1.2"
+              d="M 0 4 C -6 28 -16 58 -8 86 C -4 98 6 106 14 110"
+              fill="none"
+              stroke="url(#lucy_clover_stem)"
+              strokeWidth="3.6"
+              strokeLinecap="round"
               animate={{
-                scale: [0.92, 1.08, 0.92],
-                rotate: [0, 4, 0, -4, 0],
+                d: [
+                  "M 0 4 C -6 28 -16 58 -8 86 C -4 98 6 106 14 110",
+                  "M 0 4 C -4 28 -12 58 -5 86 C -1 98 9 106 16 110",
+                  "M 0 4 C -6 28 -16 58 -8 86 C -4 98 6 106 14 110",
+                ],
               }}
               transition={{
-                duration: 2.8,
+                duration: 3,
                 repeat: Number.POSITIVE_INFINITY,
                 ease: "easeInOut",
               }}
-              className="filter drop-shadow-[0_0_16px_rgba(251,191,36,0.7)]"
+              className="filter drop-shadow-[0_0_6px_rgba(5,150,105,0.6)]"
             />
 
-            {/* Diagonal Secondary 4-Point Star */}
-            <motion.path
-              d="M 0 -38 Q 4 -8 38 0 Q 4 8 0 38 Q -4 8 -38 0 Q -4 -8 0 -38 Z"
-              fill="rgba(255, 255, 255, 0.45)"
-              stroke="rgba(254, 240, 138, 0.8)"
-              strokeWidth="1"
-              transform="rotate(45)"
+            {/* Whole Clover Bloom Breathing Motion */}
+            <motion.g
               animate={{
-                scale: [1.05, 0.88, 1.05],
-                opacity: [0.5, 0.9, 0.5],
+                scale: [0.95, 1.05, 0.95],
+                rotate: [0, 2.5, 0, -2.5, 0],
               }}
               transition={{
-                duration: 2.8,
+                duration: 3.2,
                 repeat: Number.POSITIVE_INFINITY,
                 ease: "easeInOut",
               }}
-            />
+              className="filter drop-shadow-[0_0_18px_rgba(16,185,129,0.7)]"
+            >
+              {/* Four Heart-Shaped Clover Leaves arranged at 0°, 90°, 180°, 270° */}
+              {[0, 90, 180, 270].map((angle, idx) => (
+                <g key={`petal-${angle}`} transform={`rotate(${angle})`}>
+                  {/* Outer Leaf Glow & Body */}
+                  <path
+                    d="M 0 0 C -16 -18 -34 -32 -34 -52 C -34 -72 -12 -84 0 -64 C 12 -84 34 -72 34 -52 C 34 -32 16 -18 0 0 Z"
+                    fill="url(#lucy_clover_leaf_grad)"
+                    stroke="url(#lucy_clover_edge_gold)"
+                    strokeWidth="1.4"
+                    className="filter drop-shadow-[0_2px_8px_rgba(4,120,87,0.5)]"
+                  />
 
-            {/* Central Heart Singularity Core */}
-            <motion.circle
-              cx="0"
-              cy="0"
-              r="14"
-              fill="url(#lucy_heart_core)"
-              animate={{
-                scale: [0.85, 1.25, 0.85],
-              }}
-              transition={{
-                duration: 1.8,
-                repeat: Number.POSITIVE_INFINITY,
-                ease: "easeInOut",
-              }}
-              className="filter drop-shadow-[0_0_12px_#ffffff]"
-            />
-            <circle cx="0" cy="0" r="4.5" fill="#ffffff" />
+                  {/* Inner Leaf Highlights & Depth Layer */}
+                  <path
+                    d="M 0 -2 C -11 -16 -24 -28 -24 -44 C -24 -60 -8 -68 0 -52 C 8 -68 24 -60 24 -44 C 24 -28 11 -16 0 -2 Z"
+                    fill="rgba(255, 255, 255, 0.08)"
+                    stroke="rgba(167, 243, 208, 0.4)"
+                    strokeWidth="0.8"
+                  />
+
+                  {/* Central Leaf Main Vein */}
+                  <path
+                    d="M 0 -4 Q 0 -32 0 -58"
+                    fill="none"
+                    stroke="#a7f3d0"
+                    strokeWidth="1.2"
+                    strokeLinecap="round"
+                    className="opacity-75"
+                  />
+
+                  {/* Leaf Branch Veins */}
+                  <path
+                    d="M 0 -26 Q -8 -33 -16 -39"
+                    fill="none"
+                    stroke="#a7f3d0"
+                    strokeWidth="0.8"
+                    strokeLinecap="round"
+                    className="opacity-55"
+                  />
+                  <path
+                    d="M 0 -26 Q 8 -33 16 -39"
+                    fill="none"
+                    stroke="#a7f3d0"
+                    strokeWidth="0.8"
+                    strokeLinecap="round"
+                    className="opacity-55"
+                  />
+                  <path
+                    d="M 0 -38 Q -7 -44 -12 -49"
+                    fill="none"
+                    stroke="#a7f3d0"
+                    strokeWidth="0.8"
+                    strokeLinecap="round"
+                    className="opacity-45"
+                  />
+                  <path
+                    d="M 0 -38 Q 7 -44 12 -49"
+                    fill="none"
+                    stroke="#a7f3d0"
+                    strokeWidth="0.8"
+                    strokeLinecap="round"
+                    className="opacity-45"
+                  />
+                </g>
+              ))}
+
+              {/* Luminous Central Dewdrop Core */}
+              <motion.circle
+                cx="0"
+                cy="0"
+                r="13"
+                fill="url(#lucy_clover_dew_core)"
+                animate={{
+                  scale: [0.85, 1.25, 0.85],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: "easeInOut",
+                }}
+                className="filter drop-shadow-[0_0_12px_#34d399]"
+              />
+
+              {/* Four-Pointed Golden Twinkle Star Flare */}
+              <motion.path
+                d="M 0 -16 Q 2 -2 16 0 Q 2 2 0 16 Q -2 2 -16 0 Q -2 -2 0 -16 Z"
+                fill="#ffffff"
+                animate={{
+                  rotate: [0, 90, 180, 270, 360],
+                  scale: [0.8, 1.2, 0.8],
+                  opacity: [0.75, 1, 0.75],
+                }}
+                transition={{
+                  duration: 4,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: "linear",
+                }}
+                className="filter drop-shadow-[0_0_8px_#fef08a]"
+              />
+
+              {/* Tiny Center Pearl */}
+              <circle cx="0" cy="0" r="3.5" fill="#ffffff" />
+            </motion.g>
           </g>
         </svg>
       </div>
 
-      {/* Lucy Typography & Branding */}
+      {/* 🍀 Lucy Typography & Lucky Clover Branding */}
       <div className="relative mt-5 sm:mt-6 text-center z-10 flex flex-col items-center">
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-2xl sm:text-3xl font-black tracking-[0.38em] uppercase font-sans bg-gradient-to-r from-amber-200 via-rose-300 via-pink-300 to-purple-300 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(251,191,36,0.45)]"
+          className="text-2xl sm:text-3xl font-black tracking-[0.38em] uppercase font-sans bg-gradient-to-r from-emerald-200 via-teal-200 via-amber-200 to-emerald-300 bg-clip-text text-transparent drop-shadow-[0_0_18px_rgba(52,211,153,0.45)] flex items-center gap-2 justify-center"
         >
-          LUCY
+          <span>LUCY</span>
+          <span className="text-xl sm:text-2xl not-italic">🍀</span>
         </motion.div>
 
         {/* Dynamic Status Message */}
         <motion.p
           initial={{ opacity: 0 }}
-          animate={{ opacity: 0.9 }}
+          animate={{ opacity: 0.95 }}
           transition={{ delay: 0.15 }}
-          className="mt-2 text-xs sm:text-sm font-medium text-amber-100/85 tracking-wider flex items-center gap-1.5"
+          className="mt-2 text-xs sm:text-sm font-medium text-emerald-100/90 tracking-wider flex items-center gap-1.5"
         >
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping inline-block" />
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping inline-block" />
           {message}
         </motion.p>
 
         {/* Subtitle / Persona Mode */}
         {subMessage && (
-          <p className="mt-1 text-[10px] font-mono tracking-[0.22em] text-rose-300/70 uppercase">
+          <p className="mt-1 text-[10px] font-mono tracking-[0.22em] text-emerald-300/70 uppercase">
             {subMessage}
           </p>
         )}
 
-        {/* Warm Golden-Rose Loading Bar */}
-        <div className="mt-5 w-44 sm:w-56 h-[3px] rounded-full bg-white/10 overflow-hidden relative border border-white/5">
+        {/* Emerald & Golden Clover Loading Bar */}
+        <div className="mt-5 w-44 sm:w-56 h-[3px] rounded-full bg-emerald-950/60 overflow-hidden relative border border-emerald-500/20 shadow-[0_0_10px_rgba(5,150,105,0.2)]">
           <motion.div
             animate={{
               x: ["-100%", "100%"],
             }}
             transition={{
-              duration: 1.5,
+              duration: 1.6,
               repeat: Number.POSITIVE_INFINITY,
               ease: "easeInOut",
             }}
-            className="w-1/2 h-full bg-gradient-to-r from-transparent via-amber-400 via-rose-400 to-transparent shadow-[0_0_10px_#fbbf24]"
+            className="w-1/2 h-full bg-gradient-to-r from-transparent via-emerald-400 via-teal-300 via-amber-300 to-transparent shadow-[0_0_10px_#34d399]"
           />
         </div>
       </div>

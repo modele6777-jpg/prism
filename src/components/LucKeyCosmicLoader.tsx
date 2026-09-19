@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { isIPhoneXSClass } from '@/lib/perfMode';
+import { LucKeyLogoText } from './LucKeyLogoText';
 
 export interface LucKeyCosmicLoaderProps {
   message?: string;
@@ -398,13 +399,8 @@ export function LucKeyCosmicLoader({
           transition={{ duration: 0.6 }}
           className="relative flex items-center justify-center"
         >
-          <h1 className="font-display font-black text-3xl sm:text-4xl tracking-[0.26em] uppercase drop-shadow-[0_0_25px_rgba(251,191,36,0.35)]">
-            <span className="bg-gradient-to-r from-amber-300 via-yellow-200 to-emerald-400 bg-clip-text text-transparent">
-              Luc
-            </span>
-            <span className="bg-gradient-to-r from-emerald-400 via-cyan-300 to-purple-400 bg-clip-text text-transparent">
-              Key
-            </span>
+          <h1 className="drop-shadow-[0_0_25px_rgba(251,191,36,0.35)]">
+            <LucKeyLogoText size="xl" />
           </h1>
         </motion.div>
 

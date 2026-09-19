@@ -394,7 +394,7 @@ export function CalmTechniquePracticeModal({
                 <CheckCircle2 size={24} className="text-emerald-300 shrink-0" />
                 <div>
                   <div className="text-xs font-bold text-emerald-100">
-                    제{prescription.globalIndex}호 처방약 실천이 완료되었습니다! 💊
+                    제{prescription.globalIndex}호 처방약 실천이 완료되었습니다.
                   </div>
                   <div className="text-[11px] text-emerald-300/80 mt-0.5">
                     마음의 긴장이 이완되고 고요한 중심이 회복되었습니다.

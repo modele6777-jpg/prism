@@ -60,6 +60,7 @@ import {
   SPECIAL_FEATURE_CHROME_HIDDEN_CLASS,
   useSpecialFeatureChromeHidden,
 } from '@/components/SpecialFeaturePanel';
+import { LucKeyLogoText } from '@/components/LucKeyLogoText';
 
 const QuickInsightSchema = z.object({
   diagnosis: z.string(),
@@ -2599,7 +2600,7 @@ export default function BluebirdApp() {
                </div>
             </div>
             <div className="cursor-pointer flex flex-col justify-center select-none" onClick={() => navigate('/')}>
-               <h1 className="text-lg md:text-xl font-display font-black text-white uppercase tracking-tighter leading-tight">LUCKEY</h1>
+               <h1><LucKeyLogoText /></h1>
                <p className="text-[8px] md:text-[9px] text-white/40 uppercase tracking-widest font-bold font-sans leading-none mt-0.5">BLUEBIRD • SOUL SANCTUARY</p>
             </div>
          </div>

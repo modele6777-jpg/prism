@@ -65,6 +65,24 @@ export function BigBangButton() {
   const [dragDistance, setDragDistance] = useState(0);
   const [dragAngleDeg, setDragAngleDeg] = useState(0);
   const [radialSectorIndex, setRadialSectorIndex] = useState<number>(-1);
+  const [isPageScrolling, setIsPageScrolling] = useState(false);
+
+  // 스크롤 중에는 추천 1순위나 HUD 칩이 미리 노출되지 않도록 감지
+  useEffect(() => {
+    let scrollTimer: ReturnType<typeof setTimeout> | null = null;
+    const handleScroll = () => {
+      setIsPageScrolling(true);
+      if (scrollTimer) clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(() => {
+        setIsPageScrolling(false);
+      }, 350);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollTimer) clearTimeout(scrollTimer);
+    };
+  }, []);
 
   // 🎯 OmniWarp BigBang Controller: 화이트홀(빛비춤) · 블랙홀(어두운 심연) 상태
   const [activeHole, setActiveHole] = useState<'whitehole' | 'blackhole'>('whitehole');
@@ -258,11 +276,12 @@ export function BigBangButton() {
     const deltaY = currentPointer ? currentPointer.clientY - start.y : 0;
     const dist = Math.hypot(deltaX, deltaY);
 
-    // 🎯 드래그(dist >= 20) 중일 때:
+    // 🎯 드래그(dist >= 38) 중일 때:
     // 7대 정규 앱 엄격 순환(Non-Repeating App Cycle) 추천 메뉴를 실시간 타깃으로 동기화 (글자 토스 포함)
+    // 사용자가 스크롤 중이거나 가벼운 터치 시 추천 1순위가 미리 노출되지 않도록 보호
     const textToToss = getActiveSelectionText();
 
-    if (dist >= 20) {
+    if (dist >= 38 && !isPageScrolling) {
       const contextCandidate = peekNextRecommendedMenuByCycle(location, textToToss || undefined);
       const isTextToss = Boolean(textToToss);
       target = {
@@ -928,7 +947,7 @@ export function BigBangButton() {
         >
           {/* 🎯 드래그 시 실시간 맥락 추천 순환(Cycle) HUD 칩 */}
           <AnimatePresence>
-            {isPressing && dragDistance >= 20 && !isAborted && currentTarget && (
+            {isPressing && dragDistance >= 38 && !isAborted && !isPageScrolling && currentTarget && (
               <motion.div
                 initial={{ opacity: 0, y: 12, scale: 0.9 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -1050,21 +1069,8 @@ export function BigBangButton() {
               }}
               aria-label={
                 hasSelectionToss
-                  ? `빅뱅 버튼 · 선택 내용 토스 대기중 ("${selectionPreviewText}...") · 탭: 루시 대화 연계, 홀드: Key 신탁 연계`
-                  : isChatView
-                  ? '빅뱅 버튼 · 탭: 루시 채팅 닫기, 더블탭: LucKey 홈, 홀드: Key, 드래그: 맥락 추천 1위 이동'
-                  : isOrbSite
-                  ? '빅뱅 버튼 · 탭: 루시 채팅 열기, 더블탭: LucKey 홈, 홀드: Key 나가기, 드래그: 맥락 추천 1위 이동'
-                  : '빅뱅 버튼 · 탭: 루시 채팅, 더블탭: LucKey 홈, 홀드: Key 들어가기, 드래그: 맥락 추천 1위 이동'
-              }
-              title={
-                hasSelectionToss
-                  ? `[선택 텍스트 토스 대기: "${selectionPreviewText}..."] 탭: 루시 1:1 대화 연계 · 홀드: Key 직관 신탁 연계 · 드래그: 추천 1위 토스`
-                  : isChatView
-                  ? '탭: 루시 채팅 닫기 · 더블탭: LucKey 홈 · 홀드: Key · 드래그: 맥락 추천 1위 이동 (사이클 순환)'
-                  : isOrbSite
-                  ? '탭: 루시 채팅 열기 · 더블탭: LucKey 홈 · 홀드: Key 나가기 · 드래그: 맥락 추천 1위 이동 (사이클 순환)'
-                  : '탭: 루시 채팅 · 더블탭: LucKey 홈 · 홀드: Key · 드래그: 맥락 추천 1위 이동 (사이클 순환)'
+                  ? '빅뱅 버튼 · 선택 내용 토스 대기중'
+                  : '빅뱅 버튼 · 탭: 루시 대화, 더블탭: 홈, 홀드: Key'
               }
             >
               {/* 🌀 [웜홀] 빛비춤 + 어두운 심연 + 사건의 지평선 3원 동시 융합 전개 */}
