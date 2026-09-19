@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -12,11 +12,11 @@ import {
   Scroll,
   X,
   RefreshCw,
-  MessageCircle,
-  Compass,
   Sparkle,
-  Radio,
   Share2,
+  Send,
+  Radio,
+  ExternalLink,
 } from "lucide-react";
 import { sacredAudio } from "@/lib/omniWarp/sacredAudio";
 import { omniWarpAudio } from "@/lib/omniWarp/omniWarpAudio";
@@ -29,6 +29,14 @@ import {
   KeyArchiveItem,
   KeyArchiveCategory,
 } from "@/lib/keyArchiveExtractor";
+import { getPendingPrismToss, clearPrismToss } from "@/lib/prismToss";
+import {
+  executeSmartToss,
+  TOSS_DESTINATIONS,
+  TossDestination,
+} from "@/lib/prismTossRegistry";
+import { getAndClearPendingSelection } from "@/lib/selectionBridge";
+import { getTodayDateKey } from "@/lib/dailyCache";
 
 interface StardustParticle {
   x: number;
@@ -45,6 +53,7 @@ export default function OrbGatewayPage() {
   const [, navigate] = useLocation();
   const narrow = useNarrowPhone();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
 
   // Audio & Animation states
   const [isDroneOn, setIsDroneOn] = useState(false);
@@ -57,6 +66,11 @@ export default function OrbGatewayPage() {
   const [activeFilter, setActiveFilter] = useState<KeyArchiveCategory>("all");
   const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // 🚀 Cross-App Toss Pipeline States
+  const [isTossPickerOpen, setIsTossPickerOpen] = useState(false);
+  const [tossTargetText, setTossTargetText] = useState("");
+  const [tossNotice, setTossNotice] = useState<string | null>(null);
 
   // PWA Standalone Detection
   const [isStandalone, setIsStandalone] = useState(false);
@@ -94,6 +108,105 @@ export default function OrbGatewayPage() {
     const items = extractAllKeyArchiveItems();
     setArchiveItems(items);
   }, []);
+
+  // 🎯 Incoming Toss Listener (수신: 다른 앱에서 스크롤/선택하여 Key/Orb로 토스된 텍스트 처리)
+  const processIncomingToss = useCallback((incomingText?: string) => {
+    let text = (incomingText || "").trim();
+
+    if (!text) {
+      // 1. Pending Prism Toss 체크
+      const pending = getPendingPrismToss("orb") || getPendingPrismToss("key");
+      if (pending) {
+        text = (pending.contextMessage || pending.autoPrompt || "").trim();
+        clearPrismToss();
+      }
+    }
+
+    if (!text) {
+      // 2. SessionStorage auto execute text 체크
+      const autoText = sessionStorage.getItem("prism_auto_execute_text");
+      if (autoText && autoText.trim().length >= 2) {
+        text = autoText.trim();
+        sessionStorage.removeItem("prism_auto_execute_text");
+        sessionStorage.removeItem("prism_auto_execute_target");
+      }
+    }
+
+    if (!text) {
+      // 3. SelectionBridge pending selection 체크
+      const sel = getAndClearPendingSelection();
+      if (sel && sel.text && sel.text.length >= 2) {
+        text = sel.text.trim();
+      }
+    }
+
+    if (!text || text.length < 2) return;
+
+    // 🌟 새로운 스크롤 토스 영시 아이템 합성 및 상단 주입
+    const newTossedMemory: KeyArchiveItem = {
+      id: `toss-received-${Date.now()}`,
+      category: "oracle",
+      categoryLabel: "✨ 스크롤 토스 수신",
+      iconType: "key",
+      badgeColor: "text-amber-300 bg-amber-500/20 border-amber-400/40",
+      glowColor: "rgba(251, 191, 36, 0.6)",
+      title: "스크롤 토스된 영감·질문",
+      keypoint: text.length > 130 ? text.slice(0, 127) + "..." : text,
+      fullText: `스크롤을 통해 Key로 토스된 영감입니다. ${text}`,
+      dateStr: getTodayDateKey(),
+      timeStr: new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }),
+      timestamp: Date.now(),
+      sourceLabel: "LucKey 스크롤 토스 연계",
+      tags: ["#스크롤토스", "#영시수신", "#직관조율"],
+    };
+
+    setArchiveItems((prev) => [newTossedMemory, ...prev]);
+    setCurrentIndex(0);
+    setActiveFilter("all");
+
+    // 공명 이펙트 & 알림
+    setIsResonating(true);
+    omniWarpAudio.playWhiteHole();
+    sacredAudio.playSingingBowl(528);
+    triggerHaptic("whitehole");
+    setTossNotice("✨ 스크롤 선택 텍스트가 Key의 수정구슬로 토스되었습니다!");
+
+    setTimeout(() => {
+      setIsResonating(false);
+    }, 1200);
+
+    setTimeout(() => {
+      setTossNotice(null);
+    }, 3500);
+  }, []);
+
+  // Mount & Window Event Listeners for Tosses
+  useEffect(() => {
+    // 즉시 확인
+    processIncomingToss();
+
+    const handleTossReceived = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      const text = detail?.contextMessage || detail?.autoPrompt || detail?.text;
+      processIncomingToss(text);
+    };
+
+    const handleSelectionTossed = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      const text = detail?.text;
+      processIncomingToss(text);
+    };
+
+    window.addEventListener("prism:toss_received", handleTossReceived);
+    window.addEventListener("prism:selection_tossed", handleSelectionTossed);
+    window.addEventListener("prism:selection_execute", handleSelectionTossed);
+
+    return () => {
+      window.removeEventListener("prism:toss_received", handleTossReceived);
+      window.removeEventListener("prism:selection_tossed", handleSelectionTossed);
+      window.removeEventListener("prism:selection_execute", handleSelectionTossed);
+    };
+  }, [processIncomingToss]);
 
   // Filtered Archive Items
   const filteredItems = useMemo(() => {
@@ -250,6 +363,28 @@ export default function OrbGatewayPage() {
     sacredAudio.playSingingBowl(528);
   };
 
+  // 🚀 Open Toss Destination Picker (Key -> LucKey 타깃 앱으로 영감 토스)
+  const handleOpenTossPicker = (text?: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const target = text || currentMemory?.fullText || currentMemory?.keypoint || "";
+    setTossTargetText(target);
+    setIsTossPickerOpen(true);
+    triggerHaptic("wormhole");
+  };
+
+  // 🚀 Execute Toss to Specific Destination
+  const handleExecuteToss = (dest: TossDestination) => {
+    triggerHaptic("whitehole");
+    omniWarpAudio.playWormhole();
+    setIsTossPickerOpen(false);
+
+    executeSmartToss("key", dest, {
+      text: tossTargetText,
+      contextMessage: tossTargetText,
+      autoPrompt: tossTargetText,
+    });
+  };
+
   // Refresh Archive from Storage
   const handleRefreshArchive = () => {
     setIsRefreshing(true);
@@ -279,7 +414,7 @@ export default function OrbGatewayPage() {
   };
 
   return (
-    <div className="relative w-full h-[100dvh] flex flex-col items-center justify-between overflow-hidden bg-[#020308] text-white select-none">
+    <div className="relative w-full h-[100dvh] flex flex-col items-center justify-between overflow-hidden bg-[#020308] text-white">
       {/* 🌌 Deep Space Ambient Glow Background */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden>
         {/* Soft Radial Ambient Nebulae */}
@@ -288,7 +423,7 @@ export default function OrbGatewayPage() {
       </div>
 
       {/* 🧭 Top Minimal Navigation Header */}
-      <header className="relative z-40 w-full max-w-lg px-3 sm:px-5 pt-[calc(var(--sat)+0.75rem)] pb-2 flex items-center justify-between shrink-0">
+      <header className="relative z-40 w-full max-w-lg px-3 sm:px-5 pt-[calc(var(--sat)+0.75rem)] pb-2 flex items-center justify-between shrink-0 select-none">
         {/* Back to LucKey Home */}
         <button
           type="button"
@@ -345,8 +480,23 @@ export default function OrbGatewayPage() {
         </div>
       </header>
 
+      {/* 🌟 Toast Notification (Toss Received Notice) */}
+      <AnimatePresence>
+        {tossNotice && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            className="fixed top-16 z-50 px-4 py-2 rounded-full bg-cyan-950/90 border border-cyan-400/60 shadow-[0_0_20px_rgba(6,182,212,0.5)] backdrop-blur-xl text-cyan-200 text-xs font-medium flex items-center gap-2 pointer-events-none"
+          >
+            <Sparkle size={14} className="text-amber-300 animate-spin" />
+            <span>{tossNotice}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* 🔮 Center Stage: Pure Mystical 3D Crystal Orb with Projection */}
-      <main className="relative z-30 flex-1 flex flex-col items-center justify-center w-full max-w-lg px-4 my-auto min-h-0">
+      <main className="relative z-30 flex-1 flex flex-col items-center justify-center w-full max-w-lg px-4 my-auto min-h-0 select-none">
         <div
           className={`relative flex items-center justify-center transition-transform duration-500 origin-center my-auto shrink-0 ${
             narrow
@@ -440,9 +590,30 @@ export default function OrbGatewayPage() {
           />
           <div className="absolute -inset-4 rounded-full border border-purple-500/20 pointer-events-none animate-pulse z-10" />
 
-          {/* 🌟 4. Pure Hyper-Realistic Glass Crystal Orb with Astral Projection */}
+          {/* 🌟 4. Pure Hyper-Realistic Glass Crystal Orb with Astral Projection & Swipe-Up Toss Gesture */}
           <div
             onClick={handleOrbTouch}
+            onTouchStart={(e) => {
+              touchStartYRef.current = e.touches[0].clientY;
+            }}
+            onTouchEnd={(e) => {
+              if (touchStartYRef.current !== null) {
+                const deltaY = touchStartYRef.current - e.changedTouches[0].clientY;
+                if (deltaY > 55) {
+                  // 🚀 위로 스크롤/스와이프 시 토스 피커 발동!
+                  handleOpenTossPicker(currentMemory?.fullText || currentMemory?.keypoint || "");
+                  touchStartYRef.current = null;
+                  return;
+                }
+              }
+              touchStartYRef.current = null;
+            }}
+            onWheel={(e) => {
+              if (e.deltaY < -35) {
+                // 휠 위로 스크롤 시 토스 피커 발동
+                handleOpenTossPicker(currentMemory?.fullText || currentMemory?.keypoint || "");
+              }
+            }}
             className={`group relative rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 active:scale-95 overflow-hidden touch-manipulation z-20 ${
               narrow ? "w-56 h-56" : "w-64 h-64 sm:w-72 sm:h-72"
             }`}
@@ -454,7 +625,7 @@ export default function OrbGatewayPage() {
                 ? "inset 0 0 45px rgba(56, 189, 248, 0.55), inset -10px -10px 25px rgba(0,0,0,0.95), 0 0 60px rgba(56, 189, 248, 0.5), 0 0 90px rgba(168, 85, 247, 0.35)"
                 : "inset 0 0 32px rgba(255, 255, 255, 0.25), inset -10px -10px 25px rgba(0, 0, 0, 0.9), 0 0 35px rgba(56, 189, 248, 0.3)",
             }}
-            title="수정구슬을 터치하여 다음 기억 파편을 투영하세요"
+            title="터치: 다음 기억 순환 | 위로 스크롤: LucKey로 차원 토스"
           >
             {/* Swirling Stardust Particle Simulation Canvas */}
             <canvas
@@ -503,7 +674,7 @@ export default function OrbGatewayPage() {
                     </h2>
 
                     {/* Core Distilled Insight */}
-                    <p className="text-[10px] sm:text-[11px] text-cyan-100/90 font-medium line-clamp-2 mt-1 leading-snug drop-shadow-sm px-1">
+                    <p className="text-[10px] sm:text-[11px] text-cyan-100/90 font-medium line-clamp-2 mt-1 leading-snug drop-shadow-sm px-1 select-text">
                       {currentMemory.keypoint}
                     </p>
 
@@ -536,9 +707,9 @@ export default function OrbGatewayPage() {
         </div>
 
         {/* 🎛️ Archive Scrying Controls & TTS Narration Bar */}
-        <div className="relative z-40 mt-4 sm:mt-5 flex flex-col items-center gap-2.5 w-full max-w-sm px-2">
+        <div className="relative z-40 mt-4 sm:mt-5 flex flex-col items-center gap-2.5 w-full max-w-sm px-2 select-none">
           {/* Main Control Strip */}
-          <div className="flex items-center justify-between w-full px-3 py-1.5 rounded-full bg-slate-950/70 border border-white/10 backdrop-blur-xl shadow-lg">
+          <div className="flex items-center justify-between w-full px-2.5 sm:px-3 py-1.5 rounded-full bg-slate-950/70 border border-white/10 backdrop-blur-xl shadow-lg">
             {/* Previous Memory */}
             <button
               type="button"
@@ -555,8 +726,19 @@ export default function OrbGatewayPage() {
                 <TTSButton
                   text={currentMemory.fullText}
                   voice="Kore"
-                  className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/40 text-cyan-200 text-xs font-medium shadow-[0_0_12px_rgba(6,182,212,0.3)] active:scale-95 transition-all cursor-pointer"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/40 text-cyan-200 text-xs font-medium shadow-[0_0_12px_rgba(6,182,212,0.3)] active:scale-95 transition-all cursor-pointer"
                 />
+
+                {/* 🚀 Quick Toss Button (Key -> LucKey 타깃 앱으로 차원 토스) */}
+                <button
+                  type="button"
+                  onClick={(e) => handleOpenTossPicker(currentMemory.fullText || currentMemory.keypoint, e)}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/40 text-purple-200 text-xs font-medium shadow-[0_0_12px_rgba(168,85,247,0.3)] active:scale-95 transition-all cursor-pointer"
+                  title="이 영감을 LucKey 다른 앱으로 토스"
+                >
+                  <Send size={12} className="text-purple-300 shrink-0" />
+                  <span className="text-[11px] font-sans">토스</span>
+                </button>
               </div>
             )}
 
@@ -571,7 +753,7 @@ export default function OrbGatewayPage() {
               title="전체 아카이브 목록 열람"
             >
               <Scroll size={13} className="text-purple-300 shrink-0" />
-              <span className="text-[11px] font-sans">아카이브</span>
+              <span className="text-[11px] font-sans">보관함</span>
               <span className="text-[10px] font-mono text-purple-300 bg-purple-500/20 px-1 rounded-full">
                 {archiveItems.length}
               </span>
@@ -591,14 +773,14 @@ export default function OrbGatewayPage() {
       </main>
 
       {/* 🌿 Minimal Bottom Guidance Banner */}
-      <footer className="relative z-40 w-full max-w-lg px-4 pb-[calc(var(--sab)+1.5rem)] flex flex-col items-center shrink-0 text-center">
+      <footer className="relative z-40 w-full max-w-lg px-4 pb-[calc(var(--sab)+1.5rem)] flex flex-col items-center shrink-0 text-center select-none">
         <motion.div
           animate={{ opacity: [0.6, 0.95, 0.6] }}
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
           className="flex items-center gap-1.5 text-xs text-cyan-200/85 tracking-wide font-sans py-1.5 px-4 rounded-full bg-white/[0.03] border border-white/5 backdrop-blur-md"
         >
-          <Sparkles size={12} className="text-cyan-300" />
-          <span>수정구슬을 터치하면 다음 키포인트가 영시됩니다</span>
+          <Sparkles size={12} className="text-cyan-300 shrink-0" />
+          <span>터치: 다음 기억 | 위로 스크롤: LucKey 토스 | 텍스트 선택 가능</span>
         </motion.div>
       </footer>
 
@@ -624,7 +806,7 @@ export default function OrbGatewayPage() {
               <div className="w-12 h-1.5 rounded-full bg-white/20 mx-auto mt-3 mb-1 shrink-0" />
 
               {/* Drawer Header */}
-              <div className="px-5 py-3 flex items-center justify-between border-b border-white/10 shrink-0">
+              <div className="px-5 py-3 flex items-center justify-between border-b border-white/10 shrink-0 select-none">
                 <div className="flex items-center gap-2">
                   <div className="p-1.5 rounded-lg bg-cyan-500/15 border border-cyan-400/30 text-cyan-300">
                     <Scroll size={16} />
@@ -637,7 +819,7 @@ export default function OrbGatewayPage() {
                       </span>
                     </h2>
                     <p className="text-[11px] text-slate-400">
-                      LucKey 활동 및 루시와의 대화 핵심 키포인트
+                      글자를 스크롤·선택하거나 토스하여 다른 앱으로 전달하세요
                     </p>
                   </div>
                 </div>
@@ -664,7 +846,7 @@ export default function OrbGatewayPage() {
               </div>
 
               {/* Category Filter Tabs */}
-              <div className="px-4 py-2.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar border-b border-white/5 shrink-0">
+              <div className="px-4 py-2.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar border-b border-white/5 shrink-0 select-none">
                 {[
                   { id: "all", label: "전체", count: archiveItems.length },
                   { id: "lucy", label: "💬 루시 대화", count: archiveItems.filter((i) => i.category === "lucy").length },
@@ -717,7 +899,7 @@ export default function OrbGatewayPage() {
                         }`}
                       >
                         {/* Card Header: Category & Date */}
-                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <div className="flex items-center justify-between gap-2 mb-1.5 select-none">
                           <span
                             className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${item.badgeColor}`}
                           >
@@ -728,26 +910,26 @@ export default function OrbGatewayPage() {
                           </span>
                         </div>
 
-                        {/* Title */}
-                        <h3 className="text-sm font-bold text-white mb-1">
+                        {/* Title (Text Selectable for Toss) */}
+                        <h3 className="text-sm font-bold text-white mb-1 select-text cursor-text">
                           {item.title}
                         </h3>
 
-                        {/* Keypoint Quote */}
-                        <p className="text-xs text-cyan-100/90 leading-relaxed font-sans mb-2 pl-2 border-l-2 border-cyan-400/40">
+                        {/* Keypoint Quote (Text Selectable for Toss) */}
+                        <p className="text-xs text-cyan-100/90 leading-relaxed font-sans mb-2 pl-2 border-l-2 border-cyan-400/40 select-text cursor-text">
                           {item.keypoint}
                         </p>
 
                         {/* Action Guidance (if present) */}
                         {item.actionGuidance && (
-                          <div className="text-[11px] text-purple-200/80 bg-purple-500/10 border border-purple-500/20 rounded-xl px-2.5 py-1.5 mb-2.5 flex items-start gap-1.5">
-                            <Sparkle size={12} className="text-purple-400 shrink-0 mt-0.5" />
+                          <div className="text-[11px] text-purple-200/80 bg-purple-500/10 border border-purple-500/20 rounded-xl px-2.5 py-1.5 mb-2.5 flex items-start gap-1.5 select-text cursor-text">
+                            <Sparkle size={12} className="text-purple-400 shrink-0 mt-0.5 select-none" />
                             <span>실천 화두: {item.actionGuidance}</span>
                           </div>
                         )}
 
-                        {/* Card Footer: Tags, TTS & Project button */}
-                        <div className="flex items-center justify-between pt-1 border-t border-white/5">
+                        {/* Card Footer: Tags, TTS & Toss buttons */}
+                        <div className="flex items-center justify-between pt-1 border-t border-white/5 select-none">
                           <div className="flex items-center gap-1 overflow-hidden text-[10px] text-slate-400">
                             {item.tags.slice(0, 2).map((t, idx) => (
                               <span key={idx} className="opacity-75">
@@ -764,13 +946,24 @@ export default function OrbGatewayPage() {
                               className="px-2.5 py-1 rounded-full bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-400/30 text-cyan-200 text-[11px] font-medium active:scale-95 transition-all cursor-pointer"
                             />
 
+                            {/* 🚀 Toss to LucKey App */}
+                            <button
+                              type="button"
+                              onClick={() => handleOpenTossPicker(item.fullText || item.keypoint)}
+                              className="px-2.5 py-1 rounded-full bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/40 text-purple-200 text-[11px] font-medium active:scale-95 transition-all cursor-pointer flex items-center gap-1"
+                              title="LucKey의 다른 앱으로 토스"
+                            >
+                              <Send size={11} />
+                              <span>토스</span>
+                            </button>
+
                             {/* Beam to Crystal Orb */}
                             <button
                               type="button"
                               onClick={() => handleSelectMemory(item)}
                               className="px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white text-[11px] font-medium border border-white/15 active:scale-95 transition-all cursor-pointer flex items-center gap-1"
                             >
-                              <span>구슬에 투영</span>
+                              <span>구슬 투영</span>
                             </button>
                           </div>
                         </div>
@@ -778,6 +971,95 @@ export default function OrbGatewayPage() {
                     );
                   })
                 )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 🚀 Cross-App Toss Destination Picker Modal */}
+      <AnimatePresence>
+        {isTossPickerOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md"
+            onClick={() => setIsTossPickerOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-sm bg-[#0c1020] border border-cyan-400/40 rounded-3xl p-5 shadow-[0_0_50px_rgba(6,182,212,0.3)] flex flex-col"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-purple-500/20 text-purple-300 border border-purple-400/30">
+                    <Send size={16} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white">
+                      LucKey로 차원 토스 (Toss)
+                    </h3>
+                    <p className="text-[11px] text-slate-400">
+                      원하는 목적지로 영감과 질문을 즉시 전달합니다
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsTossPickerOpen(false)}
+                  className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-all cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Toss Context Message Preview */}
+              {tossTargetText && (
+                <div className="mt-3 p-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-xs text-cyan-200/90 line-clamp-2 italic font-sans">
+                  "{tossTargetText}"
+                </div>
+              )}
+
+              {/* Destination Options */}
+              <div className="mt-3.5 space-y-2 max-h-[50vh] overflow-y-auto pr-1">
+                {[
+                  TOSS_DESTINATIONS.lucy,
+                  TOSS_DESTINATIONS.trinity,
+                  TOSS_DESTINATIONS.muse,
+                  TOSS_DESTINATIONS.orange,
+                  TOSS_DESTINATIONS.bluebird,
+                  TOSS_DESTINATIONS.heal,
+                  TOSS_DESTINATIONS.epilogue,
+                ].map((dest) => (
+                  <button
+                    key={dest.id}
+                    type="button"
+                    onClick={() => handleExecuteToss(dest)}
+                    className="w-full flex items-center justify-between p-2.5 rounded-2xl bg-white/[0.04] hover:bg-cyan-500/15 border border-white/5 hover:border-cyan-400/40 text-left transition-all active:scale-[0.98] cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-xl shrink-0 group-hover:scale-110 transition-transform">
+                        {dest.icon}
+                      </span>
+                      <div>
+                        <div className="text-xs font-bold text-white group-hover:text-cyan-200 flex items-center gap-1.5">
+                          {dest.name}
+                        </div>
+                        <div className="text-[10px] text-slate-400 group-hover:text-slate-300">
+                          {dest.subName}
+                        </div>
+                      </div>
+                    </div>
+
+                    <ExternalLink size={14} className="text-slate-500 group-hover:text-cyan-300 shrink-0 transition-colors" />
+                  </button>
+                ))}
               </div>
             </motion.div>
           </motion.div>

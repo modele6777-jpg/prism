@@ -413,8 +413,12 @@ export function executeSmartToss(
 
   if (typeof window !== 'undefined') {
     const safePath = resolveCanonicalPath(destination.path);
-    window.dispatchEvent(new CustomEvent('prism-navigate', { detail: { path: safePath } }));
-    window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: safePath } }));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (window.location.pathname.includes('orb')) {
+      window.location.href = safePath;
+    } else {
+      window.dispatchEvent(new CustomEvent('prism-navigate', { detail: { path: safePath } }));
+      window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: safePath } }));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }
 }

@@ -6,6 +6,7 @@ import { BgMusicPlayer } from "./components/trinity/BgMusicPlayer";
 import { BigBangButton } from "./components/omniwarp/BigBangButton";
 import { BigBangExpansionOverlay } from "./components/omniwarp/BigBangExpansionOverlay";
 import InstallPrompt from "./components/InstallPrompt";
+import SelectionBridgeToolbar from "./components/SelectionBridgeToolbar";
 import { OrbCosmicLoader } from "./components/OrbCosmicLoader";
 import "./index.css";
 import { initPerfMode, getSwUpdateIntervalMs, shouldMountBgMusicPlayer } from "./lib/perfMode";
@@ -74,6 +75,7 @@ function OrbApp() {
       )}
       <BigBangButton />
       <BigBangExpansionOverlay />
+      <SelectionBridgeToolbar />
       <InstallPrompt />
     </>
   );
