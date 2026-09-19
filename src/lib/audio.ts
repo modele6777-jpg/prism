@@ -491,8 +491,6 @@ export function getTTSAudioElement(): HTMLAudioElement {
     } catch (error) {
       console.warn('[AudioUnlock] Web Audio unlock failed:', error);
     }
-
-    primeTTSAudioElement();
   }
 
   /** Call synchronously during a user gesture before async TTS fetch. */

@@ -253,20 +253,20 @@ function AppContent() {
     initTTSAudioLifecycle();
   }, []);
 
-  // Unlock Web Audio and HTML5 Audio from real user gestures and maintain wake state.
+  // Unlock Web Audio from real user gesture once, and detach listeners immediately
   React.useEffect(() => {
     let unlocked = false;
+    const cleanupListeners = () => {
+      window.removeEventListener('pointerdown', handleUserGesture);
+      window.removeEventListener('touchstart', handleUserGesture);
+      window.removeEventListener('click', handleUserGesture);
+    };
+
     const handleUserGesture = () => {
       if (!unlocked) {
         unlocked = true;
         unlockAudioPlayback();
-      } else {
-        try {
-          const ctx = getSharedAudioContext();
-          if (ctx && ctx.state === 'suspended') {
-            ctx.resume().catch(() => {});
-          }
-        } catch (_) {}
+        cleanupListeners();
       }
     };
 
@@ -274,11 +274,7 @@ function AppContent() {
     window.addEventListener('touchstart', handleUserGesture, { passive: true });
     window.addEventListener('click', handleUserGesture, { passive: true });
 
-    return () => {
-      window.removeEventListener('pointerdown', handleUserGesture);
-      window.removeEventListener('touchstart', handleUserGesture);
-      window.removeEventListener('click', handleUserGesture);
-    };
+    return cleanupListeners;
   }, []);
 
 

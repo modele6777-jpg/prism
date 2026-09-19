@@ -45,20 +45,30 @@ class SafeStorageWrapper implements Storage {
     this.isSession = isSession;
   }
 
+  private _nativeStorage: Storage | null | undefined = undefined;
+
   private get nativeStorage(): Storage | null {
-    if (typeof window === 'undefined') return null;
+    if (this._nativeStorage !== undefined) {
+      return this._nativeStorage;
+    }
+    if (typeof window === 'undefined') {
+      this._nativeStorage = null;
+      return null;
+    }
     try {
       const storage = this.isSession ? window.sessionStorage : window.localStorage;
       if (storage) {
-        // Quick verification of read/write capability
+        // Quick one-time verification of read/write capability
         const testKey = '__prism_storage_probe__';
         storage.setItem(testKey, '1');
         storage.removeItem(testKey);
+        this._nativeStorage = storage;
         return storage;
       }
     } catch (_) {
       // Catch quota exceeded or private browsing restrictions
     }
+    this._nativeStorage = null;
     return null;
   }
 

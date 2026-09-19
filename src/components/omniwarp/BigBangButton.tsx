@@ -881,7 +881,16 @@ export function BigBangButton() {
   };
 
   useEffect(() => {
+    const handleGlobalCancel = () => {
+      if (touchStartRef.current) {
+        handlePointerCancel();
+      }
+    };
+    window.addEventListener('pointercancel', handleGlobalCancel);
+    window.addEventListener('blur', handleGlobalCancel);
     return () => {
+      window.removeEventListener('pointercancel', handleGlobalCancel);
+      window.removeEventListener('blur', handleGlobalCancel);
       stopBlackHoleContinuousHaptic();
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
@@ -974,6 +983,7 @@ export function BigBangButton() {
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
               onPointerCancel={handlePointerCancel}
+              onLostPointerCapture={handlePointerCancel}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               animate={{
