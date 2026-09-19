@@ -1155,39 +1155,7 @@ export function ArtRecommendationView() {
     }, 4000);
   }, []);
 
-  const handleShuffleKoreanPoem = useCallback(() => {
-    setRecommendation((prev) => {
-      if (!prev) return null;
-      const currentTitle = prev.famousPoem?.title || "";
-      const candidates = KOREAN_FAMOUS_POEMS.filter(
-        (p) => !currentTitle.toLowerCase().includes(p.title.toLowerCase())
-      );
-      const picked = candidates[Math.floor(Math.random() * candidates.length)] || KOREAN_FAMOUS_POEMS[0];
-      const updated: ArtRecommendation = {
-        ...prev,
-        famousPoem: {
-          title: picked.title,
-          titleOriginal: picked.titleOriginal || picked.title,
-          poet: picked.poet,
-          poetOriginal: picked.poetOriginal || picked.poet,
-          excerpt: picked.excerpt,
-          whyRecommended: picked.whyRecommended,
-          siyoilUrl: picked.siyoilUrl,
-          poemSourceName: picked.poemSourceName,
-        },
-      };
-      try {
-        localStorage.setItem(ART_CACHE_KEYS.recommendation, JSON.stringify(updated));
-      } catch (err) {
-        console.warn("Failed to persist updated poem to cache:", err);
-      }
-      setPoemToastMessage(`《${picked.title}》(${picked.poet})으로 변경되었습니다.`);
-      setTimeout(() => {
-        setPoemToastMessage(null);
-      }, 4000);
-      return updated;
-    });
-  }, []);
+
 
   const restoreDailyArtFromCache = useCallback((): boolean => {
     if (!isArtCacheFresh()) return false;
@@ -2121,15 +2089,7 @@ export function ArtRecommendationView() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={handleShuffleKoreanPoem}
-                      title="다른 한국 명시 랜덤 추천"
-                      className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 px-2.5 py-1.5 rounded-xl transition-all active:scale-95 cursor-pointer"
-                    >
-                      <RefreshCw size={12} />
-                      <span className="hidden sm:inline">다른 시 셔플</span>
-                    </button>
+
                     <button
                       type="button"
                       onClick={() => setIsPoemLibraryOpen(true)}
