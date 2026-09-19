@@ -808,6 +808,33 @@ function deduplicateReadingText(text: string): string {
   return result.join('\n');
 }
 
+/**
+ * 🚫 타로 결과 음성 낭독 및 본문 표시 시 핵심 요약 블록 100% 원천 제거
+ * - 사용자 요청: "타로 결과 읽어줄때 핵심요약은 읽지마"
+ * - [핵심 3줄 요약], ### 핵심 요약 및 관련 불릿 항목을 온전히 제거하여 순수 타로 마스터 본문 리딩만 읽도록 보장
+ */
+export function stripSummaryFromTarotText(text: string): string {
+  if (!text) return "";
+
+  // 1. 후행 핵심 요약 섹션(헤딩, 대괄호 태그, 번호 헤딩 및 이후 전체 텍스트) 원천 제거
+  let cleaned = text
+    .replace(
+      /(?:\r?\n|^)\s*(?:#{1,6}\s*)?(?:✨\s*)?(?:\d+\.\s*)?(?:\[\s*)?(?:핵심\s*(?:3줄\s*|세줄\s*)?요약|3줄\s*요약|핵심\s*요약|Quick\s*Summary)(?:\])?\s*[\s\S]*$/i,
+      ""
+    )
+    .trim();
+
+  // 2. 혹시 본문 중간에 잔여할 수 있는 핵심 요약 불릿 라인도 원천 배제
+  cleaned = cleaned
+    .replace(
+      /(?:\r?\n|^)\s*[-*•·]?\s*\[(?:현재\s*에너지|방향과\s*결단|실천\s*처방)\][^\r\n]*/gi,
+      ""
+    )
+    .trim();
+
+  return cleaned;
+}
+
 function extractConciseSummary(text: string): string[] {
   if (!text || text.trim().length < 80) return [];
 
@@ -1698,9 +1725,13 @@ function playDailyCardChimeAsync() {
 
   const displayTarotResult = useMemo(() => {
     if (!tarotResult) return "";
-    return tarotResult
-      .replace(/(?:\n|^)(?:\[핵심\s*3줄\s*요약\]|###\s*.*핵심\s*3줄\s*요약)[\s\S]*$/, "")
-      .trim();
+    return stripSummaryFromTarotText(tarotResult);
+  }, [tarotResult]);
+
+  // 🔊 타로 결과 음성 낭독 전용 텍스트 (핵심 3줄 요약 완전 배제: 본문 1~5단계 순수 리딩만 낭독)
+  const tarotSpeechReadingText = useMemo(() => {
+    if (!tarotResult) return "";
+    return prepareNaturalSpeechText(stripSummaryFromTarotText(tarotResult));
   }, [tarotResult]);
 
   const summarySpeechText = useMemo(() => {
@@ -1720,21 +1751,16 @@ function playDailyCardChimeAsync() {
   }, [isTTSActive, summarySpeechText, ttsState.activeFullText]);
 
   const isFullReadingTTSActive = useMemo(() => {
-    if (!isTTSActive || !tarotResult) return false;
+    if (!isTTSActive || !tarotSpeechReadingText) return false;
     return !isSummaryTTSActive;
-  }, [isTTSActive, tarotResult, isSummaryTTSActive]);
+  }, [isTTSActive, tarotSpeechReadingText, isSummaryTTSActive]);
 
   // Auto-prefetch TTS for reading & summary when generated
   useEffect(() => {
-    if (tarotResult && !isTarotGenerating && tarotResult.trim().length >= 120) {
-      const summaryBullets = extractConciseSummary(tarotResult);
-      if (summaryBullets.length > 0) {
-        const firstSummaryChunk = summaryBullets[0].replace(/^\[([^\]]+)\]\s*/, '$1. ').trim().replace(/[.!?\s]+$/, '') + '.';
-        prefetchTTS(firstSummaryChunk, 'Kore', '신비');
-      }
-      prefetchTTS(tarotResult.slice(0, 400), 'Kore', '신비');
+    if (tarotSpeechReadingText && !isTarotGenerating && tarotSpeechReadingText.trim().length >= 80) {
+      prefetchTTS(tarotSpeechReadingText.slice(0, 400), 'Kore', '신비');
     }
-  }, [tarotResult, isTarotGenerating]);
+  }, [tarotSpeechReadingText, isTarotGenerating]);
   const [chatInput, setChatInput] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -3274,8 +3300,8 @@ function playDailyCardChimeAsync() {
                                         onClick={async () => {
                                           if (isFullReadingTTSActive) {
                                             stopTTS();
-                                          } else if (tarotResult) {
-                                            await playTTSInChunks(tarotResult, 'Kore', 420, '신비');
+                                          } else if (tarotSpeechReadingText) {
+                                            await playTTSInChunks(tarotSpeechReadingText, 'Kore', 420, '신비');
                                           }
                                         }}
                                         className={`px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
@@ -3283,7 +3309,7 @@ function playDailyCardChimeAsync() {
                                             ? "bg-yellow-500/25 text-yellow-300 border border-yellow-400/40 animate-pulse"
                                             : "bg-white/10 hover:bg-white/20 text-white/90 border border-white/15"
                                         }`}
-                                        title={isFullReadingTTSActive ? "낭독 중지하기" : "전체 리딩 음성으로 듣기"}
+                                        title={isFullReadingTTSActive ? "낭독 중지하기" : "전체 리딩 음성으로 듣기 (핵심요약 제외)"}
                                       >
                                         {isFullReadingTTSActive ? <VolumeX size={12} /> : <Volume2 size={12} />}
                                         <span>{isFullReadingTTSActive ? "중지" : "전체 낭독"}</span>

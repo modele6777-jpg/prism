@@ -504,7 +504,7 @@ export default function OrbGatewayPage() {
     triggerHaptic("whitehole");
   };
 
-  // 🔮 Crystal Orb Tap: Cycle Memory & Cosmic Sacred Resonance
+  // 🔮 Crystal Orb Tap: Toggle Parchment Roll (두루마리 열기/닫기 토글)
   const handleOrbTouch = () => {
     setIsResonating(true);
     setRippleKey((k) => k + 1);
@@ -514,13 +514,8 @@ export default function OrbGatewayPage() {
     sacredAudio.playSingingBowl(528);
     triggerHaptic("whitehole");
 
-    // Reset roll state to reveal new memory unrolled
-    setIsParchmentRolled(false);
-
-    // Cycle to next memory fragment
-    if (filteredItems.length > 0) {
-      setCurrentIndex((prev) => (prev + 1) % filteredItems.length);
-    }
+    // Toggle parchment roll state (열기/닫기)
+    setIsParchmentRolled((prev) => !prev);
 
     setTimeout(() => {
       setIsResonating(false);
@@ -599,7 +594,26 @@ export default function OrbGatewayPage() {
     }
   };
 
-  // 🪐 칠요 성진 앱으로 즉시 이동 & 양피지 영시 토스 (지체 없이 바로 이동)
+  // 🪐 아이콘 클릭 시 해당 앱 모드 선택 활성화 (이동/토스 없음)
+  const handleSelectApp = useCallback(
+    (app: SeptagramAppDimension) => {
+      // 이미 선택된 앱이면 선택 해제, 아니면 해당 앱 선택
+      setSelectedRuneIds((prev) =>
+        prev.includes(app.id) ? [] : [app.id]
+      );
+      setHoveredApp(null);
+      setHoveredRuneInfo(null);
+
+      // 선택 피드백 햅틱 & 사운드
+      triggerHaptic("wormhole");
+      try {
+        sacredAudio.playSingingBowl(528);
+      } catch (_) {}
+    },
+    []
+  );
+
+  // 🚀 두루마리 토스: 롤드 상태에서 행성 그리드 버튼 클릭 시 앱으로 이동 (기존 토스 기능)
   const handleTossToApp = useCallback(
     (app: SeptagramAppDimension) => {
       setSelectedRuneIds([app.id]);
@@ -641,14 +655,14 @@ export default function OrbGatewayPage() {
           themeColor: app.color,
         };
 
-      // 3. 지체 없이 즉각 스마트 토스 실행 (sessionStorage/localStorage 저장 및 이벤트 디스패치)
+      // 3. 스마트 토스 실행
       executeSmartToss("key", dest, {
         text: tossMessage,
         contextMessage: tossMessage,
         autoPrompt: tossMessage,
       });
 
-      // 4. SPA wouter 네비게이트 및 location.href를 통한 100% 즉시 이동 보장
+      // 4. 이동
       const safePath = dest.path;
       try {
         navigate(safePath);
@@ -659,7 +673,6 @@ export default function OrbGatewayPage() {
         window.dispatchEvent(new CustomEvent("nav-click-active", { detail: { path: safePath } }));
         window.scrollTo({ top: 0, behavior: "smooth" });
 
-        // 독립 PWA(orb.html) 또는 라우트 미반영 시 즉시 location.href 이동
         if (window.location.pathname.includes("orb") || !window.location.pathname.includes(safePath.replace("/", ""))) {
           window.location.href = safePath;
         }
@@ -1025,7 +1038,7 @@ export default function OrbGatewayPage() {
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleTossToApp(app);
+                          handleSelectApp(app);
                         }}
                         onMouseEnter={(e) => {
                           setHoveredApp(app);
@@ -1042,22 +1055,22 @@ export default function OrbGatewayPage() {
                         }}
                         className={`group/rune relative flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full transition-all duration-300 active:scale-90 cursor-pointer touch-manipulation ${
                           isSelected
-                            ? "scale-125 ring-2 ring-white shadow-[0_0_25px_rgba(255,255,255,0.95)] z-40"
+                            ? "scale-125 ring-2 ring-cyan-300 shadow-[0_0_25px_rgba(6,182,212,0.95)] z-40"
                             : isHovered
-                            ? "scale-120 shadow-[0_0_18px_rgba(56,189,248,0.85)] z-40"
-                            : "hover:scale-115 opacity-85 hover:opacity-100"
+                            ? "scale-110 shadow-[0_0_18px_rgba(6,182,212,0.85)] z-40"
+                            : "hover:scale-110 opacity-75 hover:opacity-100"
                         }`}
                         style={{
                           background: isSelected
-                            ? `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.5) 0%, ${app.color} 85%)`
-                            : `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.25) 0%, rgba(15,20,35,0.95) 75%)`,
-                          border: `1.5px solid ${isSelected ? "#ffffff" : app.color}`,
+                            ? `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.45) 0%, rgba(6,182,212,0.9) 85%)`
+                            : `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.15) 0%, rgba(6,20,40,0.95) 75%)`,
+                          border: `1.5px solid ${isSelected ? "rgba(6,182,212,1)" : "rgba(6,182,212,0.5)"}`,
                           boxShadow: isSelected
-                            ? `0 0 22px ${app.glowColor}, inset 0 0 8px rgba(255,255,255,0.8)`
-                            : `0 0 10px ${app.glowColor}`,
+                            ? `0 0 22px rgba(6,182,212,0.8), inset 0 0 8px rgba(255,255,255,0.6)`
+                            : `0 0 8px rgba(6,182,212,0.35)`,
                         }}
-                        aria-label={`${app.name} (${app.shortName}) 토스`}
-                        title={`${app.name} (${app.subTitle}) 터치 시 양피지 토스`}
+                        aria-label={`${app.name} (${app.shortName}) 모드 선택`}
+                        title={app.name}
                       >
                         {/* 정방향 자전 보정 (Counter-rotation so rune symbol stays upright) */}
                         <motion.div
@@ -1299,26 +1312,8 @@ export default function OrbGatewayPage() {
                   <div className="flex items-center justify-between mb-2 px-1">
                     <div className="flex items-center gap-1.5 text-xs font-semibold text-cyan-200">
                       <Sparkles size={12} className="text-amber-300 animate-spin" />
-                      <span>오브 둘레의 행성을 터치하여 두루마리를 토스하세요!</span>
+                      <span>행성 아이콘을 터치하여 두루마리를 토스하세요</span>
                     </div>
-                    {recommendedPrescription && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActivePracticePrescription(recommendedPrescription);
-                          setIsPracticeModalOpen(true);
-                          triggerHaptic("mirrorhole");
-                          try {
-                            sacredAudio.playSingingBowl(528);
-                          } catch (_) {}
-                        }}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/25 hover:bg-emerald-500/40 border border-emerald-400/50 text-[10.5px] font-bold text-emerald-200 transition-all cursor-pointer shrink-0 shadow-[0_0_10px_rgba(16,185,129,0.3)] active:scale-95"
-                        title="추천 처방 기법 실천하기"
-                      >
-                        <span>{recommendedPrescription.icon} 제{recommendedPrescription.globalIndex}호 기법 실천</span>
-                      </button>
-                    )}
                   </div>
 
                   <div className="grid grid-cols-7 gap-1">
@@ -1465,55 +1460,46 @@ export default function OrbGatewayPage() {
                       </div>
                     )}
 
-                    {/* 💊 40대 마음 처방약 맞춤 추천 & 즉시 실천 카드 */}
+                    {/* 💊 40대 마음 처방약 맞춤 추천 카드 (탭하면 가이드 열람) */}
                     {recommendedPrescription && (
-                      <div className="p-3 rounded-2xl bg-gradient-to-r from-emerald-950/70 via-[#0d221a]/80 to-emerald-950/70 border border-emerald-500/45 shadow-lg select-none">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 overflow-hidden">
-                            <span className="text-base shrink-0 p-1.5 rounded-xl bg-emerald-500/25 border border-emerald-400/50">
-                              {recommendedPrescription.icon}
-                            </span>
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/30 text-emerald-200 font-mono">
-                                  추천 상비약 제{recommendedPrescription.globalIndex}호
-                                </span>
-                                <span className="text-[9.5px] text-emerald-300/80 font-mono">
-                                  약효 {recommendedPrescription.timeEstimate}
-                                </span>
-                              </div>
-                              <h4 className="text-xs sm:text-[13px] font-bold text-emerald-50 truncate mt-0.5">
-                                {recommendedPrescription.title}
-                                <span className="text-[10.5px] font-normal text-emerald-300/80 ml-1">
-                                  ({recommendedPrescription.subtitle})
-                                </span>
-                              </h4>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActivePracticePrescription(recommendedPrescription);
+                          setIsPracticeModalOpen(true);
+                          triggerHaptic("whitehole");
+                          try { sacredAudio.playSingingBowl(528); } catch (_) {}
+                        }}
+                        className="w-full p-3 rounded-2xl bg-gradient-to-r from-emerald-950/70 via-[#0d221a]/80 to-emerald-950/70 border border-emerald-500/45 shadow-lg select-none text-left active:scale-99 transition-all cursor-pointer hover:border-emerald-400/60 group"
+                        title="탭하여 처방 기법 전체 가이드 보기"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-base shrink-0 p-1.5 rounded-xl bg-emerald-500/25 border border-emerald-400/50">
+                            {recommendedPrescription.icon}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/30 text-emerald-200 font-mono">
+                                추천 상비약 제{recommendedPrescription.globalIndex}호
+                              </span>
+                              <span className="text-[9.5px] text-emerald-300/80 font-mono">
+                                {recommendedPrescription.timeEstimate}
+                              </span>
                             </div>
+                            <h4 className="text-xs sm:text-[13px] font-bold text-emerald-50 truncate mt-0.5">
+                              {recommendedPrescription.title}
+                              <span className="text-[10.5px] font-normal text-emerald-300/80 ml-1">
+                                ({recommendedPrescription.subtitle})
+                              </span>
+                            </h4>
                           </div>
-
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActivePracticePrescription(recommendedPrescription);
-                              setIsPracticeModalOpen(true);
-                              triggerHaptic("whitehole");
-                              try {
-                                sacredAudio.playSingingBowl(528);
-                              } catch (_) {}
-                            }}
-                            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500/40 via-teal-500/40 to-emerald-500/40 hover:from-emerald-500/60 hover:to-teal-500/60 border border-emerald-400/80 text-emerald-50 text-xs font-bold active:scale-95 transition-all shadow-[0_0_15px_rgba(16,185,129,0.45)] shrink-0 flex items-center gap-1.5 cursor-pointer"
-                            title="이 처방 기법을 1~3분 동안 직접 실천하기"
-                          >
-                            <Sparkles size={12} className="text-amber-300 animate-pulse" />
-                            <span>기법 실천하기</span>
-                          </button>
+                          <Sparkles size={13} className="text-emerald-400/60 group-hover:text-emerald-300 shrink-0 transition-colors" />
                         </div>
-
-                        <p className="text-[11.5px] text-emerald-100/90 mt-2 pl-2.5 border-l-2 border-emerald-400/50 leading-relaxed font-sans line-clamp-2">
-                          "{recommendedPrescription.affirmation}" — {recommendedPrescription.clinicalTip || recommendedPrescription.purpose}
+                        <p className="text-[11.5px] text-emerald-100/85 mt-2 pl-2.5 border-l-2 border-emerald-400/45 leading-relaxed text-left line-clamp-2">
+                          "{recommendedPrescription.affirmation}"
                         </p>
-                      </div>
+                      </button>
                     )}
 
                     {/* 📜 Bottom Prompt to Roll Up for Toss */}
@@ -1562,8 +1548,8 @@ export default function OrbGatewayPage() {
           <Sparkles size={12} className="text-amber-300 shrink-0" />
           <span>
             {isParchmentRolled
-              ? "📜 두루마리가 봉인되었습니다 · 오브 둘레의 앱 행성을 터치하여 토스하세요"
-              : "구슬 터치 시 영시 갱신 · '돌돌 말기'를 누르면 행성으로 토스할 수 있습니다"}
+              ? "📜 두루마리 봉인 · 행성 그리드에서 앱을 선택하여 토스"
+              : "오브 터치로 두루마리 말기/펼치기 · 주변 아이콘 클릭으로 앱 선택"}
           </span>
         </motion.div>
       </footer>
@@ -1576,20 +1562,14 @@ export default function OrbGatewayPage() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 3, scale: 0.9 }}
             transition={{ duration: 0.12 }}
-            className="fixed z-[9999] pointer-events-none -translate-x-1/2 -translate-y-full px-3 py-1.5 rounded-full bg-zinc-950/95 border text-xs font-bold text-white shadow-[0_4px_24px_rgba(0,0,0,0.9)] backdrop-blur-md flex items-center gap-1.5 whitespace-nowrap select-none hidden sm:flex"
+            className="fixed z-[9999] pointer-events-none -translate-x-1/2 -translate-y-full px-3 py-1 rounded-full bg-[#020d1a]/95 border border-cyan-400/50 text-xs font-bold text-cyan-100 shadow-[0_4px_20px_rgba(6,182,212,0.3)] backdrop-blur-md whitespace-nowrap select-none hidden sm:flex items-center gap-1.5"
             style={{
               left: `${hoveredRuneInfo.x}px`,
               top: `${hoveredRuneInfo.y - 10}px`,
-              borderColor: hoveredRuneInfo.app.color,
-              boxShadow: `0 0 16px ${hoveredRuneInfo.app.glowColor}, 0 4px 18px rgba(0,0,0,0.85)`,
             }}
           >
             <span className="text-sm">{hoveredRuneInfo.app.icon}</span>
-            <span style={{ color: hoveredRuneInfo.app.color }}>{hoveredRuneInfo.app.name}</span>
-            <span className="text-slate-300 font-normal">({hoveredRuneInfo.app.subTitle})</span>
-            <span className="text-[10px] text-amber-300/80 bg-amber-400/10 px-1.5 py-0.5 rounded-full font-sans">
-              터치하여 토스
-            </span>
+            <span className="text-cyan-200 font-semibold tracking-wide">{hoveredRuneInfo.app.shortName}</span>
           </motion.div>
         )}
       </AnimatePresence>

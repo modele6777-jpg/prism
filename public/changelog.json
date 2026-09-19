@@ -1,5 +1,19 @@
 [
   {
+    "version": "1.2.990",
+    "summary": "CalmTechniquePracticeModal 전면 개편 및 OrbGatewayPage 조제버튼 제거",
+    "builtAt": "2026-09-19T11:57:00.000Z",
+    "items": [
+      "🧘 CalmTechniquePracticeModal 전면 재설계: 단계별 좌우 네비게이션 버튼 완전 제거, 모든 실천 단계를 한 화면에 스크롤로 표시",
+      "⏱️ 단계별 독립 인라인 타이머 구현: 각 StepTimer 컴포넌트가 독립적인 상태를 유지하며 원형 SVG 프로그레스 링 포함",
+      "📝 단계별 독립 입력 필드(StepFields) 구현: text_input, textarea, checklist 타입별 인라인 렌더링",
+      "💎 고급 다크 글래스 디자인 시스템 적용: inline style 기반 emerald 그라디언트, 모바일 핸들, 배경 클릭 닫기",
+      "📜 기법 목적(purpose), 임상 지도(clinicalTip), 오늘의 확언(affirmation) 섹션 항상 표시",
+      "🚫 OrbGatewayPage 조제버튼 제거: 롤드 상태 '기법 실천' 버튼 및 오픈 양피지 '기법 실천하기' 버튼 제거",
+      "✅ 처방 추천 카드 전체를 클릭 가능한 버튼으로 변환 — 탭하면 전체 가이드 모달 오픈"
+    ]
+  },
+  {
     "version": "1.2.988",
     "summary": "빅뱅 버튼 드래그 추천 7대 핵심 앱 엄격 비반복 순환(Strict Non-Repeating Cycle) 엔진 및 실시간 순환 진행 HUD 도입",
     "builtAt": "2026-09-19T09:30:00.000Z",
