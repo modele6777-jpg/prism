@@ -809,7 +809,7 @@ export function UnifiedChat() {
         saveLucyChatSummary(summaryText, activePersona);
         // 루시가 요약을 말풍선으로 전달
         await sendUnifiedMessage(
-          `[대화 요약 결과]\n${summaryText}\n\n(오브 사이트에도 자동으로 공유됐어 ✨)`,
+          `[대화 요약 결과]\n${summaryText}\n\n(Key 사이트에도 자동으로 공유됐어 ✨)`,
           activePersona,
           undefined,
           { extraSystemContext: '\n\n[지시: 이것은 대화 요약 결과야. 루시는 요약 내용을 자연스럽게 읽어주고, 오브와 데이터가 연결됐다고 간단히 알려줘. 1~2문장만.]' }
@@ -905,7 +905,7 @@ export function UnifiedChat() {
                         ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
                         : 'bg-sky-500/20 hover:bg-sky-500/30 border-sky-500/40 text-sky-200'
                     }`}
-                    title="대화 요약 → 오브 사이트에 공유"
+                    title="대화 요약 → Key 사이트에 공유"
                   >
                     {isSummarizing ? (
                       <Loader2 size={13} className="animate-spin" />

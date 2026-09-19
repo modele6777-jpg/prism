@@ -1,7 +1,7 @@
 {
-  "name": "lucy-universe",
+  "name": "luckey",
   "private": true,
-  "version": "1.2.970",
+  "version": "1.2.971",
   "engines": {
     "node": ">=20.0.0"
   },

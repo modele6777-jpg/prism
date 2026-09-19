@@ -94,9 +94,9 @@ export default defineConfig(({mode}) => {
           'manifest-orb.json',
         ],
         manifest: {
-          name: "프리즘 프로 (PRISM PRO)",
-          short_name: "프리즘프로",
-          description: "프리즘 프로 AI 페르소나 유니버스 (PRISM PRO)",
+          name: "LucKey",
+          short_name: "LucKey",
+          description: "LucKey AI 페르소나 유니버스",
           start_url: "/",
           display: "standalone",
           background_color: "#000000",

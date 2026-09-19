@@ -427,7 +427,7 @@ export default function OrbGatewayPage() {
   // LucKey 단독 PWA 메타데이터 및 매니페스트 동적 설정
   useEffect(() => {
     const prevTitle = document.title;
-    document.title = "LucKey (루키 / 럭키)";
+    document.title = "Key";
 
     let manifestTag = document.querySelector('link[rel="manifest"]') as HTMLLinkElement | null;
     const prevManifestHref = manifestTag ? manifestTag.getAttribute("href") : null;
@@ -623,7 +623,7 @@ export default function OrbGatewayPage() {
     try {
       const tossPayload = {
         source: "orb",
-        sourceName: "크리스탈 오브",
+        sourceName: "Key",
         targetAppId: app.id,
         timestamp: Date.now(),
         query: queryStr,
@@ -638,9 +638,9 @@ export default function OrbGatewayPage() {
         sourceApp: "orb",
         targetApp: targetAppId,
         actionType: "smart_toss",
-        contextMessage: `[크리스탈 오브 차원 도약] ${keyThemeStr}`,
+        contextMessage: `[Key 차원 도약] ${keyThemeStr}`,
         autoTrigger: true,
-        autoPrompt: `[크리스탈 오브 직관 연동] 질문: "${queryStr}" / 직관 해답: "${directAnswerStr}" / 실천 가이드: "${actionSolutionStr}"`,
+        autoPrompt: `[Key 직관 연동] 질문: "${queryStr}" / 직관 해답: "${directAnswerStr}" / 실천 가이드: "${actionSolutionStr}"`,
         orbInsight: {
           query: queryStr,
           keyTheme: keyThemeStr,
@@ -683,7 +683,7 @@ export default function OrbGatewayPage() {
         },
         context: {
           activeRoute: "/orb",
-          activeTitle: "크리스탈 오브",
+          activeTitle: "Key",
           summary: `${keyThemeStr} - ${directAnswerStr.slice(0, 40)}`,
           primarySubject: keyThemeStr,
           capturedAt: Date.now(),
@@ -742,7 +742,7 @@ export default function OrbGatewayPage() {
   // Dynamic Head & PWA Meta for iPhone Safari "Add to Home Screen"
   useEffect(() => {
     const prevTitle = document.title;
-    document.title = "LucKey (루키 / 럭키)";
+    document.title = "Key";
 
     // 1. Manifest
     let manifestTag = document.querySelector('link[rel="manifest"]') as HTMLLinkElement | null;
@@ -1446,7 +1446,7 @@ ${dimensionDescriptions}`;
           <div className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl text-slate-300 text-xs">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shrink-0" />
             <span className="hidden sm:inline">오라클 연동</span>
-            <span className="sm:hidden text-[11px]">LucKey</span>
+            <span className="sm:hidden text-[11px]">Key</span>
           </div>
         </div>
 
@@ -1454,7 +1454,7 @@ ${dimensionDescriptions}`;
         <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-cyan-500/10 border border-cyan-400/30 backdrop-blur-xl shadow-lg min-w-0 max-w-[170px] xs:max-w-[220px] sm:max-w-none">
           <CrystalOrbIcon size={15} className="shrink-0 text-cyan-300 animate-pulse" />
           <span className="text-xs sm:text-sm font-semibold tracking-wider text-cyan-200 truncate">
-            {prismUserName ? `${prismUserName}의 LucKey` : "LucKey"}
+            {prismUserName ? `${prismUserName}의 Key` : "Key"}
           </span>
         </div>
 
@@ -1465,7 +1465,7 @@ ${dimensionDescriptions}`;
               type="button"
               onClick={() => window.dispatchEvent(new CustomEvent("trigger-pwa-install"))}
               className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-medium backdrop-blur-xl border border-cyan-400/40 bg-cyan-500/15 text-cyan-200 hover:bg-cyan-500/25 transition-all active:scale-95 shadow-[0_0_12px_rgba(6,182,212,0.25)] touch-manipulation cursor-pointer"
-              title="LucKey 독립 앱 설치"
+              title="Key 독립 앱 설치"
             >
               <Download size={12} className="text-cyan-300 shrink-0" />
               <span className="hidden sm:inline">앱 설치</span>
@@ -1533,7 +1533,7 @@ ${dimensionDescriptions}`;
           }`}
         >
           <Key size={13} className={keyActiveTab === 'digest' ? 'text-cyan-300' : ''} />
-          <span>LucKey 요약</span>
+          <span>Key 요약</span>
         </button>
 
         <button

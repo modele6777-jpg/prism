@@ -1974,7 +1974,7 @@ ${content}
     } else if (fs.existsSync(distOrbManifest)) {
       return res.sendFile(distOrbManifest);
     }
-    return res.json({ name: "크리스탈 오브 (Crystal Orb)", short_name: "크리스탈오브", start_url: "/orb", display: "standalone" });
+    return res.json({ name: "Key", short_name: "Key", start_url: "/orb", display: "standalone" });
   });
 
   // Apple Touch Icon Dynamic Multi-Tenant Route Handler for iOS Safari

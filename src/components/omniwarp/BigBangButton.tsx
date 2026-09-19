@@ -815,7 +815,7 @@ export function BigBangButton() {
             phase: 'blackhole',
             target: {
               id: 'orb',
-              name: '크리스탈 오브',
+              name: 'Key',
               destinationPath: '/orb',
               themeColor: '#38bdf8',
               eventHorizonMode: 'blackhole',
@@ -1033,21 +1033,21 @@ export function BigBangButton() {
               }}
               aria-label={
                 hasSelectionToss
-                  ? `빅뱅 버튼 · 선택 내용 토스 대기중 ("${selectionPreviewText}...") · 탭: 루시 대화 연계, 홀드: LucKey 신탁 연계`
+                  ? `빅뱅 버튼 · 선택 내용 토스 대기중 ("${selectionPreviewText}...") · 탭: 루시 대화 연계, 홀드: Key 신탁 연계`
                   : isChatView
-                  ? '빅뱅 버튼 · 탭: 루시 채팅 닫기, 더블탭: 프리즘 메인, 홀드: LucKey, 드래그: 맥락 추천 1위 이동'
+                  ? '빅뱅 버튼 · 탭: 루시 채팅 닫기, 더블탭: LucKey 홈, 홀드: Key, 드래그: 맥락 추천 1위 이동'
                   : isOrbSite
-                  ? '빅뱅 버튼 · 탭: 루시 채팅 열기, 더블탭: 프리즘 메인, 홀드: LucKey 나가기, 드래그: 맥락 추천 1위 이동'
-                  : '빅뱅 버튼 · 탭: 루시 채팅, 더블탭: 프리즘 메인, 홀드: LucKey 들어가기, 드래그: 맥락 추천 1위 이동'
+                  ? '빅뱅 버튼 · 탭: 루시 채팅 열기, 더블탭: LucKey 홈, 홀드: Key 나가기, 드래그: 맥락 추천 1위 이동'
+                  : '빅뱅 버튼 · 탭: 루시 채팅, 더블탭: LucKey 홈, 홀드: Key 들어가기, 드래그: 맥락 추천 1위 이동'
               }
               title={
                 hasSelectionToss
-                  ? `[선택 텍스트 토스 대기: "${selectionPreviewText}..."] 탭: 루시 1:1 대화 연계 · 홀드: LucKey 직관 신탁 연계 · 드래그: 추천 1위 토스`
+                  ? `[선택 텍스트 토스 대기: "${selectionPreviewText}..."] 탭: 루시 1:1 대화 연계 · 홀드: Key 직관 신탁 연계 · 드래그: 추천 1위 토스`
                   : isChatView
-                  ? '탭: 루시 채팅 닫기 · 더블탭: 프리즘 메인 · 홀드: LucKey · 드래그: 맥락 추천 1위 이동 (사이클 순환)'
+                  ? '탭: 루시 채팅 닫기 · 더블탭: LucKey 홈 · 홀드: Key · 드래그: 맥락 추천 1위 이동 (사이클 순환)'
                   : isOrbSite
-                  ? '탭: 루시 채팅 열기 · 더블탭: 프리즘 메인 · 홀드: LucKey 나가기 · 드래그: 맥락 추천 1위 이동 (사이클 순환)'
-                  : '탭: 루시 채팅 · 더블탭: 프리즘 메인 · 홀드: LucKey · 드래그: 맥락 추천 1위 이동 (사이클 순환)'
+                  ? '탭: 루시 채팅 열기 · 더블탭: LucKey 홈 · 홀드: Key 나가기 · 드래그: 맥락 추천 1위 이동 (사이클 순환)'
+                  : '탭: 루시 채팅 · 더블탭: LucKey 홈 · 홀드: Key · 드래그: 맥락 추천 1위 이동 (사이클 순환)'
               }
             >
               {/* 🌀 [웜홀] 빛비춤 + 어두운 심연 + 사건의 지평선 3원 동시 융합 전개 */}

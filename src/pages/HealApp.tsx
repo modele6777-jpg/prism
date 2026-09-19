@@ -1647,7 +1647,7 @@ export default function HealApp() {
                </div>
             </div>
             <div className="cursor-pointer flex flex-col justify-center select-none" onClick={() => navigate('/')}>
-               <h1 className="text-lg md:text-xl font-display font-black text-white uppercase tracking-tighter leading-tight">PRISM</h1>
+               <h1 className="text-lg md:text-xl font-display font-black text-white uppercase tracking-tighter leading-tight">LUCKEY</h1>
                <p className="text-[8px] md:text-[9px] text-white/40 uppercase tracking-widest font-bold font-sans leading-none mt-0.5">AURA • WELLNESS COACH</p>
             </div>
          </div>

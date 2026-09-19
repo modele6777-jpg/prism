@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "Prism",
-  "short_name": "Prism",
-  "description": "Prism AI 페르소나 유니버스",
+  "name": "LucKey",
+  "short_name": "LucKey",
+  "description": "LucKey AI 페르소나 유니버스",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

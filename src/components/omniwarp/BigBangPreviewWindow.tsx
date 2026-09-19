@@ -149,7 +149,7 @@ export function BigBangPreviewWindow({
               </span>
             ) : isMirrorhole ? (
               <span className="flex items-center gap-1 text-sky-200 drop-shadow-[0_0_8px_rgba(224,242,254,0.9)]">
-                <Sparkles size={14} className="animate-pulse text-sky-200" /> 미러홀 (유리 · 프리즘 홈)
+                <Sparkles size={14} className="animate-pulse text-sky-200" /> 미러홀 (유리 · LucKey 홈)
               </span>
             ) : isWormhole ? (
               <span className="flex items-center gap-1 text-purple-300">
@@ -203,7 +203,7 @@ export function BigBangPreviewWindow({
           )}
           <div className="flex flex-col min-w-0 text-left">
             <span className="text-[11px] font-extrabold text-cyan-200 truncate flex items-center gap-1">
-              {currentTarget ? currentTarget.previewLabel : isMirrorhole ? '[미러홀 투영] 🪞 프리즘 홈' : `다음 도약: ${nextDest.name}`}
+              {currentTarget ? currentTarget.previewLabel : isMirrorhole ? '[미러홀 투영] 🪞 LucKey 홈' : `다음 도약: ${nextDest.name}`}
             </span>
             <span className="text-[8.5px] text-white/80 truncate mt-0.5">
               {currentTarget?.previewDescription || (isMirrorhole ? '투명한 크리스탈 유리 거울 면을 통과하여 프리즘 홈 허브로 즉시 귀환합니다.' : nextDest.description)}
@@ -257,7 +257,7 @@ export function BigBangPreviewWindow({
             }`}
           >
             <PrismAppIcon nameOrId="blackhole" size={13} className="shrink-0 text-cyan-300" />
-            <span className="text-[7.5px] font-mono whitespace-nowrap mt-0.5">블랙홀(오브)</span>
+            <span className="text-[7.5px] font-mono whitespace-nowrap mt-0.5">블랙홀(Key)</span>
           </div>
         </div>
 
@@ -310,9 +310,9 @@ export function BigBangPreviewWindow({
             ? isWhitehole
               ? '지금 손을 떼면 [루시 1:1 대화]로 직행합니다'
               : isMirrorhole
-              ? '지금 손을 떼면 [프리즘 홈]으로 즉시 귀환합니다'
+              ? '지금 손을 떼면 [LucKey 홈]으로 즉시 귀환합니다'
               : isBlackhole
-              ? '지금 손을 떼면 [크리스탈 오브]로 빨려 들어갑니다'
+              ? '지금 손을 떼면 [Key]로 들어갑니다'
               : currentTarget?.previewLabel || '손을 떼면 선택된 차원으로 도약합니다'
             : '타이밍에 맞춰 손을 떼어 원하는 차원으로 도약하세요'}
         </span>

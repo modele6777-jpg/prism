@@ -113,9 +113,9 @@ export default function InstallPrompt() {
 
   const appConfig = isOrbSite
     ? {
-        title: "LucKey 앱 설치",
+        title: "Key 앱 설치",
         desc: "홈 화면에 독립 앱으로 추가하여 루시 대화 요약과 직관 행운의 열쇠를 경험해 보세요.",
-        guideTitle: "LucKey 완전한 앱 설치 방법",
+        guideTitle: "Key 완전한 앱 설치 방법",
         guideSubtitle: "아래 순서에 따라 홈 화면에 독립 앱으로 안전하고 신속하게 설치해 보세요.",
         iconSrc: "/luckey-icon-192.png",
       }
@@ -128,9 +128,9 @@ export default function InstallPrompt() {
         iconSrc: "/lucy-icon-192.png",
       }
     : {
-        title: "PRISM PRO 앱 설치",
+        title: "LucKey 앱 설치",
         desc: "홈 화면에 앱으로 추가하여 온전한 속도와 7대 우주 페르소나를 경험해 보세요.",
-        guideTitle: "PRISM PRO 완전한 앱 설치 방법",
+        guideTitle: "LucKey 완전한 앱 설치 방법",
         guideSubtitle: "아래 순서에 따라 시스템에 정식으로 호환되는 완전한 앱 형태로 소장 및 설치해 보세요.",
         iconSrc: "/icon-192.png",
       };

@@ -1,5 +1,15 @@
 [
   {
+    "version": "1.2.971",
+    "summary": "전체 서비스 명칭 'LucKey' 통일 및 독립 오브 사이트 명칭 'Key' 전면 리브랜딩 적용",
+    "builtAt": "2026-09-19T06:29:00.000Z",
+    "items": [
+      "🌟 전체 서비스 공식 명칭 'LucKey' 전면 적용: index.html 웹페이지 타이틀(<title>LucKey</title>), 메타 태그, PWA manifest.json, vite.config.ts 빌드 매니페스트 및 주요 5대 앱(프롤로그 허브, 트리니티, 오렌지, 힐, 블루버드) 헤더 로고 브랜드를 'LucKey'로 완전 통일",
+      "🔑 독립 오브 사이트 공식 명칭 'Key' 재정립: /orb 독립 사이트의 타이틀(<title>Key</title>), 모바일 메타, manifest-orb.webmanifest, manifest-orb.json, 헤더 센터 타이틀, 상단 탭(Key 요약, Key 4대 특수 신탁 의식), 토스 연동 페이로드 및 앱 설치 안내를 'Key'로 명확화",
+      "🌀 빅뱅 버튼 & 웜홀 HUD 내비게이션 텍스트 동기화: 중앙 빅뱅 버튼 툴팁 및 제자리 홀드 동작을 'Key'로 일원화하고, 더블탭 귀환 및 미러홀 투영 대상을 'LucKey 홈'으로 정밀 연동"
+    ]
+  },
+  {
     "version": "1.2.970",
     "summary": "오라클 메뉴 진입 안내 화면 신설, 박주형 님 맞춤 심층 3장 치유 서한 및 오라클 타로 편지 집중 뷰 개편",
     "builtAt": "2026-09-19T02:17:30.000Z",
