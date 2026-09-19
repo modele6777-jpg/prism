@@ -849,6 +849,7 @@ export default function OrbGatewayPage() {
               <div className="px-4 py-2.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar border-b border-white/5 shrink-0 select-none">
                 {[
                   { id: "all", label: "전체", count: archiveItems.length },
+                  { id: "pharmacy", label: "💊 40대 마음약", count: archiveItems.filter((i) => i.category === "pharmacy").length },
                   { id: "lucy", label: "💬 루시 대화", count: archiveItems.filter((i) => i.category === "lucy").length },
                   { id: "tarot", label: "🎴 타로·운세", count: archiveItems.filter((i) => i.category === "tarot").length },
                   { id: "saju", label: "🔮 사주·명리", count: archiveItems.filter((i) => i.category === "saju").length },
@@ -920,11 +921,26 @@ export default function OrbGatewayPage() {
                           {item.keypoint}
                         </p>
 
-                        {/* Action Guidance (if present) */}
+                        {/* Action Guidance / Prescription Dosage Guide */}
                         {item.actionGuidance && (
-                          <div className="text-[11px] text-purple-200/80 bg-purple-500/10 border border-purple-500/20 rounded-xl px-2.5 py-1.5 mb-2.5 flex items-start gap-1.5 select-text cursor-text">
-                            <Sparkle size={12} className="text-purple-400 shrink-0 mt-0.5 select-none" />
-                            <span>실천 화두: {item.actionGuidance}</span>
+                          <div
+                            className={`text-[11px] rounded-xl px-2.5 py-1.5 mb-2.5 flex items-start gap-1.5 select-text cursor-text ${
+                              item.category === "pharmacy"
+                                ? "text-emerald-200/90 bg-emerald-500/10 border border-emerald-500/20"
+                                : "text-purple-200/80 bg-purple-500/10 border border-purple-500/20"
+                            }`}
+                          >
+                            <Sparkle
+                              size={12}
+                              className={`shrink-0 mt-0.5 select-none ${
+                                item.category === "pharmacy" ? "text-emerald-400" : "text-purple-400"
+                              }`}
+                            />
+                            <span>
+                              {item.category === "pharmacy"
+                                ? item.actionGuidance
+                                : `실천 화두: ${item.actionGuidance}`}
+                            </span>
                           </div>
                         )}
 

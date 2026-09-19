@@ -9,12 +9,13 @@ import { loadSavedChatInsights } from './chatInsightsEngine';
 import { loadAllPermanentMemories } from './chatMemoryArchive';
 import { getOrbScryingHistory } from './prismOmniSync';
 import { getTodayDateKey } from './dailyCache';
+import { CALM_PRESCRIPTIONS, getDailyRecommendedPrescription } from './calmPharmacopeia';
 
-export type KeyArchiveCategory = 'all' | 'lucy' | 'tarot' | 'saju' | 'healing' | 'muse' | 'oracle';
+export type KeyArchiveCategory = 'all' | 'pharmacy' | 'lucy' | 'tarot' | 'saju' | 'healing' | 'muse' | 'oracle';
 
 export interface KeyArchiveItem {
   id: string;
-  category: 'lucy' | 'tarot' | 'saju' | 'healing' | 'muse' | 'oracle';
+  category: 'pharmacy' | 'lucy' | 'tarot' | 'saju' | 'healing' | 'muse' | 'oracle';
   categoryLabel: string;
   iconType: 'lucy' | 'tarot' | 'saju' | 'healing' | 'muse' | 'oracle' | 'key';
   badgeColor: string;
@@ -79,6 +80,52 @@ function tryParse(key: string): any {
 export function extractAllKeyArchiveItems(): KeyArchiveItem[] {
   const items: KeyArchiveItem[] = [];
   const todayKey = getTodayDateKey();
+
+  // ─────────────────────────────────────────────────────────────
+  // 💊 0. CALM 40대 마음 상비약 & 오늘의 맞춤 처방약
+  // ─────────────────────────────────────────────────────────────
+  try {
+    const dailyPill = getDailyRecommendedPrescription(todayKey);
+    items.push({
+      id: `daily-prescription-${todayKey}`,
+      category: 'pharmacy',
+      categoryLabel: '💊 오늘의 맞춤 조제약',
+      iconType: 'key',
+      badgeColor: 'text-emerald-200 bg-emerald-500/25 border-emerald-400/60 ring-1 ring-emerald-400/30',
+      glowColor: 'rgba(52, 211, 153, 0.7)',
+      title: `[오늘의 알약] ${dailyPill.title}: ${dailyPill.subtitle}`,
+      keypoint: `"${dailyPill.affirmation}" — ${dailyPill.clinicalTip}`,
+      fullText: `오늘의 맞춤 조제약입니다. ${dailyPill.fullDosageText}`,
+      dateStr: todayKey,
+      timeStr: `약효 ${dailyPill.timeEstimate}`,
+      timestamp: Date.now() + 100000, // 최상단 노출
+      sourceLabel: `CALM 40대 상비약 (제${dailyPill.globalIndex}호)`,
+      actionGuidance: `[1분 복약 실천] ${dailyPill.prescriptionGuide}`,
+      tags: ['#오늘의처방약', `#${dailyPill.tag}`, '#CALM마음연습'],
+    });
+
+    CALM_PRESCRIPTIONS.forEach((p) => {
+      items.push({
+        id: `pharmacy-${p.globalIndex}`,
+        category: 'pharmacy',
+        categoryLabel: `💊 제${p.globalIndex}호 처방약`,
+        iconType: 'key',
+        badgeColor: 'text-emerald-300 bg-emerald-500/15 border-emerald-400/40',
+        glowColor: 'rgba(52, 211, 153, 0.45)',
+        title: `${p.title}: ${p.subtitle}`,
+        keypoint: p.clinicalTip || p.purpose,
+        fullText: p.fullDosageText,
+        dateStr: todayKey,
+        timeStr: `약효 ${p.timeEstimate}`,
+        timestamp: Date.now() - 3600000 * 24 - p.globalIndex * 1000,
+        sourceLabel: `CALM ${p.chapterTitle}`,
+        actionGuidance: `${p.prescriptionGuide} [확언] "${p.affirmation}"`,
+        tags: [`#제${p.globalIndex}호약`, `#${p.tag}`, `#${p.chapterTitle.replace(/\s+/g, '')}`],
+      });
+    });
+  } catch (e) {
+    console.warn('[KeyArchiveExtractor] Error loading calm pharmacopeia:', e);
+  }
 
   // ─────────────────────────────────────────────────────────────
   // 1. 💬 루시와의 대화: 저장된 구조화 통찰 (Chat Insights Engine)
