@@ -21,6 +21,7 @@ export interface OmniWarpTarget {
   gauge: number; // 0.0 ~ 1.0 (0% ~ 100%)
   aiTemperature: number; // 0.0 ~ 1.5
   title: string;
+  name?: string;
   actionType: string;
   destinationPath: string;
   previewLabel: string;
@@ -31,6 +32,13 @@ export interface OmniWarpTarget {
   runeSymbol?: string;
   runeName?: string;
   eventHorizonMode?: 'whitehole' | 'mirrorhole' | 'blackhole';
+  cycleStats?: {
+    visitedCount: number;
+    totalCount: number;
+    remainingCount: number;
+    cycleIndex: number;
+    isFullCycleCompleted: boolean;
+  };
 }
 
 export interface WarpForceMetrics {

@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'wouter';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { WarpPhase, OmniWarpTarget, OmniWarpContext } from '@/lib/omniWarp/types';
 import { calculateWarpMetrics, forceToAiTemperature, RADIAL_WARP_APPS } from '@/lib/omniWarp/forceSensor';
 import { serializeCurrentView, synthesizeWarpTarget, isDisallowedWarpDestination } from '@/lib/omniWarp/omniWarpEngine';
@@ -21,7 +21,7 @@ import { triggerHaptic, startBlackHoleContinuousHaptic, stopBlackHoleContinuousH
 import { safeSessionStorage } from '@/utils/safeStorage';
 import { peekPendingSelection, savePendingSelection, clearPendingSelection, getLiveSelectedText } from '@/lib/selectionBridge';
 import { sendPrismToss } from '@/lib/prismToss';
-import { getRecommendedMenu, tossSelectionToMenu } from '@/lib/selectionContextRecommender';
+import { tossSelectionToMenu } from '@/lib/selectionContextRecommender';
 import { BigBangCircularMeter } from './BigBangCircularMeter';
 
 export function BigBangButton() {
@@ -258,12 +258,13 @@ export function BigBangButton() {
     const deltaY = currentPointer ? currentPointer.clientY - start.y : 0;
     const dist = Math.hypot(deltaX, deltaY);
 
-    // 🎯 스크롤(선택 텍스트) 없이 드래그(dist >= 20) 중일 때:
-    // 맥락 감지 사이클 추천 1위 메뉴를 실시간 타깃으로 동기화
+    // 🎯 드래그(dist >= 20) 중일 때:
+    // 7대 정규 앱 엄격 순환(Non-Repeating App Cycle) 추천 메뉴를 실시간 타깃으로 동기화 (글자 토스 포함)
     const textToToss = getActiveSelectionText();
 
-    if (!textToToss && dist >= 20) {
-      const contextCandidate = peekNextRecommendedMenuByCycle(location);
+    if (dist >= 20) {
+      const contextCandidate = peekNextRecommendedMenuByCycle(location, textToToss || undefined);
+      const isTextToss = Boolean(textToToss);
       target = {
         id: contextCandidate.menu.id,
         icon: contextCandidate.menu.emoji,
@@ -271,12 +272,15 @@ export function BigBangButton() {
         gauge: metrics.virtualForce,
         aiTemperature: temp,
         title: contextCandidate.menu.name,
-        actionType: 'navigate',
-        previewLabel: `[맥락 추천 1위] ${contextCandidate.menu.emoji} ${contextCandidate.menu.name}`,
+        actionType: isTextToss ? 'smart_toss' : 'navigate',
+        previewLabel: isTextToss
+          ? `[글자 추천 토스 · 순환 ${contextCandidate.stats.visitedCount}/${contextCandidate.stats.totalCount}] ${contextCandidate.menu.emoji} ${contextCandidate.menu.name}`
+          : `[맥락 추천 1위 · 순환 ${contextCandidate.stats.visitedCount}/${contextCandidate.stats.totalCount}] ${contextCandidate.menu.emoji} ${contextCandidate.menu.name}`,
         previewDescription: contextCandidate.reason,
         destinationPath: contextCandidate.safePath,
         themeColor: contextCandidate.menu.themeColor,
         accentGlow: contextCandidate.menu.themeColor || 'rgba(56, 189, 248, 0.85)',
+        cycleStats: contextCandidate.stats,
       };
     }
 
@@ -654,68 +658,21 @@ export function BigBangButton() {
     // [2] 홀드 (250ms 이상) 또는 드래그 릴리즈 분기
     const textToToss = getActiveSelectionText();
 
-    // 🎯 스크롤(선택)한 상태로 빅뱅 버튼을 드래그하면 (dist >= 20):
-    // 항상 추천 1순위 메뉴로만 즉시 토스!
-    if (textToToss && dist >= 20) {
-      const rec = getRecommendedMenu(textToToss, location);
-      // 항상 추천 1순위(rec.menu)로만 토스
-      const targetMenu = rec.menu;
-
-      triggerHaptic('wormhole');
-      omniWarpAudio.playWormhole();
-
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(
-          new CustomEvent('prism:bigbang_commit', {
-            detail: {
-              phase: 'wormhole',
-              target: {
-                id: targetMenu.id,
-                name: targetMenu.name,
-                destinationPath: targetMenu.path,
-                themeColor: targetMenu.themeColor,
-                icon: targetMenu.emoji,
-                previewLabel: `[글자 추천 토스] ${targetMenu.emoji} ${targetMenu.name}`,
-                previewDescription: `스크롤된 글자를 [${targetMenu.name}]으로 차원 토스합니다.`,
-              },
-              context,
-              metrics: { ...metrics, phase: 'wormhole' },
-              timestamp: Date.now(),
-            },
-          })
-        );
-      }
-
-      // 대상 메뉴로 즉각 토스 & 네비게이션 실행
-      tossSelectionToMenu(textToToss, targetMenu, location, (targetPath) => {
-        if (isOrbSite) {
-          window.location.href = targetPath;
-        } else {
-          navigate(targetPath);
-          window.dispatchEvent(new CustomEvent('prism-navigate', { detail: { path: targetPath } }));
-          window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: targetPath } }));
-        }
-      });
-
-      setActivePhase('idle');
-      setGauge(0);
-      setDurationMs(0);
-      return;
-    }
-
-    // 🎯 스크롤(선택 텍스트) 없이 빅뱅 버튼을 드래그하면 (dist >= 20):
-    // 맥락 감지(Context Sensing)를 통해 다음 메뉴가 어디가 좋을지 자동 추천 1위로만 도약!
-    // (단, 이미 들어갔던 메뉴는 한 사이클 동안 배제되며, 전체 메뉴 1바퀴 완주 후 다음 사이클에서 다시 진입)
+    // 🎯 빅뱅 버튼 드래그 (dist >= 20):
+    // 7대 핵심 정규 앱 엄격 순환(Non-Repeating App Cycle) 기반 추천 메뉴 도약 / 글자 토스 실행!
     if (dist >= 20) {
       triggerHaptic('wormhole');
       omniWarpAudio.playWormhole();
 
-      const { menu: targetMenu, reason, stats, safePath } = commitNextRecommendedMenuByCycle(location);
+      const { menu: targetMenu, reason, stats, safePath } = commitNextRecommendedMenuByCycle(
+        location,
+        textToToss || undefined
+      );
 
       // 🛡️ 실존 페이지 및 워프 불가 목적지 검증
       if (
         !isValidPrismPath(safePath) ||
-        safePath === '/' ||
+        (safePath === '/' && isDisallowedWarpDestination('hub')) ||
         safePath === '/universe' ||
         safePath === '/profile' ||
         isDisallowedWarpDestination(targetMenu.id) ||
@@ -729,6 +686,18 @@ export function BigBangButton() {
         return;
       }
 
+      const cycleLabel = stats.isFullCycleCompleted
+        ? `새 순환 ${stats.cycleIndex}회차`
+        : `순환 ${stats.visitedCount}/${stats.totalCount}`;
+
+      const previewLabel = textToToss
+        ? `[글자 토스 · ${cycleLabel}] ${targetMenu.emoji} ${targetMenu.name}`
+        : `[맥락 추천 1위 · ${cycleLabel}] ${targetMenu.emoji} ${targetMenu.name}`;
+
+      const previewDescription = stats.isFullCycleCompleted
+        ? `${reason} (🎉 전체 7대 앱 1사이클 완주! 새로운 순환이 시작됩니다.)`
+        : `${reason} (${stats.cycleIndex}회차 순환 탐험: ${stats.visitedCount}/${stats.totalCount})`;
+
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
           new CustomEvent('prism:bigbang_commit', {
@@ -740,12 +709,9 @@ export function BigBangButton() {
                 destinationPath: safePath,
                 themeColor: targetMenu.themeColor,
                 icon: targetMenu.emoji,
-                previewLabel: stats.isFullCycleCompleted
-                  ? `[맥락 추천 1위 · 새 사이클] ${targetMenu.emoji} ${targetMenu.name}`
-                  : `[맥락 추천 1위 · ${stats.visitedCount}/${stats.totalCount}] ${targetMenu.emoji} ${targetMenu.name}`,
-                previewDescription: stats.isFullCycleCompleted
-                  ? `${reason} (🎉 전체 메뉴 1사이클 완주! 새로운 순환이 시작됩니다.)`
-                  : `${reason} (${stats.cycleIndex}회차 순환 탐험: ${stats.visitedCount}/${stats.totalCount})`,
+                previewLabel,
+                previewDescription,
+                cycleStats: stats,
               },
               context,
               metrics: { ...metrics, phase: 'wormhole' },
@@ -755,22 +721,35 @@ export function BigBangButton() {
         );
       }
 
-      setTimeout(() => {
-        if (isOrbSite) {
-          window.location.href = safePath;
-        } else {
-          navigate(safePath);
-          window.dispatchEvent(new CustomEvent('prism-navigate', { detail: { path: safePath } }));
-          window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: safePath } }));
-          if (safePath.includes('?tab=')) {
-            const tabName = safePath.split('?tab=')[1]?.split('&')[0];
-            if (tabName) {
-              sessionStorage.setItem('prism_target_tab', tabName);
-              window.dispatchEvent(new CustomEvent('prism-tab-change', { detail: { tab: tabName } }));
+      if (textToToss) {
+        // 대상 메뉴로 즉각 토스 & 네비게이션 실행
+        tossSelectionToMenu(textToToss, targetMenu, location, (targetPath) => {
+          if (isOrbSite) {
+            window.location.href = targetPath;
+          } else {
+            navigate(targetPath);
+            window.dispatchEvent(new CustomEvent('prism-navigate', { detail: { path: targetPath } }));
+            window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: targetPath } }));
+          }
+        });
+      } else {
+        setTimeout(() => {
+          if (isOrbSite) {
+            window.location.href = safePath;
+          } else {
+            navigate(safePath);
+            window.dispatchEvent(new CustomEvent('prism-navigate', { detail: { path: safePath } }));
+            window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: safePath } }));
+            if (safePath.includes('?tab=')) {
+              const tabName = safePath.split('?tab=')[1]?.split('&')[0];
+              if (tabName) {
+                sessionStorage.setItem('prism_target_tab', tabName);
+                window.dispatchEvent(new CustomEvent('prism-tab-change', { detail: { tab: tabName } }));
+              }
             }
           }
-        }
-      }, 240);
+        }, 240);
+      }
 
       setActivePhase('idle');
       setGauge(0);
@@ -947,7 +926,35 @@ export function BigBangButton() {
           onPointerEnter={() => setIsHovered(true)}
           onPointerLeave={() => setIsHovered(false)}
         >
-
+          {/* 🎯 드래그 시 실시간 맥락 추천 순환(Cycle) HUD 칩 */}
+          <AnimatePresence>
+            {isPressing && dragDistance >= 20 && !isAborted && currentTarget && (
+              <motion.div
+                initial={{ opacity: 0, y: 12, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 8, scale: 0.9 }}
+                transition={{ duration: 0.15, ease: 'easeOut' }}
+                className="absolute -top-16 left-1/2 -translate-x-1/2 pointer-events-none z-50 flex flex-col items-center whitespace-nowrap select-none"
+              >
+                <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-950/90 backdrop-blur-md border border-cyan-400/50 shadow-[0_0_24px_rgba(56,189,248,0.4)]">
+                  <span className="text-base leading-none drop-shadow">{currentTarget.icon || '🌀'}</span>
+                  <span className="text-xs font-bold text-white tracking-tight">
+                    {currentTarget.title || currentTarget.name}
+                  </span>
+                  {currentTarget.cycleStats && (
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cyan-500/25 text-cyan-300 border border-cyan-400/40">
+                      {currentTarget.cycleStats.isFullCycleCompleted
+                        ? `새 순환 ${currentTarget.cycleStats.cycleIndex}회차`
+                        : `순환 ${currentTarget.cycleStats.visitedCount}/${currentTarget.cycleStats.totalCount}`}
+                    </span>
+                  )}
+                </div>
+                <div className="text-[10px] text-cyan-200/90 font-medium mt-1 px-2.5 py-0.5 bg-black/60 rounded-md backdrop-blur-sm drop-shadow max-w-[260px] truncate text-center">
+                  {currentTarget.previewDescription || '손을 떼면 즉시 차원 도약합니다'}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* 🎯 버튼 & 궤도 정밀 센터링 앵커 (대형 코스믹 아티팩트 규격 76~84px) */}
           <div className="relative w-[76px] h-[76px] sm:w-[84px] sm:h-[84px] flex items-center justify-center shrink-0">
