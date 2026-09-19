@@ -545,10 +545,6 @@ export function DailySecret() {
     return list;
   }, [sharedState?.userProfile]);
 
-  const handleSelectWishExample = (text: string) => {
-    setWish(text);
-  };
-
   const handleResetWish = useCallback(() => {
     setWish('');
     setWishApplied(false);
@@ -589,16 +585,6 @@ export function DailySecret() {
       }
     } catch (_) {}
   }, [handleResetWish, sharedState, updateSharedState]);
-
-  const handleRandomWish = () => {
-    const allLists: string[] = [
-      ...smartProfileWishes.map((w) => w.text),
-      ...Object.values(TAILORED_WISH_EXAMPLES).flat(),
-    ];
-    if (allLists.length === 0) return;
-    const pick = allLists[Math.floor(Math.random() * allLists.length)];
-    setWish(pick);
-  };
 
   const cleanEveningPrompt = useMemo(() => {
     if (!data?.eveningPrompt || /[a-zA-Z]{3,}/.test(data.eveningPrompt)) {
@@ -830,35 +816,105 @@ export function DailySecret() {
     return { userProfileStr, memory, name };
   }, [sharedState]);
 
-  const receiveSecret = useCallback(async (options?: { force?: boolean; redraw?: boolean }) => {
-    if (loading) return;
+  const receiveSecret = useCallback(async (options?: { force?: boolean; redraw?: boolean; targetWish?: string }) => {
     justResetRef.current = false;
-    setLoading(true);
 
     const activeSeed = options?.redraw ? redrawSeed + 1 : redrawSeed;
     if (options?.redraw) {
       setRedrawSeed(activeSeed);
     }
 
-    const safetyTimer = setTimeout(() => {
-      setLoading(false);
-    }, 25000);
-
     const { userProfileStr, memory, name } = buildPromptContext();
-    const currentWish = wish.trim();
-    const hasWish = Boolean(currentWish);
+    const effectiveWish = (options?.targetWish !== undefined ? options.targetWish : wish).trim();
+    const hasWish = Boolean(effectiveWish);
 
-    const randomCosmicThemes = [
-      '우주의 무한한 풍요와 부의 유입',
-      '깊고 단단한 내면의 평온과 절대적 자유',
-      '놀라운 기적과 뜻밖의 축복',
-      '원하는 모든 목표와 시험의 당당한 성취',
-      '세포와 신경의 눈부신 활력과 완전한 치유',
-      '가장 아름답고 진실한 사랑과 인연의 연결',
-    ];
-    const todayTheme = randomCosmicThemes[Math.abs(Date.now() + activeSeed) % randomCosmicThemes.length];
+    if (options?.targetWish !== undefined && options.targetWish !== wish) {
+      setWish(options.targetWish);
+    }
 
+    const now = Date.now();
+    // ⚡ 1. 즉시 0초 만에 완벽한 맞춤 시크릿 키트 생성 및 개방 (Zero-Latency Instant Open)
+    const instantKit = generateTailoredSecretFallback(effectiveWish, name, activeSeed);
+    const initialData: DailySecretData = {
+      ...instantKit,
+      appliedWish: hasWish ? effectiveWish : undefined,
+      updatedAt: now,
+    };
+
+    // 🚀 지체 없이 화면 즉각 개방 (한 번 터치로 즉각 열림 보장)
+    setData(initialData);
+    setLoading(false);
+
+    if (hasWish) {
+      localStorage.setItem(dayStorageKey('wish_applied'), 'true');
+      localStorage.setItem(dayStorageKey('applied_wish'), effectiveWish);
+      localStorage.setItem(dayStorageKey('wish'), effectiveWish);
+      safeLocalStorage.setItem(`orange_daily_secret_applied_wish_${todayKey()}`, effectiveWish);
+      safeLocalStorage.setItem(`orange_daily_secret_wish_${todayKey()}`, effectiveWish);
+      safeLocalStorage.setItem(`orange_daily_secret_wish_applied_${todayKey()}`, 'true');
+      setWish(effectiveWish);
+      setWishApplied(true);
+    } else {
+      localStorage.removeItem(dayStorageKey('applied_wish'));
+      localStorage.removeItem(dayStorageKey('wish_applied'));
+      safeLocalStorage.removeItem(`orange_daily_secret_applied_wish_${todayKey()}`);
+      safeLocalStorage.removeItem(`orange_daily_secret_wish_applied_${todayKey()}`);
+      setWishApplied(false);
+    }
+
+    const secretPayload = JSON.stringify({ date: todayKey(), data: initialData, updatedAt: now });
+    localStorage.setItem(STORAGE_KEY, secretPayload);
+    localStorage.setItem(`orange_daily_secret_${todayKey()}`, secretPayload);
+    localStorage.setItem('orange_daily_secret_cache', secretPayload);
+    safeLocalStorage.setItem(STORAGE_KEY, secretPayload);
+    safeLocalStorage.setItem(`orange_daily_secret_${todayKey()}`, secretPayload);
+    safeLocalStorage.setItem('orange_daily_secret_cache', secretPayload);
+
+    // Cross-device sync
     try {
+      const today = todayKey();
+      void updateSharedState({
+        dailySecrets: {
+          ...(sharedState?.dailySecrets || {}),
+          [today]: {
+            ...initialData,
+            appliedWish: hasWish ? effectiveWish : undefined,
+            updatedAt: now,
+            timestamp: now,
+            practice,
+            gratitudeChecked,
+            extraGratitude,
+            script: script || (initialData.scriptingStarter ? `${initialData.scriptingStarter}\n\n` : ''),
+          },
+        },
+        lastOrangeDailySync: now,
+      }, 'ORANGE');
+    } catch (_) {}
+
+    recordPrismFeature({
+      app: 'orange',
+      featureName: '시크릿(The Secret) 확언 키트',
+      summary: `확언: "${initialData.affirmation}", 요청(Ask): "${initialData.desire}"${hasWish ? ` (소원: "${effectiveWish}")` : ''}`,
+      details: initialData,
+    });
+
+    if (initialData.scriptingStarter && !script.trim()) {
+      setScript(`${initialData.scriptingStarter}\n\n`);
+    }
+
+    // 🌟 2. 백그라운드 AI 심화 개선 (비동기 보강, 6초 타임아웃)
+    // 키트가 0초 만에 이미 개방되어 감상 가능하므로, 네트워크 실패/지연이 있어도 사용자를 차단하지 않음
+    try {
+      const randomCosmicThemes = [
+        '우주의 무한한 풍요와 부의 유입',
+        '깊고 단단한 내면의 평온과 절대적 자유',
+        '놀라운 기적과 뜻밖의 축복',
+        '원하는 모든 목표와 시험의 당당한 성취',
+        '세포와 신경의 눈부신 활력과 완전한 치유',
+        '가장 아름답고 진실한 사랑과 인연의 연결',
+      ];
+      const todayTheme = randomCosmicThemes[Math.abs(Date.now() + activeSeed) % randomCosmicThemes.length];
+
       const systemPrompt = [
         '당신은 론다 번(Rhonda Byrne)의 『시크릿(The Secret)』— 끌어당김의 법칙을 바탕으로 오늘의 시크릿 키트를 만드는 ORANGE 가이드입니다.',
         '핵심 원리: Ask(명확한 요청) → Believe(흔들림 없는 믿음) → Receive(이미 받은 것처럼 느끼고 수용).',
@@ -879,7 +935,7 @@ export function DailySecret() {
         '',
         hasWish
           ? [
-              `사용자가 오늘 우주에 요청한 구체적 소원: "${currentWish}"`,
+              `사용자가 오늘 우주에 요청한 구체적 소원: "${effectiveWish}"`,
               '위 소원을 100% 중심에 두고 모든 항목(affirmation, reflection, action, desire, visualizationGuide, gratitudeSeeds, feelingAnchor, mirrorPhrase, eveningPrompt, scriptingStarter)을 개별적이고 독창적으로 작성하세요.',
             ].join('\n')
           : `사용자가 별도의 소원을 적지 않았으므로, 오늘의 특별한 영적 테마 [${todayTheme}]를 중심으로 풍요, 평온, 성공, 사랑, 건강을 강력하게 끌어당기는 조화롭고 독창적인 시크릿 키트를 작성하세요.`,
@@ -889,109 +945,66 @@ export function DailySecret() {
       ].filter(Boolean).join('\n');
 
       const userPrompt = hasWish
-        ? `[${name}님의 핵심 고민 / 소원: "${currentWish}"]\n[무작위 시드: ${Date.now()}-${activeSeed}]\n\n위 고민/소원의 본질을 깊이 꿰뚫어보고, "나의 소원 ...은 이루어졌으며" 같은 기계적인 템플릿 문장을 절대 쓰지 마세요.\n이 고민과 고통이 완벽하게 해결되고 반전되어 현실이 된 감격과 절대적 확신을 담아 감동적인 1인칭 맞춤형 시크릿 키트를 작성해 주세요.\n\n특히 Today’s Secret Affirmation(확언)은 "${currentWish}" 고민의 구체적 정황(불안 해소, 당당한 성공, 금전 풍요, 따뜻한 화해 등)이 살아 숨 쉬는 명문장 1문장으로 선언해야 합니다.`
+        ? `[${name}님의 핵심 고민 / 소원: "${effectiveWish}"]\n[무작위 시드: ${Date.now()}-${activeSeed}]\n\n위 고민/소원의 본질을 깊이 꿰뚫어보고, "나의 소원 ...은 이루어졌으며" 같은 기계적인 템플릿 문장을 절대 쓰지 마세요.\n이 고민과 고통이 완벽하게 해결되고 반전되어 현실이 된 감격과 절대적 확신을 담아 감동적인 1인칭 맞춤형 시크릿 키트를 작성해 주세요.\n\n특히 Today’s Secret Affirmation(확언)은 "${effectiveWish}" 고민의 구체적 정황(불안 해소, 당당한 성공, 금전 풍요, 따뜻한 화해 등)이 살아 숨 쉬는 명문장 1문장으로 선언해야 합니다.`
         : `[오늘의 영적 테마: ${todayTheme}]\n[무작위 시드: ${Date.now()}-${activeSeed}]\n${name}님을 위한 오늘만의 독창적이고 가슴 벅찬 시크릿 키트를 주세요. 이전에 자주 나온 진부하거나 똑같은 문구를 완전히 피하고, 마음속 고민을 녹이고 풍요와 평온을 여는 품격 있는 새로운 맞춤 확언과 도구들을 작성해 주세요.`;
 
-      let result: DailySecretData | null = null;
-      try {
-        result = await invokeLLMStructured({
-          messages: [
-            {
-              role: 'system',
-              content: systemPrompt,
-            },
-            {
-              role: 'user',
-              content: userPrompt,
-            },
-          ],
-          schema: DailySecretSchema,
-        });
-      } catch (aiErr) {
-        console.warn('[DailySecret] AI structured invoke failed, falling back to rich tailored kit:', aiErr);
-        result = generateTailoredSecretFallback(currentWish, name, activeSeed);
-      }
-
-      // If AI returned bogus/mock output with "고요한 파동" or missed wish, immediately fall back to rich tailored kit
-      if (
-        !result ||
-        !result.affirmation ||
-        result.affirmation.includes('고요한 파동') ||
-        result.affirmation.includes('심신을 정렬') ||
-        (hasWish && !result.affirmation.includes(currentWish))
-      ) {
-        result = generateTailoredSecretFallback(currentWish, name, activeSeed);
-      }
-
-      const now = Date.now();
-      const completed = ensureFullKit(result, currentWish, name, activeSeed) || generateTailoredSecretFallback(currentWish, name, activeSeed);
-      const effectiveWish = hasWish ? currentWish : undefined;
-      const finalData: DailySecretData = { ...completed, appliedWish: effectiveWish, updatedAt: now };
-
-      setData(finalData);
-      if (effectiveWish) {
-        localStorage.setItem(dayStorageKey('wish_applied'), 'true');
-        localStorage.setItem(dayStorageKey('applied_wish'), effectiveWish);
-        localStorage.setItem(dayStorageKey('wish'), effectiveWish);
-        safeLocalStorage.setItem(`orange_daily_secret_applied_wish_${todayKey()}`, effectiveWish);
-        safeLocalStorage.setItem(`orange_daily_secret_wish_${todayKey()}`, effectiveWish);
-        safeLocalStorage.setItem(`orange_daily_secret_wish_applied_${todayKey()}`, 'true');
-        setWish(effectiveWish);
-        setWishApplied(true);
-      } else {
-        localStorage.removeItem(dayStorageKey('applied_wish'));
-        localStorage.removeItem(dayStorageKey('wish_applied'));
-        safeLocalStorage.removeItem(`orange_daily_secret_applied_wish_${todayKey()}`);
-        safeLocalStorage.removeItem(`orange_daily_secret_wish_applied_${todayKey()}`);
-      }
-      const secretPayload = JSON.stringify({ date: todayKey(), data: finalData, updatedAt: now });
-      localStorage.setItem(STORAGE_KEY, secretPayload);
-      localStorage.setItem(`orange_daily_secret_${todayKey()}`, secretPayload);
-      localStorage.setItem('orange_daily_secret_cache', secretPayload);
-      safeLocalStorage.setItem(STORAGE_KEY, secretPayload);
-      safeLocalStorage.setItem(`orange_daily_secret_${todayKey()}`, secretPayload);
-      safeLocalStorage.setItem('orange_daily_secret_cache', secretPayload);
-
-      // Realtime cross-device synchronization to Firestore & server vault
-      try {
-        const today = todayKey();
-        void updateSharedState({
-          dailySecrets: {
-            ...(sharedState?.dailySecrets || {}),
-            [today]: {
-              ...finalData,
-              appliedWish: effectiveWish,
-              updatedAt: now,
-              timestamp: now,
-              practice,
-              gratitudeChecked,
-              extraGratitude,
-              script: script || (finalData.scriptingStarter ? `${finalData.scriptingStarter}\n\n` : ''),
-            },
-          },
-          lastOrangeDailySync: now,
-        }, 'ORANGE');
-      } catch (_) {}
-
-      recordPrismFeature({
-        app: 'orange',
-        featureName: '시크릿(The Secret) 확언 키트',
-        summary: `확언: "${finalData.affirmation}", 요청(Ask): "${finalData.desire}"${effectiveWish ? ` (소원: "${effectiveWish}")` : ''}`,
-        details: finalData,
+      const aiPromise = invokeLLMStructured({
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        schema: DailySecretSchema,
       });
 
-      if (finalData.scriptingStarter && !script.trim()) {
-        setScript(`${finalData.scriptingStarter}\n\n`);
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('AI background enhancement timeout')), 6000)
+      );
+
+      const aiResult = await Promise.race([aiPromise, timeoutPromise]);
+      if (
+        aiResult &&
+        aiResult.affirmation &&
+        !aiResult.affirmation.includes('고요한 파동') &&
+        !aiResult.affirmation.includes('심신을 정렬') &&
+        (!hasWish || aiResult.affirmation.includes(effectiveWish))
+      ) {
+        const enriched = ensureFullKit(aiResult, effectiveWish, name, activeSeed);
+        if (enriched) {
+          const enrichedFinal: DailySecretData = { ...enriched, appliedWish: hasWish ? effectiveWish : undefined, updatedAt: Date.now() };
+          setData(enrichedFinal);
+          const enrichedPayload = JSON.stringify({ date: todayKey(), data: enrichedFinal, updatedAt: Date.now() });
+          localStorage.setItem(STORAGE_KEY, enrichedPayload);
+          localStorage.setItem(`orange_daily_secret_${todayKey()}`, enrichedPayload);
+          localStorage.setItem('orange_daily_secret_cache', enrichedPayload);
+          safeLocalStorage.setItem(STORAGE_KEY, enrichedPayload);
+          safeLocalStorage.setItem(`orange_daily_secret_${todayKey()}`, enrichedPayload);
+          safeLocalStorage.setItem('orange_daily_secret_cache', enrichedPayload);
+        }
       }
-    } catch (error) {
-      console.error('[DailySecret] Top-level error:', error);
-      const fallback = generateTailoredSecretFallback(currentWish, name);
-      setData(fallback);
-    } finally {
-      clearTimeout(safetyTimer);
-      setLoading(false);
+    } catch (_) {
+      // Background AI error or timeout is completely silent because initialData is already active and perfect
     }
-  }, [buildPromptContext, extraGratitude, gratitudeChecked, loading, practice, script, sharedState, updateSharedState, wish]);
+  }, [buildPromptContext, extraGratitude, gratitudeChecked, practice, redrawSeed, script, sharedState, updateSharedState, wish]);
+
+  const handleSelectWishExample = useCallback((text: string, immediateOpen = false) => {
+    setWish(text);
+    if (immediateOpen) {
+      void receiveSecret({ force: true, targetWish: text });
+    }
+  }, [receiveSecret]);
+
+  const handleRandomWish = useCallback((immediateOpen = false) => {
+    const allLists: string[] = [
+      ...smartProfileWishes.map((w) => w.text),
+      ...Object.values(TAILORED_WISH_EXAMPLES).flat(),
+    ];
+    if (allLists.length === 0) return;
+    const pick = allLists[Math.floor(Math.random() * allLists.length)];
+    setWish(pick);
+    if (immediateOpen) {
+      void receiveSecret({ force: true, targetWish: pick });
+    }
+  }, [receiveSecret, smartProfileWishes]);
 
   const copyText = async (text: string, key: string) => {
     try {
@@ -1095,12 +1108,12 @@ export function DailySecret() {
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
-                  onClick={handleRandomWish}
+                  onClick={() => handleRandomWish(true)}
                   className="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-200 text-[10px] font-medium flex items-center gap-1 transition-all cursor-pointer hover:border-amber-400/40 active:scale-95"
-                  title="랜덤 소원 추천받기"
+                  title="랜덤 소원을 추천받고 즉시 키트를 엽니다"
                 >
                   <Shuffle size={11} className="text-amber-400" />
-                  <span>랜덤 추천</span>
+                  <span>랜덤 추천 즉시 열기</span>
                 </button>
                 {wish.trim() && (
                   <button
@@ -1147,18 +1160,22 @@ export function DailySecret() {
                     <button
                       key={idx}
                       type="button"
-                      onClick={() => handleSelectWishExample(item.text)}
+                      onClick={() => handleSelectWishExample(item.text, true)}
                       className={`text-left px-3 py-2 rounded-xl text-xs transition-all cursor-pointer flex items-center gap-2 border active:scale-[0.98] ${
                         isSelected
                           ? 'bg-gradient-to-r from-amber-500/30 to-orange-500/20 text-amber-100 border-amber-400/60 shadow-[0_0_12px_rgba(245,158,11,0.25)] font-bold'
                           : 'bg-black/30 hover:bg-amber-500/10 text-white/80 hover:text-white border-white/10 hover:border-amber-500/30'
                       }`}
+                      title="이 소원으로 즉시 시크릿 키트를 엽니다"
                     >
                       <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-300 font-mono shrink-0">
                         {item.tag}
                       </span>
-                      <span className="truncate max-w-[280px] sm:max-w-md">{item.text}</span>
-                      {isSelected && <Check size={12} className="text-amber-400 shrink-0 ml-auto" />}
+                      <span className="truncate max-w-[240px] sm:max-w-md">{item.text}</span>
+                      <span className="text-[10px] text-amber-300/80 shrink-0 ml-auto flex items-center gap-1 font-sans font-medium">
+                        <Sparkles size={11} className="text-amber-400" />
+                        즉시 열기
+                      </span>
                     </button>
                   );
                 })
@@ -1169,16 +1186,20 @@ export function DailySecret() {
                     <button
                       key={idx}
                       type="button"
-                      onClick={() => handleSelectWishExample(ex)}
+                      onClick={() => handleSelectWishExample(ex, true)}
                       className={`text-left px-3 py-2 rounded-xl text-xs transition-all cursor-pointer flex items-center gap-2 border active:scale-[0.98] ${
                         isSelected
                           ? 'bg-gradient-to-r from-amber-500/30 to-orange-500/20 text-amber-100 border-amber-400/60 shadow-[0_0_12px_rgba(245,158,11,0.25)] font-bold'
                           : 'bg-black/30 hover:bg-amber-500/10 text-white/80 hover:text-white border-white/10 hover:border-amber-500/30'
                       }`}
+                      title="이 소원으로 즉시 시크릿 키트를 엽니다"
                     >
                       <Sparkles size={11} className={isSelected ? 'text-amber-400 shrink-0' : 'text-amber-400/40 shrink-0'} />
-                      <span className="truncate max-w-[280px] sm:max-w-md">{ex}</span>
-                      {isSelected && <Check size={12} className="text-amber-400 shrink-0 ml-auto" />}
+                      <span className="truncate max-w-[240px] sm:max-w-md">{ex}</span>
+                      <span className="text-[10px] text-amber-300/80 shrink-0 ml-auto flex items-center gap-1 font-sans font-medium">
+                        <Sparkles size={11} className="text-amber-400" />
+                        즉시 열기
+                      </span>
                     </button>
                   );
                 })
@@ -1205,23 +1226,13 @@ export function DailySecret() {
             <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
               <button
                 type="button"
-                onClick={() => void receiveSecret({ force: true })}
-                disabled={loading}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500/25 to-orange-500/25 hover:from-amber-500/35 hover:to-orange-500/35 border border-amber-500/40 text-amber-100 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-lg shadow-amber-950/40 disabled:opacity-40 disabled:cursor-not-allowed"
+                onClick={() => void receiveSecret({ force: true, targetWish: wish })}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500/25 to-orange-500/25 hover:from-amber-500/35 hover:to-orange-500/35 border border-amber-500/40 text-amber-100 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-lg shadow-amber-950/40 active:scale-95"
               >
-                {loading ? (
-                  <>
-                    <RefreshCw size={13} className="animate-spin text-amber-300" />
-                    <span>맞춤 키트 생성 중...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles size={13} className="text-amber-400" />
-                    <span>
-                      {wish.trim() ? '소원 맞춤 키트 받기' : '오늘의 시크릿 키트 받기'}
-                    </span>
-                  </>
-                )}
+                <Sparkles size={13} className="text-amber-400" />
+                <span>
+                  {wish.trim() ? '소원 맞춤 키트 받기' : '오늘의 시크릿 키트 받기'}
+                </span>
               </button>
             </div>
           </div>
@@ -1236,22 +1247,17 @@ export function DailySecret() {
         >
           <button
             type="button"
-            onClick={() => void receiveSecret({ force: true })}
-            disabled={loading}
-            className="w-full group relative overflow-hidden rounded-[28px] border border-amber-500/30 bg-gradient-to-br from-amber-500/15 via-white/5 to-orange-500/10 p-8 sm:p-10 text-center shadow-2xl shadow-amber-500/10 transition-all hover:border-amber-400/50 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60 disabled:pointer-events-none cursor-pointer"
+            onClick={() => void receiveSecret({ force: true, targetWish: wish })}
+            className="w-full group relative overflow-hidden rounded-[28px] border border-amber-500/30 bg-gradient-to-br from-amber-500/15 via-white/5 to-orange-500/10 p-8 sm:p-10 text-center shadow-2xl shadow-amber-500/10 transition-all hover:border-amber-400/50 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
           >
             <div className="absolute inset-0 bg-amber-500/10 blur-[80px] opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="relative z-10 flex flex-col items-center gap-4">
               <div className="w-16 h-16 rounded-full border border-amber-500/30 bg-amber-500/10 flex items-center justify-center shadow-[0_0_30px_rgba(245,158,11,0.25)]">
-                {loading ? (
-                  <RefreshCw size={28} className="text-amber-400 animate-spin" />
-                ) : (
-                  <KeyRound size={28} className="text-amber-400 animate-pulse" />
-                )}
+                <KeyRound size={28} className="text-amber-400 animate-pulse" />
               </div>
               <div className="space-y-2">
                 <p className="text-lg sm:text-xl font-bold text-white tracking-tight">
-                  {loading ? '소원 맞춤 시크릿 키트를 여는 중...' : wish.trim() ? '소원 맞춤 시크릿 키트 받기' : '오늘의 시크릿 키트 받기'}
+                  {wish.trim() ? '소원 맞춤 시크릿 키트 받기' : '오늘의 시크릿 키트 받기'}
                 </p>
                 <p className="text-[10px] sm:text-xs text-white/40 font-sans">
                   {wish.trim() ? `"${wish.trim().slice(0, 20)}${wish.trim().length > 20 ? '...' : ''}" 맞춤형 확언 + 시각화 + 감사 + 실천` : '확언 + 68초 시각화 + 감사 + 실천 도구'}
