@@ -311,8 +311,8 @@ function AppContent() {
     return (
       <PrismRainbowLoader
         fullScreen
-        message="프리즘 스펙트럼 조율 중..."
-        subMessage="SPECTRUM OF LIGHT & CONSCIOUSNESS"
+        message="행운과 해답의 문을 여는 중..."
+        subMessage="LUCKEY · SOUL SANCTUARY & CELESTIAL KEY"
       />
     );
   }

@@ -1,12 +1,12 @@
 import React from 'react';
-import { PrismRainbowLoader } from './PrismRainbowLoader';
+import { LucKeyCosmicLoader } from './LucKeyCosmicLoader';
 
 export function PageLoader() {
   return (
     <div className="h-full min-h-[50vh] flex flex-col items-center justify-center py-10 w-full">
-      <PrismRainbowLoader
+      <LucKeyCosmicLoader
         compact
-        message="마음의 스펙트럼을 불러오는 중..."
+        message="LucKey 유니버스 조율 중..."
         subMessage="ALIGNING SACRED FREQUENCY"
       />
     </div>

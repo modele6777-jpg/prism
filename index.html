@@ -286,50 +286,150 @@
   </head>
   <body>
     <div id="root">
-      <div style="position:fixed;inset:0;background:#07070d;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;color:#fff;font-family:-apple-system,BlinkMacSystemFont,sans-serif;user-select:none;">
-        <div style="position:relative;display:flex;align-items:center;justify-content:center;">
-          <svg viewBox="0 0 420 280" style="width:320px;height:210px;overflow:visible;" xmlns="http://www.w3.org/2000/svg">
+      <div style="position:fixed;inset:0;background:#05060c;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;color:#fff;font-family:-apple-system,BlinkMacSystemFont,sans-serif;user-select:none;overflow:hidden;">
+        <style>
+          @keyframes lkFloat { 0%, 100% { transform: translateY(-4px); } 50% { transform: translateY(4px); } }
+          @keyframes lkOrbit1 { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+          @keyframes lkOrbit2 { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
+          @keyframes lkPulse { 0%, 100% { opacity: 0.7; transform: scale(0.88); } 50% { opacity: 1; transform: scale(1.2); } }
+          @keyframes lkScan { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+          @keyframes lkAura { 0%, 100% { opacity: 0.3; transform: scale(0.95); } 50% { opacity: 0.55; transform: scale(1.1); } }
+        </style>
+
+        <!-- Ambient Cosmic Aurora Glow -->
+        <div style="position:absolute;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle, rgba(251,191,36,0.22) 0%, rgba(16,185,129,0.25) 30%, rgba(6,182,212,0.22) 65%, rgba(168,85,247,0.18) 100%);filter:blur(60px);animation:lkAura 8s infinite ease-in-out;pointer-events:none;"></div>
+
+        <!-- Central 3D Sacred Clover-Key (Luck + Key) Stage -->
+        <div style="position:relative;display:flex;align-items:center;justify-content:center;animation:lkFloat 4s infinite ease-in-out;">
+          <svg viewBox="0 0 300 320" style="width:230px;height:245px;overflow:visible;" xmlns="http://www.w3.org/2000/svg">
             <defs>
-              <linearGradient id="initWhiteBeam" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.2"/>
-                <stop offset="100%" stop-color="#ffffff" stop-opacity="1"/>
+              <linearGradient id="initLkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#fffbeb" stop-opacity="0.98"/>
+                <stop offset="22%" stop-color="#fde047" stop-opacity="0.95"/>
+                <stop offset="48%" stop-color="#34d399" stop-opacity="0.92"/>
+                <stop offset="75%" stop-color="#38bdf8" stop-opacity="0.88"/>
+                <stop offset="100%" stop-color="#a855f7" stop-opacity="0.92"/>
               </linearGradient>
-              <linearGradient id="initGlassGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="rgba(255,255,255,0.18)"/>
-                <stop offset="50%" stop-color="rgba(120,200,255,0.06)"/>
-                <stop offset="100%" stop-color="rgba(255,255,255,0.12)"/>
+              <linearGradient id="initCloverLeaf" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#6ee7b7" stop-opacity="0.95"/>
+                <stop offset="50%" stop-color="#10b981" stop-opacity="0.9"/>
+                <stop offset="100%" stop-color="#047857" stop-opacity="0.85"/>
               </linearGradient>
-              <linearGradient id="initDispersion" x1="0%" y1="50%" x2="100%" y2="50%">
-                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
-                <stop offset="40%" stop-color="#ffea00" stop-opacity="0.8"/>
-                <stop offset="70%" stop-color="#00e5ff" stop-opacity="0.8"/>
-                <stop offset="100%" stop-color="#d500f9" stop-opacity="0.85"/>
+              <linearGradient id="initGoldTrim" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+                <stop offset="50%" stop-color="#fbbf24" stop-opacity="0.9"/>
+                <stop offset="100%" stop-color="#d97706" stop-opacity="0.85"/>
+              </linearGradient>
+              <radialGradient id="initSolfeggio" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
+                <stop offset="30%" stop-color="#fef08a" stop-opacity="0.95"/>
+                <stop offset="65%" stop-color="#34d399" stop-opacity="0.8"/>
+                <stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/>
+              </radialGradient>
+              <linearGradient id="initOrbit1" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.9"/>
+                <stop offset="55%" stop-color="#34d399" stop-opacity="0.85"/>
+                <stop offset="100%" stop-color="#10b981" stop-opacity="0.2"/>
+              </linearGradient>
+              <linearGradient id="initOrbit2" x1="100%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.85"/>
+                <stop offset="50%" stop-color="#c084fc" stop-opacity="0.88"/>
+                <stop offset="100%" stop-color="#818cf8" stop-opacity="0.2"/>
+              </linearGradient>
+              <linearGradient id="initShaftGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+                <stop offset="25%" stop-color="#fbbf24" stop-opacity="0.9"/>
+                <stop offset="60%" stop-color="#34d399" stop-opacity="0.85"/>
+                <stop offset="85%" stop-color="#38bdf8" stop-opacity="0.8"/>
+                <stop offset="100%" stop-color="#6366f1" stop-opacity="0.85"/>
               </linearGradient>
             </defs>
-            <!-- White beam -->
-            <line x1="20" y1="165" x2="152" y2="135" stroke="url(#initWhiteBeam)" stroke-width="3" stroke-linecap="round"/>
-            <!-- Triangle body -->
-            <polygon points="185,50 115,195 255,195" fill="url(#initGlassGrad)" stroke="#ffffff" stroke-width="1.8"/>
-            <polygon points="152,135 220,118 226,148" fill="url(#initDispersion)" opacity="0.8"/>
-            <circle cx="185" cy="50" r="3.5" fill="#ffffff"/>
-            <!-- Rainbow bands -->
-            <path d="M 220,118 L 410,132 L 410,147 L 222,123 Z" fill="#ff0055" />
-            <path d="M 222,123 L 410,147 L 410,162 L 223,129 Z" fill="#ff6d00" />
-            <path d="M 223,129 L 410,162 L 410,177 L 224,135 Z" fill="#ffd600" />
-            <path d="M 224,135 L 410,177 L 410,192 L 225,141 Z" fill="#00e676" />
-            <path d="M 225,141 L 410,192 L 410,207 L 226,146 Z" fill="#00b0ff" />
-            <path d="M 226,146 L 410,207 L 410,222 L 227,151 Z" fill="#3d5afe" />
-            <path d="M 227,151 L 410,222 L 410,238 L 228,156 Z" fill="#d500f9" />
+
+            <!-- Astral Orbit Rings -->
+            <g transform="translate(150, 92)">
+              <g style="animation: lkOrbit1 10s infinite linear; transform-origin: 0 0;">
+                <ellipse cx="0" cy="0" rx="88" ry="36" fill="none" stroke="url(#initOrbit1)" stroke-width="1.6" stroke-dasharray="6 3 12 3" transform="rotate(-24)"/>
+                <circle cx="76" cy="-18" r="3" fill="#fef08a"/>
+                <circle cx="-76" cy="18" r="2.2" fill="#6ee7b7"/>
+              </g>
+              <g style="animation: lkOrbit2 13s infinite linear; transform-origin: 0 0;">
+                <ellipse cx="0" cy="0" rx="86" ry="35" fill="none" stroke="url(#initOrbit2)" stroke-width="1.4" stroke-dasharray="4 4 8 4" transform="rotate(26)"/>
+                <circle cx="-74" cy="-17" r="2.8" fill="#a5f3fc"/>
+                <circle cx="74" cy="17" r="2.4" fill="#e879f9"/>
+              </g>
+            </g>
+
+            <!-- 4-Leaf Clover (Luck) Head -->
+            <g>
+              <path d="M 150 92 C 138 68, 126 44, 150 42 C 174 44, 162 68, 150 92 Z" fill="url(#initCloverLeaf)" stroke="url(#initGoldTrim)" stroke-width="2.2"/>
+              <path d="M 150 92 C 138 116, 126 140, 150 142 C 174 140, 162 116, 150 92 Z" fill="url(#initCloverLeaf)" stroke="url(#initGoldTrim)" stroke-width="2.2"/>
+              <path d="M 150 92 C 126 80, 102 68, 100 92 C 102 116, 126 104, 150 92 Z" fill="url(#initCloverLeaf)" stroke="url(#initGoldTrim)" stroke-width="2.2"/>
+              <path d="M 150 92 C 174 80, 198 68, 200 92 C 198 116, 174 104, 150 92 Z" fill="url(#initCloverLeaf)" stroke="url(#initGoldTrim)" stroke-width="2.2"/>
+            </g>
+
+            <!-- Inner Lines -->
+            <line x1="150" y1="92" x2="150" y2="52" stroke="url(#initGoldTrim)" stroke-width="1" opacity="0.6"/>
+            <line x1="150" y1="92" x2="150" y2="132" stroke="url(#initGoldTrim)" stroke-width="1" opacity="0.6"/>
+            <line x1="150" y1="92" x2="110" y2="92" stroke="url(#initGoldTrim)" stroke-width="1" opacity="0.6"/>
+            <line x1="150" y1="92" x2="190" y2="92" stroke="url(#initGoldTrim)" stroke-width="1" opacity="0.6"/>
+
+            <!-- Central Singularity Ring (528Hz Solfeggio) -->
+            <circle cx="150" cy="92" r="16" fill="#030712" stroke="url(#initGoldTrim)" stroke-width="2"/>
+            <circle cx="150" cy="92" r="13" fill="url(#initSolfeggio)" style="animation: lkPulse 2.2s infinite ease-in-out; transform-origin: 150px 92px;"/>
+            <path d="M 150 78 Q 150 92 164 92 Q 150 92 150 106 Q 150 92 136 92 Q 150 92 150 78 Z" fill="#ffffff"/>
+            <circle cx="150" cy="92" r="3.2" fill="#fffbeb"/>
+
+            <!-- Top Spire Crown -->
+            <path d="M 150 30 L 156 39 L 150 43 L 144 39 Z" fill="url(#initGoldTrim)"/>
+            <circle cx="150" cy="30" r="2.5" fill="#fde047"/>
+
+            <!-- Collar & Key Shaft (Key) -->
+            <path d="M 124 138 C 136 133 144 131 150 131 C 156 131 164 133 176 138 C 164 144 156 146 150 146 C 144 146 136 144 124 138 Z" fill="url(#initGoldTrim)" stroke="#ffffff" stroke-width="0.8"/>
+            <circle cx="150" cy="138.5" r="2.2" fill="#10b981"/>
+
+            <rect x="145.5" y="146" width="9" height="118" rx="4.5" fill="url(#initShaftGrad)" stroke="url(#initGoldTrim)" stroke-width="1.2"/>
+            <line x1="150" y1="149" x2="150" y2="260" stroke="#ffffff" stroke-width="1.6" stroke-opacity="0.9" stroke-linecap="round"/>
+
+            <!-- Gem Nodes -->
+            <circle cx="150" cy="172" r="3.2" fill="#fbbf24" stroke="#ffffff" stroke-width="0.8"/>
+            <circle cx="150" cy="202" r="3.4" fill="#34d399" stroke="#ffffff" stroke-width="0.8"/>
+            <circle cx="150" cy="232" r="3.2" fill="#38bdf8" stroke="#ffffff" stroke-width="0.8"/>
+
+            <!-- Key Bit -->
+            <g transform="translate(154.5, 218)">
+              <path d="M 0 0 L 22 0 C 25 0 27 2 27 5 L 27 10 L 16 10 L 16 18 L 26 18 C 28 18 29 20 29 22 L 29 32 C 29 34 27 36 25 36 L 0 36 Z" fill="url(#initShaftGrad)" stroke="url(#initGoldTrim)" stroke-width="1.4"/>
+              <rect x="6" y="5" width="4" height="4" rx="1" fill="#030712"/>
+              <rect x="6" y="24" width="4" height="6" rx="1" fill="#030712"/>
+              <circle cx="19" cy="27" r="2.2" fill="#fde047"/>
+            </g>
+
+            <!-- Terminal Crest -->
+            <g transform="translate(150, 268)">
+              <ellipse cx="0" cy="0" rx="12" ry="7" fill="url(#initGoldTrim)" stroke="#ffffff" stroke-width="1"/>
+              <circle cx="0" cy="0" r="3" fill="#10b981"/>
+              <path d="M 0 7 L 3 16 L 0 20 L -3 16 Z" fill="url(#initShaftGrad)"/>
+              <circle cx="0" cy="20" r="1.8" fill="#fde047"/>
+            </g>
           </svg>
         </div>
-        <div style="margin-top:8px;font-size:26px;font-weight:900;letter-spacing:0.3em;text-transform:uppercase;background:linear-gradient(90deg,#ff0055,#ff9100,#ffd600,#00e676,#00b0ff,#d500f9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
-          PRISM
+
+        <!-- LucKey Brand Title -->
+        <div style="margin-top:12px;font-size:30px;font-weight:900;letter-spacing:0.26em;text-transform:uppercase;display:flex;align-items:center;justify-content:center;">
+          <span style="background:linear-gradient(90deg, #fde047, #34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Luc</span>
+          <span style="background:linear-gradient(90deg, #34d399, #38bdf8, #c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Key</span>
         </div>
-        <div style="font-size:11px;font-weight:600;letter-spacing:0.18em;color:rgba(255,255,255,0.7);margin-top:10px;">
-          프리즘 스펙트럼 조율 중...
+
+        <!-- Subtitle & Loading Status -->
+        <div style="font-size:12px;font-weight:600;letter-spacing:0.16em;color:rgba(167,243,208,0.95);margin-top:8px;">
+          행운과 해답의 문을 여는 중...
         </div>
-        <div style="width:180px;height:3px;background:rgba(255,255,255,0.1);border-radius:999px;margin-top:18px;overflow:hidden;">
-          <div style="width:100%;height:100%;background:linear-gradient(90deg,#ff0055,#ff9100,#ffd600,#00e676,#00b0ff,#d500f9);"></div>
+        <div style="font-size:9px;font-weight:500;letter-spacing:0.22em;color:rgba(125,211,252,0.6);margin-top:4px;font-family:monospace;text-transform:uppercase;">
+          LUCKEY · SOUL SANCTUARY &amp; CELESTIAL KEY
+        </div>
+
+        <!-- Animated Progress Gauge -->
+        <div style="width:190px;height:3px;background:rgba(255,255,255,0.1);border-radius:999px;margin-top:18px;overflow:hidden;position:relative;">
+          <div style="width:100%;height:100%;background:linear-gradient(90deg,#fbbf24,#34d399,#38bdf8,#a855f7);animation:lkScan 1.9s infinite ease-in-out;"></div>
         </div>
       </div>
     </div>
