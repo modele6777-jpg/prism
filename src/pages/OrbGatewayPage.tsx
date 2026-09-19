@@ -50,6 +50,174 @@ interface StardustParticle {
   color: string;
 }
 
+export interface SeptagramAppDimension {
+  id: string;
+  tossId: string;
+  name: string;
+  shortName: string;
+  subTitle: string;
+  path: string;
+  icon: string;
+  runeSymbol: string;
+  runeName: string;
+  runeMeaning: string;
+  orbitTier: 1 | 2 | 3 | 4 | 5 | 6 | 7;
+  orbitRadius: number;
+  initialAngle: number;
+  color: string;
+  glowColor: string;
+  keywords: string[];
+  description: string;
+}
+
+/**
+ * 🪐 칠요 성진(Septagram) 7대 차원 행성 메타데이터
+ * 7대 전용 동심 궤도(Concentric Planetary Orrery) & 고대 룬 표식(Elder Runic Sigils)
+ * 양피지의 영시/처방을 각 차원(루시·오렌지·트리니티·아우라·파랑새·뮤즈·에필로그)으로 즉시 토스
+ */
+export const SEPTAGRAM_APPS: SeptagramAppDimension[] = [
+  // Tier 1 (r=124): LUCY
+  {
+    id: "lucy",
+    tossId: "lucy",
+    name: "LUCY",
+    shortName: "루시",
+    subTitle: "1:1 심층 심리상담",
+    path: "/chat",
+    icon: "✨",
+    runeSymbol: "ᛚ",
+    runeName: "Laguz",
+    runeMeaning: "물의 흐름과 무의식 상담",
+    orbitTier: 1,
+    orbitRadius: 124,
+    initialAngle: 0,
+    color: "#38bdf8",
+    glowColor: "rgba(56, 189, 248, 0.9)",
+    keywords: ["루시", "상담", "심리", "대화", "공감", "치유"],
+    description: "영시와 고민의 맥락을 들고 루시와 1:1 심층 심리상담",
+  },
+  // Tier 2 (r=138): ORANGE
+  {
+    id: "orange",
+    tossId: "orange",
+    name: "ORANGE",
+    shortName: "오렌지",
+    subTitle: "감정 성찰과 소원의 우물",
+    path: "/orange",
+    icon: "🍊",
+    runeSymbol: "ᛋ",
+    runeName: "Sowilo",
+    runeMeaning: "태양과 내면의 빛",
+    orbitTier: 2,
+    orbitRadius: 138,
+    initialAngle: 51.4,
+    color: "#f97316",
+    glowColor: "rgba(249, 115, 22, 0.9)",
+    keywords: ["성찰", "소원의 우물", "감정", "마음", "소원", "치유", "불안"],
+    description: "불안과 감정을 성찰하고 소원의 우물에 소망을 띄우는 비밀의 숲",
+  },
+  // Tier 3 (r=152): TRINITY
+  {
+    id: "trinity",
+    tossId: "trinity",
+    name: "TRINITY",
+    shortName: "트리니티",
+    subTitle: "3장의 타로와 무의식 탐색",
+    path: "/trinity",
+    icon: "🔮",
+    runeSymbol: "ᛈ",
+    runeName: "Pertho",
+    runeMeaning: "운명과 심층 무의식의 비밀",
+    orbitTier: 3,
+    orbitRadius: 152,
+    initialAngle: 102.8,
+    color: "#a855f7",
+    glowColor: "rgba(168, 85, 247, 0.9)",
+    keywords: ["미래", "갈림길", "선택", "운명", "무의식", "타로", "상징"],
+    description: "3장의 상징 카드로 무의식의 심층 심리를 해독하는 타로 나침반",
+  },
+  // Tier 4 (r=166): AURA HEAL
+  {
+    id: "heal",
+    tossId: "heal",
+    name: "AURA HEAL",
+    shortName: "아우라",
+    subTitle: "신체 웰니스 & 호오포노포노",
+    path: "/heal",
+    icon: "🧘",
+    runeSymbol: "ᛉ",
+    runeName: "Algiz",
+    runeMeaning: "보호와 내면의 치유",
+    orbitTier: 4,
+    orbitRadius: 166,
+    initialAngle: 154.3,
+    color: "#10b981",
+    glowColor: "rgba(16, 185, 129, 0.9)",
+    keywords: ["집착", "불안", "긴장", "내려놓기", "방하착", "흘려보냄", "명상", "호오포노포노"],
+    description: "마음의 긴장과 번뇌를 내려놓는 호오포노포노 정화와 웰니스 성소",
+  },
+  // Tier 5 (r=180): BLUEBIRD
+  {
+    id: "bluebird",
+    tossId: "bluebird",
+    name: "BLUEBIRD",
+    shortName: "파랑새",
+    subTitle: "행복과 평온의 안식처",
+    path: "/bluebird",
+    icon: "🐦",
+    runeSymbol: "ᛒ",
+    runeName: "Berkana",
+    runeMeaning: "영혼을 감싸는 안식처",
+    orbitTier: 5,
+    orbitRadius: 180,
+    initialAngle: 205.7,
+    color: "#06b6d4",
+    glowColor: "rgba(6, 182, 212, 0.9)",
+    keywords: ["상처", "죄책감", "용서", "화해", "인간관계", "안식", "파랑새"],
+    description: "지친 마음에 일상의 평온과 행복, 따뜻한 감사의 온기를 되찾는 성소",
+  },
+  // Tier 6 (r=194): MUSE
+  {
+    id: "muse",
+    tossId: "muse",
+    name: "MUSE",
+    shortName: "뮤즈",
+    subTitle: "명화·명시·명곡 예술처방",
+    path: "/muse",
+    icon: "🎨",
+    runeSymbol: "ᚹ",
+    runeName: "Wunjo",
+    runeMeaning: "예술적 희열과 하모니",
+    orbitTier: 6,
+    orbitRadius: 194,
+    initialAngle: 257.1,
+    color: "#ec4899",
+    glowColor: "rgba(236, 72, 153, 0.9)",
+    keywords: ["감성", "예술", "명화", "음악", "영감", "시", "창의", "처방"],
+    description: "클래식 명곡과 명화, 시구로 메마른 감성을 소생시키는 예술처방",
+  },
+  // Tier 7 (r=208): EPILOGUE
+  {
+    id: "epilogue",
+    tossId: "epilogue",
+    name: "EPILOGUE",
+    shortName: "에필로그",
+    subTitle: "밤 서재 하루 마감 영감 일기",
+    path: "/epilogue",
+    icon: "🌙",
+    runeSymbol: "ᚨ",
+    runeName: "Ansuz",
+    runeMeaning: "신성한 지혜와 영감의 기록",
+    orbitTier: 7,
+    orbitRadius: 208,
+    initialAngle: 308.6,
+    color: "#6366f1",
+    glowColor: "rgba(99, 102, 241, 0.9)",
+    keywords: ["밤", "하루", "마감", "일기", "회고", "성찰", "마무리", "오늘"],
+    description: "오늘 하루를 고요히 마무리하고 지혜로 기록하는 밤 서재",
+  },
+];
+
 export default function OrbGatewayPage() {
   const [, navigate] = useLocation();
   const narrow = useNarrowPhone();
@@ -59,6 +227,16 @@ export default function OrbGatewayPage() {
   const [isDroneOn, setIsDroneOn] = useState(false);
   const [isResonating, setIsResonating] = useState(false);
   const [rippleKey, setRippleKey] = useState(0);
+
+  // Planetary Orrery & Alignment States
+  const [selectedRuneIds, setSelectedRuneIds] = useState<string[]>([]);
+  const [hoveredApp, setHoveredApp] = useState<SeptagramAppDimension | null>(null);
+  const [hoveredRuneInfo, setHoveredRuneInfo] = useState<{
+    app: SeptagramAppDimension;
+    x: number;
+    y: number;
+  } | null>(null);
+  const [isTossing, setIsTossing] = useState(false);
 
   // Archive & Scrying States
   const [archiveItems, setArchiveItems] = useState<KeyArchiveItem[]>([]);
@@ -389,6 +567,62 @@ export default function OrbGatewayPage() {
     }
   };
 
+  // 🪐 칠요 성진 앱으로 양피지 즉시 토스 (정렬 모션 + 광선 발사 + 스마트 토스)
+  const handleTossToApp = useCallback(
+    (app: SeptagramAppDimension) => {
+      if (isTossing) return;
+      setIsTossing(true);
+      setSelectedRuneIds([app.id]);
+      setHoveredApp(null);
+      setHoveredRuneInfo(null);
+
+      // Sound & tactile feedback
+      triggerHaptic("wormhole");
+      omniWarpAudio.playWormhole();
+      sacredAudio.playSingingBowl(639);
+
+      // Extract current memory text
+      const title = currentMemory?.title || "Key 크리스탈 오브 영시";
+      const keypoint = currentMemory?.keypoint || "";
+      const guidance = currentMemory?.actionGuidance || "";
+      const fullText = currentMemory?.fullText || "";
+
+      const tossMessage = [
+        `[Key 영시 신탁] ${title}`,
+        keypoint ? `💡 핵심 통찰: ${keypoint}` : "",
+        guidance ? `🌿 실천 지침: ${guidance}` : "",
+        fullText ? `📜 원문:\n${fullText}` : "",
+      ]
+        .filter(Boolean)
+        .join("\n\n");
+
+      const dest =
+        TOSS_DESTINATIONS[app.tossId] ||
+        TOSS_DESTINATIONS[app.id] || {
+          id: app.id,
+          name: app.name,
+          subName: app.subTitle,
+          icon: app.icon,
+          path: app.path,
+          description: app.description,
+          themeColor: app.color,
+        };
+
+      setTossNotice(`✨ [${app.shortName}] 행성으로 양피지 영시를 토스하는 중...`);
+
+      // 600ms 동안 정렬 모션(0.38s)과 공명 레이저 빔을 관조한 뒤 토스 도약
+      setTimeout(() => {
+        executeSmartToss("key", dest, {
+          text: tossMessage,
+          contextMessage: tossMessage,
+          autoPrompt: tossMessage,
+        });
+        setIsTossing(false);
+      }, 600);
+    },
+    [currentMemory, isTossing]
+  );
+
   return (
     <div className="relative w-full h-[100dvh] flex flex-col items-center justify-between overflow-hidden bg-[#020308] text-white">
       {/* 🌌 Deep Space Ambient Glow Background */}
@@ -538,10 +772,275 @@ export default function OrbGatewayPage() {
               })}
             </svg>
 
-            {/* Concentric Celestial Orbit Rings */}
-            <div className="absolute inset-8 rounded-full border border-cyan-500/20 pointer-events-none" />
-            <div className="absolute inset-14 rounded-full border border-dashed border-purple-500/25 pointer-events-none" />
-            <div className="absolute inset-20 rounded-full border border-amber-400/15 pointer-events-none" />
+            {/* 🪐 칠요 성진 7대 전용 동심 궤도 시스템 (7 Concentric Planetary Orbit Rings) */}
+            <svg viewBox="0 0 440 440" className="absolute inset-0 w-full h-full pointer-events-none">
+              {SEPTAGRAM_APPS.map((app) => {
+                const isSelected = selectedRuneIds.includes(app.id);
+                return (
+                  <g key={`orbit-ring-${app.id}`}>
+                    <circle
+                      cx="220"
+                      cy="220"
+                      r={app.orbitRadius}
+                      fill="none"
+                      stroke={app.color}
+                      strokeWidth={isSelected ? "1.8" : "0.85"}
+                      strokeDasharray={isSelected ? "6 4" : "4 6"}
+                      strokeOpacity={isSelected ? 0.9 : 0.28}
+                      className="transition-all duration-300"
+                    />
+                    {isSelected && (
+                      <circle
+                        cx="220"
+                        cy="220"
+                        r={app.orbitRadius}
+                        fill="none"
+                        stroke={app.color}
+                        strokeWidth="4"
+                        strokeOpacity="0.3"
+                        className="blur-[2px]"
+                      />
+                    )}
+                  </g>
+                );
+              })}
+            </svg>
+          </div>
+
+          {/* 🪐 칠요 성진 7대 전용 룬 노드 및 일직선 축 정렬 모션 레이어 (Concentric Planetary Orrery & Alignment Motion) */}
+          <div className="absolute inset-[-54px] sm:inset-[-74px] pointer-events-none flex items-center justify-center select-none z-30">
+            <motion.div
+              className="absolute inset-0 pointer-events-none"
+              animate={{ rotate: 360 }}
+              transition={{
+                duration: isResonating ? 15 : 52,
+                repeat: Infinity,
+                ease: "linear",
+              }}
+            >
+              {/* 성간 공명 일직선 레이저 빔 (Laser Beam connecting Center to Aligned App) */}
+              <svg viewBox="0 0 440 440" className="absolute inset-0 w-full h-full pointer-events-none z-20">
+                {selectedRuneIds.length === 1 && (() => {
+                  const app = SEPTAGRAM_APPS.find((a) => a.id === selectedRuneIds[0]);
+                  if (!app) return null;
+                  const rad = (90 * Math.PI) / 180; // 90° points straight down toward the Sacred Parchment
+                  const x = 220 + app.orbitRadius * Math.cos(rad);
+                  const y = 220 + app.orbitRadius * Math.sin(rad);
+                  const lineColor = app.color;
+
+                  return (
+                    <motion.g
+                      key={`single-beam-${app.id}`}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.2 }}
+                      className="pointer-events-none"
+                    >
+                      <line
+                        x1={220}
+                        y1={220}
+                        x2={x}
+                        y2={y + 16}
+                        stroke={lineColor}
+                        strokeWidth="8"
+                        strokeOpacity="0.45"
+                        strokeLinecap="round"
+                        className="blur-[4px]"
+                      />
+                      <line
+                        x1={220}
+                        y1={220}
+                        x2={x}
+                        y2={y}
+                        stroke="#ffffff"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                      />
+                      <line
+                        x1={220}
+                        y1={220}
+                        x2={x}
+                        y2={y}
+                        stroke={lineColor}
+                        strokeWidth="2"
+                        strokeDasharray="4 6"
+                        strokeOpacity="0.9"
+                        className="animate-pulse"
+                      />
+                      <circle cx={220} cy={220} r="5" fill="#ffffff" />
+                      <circle cx={220} cy={220} r="9" fill="none" stroke={lineColor} strokeWidth="1.5" className="animate-ping" />
+                      <circle cx={x} cy={y} r="4" fill="#ffffff" />
+                      <circle cx={x} cy={y} r="8" fill="none" stroke="#fde047" strokeWidth="1.5" className="animate-ping" />
+                    </motion.g>
+                  );
+                })()}
+
+                {selectedRuneIds.length >= 2 && (() => {
+                  const baseApp = SEPTAGRAM_APPS.find((a) => a.id === selectedRuneIds[0]) || SEPTAGRAM_APPS[0];
+                  const selectedApps = selectedRuneIds
+                    .map((id) => SEPTAGRAM_APPS.find((a) => a.id === id))
+                    .filter(Boolean) as SeptagramAppDimension[];
+                  const maxRadius = Math.max(...selectedApps.map((a) => a.orbitRadius), 160);
+                  const x1 = 220;
+                  const y1 = 220 - (maxRadius + 10);
+                  const x2 = 220;
+                  const y2 = 220 + (maxRadius + 10);
+                  const glowColor = baseApp.color;
+
+                  return (
+                    <motion.g
+                      key={`axis-beam-${selectedRuneIds.join("-")}`}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.2 }}
+                      className="pointer-events-none"
+                    >
+                      <line
+                        x1={x1}
+                        y1={y1}
+                        x2={x2}
+                        y2={y2}
+                        stroke={glowColor}
+                        strokeWidth="10"
+                        strokeOpacity="0.45"
+                        strokeLinecap="round"
+                        className="blur-[5px]"
+                      />
+                      <line
+                        x1={x1}
+                        y1={y1}
+                        x2={x2}
+                        y2={y2}
+                        stroke="#ffffff"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                      />
+                      <line
+                        x1={x1}
+                        y1={y1}
+                        x2={x2}
+                        y2={y2}
+                        stroke="#fde047"
+                        strokeWidth="2"
+                        strokeDasharray="6 8"
+                        className="animate-pulse"
+                      />
+                      <circle cx={220} cy={220} r="6" fill="#ffffff" />
+                      <circle cx={220} cy={220} r="10" fill="none" stroke={glowColor} strokeWidth="1.5" className="opacity-80" />
+                    </motion.g>
+                  );
+                })()}
+              </svg>
+
+              {/* 3. 7대 전용 룬 노드 (각 궤도당 1개 행성, 정렬 모션 & 자전 역보정) */}
+              {SEPTAGRAM_APPS.map((app) => {
+                const isSelected = selectedRuneIds.includes(app.id);
+                const selectedIndex = selectedRuneIds.indexOf(app.id);
+                const isHovered = hoveredApp?.id === app.id;
+
+                // 룬 일직선 축 정렬 각도 오프셋 계산:
+                // 선택 시 90도(하단 양피지 방향) 축으로 신속히(0.38s) 회전 이동
+                let alignmentDelta = 0;
+                if (isSelected) {
+                  if (selectedRuneIds.length === 1) {
+                    const targetAngle = 90; // 하단 양피지 방향
+                    alignmentDelta = (targetAngle - app.initialAngle) % 360;
+                    if (alignmentDelta > 180) alignmentDelta -= 360;
+                    if (alignmentDelta < -180) alignmentDelta += 360;
+                  } else {
+                    const targetAngle = selectedIndex % 2 === 0 ? 90 : 270;
+                    alignmentDelta = (targetAngle - app.initialAngle) % 360;
+                    if (alignmentDelta > 180) alignmentDelta -= 360;
+                    if (alignmentDelta < -180) alignmentDelta += 360;
+                  }
+                }
+
+                // 좌표 계산 (회전 좌표계 내부의 고유 위치)
+                const rad = (app.initialAngle * Math.PI) / 180;
+                const cx = 220 + app.orbitRadius * Math.cos(rad);
+                const cy = 220 + app.orbitRadius * Math.sin(rad);
+                const leftPercent = (cx / 440) * 100;
+                const topPercent = (cy / 440) * 100;
+
+                return (
+                  <motion.div
+                    key={`tier-node-wrap-${app.id}`}
+                    className="absolute inset-0 pointer-events-none"
+                    animate={{ rotate: alignmentDelta }}
+                    transition={{
+                      duration: 0.38,
+                      ease: [0.2, 0.8, 0.2, 1],
+                    }}
+                  >
+                    <div
+                      className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto z-30"
+                      style={{ left: `${leftPercent}%`, top: `${topPercent}%` }}
+                    >
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTossToApp(app);
+                        }}
+                        onMouseEnter={(e) => {
+                          setHoveredApp(app);
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          setHoveredRuneInfo({
+                            app,
+                            x: rect.left + rect.width / 2,
+                            y: rect.top,
+                          });
+                        }}
+                        onMouseLeave={() => {
+                          setHoveredApp(null);
+                          setHoveredRuneInfo(null);
+                        }}
+                        className={`group/rune relative flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full transition-all duration-300 active:scale-90 cursor-pointer touch-manipulation ${
+                          isSelected
+                            ? "scale-125 ring-2 ring-white shadow-[0_0_25px_rgba(255,255,255,0.95)] z-40"
+                            : isHovered
+                            ? "scale-120 shadow-[0_0_18px_rgba(56,189,248,0.85)] z-40"
+                            : "hover:scale-115 opacity-85 hover:opacity-100"
+                        }`}
+                        style={{
+                          background: isSelected
+                            ? `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.5) 0%, ${app.color} 85%)`
+                            : `radial-gradient(circle at 35% 30%, rgba(255,255,255,0.25) 0%, rgba(15,20,35,0.95) 75%)`,
+                          border: `1.5px solid ${isSelected ? "#ffffff" : app.color}`,
+                          boxShadow: isSelected
+                            ? `0 0 22px ${app.glowColor}, inset 0 0 8px rgba(255,255,255,0.8)`
+                            : `0 0 10px ${app.glowColor}`,
+                        }}
+                        aria-label={`${app.name} (${app.shortName}) 토스`}
+                        title={`${app.name} (${app.subTitle}) 터치 시 양피지 토스`}
+                      >
+                        {/* 정방향 자전 보정 (Counter-rotation so rune symbol stays upright) */}
+                        <motion.div
+                          animate={{ rotate: -alignmentDelta }}
+                          transition={{
+                            duration: 0.38,
+                            ease: [0.2, 0.8, 0.2, 1],
+                          }}
+                          className="flex items-center justify-center w-full h-full pointer-events-none"
+                        >
+                          <motion.span
+                            animate={{ rotate: -360 }}
+                            transition={{
+                              duration: isResonating ? 15 : 52,
+                              repeat: Infinity,
+                              ease: "linear",
+                            }}
+                            className="font-serif font-black text-xs sm:text-sm select-none text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.85)] inline-block"
+                          >
+                            {app.runeSymbol}
+                          </motion.span>
+                        </motion.div>
+                      </button>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </motion.div>
           </div>
 
           {/* 🌟 2. Interactive Resonance Waves (Triggered on Tap) */}
@@ -775,6 +1274,43 @@ export default function OrbGatewayPage() {
                     </div>
                   )}
 
+                  {/* 🪐 Planetary Dimension Quick-Toss Bar */}
+                  <div className="pt-2 mt-2 border-t border-amber-500/20 select-none">
+                    <div className="flex items-center justify-between mb-1.5 px-0.5">
+                      <div className="flex items-center gap-1 text-[11px] font-medium text-amber-200/90">
+                        <Sparkle size={11} className="text-amber-400 animate-spin" />
+                        <span>영시 즉시 토스 (오브 둘레 행성 터치)</span>
+                      </div>
+                      <span className="text-[10px] text-amber-300/60 font-mono">7대 차원</span>
+                    </div>
+                    <div className="grid grid-cols-7 gap-1">
+                      {SEPTAGRAM_APPS.map((app) => {
+                        const isSelected = selectedRuneIds.includes(app.id);
+                        return (
+                          <button
+                            key={`parchment-toss-${app.id}`}
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleTossToApp(app);
+                            }}
+                            className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-lg border transition-all active:scale-95 cursor-pointer touch-manipulation ${
+                              isSelected
+                                ? "bg-amber-400/25 border-amber-300 text-white shadow-[0_0_12px_rgba(251,191,36,0.6)] scale-105"
+                                : "bg-white/[0.04] hover:bg-white/[0.1] border-white/10 text-slate-300 hover:text-white"
+                            }`}
+                            title={`${app.name} (${app.subTitle})으로 토스`}
+                          >
+                            <span className="text-xs">{app.icon}</span>
+                            <span className="text-[9px] font-bold mt-0.5 tracking-tighter truncate max-w-full">
+                              {app.shortName}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   {/* Parchment Footer: Tags & Time Estimate / Date */}
                   <div className="flex items-center justify-between text-[10px] text-amber-300/60 pt-1.5 border-t border-amber-500/15 font-mono select-none">
                     <div className="flex items-center gap-1.5 overflow-hidden">
@@ -803,9 +1339,35 @@ export default function OrbGatewayPage() {
           className="flex items-center gap-1.5 text-xs text-amber-200/85 tracking-wide font-sans py-1.5 px-4 rounded-full bg-white/[0.03] border border-white/5 backdrop-blur-md"
         >
           <Sparkles size={12} className="text-amber-300 shrink-0" />
-          <span>구슬을 터치하면 성스러운 빛과 함께 양피지에 영시가 기록됩니다</span>
+          <span>구슬 터치 시 영시 갱신 · 외곽 행성 터치 시 양피지 즉시 토스</span>
         </motion.div>
       </footer>
+
+      {/* 🏷️ 데스크톱 행성 호버 팝업 툴팁 */}
+      <AnimatePresence>
+        {hoveredRuneInfo && (
+          <motion.div
+            initial={{ opacity: 0, y: 5, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 3, scale: 0.9 }}
+            transition={{ duration: 0.12 }}
+            className="fixed z-[9999] pointer-events-none -translate-x-1/2 -translate-y-full px-3 py-1.5 rounded-full bg-zinc-950/95 border text-xs font-bold text-white shadow-[0_4px_24px_rgba(0,0,0,0.9)] backdrop-blur-md flex items-center gap-1.5 whitespace-nowrap select-none hidden sm:flex"
+            style={{
+              left: `${hoveredRuneInfo.x}px`,
+              top: `${hoveredRuneInfo.y - 10}px`,
+              borderColor: hoveredRuneInfo.app.color,
+              boxShadow: `0 0 16px ${hoveredRuneInfo.app.glowColor}, 0 4px 18px rgba(0,0,0,0.85)`,
+            }}
+          >
+            <span className="text-sm">{hoveredRuneInfo.app.icon}</span>
+            <span style={{ color: hoveredRuneInfo.app.color }}>{hoveredRuneInfo.app.name}</span>
+            <span className="text-slate-300 font-normal">({hoveredRuneInfo.app.subTitle})</span>
+            <span className="text-[10px] text-amber-300/80 bg-amber-400/10 px-1.5 py-0.5 rounded-full font-sans">
+              터치하여 토스
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* 📜 Full Archive Drawer Modal */}
       <AnimatePresence>
