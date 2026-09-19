@@ -237,6 +237,7 @@ export default function OrbGatewayPage() {
     y: number;
   } | null>(null);
   const [isTossing, setIsTossing] = useState(false);
+  const [isParchmentRolled, setIsParchmentRolled] = useState(false);
 
   // Archive & Scrying States
   const [archiveItems, setArchiveItems] = useState<KeyArchiveItem[]>([]);
@@ -499,6 +500,9 @@ export default function OrbGatewayPage() {
     sacredAudio.playSingingBowl(528);
     triggerHaptic("whitehole");
 
+    // Reset roll state to reveal new memory unrolled
+    setIsParchmentRolled(false);
+
     // Cycle to next memory fragment
     if (filteredItems.length > 0) {
       setCurrentIndex((prev) => (prev + 1) % filteredItems.length);
@@ -513,6 +517,7 @@ export default function OrbGatewayPage() {
   const handleNextMemory = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     if (filteredItems.length === 0) return;
+    setIsParchmentRolled(false);
     triggerHaptic("wormhole");
     setCurrentIndex((prev) => (prev + 1) % filteredItems.length);
   };
@@ -520,12 +525,14 @@ export default function OrbGatewayPage() {
   const handlePrevMemory = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     if (filteredItems.length === 0) return;
+    setIsParchmentRolled(false);
     triggerHaptic("wormhole");
     setCurrentIndex((prev) => (prev - 1 + filteredItems.length) % filteredItems.length);
   };
 
   // Select memory from modal list
   const handleSelectMemory = (item: KeyArchiveItem) => {
+    setIsParchmentRolled(false);
     const idx = filteredItems.findIndex((it) => it.id === item.id);
     if (idx !== -1) {
       setCurrentIndex(idx);
@@ -537,6 +544,17 @@ export default function OrbGatewayPage() {
     setIsArchiveModalOpen(false);
     triggerHaptic("whitehole");
     sacredAudio.playSingingBowl(528);
+  };
+
+  // 📜 Toggle Parchment Roll State (양피지 두루마리 돌돌 말기/펼치기)
+  const handleToggleRoll = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setIsParchmentRolled((prev) => {
+      const next = !prev;
+      triggerHaptic(next ? "wormhole" : "whitehole");
+      sacredAudio.playSingingBowl(next ? 528 : 432);
+      return next;
+    });
   };
 
   // Refresh Archive from Storage
@@ -575,6 +593,7 @@ export default function OrbGatewayPage() {
       setSelectedRuneIds([app.id]);
       setHoveredApp(null);
       setHoveredRuneInfo(null);
+      setIsParchmentRolled(true); // Automatically ensure rolled scroll state for the soaring toss
 
       // Sound & tactile feedback
       triggerHaptic("wormhole");
@@ -1136,7 +1155,11 @@ export default function OrbGatewayPage() {
                     <div className="flex items-center gap-1 mt-0.5 text-[8.5px] font-mono text-amber-300/90 tracking-wider">
                       <span>{currentIndex + 1} / {filteredItems.length}</span>
                       <span>·</span>
-                      <span className="text-cyan-300/90 font-sans">양피지 발현 ✧</span>
+                      {isParchmentRolled ? (
+                        <span className="text-amber-300 font-sans font-bold animate-pulse">두루마리 토스 대기 ✧</span>
+                      ) : (
+                        <span className="text-cyan-300/90 font-sans">양피지 발현 ✧</span>
+                      )}
                     </div>
                   </motion.div>
                 ) : (
@@ -1172,161 +1195,265 @@ export default function OrbGatewayPage() {
           />
         </div>
 
-        {/* 📜 5. The Sacred Parchment Scroll (성스러운 양피지) */}
+        {/* 📜 5. The Sacred Parchment Scroll (성스러운 양피지 및 돌돌 말린 두루마리 토스) */}
         <AnimatePresence mode="wait">
           {currentMemory && (
-            <motion.div
-              key={currentMemory.id}
-              initial={{ opacity: 0, y: 12, scale: 0.97 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -8, scale: 0.98 }}
-              transition={{ duration: 0.45, ease: "easeOut" }}
-              className="relative z-40 w-full max-w-sm sm:max-w-md px-1 sm:px-2 select-text"
-            >
-              {/* Outer Antique Parchment Frame */}
-              <div
-                className={`relative rounded-2xl p-3.5 sm:p-4 transition-all duration-700 backdrop-blur-xl border ${
-                  isResonating
-                    ? "bg-gradient-to-b from-[#241d15]/95 via-[#1a1510]/95 to-[#241c14]/95 border-amber-400/60 shadow-[0_0_40px_rgba(251,191,36,0.35),inset_0_0_25px_rgba(245,158,11,0.2)]"
-                    : "bg-gradient-to-b from-[#1c1813]/95 via-[#14120e]/95 to-[#1c1712]/95 border-amber-500/30 shadow-[0_0_30px_rgba(0,0,0,0.85),inset_0_0_20px_rgba(217,119,6,0.1)]"
-                }`}
+            isParchmentRolled ? (
+              /* 📜 [상태 1] 돌돌 말린 신성한 양피지 두루마리 (오브 둘레 행성들로 토스 가동) */
+              <motion.div
+                key={`rolled-${currentMemory.id}`}
+                initial={{ opacity: 0, scaleY: 0.25, y: 12 }}
+                animate={
+                  isTossing
+                    ? { y: -260, scale: 0.15, opacity: 0, rotate: 360 }
+                    : { opacity: 1, scaleY: 1, y: 0, scale: 1, rotate: 0 }
+                }
+                exit={{ opacity: 0, scaleY: 0.25, y: -8 }}
+                transition={{ duration: 0.45, ease: [0.2, 0.8, 0.2, 1] }}
+                className="relative z-40 w-full max-w-sm sm:max-w-md px-1 sm:px-2 flex flex-col items-center select-none"
               >
-                {/* Antique Parchment Ornate Corner Brackets */}
-                <div className="absolute top-1.5 left-2 text-amber-400/40 text-[11px] select-none font-serif">⌜</div>
-                <div className="absolute top-1.5 right-2 text-amber-400/40 text-[11px] select-none font-serif">⌝</div>
-                <div className="absolute bottom-1.5 left-2 text-amber-400/40 text-[11px] select-none font-serif">⌞</div>
-                <div className="absolute bottom-1.5 right-2 text-amber-400/40 text-[11px] select-none font-serif">⌟</div>
+                {/* 🌟 3D Antique Rolled Scroll Cylinder with Wax Seal */}
+                <div
+                  onClick={handleToggleRoll}
+                  className={`relative w-full rounded-2xl p-3.5 flex items-center justify-between gap-2.5 backdrop-blur-xl border transition-all duration-500 shadow-2xl cursor-pointer active:scale-98 ${
+                    isResonating
+                      ? "bg-gradient-to-r from-[#2c1d11] via-[#4d3720] via-[#63482a] via-[#4d3720] to-[#2c1d11] border-amber-400/80 shadow-[0_0_35px_rgba(251,191,36,0.4)]"
+                      : "bg-gradient-to-r from-[#20150b] via-[#3d2b19] via-[#523a22] via-[#3d2b19] to-[#20150b] border-amber-500/50 shadow-[0_0_25px_rgba(0,0,0,0.9)]"
+                  }`}
+                  title="터치하여 다시 펼쳐보기"
+                >
+                  {/* Left Wooden Knob */}
+                  <div className="w-2.5 h-11 rounded-l-md bg-gradient-to-b from-amber-600 via-amber-400 to-amber-900 border-l border-amber-300/60 shadow-inner shrink-0" />
 
-                {/* Parchment Header Ribbon */}
-                <div className="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-amber-500/20 select-none">
-                  <div className="flex items-center gap-1.5 overflow-hidden">
-                    <span className="text-amber-400/90 text-xs">📜</span>
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${currentMemory.badgeColor}`}>
-                      {currentMemory.categoryLabel}
-                    </span>
-                    <span className="text-[10px] font-mono text-amber-200/60">
-                      {currentIndex + 1} / {filteredItems.length}
-                    </span>
-                  </div>
+                  {/* Center Scroll Body & Wax Seal */}
+                  <div className="flex-1 flex items-center justify-between min-w-0 px-1">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      {/* Wax Seal */}
+                      <div className="relative w-9 h-9 rounded-full bg-gradient-to-br from-red-600 via-red-800 to-amber-950 border-2 border-amber-400/90 flex items-center justify-center shadow-[0_0_15px_rgba(239,68,68,0.7)] shrink-0">
+                        <KeyRound size={15} className="text-amber-200" />
+                        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-300 animate-ping" />
+                      </div>
 
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {/* TTS Voice Narration Button */}
-                    <TTSButton
-                      text={currentMemory.fullText}
-                      voice="Kore"
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/35 text-amber-200 text-xs font-medium active:scale-95 transition-all cursor-pointer shadow-sm"
-                    />
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-bold text-amber-100 tracking-wide truncate">
+                            봉인된 양피지 두루마리
+                          </span>
+                          <span className="text-[9px] font-mono text-amber-300 bg-amber-500/25 px-1.5 py-0.2 rounded-full border border-amber-400/40">
+                            토스 대기
+                          </span>
+                        </div>
+                        <p className="text-[10.5px] text-amber-200/80 truncate mt-0.5 font-serif">
+                          {currentMemory.title}
+                        </p>
+                      </div>
+                    </div>
 
-                    {/* Previous Memory */}
+                    {/* Unroll Button */}
                     <button
                       type="button"
-                      onClick={handlePrevMemory}
-                      className="p-1 rounded-full hover:bg-white/10 active:scale-90 text-amber-300 transition-all cursor-pointer"
-                      title="이전 영시"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleRoll();
+                      }}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/45 text-amber-200 text-xs font-semibold active:scale-95 transition-all shadow-sm cursor-pointer shrink-0"
+                      title="양피지 다시 펼쳐보기"
                     >
-                      <ChevronLeft size={16} />
-                    </button>
-
-                    {/* Next Memory */}
-                    <button
-                      type="button"
-                      onClick={handleNextMemory}
-                      className="p-1 rounded-full hover:bg-white/10 active:scale-90 text-amber-300 transition-all cursor-pointer"
-                      title="다음 영시"
-                    >
-                      <ChevronRight size={16} />
+                      <Scroll size={12} className="text-amber-300" />
+                      <span>펼치기</span>
                     </button>
                   </div>
+
+                  {/* Right Wooden Knob */}
+                  <div className="w-2.5 h-11 rounded-r-md bg-gradient-to-b from-amber-600 via-amber-400 to-amber-900 border-r border-amber-300/60 shadow-inner shrink-0" />
                 </div>
 
-                {/* Scrollable Parchment Body (Completely Visible, Never Cut Off) */}
-                <div className="max-h-[34vh] sm:max-h-[38vh] overflow-y-auto pr-1 space-y-2 overscroll-contain select-text custom-scrollbar">
-                  {/* Complete Title */}
-                  <h3 className="text-sm sm:text-[15px] font-serif font-bold text-[#fffdf7] tracking-wide leading-snug drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
-                    {currentMemory.title}
-                  </h3>
+                {/* 🪐 Prompt Banner & 7 Planetary Toss Targets when Rolled */}
+                <div className="w-full mt-2.5 p-2.5 rounded-2xl bg-[#0a0f1d]/90 border border-cyan-500/35 backdrop-blur-xl shadow-xl">
+                  <div className="flex items-center justify-between mb-2 px-1">
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-cyan-200">
+                      <Sparkles size={12} className="text-amber-300 animate-spin" />
+                      <span>오브 둘레의 행성을 터치하여 두루마리를 토스하세요!</span>
+                    </div>
+                    <span className="text-[10px] font-mono text-cyan-400/70">7대 차원</span>
+                  </div>
 
-                  {/* Distilled Keypoint / Clinical Insight */}
-                  <p className="text-xs sm:text-[13px] text-[#fef3c7]/95 leading-relaxed font-sans pl-2.5 border-l-2 border-amber-400/50 bg-amber-950/25 py-1 rounded-r-lg">
-                    {currentMemory.keypoint}
-                  </p>
+                  <div className="grid grid-cols-7 gap-1">
+                    {SEPTAGRAM_APPS.map((app) => {
+                      const isSelected = selectedRuneIds.includes(app.id);
+                      return (
+                        <button
+                          key={`rolled-parchment-toss-${app.id}`}
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleTossToApp(app);
+                          }}
+                          className={`flex flex-col items-center justify-center py-2 px-0.5 rounded-xl border transition-all active:scale-95 cursor-pointer touch-manipulation ${
+                            isSelected
+                              ? "bg-cyan-500/35 border-cyan-300 text-white shadow-[0_0_15px_rgba(6,182,212,0.8)] scale-105"
+                              : "bg-white/[0.04] hover:bg-white/[0.12] border-white/10 text-slate-300 hover:text-white"
+                          }`}
+                          title={`${app.name} (${app.subTitle})으로 두루마리 발송`}
+                        >
+                          <span className="text-base">{app.icon}</span>
+                          <span className="text-[9.5px] font-bold mt-0.5 tracking-tighter truncate max-w-full">
+                            {app.shortName}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </motion.div>
+            ) : (
+              /* 📜 [상태 2] 펼쳐진 성스러운 양피지 본문 (내용 감상 및 돌돌 말기 액션) */
+              <motion.div
+                key={`open-${currentMemory.id}`}
+                initial={{ opacity: 0, scaleY: 0.3, y: 12 }}
+                animate={
+                  isTossing
+                    ? { y: -260, scale: 0.15, opacity: 0, rotate: 360 }
+                    : { opacity: 1, scaleY: 1, y: 0, scale: 1, rotate: 0 }
+                }
+                exit={{ opacity: 0, scaleY: 0.3, y: -8 }}
+                transition={{ duration: 0.45, ease: "easeOut" }}
+                className="relative z-40 w-full max-w-sm sm:max-w-md px-1 sm:px-2 select-text"
+              >
+                {/* Outer Antique Parchment Frame */}
+                <div
+                  className={`relative rounded-2xl p-3.5 sm:p-4 transition-all duration-700 backdrop-blur-xl border ${
+                    isResonating
+                      ? "bg-gradient-to-b from-[#241d15]/95 via-[#1a1510]/95 to-[#241c14]/95 border-amber-400/60 shadow-[0_0_40px_rgba(251,191,36,0.35),inset_0_0_25px_rgba(245,158,11,0.2)]"
+                      : "bg-gradient-to-b from-[#1c1813]/95 via-[#14120e]/95 to-[#1c1712]/95 border-amber-500/30 shadow-[0_0_30px_rgba(0,0,0,0.85),inset_0_0_20px_rgba(217,119,6,0.1)]"
+                  }`}
+                >
+                  {/* Antique Parchment Ornate Corner Brackets */}
+                  <div className="absolute top-1.5 left-2 text-amber-400/40 text-[11px] select-none font-serif">⌜</div>
+                  <div className="absolute top-1.5 right-2 text-amber-400/40 text-[11px] select-none font-serif">⌝</div>
+                  <div className="absolute bottom-1.5 left-2 text-amber-400/40 text-[11px] select-none font-serif">⌞</div>
+                  <div className="absolute bottom-1.5 right-2 text-amber-400/40 text-[11px] select-none font-serif">⌟</div>
 
-                  {/* Prescription Action Guidance / 1-Minute Practice & Affirmation */}
-                  {currentMemory.actionGuidance && (
-                    <div
-                      className={`text-[11.5px] rounded-xl p-2.5 flex items-start gap-2 border leading-relaxed ${
-                        currentMemory.category === "pharmacy"
-                          ? "text-emerald-100 bg-emerald-950/40 border-emerald-500/30"
-                          : "text-amber-100 bg-amber-950/35 border-amber-500/30"
-                      }`}
-                    >
-                      <Sparkles
-                        size={13}
-                        className={`shrink-0 mt-0.5 select-none ${
-                          currentMemory.category === "pharmacy" ? "text-emerald-400" : "text-amber-400"
-                        }`}
-                      />
-                      <span>
-                        {currentMemory.category === "pharmacy"
-                          ? currentMemory.actionGuidance
-                          : `실천 화두: ${currentMemory.actionGuidance}`}
+                  {/* Parchment Header Ribbon */}
+                  <div className="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-amber-500/20 select-none">
+                    <div className="flex items-center gap-1.5 overflow-hidden">
+                      <span className="text-amber-400/90 text-xs">📜</span>
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${currentMemory.badgeColor}`}>
+                        {currentMemory.categoryLabel}
+                      </span>
+                      <span className="text-[10px] font-mono text-amber-200/60">
+                        {currentIndex + 1} / {filteredItems.length}
                       </span>
                     </div>
-                  )}
 
-                  {/* 🪐 Planetary Dimension Quick-Toss Bar */}
-                  <div className="pt-2 mt-2 border-t border-amber-500/20 select-none">
-                    <div className="flex items-center justify-between mb-1.5 px-0.5">
-                      <div className="flex items-center gap-1 text-[11px] font-medium text-amber-200/90">
-                        <Sparkle size={11} className="text-amber-400 animate-spin" />
-                        <span>영시 즉시 토스 (오브 둘레 행성 터치)</span>
-                      </div>
-                      <span className="text-[10px] text-amber-300/60 font-mono">7대 차원</span>
-                    </div>
-                    <div className="grid grid-cols-7 gap-1">
-                      {SEPTAGRAM_APPS.map((app) => {
-                        const isSelected = selectedRuneIds.includes(app.id);
-                        return (
-                          <button
-                            key={`parchment-toss-${app.id}`}
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleTossToApp(app);
-                            }}
-                            className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-lg border transition-all active:scale-95 cursor-pointer touch-manipulation ${
-                              isSelected
-                                ? "bg-amber-400/25 border-amber-300 text-white shadow-[0_0_12px_rgba(251,191,36,0.6)] scale-105"
-                                : "bg-white/[0.04] hover:bg-white/[0.1] border-white/10 text-slate-300 hover:text-white"
-                            }`}
-                            title={`${app.name} (${app.subTitle})으로 토스`}
-                          >
-                            <span className="text-xs">{app.icon}</span>
-                            <span className="text-[9px] font-bold mt-0.5 tracking-tighter truncate max-w-full">
-                              {app.shortName}
-                            </span>
-                          </button>
-                        );
-                      })}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {/* TTS Voice Narration Button */}
+                      <TTSButton
+                        text={currentMemory.fullText}
+                        voice="Kore"
+                        className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/35 text-amber-200 text-xs font-medium active:scale-95 transition-all cursor-pointer shadow-sm"
+                      />
+
+                      {/* 📜 돌돌 말기 Button in Header */}
+                      <button
+                        type="button"
+                        onClick={handleToggleRoll}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-500/30 to-amber-600/30 hover:from-amber-500/45 hover:to-amber-600/45 border border-amber-400/50 text-amber-100 text-xs font-bold active:scale-95 transition-all shadow-[0_0_12px_rgba(251,191,36,0.3)] cursor-pointer"
+                        title="양피지를 두루마리로 돌돌 말아 토스 준비"
+                      >
+                        <Scroll size={12} className="text-amber-300" />
+                        <span>돌돌 말기</span>
+                      </button>
+
+                      {/* Previous Memory */}
+                      <button
+                        type="button"
+                        onClick={handlePrevMemory}
+                        className="p-1 rounded-full hover:bg-white/10 active:scale-90 text-amber-300 transition-all cursor-pointer"
+                        title="이전 영시"
+                      >
+                        <ChevronLeft size={16} />
+                      </button>
+
+                      {/* Next Memory */}
+                      <button
+                        type="button"
+                        onClick={handleNextMemory}
+                        className="p-1 rounded-full hover:bg-white/10 active:scale-90 text-amber-300 transition-all cursor-pointer"
+                        title="다음 영시"
+                      >
+                        <ChevronRight size={16} />
+                      </button>
                     </div>
                   </div>
 
-                  {/* Parchment Footer: Tags & Time Estimate / Date */}
-                  <div className="flex items-center justify-between text-[10px] text-amber-300/60 pt-1.5 border-t border-amber-500/15 font-mono select-none">
-                    <div className="flex items-center gap-1.5 overflow-hidden">
-                      {currentMemory.tags.slice(0, 3).map((t, idx) => (
-                        <span key={idx} className="opacity-80">
-                          {t}
+                  {/* Scrollable Parchment Body (Completely Visible, Never Cut Off) */}
+                  <div className="max-h-[34vh] sm:max-h-[38vh] overflow-y-auto pr-1 space-y-2 overscroll-contain select-text custom-scrollbar">
+                    {/* Complete Title */}
+                    <h3 className="text-sm sm:text-[15px] font-serif font-bold text-[#fffdf7] tracking-wide leading-snug drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
+                      {currentMemory.title}
+                    </h3>
+
+                    {/* Distilled Keypoint / Clinical Insight */}
+                    <p className="text-xs sm:text-[13px] text-[#fef3c7]/95 leading-relaxed font-sans pl-2.5 border-l-2 border-amber-400/50 bg-amber-950/25 py-1 rounded-r-lg">
+                      {currentMemory.keypoint}
+                    </p>
+
+                    {/* Prescription Action Guidance / 1-Minute Practice & Affirmation */}
+                    {currentMemory.actionGuidance && (
+                      <div
+                        className={`text-[11.5px] rounded-xl p-2.5 flex items-start gap-2 border leading-relaxed ${
+                          currentMemory.category === "pharmacy"
+                            ? "text-emerald-100 bg-emerald-950/40 border-emerald-500/30"
+                            : "text-amber-100 bg-amber-950/35 border-amber-500/30"
+                        }`}
+                      >
+                        <Sparkles
+                          size={13}
+                          className={`shrink-0 mt-0.5 select-none ${
+                            currentMemory.category === "pharmacy" ? "text-emerald-400" : "text-amber-400"
+                          }`}
+                        />
+                        <span>
+                          {currentMemory.category === "pharmacy"
+                            ? currentMemory.actionGuidance
+                            : `실천 화두: ${currentMemory.actionGuidance}`}
                         </span>
-                      ))}
+                      </div>
+                    )}
+
+                    {/* 📜 Bottom Prompt to Roll Up for Toss */}
+                    <div className="pt-2 mt-2 border-t border-amber-500/20 flex items-center justify-between gap-2 select-none">
+                      <p className="text-[11px] text-amber-200/80 leading-tight">
+                        영시를 확인한 후 두루마리를 말아 행성으로 토스하세요.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleToggleRoll}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/35 via-amber-400/25 to-amber-500/35 hover:from-amber-500/50 hover:to-amber-500/50 border border-amber-400/65 text-amber-100 text-xs font-bold active:scale-95 transition-all shadow-[0_0_15px_rgba(251,191,36,0.35)] shrink-0 cursor-pointer"
+                      >
+                        <Scroll size={13} className="text-amber-300" />
+                        <span>두루마리 말기 📜</span>
+                      </button>
                     </div>
-                    <span>
-                      {currentMemory.dateStr} {currentMemory.timeStr || ""}
-                    </span>
+
+                    {/* Parchment Footer: Tags & Time Estimate / Date */}
+                    <div className="flex items-center justify-between text-[10px] text-amber-300/60 pt-1.5 border-t border-amber-500/15 font-mono select-none">
+                      <div className="flex items-center gap-1.5 overflow-hidden">
+                        {currentMemory.tags.slice(0, 3).map((t, idx) => (
+                          <span key={idx} className="opacity-80">
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                      <span>
+                        {currentMemory.dateStr} {currentMemory.timeStr || ""}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            )
           )}
         </AnimatePresence>
       </main>
@@ -1339,7 +1466,11 @@ export default function OrbGatewayPage() {
           className="flex items-center gap-1.5 text-xs text-amber-200/85 tracking-wide font-sans py-1.5 px-4 rounded-full bg-white/[0.03] border border-white/5 backdrop-blur-md"
         >
           <Sparkles size={12} className="text-amber-300 shrink-0" />
-          <span>구슬 터치 시 영시 갱신 · 외곽 행성 터치 시 양피지 즉시 토스</span>
+          <span>
+            {isParchmentRolled
+              ? "📜 두루마리가 봉인되었습니다 · 오브 둘레의 앱 행성을 터치하여 토스하세요"
+              : "구슬 터치 시 영시 갱신 · '돌돌 말기'를 누르면 행성으로 토스할 수 있습니다"}
+          </span>
         </motion.div>
       </footer>
 
