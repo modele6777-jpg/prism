@@ -17,6 +17,7 @@ import {
   Send,
   Radio,
   ExternalLink,
+  KeyRound,
 } from "lucide-react";
 import { sacredAudio } from "@/lib/omniWarp/sacredAudio";
 import { omniWarpAudio } from "@/lib/omniWarp/omniWarpAudio";
@@ -53,7 +54,6 @@ export default function OrbGatewayPage() {
   const [, navigate] = useLocation();
   const narrow = useNarrowPhone();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const touchStartYRef = useRef<number | null>(null);
 
   // Audio & Animation states
   const [isDroneOn, setIsDroneOn] = useState(false);
@@ -67,9 +67,7 @@ export default function OrbGatewayPage() {
   const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // 🚀 Cross-App Toss Pipeline States
-  const [isTossPickerOpen, setIsTossPickerOpen] = useState(false);
-  const [tossTargetText, setTossTargetText] = useState("");
+  // Cross-App Toss Notification State (when receiving tossed text into Key)
   const [tossNotice, setTossNotice] = useState<string | null>(null);
 
   // PWA Standalone Detection
@@ -363,28 +361,6 @@ export default function OrbGatewayPage() {
     sacredAudio.playSingingBowl(528);
   };
 
-  // 🚀 Open Toss Destination Picker (Key -> LucKey 타깃 앱으로 영감 토스)
-  const handleOpenTossPicker = (text?: string, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    const target = text || currentMemory?.fullText || currentMemory?.keypoint || "";
-    setTossTargetText(target);
-    setIsTossPickerOpen(true);
-    triggerHaptic("wormhole");
-  };
-
-  // 🚀 Execute Toss to Specific Destination
-  const handleExecuteToss = (dest: TossDestination) => {
-    triggerHaptic("whitehole");
-    omniWarpAudio.playWormhole();
-    setIsTossPickerOpen(false);
-
-    executeSmartToss("key", dest, {
-      text: tossTargetText,
-      contextMessage: tossTargetText,
-      autoPrompt: tossTargetText,
-    });
-  };
-
   // Refresh Archive from Storage
   const handleRefreshArchive = () => {
     setIsRefreshing(true);
@@ -590,32 +566,11 @@ export default function OrbGatewayPage() {
           />
           <div className="absolute -inset-4 rounded-full border border-purple-500/20 pointer-events-none animate-pulse z-10" />
 
-          {/* 🌟 4. Pure Hyper-Realistic Glass Crystal Orb with Astral Projection & Swipe-Up Toss Gesture */}
+          {/* 🌟 4. Pure Hyper-Realistic Glass Crystal Orb */}
           <div
             onClick={handleOrbTouch}
-            onTouchStart={(e) => {
-              touchStartYRef.current = e.touches[0].clientY;
-            }}
-            onTouchEnd={(e) => {
-              if (touchStartYRef.current !== null) {
-                const deltaY = touchStartYRef.current - e.changedTouches[0].clientY;
-                if (deltaY > 55) {
-                  // 🚀 위로 스크롤/스와이프 시 토스 피커 발동!
-                  handleOpenTossPicker(currentMemory?.fullText || currentMemory?.keypoint || "");
-                  touchStartYRef.current = null;
-                  return;
-                }
-              }
-              touchStartYRef.current = null;
-            }}
-            onWheel={(e) => {
-              if (e.deltaY < -35) {
-                // 휠 위로 스크롤 시 토스 피커 발동
-                handleOpenTossPicker(currentMemory?.fullText || currentMemory?.keypoint || "");
-              }
-            }}
             className={`group relative rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 active:scale-95 overflow-hidden touch-manipulation z-20 ${
-              narrow ? "w-56 h-56" : "w-64 h-64 sm:w-72 sm:h-72"
+              narrow ? "w-44 h-44" : "w-48 h-48 sm:w-56 sm:h-56"
             }`}
             style={{
               background: isResonating
@@ -625,7 +580,7 @@ export default function OrbGatewayPage() {
                 ? "inset 0 0 45px rgba(56, 189, 248, 0.55), inset -10px -10px 25px rgba(0,0,0,0.95), 0 0 60px rgba(56, 189, 248, 0.5), 0 0 90px rgba(168, 85, 247, 0.35)"
                 : "inset 0 0 32px rgba(255, 255, 255, 0.25), inset -10px -10px 25px rgba(0, 0, 0, 0.9), 0 0 35px rgba(56, 189, 248, 0.3)",
             }}
-            title="터치: 다음 기억 순환 | 위로 스크롤: LucKey로 차원 토스"
+            title="터치: 수정구슬 공명 및 다음 영시 기록"
           >
             {/* Swirling Stardust Particle Simulation Canvas */}
             <canvas
@@ -635,7 +590,7 @@ export default function OrbGatewayPage() {
 
             {/* Specular Glare Reflection on Glass Curved Surface */}
             <div
-              className="absolute top-3 left-6 sm:top-5 sm:left-10 w-24 sm:w-32 h-9 sm:h-12 rounded-full pointer-events-none z-30 -rotate-[28deg]"
+              className="absolute top-3 left-6 sm:top-4 sm:left-8 w-20 sm:w-28 h-8 sm:h-10 rounded-full pointer-events-none z-30 -rotate-[28deg]"
               style={{
                 background: "radial-gradient(ellipse at center, rgba(255, 255, 255, 0.8) 0%, transparent 75%)",
               }}
@@ -643,14 +598,14 @@ export default function OrbGatewayPage() {
 
             {/* Bottom Refraction Rim Glow */}
             <div
-              className="absolute bottom-4 inset-x-8 h-8 rounded-full pointer-events-none z-25 opacity-70"
+              className="absolute bottom-3 inset-x-6 h-6 rounded-full pointer-events-none z-25 opacity-70"
               style={{
                 background: "radial-gradient(ellipse at center, rgba(56, 189, 248, 0.45) 0%, transparent 80%)",
               }}
             />
 
-            {/* 🔮 Center Projected Keypoint Vision (Holographic Projection) */}
-            <div className="relative z-20 flex flex-col items-center justify-center text-center pointer-events-none p-3.5 select-none w-[88%] max-w-[240px]">
+            {/* 🔮 Center Projected Keypoint Vision (Luminous Key & Celestial Scrying Focus) */}
+            <div className="relative z-20 flex flex-col items-center justify-center text-center pointer-events-none p-2 select-none w-[88%] max-w-[200px]">
               <AnimatePresence mode="wait">
                 {currentMemory ? (
                   <motion.div
@@ -661,30 +616,28 @@ export default function OrbGatewayPage() {
                     transition={{ duration: 0.45, ease: "easeOut" }}
                     className="flex flex-col items-center w-full"
                   >
+                    {/* Glowing Astral Key Crest */}
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-cyan-500/15 border border-cyan-400/40 mb-1 shadow-[0_0_18px_rgba(56,189,248,0.6)]">
+                      <KeyRound size={18} className="text-cyan-300 animate-pulse drop-shadow-[0_0_8px_#38bdf8]" />
+                    </div>
+
                     {/* Category Capsule Badge */}
-                    <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full border backdrop-blur-md mb-1.5 shadow-sm bg-black/40">
-                      <span className={`text-[10px] font-medium tracking-wide ${currentMemory.badgeColor.split(' ')[0]}`}>
+                    <div className="flex items-center gap-1 px-2 py-0.5 rounded-full border backdrop-blur-md mb-1 shadow-sm bg-black/60">
+                      <span className={`text-[9px] sm:text-[10px] font-medium tracking-wide ${currentMemory.badgeColor.split(' ')[0]}`}>
                         {currentMemory.categoryLabel}
                       </span>
                     </div>
 
-                    {/* Keypoint Title */}
-                    <h2 className="text-xs sm:text-[13px] font-bold text-white line-clamp-1 drop-shadow-[0_0_10px_rgba(56,189,248,0.9)] font-sans tracking-wide">
-                      {currentMemory.title}
+                    {/* Concise Scrying Title inside Orb */}
+                    <h2 className="text-[11px] sm:text-xs font-bold text-white drop-shadow-[0_0_10px_rgba(56,189,248,0.9)] font-sans tracking-wide line-clamp-1">
+                      {currentMemory.title.split(':')[0]}
                     </h2>
 
-                    {/* Core Distilled Insight */}
-                    <p className="text-[10px] sm:text-[11px] text-cyan-100/90 font-medium line-clamp-2 mt-1 leading-snug drop-shadow-sm px-1 select-text">
-                      {currentMemory.keypoint}
-                    </p>
-
-                    {/* Astral Date & Memory Index Indicator */}
-                    <div className="flex items-center gap-1.5 mt-2 text-[9px] font-mono text-cyan-300/70 tracking-wider">
-                      <span>{currentMemory.dateStr}</span>
+                    {/* Starlight Indicator */}
+                    <div className="flex items-center gap-1 mt-0.5 text-[8.5px] font-mono text-amber-300/90 tracking-wider">
+                      <span>{currentIndex + 1} / {filteredItems.length}</span>
                       <span>·</span>
-                      <span className="text-cyan-200 font-semibold">
-                        {currentIndex + 1} / {filteredItems.length}
-                      </span>
+                      <span className="text-cyan-300/90 font-sans">양피지 발현 ✧</span>
                     </div>
                   </motion.div>
                 ) : (
@@ -693,10 +646,13 @@ export default function OrbGatewayPage() {
                     animate={{ opacity: 1 }}
                     className="flex flex-col items-center"
                   >
-                    <span className="text-cyan-200 text-lg font-serif tracking-widest drop-shadow-[0_0_12px_rgba(56,189,248,0.9)]">
+                    <div className="w-9 h-9 rounded-full bg-cyan-500/10 border border-cyan-400/30 flex items-center justify-center mb-1">
+                      <Sparkles size={16} className="text-cyan-300 animate-spin" />
+                    </div>
+                    <span className="text-cyan-200 text-sm sm:text-base font-serif tracking-widest drop-shadow-[0_0_12px_rgba(56,189,248,0.9)]">
                       ✧ Key ✧
                     </span>
-                    <span className="text-[10px] font-mono uppercase tracking-[0.24em] text-cyan-300/70 mt-1">
+                    <span className="text-[8.5px] font-mono uppercase tracking-[0.24em] text-cyan-300/70 mt-0.5">
                       ASTRAL SCRYING SPHERE
                     </span>
                   </motion.div>
@@ -706,70 +662,137 @@ export default function OrbGatewayPage() {
           </div>
         </div>
 
-        {/* 🎛️ Archive Scrying Controls & TTS Narration Bar */}
-        <div className="relative z-40 mt-4 sm:mt-5 flex flex-col items-center gap-2.5 w-full max-w-sm px-2 select-none">
-          {/* Main Control Strip */}
-          <div className="flex items-center justify-between w-full px-2.5 sm:px-3 py-1.5 rounded-full bg-slate-950/70 border border-white/10 backdrop-blur-xl shadow-lg">
-            {/* Previous Memory */}
-            <button
-              type="button"
-              onClick={handlePrevMemory}
-              className="p-1.5 rounded-full hover:bg-white/10 active:scale-90 text-cyan-300 transition-all cursor-pointer touch-manipulation"
-              title="이전 기억 파편"
-            >
-              <ChevronLeft size={16} />
-            </button>
-
-            {/* TTS Voice Narration Button */}
-            {currentMemory && (
-              <div className="flex items-center gap-1.5">
-                <TTSButton
-                  text={currentMemory.fullText}
-                  voice="Kore"
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/40 text-cyan-200 text-xs font-medium shadow-[0_0_12px_rgba(6,182,212,0.3)] active:scale-95 transition-all cursor-pointer"
-                />
-
-                {/* 🚀 Quick Toss Button (Key -> LucKey 타깃 앱으로 차원 토스) */}
-                <button
-                  type="button"
-                  onClick={(e) => handleOpenTossPicker(currentMemory.fullText || currentMemory.keypoint, e)}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/40 text-purple-200 text-xs font-medium shadow-[0_0_12px_rgba(168,85,247,0.3)] active:scale-95 transition-all cursor-pointer"
-                  title="이 영감을 LucKey 다른 앱으로 토스"
-                >
-                  <Send size={12} className="text-purple-300 shrink-0" />
-                  <span className="text-[11px] font-sans">토스</span>
-                </button>
-              </div>
-            )}
-
-            {/* Open Full Archive Drawer */}
-            <button
-              type="button"
-              onClick={() => {
-                triggerHaptic("wormhole");
-                setIsArchiveModalOpen(true);
-              }}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 text-slate-300 hover:text-white text-xs font-medium active:scale-95 transition-all cursor-pointer shadow-sm"
-              title="전체 아카이브 목록 열람"
-            >
-              <Scroll size={13} className="text-purple-300 shrink-0" />
-              <span className="text-[11px] font-sans">보관함</span>
-              <span className="text-[10px] font-mono text-purple-300 bg-purple-500/20 px-1 rounded-full">
-                {archiveItems.length}
-              </span>
-            </button>
-
-            {/* Next Memory */}
-            <button
-              type="button"
-              onClick={handleNextMemory}
-              className="p-1.5 rounded-full hover:bg-white/10 active:scale-90 text-cyan-300 transition-all cursor-pointer touch-manipulation"
-              title="다음 기억 파편"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
+        {/* 🌟 Radiant Light Ray Connecting Crystal Orb to Sacred Parchment */}
+        <div className="relative z-30 flex flex-col items-center w-full -my-1 pointer-events-none select-none">
+          <div
+            className={`w-0.5 h-3 sm:h-5 transition-all duration-700 ${
+              isResonating
+                ? "bg-gradient-to-b from-cyan-300 via-amber-300 to-amber-400 opacity-95 shadow-[0_0_15px_#fde047]"
+                : "bg-gradient-to-b from-cyan-400/40 to-amber-500/30 opacity-60"
+            }`}
+          />
         </div>
+
+        {/* 📜 5. The Sacred Parchment Scroll (성스러운 양피지) */}
+        <AnimatePresence mode="wait">
+          {currentMemory && (
+            <motion.div
+              key={currentMemory.id}
+              initial={{ opacity: 0, y: 12, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -8, scale: 0.98 }}
+              transition={{ duration: 0.45, ease: "easeOut" }}
+              className="relative z-40 w-full max-w-sm sm:max-w-md px-1 sm:px-2 select-text"
+            >
+              {/* Outer Antique Parchment Frame */}
+              <div
+                className={`relative rounded-2xl p-3.5 sm:p-4 transition-all duration-700 backdrop-blur-xl border ${
+                  isResonating
+                    ? "bg-gradient-to-b from-[#241d15]/95 via-[#1a1510]/95 to-[#241c14]/95 border-amber-400/60 shadow-[0_0_40px_rgba(251,191,36,0.35),inset_0_0_25px_rgba(245,158,11,0.2)]"
+                    : "bg-gradient-to-b from-[#1c1813]/95 via-[#14120e]/95 to-[#1c1712]/95 border-amber-500/30 shadow-[0_0_30px_rgba(0,0,0,0.85),inset_0_0_20px_rgba(217,119,6,0.1)]"
+                }`}
+              >
+                {/* Antique Parchment Ornate Corner Brackets */}
+                <div className="absolute top-1.5 left-2 text-amber-400/40 text-[11px] select-none font-serif">⌜</div>
+                <div className="absolute top-1.5 right-2 text-amber-400/40 text-[11px] select-none font-serif">⌝</div>
+                <div className="absolute bottom-1.5 left-2 text-amber-400/40 text-[11px] select-none font-serif">⌞</div>
+                <div className="absolute bottom-1.5 right-2 text-amber-400/40 text-[11px] select-none font-serif">⌟</div>
+
+                {/* Parchment Header Ribbon */}
+                <div className="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-amber-500/20 select-none">
+                  <div className="flex items-center gap-1.5 overflow-hidden">
+                    <span className="text-amber-400/90 text-xs">📜</span>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${currentMemory.badgeColor}`}>
+                      {currentMemory.categoryLabel}
+                    </span>
+                    <span className="text-[10px] font-mono text-amber-200/60">
+                      {currentIndex + 1} / {filteredItems.length}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {/* TTS Voice Narration Button */}
+                    <TTSButton
+                      text={currentMemory.fullText}
+                      voice="Kore"
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/35 text-amber-200 text-xs font-medium active:scale-95 transition-all cursor-pointer shadow-sm"
+                    />
+
+                    {/* Previous Memory */}
+                    <button
+                      type="button"
+                      onClick={handlePrevMemory}
+                      className="p-1 rounded-full hover:bg-white/10 active:scale-90 text-amber-300 transition-all cursor-pointer"
+                      title="이전 영시"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+
+                    {/* Next Memory */}
+                    <button
+                      type="button"
+                      onClick={handleNextMemory}
+                      className="p-1 rounded-full hover:bg-white/10 active:scale-90 text-amber-300 transition-all cursor-pointer"
+                      title="다음 영시"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Scrollable Parchment Body (Completely Visible, Never Cut Off) */}
+                <div className="max-h-[34vh] sm:max-h-[38vh] overflow-y-auto pr-1 space-y-2 overscroll-contain select-text custom-scrollbar">
+                  {/* Complete Title */}
+                  <h3 className="text-sm sm:text-[15px] font-serif font-bold text-[#fffdf7] tracking-wide leading-snug drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
+                    {currentMemory.title}
+                  </h3>
+
+                  {/* Distilled Keypoint / Clinical Insight */}
+                  <p className="text-xs sm:text-[13px] text-[#fef3c7]/95 leading-relaxed font-sans pl-2.5 border-l-2 border-amber-400/50 bg-amber-950/25 py-1 rounded-r-lg">
+                    {currentMemory.keypoint}
+                  </p>
+
+                  {/* Prescription Action Guidance / 1-Minute Practice & Affirmation */}
+                  {currentMemory.actionGuidance && (
+                    <div
+                      className={`text-[11.5px] rounded-xl p-2.5 flex items-start gap-2 border leading-relaxed ${
+                        currentMemory.category === "pharmacy"
+                          ? "text-emerald-100 bg-emerald-950/40 border-emerald-500/30"
+                          : "text-amber-100 bg-amber-950/35 border-amber-500/30"
+                      }`}
+                    >
+                      <Sparkles
+                        size={13}
+                        className={`shrink-0 mt-0.5 select-none ${
+                          currentMemory.category === "pharmacy" ? "text-emerald-400" : "text-amber-400"
+                        }`}
+                      />
+                      <span>
+                        {currentMemory.category === "pharmacy"
+                          ? currentMemory.actionGuidance
+                          : `실천 화두: ${currentMemory.actionGuidance}`}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Parchment Footer: Tags & Time Estimate / Date */}
+                  <div className="flex items-center justify-between text-[10px] text-amber-300/60 pt-1.5 border-t border-amber-500/15 font-mono select-none">
+                    <div className="flex items-center gap-1.5 overflow-hidden">
+                      {currentMemory.tags.slice(0, 3).map((t, idx) => (
+                        <span key={idx} className="opacity-80">
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                    <span>
+                      {currentMemory.dateStr} {currentMemory.timeStr || ""}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
 
       {/* 🌿 Minimal Bottom Guidance Banner */}
@@ -777,10 +800,10 @@ export default function OrbGatewayPage() {
         <motion.div
           animate={{ opacity: [0.6, 0.95, 0.6] }}
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-          className="flex items-center gap-1.5 text-xs text-cyan-200/85 tracking-wide font-sans py-1.5 px-4 rounded-full bg-white/[0.03] border border-white/5 backdrop-blur-md"
+          className="flex items-center gap-1.5 text-xs text-amber-200/85 tracking-wide font-sans py-1.5 px-4 rounded-full bg-white/[0.03] border border-white/5 backdrop-blur-md"
         >
-          <Sparkles size={12} className="text-cyan-300 shrink-0" />
-          <span>터치: 다음 기억 | 위로 스크롤: LucKey 토스 | 텍스트 선택 가능</span>
+          <Sparkles size={12} className="text-amber-300 shrink-0" />
+          <span>구슬을 터치하면 성스러운 빛과 함께 양피지에 영시가 기록됩니다</span>
         </motion.div>
       </footer>
 
@@ -962,17 +985,6 @@ export default function OrbGatewayPage() {
                               className="px-2.5 py-1 rounded-full bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-400/30 text-cyan-200 text-[11px] font-medium active:scale-95 transition-all cursor-pointer"
                             />
 
-                            {/* 🚀 Toss to LucKey App */}
-                            <button
-                              type="button"
-                              onClick={() => handleOpenTossPicker(item.fullText || item.keypoint)}
-                              className="px-2.5 py-1 rounded-full bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/40 text-purple-200 text-[11px] font-medium active:scale-95 transition-all cursor-pointer flex items-center gap-1"
-                              title="LucKey의 다른 앱으로 토스"
-                            >
-                              <Send size={11} />
-                              <span>토스</span>
-                            </button>
-
                             {/* Beam to Crystal Orb */}
                             <button
                               type="button"
@@ -992,95 +1004,7 @@ export default function OrbGatewayPage() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* 🚀 Cross-App Toss Destination Picker Modal */}
-      <AnimatePresence>
-        {isTossPickerOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md"
-            onClick={() => setIsTossPickerOpen(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-sm bg-[#0c1020] border border-cyan-400/40 rounded-3xl p-5 shadow-[0_0_50px_rgba(6,182,212,0.3)] flex flex-col"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-lg bg-purple-500/20 text-purple-300 border border-purple-400/30">
-                    <Send size={16} />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-white">
-                      LucKey로 차원 토스 (Toss)
-                    </h3>
-                    <p className="text-[11px] text-slate-400">
-                      원하는 목적지로 영감과 질문을 즉시 전달합니다
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setIsTossPickerOpen(false)}
-                  className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-all cursor-pointer"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              {/* Toss Context Message Preview */}
-              {tossTargetText && (
-                <div className="mt-3 p-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-xs text-cyan-200/90 line-clamp-2 italic font-sans">
-                  "{tossTargetText}"
-                </div>
-              )}
-
-              {/* Destination Options */}
-              <div className="mt-3.5 space-y-2 max-h-[50vh] overflow-y-auto pr-1">
-                {[
-                  TOSS_DESTINATIONS.lucy,
-                  TOSS_DESTINATIONS.trinity,
-                  TOSS_DESTINATIONS.muse,
-                  TOSS_DESTINATIONS.orange,
-                  TOSS_DESTINATIONS.bluebird,
-                  TOSS_DESTINATIONS.heal,
-                  TOSS_DESTINATIONS.epilogue,
-                ].map((dest) => (
-                  <button
-                    key={dest.id}
-                    type="button"
-                    onClick={() => handleExecuteToss(dest)}
-                    className="w-full flex items-center justify-between p-2.5 rounded-2xl bg-white/[0.04] hover:bg-cyan-500/15 border border-white/5 hover:border-cyan-400/40 text-left transition-all active:scale-[0.98] cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-xl shrink-0 group-hover:scale-110 transition-transform">
-                        {dest.icon}
-                      </span>
-                      <div>
-                        <div className="text-xs font-bold text-white group-hover:text-cyan-200 flex items-center gap-1.5">
-                          {dest.name}
-                        </div>
-                        <div className="text-[10px] text-slate-400 group-hover:text-slate-300">
-                          {dest.subName}
-                        </div>
-                      </div>
-                    </div>
-
-                    <ExternalLink size={14} className="text-slate-500 group-hover:text-cyan-300 shrink-0 transition-colors" />
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
+
