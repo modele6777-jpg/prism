@@ -754,7 +754,7 @@ export function generateDynamicSecretKit(
 
   // If user entered a custom wish, match category or tailor dynamically
   if (isCustomWish) {
-    let matchedTheme: 'abundance' | 'success' | 'love' | 'health' | 'peace' = 'peace';
+    let matchedTheme: 'abundance' | 'success' | 'love' | 'health' | 'peace' | 'miracle' = 'peace';
 
     if (/돈|재물|금전|부자|수입|매출|연봉|빚|채무|자산|투자|수익|통장|부동산|경제/.test(lower)) {
       matchedTheme = 'abundance';
@@ -764,6 +764,8 @@ export function generateDynamicSecretKit(
       matchedTheme = 'love';
     } else if (/건강|피로|치유|통증|수면|불면|잠|활력|다이어트|몸|질병|치료|컨디션|아픔/.test(lower)) {
       matchedTheme = 'health';
+    } else if (/기적|행운|운|기회|소원|선물|축복|마법|은혜|우주/.test(lower)) {
+      matchedTheme = 'miracle';
     } else {
       matchedTheme = 'peace';
     }
@@ -802,6 +804,13 @@ export function generateDynamicSecretKit(
         `나는 이미 "${cleanWish}"의 건강하고 균형 잡힌 심신으로 완벽히 거듭났으며, 온몸 가득 넘쳐나는 에너지로 매 순간을 기쁘게 살아갑니다.`,
         `우주의 무한한 생명력이 내 몸을 감싸 안아 "${cleanWish}"의 기적을 선물하였으며, 나의 숨결마다 완전한 건강과 평화가 깃듭니다.`
       ];
+    } else if (matchedTheme === 'miracle') {
+      customAffirmationTemplates = [
+        `온 우주가 나의 간절한 소망 "${cleanWish}"을(를) 완벽히 이루기 위해 일사불란하게 돕고 있으며, 나는 오늘 기대치 않았던 놀라운 기적과 축복을 기쁘게 마주합니다.`,
+        `"${cleanWish}"을(를) 향한 내 안의 모든 의심과 조급함은 녹아내렸고, 상상 이상의 신비로운 기적과 뜻밖의 은혜가 삶의 전면에 펼쳐졌습니다.`,
+        `나는 이미 "${cleanWish}"의 기적을 선물받은 감사와 감격 속에 존재하며, 매 순간 온 우주의 세심한 배려와 사랑을 온몸으로 실감합니다.`,
+        `온 우주의 선한 힘이 나를 가장 안전하고 완벽한 타이밍으로 이끌어 주어, "${cleanWish}"의 눈부신 기적이 내 현실이 되었습니다.`
+      ];
     } else {
       customAffirmationTemplates = [
         `나는 간절히 염원하던 "${cleanWish}"의 현실을 이미 온전히 살아내고 있으며, 내 삶의 모든 막힘이 시원하게 풀려 상상 이상의 벅찬 결실과 깊은 평온이 지금 여기에 실현되었습니다.`,
@@ -815,16 +824,16 @@ export function generateDynamicSecretKit(
 
     return {
       affirmation: customAffirmationTemplates[affIndex],
-      reflection: `"${cleanWish}"을(를) 간절히 염원한다는 것은 이미 그것을 온전히 담아낼 그릇과 가능성이 내면에 준비되어 있다는 뜻입니다. ${selectedBase.reflection}`,
-      action: `오늘 하루 "${cleanWish}"이(가) 이미 완벽히 성취된 사람처럼 당당하고 여유로운 발걸음으로 미소 지으며 ${selectedBase.action}`,
-      desire: `우주여, ${name}의 삶에 "${cleanWish}"의 소망이 가장 지혜롭고 아름다운 방식으로 피어나게 하옵소서.`,
-      visualizationGuide: `조용히 눈을 감고 깊은 숨을 들이마십니다. 당신이 간절히 염원하던 "${cleanWish}"의 상황이 눈앞에 환하고 선명한 현실로 펼쳐집니다. 안도의 숨결과 함께 얼굴에 번지는 벅찬 미소, 온몸으로 전해지는 전율을 생생히 느껴보세요.`,
-      feelingAnchor: `"${cleanWish}"의 성취로 모든 불안이 사라지고 온 영혼이 충만한 기쁨과 안도로 채워지는 벅찬 전율`,
-      mirrorPhrase: `거울 속 나를 보며 선언합니다. "${name}, 너는 '${cleanWish}'의 모든 축복과 기적을 누릴 자격이 넘친다."`,
-      eveningPrompt: `오늘 하루 우주에 전해진 "${cleanWish}"의 소망이 밤사이 가장 지혜롭고 완전하게 피어남을 믿으며 깊고 평온한 안식에 듭니다.`,
-      scriptingStarter: `오늘 하루, 마침내 내 마음속 간절했던 "${cleanWish}" 소망이 현실에서 기적처럼 풀려나가는 벅찬 순간을 경험했다.`,
+      reflection: selectedBase.reflection,
+      action: selectedBase.action,
+      desire: `우주여, ${name ? name + '의 삶에 ' : ''}"${cleanWish}"의 소망이 가장 지혜롭고 아름다운 방식으로 피어나게 하옵소서.`,
+      visualizationGuide: selectedBase.visualizationGuide,
+      feelingAnchor: selectedBase.feelingAnchor,
+      mirrorPhrase: selectedBase.mirrorPhrase,
+      eveningPrompt: selectedBase.eveningPrompt,
+      scriptingStarter: selectedBase.scriptingStarter,
       gratitudeSeeds: [
-        `나의 소망 "${cleanWish}"이(가) 가장 조화롭고 완벽한 방식으로 해결되고 있음에 감사합니다.`,
+        `나의 소망 "${cleanWish}"이(가) 우주의 완전한 질서 속에서 가장 조화롭게 이루어지고 있음에 감사합니다.`,
         selectedBase.gratitudeSeeds[1],
         selectedBase.gratitudeSeeds[2],
       ],

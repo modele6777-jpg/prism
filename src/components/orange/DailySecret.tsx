@@ -80,7 +80,7 @@ function ensureFullKit(
     affirmation.includes('심신을 정렬') ||
     affirmation.includes('은(는) 이미 우주의 완벽한 섭리 안에서') ||
     affirmation.startsWith('나의 소원 "') ||
-    /[a-zA-Z]{4,}/.test(affirmation) ||
+    !/[가-힣]/.test(affirmation) ||
     affirmation === '나의 삶은 언제나 나를 가장 완전하고 조화로운 길로 이끌며, 내 안의 모든 저항과 의심이 녹아내려 찬란한 결실과 깊은 평온이 기적처럼 실현되었습니다.' ||
     affirmation.length < 10;
 
@@ -88,50 +88,42 @@ function ensureFullKit(
     affirmation = fallback.affirmation;
   }
 
-  // 사용자가 구체적 소원을 입력한 경우, 확언에 소원이 반영되지 않았거나 일반 템플릿이면 소원 맞춤 확언으로 강제 승격
-  if (effectiveWish && effectiveWish.trim()) {
-    const cleanW = effectiveWish.trim();
-    if (isBogusAffirmation || !affirmation.includes(cleanW)) {
-      affirmation = fallback.affirmation;
-    }
-  }
-
   // 🚨 [필수 중복 방지 및 고정 문구 제거]
-  if (!reflection || reflection.includes('고요한 파동') || reflection.includes('심신을 정렬') || reflection === affirmation || reflection.length < 15 || reflection === action || /[a-zA-Z]{4,}/.test(reflection)) {
+  if (!reflection || reflection.includes('고요한 파동') || reflection.includes('심신을 정렬') || reflection === affirmation || reflection.length < 15 || reflection === action || !/[가-힣]/.test(reflection)) {
     reflection = fallback.reflection;
   }
-  if (!action || action.includes('고요한 파동') || action.includes('심신을 정렬') || action === affirmation || action === reflection || action.length < 8 || /[a-zA-Z]{4,}/.test(action)) {
+  if (!action || action.includes('고요한 파동') || action.includes('심신을 정렬') || action === affirmation || action === reflection || action.length < 8 || !/[가-힣]/.test(action)) {
     action = fallback.action;
   }
 
   let desire = raw.desire?.trim() || fallback.desire;
-  if (!desire || desire.includes('고요한 파동') || desire.includes('심신을 정렬') || desire === affirmation || desire === reflection || /[a-zA-Z]{4,}/.test(desire)) {
+  if (!desire || desire.includes('고요한 파동') || desire.includes('심신을 정렬') || desire === affirmation || desire === reflection || !/[가-힣]/.test(desire)) {
     desire = fallback.desire;
   }
 
   let visualizationGuide = raw.visualizationGuide?.trim() || fallback.visualizationGuide;
-  if (!visualizationGuide || visualizationGuide.includes('고요한 파동') || visualizationGuide.includes('심신을 정렬') || visualizationGuide === affirmation || visualizationGuide.length < 20 || /[a-zA-Z]{4,}/.test(visualizationGuide)) {
+  if (!visualizationGuide || visualizationGuide.includes('고요한 파동') || visualizationGuide.includes('심신을 정렬') || visualizationGuide === affirmation || visualizationGuide.length < 20 || !/[가-힣]/.test(visualizationGuide)) {
     visualizationGuide = fallback.visualizationGuide;
   }
 
   let feelingAnchor = raw.feelingAnchor?.trim() || fallback.feelingAnchor;
-  if (!feelingAnchor || feelingAnchor.includes('고요한 파동') || feelingAnchor.includes('심신을 정렬') || feelingAnchor === affirmation || /[a-zA-Z]{4,}/.test(feelingAnchor)) {
+  if (!feelingAnchor || feelingAnchor.includes('고요한 파동') || feelingAnchor.includes('심신을 정렬') || feelingAnchor === affirmation || !/[가-힣]/.test(feelingAnchor)) {
     feelingAnchor = fallback.feelingAnchor;
   }
 
   let mirrorPhrase = raw.mirrorPhrase?.trim() || fallback.mirrorPhrase;
-  if (!mirrorPhrase || mirrorPhrase.includes('고요한 파동') || mirrorPhrase.includes('심신을 정렬') || mirrorPhrase === affirmation || /[a-zA-Z]{4,}/.test(mirrorPhrase)) {
+  if (!mirrorPhrase || mirrorPhrase.includes('고요한 파동') || mirrorPhrase.includes('심신을 정렬') || mirrorPhrase === affirmation || !/[가-힣]/.test(mirrorPhrase)) {
     mirrorPhrase = fallback.mirrorPhrase;
   }
 
   let eveningPrompt = raw.eveningPrompt?.trim() || fallback.eveningPrompt;
   // 🚨 [필수 언어 점검 및 고정 문구 제거]
-  if (!eveningPrompt || eveningPrompt.includes('고요한 파동') || eveningPrompt.includes('심신을 정렬') || eveningPrompt === affirmation || eveningPrompt === reflection || eveningPrompt.length < 10 || /[a-zA-Z]{3,}/.test(eveningPrompt)) {
+  if (!eveningPrompt || eveningPrompt.includes('고요한 파동') || eveningPrompt.includes('심신을 정렬') || eveningPrompt === affirmation || eveningPrompt === reflection || eveningPrompt.length < 10 || !/[가-힣]/.test(eveningPrompt)) {
     eveningPrompt = fallback.eveningPrompt;
   }
 
   let scriptingStarter = raw.scriptingStarter?.trim() || fallback.scriptingStarter;
-  if (!scriptingStarter || scriptingStarter.includes('고요한 파동') || scriptingStarter.includes('심신을 정렬') || scriptingStarter === affirmation || /[a-zA-Z]{4,}/.test(scriptingStarter)) {
+  if (!scriptingStarter || scriptingStarter.includes('고요한 파동') || scriptingStarter.includes('심신을 정렬') || scriptingStarter === affirmation || !/[가-힣]/.test(scriptingStarter)) {
     scriptingStarter = fallback.scriptingStarter;
   }
 
@@ -141,7 +133,7 @@ function ensureFullKit(
       : fallback.gratitudeSeeds;
 
   if (
-    gratitudeSeeds.some((s) => s === affirmation || s === reflection || s === action || /[a-zA-Z]{4,}/.test(s)) ||
+    gratitudeSeeds.some((s) => !s || s === affirmation || s === reflection || s === action || !/[가-힣]/.test(s)) ||
     gratitudeSeeds[0] === gratitudeSeeds[1] ||
     gratitudeSeeds[1] === gratitudeSeeds[2]
   ) {
@@ -493,6 +485,7 @@ export function DailySecret() {
   const [data, setData] = useState<DailySecretData | null>(() => loadCachedSecret());
   const justResetRef = useRef(false);
   const [loading, setLoading] = useState(false);
+  const [isAiEnhancing, setIsAiEnhancing] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [wish, setWish] = useState(loadWish);
   const [wishApplied, setWishApplied] = useState(loadWishApplied);
@@ -587,7 +580,7 @@ export function DailySecret() {
   }, [handleResetWish, sharedState, updateSharedState]);
 
   const cleanEveningPrompt = useMemo(() => {
-    if (!data?.eveningPrompt || /[a-zA-Z]{3,}/.test(data.eveningPrompt)) {
+    if (!data?.eveningPrompt || !/[가-힣]/.test(data.eveningPrompt)) {
       const fallback = generateTailoredSecretFallback(wish, sharedState?.userProfile?.basic?.nickname || '여행자');
       return fallback.eveningPrompt;
     }
@@ -916,27 +909,29 @@ export function DailySecret() {
       const todayTheme = randomCosmicThemes[Math.abs(Date.now() + activeSeed) % randomCosmicThemes.length];
 
       const systemPrompt = [
-        '당신은 론다 번(Rhonda Byrne)의 『시크릿(The Secret)』— 끌어당김의 법칙을 바탕으로 오늘의 시크릿 키트를 만드는 ORANGE 가이드입니다.',
+        '당신은 론다 번(Rhonda Byrne)의 『시크릿(The Secret)』— 끌어당김의 법칙을 바탕으로 오늘의 시크릿 키트를 만드는 ORANGE 영적 가이드입니다.',
         '핵심 원리: Ask(명확한 요청) → Believe(흔들림 없는 믿음) → Receive(이미 받은 것처럼 느끼고 수용).',
         '생각과 감정의 주파수가 실제 현실을 강력하게 끌어당깁니다.',
         '',
-        '★★★ [절대 필수: 각 항목별 명확한 역할 분리 및 문장 중복 엄격 금지 규칙] ★★★',
-        '1. affirmation (Today’s Secret Affirmation): 사용자의 소원/고민 내용에 100% 직결되는 1인칭 현재완료형 선언문 1문장입니다. 기계적인 서두("나의 소원 ...은 이루어졌으며")를 금지하고, 소원이 성취되어 고민이 완전히 해소된 생생한 현실과 벅찬 감격을 직접 선언하십시오.',
-        '2. reflection (Believe · 믿음으로 새기기): affirmation과 완전히 다른 독자적인 문장이어야 합니다! 의심과 조급함을 내려놓고 잠재의식과 우주의 주파수에 나를 맞추도록 돕는 2~3문장의 깊이 있는 통찰/철학적 사색 글이어야 합니다. 절대로 확언 문장을 그대로 반복하지 마십시오.',
-        '3. action (Receive · 오늘의 작은 실천): affirmation/reflection과 완전히 다른 구체적인 신체적/일상적 실천 미션 1문장입니다! (예: "오늘 하루 이미 소원을 이룬 사람처럼 어깨를 펴고 미소 지으며 10분간 산책하기", "소중한 사람에게 먼저 다정한 안부 전하기" 등).',
-        '4. desire (Ask · 오늘의 소원 선언): 우주에 올리는 명확하고 순수한 청원 1문장입니다.',
-        '5. visualizationGuide (68초 시각화): 소원이 이루어진 장면을 오감으로 느끼는 가이드 3~4문장입니다.',
-        '6. feelingAnchor (Feel · 이미 받은 느낌): 성취 시 벅찬 감정을 표현한 1줄입니다.',
-        '7. mirrorPhrase (거울 확언): 거울을 보며 자신에게 건네는 확신 1문장입니다.',
-        '8. eveningPrompt (저녁 감사): 하루를 평온히 닫는 감사 1문장입니다.',
-        '9. scriptingStarter (스크립팅): 이미 이루어진 하루를 기록하는 일기 첫 문장입니다.',
-        '10. [경고] affirmation, reflection, action 항목에 절대로 동일하거나 유사한 텍스트를 중복해서 출력하지 마십시오. 각 항목은 고유한 목적과 고유한 문장 구조를 가져야 합니다.',
-        '11. [언어 절대 준수] 저녁 감사(eveningPrompt)를 포함한 모든 항목의 텍스트는 반드시 100% 품격 있는 한국어로만 작성해야 합니다. 영어나 외국어를 절대 출력하지 마십시오.',
+        '★★★ [절대 필수: 문학적 깊이 & 각 항목별 100% 독창적 문장 규칙] ★★★',
+        '1. 판에 박힌 기계적 템플릿(예: "나의 소원 ...은 이루어졌으며", "조용히 눈을 감고...", "모든 불안이 사라지고...")을 절대 복사하듯 쓰지 마십시오.',
+        '2. 사용자의 소원과 고민을 깊이 있는 공감과 통찰로 어루만져, 읽는 순간 가슴이 벅차오르고 온몸에 전율이 도는 예술적이고 품격 있는 문장을 창조하십시오.',
+        '3. affirmation: 소원이 이미 완벽히 성취된 현실을 선언하는 1인칭 현재완료형 선언문 1문장입니다.',
+        '4. reflection: 의심과 조급함을 내려놓고 우주의 순리를 신뢰하도록 이끄는 깊은 철학적 사색 글 2~3문장입니다. (절대 affirmation과 같은 문장을 반복하지 마십시오).',
+        '5. action: 소원을 이미 이룬 사람의 당당함으로 오늘 즉시 행할 수 있는 구체적인 일상 미션 1문장입니다.',
+        '6. desire: 우주에 올리는 맑고 순수한 청원 1문장입니다.',
+        '7. visualizationGuide: 소원이 성취된 구체적인 순간(표정, 숨결, 주변의 반응, 소리, 공기의 온기)을 오감으로 그리는 생생한 3~4문장의 시각화 가이드입니다.',
+        '8. feelingAnchor: 성취의 순간 가슴 깊이 차오르는 전율과 안도감을 압축한 독창적인 1줄 감정 앵커입니다.',
+        '9. mirrorPhrase: 거울 속 자신과 눈을 맞추며 가슴을 울리는 진실된 선언 1문장입니다.',
+        '10. eveningPrompt: 하루를 평온히 닫고 우주의 은혜에 몸을 맡기는 저녁 감사 1문장입니다.',
+        '11. scriptingStarter: 마침내 기적이 일어난 오늘 하루를 감사함으로 기록하는 일기 첫 문장입니다.',
+        '12. gratitudeSeeds: 소원 성취의 주파수를 여는 서로 다른 3가지의 구체적 감사 문장입니다.',
+        '13. [언어 절대 준수] 모든 문장은 반드시 100% 품격 있는 한국어로만 작성해야 합니다.',
         '',
         hasWish
           ? [
               `사용자가 오늘 우주에 요청한 구체적 소원: "${effectiveWish}"`,
-              '위 소원을 100% 중심에 두고 모든 항목(affirmation, reflection, action, desire, visualizationGuide, gratitudeSeeds, feelingAnchor, mirrorPhrase, eveningPrompt, scriptingStarter)을 개별적이고 독창적으로 작성하세요.',
+              `위 소원 "${effectiveWish}"의 구체적 정황과 감정을 깊이 분석하여, 모든 항목을 이 소원에 특화된 고유하고 감동적인 내용으로 작성하세요.`,
             ].join('\n')
           : `사용자가 별도의 소원을 적지 않았으므로, 오늘의 특별한 영적 테마 [${todayTheme}]를 중심으로 풍요, 평온, 성공, 사랑, 건강을 강력하게 끌어당기는 조화롭고 독창적인 시크릿 키트를 작성하세요.`,
         '',
@@ -945,8 +940,10 @@ export function DailySecret() {
       ].filter(Boolean).join('\n');
 
       const userPrompt = hasWish
-        ? `[${name}님의 핵심 고민 / 소원: "${effectiveWish}"]\n[무작위 시드: ${Date.now()}-${activeSeed}]\n\n위 고민/소원의 본질을 깊이 꿰뚫어보고, "나의 소원 ...은 이루어졌으며" 같은 기계적인 템플릿 문장을 절대 쓰지 마세요.\n이 고민과 고통이 완벽하게 해결되고 반전되어 현실이 된 감격과 절대적 확신을 담아 감동적인 1인칭 맞춤형 시크릿 키트를 작성해 주세요.\n\n특히 Today’s Secret Affirmation(확언)은 "${effectiveWish}" 고민의 구체적 정황(불안 해소, 당당한 성공, 금전 풍요, 따뜻한 화해 등)이 살아 숨 쉬는 명문장 1문장으로 선언해야 합니다.`
+        ? `[${name}님의 핵심 고민 / 소원: "${effectiveWish}"]\n[무작위 시드: ${Date.now()}-${activeSeed}]\n\n위 고민/소원의 본질을 깊이 꿰뚫어보고, 기존의 뻔한 템플릿 문장을 완전히 탈피하여 ${name}님만을 위한 가슴 벅찬 독창적 맞춤 시크릿 키트를 작성해 주세요.\n특히 68초 시각화(visualizationGuide)와 확언(affirmation)은 "${effectiveWish}" 소망이 실현된 바로 그 순간의 감각과 전율이 생생하게 살아 숨 쉬어야 합니다.`
         : `[오늘의 영적 테마: ${todayTheme}]\n[무작위 시드: ${Date.now()}-${activeSeed}]\n${name}님을 위한 오늘만의 독창적이고 가슴 벅찬 시크릿 키트를 주세요. 이전에 자주 나온 진부하거나 똑같은 문구를 완전히 피하고, 마음속 고민을 녹이고 풍요와 평온을 여는 품격 있는 새로운 맞춤 확언과 도구들을 작성해 주세요.`;
+
+      setIsAiEnhancing(true);
 
       const aiPromise = invokeLLMStructured({
         messages: [
@@ -957,7 +954,7 @@ export function DailySecret() {
       });
 
       const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('AI background enhancement timeout')), 6000)
+        setTimeout(() => reject(new Error('AI background enhancement timeout')), 15000)
       );
 
       const aiResult = await Promise.race([aiPromise, timeoutPromise]);
@@ -965,8 +962,7 @@ export function DailySecret() {
         aiResult &&
         aiResult.affirmation &&
         !aiResult.affirmation.includes('고요한 파동') &&
-        !aiResult.affirmation.includes('심신을 정렬') &&
-        (!hasWish || aiResult.affirmation.includes(effectiveWish))
+        !aiResult.affirmation.includes('심신을 정렬')
       ) {
         const enriched = ensureFullKit(aiResult, effectiveWish, name, activeSeed);
         if (enriched) {
@@ -983,6 +979,8 @@ export function DailySecret() {
       }
     } catch (_) {
       // Background AI error or timeout is completely silent because initialData is already active and perfect
+    } finally {
+      setIsAiEnhancing(false);
     }
   }, [buildPromptContext, extraGratitude, gratitudeChecked, practice, redrawSeed, script, sharedState, updateSharedState, wish]);
 
@@ -1295,6 +1293,12 @@ export function DailySecret() {
                       <X size={10} />
                       <span>소원 초기화</span>
                     </button>
+                  </div>
+                )}
+                {isAiEnhancing && (
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-200 text-[11px] mt-1 shadow-lg shadow-amber-950/30 animate-pulse">
+                    <Sparkles size={11} className="text-amber-400 animate-spin" />
+                    <span>끌어당김 AI가 당신의 소원에 맞춘 깊은 확언과 도구를 정밀 조율 중입니다...</span>
                   </div>
                 )}
               </div>
