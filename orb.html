@@ -177,64 +177,112 @@
         <!-- Cosmic Nebula Glow -->
         <div style="position:absolute;width:360px;height:360px;border-radius:50%;background:radial-gradient(circle,rgba(56,189,248,0.2) 0%,rgba(168,85,247,0.2) 45%,transparent 70%);filter:blur(40px);pointer-events:none;"></div>
         
-        <!-- 3D Orb & Orbit SVG Stage -->
+        <!-- 3D Crystal Key & Orbit SVG Stage -->
         <div style="position:relative;display:flex;align-items:center;justify-content:center;">
-          <svg viewBox="0 0 280 280" style="width:240px;height:240px;overflow:visible;" xmlns="http://www.w3.org/2000/svg">
+          <svg viewBox="0 0 280 320" style="width:240px;height:274px;overflow:visible;" xmlns="http://www.w3.org/2000/svg">
             <defs>
-              <radialGradient id="initOrbSphere" cx="35%" cy="28%" r="72%" fx="32%" fy="24%">
+              <linearGradient id="initKeyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stop-color="#ffffff" stop-opacity="0.98"/>
-                <stop offset="18%" stop-color="#a5f3fc" stop-opacity="0.9"/>
-                <stop offset="42%" stop-color="#38bdf8" stop-opacity="0.75"/>
-                <stop offset="70%" stop-color="#818cf8" stop-opacity="0.65"/>
-                <stop offset="88%" stop-color="#312e81" stop-opacity="0.9"/>
-                <stop offset="100%" stop-color="#05050f" stop-opacity="1"/>
-              </radialGradient>
-              <radialGradient id="initOrbSingularity" cx="50%" cy="50%" r="50%">
+                <stop offset="25%" stop-color="#67e8f9" stop-opacity="0.95"/>
+                <stop offset="50%" stop-color="#34d399" stop-opacity="0.9"/>
+                <stop offset="78%" stop-color="#38bdf8" stop-opacity="0.85"/>
+                <stop offset="100%" stop-color="#a855f7" stop-opacity="0.9"/>
+              </linearGradient>
+              <radialGradient id="initCoreSingularity" cx="50%" cy="50%" r="50%">
                 <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
-                <stop offset="30%" stop-color="#67e8f9" stop-opacity="0.9"/>
-                <stop offset="70%" stop-color="#c084fc" stop-opacity="0.6"/>
-                <stop offset="100%" stop-color="#6366f1" stop-opacity="0"/>
+                <stop offset="35%" stop-color="#67e8f9" stop-opacity="0.95"/>
+                <stop offset="70%" stop-color="#c084fc" stop-opacity="0.7"/>
+                <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
               </radialGradient>
-              <linearGradient id="initOrbitRing" x1="0%" y1="0%" x2="100%" y2="100%">
+              <linearGradient id="initOrbitRing1" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stop-color="#67e8f9" stop-opacity="0.9"/>
                 <stop offset="50%" stop-color="#c084fc" stop-opacity="0.85"/>
                 <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.2"/>
               </linearGradient>
+              <linearGradient id="initOrbitRing2" x1="100%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#34d399" stop-opacity="0.85"/>
+                <stop offset="50%" stop-color="#818cf8" stop-opacity="0.9"/>
+                <stop offset="100%" stop-color="#22d3ee" stop-opacity="0.2"/>
+              </linearGradient>
+              <linearGradient id="initShaftGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/>
+                <stop offset="35%" stop-color="#67e8f9" stop-opacity="0.92"/>
+                <stop offset="70%" stop-color="#38bdf8" stop-opacity="0.8"/>
+                <stop offset="100%" stop-color="#4f46e5" stop-opacity="0.85"/>
+              </linearGradient>
             </defs>
 
-            <!-- Tilted Astral Orbit Ring -->
-            <ellipse cx="140" cy="140" rx="115" ry="44" fill="none" stroke="url(#initOrbitRing)" stroke-width="1.8" stroke-dasharray="6 4 12 4" transform="rotate(-26 140 140)" opacity="0.8"/>
-            <circle cx="215" cy="105" r="3.5" fill="#a5f3fc"/>
+            <!-- Outer Astral Orbit Rings around Key Head -->
+            <g transform="translate(140, 85)">
+              <ellipse cx="0" cy="0" rx="85" ry="34" fill="none" stroke="url(#initOrbitRing1)" stroke-width="1.6" stroke-dasharray="5 3 10 3" transform="rotate(-22)" opacity="0.75"/>
+              <circle cx="72" cy="-16" r="3" fill="#a5f3fc"/>
+              <circle cx="-72" cy="16" r="2.2" fill="#e879f9"/>
+              <ellipse cx="0" cy="0" rx="92" ry="32" fill="none" stroke="url(#initOrbitRing2)" stroke-width="1.2" stroke-dasharray="4 5" transform="rotate(28)" opacity="0.65"/>
+              <circle cx="-76" cy="-14" r="2.5" fill="#67e8f9"/>
+            </g>
 
-            <!-- 3D Crystal Orb Body -->
-            <circle cx="140" cy="140" r="68" fill="url(#initOrbSphere)" stroke="rgba(255,255,255,0.4)" stroke-width="1.2"/>
+            <!-- Key Head: Outer Crystal Ring (Bow) -->
+            <circle cx="140" cy="85" r="38" fill="url(#initCoreSingularity)" stroke="url(#initKeyGrad)" stroke-width="3.5"/>
+            <!-- Inner Dark Cavity -->
+            <circle cx="140" cy="85" r="28" fill="#030514"/>
+            <circle cx="140" cy="85" r="24" fill="url(#initCoreSingularity)" opacity="0.9"/>
 
-            <!-- Inner Pulsing Core -->
-            <circle cx="140" cy="140" r="32" fill="url(#initOrbSingularity)"/>
+            <!-- 🍀 4-Leaf Clover Crystal Petals -->
+            <g opacity="0.85">
+              <path d="M 140 85 C 132 72 132 58 140 56 C 148 58 148 72 140 85 Z" fill="#34d399"/>
+              <path d="M 140 85 C 132 98 132 112 140 114 C 148 112 148 98 140 85 Z" fill="#c084fc"/>
+              <path d="M 140 85 C 127 77 113 77 111 85 C 113 93 127 93 140 85 Z" fill="#67e8f9"/>
+              <path d="M 140 85 C 153 77 167 77 169 85 C 167 93 153 93 140 85 Z" fill="#34d399"/>
+            </g>
 
-            <!-- Specular Curved Highlight -->
-            <ellipse cx="120" cy="108" rx="32" ry="18" fill="rgba(255,255,255,0.85)" transform="rotate(-28 120 108)" filter="blur(1px)"/>
-            <circle cx="110" cy="100" r="4.5" fill="#ffffff"/>
+            <!-- Center 4-Point Starlight Singularity -->
+            <path d="M 140 68 Q 140 85 157 85 Q 140 85 140 102 Q 140 85 123 85 Q 140 85 140 68 Z" fill="#ffffff" opacity="0.95"/>
+            <circle cx="140" cy="85" r="3.2" fill="#ffffff"/>
 
-            <!-- Bottom Reflection Glow -->
-            <path d="M 100 180 A 68 68 0 0 0 178 180" fill="none" stroke="rgba(165,243,252,0.6)" stroke-width="3" stroke-linecap="round"/>
+            <!-- Top Crown Spire Gem -->
+            <path d="M 140 40 L 146 50 L 140 55 L 134 50 Z" fill="#ffffff" opacity="0.9"/>
+            <circle cx="140" cy="40" r="2.2" fill="#67e8f9"/>
+
+            <!-- Crossguard / Collar -->
+            <path d="M 112 126 C 124 122 133 120 140 120 C 147 120 156 122 168 126 C 156 131 147 133 140 133 C 133 133 124 131 112 126 Z" fill="url(#initKeyGrad)" stroke="#ffffff" stroke-width="0.8"/>
+            <circle cx="140" cy="126" r="3.5" fill="#ffffff"/>
+
+            <!-- Shaft -->
+            <rect x="132" y="130" width="16" height="105" rx="8" fill="url(#initShaftGrad)" stroke="#ffffff" stroke-width="1.4" stroke-opacity="0.85"/>
+            <line x1="140" y1="134" x2="140" y2="230" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
+
+            <!-- Shaft Middle Bead -->
+            <ellipse cx="140" cy="172" rx="12" ry="5.5" fill="#ffffff" opacity="0.9"/>
+            <circle cx="140" cy="172" r="2.5" fill="#67e8f9"/>
+
+            <!-- Key Bit Teeth -->
+            <path d="M 148 185 L 168 185 L 174 191 L 174 199 L 166 203 L 148 203 Z" fill="url(#initKeyGrad)" stroke="#ffffff" stroke-width="1.2"/>
+            <path d="M 148 208 L 178 208 L 185 215 L 185 224 L 176 230 L 162 230 L 157 224 L 148 224 Z" fill="url(#initKeyGrad)" stroke="#ffffff" stroke-width="1.2"/>
+
+            <!-- Bottom Spire Tip -->
+            <path d="M 132 233 L 140 252 L 148 233 Z" fill="url(#initShaftGrad)" stroke="#ffffff" stroke-width="1"/>
+            <circle cx="140" cy="252" r="2.8" fill="#ffffff"/>
+
+            <!-- Curved Specular Glint -->
+            <ellipse cx="126" cy="72" rx="14" ry="7" fill="rgba(255,255,255,0.85)" transform="rotate(-26 126 72)"/>
+            <circle cx="120" cy="67" r="2" fill="#ffffff"/>
           </svg>
         </div>
 
         <!-- Typography -->
-        <div style="margin-top:12px;font-size:24px;font-weight:900;letter-spacing:0.34em;text-transform:uppercase;background:linear-gradient(135deg,#a5f3fc 0%,#38bdf8 50%,#c084fc 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
-          CRYSTAL ORB
+        <div style="margin-top:12px;font-size:24px;font-weight:900;letter-spacing:0.36em;text-transform:uppercase;background:linear-gradient(135deg,#a5f3fc 0%,#67e8f9 35%,#34d399 70%,#c084fc 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+          KEY
         </div>
         <div style="font-size:12px;font-weight:600;letter-spacing:0.16em;color:rgba(165,243,252,0.85);margin-top:8px;">
-          크리스탈 오브 차원 궤도 동기화 중...
+          Key 차원 궤도 동기화 중...
         </div>
         <div style="font-size:10px;font-family:monospace;letter-spacing:0.2em;color:rgba(192,132,252,0.6);margin-top:4px;text-transform:uppercase;">
-          ASTRAL SCRYING SPHERE
+          ASTRAL CRYSTAL KEY & CONSCIOUSNESS
         </div>
         
         <!-- Cosmic Progress Bar -->
         <div style="width:200px;height:3px;background:rgba(255,255,255,0.1);border-radius:999px;margin-top:18px;overflow:hidden;position:relative;">
-          <div style="width:100%;height:100%;background:linear-gradient(90deg,transparent,#38bdf8,#c084fc,transparent);"></div>
+          <div style="width:100%;height:100%;background:linear-gradient(90deg,transparent,#38bdf8,#34d399,#c084fc,transparent);"></div>
         </div>
       </div>
     </div>

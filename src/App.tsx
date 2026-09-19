@@ -299,12 +299,12 @@ function AppContent() {
         />
       );
     }
-    if (location === '/orb' || location === '/gateway' || location === '/crystal') {
+    if (location === '/orb' || location === '/gateway' || location === '/crystal' || location === '/key') {
       return (
         <OrbCosmicLoader
           fullScreen
-          message="크리스탈 오브 차원 궤도 동기화 중..."
-          subMessage="ASTRAL SCRYING SPHERE & CONSCIOUSNESS"
+          message="Key 차원 궤도 동기화 중..."
+          subMessage="ASTRAL CRYSTAL KEY & CONSCIOUSNESS"
         />
       );
     }
@@ -325,8 +325,8 @@ function AppContent() {
     }
   })();
 
-  const isStandaloneChat = location === '/chat' || location === '/lucy' || location === '/handbook' || location === '/rebible' || location === '/orb' || location === '/gateway' || location === '/crystal';
-  const isOrbSite = location === '/orb' || location === '/gateway' || location === '/crystal';
+  const isStandaloneChat = location === '/chat' || location === '/lucy' || location === '/handbook' || location === '/rebible' || location === '/orb' || location === '/gateway' || location === '/crystal' || location === '/key';
+  const isOrbSite = location === '/orb' || location === '/gateway' || location === '/crystal' || location === '/key';
   const isChatView = location === '/chat' || location === '/lucy';
 
   if (!firebaseUser && !isStandaloneChat) {

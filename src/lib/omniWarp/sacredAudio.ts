@@ -92,6 +92,10 @@ class SacredAudioEngine {
     return this.isDroneActive;
   }
 
+  stopDrone(): void {
+    this.toggleDrone(false);
+  }
+
   /**
    * 크리스탈 싱잉볼 (Tibetan Singing Bowl Bell Strike)
    * 수정구슬 영시 개화 시 맑고 깊게 울려 퍼지는 배음 타종
