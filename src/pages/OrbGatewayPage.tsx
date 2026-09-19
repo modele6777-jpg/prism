@@ -38,6 +38,11 @@ import {
 } from "@/lib/prismTossRegistry";
 import { getAndClearPendingSelection } from "@/lib/selectionBridge";
 import { getTodayDateKey } from "@/lib/dailyCache";
+import {
+  recommendPrescriptionForParchment,
+  type CalmPrescription,
+} from "@/lib/calmPharmacopeia";
+import { CalmTechniquePracticeModal } from "@/components/orb/CalmTechniquePracticeModal";
 
 interface StardustParticle {
   x: number;
@@ -239,6 +244,10 @@ export default function OrbGatewayPage() {
   const [isTossing, setIsTossing] = useState(false);
   const [isParchmentRolled, setIsParchmentRolled] = useState(false);
 
+  // 💊 40대 마음 처방약전 실천 인터랙티브 모달 상태
+  const [activePracticePrescription, setActivePracticePrescription] = useState<CalmPrescription | null>(null);
+  const [isPracticeModalOpen, setIsPracticeModalOpen] = useState(false);
+
   // Archive & Scrying States
   const [archiveItems, setArchiveItems] = useState<KeyArchiveItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -399,6 +408,11 @@ export default function OrbGatewayPage() {
     const safeIndex = Math.min(currentIndex, filteredItems.length - 1);
     return filteredItems[safeIndex] || filteredItems[0];
   }, [filteredItems, currentIndex, archiveItems]);
+
+  // 💊 현재 양피지 영시 맞춤 40대 마음 처방 기법 추천
+  const recommendedPrescription = useMemo(() => {
+    return recommendPrescriptionForParchment(currentMemory || undefined);
+  }, [currentMemory]);
 
   // 🔮 Swirling Stardust Particle Simulation Canvas inside the Crystal Orb
   useEffect(() => {
@@ -1287,7 +1301,24 @@ export default function OrbGatewayPage() {
                       <Sparkles size={12} className="text-amber-300 animate-spin" />
                       <span>오브 둘레의 행성을 터치하여 두루마리를 토스하세요!</span>
                     </div>
-                    <span className="text-[10px] font-mono text-cyan-400/70">7대 차원</span>
+                    {recommendedPrescription && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActivePracticePrescription(recommendedPrescription);
+                          setIsPracticeModalOpen(true);
+                          triggerHaptic("mirrorhole");
+                          try {
+                            sacredAudio.playSingingBowl(528);
+                          } catch (_) {}
+                        }}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/25 hover:bg-emerald-500/40 border border-emerald-400/50 text-[10.5px] font-bold text-emerald-200 transition-all cursor-pointer shrink-0 shadow-[0_0_10px_rgba(16,185,129,0.3)] active:scale-95"
+                        title="추천 처방 기법 실천하기"
+                      >
+                        <span>{recommendedPrescription.icon} 제{recommendedPrescription.globalIndex}호 기법 실천</span>
+                      </button>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-7 gap-1">
@@ -1431,6 +1462,57 @@ export default function OrbGatewayPage() {
                             ? currentMemory.actionGuidance
                             : `실천 화두: ${currentMemory.actionGuidance}`}
                         </span>
+                      </div>
+                    )}
+
+                    {/* 💊 40대 마음 처방약 맞춤 추천 & 즉시 실천 카드 */}
+                    {recommendedPrescription && (
+                      <div className="p-3 rounded-2xl bg-gradient-to-r from-emerald-950/70 via-[#0d221a]/80 to-emerald-950/70 border border-emerald-500/45 shadow-lg select-none">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 overflow-hidden">
+                            <span className="text-base shrink-0 p-1.5 rounded-xl bg-emerald-500/25 border border-emerald-400/50">
+                              {recommendedPrescription.icon}
+                            </span>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/30 text-emerald-200 font-mono">
+                                  추천 상비약 제{recommendedPrescription.globalIndex}호
+                                </span>
+                                <span className="text-[9.5px] text-emerald-300/80 font-mono">
+                                  약효 {recommendedPrescription.timeEstimate}
+                                </span>
+                              </div>
+                              <h4 className="text-xs sm:text-[13px] font-bold text-emerald-50 truncate mt-0.5">
+                                {recommendedPrescription.title}
+                                <span className="text-[10.5px] font-normal text-emerald-300/80 ml-1">
+                                  ({recommendedPrescription.subtitle})
+                                </span>
+                              </h4>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActivePracticePrescription(recommendedPrescription);
+                              setIsPracticeModalOpen(true);
+                              triggerHaptic("whitehole");
+                              try {
+                                sacredAudio.playSingingBowl(528);
+                              } catch (_) {}
+                            }}
+                            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500/40 via-teal-500/40 to-emerald-500/40 hover:from-emerald-500/60 hover:to-teal-500/60 border border-emerald-400/80 text-emerald-50 text-xs font-bold active:scale-95 transition-all shadow-[0_0_15px_rgba(16,185,129,0.45)] shrink-0 flex items-center gap-1.5 cursor-pointer"
+                            title="이 처방 기법을 1~3분 동안 직접 실천하기"
+                          >
+                            <Sparkles size={12} className="text-amber-300 animate-pulse" />
+                            <span>기법 실천하기</span>
+                          </button>
+                        </div>
+
+                        <p className="text-[11.5px] text-emerald-100/90 mt-2 pl-2.5 border-l-2 border-emerald-400/50 leading-relaxed font-sans line-clamp-2">
+                          "{recommendedPrescription.affirmation}" — {recommendedPrescription.clinicalTip || recommendedPrescription.purpose}
+                        </p>
                       </div>
                     )}
 
@@ -1709,6 +1791,27 @@ export default function OrbGatewayPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* 💊 40대 마음 처방약전 인터랙티브 기법 실천 모달 */}
+      <CalmTechniquePracticeModal
+        isOpen={isPracticeModalOpen}
+        onClose={() => setIsPracticeModalOpen(false)}
+        prescription={activePracticePrescription}
+        sourceParchmentTitle={currentMemory?.title}
+        onNavigateToLucy={(contextPrompt) => {
+          setIsPracticeModalOpen(false);
+          executeSmartToss("key", TOSS_DESTINATIONS.lucy, {
+            text: contextPrompt,
+            contextMessage: contextPrompt,
+            autoPrompt: contextPrompt,
+          });
+          navigate("/chat");
+        }}
+        onNavigateToHeal={() => {
+          setIsPracticeModalOpen(false);
+          navigate("/heal");
+        }}
+      />
     </div>
   );
 }
