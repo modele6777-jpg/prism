@@ -83,7 +83,7 @@ export default function CalmApp() {
   }, [iframeLoaded]);
 
   const searchParams = typeof window !== 'undefined' ? window.location.search : '';
-  const iframeSrc = `/calm/index.html${searchParams ? searchParams + '&v=30.0' : '?v=30.0'}`;
+  const iframeSrc = `/calm/index.html${searchParams ? searchParams + '&v=31.0' : '?v=31.0'}`;
 
   return (
     <div className="fixed inset-0 w-full h-[100dvh] bg-[#fcf9f5] z-40 overflow-hidden flex flex-col">

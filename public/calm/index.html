@@ -97,7 +97,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Nanum+Myeongjo:wght@400;700;800&family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="./style.css?v=29.0">
+  <link rel="stylesheet" href="./style.css?v=31.0">
 </head>
 <body>
   <!-- Canvas Watermark -->
@@ -117,56 +117,8 @@
       </div>
     </div>
 
-    <!-- Action Buttons & LP Vinyl BGM Player -->
-    <div class="nav-actions">
-      <!-- LP Vinyl Disc BGM Player (PRISM 동일 턴테이블 스타일) -->
-      <div class="key-lp-player-wrapper" id="key-lp-player-wrapper">
-        <button type="button" id="key-lp-disc-btn" class="key-lp-disc-btn" aria-label="치유 배경음 LP 플레이어">
-          <div class="lp-vinyl-disc" id="key-lp-disc">
-            <div class="lp-vinyl-grooves lp-paused" id="key-lp-grooves"></div>
-            <div class="lp-groove-ring-1"></div>
-            <div class="lp-groove-ring-2"></div>
-            <div class="lp-center-label">
-              <div class="lp-spindle-hole"></div>
-            </div>
-            <div class="lp-tonearm" id="key-lp-tonearm">
-              <div class="lp-tonearm-bar"></div>
-              <div class="lp-tonearm-head"></div>
-            </div>
-          </div>
-          <span class="key-lp-title" id="key-lp-title">치유 배경음</span>
-          <span style="font-size: 10px; opacity: 0.6; margin-left: -2px;">▾</span>
-        </button>
-
-        <!-- Dropdown / Popover Sound Selector -->
-        <div class="key-lp-dropdown" id="key-lp-dropdown">
-          <div class="key-lp-dropdown-header">
-            <span>🎧 치유 배경음 선택 (14선)</span>
-            <button type="button" id="key-lp-stop-btn" class="key-lp-stop-btn">⏹️ 정지</button>
-          </div>
-          <div class="key-lp-track-list" id="key-lp-track-list">
-            <button type="button" class="key-lp-track-btn" data-sound="ocean">🌊 파도</button>
-            <button type="button" class="key-lp-track-btn" data-sound="rain">🌧️ 빗소리</button>
-            <button type="button" class="key-lp-track-btn" data-sound="stream">🏞️ 시냇물</button>
-            <button type="button" class="key-lp-track-btn" data-sound="forest">🍃 숲바람</button>
-            <button type="button" class="key-lp-track-btn" data-sound="fire">🪵 벽난로</button>
-            <button type="button" class="key-lp-track-btn" data-sound="bowl">🔔 싱잉볼</button>
-            <button type="button" class="key-lp-track-btn" data-sound="freq432">✨ 432Hz 치유</button>
-            <button type="button" class="key-lp-track-btn" data-sound="freq528">💖 528Hz 평온</button>
-            <button type="button" class="key-lp-track-btn" data-sound="om">🧘 젠 옴</button>
-            <button type="button" class="key-lp-track-btn" data-sound="chime">🎐 풍경 차임</button>
-            <button type="button" class="key-lp-track-btn" data-sound="musicbox">🎶 치유 오르골</button>
-            <button type="button" class="key-lp-track-btn" data-sound="crickets">🌙 풀벌레</button>
-            <button type="button" class="key-lp-track-btn" data-sound="pink">🔕 핑크 노이즈</button>
-            <button type="button" class="key-lp-track-btn" data-sound="thunder">⛈️ 먼 천둥</button>
-          </div>
-          <div class="key-lp-vol-bar">
-            <span>🔊</span>
-            <input type="range" id="key-lp-vol-slider" min="0" max="1" step="0.05" value="0.45" aria-label="배경음 음량" title="배경음 볼륨">
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- Action Buttons -->
+    <div class="nav-actions"></div>
   </nav>
 
   <!-- Main Content Wrapper -->
@@ -771,21 +723,9 @@
   </div>
 
   <!-- Scripts -->
-  <script src="./practice-data.js?v=29.0"></script>
-  <script src="./teachings-data.js?v=29.0"></script>
-  <script src="./audio-synth.js?v=29.0"></script>
-  <script src="./app.js?v=29.0"></script>
-  <!-- Floating BigBang Button (홈 버튼 -> 빅뱅 버튼 변환) -->
-  <div id="key-bigbang-fab" class="key-bigbang-container" aria-label="빅뱅 홈 복귀">
-    <button type="button" id="key-bigbang-btn" class="key-bigbang-btn" aria-label="빅뱅 홈으로 이동">
-      <div class="key-bigbang-orbit"></div>
-      <div class="key-bigbang-core">
-        <div class="key-bigbang-star"></div>
-        <div class="key-bigbang-pulse-1"></div>
-        <div class="key-bigbang-pulse-2"></div>
-      </div>
-      <span class="key-bigbang-label">HOME</span>
-    </button>
-  </div>
+  <script src="./practice-data.js?v=31.0"></script>
+  <script src="./teachings-data.js?v=31.0"></script>
+  <script src="./audio-synth.js?v=31.0"></script>
+  <script src="./app.js?v=31.0"></script>
 </body>
 </html>
