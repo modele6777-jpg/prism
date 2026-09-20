@@ -244,8 +244,8 @@ export function LucyResponseRecommendation({
     return null;
   }
 
-  // 1. 맥락 분석을 통해 최적의 추천 채널 및 추천 기능 도출
-  const { recommendedChannel, secondaryChannel, recommendedFeature, themeReason } = useMemo(() => {
+  // 1. 맥락 분석을 통해 최적의 단일 추천 채널 및 Key 실천 기법 도출
+  const { recommendedChannel, recommendedFeature, themeReason } = useMemo(() => {
     const combined = `${userQuery} ${lucyAnswer}`.toLowerCase();
 
     // 채널 점수 계산
@@ -268,72 +268,36 @@ export function LucyResponseRecommendation({
     // 뮤즈 (예술, 영감, 창작, 글쓰기, 시, 음악, 그림, 명화, 카피)
     if (/예술|영감|창작|글쓰기|시|음악|그림|명화|카피|명곡|클래식/.test(combined)) channelScores.muse += 3;
 
-    // 점수 정렬
+    // 단 1개의 최적 추천 채널 선정
     const sortedChannels = (Object.keys(channelScores) as SpecialChannel[]).sort(
       (a, b) => channelScores[b] - channelScores[a]
     );
-
     const topChannelKey = channelScores[sortedChannels[0]] > 0 ? sortedChannels[0] : 'trinity';
-    const secondChannelKey = channelScores[sortedChannels[1]] > 0 ? sortedChannels[1] : (topChannelKey === 'orange' ? 'bluebird' : 'orange');
+    const primaryChannel = CHANNELS_META[topChannelKey];
 
-    // 기능(Feature App) 점수 계산
-    let bestFeature = FEATURE_APPS[0];
-    let maxFeatureScore = -1;
+    // 40대 Key 마음약방 실천 연습 중 맥락에 가장 부합하는 1개 기법 추출
+    const bestEx = findBestKeyExercise(userQuery, lucyAnswer);
+    const keyFeature: FeatureAppMeta = {
+      id: 'key',
+      name: 'KEY 마음약방',
+      shortName: `연습 ${bestEx.index}. ${bestEx.title}`,
+      featureTitle: `40대 치유 연습 중 맞춤 추천: 연습 ${bestEx.index}. ${bestEx.title} (${bestEx.page}쪽)`,
+      path: `/key?ex=${bestEx.globalIndex}`,
+      iconText: bestEx.icon || '🔑',
+      runeSymbol: 'ᛟ',
+      runeName: 'Othala',
+      color: '#38bdf8',
+      glowColor: 'rgba(56, 189, 248, 0.9)',
+      description: `[${bestEx.tag}] ${bestEx.purpose}`,
+      actionLabel: `실천`,
+      keywords: [],
+    };
 
-    for (const app of FEATURE_APPS) {
-      let score = 0;
-      for (const kw of app.keywords) {
-        if (combined.includes(kw.toLowerCase())) {
-          score += 2;
-        }
-      }
-      if (score > maxFeatureScore) {
-        maxFeatureScore = score;
-        bestFeature = app;
-      }
-    }
-
-    // Key 40가지 실천 연습 특화 매칭: 질문이나 답변에 불안, 걱정, 스트레스, 실천, 연습 관련 내용이 있거나 bestFeature가 key인 경우
-    const isAnxietyOrKeyIntent = /불안|걱정|공황|초조|두려움|스트레스|긴장|마음약방|처방|연습|실천|키\b|key|호흡|탈융합|수용|잡념|자책/i.test(combined);
-
-    let reasonText = '질문과 답변의 맥락에 맞춘 최적화 추천';
-
-    if (bestFeature.id === 'key' || isAnxietyOrKeyIntent) {
-      const bestEx = findBestKeyExercise(userQuery, lucyAnswer);
-      bestFeature = {
-        id: 'key',
-        name: 'KEY 마음약방',
-        shortName: `연습 ${bestEx.index}. ${bestEx.title}`,
-        featureTitle: `40대 치유 연습 중 맞춤 추천: 연습 ${bestEx.index}. ${bestEx.title} (${bestEx.page}쪽)`,
-        path: `/key?ex=${bestEx.globalIndex}`,
-        iconText: bestEx.icon || '🔑',
-        runeSymbol: 'ᛟ',
-        runeName: 'Othala',
-        color: '#38bdf8',
-        glowColor: 'rgba(56, 189, 248, 0.9)',
-        description: `[${bestEx.tag}] ${bestEx.purpose}`,
-        actionLabel: `🎯 [연습 ${bestEx.index}. ${bestEx.title}] 바로 실천하기`,
-        keywords: [],
-      };
-      reasonText = `마음에 가장 필요한 Key '연습 ${bestEx.index}. ${bestEx.title}' 맞춤 처방`;
-    } else if (maxFeatureScore <= 0) {
-      // 매칭되는 키워드가 적을 때 상위 추천 채널과 동일한 앱 매핑
-      const fallbackApp = FEATURE_APPS.find((a) => a.id === topChannelKey) || FEATURE_APPS[0];
-      bestFeature = fallbackApp;
-    }
-
-    if (!isAnxietyOrKeyIntent && bestFeature.id !== 'key') {
-      if (topChannelKey === 'trinity') reasonText = '운명과 무의식 상징을 깊이 해독하는 추천';
-      else if (topChannelKey === 'orange') reasonText = '1원칙 논리와 실행 전략에 집중하는 추천';
-      else if (topChannelKey === 'aura') reasonText = '몸의 감각과 호흡, 긴장 완화를 돕는 추천';
-      else if (topChannelKey === 'bluebird') reasonText = '상처받은 마음에 온기와 정화를 불어넣는 추천';
-      else if (topChannelKey === 'muse') reasonText = '예술적 영감과 감성을 일깨우는 추천';
-    }
+    const reasonText = `Key '연습 ${bestEx.index}. ${bestEx.title}' 및 ${primaryChannel.shortName} 채널 맞춤 처방`;
 
     return {
-      recommendedChannel: CHANNELS_META[topChannelKey],
-      secondaryChannel: CHANNELS_META[secondChannelKey],
-      recommendedFeature: bestFeature,
+      recommendedChannel: primaryChannel,
+      recommendedFeature: keyFeature,
       themeReason: reasonText,
     };
   }, [userQuery, lucyAnswer]);
@@ -409,7 +373,6 @@ export function LucyResponseRecommendation({
       } catch (err) {
         console.error('[LucyRecommendation] Navigation error:', err);
       } finally {
-        // Ensure isLeaping resets so buttons never get stuck
         setTimeout(() => setIsLeaping(false), 800);
       }
     }, 280);
@@ -422,154 +385,96 @@ export function LucyResponseRecommendation({
     <motion.div
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mt-3.5 pt-3 border-t border-slate-200/70 dark:border-slate-800/70 space-y-2.5 text-slate-800 dark:text-slate-200"
+      className="mt-3 pt-2.5 border-t border-slate-200/70 dark:border-slate-800/70 text-slate-800 dark:text-slate-200"
     >
-      {/* 1. 상단 라벨 & 주제 안내 */}
-      <div className="flex items-center justify-between gap-2 px-1">
-        <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-700 dark:text-amber-400">
-          <Sparkles size={13} className="text-amber-500 animate-pulse" />
-          <span>LucKey 연계 추천 경로</span>
-        </div>
-        <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
-          {themeReason}
-        </span>
-      </div>
-
-      {/* 2. 추천 채널 전환 섹션 (Recommended Channel Switch) */}
-      <div className="flex items-center gap-2 flex-wrap bg-amber-50/60 dark:bg-amber-950/20 p-2.5 rounded-2xl border border-amber-200/60 dark:border-amber-500/20">
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-amber-200/70 dark:bg-amber-900/50 text-amber-900 dark:text-amber-200 font-bold">
-            LucKey 채널
+      {/* 🌟 단일 통합 추천 칸 (Key 추천 기법 + LucKey 연계 추천 경로 1개를 같은 칸에 배치) */}
+      <div className="p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950/90 to-slate-900 text-white border border-cyan-500/30 shadow-md space-y-2.5 transition-all hover:border-cyan-400/50">
+        {/* 헤더: LucKey 연계 추천 라벨 & 테마 이유 */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-300">
+            <Sparkles size={13} className="text-amber-400 animate-pulse" />
+            <span>LucKey 연계 추천</span>
+          </div>
+          <span className="text-[10px] text-slate-400 truncate max-w-[210px] sm:max-w-none">
+            {themeReason}
           </span>
         </div>
 
-        <button
-          type="button"
-          onClick={() => {
-            handleLeapToFeature({
-              id: recommendedChannel.id,
-              name: recommendedChannel.name,
-              shortName: recommendedChannel.shortName,
-              featureTitle: `${recommendedChannel.name} 전문 채널`,
-              path: recommendedChannel.path,
-              iconText: '✨',
-              runeSymbol: 'ᛟ',
-              runeName: recommendedChannel.shortName,
-              color: recommendedChannel.color,
-              glowColor: recommendedChannel.color,
-              description: recommendedChannel.tagline,
-              actionLabel: `${recommendedChannel.shortName} 채널 입장`,
-              keywords: [],
-            });
-          }}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-2xs ${recommendedChannel.badgeClass} ${recommendedChannel.hoverClass} active:scale-95`}
-          title={`클릭 시 [${recommendedChannel.name}] LucKey 채널로 입장합니다.`}
-        >
-          <RecChannelIcon size={13} className="shrink-0" />
-          <span>{recommendedChannel.shortName} 채널 입장</span>
-          <span className="text-[10px] opacity-75 font-normal">➔</span>
-        </button>
-
-        {/* 보조 추천 채널이 있고 현재 채널과 다를 경우 추가 제공 */}
-        {secondaryChannel && secondaryChannel.id !== recommendedChannel.id && (
-          <button
-            type="button"
-            onClick={() => {
-              handleLeapToFeature({
-                id: secondaryChannel.id,
-                name: secondaryChannel.name,
-                shortName: secondaryChannel.shortName,
-                featureTitle: `${secondaryChannel.name} 전문 채널`,
-                path: secondaryChannel.path,
-                iconText: '✨',
-                runeSymbol: 'ᛟ',
-                runeName: secondaryChannel.shortName,
-                color: secondaryChannel.color,
-                glowColor: secondaryChannel.color,
-                description: secondaryChannel.tagline,
-                actionLabel: `${secondaryChannel.shortName} 채널 입장`,
-                keywords: [],
-              });
-            }}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer opacity-90 hover:opacity-100 ${secondaryChannel.badgeClass} ${secondaryChannel.hoverClass} active:scale-95`}
-            title={`[${secondaryChannel.name}] LucKey 채널로 입장`}
-          >
-            <span>{secondaryChannel.shortName} 채널</span>
-            <span className="text-[10px] opacity-60">입장 ➔</span>
-          </button>
-        )}
-
-        <span className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:inline ml-auto truncate">
-          {recommendedChannel.tagline}
-        </span>
-      </div>
-
-      {/* 3. 추천 기능/차원 도약 배너 (Recommended Feature App Leap - 오브처럼 구현) */}
-      <div
-        onClick={() => handleLeapToFeature(recommendedFeature)}
-        className={`p-3 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white border border-cyan-500/30 flex items-center justify-between gap-3 shadow-md cursor-pointer transition-all hover:border-cyan-400/60 hover:shadow-[0_0_18px_rgba(6,182,212,0.25)] active:scale-[0.99] group ${
-          isLeaping ? 'pointer-events-none ring-2 ring-cyan-400/60 animate-pulse' : ''
-        }`}
-      >
-        <div className="flex items-center gap-2.5 min-w-0">
-          {/* 룬 표식 & 행성 아이콘 박스 (오브와 완벽 일치 디자인) */}
+        {/* 같은 칸 내부: Key 추천기법 (좌측) + 단 1개의 LucKey 연계 채널 (우측) */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-0.5">
+          {/* A. Key 추천 기법 (40가지 실천 연습실) */}
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border font-serif font-black text-lg text-white shadow-sm"
-            style={{
-              background: 'radial-gradient(circle at 35% 30%, rgba(255,255,255,0.2) 0%, rgba(20,20,35,0.95) 80%)',
-              borderColor: recommendedFeature.color,
-              boxShadow: `0 0 12px ${recommendedFeature.glowColor}`,
-            }}
+            onClick={() => handleLeapToFeature(recommendedFeature)}
+            className="flex-1 flex items-center gap-2.5 p-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-cyan-400/25 hover:border-cyan-400/60 transition-all cursor-pointer group active:scale-[0.99] min-w-0"
+            title={`${recommendedFeature.featureTitle} (클릭 시 Key 연습실로 바로 이동)`}
           >
-            {recommendedFeature.runeSymbol}
+            <div
+              className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 border font-serif font-black text-base text-white shadow-sm"
+              style={{
+                background: 'radial-gradient(circle at 35% 30%, rgba(255,255,255,0.25) 0%, rgba(20,20,35,0.95) 80%)',
+                borderColor: recommendedFeature.color,
+                boxShadow: `0 0 10px ${recommendedFeature.glowColor}`,
+              }}
+            >
+              {recommendedFeature.iconText || '🔑'}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-cyan-400/20 text-cyan-300 font-bold border border-cyan-400/40 shrink-0">
+                  Key 추천 기법
+                </span>
+                <span className="text-xs font-bold text-white truncate group-hover:text-cyan-200 transition-colors">
+                  {recommendedFeature.shortName}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300 truncate mt-0.5 font-normal">
+                {recommendedFeature.description}
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={isLeaping}
+              className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-black shrink-0 flex items-center gap-1 shadow-sm transition-all group-hover:brightness-110 cursor-pointer"
+              style={{
+                background: `linear-gradient(135deg, ${recommendedFeature.color}, #f59e0b)`,
+              }}
+            >
+              <span>실천</span>
+              <ArrowRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+            </button>
           </div>
 
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-cyan-400/20 text-cyan-300 font-bold border border-cyan-400/40">
-                추천 기능 도약
-              </span>
-              <span className="text-xs sm:text-sm font-bold text-white truncate">
-                {recommendedFeature.name}
-              </span>
-              <span className="text-amber-300/90 text-[10px] sm:text-[11px] font-serif">
-                ({recommendedFeature.runeName} 룬)
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-300 truncate mt-0.5 font-normal">
-              {recommendedFeature.description}
-            </p>
+          {/* B. LucKey 연계 추천 경로 (단 1개만 같은 칸에 배치) */}
+          <div className="sm:border-l sm:border-white/10 sm:pl-2.5 flex items-center justify-between sm:justify-start gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                handleLeapToFeature({
+                  id: recommendedChannel.id,
+                  name: recommendedChannel.name,
+                  shortName: recommendedChannel.shortName,
+                  featureTitle: `${recommendedChannel.name} 전문 채널`,
+                  path: recommendedChannel.path,
+                  iconText: '✨',
+                  runeSymbol: 'ᛟ',
+                  runeName: recommendedChannel.shortName,
+                  color: recommendedChannel.color,
+                  glowColor: recommendedChannel.color,
+                  description: recommendedChannel.tagline,
+                  actionLabel: `${recommendedChannel.shortName} 채널 입장`,
+                  keywords: [],
+                });
+                onSwitchChannel([recommendedChannel.id], false, recommendedChannel.name);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-xs active:scale-95 ${recommendedChannel.badgeClass} ${recommendedChannel.hoverClass}`}
+              title={`[${recommendedChannel.name}] LucKey 채널로 즉시 입장합니다.`}
+            >
+              <RecChannelIcon size={13} className="shrink-0" />
+              <span>{recommendedChannel.shortName} 채널</span>
+              <span className="text-[10px] opacity-75 font-normal">➔</span>
+            </button>
           </div>
         </div>
-
-        <button
-          type="button"
-          disabled={isLeaping}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleLeapToFeature(recommendedFeature);
-          }}
-          className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold text-black shadow-md hover:brightness-110 active:scale-95 transition-all shrink-0 cursor-pointer ${
-            isLeaping ? 'opacity-80 cursor-wait animate-pulse' : ''
-          }`}
-          style={{
-            background: `linear-gradient(135deg, ${recommendedFeature.color}, #f59e0b)`,
-            boxShadow: `0 0 14px ${recommendedFeature.glowColor}`,
-          }}
-          title={`${recommendedFeature.shortName} 기능으로 즉시 도약`}
-        >
-          {isLeaping ? (
-            <>
-              <Sparkles size={12} className="animate-spin text-black" />
-              <span>도약 중...</span>
-            </>
-          ) : (
-            <>
-              <span>{recommendedFeature.actionLabel}</span>
-              <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
-            </>
-          )}
-        </button>
       </div>
     </motion.div>
   );
