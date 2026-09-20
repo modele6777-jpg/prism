@@ -105,15 +105,15 @@
     },
     {
       "source": "/orb",
-      "destination": "/orb.html"
+      "destination": "/index.html"
     },
     {
       "source": "/gateway",
-      "destination": "/orb.html"
+      "destination": "/index.html"
     },
     {
       "source": "/crystal",
-      "destination": "/orb.html"
+      "destination": "/index.html"
     },
     {
       "source": "/((?!api).*)",

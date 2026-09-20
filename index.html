@@ -2,12 +2,12 @@
 <html lang="en">
   <head>
     <script>
-      // 0-A. Instant Orb Gateway PWA Guard & Route Shield
+      // 0-A. Instant Key Gateway Route Shield
       (function() {
         try {
           var p = window.location.pathname;
           if (p === '/orb' || p.startsWith('/orb/') || p === '/gateway' || p === '/crystal') {
-            window.location.replace('/orb.html' + window.location.search + window.location.hash);
+            window.location.replace('/key' + window.location.search + window.location.hash);
           }
         } catch(e) {}
       })();
@@ -275,9 +275,9 @@
     <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <link rel="apple-touch-icon-precomposed" sizes="180x180" href="/apple-touch-icon-precomposed.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon-v2.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-v2.png" />
+    <link rel="apple-touch-icon-precomposed" sizes="180x180" href="/apple-touch-icon-v2.png" />
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="LucKey">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">

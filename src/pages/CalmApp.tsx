@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation } from "wouter";
 import { AnimatePresence, motion } from "motion/react";
 import { KeyCosmicLoader } from "@/components/KeyCosmicLoader";
@@ -8,15 +8,28 @@ export default function CalmApp() {
   const [, navigate] = useLocation();
   const [isLoading, setIsLoading] = useState(true);
   const [iframeLoaded, setIframeLoaded] = useState(false);
-  const [minTimerDone, setMinTimerDone] = useState(false);
+
+  const dismissLoader = useCallback(() => {
+    setIsLoading(false);
+  }, []);
 
   useEffect(() => {
     const prevTitle = document.title;
     document.title = "Key - 40대 불안 치유 연습 & Dr.Z RAG";
 
-    // Forward any pending prism toss payload or navigation to Lucy
+    // Handle messages from iframe (navigation to Lucy, or frame ready signal)
     const handleMessage = (e: MessageEvent) => {
-      if (e.data && e.data.type === "NAVIGATE_LUCKEY") {
+      if (!e.data) return;
+
+      // 1. Frame is ready - dismiss loader immediately without artificial delay
+      if (e.data.type === "CALM_FRAME_READY" || e.data.type === "CALM_READY") {
+        setIframeLoaded(true);
+        setIsLoading(false);
+        return;
+      }
+
+      // 2. Forward pending prism toss payload or navigation to Lucy
+      if (e.data.type === "NAVIGATE_LUCKEY") {
         if (e.data.text) {
           try {
             sessionStorage.setItem('lucy_injected_auto_send', e.data.text);
@@ -28,29 +41,26 @@ export default function CalmApp() {
     };
     window.addEventListener("message", handleMessage);
 
-    // Guaranteed minimum display (1.5 seconds) so the user clearly experiences the Key cosmic loader
-    const minTimer = setTimeout(() => {
-      setMinTimerDone(true);
-    }, 1500);
-
-    // Fallback maximum timer (3.5 seconds) in case iframe onLoad doesn't fire
+    // Guaranteed fallback: maximum 1000ms display so the user is never stuck in infinite loading
     const fallbackTimer = setTimeout(() => {
       setIsLoading(false);
-    }, 3500);
+    }, 1000);
 
     return () => {
-      clearTimeout(minTimer);
       clearTimeout(fallbackTimer);
       document.title = prevTitle;
       window.removeEventListener("message", handleMessage);
     };
   }, [navigate]);
 
-  useEffect(() => {
-    if (minTimerDone && iframeLoaded) {
+  // Once iframe onLoad fires, release loading immediately
+  const handleIFrameLoad = useCallback(() => {
+    setIframeLoaded(true);
+    // Smooth micro-transition: dismiss after short frame flush
+    requestAnimationFrame(() => {
       setIsLoading(false);
-    }
-  }, [minTimerDone, iframeLoaded]);
+    });
+  }, []);
 
   // 전달받은 특정 실천 연습이 있으면 iframe 로드 후 즉시 실행 요청
   useEffect(() => {
@@ -63,13 +73,16 @@ export default function CalmApp() {
           if (exIdx) {
             const timer = setTimeout(() => {
               iframeRef.current?.contentWindow?.postMessage({ type: 'START_PRACTICE', exerciseIdx: exIdx }, '*');
-            }, 350);
+            }, 300);
             return () => clearTimeout(timer);
           }
         }
       } catch (_) {}
     }
   }, [iframeLoaded]);
+
+  const searchParams = typeof window !== 'undefined' ? window.location.search : '';
+  const iframeSrc = `/calm/index.html${searchParams ? searchParams + '&v=30.0' : '?v=30.0'}`;
 
   return (
     <div className="fixed inset-0 w-full h-[100dvh] bg-[#fcf9f5] z-40 overflow-hidden flex flex-col">
@@ -79,8 +92,9 @@ export default function CalmApp() {
             key="key-cosmic-loader"
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.45, ease: "easeInOut" }}
-            className="fixed inset-0 z-50 pointer-events-auto"
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            onClick={dismissLoader}
+            className="fixed inset-0 z-50 flex items-center justify-center cursor-pointer"
           >
             <KeyCosmicLoader
               fullScreen
@@ -92,13 +106,11 @@ export default function CalmApp() {
       </AnimatePresence>
       <iframe
         ref={iframeRef}
-        src={`/calm/index.html${typeof window !== 'undefined' ? window.location.search : ''}`}
+        src={iframeSrc}
         title="Key"
         className="w-full h-full border-0 m-0 p-0 flex-1"
         allow="autoplay; microphone"
-        onLoad={() => {
-          setIframeLoaded(true);
-        }}
+        onLoad={handleIFrameLoad}
       />
     </div>
   );

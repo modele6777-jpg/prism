@@ -147,7 +147,7 @@ export default defineConfig(({mode}) => {
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
           navigateFallback: 'index.html',
-          navigateFallbackDenylist: [/^\/chat/, /^\/lucy/, /^\/handbook/, /^\/rebible/],
+          navigateFallbackDenylist: [/^\/chat/, /^\/lucy/, /^\/handbook/, /^\/rebible/, /^\/calm/, /^\/key/, /^\/orb/],
           cleanupOutdatedCaches: true,
           clientsClaim: true,
           skipWaiting: true,
@@ -159,7 +159,9 @@ export default defineConfig(({mode}) => {
                 request.destination === 'document' &&
                 !url.pathname.startsWith('/chat') &&
                 !url.pathname.startsWith('/lucy') &&
-                !url.pathname.startsWith('/handbook'),
+                !url.pathname.startsWith('/handbook') &&
+                !url.pathname.startsWith('/calm') &&
+                !url.pathname.startsWith('/key'),
               handler: 'NetworkFirst',
               options: {
                 cacheName: 'prism-html',

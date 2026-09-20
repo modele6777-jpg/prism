@@ -293,25 +293,13 @@ function AppContent() {
     }
   }, [isUnlocked, sharedState?.themeColor]);
 
-  if (!isAuthReady || !appEntranceDone) {
-    if (location === '/chat' || location === '/lucy') {
-      return (
-        <LucyAuraLoader
-          fullScreen
-          message="루시와 행운의 깊은 교감 조율 중..."
-          subMessage="FOUR-LEAF CLOVER · FORTUNE & INTUITION"
-        />
-      );
-    }
-    if (location === '/key' || location === '/calm' || location === '/orb') {
-      return (
-        <KeyCosmicLoader
-          fullScreen
-          message="Key 마음약방 처방 조율 중..."
-          subMessage="40 CALM PRACTICES & CLINICAL SOMATIC RAG"
-        />
-      );
-    }
+  const isStandaloneChat = location === '/chat' || location === '/lucy' || location === '/handbook' || location === '/rebible' || location === '/orb' || location === '/gateway' || location === '/crystal' || location === '/key' || location === '/calm';
+  const isOrbSite = location === '/orb' || location === '/gateway' || location === '/crystal';
+  const isCalmSite = location === '/calm' || location === '/key';
+  const isChatView = location === '/chat' || location === '/lucy';
+
+  // Standalone routes bypass full auth gating immediately so they never hang on key/calm/chat entry
+  if ((!isAuthReady || !appEntranceDone) && !isStandaloneChat) {
     return (
       <PrismRainbowLoader
         fullScreen
@@ -328,11 +316,6 @@ function AppContent() {
       return false;
     }
   })();
-
-  const isStandaloneChat = location === '/chat' || location === '/lucy' || location === '/handbook' || location === '/rebible' || location === '/orb' || location === '/gateway' || location === '/crystal' || location === '/key' || location === '/calm';
-  const isOrbSite = location === '/orb' || location === '/gateway' || location === '/crystal';
-  const isCalmSite = location === '/calm' || location === '/key';
-  const isChatView = location === '/chat' || location === '/lucy';
 
   if (!firebaseUser && !isStandaloneChat) {
     return (
