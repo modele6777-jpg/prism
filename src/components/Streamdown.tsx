@@ -98,6 +98,9 @@ function replaceEmotionWithEmoji(text: string): string {
     return ` ${getEmotionEmoji(p1)} `;
   });
 
+  // 4. Clean runaway degenerate repeating tokens (e.g. "shame shame shame...")
+  res = res.replace(/\b([a-zA-Z가-힣]{2,})\b(?:\s*[,.\s-]*\s*\1){3,}/gi, "");
+
   return res;
 }
 

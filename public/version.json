@@ -1,14 +1,13 @@
 {
   "name": "luckey",
-  "version": "1.2.999",
-  "summary": "Key의 '지금 책 몇 쪽을 읽고 계신가요?' 제거, '루시에게 질문하기' 즉시 이동 및 루시-Key 상호 연습 추천 연동 완성",
-  "builtAt": "2026-09-20T02:03:00.000Z",
+  "version": "1.3.0",
+  "summary": "LLM 무한 반복(Degeneration Loop) 방어 차단기, 토큰 상한 보호(maxOutputTokens 800) 및 감정 태그 누출 실시간 필터 구축",
+  "builtAt": "2026-09-20T02:14:00.000Z",
   "items": [
-    "🔖 책 동기화 바 제거: public/calm/index.html에서 '지금 책 몇 쪽을 읽고 계신가요?' 섹션을 완전히 제거하고 산뜻한 연습 실천 카드로 개편",
-    "💬 '루시에게 질문하기' 원클릭 연동: Dr. Z 질문하기 버튼들을 '루시에게 질문하기'로 변경하고, 클릭 시 루시 채팅(/chat)으로 자동 이동하여 해당 실천 내용 및 질문이 즉시 전송되도록 구현",
-    "🔄 루시-Key 상호 실천 추천 연동: 루시 채팅 시스템 프롬프트에 Key 마음약방 40가지 불안 치유 연습 연동 지침을 추가하여, 불안·스트레스 호소 시 적합한 연습과 바로가기 링크를 추천하도록 구현",
-    "🌟 루시 추천 반응 위젯 Key 통합: LucyResponseRecommendation의 추천 기능 목록에 'KEY 마음약방 40가지 불안 치유 연습실' 도약 카드를 공식 배치하여 원클릭으로 Key 연습실 이동 지원",
-    "📨 iframe-SPA 메시지 브릿지 확장: CalmApp.tsx의 NAVIGATE_LUCKEY 메시지 수신부에 질의 텍스트 자동 주입 로직을 연동하여 매끄러운 크로스 앱 데이터 전달 완성"
+    "🛡️ 실시간 반복 감지 차단기(Circuit Breaker) 구축: 스트리밍 수신 중 동일 단어 4회 이상 연속 반복 시 즉시 스트림을 강제 중단하고 깔끔한 문맥으로 복원",
+    "⚡ 토큰 폭주 방지 maxOutputTokens 상한 설정: Gemini 및 OpenAI 스트리밍에 maxOutputTokens: 800 및 presence/frequency 페널티를 적용하여 의도치 않은 토큰 할당량 소모 원천 차단",
+    "🧹 UI 디스플레이 정제 필터 강화: cleanChatDisplayText 및 Streamdown에 비정상 토큰 루프 제거 필터를 추가하여 화면 상에 불필요한 반복 단어가 절대 노출되지 않도록 보장",
+    "💬 루시 마음 회복 대체 응답 연결: 토큰 루프로 인해 텍스트가 유실될 경우 부드럽고 따뜻한 위로 문장으로 자동 대체 처리"
   ],
   "author": "Antigravity AI Agent",
   "buildEnvironment": "cloud-run"

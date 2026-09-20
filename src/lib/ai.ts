@@ -518,11 +518,39 @@ const EPILOGUE_FALLBACK_MARKERS = [
   "기본 요약을 표시했습니다",
   "AI 요약 생성에 실패",
 ] as const;
+/**
+ * Real-time Repetition / Degeneration Loop Detector
+ * Detects runaway token repetition (e.g. "shame shame shame shame..." or short phrase looping)
+ */
+export function checkRepetitionLoop(text: string): { isLoop: boolean; cleaned: string } {
+  if (!text || text.length < 12) return { isLoop: false, cleaned: text };
+
+  // 1. Single word repeated 4+ times consecutively (e.g., "shame shame shame shame")
+  const wordRepetitionRegex = /\b([a-zA-Z가-힣]{2,})\b(?:\s*[,.\s-]*\s*\1){3,}/i;
+  const wordMatch = wordRepetitionRegex.exec(text);
+  if (wordMatch) {
+    const cutIndex = wordMatch.index;
+    const cleaned = text.slice(0, cutIndex).trim();
+    return { isLoop: true, cleaned };
+  }
+
+  // 2. Short phrase (2~4 words) repeated 3+ times
+  const phraseRepetitionRegex = /((?:[a-zA-Z가-힣0-9]{2,}\s+){1,4}[a-zA-Z가-힣0-9]{2,})(?:\s*[,.\s-]*\s*\1){2,}/i;
+  const phraseMatch = phraseRepetitionRegex.exec(text);
+  if (phraseMatch) {
+    const cutIndex = phraseMatch.index;
+    const cleaned = text.slice(0, cutIndex).trim();
+    return { isLoop: true, cleaned };
+  }
+
+  return { isLoop: false, cleaned: text };
+}
 
 export function extractChatCompletionText(content: unknown): string {
-  if (typeof content === "string") return content.trim();
-  if (Array.isArray(content)) {
-    return content
+  let raw = "";
+  if (typeof content === "string") raw = content.trim();
+  else if (Array.isArray(content)) {
+    raw = content
       .map((part) => {
         if (typeof part === "string") return part;
         if (part && typeof part === "object" && "text" in part) {
@@ -533,7 +561,9 @@ export function extractChatCompletionText(content: unknown): string {
       .join("")
       .trim();
   }
-  return "";
+  if (!raw) return "";
+  const loopCheck = checkRepetitionLoop(raw);
+  return loopCheck.isLoop ? (loopCheck.cleaned || "마음속에 무거운 감정이 밀려왔나 봐. 천천히 숨을 고르고, 편안하게 이야기해 줘.") : raw;
 }
 
 export function isFallbackEpilogueSummary(summary: string | undefined | null): boolean {
@@ -1113,6 +1143,7 @@ async function invokeLLMStreamInner(params: {
             config: {
               systemInstruction: systemMessage?.content as string,
               temperature: 0.7,
+              maxOutputTokens: 800,
             }
           });
 
@@ -1120,6 +1151,13 @@ async function invokeLLMStreamInner(params: {
           for await (const chunk of responseStream) {
             const chunkText = chunk.text || "";
             if (chunkText) {
+              const candidate = fullContent + chunkText;
+              const loopCheck = checkRepetitionLoop(candidate);
+              if (loopCheck.isLoop) {
+                console.warn("[invokeLLMStream] Degeneration Loop detected in Gemini stream! Tripping circuit breaker.");
+                fullContent = loopCheck.cleaned || "마음속에 무거운 감정이 밀려왔나 봐. 천천히 숨을 고르고, 편안하게 이야기해 줘.";
+                break;
+              }
               fullContent += chunkText;
               hasEmittedToCaller = true;
               params.onChunk(chunkText);
@@ -1127,8 +1165,9 @@ async function invokeLLMStreamInner(params: {
           }
 
           if (fullContent && fullContent.trim().length > 0) {
-            params.onFinish?.(fullContent);
-            return fullContent;
+            const finalCleaned = checkRepetitionLoop(fullContent).cleaned || "마음속에 무거운 감정이 밀려왔나 봐. 천천히 숨을 고르고, 편안하게 이야기해 줘.";
+            params.onFinish?.(finalCleaned);
+            return finalCleaned;
           }
         } catch (streamModelErr: any) {
           console.warn(`[invokeLLMStream] Gemini stream model ${currentModel} error:`, streamModelErr?.message || streamModelErr);
@@ -1175,6 +1214,9 @@ async function invokeLLMStreamInner(params: {
               messages,
               stream: true,
               temperature: 0.7,
+              max_tokens: 800,
+              presence_penalty: 0.3,
+              frequency_penalty: 0.5,
             }),
             signal: streamController.signal,
           });
@@ -1291,6 +1333,15 @@ async function invokeLLMStreamInner(params: {
                   const parsed = JSON.parse(dataStr);
                   const content = parsed.choices?.[0]?.delta?.content || "";
                   if (content) {
+                    const candidate = fullContent + content;
+                    const loopCheck = checkRepetitionLoop(candidate);
+                    if (loopCheck.isLoop) {
+                      console.warn("[invokeLLMStream] Degeneration Loop detected in OpenAI stream! Tripping circuit breaker.");
+                      fullContent = loopCheck.cleaned || "마음속에 무거운 감정이 밀려왔나 봐. 천천히 숨을 고르고, 편안하게 이야기해 줘.";
+                      isDone = true;
+                      try { await reader.cancel(); } catch (_) {}
+                      break;
+                    }
                     fullContent += content;
                     params.onChunk(content);
                   }
@@ -1311,8 +1362,14 @@ async function invokeLLMStreamInner(params: {
                   const parsed = JSON.parse(dataStr);
                   const content = parsed.choices?.[0]?.delta?.content || "";
                   if (content) {
-                    fullContent += content;
-                    params.onChunk(content);
+                    const candidate = fullContent + content;
+                    const loopCheck = checkRepetitionLoop(candidate);
+                    if (loopCheck.isLoop) {
+                      fullContent = loopCheck.cleaned || "마음속에 무거운 감정이 밀려왔나 봐. 천천히 숨을 고르고, 편안하게 이야기해 줘.";
+                    } else {
+                      fullContent += content;
+                      params.onChunk(content);
+                    }
                   }
                 } catch (e) {}
               }
@@ -1324,10 +1381,9 @@ async function invokeLLMStreamInner(params: {
       }
 
       if (fullContent && fullContent.trim().length > 0) {
-        if (params.onFinish) {
-          params.onFinish(fullContent);
-        }
-        return fullContent;
+        const finalCleaned = checkRepetitionLoop(fullContent).cleaned || "마음속에 무거운 감정이 밀려왔나 봐. 천천히 숨을 고르고, 편안하게 이야기해 줘.";
+        params.onFinish?.(finalCleaned);
+        return finalCleaned;
       }
     } catch (e: any) {
       console.warn(`[invokeLLMStream] Streaming model ${modelName} failed:`, e?.message || e);

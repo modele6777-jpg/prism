@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.3.0",
+    "summary": "LLM 무한 반복(Degeneration Loop) 방어 차단기, 토큰 상한 보호(maxOutputTokens 800) 및 감정 태그 누출 실시간 필터 구축",
+    "builtAt": "2026-09-20T02:14:00.000Z",
+    "items": [
+      "🛡️ 실시간 반복 감지 차단기(Circuit Breaker) 구축: 스트리밍 수신 중 동일 단어 4회 이상 연속 반복 시 즉시 스트림을 강제 중단하고 깔끔한 문맥으로 복원",
+      "⚡ 토큰 폭주 방지 maxOutputTokens 상한 설정: Gemini 및 OpenAI 스트리밍에 maxOutputTokens: 800 및 presence/frequency 페널티를 적용하여 의도치 않은 토큰 할당량 소모 원천 차단",
+      "🧹 UI 디스플레이 정제 필터 강화: cleanChatDisplayText 및 Streamdown에 비정상 토큰 루프 제거 필터를 추가하여 화면 상에 불필요한 반복 단어가 절대 노출되지 않도록 보장",
+      "💬 루시 마음 회복 대체 응답 연결: 토큰 루프로 인해 텍스트가 유실될 경우 부드럽고 따뜻한 위로 문장으로 자동 대체 처리"
+    ]
+  },
+  {
     "version": "1.2.999",
     "summary": "Key의 '지금 책 몇 쪽을 읽고 계신가요?' 제거, '루시에게 질문하기' 즉시 이동 및 루시-Key 상호 연습 추천 연동 완성",
     "builtAt": "2026-09-20T02:03:00.000Z",
