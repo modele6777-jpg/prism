@@ -7,7 +7,7 @@ export default function CalmApp() {
 
   useEffect(() => {
     const prevTitle = document.title;
-    document.title = "CALM 마음약방 - 40대 불안 치유 연습 & Dr.Z RAG";
+    document.title = "Key - 40대 불안 치유 연습 & Dr.Z RAG";
 
     // Forward any pending prism toss payload to calm iframe
     const handleMessage = (e: MessageEvent) => {
@@ -28,7 +28,7 @@ export default function CalmApp() {
       <iframe
         ref={iframeRef}
         src="/calm/"
-        title="CALM 마음약방"
+        title="Key"
         className="w-full h-full border-0 m-0 p-0 flex-1"
         allow="autoplay; microphone"
       />

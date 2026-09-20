@@ -1,15 +1,14 @@
 {
   "name": "luckey",
-  "version": "1.2.993",
-  "summary": "CALM 마음약방(40대 불안 치유 연습 & Dr.Z RAG)을 기존 Key 자리에 무손실 그대로 연동 이관",
-  "builtAt": "2026-09-20T01:15:00.000Z",
+  "version": "1.2.994",
+  "summary": "마음약방 애플리케이션의 타이틀 및 브랜딩 명칭을 Key로 공식 변경",
+  "builtAt": "2026-09-20T01:18:00.000Z",
   "items": [
-    "🧘 CALM 원작 애플리케이션 무손실 통합: CALM의 40대 마음 치유 실천 기법, 10대 가르침, 사운드스케이프 오디오 신디사이저, 앰비언트 플레이어를 /calm 정적 라우트 및 CalmApp 통합 뷰로 100% 무손실 이관",
-    "🔑 기존 Key 경로 자동 리다이렉트 및 라우트 연결: /key 및 /key/ 접근 시 즉시 CALM 마음약방(/calm)으로 이동하도록 Express 백엔드 및 클라이언트 라우터 완벽 연동",
-    "🤖 Dr. Z 3단계 내면 평화 AI 상담 & RAG 서버 연동: Somatic-ACIM-ACT 기반의 Dr. Z 상담 엔진(Gemini / OpenAI fallback) 및 도서 RAG 지식 검색 엔드포인트(/api/chat, /api/exercises, /api/book-info) 완벽 탑재",
-    "🎙️ 고품질 Gemini TTS 음성 생성 및 PCM 변환 캐싱: 마음 챙김 가이드 및 기법 오디오 생성을 위한 서버 사이드 Gemini TTS (/api/tts) 및 캐시 저장소 구축",
-    "🌌 프리즘 토스(Toss) & 옴니워프(Omniwarp) 생태계 통합: CALM 마음약방을 Prism 라우트 레지스트리 및 토스 데스티네이션(calm / key)으로 등록하여 언제 어디서나 바로 처방 화면으로 이동 가능",
-    "🍀 LucKey 홈 복귀 내비게이션 탑재: CALM 상단 헤더에 LucKey 홈으로 바로 복귀할 수 있는 전용 홈 버튼 추가"
+    "🔑 Key 공식 타이틀 전면 적용: public/calm/index.html의 <title>, 메타 태그, 상단 스티키 내비게이션 브랜딩 텍스트를 'Key'로 변경",
+    "📱 PWA 매니페스트 및 북마크 명칭 업데이트: public/calm/manifest.json의 name 및 short_name을 'Key'로 갱신",
+    "🖼️ 도서 표지 상대 경로 버그 수정: 책 표지 이미지 src를 relative path(./book-cover.jpg)로 수정하여 서브 디렉토리 렌더링 보장",
+    "🌐 라우트 및 토스 레지스트리 동기화: prismRouteRegistry 및 prismTossRegistry 내 대표 명칭을 'Key' 및 🔑 아이콘으로 통합 정비",
+    "📄 임베디드 뷰 타이틀 갱신: CalmApp.tsx의 document.title 및 iframe 타이틀을 'Key'로 통일"
   ],
   "author": "Antigravity AI Agent",
   "buildEnvironment": "cloud-run"

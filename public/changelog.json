@@ -1,5 +1,17 @@
 [
   {
+    "version": "1.2.994",
+    "summary": "마음약방 애플리케이션의 타이틀 및 브랜딩 명칭을 Key로 공식 변경",
+    "builtAt": "2026-09-20T01:18:00.000Z",
+    "items": [
+      "🔑 Key 공식 타이틀 전면 적용: public/calm/index.html의 <title>, 메타 태그, 상단 스티키 내비게이션 브랜딩 텍스트를 'Key'로 변경",
+      "📱 PWA 매니페스트 및 북마크 명칭 업데이트: public/calm/manifest.json의 name 및 short_name을 'Key'로 갱신",
+      "🖼️ 도서 표지 상대 경로 버그 수정: 책 표지 이미지 src를 relative path(./book-cover.jpg)로 수정하여 서브 디렉토리 렌더링 보장",
+      "🌐 라우트 및 토스 레지스트리 동기화: prismRouteRegistry 및 prismTossRegistry 내 대표 명칭을 'Key' 및 🔑 아이콘으로 통합 정비",
+      "📄 임베디드 뷰 타이틀 갱신: CalmApp.tsx의 document.title 및 iframe 타이틀을 'Key'로 통일"
+    ]
+  },
+  {
     "version": "1.2.993",
     "summary": "CALM 마음약방(40대 불안 치유 연습 & Dr.Z RAG)을 기존 Key 자리에 무손실 그대로 연동 이관",
     "builtAt": "2026-09-20T01:15:00.000Z",
