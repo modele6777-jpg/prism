@@ -846,5 +846,46 @@
   <script src="./teachings-data.js?v=29.0"></script>
   <script src="./audio-synth.js?v=29.0"></script>
   <script src="./app.js?v=29.0"></script>
+  <!-- Standalone Mode Fallback: BigBang button and BGM Player if opened directly outside iframe -->
+  <script>
+    (function() {
+      if (window.self !== window.top) return;
+      
+      // 1. Standalone BigBang Button
+      var bbBtn = document.createElement('div');
+      bbBtn.id = 'standalone-bigbang-button';
+      bbBtn.innerHTML = `
+        <button type="button" aria-label="빅뱅 버튼 · 프리즘 홈 복귀" style="width: 68px; height: 68px; border-radius: 9999px; background: radial-gradient(circle at 40% 35%, #38bdf8 0%, #0284c7 45%, #030514 100%); border: 2px solid rgba(56, 189, 248, 0.6); box-shadow: 0 0 24px rgba(56, 189, 248, 0.4), inset 0 0 16px rgba(255, 255, 255, 0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; outline: none; position: relative; overflow: hidden;">
+          <span style="position: relative; z-index: 10; font-size: 24px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));">🌀</span>
+          <span style="position: relative; z-index: 10; font-size: 8px; font-weight: 800; color: #ffffff; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 1px;">Home</span>
+        </button>
+      `;
+      bbBtn.style.cssText = 'position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); z-index: 9999; pointer-events: auto; display: flex; align-items: center; justify-content: center;';
+      bbBtn.querySelector('button').addEventListener('click', function() {
+        window.location.href = '/';
+      });
+      document.body.appendChild(bbBtn);
+
+      // 2. Standalone BgMusic Button (top-right vinyl disc)
+      var bgmBtn = document.createElement('div');
+      bgmBtn.id = 'standalone-bgm-button';
+      bgmBtn.innerHTML = `
+        <button type="button" aria-label="배경음 버튼" style="width: 42px; height: 42px; border-radius: 9999px; background: #0f172a; border: 1.5px solid rgba(255,255,255,0.25); box-shadow: 0 4px 14px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; outline: none;">
+          <span style="font-size: 18px; display: inline-block;">💿</span>
+        </button>
+      `;
+      bgmBtn.style.cssText = 'position: fixed; top: calc(env(safe-area-inset-top, 0px) + 12px); right: 16px; z-index: 9999; pointer-events: auto;';
+      var isPlaying = false;
+      bgmBtn.querySelector('button').addEventListener('click', function() {
+        var firstSound = document.querySelector('.sound-btn[data-sound="ocean"]') || document.querySelector('.sound-btn');
+        if (firstSound) {
+          firstSound.click();
+          isPlaying = !isPlaying;
+          bgmBtn.querySelector('span').style.animation = isPlaying ? 'spin 3s linear infinite' : 'none';
+        }
+      });
+      document.body.appendChild(bgmBtn);
+    })();
+  </script>
 </body>
 </html>

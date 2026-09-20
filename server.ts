@@ -2181,15 +2181,24 @@ self.addEventListener('activate', (e) => {
         const handbookPath = path.join(distPath, 'handbook.html');
         if (fs.existsSync(handbookPath)) return res.sendFile(handbookPath);
       }
-      if (req.path.startsWith('/calm')) {
+      // Serve static assets for calm iframe (e.g. /calm/index.html, /calm/style.css, /calm/app.js)
+      if (req.path === '/calm/index.html') {
         const calmPath = path.join(distPath, 'calm', 'index.html');
         if (fs.existsSync(calmPath)) return res.sendFile(calmPath);
         const devCalmPath = path.join(process.cwd(), 'public', 'calm', 'index.html');
         if (fs.existsSync(devCalmPath)) return res.sendFile(devCalmPath);
       }
-      if (req.path === '/key' || req.path === '/key/' || req.path.startsWith('/orb') || req.path.startsWith('/gateway') || req.path.startsWith('/crystal')) {
-        return res.redirect(302, '/calm/');
+      if (req.path.startsWith('/calm/') && req.path !== '/calm/' && !req.path.endsWith('.html')) {
+        const filePath = path.join(distPath, req.path);
+        if (fs.existsSync(filePath)) return res.sendFile(filePath);
+        const devFilePath = path.join(process.cwd(), 'public', req.path);
+        if (fs.existsSync(devFilePath)) return res.sendFile(devFilePath);
       }
+      // Direct browser navigation to /calm, /orb, /gateway, /crystal routes to /key in React SPA
+      if (req.path === '/calm' || req.path === '/calm/' || req.path.startsWith('/orb') || req.path.startsWith('/gateway') || req.path.startsWith('/crystal')) {
+        return res.redirect(302, '/key');
+      }
+      // /key and all other routes load the main React SPA (dist/index.html) with BigBangButton & BgMusicPlayer
       return res.sendFile(path.join(distPath, 'index.html'));
     });
   }

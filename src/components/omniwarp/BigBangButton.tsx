@@ -849,10 +849,10 @@ export function BigBangButton() {
         // Key 사이트 들어가기 -> /key 입장 & 토스 수신
         const currentPath = location || '/';
         safeSessionStorage.setItem('prism_key_return_path', currentPath);
+        navigate('/key');
         if (typeof window !== 'undefined') {
-          window.location.href = '/key';
-        } else {
-          navigate('/key');
+          window.dispatchEvent(new CustomEvent('prism-navigate', { detail: { path: '/key' } }));
+          window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: '/key' } }));
         }
       }
     }, 240);

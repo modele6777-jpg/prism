@@ -1,5 +1,17 @@
 [
   {
+    "version": "1.2.998",
+    "summary": "Key 화면에서 빅뱅 버튼 및 배경음(BGM) 버튼 상시 표출 보장 및 SPA 라우팅 완벽 연동",
+    "builtAt": "2026-09-20T02:00:00.000Z",
+    "items": [
+      "🚀 서버 라우팅 정상화: server.ts에서 /key 접근 시 정적 /calm/으로 302 리다이렉트하여 React SPA를 벗어나던 문제를 수정, /key 진입 시 메인 React SPA를 서비스하여 빅뱅 버튼과 배경음 플레이어가 온전히 표출되도록 해결",
+      "🌀 빅뱅 버튼 Key 진입 SPA 네비게이션: BigBangButton에서 Key 입장 시 window.location.href 하드 리로드 대신 navigate('/key')를 실행하여 전체 프리즘 셸 컨텍스트 유지",
+      "💿 상단 배경음(BGM) 버튼 레이아웃 여백 확보: public/calm/style.css의 .nav-actions에 padding-right(64px)를 추가하여 우측 상단 LP 레코드 디스크 플레이어와 상단 네비 버튼 간 겹침 방지",
+      "📱 하단 빅뱅 버튼 스크롤 여백 확보: public/calm/style.css body에 padding-bottom(110px)을 지정하여 최하단 콘텐츠가 빅뱅 버튼에 가려지지 않도록 최적화",
+      "🛡️ 단독 실행 시 폴백 위젯 지원: /calm/index.html을 단독으로 열었을 때도 빅뱅 버튼과 배경음 제어 버튼이 자동으로 표시되어 홈 귀환 및 사운드 조작 지원"
+    ]
+  },
+  {
     "version": "1.2.997",
     "summary": "Key 브랜딩 대소문자 표기('Key') 완전 정상화 및 Key 전용 3D 크리스탈 우주 로더 노출 복원",
     "builtAt": "2026-09-20T01:53:00.000Z",

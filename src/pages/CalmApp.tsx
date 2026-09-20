@@ -67,7 +67,7 @@ export default function CalmApp() {
       </AnimatePresence>
       <iframe
         ref={iframeRef}
-        src="/calm/"
+        src="/calm/index.html"
         title="Key"
         className="w-full h-full border-0 m-0 p-0 flex-1"
         allow="autoplay; microphone"

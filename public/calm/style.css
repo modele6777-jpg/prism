@@ -75,6 +75,7 @@ body {
   position: relative;
   overscroll-behavior-x: none;
   touch-action: pan-y pinch-zoom;
+  padding-bottom: 110px; /* Leave space for BigBang button at bottom center */
 }
 
 button, a, input, textarea, select {
@@ -329,6 +330,7 @@ button, a, input, textarea, select {
   display: flex;
   align-items: center;
   gap: 10px;
+  padding-right: 64px; /* Space for the floating BgMusicPlayer (LP Vinyl Disc) */
 }
 
 .nav-btn {
@@ -2624,6 +2626,7 @@ button, a, input, textarea, select {
 
   .nav-actions {
     gap: 6px;
+    padding-right: 54px;
   }
 
   .nav-btn {
