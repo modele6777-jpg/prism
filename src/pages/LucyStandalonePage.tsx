@@ -1473,10 +1473,11 @@ export default function LucyStandalonePage() {
                           isLatest={index === filteredMessages.length - 1}
                           isGenerating={isLucyGenerating && index === filteredMessages.length - 1}
                         />
-                        {/* 🔮 LucKey 연계 추천 채널 및 Key 실천 도약 바: 나갔다 들어와도 영구 보존 */}
+                        {/* 🔮 LucKey 연계 추천 채널 및 Key 실천 도약 바: 수다모드에서는 생략, 전문 모드에서만 유지 */}
                         {(!isLucyGenerating || index < filteredMessages.length - 1) &&
                           textContent &&
-                          textContent.trim().length > 10 && (
+                          textContent.trim().length > 10 &&
+                          !msgModeInfo.isCasual && (
                           <div className="mt-2.5">
                             <LucyResponseRecommendation
                               userQuery={(() => {
@@ -1490,7 +1491,7 @@ export default function LucyStandalonePage() {
                               })()}
                               lucyAnswer={textContent}
                               currentChannels={activeChannels}
-                              isCasual={false}
+                              isCasual={msgModeInfo.isCasual}
                               onSwitchChannel={(channels, isMaster, label) => handleActivateMessageMode(channels, isMaster, label)}
                               onNavigate={(path) => navigate(path)}
                             />

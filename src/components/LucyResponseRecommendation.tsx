@@ -233,22 +233,60 @@ export function LucyResponseRecommendation({
   userQuery = '',
   lucyAnswer,
   currentChannels = [],
-  isCasual: _isCasual = false,
+  isCasual = false,
   onSwitchChannel,
   onNavigate,
 }: LucyResponseRecommendationProps) {
   const [isLeaping, setIsLeaping] = useState(false);
 
-  // 답변 텍스트가 10자 이상인 경우 항시 추천 제공 (나갔다 들어와도 유지)
+  // 1. 수다 모드(isCasual)에서는 기법 추천과 채널 추천을 전면 생략 (사용자 지정 규칙)
+  if (isCasual) {
+    return null;
+  }
+
+  // 답변 텍스트가 10자 미만인 경우 추천 생략
   if (!lucyAnswer || lucyAnswer.trim().length < 10) {
     return null;
   }
 
-  // 1. 맥락 분석을 통해 최적의 단일 추천 채널 및 Key 실천 기법 도출
+  // 2. 질문과 답변의 맥락 정밀 분석을 통해 최적의 단일 추천 채널 및 Key 실천 기법 도출
   const { recommendedChannel, recommendedFeature, themeReason } = useMemo(() => {
-    const combined = `${userQuery} ${lucyAnswer}`.toLowerCase();
+    const cleanUser = (userQuery || '').toLowerCase();
+    const cleanLucy = (lucyAnswer || '').toLowerCase();
 
-    // 채널 점수 계산
+    // 40대 Key 마음약방 실천 연습 중 맥락에 가장 부합하는 1개 기법 먼저 정밀 추출
+    const bestEx = findBestKeyExercise(cleanUser, cleanLucy);
+
+    // 각 채널별 정밀 도메인 키워드 사전
+    const CHANNEL_KEYWORDS: Record<SpecialChannel, string[]> = {
+      orange: [
+        '전략', '1원칙', '분석', '계획', '의사결정', '선택', '판단', '로드맵', '우선순위',
+        '해결책', '대안', '원인', '성찰', '이성', '논리', '체계', '소원', '우물', '소망',
+        '동기', '목표', '성공', '커리어', '진로', '사업', '비즈니스', '투자', '취업', '효율', '실행방안'
+      ],
+      trinity: [
+        '사주', '타로', '운명', '운세', '미래', '점괘', '카드', '오라클', '신탁', '동시성',
+        '천간', '지지', '대운', '오행', '목화토금수', '사주팔자', '명리', '무의식', '영혼',
+        '상징', '인연', '전생', '우주', '직관', '예감', '점', '팔자', '별자리', '운의흐름'
+      ],
+      aura: [
+        '호흡', '방하착', '내려놓기', '세도나', '신체', '몸', '피로', '수면', '잠', '불면',
+        '이완', '명상', '스트레스', '긴장', '두통', '근육', '어깨', '목', '체력', '건강',
+        '휴식', '쉼', '맥박', '심장', '가슴답답', '숨가쁨', '과호흡', '굳음', '몸살', '지침', '탈진'
+      ],
+      bluebird: [
+        '위로', '정화', '호오포노포노', '미안', '용서', '고마워', '사랑해', '상처', '슬픔',
+        '눈물', '울음', '외로움', '우울', '힘들', '속상', '괴로', '내면아이', '따뜻', '포옹',
+        '마음치유', '토닥', '비밀쪽지', '상실', '이별', '공감', '서러움', '가슴아픔', '마음'
+      ],
+      muse: [
+        '예술', '명화', '그림', '미술', '음악', '노래', '클래식', '명곡', '시', '시구',
+        '작시', '영감', '창작', '글쓰기', '문장', '표현', '아이디어', '카피', '감성', '감수성',
+        '도슨트', '박물관', '전시', '아름다움', '뮤즈', '낭만', '예술치유', '선율'
+      ],
+    };
+
+    // 채널 점수 계산 (사용자 질문 가중치 6점 / 루시 답변 가중치 3점)
     const channelScores: Record<SpecialChannel, number> = {
       orange: 0,
       trinity: 0,
@@ -257,26 +295,51 @@ export function LucyResponseRecommendation({
       muse: 0,
     };
 
-    // 오렌지 (전략, 1원칙, 선택, 분석, 소원)
-    if (/1원칙|전략|계획|로드맵|분석|선택|판단|의사결정|원인|소원|소망/.test(combined)) channelScores.orange += 3;
-    // 트리니티 (사주, 타로, 운명, 미래, 운세, 동시성)
-    if (/사주|타로|운명|미래|운세|카드|점괘|대운|천간|지지|동시성/.test(combined)) channelScores.trinity += 3;
-    // 아우라 (호흡, 신체, 피로, 명상, 방하착, 수면, 몸, 이완)
-    if (/호흡|신체|몸|피로|수면|잠|이완|명상|방하착|세도나|스트레스/.test(combined)) channelScores.aura += 3;
-    // 블루버드 (위로, 정화, 호오포노포노, 슬픔, 눈물, 상처, 내면아이, 포옹)
-    if (/위로|정화|호오포노포노|슬픔|눈물|상처|외로|힘들|따뜻|내면아이/.test(combined)) channelScores.bluebird += 3;
-    // 뮤즈 (예술, 영감, 창작, 글쓰기, 시, 음악, 그림, 명화, 카피)
-    if (/예술|영감|창작|글쓰기|시|음악|그림|명화|카피|명곡|클래식/.test(combined)) channelScores.muse += 3;
+    (Object.keys(CHANNEL_KEYWORDS) as SpecialChannel[]).forEach((ch) => {
+      const kws = CHANNEL_KEYWORDS[ch];
+      for (const kw of kws) {
+        if (cleanUser.includes(kw)) channelScores[ch] += 6;
+        if (cleanLucy.includes(kw)) channelScores[ch] += 3;
+      }
+      // 현재 대화 채널과의 연속성 보너스 (+4)
+      if (currentChannels.includes(ch)) {
+        channelScores[ch] += 4;
+      }
+    });
 
-    // 단 1개의 최적 추천 채널 선정
+    // 매칭된 Key 연습의 도메인과 LucKey 채널 시너지 연계 가중치 부여
+    const exIdx = bestEx.globalIndex;
+    if ([13, 14, 15, 16, 17, 18, 20, 21].includes(exIdx)) {
+      // 신체 감각, 호흡, 이완, 근육 긴장 -> 아우라 채널
+      channelScores.aura += 12;
+    } else if ([9, 23, 24, 28, 32, 33, 35].includes(exIdx)) {
+      // 내면아이, 슬픔, 위로, 수용, 감정 정화 -> 블루버드 채널
+      channelScores.bluebird += 12;
+    } else if ([1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 22, 25, 26, 27, 29, 30, 31, 34, 39, 40].includes(exIdx)) {
+      // 전략적 사고, 우선순위, 가치 행동, 인지 재구성 -> 오렌지 채널
+      channelScores.orange += 12;
+    } else if ([36, 37, 38].includes(exIdx)) {
+      // 예기불안, 미래 통찰 -> 트리니티 및 오렌지
+      channelScores.trinity += 8;
+      channelScores.orange += 6;
+    }
+
+    // 최고 득점 단 1개의 최적 추천 채널 선정
     const sortedChannels = (Object.keys(channelScores) as SpecialChannel[]).sort(
       (a, b) => channelScores[b] - channelScores[a]
     );
-    const topChannelKey = channelScores[sortedChannels[0]] > 0 ? sortedChannels[0] : 'trinity';
+
+    // 모든 채널 점수가 0인 경우에도 Key 연습의 성격에 맞는 자연스러운 채널 도출
+    let topChannelKey: SpecialChannel = sortedChannels[0];
+    if (channelScores[topChannelKey] <= 0) {
+      if ([13, 14, 15, 16, 17, 18, 20, 21].includes(exIdx)) topChannelKey = 'aura';
+      else if ([9, 23, 24, 28, 32, 33, 35].includes(exIdx)) topChannelKey = 'bluebird';
+      else if ([36, 37, 38].includes(exIdx)) topChannelKey = 'trinity';
+      else topChannelKey = 'orange';
+    }
+
     const primaryChannel = CHANNELS_META[topChannelKey];
 
-    // 40대 Key 마음약방 실천 연습 중 맥락에 가장 부합하는 1개 기법 추출
-    const bestEx = findBestKeyExercise(userQuery, lucyAnswer);
     const keyFeature: FeatureAppMeta = {
       id: 'key',
       name: 'KEY 마음약방',
@@ -293,14 +356,14 @@ export function LucyResponseRecommendation({
       keywords: [],
     };
 
-    const reasonText = `Key '연습 ${bestEx.index}. ${bestEx.title}' 및 ${primaryChannel.shortName} 채널 맞춤 처방`;
+    const reasonText = `[${bestEx.tag}·${primaryChannel.badgeLabel}] ${primaryChannel.shortName} 채널 × Key ${bestEx.title} 맞춤 연계`;
 
     return {
       recommendedChannel: primaryChannel,
       recommendedFeature: keyFeature,
       themeReason: reasonText,
     };
-  }, [userQuery, lucyAnswer]);
+  }, [userQuery, lucyAnswer, currentChannels]);
 
   // 추천 기능으로 도약 실행 (오브의 handleTossToDimension과 동일한 유기적 토스 연동)
   const handleLeapToFeature = (feature: FeatureAppMeta) => {
