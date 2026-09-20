@@ -34,6 +34,7 @@ export default function CalmApp() {
           try {
             sessionStorage.setItem('lucy_injected_auto_send', e.data.text);
             sessionStorage.setItem('lucy_injected_input_draft', e.data.text);
+            window.dispatchEvent(new CustomEvent('lucy:dynamic_inject', { detail: { prompt: e.data.text } }));
           } catch (_) {}
         }
         navigate(e.data.path || "/chat");

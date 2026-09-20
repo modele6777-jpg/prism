@@ -1025,7 +1025,32 @@ export default function LucyStandalonePage() {
         setActiveChannels(targetChannels);
       }
 
-      // 🧠 텍스트 드래그(선택) 연동: 앱 어디서든 선택한 내용을 루시 채팅으로 전송한 경우 자동 처리
+      // 1. Explicit auto-send prompt from other sub-apps (e.g. 40가지 기법 질문, ReBible 묵상 등)
+      const autoSendPrompt = sessionStorage.getItem('lucy_injected_auto_send');
+      if (autoSendPrompt) {
+        sessionStorage.removeItem('lucy_injected_auto_send');
+        sessionStorage.removeItem('lucy_injected_input_draft');
+        try {
+          getAndClearPendingSelection();
+        } catch (_) {}
+        // Determine channels based on pending channel or fallback to Master Mode
+        const finalChannels: SpecialChannel[] = targetChannels !== null
+          ? targetChannels
+          : ['orange', 'trinity', 'aura', 'bluebird', 'muse'];
+        setActiveChannels(finalChannels);
+        // Automatically start the conversation with reliable retry
+        const runSend = (attempt = 0) => {
+          if (handleSendRef.current) {
+            handleSendRef.current(autoSendPrompt, finalChannels);
+          } else if (attempt < 15) {
+            setTimeout(() => runSend(attempt + 1), 100);
+          }
+        };
+        setTimeout(() => runSend(0), 150);
+        return;
+      }
+
+      // 2. 🧠 텍스트 드래그(선택) 연동: 앱 어디서든 선택한 내용을 루시 채팅으로 전송한 경우 자동 처리
       const pendingSelection = getAndClearPendingSelection();
       if (pendingSelection && pendingSelection.text) {
         const queryText = `[선택 내용 안내 요청]\n"${pendingSelection.text}"\n\n방금 내가 앱에서 선택한 이 내용에 대해 핵심과 의미, 유용한 조언을 자세히 안내해 줘.`;
@@ -1034,32 +1059,12 @@ export default function LucyStandalonePage() {
         const runSend = (attempt = 0) => {
           if (handleSendRef.current) {
             handleSendRef.current(queryText, finalChannels);
-          } else if (attempt < 5) {
+          } else if (attempt < 15) {
             setTimeout(() => runSend(attempt + 1), 100);
           }
         };
-        setTimeout(() => runSend(0), 200);
+        setTimeout(() => runSend(0), 150);
         return;
-      }
-
-      const autoSendPrompt = sessionStorage.getItem('lucy_injected_auto_send');
-      if (autoSendPrompt) {
-        sessionStorage.removeItem('lucy_injected_auto_send');
-        sessionStorage.removeItem('lucy_injected_input_draft');
-        // Determine channels based on pending channel or fallback to Master Mode
-        const finalChannels: SpecialChannel[] = targetChannels !== null
-          ? targetChannels
-          : ['orange', 'trinity', 'aura', 'bluebird', 'muse'];
-        setActiveChannels(finalChannels);
-        // Automatically start the conversation with retry
-        const runSend = (attempt = 0) => {
-          if (handleSendRef.current) {
-            handleSendRef.current(autoSendPrompt, finalChannels);
-          } else if (attempt < 5) {
-            setTimeout(() => runSend(attempt + 1), 100);
-          }
-        };
-        setTimeout(() => runSend(0), 200);
       } else {
         const injectedDraft = sessionStorage.getItem('lucy_injected_input_draft');
         if (injectedDraft) {

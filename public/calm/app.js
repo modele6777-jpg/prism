@@ -632,8 +632,8 @@ document.addEventListener('DOMContentLoaded', () => {
           <button class="btn-card-launch" onclick="window.startPractice(${ex.globalIndex})">
             <span>🎯 직접 실천하기</span>
           </button>
-          <button class="btn-card-chat" onclick="window.askAboutPractice(${ex.globalIndex})">
-            질문
+          <button class="btn-card-chat" onclick="window.askAboutPractice(${ex.globalIndex})" title="루시에게 이 연습 실천법 질문하기">
+            💬 루시에게 질문
           </button>
         </div>
       `;
@@ -654,9 +654,21 @@ document.addEventListener('DOMContentLoaded', () => {
   window.askAboutPractice = function(globalIdx) {
     const ex = window.PRACTICE_EXERCISES.find(e => e.globalIndex === globalIdx);
     if (!ex) return;
-    const text = `책 ${ex.page}쪽의 '연습 ${ex.index}. ${ex.title}'에 대해 저자의 핵심 의도와 실천 팁을 자세히 설명해 줘.`;
+    const purposeText = ex.purpose ? `\n• 핵심 의도: ${ex.purpose}` : '';
+    const clinicalTipText = ex.clinicalTip ? `\n• 임상 팁: ${ex.clinicalTip}` : '';
+    const affirmationText = ex.affirmation ? `\n• 치유 확언: "${ex.affirmation}"` : '';
+
+    const text = `루시야, 《FIND YOUR 왜 나는 불안할까》 도서 ${ex.chapter}장의 '${ex.icon || '🎯'} 연습 ${ex.index}. ${ex.title}'(도서 P.${ex.page}) 실천 기법에 대해 질문하고 싶어.${purposeText}${clinicalTipText}${affirmationText}\n\n지금 마음이 불안하거나 잡념이 맴돌 때 이 기법을 일상에서 어떻게 구체적으로 연습하고 적용하면 좋을지, 핵심 실천 팁과 따뜻한 조언을 해줘.`;
+
+    try {
+      sessionStorage.setItem('lucy_injected_auto_send', text);
+      sessionStorage.setItem('lucy_injected_input_draft', text);
+    } catch (_) {}
+
     if (window.parent && window.parent !== window) {
       window.parent.postMessage({ type: 'NAVIGATE_LUCKEY', path: '/chat', text }, '*');
+    } else if (window.top) {
+      window.top.location.href = '/chat';
     } else {
       window.location.href = '/chat';
     }
