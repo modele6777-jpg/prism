@@ -15,6 +15,7 @@ import { GlobalHandbookAudioWidget } from "./components/GlobalHandbookAudioWidge
 import { PageLoader } from "./components/PageLoader";
 import { PrismRainbowLoader } from "./components/PrismRainbowLoader";
 import { LucyAuraLoader } from "./components/LucyAuraLoader";
+import { KeyCosmicLoader } from "./components/KeyCosmicLoader";
 
 import { BgMusicPlayer } from "./components/trinity/BgMusicPlayer";
 import { initTTSAudioLifecycle, unlockAudioPlayback, getSharedAudioContext } from "./lib/audio";
@@ -299,6 +300,15 @@ function AppContent() {
           fullScreen
           message="루시와 행운의 깊은 교감 조율 중..."
           subMessage="FOUR-LEAF CLOVER · FORTUNE & INTUITION"
+        />
+      );
+    }
+    if (location === '/key' || location === '/calm' || location === '/orb') {
+      return (
+        <KeyCosmicLoader
+          fullScreen
+          message="Key 마음약방 처방 조율 중..."
+          subMessage="40 CALM PRACTICES & CLINICAL SOMATIC RAG"
         />
       );
     }

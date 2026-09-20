@@ -1,15 +1,13 @@
 {
   "name": "luckey",
-  "version": "1.2.996",
-  "summary": "기존 구버전 Key/Orb 잔재 파일 및 컴포넌트 전면 영구 삭제 및 CALM(Key) 단독 체제 확립",
-  "builtAt": "2026-09-20T01:45:00.000Z",
+  "version": "1.2.997",
+  "summary": "Key 브랜딩 대소문자 표기('Key') 완전 정상화 및 Key 전용 3D 크리스탈 우주 로더 노출 복원",
+  "builtAt": "2026-09-20T01:53:00.000Z",
   "items": [
-    "🗑️ 구버전 Key/Orb 메인 페이지 및 진입점 완전 삭제: src/pages/OrbGatewayPage.tsx, orb.html, src/orb-main.tsx 영구 제거",
-    "🗑️ 구버전 Key 전용 모달 컴포넌트 8종 일괄 삭제: src/components/orb/ 디렉토리 및 CalmTechniquePracticeModal, LucyKeyDigestView, QuantumDecisionModal, RuneCastingModal, SoulAuraScanModal, VoidNebulaModal, OrbSpecialRitualsBar 완전 정리",
-    "🗑️ 구버전 Key 라이브러리 및 하이브리드 데이터 파일 삭제: src/lib/calmPharmacopeia.ts (4,000줄), calmTechniqueCycle.ts, keyArchiveExtractor.ts, lucyKeyDigest.ts, orbRituals.ts 완전 제거",
-    "🗑️ 구버전 PWA 및 아이콘 애셋 정리: public/manifest-orb.webmanifest, manifest-orb.json, orb 아이콘 애셋 및 src/components/OrbCosmicLoader.tsx, CrystalOrbIcon.tsx 완전 삭제",
-    "⚙️ Vite 롤업 빌드 및 PWA 클린업: vite.config.ts의 orb.html 입력 엔트리 및 workbox 오프라인 설정에서 orb 참조 완전 제거",
-    "✨ CALM 기반 순수 Key 마음약방 단독 체제 완성: 기존 Key 자리를 원작 CALM 무손실 웹앱이 100% 온전히 계승하여 완벽 동작"
+    "✨ 브랜딩 폰트 정상화: public/calm/style.css의 .brand-heading 글꼴을 Roman small-caps(대문자 강제) 폰트인 Cinzel에서 Pretendard로 변경하여 'KEY'가 아닌 본래의 명칭 'Key'로 깔끔하게 렌더링되도록 수정",
+    "🔑 Key 전용 3D 크리스탈 우주 로더 복원 및 노출 보장: src/pages/CalmApp.tsx에서 iframe 로드 시 로더가 200ms만에 소멸하던 문제를 최소 1,500ms 동안 우아하게 유지되도록 개선",
+    "🌌 부드러운 전환 효과 추가: KeyCosmicLoader 퇴장 시 AnimatePresence를 적용하여 은은한 페이드아웃과 함께 Key 메인 화면으로 자연스럽게 전환",
+    "🚀 라우트 및 초기 로딩 연동 확인: App.tsx 및 CalmApp.tsx 양쪽에서 /key 진입 시 Key 전용 3D 크리스탈 열쇠 벡터 애니메이션 로딩 화면이 안정적으로 표출되도록 완벽 연동"
   ],
   "author": "Antigravity AI Agent",
   "buildEnvironment": "cloud-run"

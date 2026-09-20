@@ -1,9 +1,14 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
+import { AnimatePresence, motion } from "motion/react";
+import { KeyCosmicLoader } from "@/components/KeyCosmicLoader";
 
 export default function CalmApp() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [, navigate] = useLocation();
+  const [isLoading, setIsLoading] = useState(true);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [minTimerDone, setMinTimerDone] = useState(false);
 
   useEffect(() => {
     const prevTitle = document.title;
@@ -17,20 +22,58 @@ export default function CalmApp() {
     };
     window.addEventListener("message", handleMessage);
 
+    // Guaranteed minimum display (1.5 seconds) so the user clearly experiences the Key cosmic loader
+    const minTimer = setTimeout(() => {
+      setMinTimerDone(true);
+    }, 1500);
+
+    // Fallback maximum timer (3.5 seconds) in case iframe onLoad doesn't fire
+    const fallbackTimer = setTimeout(() => {
+      setIsLoading(false);
+    }, 3500);
+
     return () => {
+      clearTimeout(minTimer);
+      clearTimeout(fallbackTimer);
       document.title = prevTitle;
       window.removeEventListener("message", handleMessage);
     };
   }, [navigate]);
 
+  useEffect(() => {
+    if (minTimerDone && iframeLoaded) {
+      setIsLoading(false);
+    }
+  }, [minTimerDone, iframeLoaded]);
+
   return (
     <div className="fixed inset-0 w-full h-[100dvh] bg-[#fcf9f5] z-40 overflow-hidden flex flex-col">
+      <AnimatePresence mode="wait">
+        {isLoading && (
+          <motion.div
+            key="key-cosmic-loader"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.45, ease: "easeInOut" }}
+            className="fixed inset-0 z-50 pointer-events-auto"
+          >
+            <KeyCosmicLoader
+              fullScreen
+              message="Key 마음약방 처방 조율 중..."
+              subMessage="40 CALM PRACTICES & CLINICAL SOMATIC RAG"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
       <iframe
         ref={iframeRef}
         src="/calm/"
         title="Key"
         className="w-full h-full border-0 m-0 p-0 flex-1"
         allow="autoplay; microphone"
+        onLoad={() => {
+          setIframeLoaded(true);
+        }}
       />
     </div>
   );
