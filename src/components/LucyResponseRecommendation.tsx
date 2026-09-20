@@ -343,8 +343,8 @@ export function LucyResponseRecommendation({
     const keyFeature: FeatureAppMeta = {
       id: 'key',
       name: 'KEY 마음약방',
-      shortName: `연습 ${bestEx.index}. ${bestEx.title}`,
-      featureTitle: `40대 치유 연습 중 맞춤 추천: 연습 ${bestEx.index}. ${bestEx.title} (${bestEx.page}쪽)`,
+      shortName: `연습 ${bestEx.globalIndex}. ${bestEx.title}`,
+      featureTitle: `40대 치유 연습 중 맞춤 추천: 연습 ${bestEx.globalIndex}. ${bestEx.title} (${bestEx.chapter}장 · ${bestEx.page}쪽)`,
       path: `/key?ex=${bestEx.globalIndex}`,
       iconText: bestEx.icon || '🔑',
       runeSymbol: 'ᛟ',

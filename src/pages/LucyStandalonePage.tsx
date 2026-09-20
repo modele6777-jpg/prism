@@ -22,6 +22,7 @@ import { detectLucyChannelsFromText } from '@/lib/lucyAutoModeDetector';
 import { triggerHaptic } from '@/lib/omniWarp/omniWarpHaptics';
 import { getAndClearPendingSelection } from '@/lib/selectionBridge';
 import { LucyResponseRecommendation } from '@/components/LucyResponseRecommendation';
+import { findBestKeyExercise } from '@/lib/keyExercisesCatalog';
 
 // Helper: Compress uploaded images to prevent UI stutter and huge payload overhead
 function compressImageIfNeeded(file: File): Promise<string> {
@@ -980,6 +981,18 @@ export default function LucyStandalonePage() {
       extraSystemContext = `[${channelCount}중 융합 시너지 모드: ${channelNames}]
 - 자동 감지된 결합 지능 엔진들의 관점을 다각도로 융합하여 깊이 있고 유용한 시너지 답변을 도출해 줘.`;
       targetPersona = 'lucy';
+    }
+
+    // 🔑 사용자 고민에 가장 알맞은 Key 실천 연습을 사전 매칭하여 시스템 지침으로 주입
+    // 이를 통해 루시 답변에서 추천하는 기법과 하단 LucKey 연계 카드가 100% 동일한 기법을 추천하도록 보장
+    if (!isCasual && userCleanText) {
+      const targetKeyEx = findBestKeyExercise(userCleanText, '');
+      const keySyncDirective = `[🔑 Key 마음약방 40가지 불안 치유 실천 연습 연동 지침]:
+- 이번 답변에서 불안, 걱정, 스트레스, 신체 긴장 완화 기법을 추천할 경우, 반드시 공식 40가지 연습 중 다음 기법을 추천해:
+  👉 '연습 ${targetKeyEx.globalIndex}. ${targetKeyEx.title}' (${targetKeyEx.tag} - ${targetKeyEx.subtitle})
+- 절대로 다른 가상의 번호나 없는 기법명을 지어내지 말고, 반드시 위 지정된 공식 명칭('연습 ${targetKeyEx.globalIndex}. ${targetKeyEx.title}')을 그대로 언급해 줘.
+- 답변 끝에는 "답변 바로 아래 추천 카드의 [실천] 버튼을 누르면 연습실에서 방금 추천한 기법이 바로 열릴 거야!"라고 다정하게 안내해 줘.`;
+      extraSystemContext = extraSystemContext ? `${extraSystemContext}\n\n${keySyncDirective}` : keySyncDirective;
     }
 
     setInput('');

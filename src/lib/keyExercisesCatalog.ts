@@ -60,14 +60,141 @@ const KEYWORD_MAP: Record<number, string[]> = {
   40: ['미니멀리즘', '행동목표', '측정가능한', '구체적목표', '모호함탈피', '실천지표', '행동의미니멀리즘'],
 };
 
+// 40가지 Key 실천 연습별 정밀 별칭 및 임상 검색어 사전
+export const EXERCISE_ALIASES: Record<number, string[]> = {
+  1: ['걱정 그리기', '걱정그리기', '불안 스케치'],
+  2: ['단어의 재구성', '단어 재구성', '하지만 대신 그리고', '단어바꾸기', '생각바꾸기'],
+  3: ['포스트잇 프로젝트', '포스트잇', '생각 붙여두기', '메모 붙이기'],
+  4: ['걱정 관찰', '걱정관찰', '영화관 거리두기', '엔딩 크레딧', '화면 밖 관객'],
+  5: ['잃어버린 짐', '잃어버린짐', '컨베이어 벨트', '생각 흘려보내기', '수하물'],
+  6: ['생각과 분리되기', '생각과 분리', '마인드 체스판', '게임판과 게임말', '체스판'],
+  7: ['스쳐 지나가는 것들', '스쳐지나가는', '지나가는 기차', '기차 소음'],
+  8: ['보라색 꽃', '보라색꽃', '보라색 꽃 생각 금지', '백곰 효과'],
+  9: ['자기비판', '내면의 비판자', '자기비판의 목소리', '자책 멈추기', '자책'],
+  10: ['토끼굴 속으로', '토끼굴', '생각의 토끼굴', '부정적 생각의 함정'],
+  11: ['지금은 걱정할 시간', '걱정할 시간', '15분 걱정', '걱정 예약석', '걱정 제한'],
+  12: ['피자 파티', '피자파티', '피자 한 조각', '걱정 피자', '한 조각씩 먹기'],
+  13: ['풍선 호흡법', '풍선 호흡', '풍선호흡', '복식호흡', '5초 풍선 호흡', '유기적 5초 풍선 호흡', '복식 호흡', '횡격막 호흡'],
+  14: ['5-4-3-2-1', '54321', '오감 그라운딩', '오감 집중', '5단계 감각', '오감 감각'],
+  15: ['어깨와 귀는 멀리', '어깨와 귀', '어깨 내리기', '승모근 이완', '상체 긴장 완화'],
+  16: ['깜짝 선물', '깜짝선물', '심장 박동 깜짝선물', '두근거림 수용', '심장 두근거림'],
+  17: ['그라운딩 전문가', '감각 샤워', '일상 그라운딩', '물소리 그라운딩'],
+  18: ['대지의 중심', '대지의중심', '발바닥 그라운딩', '발바닥 접지', '대지 접지', '호흡에 닻 내리기', '발바닥 그라운딩 기법'],
+  19: ['나의 즐겨찾기', '감각 즐겨찾기', '즐겨찾기', '기분전환 리스트'],
+  20: ['보디 스캔', '보디스캔', '바디 스캔', '바디스캔', '신체 스캔', '전신 스캔'],
+  21: ['근육 재정비', '점진적 이완', '점진적 근육 이완', '주먹 쥐고 툭', '주먹쥐고 툭'],
+  22: ['시간 관리 기술', '할 일 쪼개기', '1인치씩 자르기', '과제 분할', '작게 쪼개기'],
+  23: ['달걀 껍데기 속 마음', '달걀 껍데기', '달걀껍데기', '취약성 수용', '껍데기 깨기'],
+  24: ['감정 수영장', '감정수영장', '감정 파도타기', '차라리 느끼기'],
+  25: ['카메라를 향해 스마일', '스마일 스포트라이트', '타인의 시선', '스포트라이트 효과'],
+  26: ['타인과 거리 두기', '내 삶의 나침반', '나침반 세우기', '가치 중심 행동'],
+  27: ['생존의 기로', '5분의 기적', '미루기 극복', '회피 탈출'],
+  28: ['내면의 투쟁', '파도와 서핑', '감정과 싸우지 않기', '투쟁 멈추기'],
+  29: ['일 중독자', '일중독자', '멈춤 신호등', '회피형 바쁨', '모기떼'],
+  30: ['행동의 선택', '손과 발의 선택', '불안해도 행동하기'],
+  31: ['거짓말쟁이 마음', '마음의 속삭임 검증', '인지 왜곡 바로잡기'],
+  32: ['가짜 감정', '완벽주의 가면 벗기', '가면증후군', '사기꾼 증후군'],
+  33: ['반대 행동 훈련', '반대 행동', '반대로 달리기', '정반대로 행동하기'],
+  34: ['스트레스 사과나무', '걱정 보따리 내려놓기', '사과나무 흔들기', '짐 덜기'],
+  35: ['과잉 반응', '감정의 온도계', '발작 버튼', '트리거 감지'],
+  36: ['예측의 정거장', '예기불안', '상상 속 공포', '미리 걱정하기'],
+  37: ['달팽이 레이스', '달팽이의 보폭', '점진적 노출', '작은 보폭'],
+  38: ['자유 시간', '나만의 자유 정원', '시간 낭비 죄책감 없애기'],
+  39: ['가짜 난이도', '첫걸음의 무게', '시작의 두려움'],
+  40: ['행동의 미니멀리즘', '오늘의 미니멀 액션', '측정 가능한 목표'],
+};
+
 /**
  * 40가지 Key 마음약방 실천 연습 중 사용자의 현재 고민(질문) 및 대화 답변 맥락에
  * 가장 정확하게 부합하는 1개의 실천 연습을 도출합니다.
+ * 
+ * 루시 답변(lucyText)에 특정 실천 연습이 명시되어 있다면 100% 일치를 위해
+ * 해당 기법을 최우선으로 즉각 추출하여 반환합니다.
  */
 export function findBestKeyExercise(userText: string = '', lucyText: string = ''): KeyExerciseItem {
-  const cleanUser = (userText || '').toLowerCase();
   const cleanLucy = (lucyText || '').toLowerCase();
+  const cleanUser = (userText || '').toLowerCase();
 
+  // 1. [최우선 순위]: 루시 답변(lucyText)에 특정 실천 연습이 명시적으로 언급되었는지 정밀 검사
+  // 루시 답변과 바로 아래의 LucKey 연계 추천 카드는 항상 100% 일치해야 합니다.
+  if (cleanLucy) {
+    let earliestMatch: { ex: KeyExerciseItem; pos: number; length: number } | null = null;
+
+    // 1-A. 모든 40가지 연습의 제목 및 별칭이 루시 답변에 출현하는 위치 조사
+    for (const ex of KEY_EXERCISES_CATALOG) {
+      const candidates = [
+        ex.title.toLowerCase(),
+        `연습 ${ex.globalIndex}`,
+        `연습${ex.globalIndex}`,
+        `연습 ${ex.index}`,
+        ...(EXERCISE_ALIASES[ex.globalIndex] || []).map((a) => a.toLowerCase()),
+      ];
+
+      for (const cand of candidates) {
+        if (!cand || cand.length < 2) continue;
+        const pos = cleanLucy.indexOf(cand);
+        if (pos !== -1) {
+          // 답변 앞부분에 먼저 언급되었거나, 더 구체적이고 긴 키워드 매칭일 경우 우선
+          if (!earliestMatch || pos < earliestMatch.pos || (pos === earliestMatch.pos && cand.length > earliestMatch.length)) {
+            earliestMatch = { ex, pos, length: cand.length };
+          }
+        }
+      }
+    }
+
+    if (earliestMatch) {
+      return earliestMatch.ex;
+    }
+
+    // 1-B. "연습 [0-9]+" 또는 "[0-9]+번 연습" 패턴 추출
+    const lucyNumberMatches = [...cleanLucy.matchAll(/연습\s*([0-9]{1,2})|([0-9]{1,2})\s*번\s*연습/g)];
+    for (const match of lucyNumberMatches) {
+      const rawNum = parseInt(match[1] || match[2], 10);
+      if (rawNum >= 1 && rawNum <= 40) {
+        const byGlobal = KEY_EXERCISES_CATALOG.find((e) => e.globalIndex === rawNum);
+        if (byGlobal) return byGlobal;
+      }
+    }
+  }
+
+  // 2. [차순위]: 사용자 질문(userText)에 특정 실천 연습이 명시적으로 요청되었는지 검사
+  if (cleanUser) {
+    let earliestUserMatch: { ex: KeyExerciseItem; pos: number; length: number } | null = null;
+
+    for (const ex of KEY_EXERCISES_CATALOG) {
+      const candidates = [
+        ex.title.toLowerCase(),
+        `연습 ${ex.globalIndex}`,
+        `연습${ex.globalIndex}`,
+        ...(EXERCISE_ALIASES[ex.globalIndex] || []).map((a) => a.toLowerCase()),
+      ];
+
+      for (const cand of candidates) {
+        if (!cand || cand.length < 2) continue;
+        const pos = cleanUser.indexOf(cand);
+        if (pos !== -1) {
+          if (!earliestUserMatch || pos < earliestUserMatch.pos || (pos === earliestUserMatch.pos && cand.length > earliestUserMatch.length)) {
+            earliestUserMatch = { ex, pos, length: cand.length };
+          }
+        }
+      }
+    }
+
+    if (earliestUserMatch) {
+      return earliestUserMatch.ex;
+    }
+
+    const userNumberMatches = [...cleanUser.matchAll(/연습\s*([0-9]{1,2})|([0-9]{1,2})\s*번\s*연습/g)];
+    for (const match of userNumberMatches) {
+      const rawNum = parseInt(match[1] || match[2], 10);
+      if (rawNum >= 1 && rawNum <= 40) {
+        const byGlobal = KEY_EXERCISES_CATALOG.find((e) => e.globalIndex === rawNum);
+        if (byGlobal) return byGlobal;
+      }
+    }
+  }
+
+  // 3. [키워드 점수 기반 종합 매칭]: 질문과 답변의 문맥 의미 분석
   let bestMatch: KeyExerciseItem = KEY_EXERCISES_CATALOG[0];
   let maxScore = -1;
 
@@ -78,21 +205,21 @@ export function findBestKeyExercise(userText: string = '', lucyText: string = ''
     const tagLower = ex.tag.toLowerCase();
     const subLower = (ex.subtitle || '').toLowerCase();
 
-    // 1. 사용자 질문에 직접적인 핵심 키워드/제목 언급 (질문 가중치 높게 부여)
+    // 1. 사용자 질문 직접 키워드
     if (cleanUser.includes(titleLower)) score += 30;
     if (cleanUser.includes(tagLower)) score += 20;
     if (subLower && cleanUser.includes(subLower)) score += 15;
 
-    // 루시 답변에 언급
-    if (cleanLucy.includes(titleLower)) score += 15;
-    if (cleanLucy.includes(tagLower)) score += 10;
-    if (subLower && cleanLucy.includes(subLower)) score += 8;
+    // 루시 답변 언급
+    if (cleanLucy.includes(titleLower)) score += 25;
+    if (cleanLucy.includes(tagLower)) score += 15;
+    if (subLower && cleanLucy.includes(subLower)) score += 10;
 
-    // 2. 특화 키워드 매칭 (질문 8점 / 답변 4점)
+    // 2. 특화 키워드 매칭
     const keywords = KEYWORD_MAP[ex.globalIndex] || [];
     for (const kw of keywords) {
       if (cleanUser.includes(kw)) score += 8;
-      if (cleanLucy.includes(kw)) score += 4;
+      if (cleanLucy.includes(kw)) score += 6;
     }
 
     // 3. 목적 및 임상 팁 단어 매칭
@@ -100,7 +227,7 @@ export function findBestKeyExercise(userText: string = '', lucyText: string = ''
     for (const tok of tokens) {
       if (tok.length >= 2) {
         if (cleanUser.includes(tok)) score += 2;
-        if (cleanLucy.includes(tok)) score += 1;
+        if (cleanLucy.includes(tok)) score += 2;
       }
     }
 
@@ -110,7 +237,7 @@ export function findBestKeyExercise(userText: string = '', lucyText: string = ''
     }
   }
 
-  // 매칭 점수가 극히 낮은 경우(0점 등) 기본으로 가장 보편적인 수용 연습(Ex 13 복식호흡) 제공
+  // 매칭 점수가 극히 낮은 경우(0점 등) 기본으로 가장 보편적인 수용 연습(Ex 13 풍선 호흡법) 제공
   if (maxScore <= 0) {
     const defaultEx = KEY_EXERCISES_CATALOG.find((e) => e.globalIndex === 13) || KEY_EXERCISES_CATALOG[0];
     return defaultEx;
