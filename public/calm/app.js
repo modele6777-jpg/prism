@@ -2181,25 +2181,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setVoiceIndicatorStatus('loading');
 
-    fetch('/api/tts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: script, voice: ttsVoice })
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.audio) {
-          clientTtsCache.set(cacheKey, data.audio);
-          playAudioUrl(data.audio, script);
-        } else {
-          // Gemini TTS 오류 또는 fallback 플래그 수신 시 브라우저 TTS 실행
-          playBrowserTts(script);
+    const ttsEndpoints = ['/api/tts', '/api/ai/tts'];
+    const callTTS = async () => {
+      for (const endpoint of ttsEndpoints) {
+        try {
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: script, voice: ttsVoice })
+          });
+          if (!res.ok) continue;
+          const data = await res.json();
+          let finalAudioUrl = data.audio;
+          if (!finalAudioUrl && data.audioContent) {
+            const mime = data.encoding === 'pcm' ? 'audio/pcm' : 'audio/mp3';
+            finalAudioUrl = `data:${mime};base64,${data.audioContent}`;
+          }
+          if (finalAudioUrl) {
+            clientTtsCache.set(cacheKey, finalAudioUrl);
+            playAudioUrl(finalAudioUrl, script);
+            return;
+          }
+        } catch (e) {
+          console.warn(`[TTS] ${endpoint} 호출 실패, 다음 엔드포인트 시도:`, e);
         }
-      })
-      .catch(err => {
-        console.warn('TTS API 호출 실패, 브라우저 음성으로 대체:', err);
-        playBrowserTts(script);
-      });
+      }
+      // 모든 AI TTS 서버 엔드포인트 실패 시 브라우저 TTS 실행
+      playBrowserTts(script);
+    };
+    callTTS();
   }
 
   // 다음 단계 TTS 오디오 백그라운드 프리로딩 (무지연 재생 보장)
@@ -2216,7 +2226,12 @@ document.addEventListener('DOMContentLoaded', () => {
         })
           .then(r => r.json())
           .then(d => {
-            if (d.audio) clientTtsCache.set(cacheKey, d.audio);
+            let url = d.audio;
+            if (!url && d.audioContent) {
+              const mime = d.encoding === 'pcm' ? 'audio/pcm' : 'audio/mp3';
+              url = `data:${mime};base64,${d.audioContent}`;
+            }
+            if (url) clientTtsCache.set(cacheKey, url);
           })
           .catch(() => {});
       }

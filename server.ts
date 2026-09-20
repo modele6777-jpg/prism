@@ -1289,19 +1289,27 @@ ${content}
     });
   });
 
-  // TTS - 고품질 Edge Neural TTS + Google TTS 다중 엔진 통합 엔드포인트
-  app.post("/api/ai/tts", async (req, res) => {
+  // TTS - 고품질 Edge Neural TTS + Google TTS 다중 엔진 통합 엔드포인트 (/api/ai/tts 및 /api/tts 모두 지원)
+  const commonTTSHandler = async (req: express.Request, res: express.Response) => {
     const { text, voice = 'Kore', emotion } = req.body;
 
     try {
       const { handleTTS } = await import('./server/api-lib/ttsHandler');
       const result = await handleTTS({ text, voice, emotion });
-      return res.status(200).json(result);
+      const mime = result.encoding === "pcm" ? "audio/pcm" : "audio/mp3";
+      const audioDataUrl = `data:${mime};base64,${result.audioContent}`;
+      return res.status(200).json({
+        ...result,
+        audio: audioDataUrl,
+      });
     } catch (error: any) {
       console.error("TTS generation error:", error);
       return res.status(500).json({ error: error?.message || "TTS generation failed" });
     }
-  });
+  };
+
+  app.post("/api/ai/tts", commonTTSHandler);
+  app.post("/api/tts", commonTTSHandler);
 
 
 

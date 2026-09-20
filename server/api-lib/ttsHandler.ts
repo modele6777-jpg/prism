@@ -54,6 +54,7 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
   const isKorean = /[가-힣]/.test(cleanText);
   const isMaleVoice =
     voice === "Fenrir" ||
+    voice === "Puck" ||
     voice === "Charon" ||
     voice === "Michael" ||
     voice === "Guy" ||
