@@ -352,11 +352,9 @@ function AppContent() {
 
   return (
     <div className="prism-app-shell relative z-[1] bg-transparent">
-      {/* Top-Right Background Music Player (Expands Leftwards) */}
+      {/* Draggable & Edge-Dockable Background Music Player */}
       {shouldMountBgMusicPlayer() && (
-        <div className="fixed top-safe-2 right-4 sm:right-6 md:top-safe-4 z-[300] transition-opacity duration-200 opacity-100">
-          <BgMusicPlayer />
-        </div>
+        <BgMusicPlayer />
       )}
 
 

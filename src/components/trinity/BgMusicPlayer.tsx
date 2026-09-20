@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Play, Pause, Disc, SkipForward, Volume2, VolumeX, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Music, Headphones, Shuffle, Repeat, Repeat1, RefreshCw, Trash2, EyeOff, RotateCcw } from "lucide-react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { Play, Pause, Disc, SkipForward, Volume2, VolumeX, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Music, Headphones, Shuffle, Repeat, Repeat1, RefreshCw, Trash2, EyeOff, RotateCcw, GripVertical, PanelRightClose, PanelLeftClose } from "lucide-react";
 import {
   getSharedAudioContext,
   getAmbientAudioBus,
@@ -251,6 +251,104 @@ export function BgMusicPlayer() {
   const [retryCount, setRetryCount] = useState(0);
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isPanelActive, setIsPanelActive] = useState(() => !!(window as any).__lucy_active_panel);
+
+  // Position & Edge Docking State
+  const [bgmPos, setBgmPos] = useState<{ y: number; dockSide: "right" | "left"; isDocked: boolean }>(() => {
+    try {
+      const saved = localStorage.getItem("prism_bgm_dock_pos_v2");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.y === "number" && (parsed.dockSide === "right" || parsed.dockSide === "left")) {
+          return {
+            y: Math.max(10, Math.min(window.innerHeight - 80, parsed.y)),
+            dockSide: parsed.dockSide,
+            isDocked: Boolean(parsed.isDocked),
+          };
+        }
+      }
+    } catch {}
+    return { y: 16, dockSide: "right", isDocked: false };
+  });
+
+  const bgmPosRef = useRef(bgmPos);
+  bgmPosRef.current = bgmPos;
+
+  // Dragging state
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef<{ startX: number; startY: number; initialY: number; hasMoved: boolean } | null>(null);
+
+  const saveBgmPos = useCallback((newPos: { y: number; dockSide: "right" | "left"; isDocked: boolean }) => {
+    setBgmPos(newPos);
+    try {
+      localStorage.setItem("prism_bgm_dock_pos_v2", JSON.stringify(newPos));
+    } catch {}
+  }, []);
+
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    // Only left click / touch starts dragging
+    if (e.button !== 0 && e.pointerType === "mouse") return;
+    dragStartRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initialY: bgmPosRef.current.y,
+      hasMoved: false,
+    };
+  }, []);
+
+  useEffect(() => {
+    const handlePointerMove = (e: PointerEvent) => {
+      if (!dragStartRef.current) return;
+      const dx = e.clientX - dragStartRef.current.startX;
+      const dy = e.clientY - dragStartRef.current.startY;
+      if (!dragStartRef.current.hasMoved && Math.hypot(dx, dy) > 5) {
+        dragStartRef.current.hasMoved = true;
+        setIsDragging(true);
+      }
+      if (dragStartRef.current.hasMoved) {
+        const clampedY = Math.max(10, Math.min(window.innerHeight - 70, dragStartRef.current.initialY + dy));
+        const side: "left" | "right" = e.clientX < window.innerWidth / 2 ? "left" : "right";
+        setBgmPos((prev) => ({
+          ...prev,
+          y: clampedY,
+          dockSide: side,
+        }));
+      }
+    };
+
+    const handlePointerUp = () => {
+      if (dragStartRef.current) {
+        if (dragStartRef.current.hasMoved) {
+          saveBgmPos({
+            y: bgmPosRef.current.y,
+            dockSide: bgmPosRef.current.dockSide,
+            isDocked: false,
+          });
+          // brief timeout to prevent triggering click on children
+          setTimeout(() => setIsDragging(false), 50);
+        } else {
+          setIsDragging(false);
+        }
+        dragStartRef.current = null;
+      }
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("pointercancel", handlePointerUp);
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointercancel", handlePointerUp);
+    };
+  }, [saveBgmPos]);
+
+  const toggleDock = useCallback((e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    saveBgmPos({
+      ...bgmPosRef.current,
+      isDocked: !bgmPosRef.current.isDocked,
+    });
+  }, [saveBgmPos]);
 
   useEffect(() => {
     const handlePanelChange = (e: Event) => {
@@ -3296,8 +3394,21 @@ export function BgMusicPlayer() {
   const handleAudioPlaying = () => setIsBuffering(false);
 
   // --- RENDER COMPONENT ---
+  const isRightDock = bgmPos.dockSide === "right";
+
   return (
-    <div ref={playerContainerRef} className={`relative font-sans select-none z-50 transition-all duration-300 ${isPanelActive ? "opacity-0 pointer-events-none scale-75" : "opacity-100"}`}>
+    <div
+      ref={playerContainerRef}
+      className={`fixed z-[300] font-sans select-none transition-all duration-300 ${
+        isPanelActive ? "opacity-0 pointer-events-none scale-75" : "opacity-100"
+      }`}
+      style={{
+        top: `${bgmPos.y}px`,
+        right: isRightDock ? (bgmPos.isDocked ? "-42px" : "12px") : undefined,
+        left: !isRightDock ? (bgmPos.isDocked ? "-42px" : "12px") : undefined,
+        touchAction: "none",
+      }}
+    >
       {/* Invisible HTML5 Audio Node for Legacy MP3s */}
       <audio
         ref={audioRef}
@@ -3309,17 +3420,44 @@ export function BgMusicPlayer() {
         preload={shouldPreloadBgmAudio() ? "auto" : "none"}
       />
 
-      {/* Floating control bar */}
-      {isCollapsed ? (
+      {/* When Edge-Docked: Show minimalist unobtrusive peeking tab */}
+      {bgmPos.isDocked ? (
         <div
-          className="flex items-center gap-1 rounded-full glass border border-white/20 shadow-xl p-1 bg-black/50 backdrop-blur-xl"
+          onClick={() => toggleDock()}
+          className={`flex items-center gap-1.5 py-1.5 px-2.5 rounded-full cursor-pointer bg-black/80 hover:bg-black/95 backdrop-blur-2xl border border-amber-400/40 shadow-[0_4px_25px_rgba(251,191,36,0.35)] transition-transform hover:scale-105 active:scale-95 group ${
+            isRightDock ? "pr-4" : "pl-4"
+          }`}
+          title="엣지에서 배경음 플레이어 꺼내기 (클릭)"
+        >
+          {isRightDock && <ChevronLeft size={13} className="text-amber-300 animate-pulse shrink-0" />}
+          <div className="relative flex items-center justify-center">
+            <LPRecordDisc isPlaying={isPlaying} isBuffering={isBuffering} size="sm" />
+          </div>
+          <span className="text-[10px] font-bold text-amber-200/90 tracking-tight hidden sm:inline-block">
+            {isPlaying ? "재생 중" : "BGM"}
+          </span>
+          {!isRightDock && <ChevronRight size={13} className="text-amber-300 animate-pulse shrink-0" />}
+        </div>
+      ) : isCollapsed ? (
+        /* Floating collapsed bar with Drag Grip & Dock Toggle */
+        <div
+          className="flex items-center gap-1 rounded-full glass border border-white/20 shadow-2xl p-1 bg-black/60 backdrop-blur-xl transition-shadow hover:shadow-[0_8px_30px_rgba(0,0,0,0.5)] group/collapsed"
           onClick={(e) => e.stopPropagation()}
         >
+          {/* Drag Handle */}
+          <div
+            onPointerDown={handlePointerDown}
+            className="cursor-grab active:cursor-grabbing p-1.5 text-white/30 hover:text-white/80 rounded-full transition-colors shrink-0"
+            title="길게 누르거나 드래그하여 위치 이동"
+          >
+            <GripVertical size={13} />
+          </div>
+
           <button
             type="button"
             onClick={handleExpandPlayer}
-            className="w-7 h-11 rounded-full flex items-center justify-center shrink-0 text-white/45 hover:text-white hover:bg-white/10 active:scale-95 transition-colors"
-            title="플레이어 펼치기 (←)"
+            className="w-7 h-10 rounded-full flex items-center justify-center shrink-0 text-white/45 hover:text-white hover:bg-white/10 active:scale-95 transition-colors"
+            title="플레이어 펼치기"
             aria-label="플레이어 펼치기"
           >
             <ChevronLeft className="w-4 h-4 shrink-0" strokeWidth={2} />
@@ -3337,18 +3475,38 @@ export function BgMusicPlayer() {
           >
             <LPRecordDisc isPlaying={isPlaying} isBuffering={isBuffering} size="lg" />
           </button>
+
+          {/* Edge Dock Button */}
+          <button
+            type="button"
+            onClick={(e) => toggleDock(e)}
+            className="p-1.5 text-white/30 hover:text-amber-300 hover:bg-white/10 rounded-full transition-all shrink-0"
+            title="화면 가장자리(엣지)에 가리기"
+            aria-label="화면 엣지에 가리기"
+          >
+            {isRightDock ? <PanelRightClose size={12} /> : <PanelLeftClose size={12} />}
+          </button>
         </div>
       ) : (
       <div
-        className="flex items-center gap-1.5 sm:gap-2 p-1 pl-2 pr-1 rounded-full glass border border-white/20 shadow-2xl hover:border-white/30 transition-all duration-300 relative max-w-[calc(100vw-8rem)] md:max-w-md bg-black/60 backdrop-blur-xl origin-right"
+        className="flex items-center gap-1.5 sm:gap-2 p-1 pl-2 pr-1 rounded-full glass border border-white/20 shadow-2xl hover:border-white/30 transition-all duration-300 relative max-w-[calc(100vw-4rem)] md:max-w-md bg-black/70 backdrop-blur-xl origin-right"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Collapse button on left, pointing right to collapse back into LP disc */}
+        {/* Drag Handle */}
+        <div
+          onPointerDown={handlePointerDown}
+          className="cursor-grab active:cursor-grabbing p-1 text-white/30 hover:text-white/80 rounded-full transition-colors shrink-0"
+          title="길게 누르거나 드래그하여 위치 이동"
+        >
+          <GripVertical size={13} />
+        </div>
+
+        {/* Collapse button, pointing right to collapse back into mini bar */}
         <button
           type="button"
           onClick={handleCollapse}
           className="p-1.5 rounded-full text-white/40 hover:text-white hover:bg-white/10 active:scale-90 transition-all shrink-0"
-          title="플레이어 접기 (→)"
+          title="플레이어 접기"
           aria-label="음악 플레이어 접기"
         >
           <ChevronRight size={12} />
@@ -3495,8 +3653,19 @@ export function BgMusicPlayer() {
           <LPRecordDisc isPlaying={isPlaying} isBuffering={isBuffering} size="lg" />
         </button>
 
-        {/* --- PREMIUM PLAYLIST DROPDOWN MENU (pops down below widget, aligned right) --- */}
-        <div className={`absolute top-full mt-3 right-0 w-[240px] bg-slate-950/95 border border-white/10 rounded-2xl p-2.5 shadow-2xl transition-all duration-300 flex flex-col gap-1.5 backdrop-blur-xl z-50 ${
+        {/* Edge Dock Button */}
+        <button
+          type="button"
+          onClick={(e) => toggleDock(e)}
+          className="p-1.5 text-white/30 hover:text-amber-300 hover:bg-white/10 rounded-full transition-all shrink-0"
+          title="화면 가장자리(엣지)에 가리기"
+          aria-label="화면 엣지에 가리기"
+        >
+          {isRightDock ? <PanelRightClose size={13} /> : <PanelLeftClose size={13} />}
+        </button>
+
+        {/* --- PREMIUM PLAYLIST DROPDOWN MENU (pops down below widget, aligned to dock side) --- */}
+        <div className={`absolute top-full mt-3 ${isRightDock ? "right-0" : "left-0"} w-[240px] bg-slate-950/95 border border-white/10 rounded-2xl p-2.5 shadow-2xl transition-all duration-300 flex flex-col gap-1.5 backdrop-blur-xl z-50 ${
           showPlaylist ? "opacity-100 translate-y-0 scale-100 pointer-events-auto" : "opacity-0 -translate-y-3 scale-95 pointer-events-none"
         }`}>
           <div className="flex items-center justify-between border-b border-white/10 pb-1.5 px-1.5 gap-2">
