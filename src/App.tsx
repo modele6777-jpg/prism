@@ -14,7 +14,6 @@ import InstallPrompt from "./components/InstallPrompt";
 import { GlobalHandbookAudioWidget } from "./components/GlobalHandbookAudioWidget";
 import { PageLoader } from "./components/PageLoader";
 import { PrismRainbowLoader } from "./components/PrismRainbowLoader";
-import { OrbCosmicLoader } from "./components/OrbCosmicLoader";
 import { LucyAuraLoader } from "./components/LucyAuraLoader";
 
 import { BgMusicPlayer } from "./components/trinity/BgMusicPlayer";
@@ -52,7 +51,6 @@ const EpilogueApp = lazyWithRetry(() => import("./pages/EpilogueApp"));
 const LucyStandalonePage = lazyWithRetry(() => import("./pages/LucyStandalonePage"));
 const HandbookStandalonePage = lazyWithRetry(() => import("./pages/HandbookStandalonePage"));
 const OmniWarpPage = lazyWithRetry(() => import("./pages/OmniWarpPage"));
-const OrbGatewayPage = lazyWithRetry(() => import("./pages/OrbGatewayPage"));
 const CalmApp = lazyWithRetry(() => import("./pages/CalmApp"));
 // Legacy UnifiedChat replaced by full standalone LucyStandalonePage (/chat)
 import { resetAppScroll } from "./utils/scrollToTop";
@@ -301,15 +299,6 @@ function AppContent() {
           fullScreen
           message="루시와 행운의 깊은 교감 조율 중..."
           subMessage="FOUR-LEAF CLOVER · FORTUNE & INTUITION"
-        />
-      );
-    }
-    if (location === '/orb' || location === '/gateway' || location === '/crystal' || location === '/key') {
-      return (
-        <OrbCosmicLoader
-          fullScreen
-          message="Key 차원 궤도 동기화 중..."
-          subMessage="ASTRAL CRYSTAL KEY & CONSCIOUSNESS"
         />
       );
     }

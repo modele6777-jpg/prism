@@ -147,7 +147,7 @@ export default defineConfig(({mode}) => {
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
           navigateFallback: 'index.html',
-          navigateFallbackDenylist: [/^\/orb/, /^\/gateway/, /^\/crystal/, /^\/chat/, /^\/lucy/, /^\/handbook/, /^\/rebible/],
+          navigateFallbackDenylist: [/^\/chat/, /^\/lucy/, /^\/handbook/, /^\/rebible/],
           cleanupOutdatedCaches: true,
           clientsClaim: true,
           skipWaiting: true,
@@ -157,9 +157,6 @@ export default defineConfig(({mode}) => {
             {
               urlPattern: ({ request, url }) =>
                 request.destination === 'document' &&
-                !url.pathname.startsWith('/orb') &&
-                !url.pathname.startsWith('/gateway') &&
-                !url.pathname.startsWith('/crystal') &&
                 !url.pathname.startsWith('/chat') &&
                 !url.pathname.startsWith('/lucy') &&
                 !url.pathname.startsWith('/handbook'),
@@ -195,7 +192,6 @@ export default defineConfig(({mode}) => {
           main: path.resolve(__dirname, 'index.html'),
           chat: path.resolve(__dirname, 'chat.html'),
           handbook: path.resolve(__dirname, 'handbook.html'),
-          orb: path.resolve(__dirname, 'orb.html'),
         },
       },
     },

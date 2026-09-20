@@ -1,14 +1,15 @@
 {
   "name": "luckey",
-  "version": "1.2.995",
-  "summary": "빅뱅 버튼 제자리 홀드 동작을 기존 Orb에서 Key(마음약방)로 전면 교체 및 구 Orb 잔재 완전 정리",
-  "builtAt": "2026-09-20T01:40:00.000Z",
+  "version": "1.2.996",
+  "summary": "기존 구버전 Key/Orb 잔재 파일 및 컴포넌트 전면 영구 삭제 및 CALM(Key) 단독 체제 확립",
+  "builtAt": "2026-09-20T01:45:00.000Z",
   "items": [
-    "🔑 빅뱅 버튼 제자리 홀드 시 Key 즉시 진입: BigBangButton에서 제자리 홀드 및 떼기 동작 시 구 /orb.html 대신 Key(/key)로 바로 이동하도록 전면 교체",
-    "🔄 Key 화면에서 제자리 홀드 시 홈 복귀: Key(/key, /calm) 내에서 빅뱅 버튼 홀드 시 안전하게 이전 프리즘 홈으로 귀환 토글 연동",
-    "🎯 선택 텍스트 토스 목적지 Key 연동: 텍스트 드래그(선택) 상태에서 빅뱅 버튼 홀드 시 타깃 앱을 'key'로 지정하여 즉시 마음 처방으로 연계",
-    "🧭 버튼 HUD 명칭 및 아이콘 Key 동기화: 홀드 시 표출되는 앱 명칭을 'Key (마음약방 입장)', '프리즘 귀환'으로 교체하고 PrismAppIcon에 KeyRound(🔑) 공식 렌더링 추가",
-    "🔀 구 /orb 및 /orb.html 경로 자동 리다이렉트: /orb, /orb.html, /gateway, /crystal 접근 시 구 오브 화면 대신 Key(/key)로 자동 이동하도록 클라이언트 및 서버 라우터 완벽 전환"
+    "🗑️ 구버전 Key/Orb 메인 페이지 및 진입점 완전 삭제: src/pages/OrbGatewayPage.tsx, orb.html, src/orb-main.tsx 영구 제거",
+    "🗑️ 구버전 Key 전용 모달 컴포넌트 8종 일괄 삭제: src/components/orb/ 디렉토리 및 CalmTechniquePracticeModal, LucyKeyDigestView, QuantumDecisionModal, RuneCastingModal, SoulAuraScanModal, VoidNebulaModal, OrbSpecialRitualsBar 완전 정리",
+    "🗑️ 구버전 Key 라이브러리 및 하이브리드 데이터 파일 삭제: src/lib/calmPharmacopeia.ts (4,000줄), calmTechniqueCycle.ts, keyArchiveExtractor.ts, lucyKeyDigest.ts, orbRituals.ts 완전 제거",
+    "🗑️ 구버전 PWA 및 아이콘 애셋 정리: public/manifest-orb.webmanifest, manifest-orb.json, orb 아이콘 애셋 및 src/components/OrbCosmicLoader.tsx, CrystalOrbIcon.tsx 완전 삭제",
+    "⚙️ Vite 롤업 빌드 및 PWA 클린업: vite.config.ts의 orb.html 입력 엔트리 및 workbox 오프라인 설정에서 orb 참조 완전 제거",
+    "✨ CALM 기반 순수 Key 마음약방 단독 체제 완성: 기존 Key 자리를 원작 CALM 무손실 웹앱이 100% 온전히 계승하여 완벽 동작"
   ],
   "author": "Antigravity AI Agent",
   "buildEnvironment": "cloud-run"
