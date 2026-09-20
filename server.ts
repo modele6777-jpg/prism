@@ -19,6 +19,7 @@ import express from "express";
 import fs from "fs";
 import * as trpcExpress from "@trpc/server/adapters/express";
 import { appRouter } from "./server/routers/index";
+import { calmRouter } from "./server/calmRouter";
 import path from "path";
 import { fileURLToPath } from "url";
 import { GoogleGenAI } from "@google/genai";
@@ -2126,6 +2127,12 @@ self.addEventListener('activate', (e) => {
     }
   });
 
+  // 🌿 CALM (40대 마음약방) Standalone Static & API Mounting
+  const calmPublicPath = path.resolve(process.cwd(), "public", "calm");
+  app.use("/calm", express.static(calmPublicPath, { index: "index.html" }));
+  app.get(["/key", "/key/"], (_req, res) => res.redirect(302, "/calm/"));
+  app.use(calmRouter);
+
   if (process.env.NODE_ENV !== "production") {
     if (fs.existsSync(distPath)) {
       app.use('/assets', express.static(path.join(distPath, 'assets')));
@@ -2176,6 +2183,15 @@ self.addEventListener('activate', (e) => {
       if (req.path.startsWith('/handbook')) {
         const handbookPath = path.join(distPath, 'handbook.html');
         if (fs.existsSync(handbookPath)) return res.sendFile(handbookPath);
+      }
+      if (req.path.startsWith('/calm')) {
+        const calmPath = path.join(distPath, 'calm', 'index.html');
+        if (fs.existsSync(calmPath)) return res.sendFile(calmPath);
+        const devCalmPath = path.join(process.cwd(), 'public', 'calm', 'index.html');
+        if (fs.existsSync(devCalmPath)) return res.sendFile(devCalmPath);
+      }
+      if (req.path === '/key' || req.path === '/key/') {
+        return res.redirect(302, '/calm/');
       }
       if (req.path.startsWith('/orb') || req.path.startsWith('/gateway') || req.path.startsWith('/crystal')) {
         const orbPath = path.join(distPath, 'orb.html');

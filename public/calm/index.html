@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <script>
+    /* Defensive patch for iframe sandbox where window.fetch has only a getter */
+    (function() {
+      try {
+        function makeFetchWritable(obj) {
+          try {
+            if (!obj) return;
+            var desc = Object.getOwnPropertyDescriptor(obj, 'fetch');
+            if (desc && desc.get && !desc.set) {
+              var activeFetch = desc.get.call(obj) || window.fetch;
+              Object.defineProperty(obj, 'fetch', {
+                configurable: true,
+                enumerable: desc.enumerable !== undefined ? desc.enumerable : true,
+                get: function() { return activeFetch; },
+                set: function(fn) { activeFetch = fn; }
+              });
+            } else if (!desc || (desc.configurable && (!desc.writable && !desc.set))) {
+              var curr = obj.fetch;
+              Object.defineProperty(obj, 'fetch', {
+                configurable: true,
+                enumerable: true,
+                writable: true,
+                value: curr
+              });
+            }
+          } catch (e) {}
+        }
+        makeFetchWritable(window);
+        if (typeof Window !== 'undefined' && Window.prototype) {
+          makeFetchWritable(Window.prototype);
+        }
+        var origDefine = Object.defineProperty;
+        Object.defineProperty = function(obj, prop, descriptor) {
+          if ((obj === window || (typeof Window !== 'undefined' && obj === Window.prototype)) && prop === 'fetch' && descriptor) {
+            var customFetch = null;
+            var origGet = descriptor.get;
+            var origSet = descriptor.set;
+            var patched = {
+              configurable: true,
+              enumerable: descriptor.enumerable !== undefined ? descriptor.enumerable : true,
+              get: function() {
+                if (customFetch !== null) return customFetch;
+                if (origGet) return origGet.call(this);
+                return descriptor.value;
+              },
+              set: function(val) {
+                customFetch = val;
+                if (origSet) {
+                  try { origSet.call(this, val); } catch (e) {}
+                }
+              }
+            };
+            return origDefine.call(Object, obj, prop, patched);
+          }
+          return origDefine.apply(Object, arguments);
+        };
+      } catch (err) {}
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>CALM - 왜 나는 불안할까 | 제이미 저커먼 도서 연동 마음 치유 동반자</title>
+  <meta name="description" content="제이미 저커먼 박사의 도서 '왜 나는 불안할까'와 함께 읽으며 시너지를 내는 프리미엄 독서 동반자 & 40가지 마음 연습 실천 스튜디오">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  
+  <!-- PWA Settings -->
+  <link rel="manifest" href="./manifest.json?v=11.0">
+  <meta name="theme-color" content="#fcf9f5">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="CALM">
+  <link rel="icon" type="image/png" sizes="48x48" href="./favicon.png?v=11.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=11.0">
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Nanum+Myeongjo:wght@400;700;800&family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="./style.css?v=29.0">
+</head>
+<body>
+  <!-- Canvas Watermark -->
+  <div class="canvas-watermark"></div>
+
+  <!-- Top Sticky Navigation -->
+  <nav class="top-nav">
+    <div class="brand-wrapper" id="nav-brand">
+      <div class="brand-icon-thumb">
+        <img src="./apple-touch-icon.png?v=3.0" alt="CALM 북커버 고래 아이콘">
+      </div>
+      <div class="brand-text-col">
+        <div class="brand-heading">
+          CALM <span id="app-version-badge" class="brand-version-badge">v29.0</span>
+        </div>
+        <div class="brand-subheading">왜 나는 불안할까 · 제이미 저커먼 저</div>
+      </div>
+    </div>
+
+    <!-- Soundscape Pill Bar (심리상담실 치유 배경음 14선) -->
+    <div class="soundscape-pill-bar" id="soundscape-bar">
+      <span class="sound-title-tag">🎧 상담실 배경음</span>
+      <div class="sound-scroll-track" id="sound-scroll-track">
+        <button type="button" class="sound-btn" data-sound="ocean" title="깊은 바다 파도 소리 (부교감 신경 이완)">🌊 파도</button>
+        <button type="button" class="sound-btn" data-sound="rain" title="마음을 씻어내는 온화한 빗소리">🌧️ 빗소리</button>
+        <button type="button" class="sound-btn" data-sound="stream" title="산속 옹달샘 맑은 시냇물 (심박수 안정)">🏞️ 시냇물</button>
+        <button type="button" class="sound-btn" data-sound="forest" title="아늑한 숲바람과 나뭇잎 솔바람">🍃 숲바람</button>
+        <button type="button" class="sound-btn" data-sound="fire" title="따뜻한 벽난로 장작 타는 소리 (심리적 안정감)">🪵 벽난로</button>
+        <button type="button" class="sound-btn" data-sound="bowl" title="티베트 싱잉볼 깊은 명상 울림 (뇌파 안정)">🔔 싱잉볼</button>
+        <button type="button" class="sound-btn" data-sound="freq432" title="432Hz 치유 주파수 (알파파 유도 & 근육 이완)">✨ 432Hz 치유</button>
+        <button type="button" class="sound-btn" data-sound="freq528" title="528Hz 평온·스트레스 호르몬 감소 주파수">💖 528Hz 평온</button>
+        <button type="button" class="sound-btn" data-sound="om" title="깊은 젠 옴(Om) 명상 호흡 공명음">🧘 젠 옴 드론</button>
+        <button type="button" class="sound-btn" data-sound="chime" title="청아한 크리스탈 풍경 윈드차임">🎐 풍경 차임</button>
+        <button type="button" class="sound-btn" data-sound="musicbox" title="마음 치유 펜타토닉 힐링 오르골">🎶 치유 오르골</button>
+        <button type="button" class="sound-btn" data-sound="crickets" title="고요한 여름밤의 안식 풀벌레 소리">🌙 밤의 풀벌레</button>
+        <button type="button" class="sound-btn" data-sound="pink" title="임상 심리상담실 차음 핑크 노이즈 (잡념 차단)">🔕 핑크 노이즈</button>
+        <button type="button" class="sound-btn" data-sound="thunder" title="창밖 빗소리와 아늑한 먼 천둥소리">⛈️ 먼 천둥</button>
+      </div>
+      <div class="sound-controls-group">
+        <label for="sound-vol-slider" class="sound-vol-label" title="배경음 볼륨 조절">🔊</label>
+        <input type="range" id="sound-vol-slider" class="sound-vol-range" min="0" max="1" step="0.05" value="0.45" aria-label="배경음 음량" title="배경음 볼륨 조절">
+        <button type="button" id="sound-btn-stop" class="sound-btn-stop hidden" title="배경음 끄기">⏹️ 끄기</button>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="nav-actions">
+      <a href="/" class="nav-btn" style="text-decoration: none; color: inherit; display: inline-flex; align-items: center; gap: 5px;" title="LucKey 홈으로 이동">
+        <span>🍀</span>
+        <span>LucKey</span>
+      </a>
+      <button id="btn-install-pwa" class="nav-btn hidden" title="홈 화면에 앱 설치하기">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        <span>앱 설치</span>
+      </button>
+      <button id="btn-open-journal" class="nav-btn" title="나만의 실천 워크북 기록장">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+        <span>내 워크북</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main Content Wrapper -->
+  <main class="main-wrapper">
+    <!-- Hero Book Showcase -->
+    <header class="hero-showcase">
+      <div class="book-3d-frame">
+        <img src="/book-cover.jpg" alt="FIND YOUR 왜 나는 불안할까 도서 표지 (파도 속 고래 일러스트)">
+      </div>
+      <div class="hero-text-content">
+        <div class="hero-tag">Clinical Psychology · ACT Workbook</div>
+        <h1 class="hero-title">불안에 맞서 싸우지 마세요,<br>파도처럼 가만히 지나가게 두세요</h1>
+        <p class="hero-desc">
+          임상심리학자 제이미 저커먼 박사의 도서 <strong>《FIND YOUR 왜 나는 불안할까》</strong>와 함께 읽는 디지털 워크북입니다. 책을 읽으며 쪽수를 맞추고, 40가지 연습을 직접 실천하며 나만의 평온을 찾아가세요.
+        </p>
+      </div>
+      <div class="hero-actions">
+        <button id="hero-btn-random" class="nav-btn nav-btn-primary">
+          <span>🎲 오늘의 랜덤 실천 처방</span>
+        </button>
+        <button id="hero-btn-explore" class="nav-btn">
+          <span>🎯 40가지 실천 연습실</span>
+        </button>
+        <button id="hero-btn-chat" class="nav-btn">
+          <span>💬 Dr. Z 마음 대화</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Companion Page Sync Bar -->
+    <section class="sync-bookmark-bar">
+      <div class="sync-bar-left">
+        <div class="bookmark-icon">🔖</div>
+        <div class="sync-bar-text">
+          <h4>지금 책 몇 쪽을 읽고 계신가요?</h4>
+          <p>쪽수를 입력하시면 해당 페이지의 핵심 인사이트와 실천 연습을 즉시 띄워드립니다.</p>
+        </div>
+      </div>
+      <div class="sync-bar-controls">
+        <div class="page-stepper">
+          <span>P.</span>
+          <input type="number" id="companion-page-input" min="8" max="160" value="18">
+        </div>
+        <button id="btn-sync-page" class="btn-copper">동기화</button>
+        <button id="btn-random-prescription" class="btn-sage">🎲 랜덤 처방</button>
+      </div>
+    </section>
+
+    <!-- Page Sync Quick Drawer Card -->
+    <div id="sync-drawer-card" class="sync-drawer-card">
+      <div class="sync-drawer-info">
+        <span class="sync-drawer-chapter" id="sync-chapter-badge">1장 · 머릿속 혼돈과 거리 두기</span>
+        <h3 class="sync-drawer-title" id="sync-title-text">연습 1. 걱정 그리기 (18쪽)</h3>
+        <p class="sync-drawer-desc" id="sync-desc-text">오감을 사용해 머릿속 불안에 형태와 색깔, 무게를 부여하고 관찰자와 생각을 분리하는 인지적 탈융합 연습입니다.</p>
+      </div>
+      <div class="sync-drawer-buttons">
+        <button id="btn-sync-practice" class="btn-copper">🎯 이 페이지 직접 실천하기</button>
+        <button id="btn-sync-ask" class="btn-sage">💬 Dr. Z에게 질문하기</button>
+      </div>
+    </div>
+
+    <!-- Segmented Navigation Tabs -->
+    <div class="view-tabs-container">
+      <div class="segmented-tabs" role="tablist">
+        <button class="tab-pill active" data-tab="tab-chat" role="tab">
+          <span class="tab-pill-icon">💬</span>
+          <span class="tab-label-full">Dr. Z 마음 대화</span>
+          <span class="tab-label-short">마음 대화</span>
+        </button>
+        <button class="tab-pill" data-tab="tab-exercises" role="tab">
+          <span class="tab-pill-icon">🎯</span>
+          <span class="tab-label-full">40가지 실천 연습실</span>
+          <span class="tab-label-short">40개 연습</span>
+        </button>
+        <button class="tab-pill" data-tab="tab-workbook" role="tab">
+          <span class="tab-pill-icon">📓</span>
+          <span class="tab-label-full">나의 실천 워크북</span>
+          <span class="tab-label-short">실천 워크북</span>
+        </button>
+        <button class="tab-pill" data-tab="tab-breathing" role="tab">
+          <span class="tab-pill-icon">🎈</span>
+          <span class="tab-label-full">풍선 호흡 (이완)</span>
+          <span class="tab-label-short">풍선 호흡</span>
+        </button>
+        <button class="tab-pill" data-tab="tab-teachings" role="tab">
+          <span class="tab-pill-icon">✨</span>
+          <span class="tab-label-full">내면의 쉼표 가르침</span>
+          <span class="tab-label-short">내면의 쉼표</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- TAB 1: Chat Interface -->
+    <section id="tab-chat" class="tab-view-section active">
+      <div class="chat-card">
+        <div class="chat-card-header">
+          <div class="chat-author-meta">
+            <div class="author-avatar">
+              <img src="/favicon.png?v=3.0" alt="Z">
+            </div>
+            <div class="author-names">
+              <h3>제이미 저커먼 박사 AI 상담실</h3>
+              <p>도서 전문 지식 & 수용전념치료(ACT) 기반 마음 치유 동반자</p>
+            </div>
+          </div>
+          <button id="btn-clear-chat" class="nav-btn" style="padding: 5px 12px; font-size: 0.78rem;" title="대화 지우기">대화 초기화</button>
+        </div>
+
+        <div id="chat-messages" class="chat-flow-container">
+          <div class="chat-bubble-row assistant">
+            <div class="author-avatar" style="width: 34px; height: 34px; flex-shrink: 0;">
+              <img src="/favicon.png?v=3.0" alt="Z" style="width: 20px; height: 20px;">
+            </div>
+            <div class="bubble-content">
+              <p>반갑습니다. 《<strong>FIND YOUR 왜 나는 불안할까</strong>》 도서 지식과 <strong>내면의 쉼표 3단계 치유</strong>(신체 접지 · 기적수업 용서 · 온전함 선언)가 통합된 마음 치유 동반자입니다.</p>
+              <p>책을 읽다 마음에 걸린 문장이나 지금 마음에 이는 어떤 파도든 편안하게 들려주세요. 질문하시면 아래의 <strong>3단계 통합 치유 카드</strong>와 <strong>맞춤 실천 연습</strong>을 즉시 처방해 드립니다:</p>
+              
+              <div class="stage-cards-container" style="margin: 12px 0;">
+                <div class="stage-card grounding" style="padding: 12px 16px;">
+                  <span class="stage-badge">🌿 1. 신체 접지</span>
+                  <div style="font-size: 0.85rem; color: var(--text-muted);">몸의 긴장을 알아차리고 지금-여기로 호흡 닻 내리기</div>
+                </div>
+                <div class="stage-card healing" style="padding: 12px 16px;">
+                  <span class="stage-badge">💧 2. 기적수업 용서 & ACT</span>
+                  <div style="font-size: 0.85rem; color: var(--text-muted);">두려운 해석 내려놓기와 생각과 나를 분리하는 수용</div>
+                </div>
+                <div class="stage-card liberation" style="padding: 12px 16px;">
+                  <span class="stage-badge">✨ 3. 본래의 온전함</span>
+                  <div style="font-size: 0.85rem; color: var(--text-muted);">외부 조건에 결코 훼손되지 않는 내면의 순수한 평화 선언</div>
+                </div>
+              </div>
+
+              <blockquote>"감정은 바다의 파도와 같습니다. 맞서 싸우면 휩쓸리지만, 서핑하듯 관찰하면 스스로 정점을 찍고 가라앉습니다."</blockquote>
+              
+              <div class="prompt-chips-row">
+                <button class="chip-btn" data-prompt="발표를 앞두고 있어서 심장이 너무 뛰고 두려워요.">🎤 발표 앞두고 심장이 뜀</button>
+                <button class="chip-btn" data-prompt="자꾸 나쁜 생각과 걱정이 꼬리를 물고 멈추지 않아요.">🌀 꼬리 무는 생각과 반추</button>
+                <button class="chip-btn" data-prompt="해야 할 일을 자꾸 미루고 나 자신을 자책하게 돼요.">⏳ 완벽주의와 과제 미루기</button>
+                <button class="chip-btn" data-prompt="남들의 시선과 평가가 너무 두렵고 눈치 보여요.">👥 타인의 시선과 가면 증후군</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-composer-bar">
+          <form id="chat-form" style="display: flex; flex-direction: column; gap: 8px;">
+            <div class="composer-input-box">
+              <textarea id="user-input" rows="1" placeholder="지금 어떤 생각이나 감정이 머무르고 있나요? (Enter 전송, Shift+Enter 줄바꿈)" required></textarea>
+              <button type="submit" id="send-btn" class="composer-send-btn" aria-label="전송">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: 40 Exercises Studio Grid -->
+    <section id="tab-exercises" class="tab-view-section">
+      <div class="exercises-view-wrapper">
+        <div class="exercises-filter-strip">
+          <button class="filter-pill-btn active" data-chapter="all">전체 (40개 연습)</button>
+          <button class="filter-pill-btn" data-chapter="1">1장: 머릿속 혼돈과 거리 두기 (1~12)</button>
+          <button class="filter-pill-btn" data-chapter="2">2장: 내 몸의 감각 깨우기 (13~22)</button>
+          <button class="filter-pill-btn" data-chapter="3">3장: 불편한 감정 직면하기 (23~40)</button>
+        </div>
+
+        <div id="exercises-grid" class="cards-gallery-grid">
+          <!-- Dynamically populated via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: Systematic Workbook Journal (나의 실천 워크북 기록장) -->
+    <section id="tab-workbook" class="tab-view-section">
+      <div class="workbook-view-wrapper">
+        <!-- 1. 워크북 에디토리얼 헤더 카드 -->
+        <div class="workbook-header-card">
+          <div class="workbook-header-content">
+            <div class="workbook-tag-row">
+              <span class="hero-tag">Clinical Psychological Records · ACT Workbook</span>
+              <span class="workbook-save-badge">🔒 로컬 브라우저 영구 안전 보관</span>
+            </div>
+            <h2 class="workbook-main-title">나의 실천 워크북 기록장</h2>
+            <p class="workbook-main-desc">
+              《FIND YOUR 왜 나는 불안할까》 40가지 연습과 3분 응급 처방전을 실천하며 기록한 나만의 치유 저널입니다. 생각과 감정의 변화, 주관적 불편감(SUD) 완화 추이를 한눈에 확인하고 지속적인 성장을 이어가세요.
+            </p>
+          </div>
+          <div class="workbook-header-actions">
+            <button id="wb-btn-export" class="nav-btn" title="모든 실천 기록을 텍스트 파일로 저장합니다">
+              <span>📥 텍스트로 내보내기</span>
+            </button>
+            <button id="wb-btn-clear" class="nav-btn" style="color: #c44;" title="저장된 모든 실천 기록을 삭제합니다">
+              <span>기록 전체 삭제</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. 체계적 분석 및 통계 대시보드 그리드 -->
+        <div class="workbook-stats-grid">
+          <div class="wb-stat-card">
+            <div class="wb-stat-icon">🎯</div>
+            <div class="wb-stat-info">
+              <div class="wb-stat-label">40개 연습 완주율</div>
+              <div class="wb-stat-val" id="wb-stat-rate">0 / 40개 (0%)</div>
+              <div class="wb-progress-track">
+                <div class="wb-progress-bar" id="wb-stat-bar" style="width: 0%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wb-stat-card">
+            <div class="wb-stat-icon">📝</div>
+            <div class="wb-stat-info">
+              <div class="wb-stat-label">누적 실천 횟수</div>
+              <div class="wb-stat-val" id="wb-stat-count">0회</div>
+              <div class="wb-stat-sub" id="wb-stat-streak">꾸준한 치유 여정</div>
+            </div>
+          </div>
+
+          <div class="wb-stat-card">
+            <div class="wb-stat-icon">🌱</div>
+            <div class="wb-stat-info">
+              <div class="wb-stat-label">평균 마음불편도 (SUD)</div>
+              <div class="wb-stat-val" id="wb-stat-sud">- / 10점</div>
+              <div class="wb-stat-sub" id="wb-stat-sud-desc">10점 만점 기준 (낮을수록 평온)</div>
+            </div>
+          </div>
+
+          <div class="wb-stat-card">
+            <div class="wb-stat-icon">🌟</div>
+            <div class="wb-stat-info">
+              <div class="wb-stat-label">최근 실천 리추얼</div>
+              <div class="wb-stat-val" id="wb-stat-last">-</div>
+              <div class="wb-stat-sub" id="wb-stat-last-chapter">오늘의 연습을 실천해보세요</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. 체계적 필터 및 검색 툴바 -->
+        <div class="workbook-toolbar">
+          <div class="wb-filter-pills" id="wb-filter-pills">
+            <button class="wb-pill active" data-wb-filter="all">전체 기록 (<span id="wb-cnt-all">0</span>)</button>
+            <button class="wb-pill" data-wb-filter="1">1장: 머릿속 혼돈 (<span id="wb-cnt-ch1">0</span>)</button>
+            <button class="wb-pill" data-wb-filter="2">2장: 신체 감각 (<span id="wb-cnt-ch2">0</span>)</button>
+            <button class="wb-pill" data-wb-filter="3">3장: 불편한 감정 (<span id="wb-cnt-ch3">0</span>)</button>
+            <button class="wb-pill" data-wb-filter="rx">💊 3분 처방전 (<span id="wb-cnt-rx">0</span>)</button>
+          </div>
+
+          <div class="wb-search-box">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="wb-search-input" placeholder="기록 내용, 연습 제목, 키워드 검색...">
+          </div>
+        </div>
+
+        <!-- 4. 구조화된 워크북 피드 목록 -->
+        <div class="workbook-entries-container" id="workbook-entries-container">
+          <!-- Dynamically populated via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: Balloon Breathing Studio -->
+    <section id="tab-breathing" class="tab-view-section">
+      <div class="breathing-studio-card">
+        <span class="hero-tag">Vagus Nerve Reset · 미주신경 이완</span>
+        <h2 style="font-family: 'Nanum Myeongjo', serif; font-size: 1.6rem; color: var(--text-title); margin: 8px 0;">5초 유기적 풍선 호흡</h2>
+        <p style="font-size: 0.92rem; color: var(--text-muted); max-width: 520px;">
+          풍선이 부풀어 오를 때 코로 숨을 깊게 들이쉬고, 줄어들 때 입으로 천천히 내쉬어 보세요. 부교감 신경을 즉각 자극하여 몸의 긴장을 풉니다.
+        </p>
+
+        <div class="balloon-stage-area">
+          <div id="breathing-balloon" class="organic-balloon">
+            <div id="balloon-phase" class="b-phase">준비</div>
+            <div id="balloon-timer" class="b-timer">5</div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; align-items: center; margin-top: 10px;">
+          <button id="btn-breathing-toggle" class="btn-copper" style="padding: 12px 28px; font-size: 1rem;">
+            <span>호흡 시작하기</span>
+          </button>
+          <span style="font-size: 0.88rem; color: var(--text-muted);">완료한 사이클: <strong id="cycle-count" style="color: var(--copper-primary);">0</strong>회</span>
+        </div>
+      </div>
+    </section>
+    <!-- TAB 4: Inner Pause Teachings (내면의 쉼표 3단계 가르침 섹션) -->
+    <section id="tab-teachings" class="tab-view-section">
+      <div class="teachings-view-wrapper">
+        <!-- Teachings Hero Introduction -->
+        <div class="teachings-intro-banner">
+          <div class="teachings-badge-row">
+            <span class="teachings-mini-badge">Somatic Grounding · ACIM Forgiveness · Inherent Wholeness</span>
+            <span class="teachings-mini-badge">영적 지혜 & 임상 심리학의 통합</span>
+          </div>
+          <h2 class="teachings-main-title">내면의 쉼표 3단계 가르침</h2>
+          <p class="teachings-main-desc">
+            불안의 파도에 맞서 싸우지 않고, 신체 감각을 자각하며(신체 접지), 두려운 해석을 내려놓고(기적수업 용서), 훼손되지 않는 본래의 평화를 선언(온전함)하는 내면의 쉼표 수행입니다.
+          </p>
+        </div>
+
+        <!-- 1. 오늘의 3단계 가르침 받기 오라클 카드 -->
+        <div class="teaching-oracle-card" id="teaching-oracle-card">
+          <div class="oracle-card-topbar">
+            <div class="oracle-theme-pill" id="oracle-theme-pill">
+              <span id="oracle-icon">🌊</span>
+              <span id="oracle-theme">파도와 바다</span>
+            </div>
+            <div class="oracle-top-actions">
+              <button id="btn-draw-teaching" class="btn-copper" title="다른 3단계 가르침 받기">
+                <span>🎲 오늘의 가르침 새로 받기</span>
+              </button>
+            </div>
+          </div>
+
+          <h3 class="oracle-headline" id="oracle-headline">불안은 바다의 파도일 뿐, 당신은 바다 그 자체입니다</h3>
+          <p class="oracle-quote" id="oracle-quote">"맞서 싸우면 휩쓸리지만, 가만히 바라보면 파도는 스스로 하얗게 부서지며 가라앉습니다."</p>
+
+          <!-- 3단계 가르침 그리드 -->
+          <div class="teaching-stages-grid">
+            <!-- 1단계 -->
+            <div class="teaching-stage-item stage-grounding">
+              <div class="stage-item-header">
+                <span class="stage-item-badge">🌿 1. 신체 접지 (Somatic)</span>
+                <span class="stage-item-keyword">몸의 긴장 이완 & 호흡 닻 내리기</span>
+              </div>
+              <p class="stage-item-desc" id="oracle-grounding-inst">턱과 어깨의 힘을 툭 빼고, 아랫배가 부풀어 올랐다 가라앉는 숨의 파도에 의식의 닻을 내리세요.</p>
+              <div class="stage-item-practice-box">
+                <strong>실천 가이드:</strong>
+                <span id="oracle-grounding-prac">코로 4초 깊게 들이쉬고, 입으로 6초 동안 천천히 내쉬며 온몸의 긴장을 바닥으로 흘려보냅니다.</span>
+              </div>
+            </div>
+
+            <!-- 2단계 -->
+            <div class="teaching-stage-item stage-healing">
+              <div class="stage-item-header">
+                <span class="stage-item-badge">💧 2. 기적수업 용서 (ACIM & ACT)</span>
+                <span class="stage-item-keyword">두려운 해석 거두기 & 관찰자 분리</span>
+              </div>
+              <p class="stage-item-desc" id="oracle-healing-inst">감정을 억누르거나 상황을 탓하려던 마음속의 투쟁을 조용히 손에서 내려놓으세요.</p>
+              <div class="stage-item-practice-box">
+                <strong>마음 선언:</strong>
+                <span id="oracle-healing-prac">"지금 내 마음에 불안이라는 파도가 찾아왔구나. 하지만 나는 저항하지 않고 관찰하겠다" 하고 용서하세요.</span>
+              </div>
+            </div>
+
+            <!-- 3단계 -->
+            <div class="teaching-stage-item stage-liberation">
+              <div class="stage-item-header">
+                <span class="stage-item-badge">✨ 3. 본래의 온전함 (Liberation)</span>
+                <span class="stage-item-keyword">조건 없는 영원한 평화 선언</span>
+              </div>
+              <div class="stage-item-declaration-box">
+                <p id="oracle-liberation-decl">수면 위의 파도가 제아무리 거세게 요동쳐도, 심연 속 바다의 깊은 평화는 단 1밀리미터도 훼손되지 않습니다. 나는 이미 온전합니다.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 가르침 하단 액션 버튼 바 -->
+          <div class="oracle-card-footer">
+            <div class="oracle-question-wrap">
+              <span class="q-icon">💡</span>
+              <span class="q-text" id="oracle-question">지금 내 마음에 이는 파도를 억지로 잔잔하게 만들려 애쓰고 있진 않나요?</span>
+            </div>
+            <div class="oracle-action-btns">
+              <button id="btn-meditate-teaching" class="btn-sage">
+                <span>🧘 3분 체화 명상 리추얼</span>
+              </button>
+              <button id="btn-ask-teaching" class="btn-copper">
+                <span>💬 이 가르침으로 상담받기</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. 3단계 치유 핵심 원리 마스터 가이드 -->
+        <div class="principles-showcase-section">
+          <div class="section-subheading-box">
+            <h3>📖 3단계 치유 핵심 원리 마스터 가이드</h3>
+            <p>신체와 생각, 영혼의 3차원을 통합하는 근본적인 평온의 메커니즘을 이해합니다.</p>
+          </div>
+
+          <div class="principles-3col-grid">
+            <div class="principle-column-card">
+              <div class="p-card-icon">🌿</div>
+              <h4>왜 신체 접지가 가장 먼저인가?</h4>
+              <div class="p-card-tag">미주신경 & 뇌간 안정화</div>
+              <p>
+                불안이 일어날 때 우리 뇌의 편도체(경보 장치)는 온몸에 비상 신호를 뿜어냅니다. 이 상태에서는 긍정적인 생각이나 논리적 설득이 통하지 않습니다.
+              </p>
+              <p class="p-card-highlight">
+                가장 먼저 신체 감각(발바닥, 호흡의 온도, 어깨 이완)에 닻을 내려 자율신경계에 "지금 위험하지 않다"는 생리적 신호를 보내야 생각의 빗장이 풀립니다.
+              </p>
+            </div>
+
+            <div class="principle-column-card">
+              <div class="p-card-icon">💧</div>
+              <h4>기적수업의 '용서'와 ACT의 '탈융합'</h4>
+              <div class="p-card-tag">해석의 투사 거두기 & 관찰자 자각</div>
+              <p>
+                기적수업에서 용서란 타인의 잘못을 참는 것이 아니라, "상황을 위협으로 해석하던 내 마음의 두려운 투사를 거두어들이는 것"입니다.
+              </p>
+              <p class="p-card-highlight">
+                수용전념치료(ACT)의 인지적 탈융합과 마찬가지로, 떠오르는 생각을 '나 자신'이 아닌 '마음에 잠시 스쳐 지나가는 구름'으로 분리할 때 공간이 생깁니다.
+              </p>
+            </div>
+
+            <div class="principle-column-card">
+              <div class="p-card-icon">✨</div>
+              <h4>본래의 온전함(Inherent Wholeness)</h4>
+              <div class="p-card-tag">훼손될 수 없는 영원한 순수 평화</div>
+              <p>
+                우리는 종종 불안이나 결점을 고쳐야만 완전해진다고 착각합니다. 하지만 구름이 아무리 짙게 껴도 구름 뒤 푸른 하늘은 결코 상처 입지 않습니다.
+              </p>
+              <p class="p-card-highlight">
+                당신은 결코 망가지지 않았습니다. 어떤 불안의 파도도 내면의 거룩한 빛을 파괴할 수 없습니다. "나는 지금 이대로 온전하다"는 선언이 평온을 엽니다.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. 3분 내면의 쉼표 인터랙티브 명상 플레이어 카드 -->
+        <div class="teaching-meditation-box" id="teaching-meditation-box">
+          <div class="t-med-top">
+            <div class="t-med-title-col">
+              <span class="hero-tag">Guided 3-Stage Ritual</span>
+              <h3>🧘 내면의 쉼표 3분 체화 명상</h3>
+              <p>접지(60초) · 용서(60초) · 온전함(60초)을 Dr. Z의 실시간 TTS 음성과 타이머로 직접 체화합니다.</p>
+            </div>
+
+            <div class="t-med-controls-col">
+              <div class="t-med-tts-toolbar">
+                <button type="button" id="btn-ritual-voice-toggle" class="btn-voice-toggle active" title="TTS 음성 안내 켜기/끄기">
+                  <span class="voice-toggle-icon" id="voice-toggle-icon">🔊</span>
+                  <span class="voice-toggle-text" id="voice-toggle-text">음성 안내 ON</span>
+                </button>
+                <div class="voice-select-wrap">
+                  <label for="ritual-voice-select" class="voice-select-label">보이스:</label>
+                  <select id="ritual-voice-select" class="ritual-voice-select" aria-label="명상 가이드 목소리 선택">
+                    <option value="Kore" selected>코레 (Kore · 따뜻하고 다정한 여성음)</option>
+                    <option value="Puck">퍽 (Puck · 차분하고 편안한 남성음)</option>
+                    <option value="Zephyr">제피르 (Zephyr · 고요한 중성음)</option>
+                    <option value="browser">기기 로컬 음성 (Web Speech)</option>
+                  </select>
+                </div>
+              </div>
+
+              <button id="btn-start-ritual" class="btn-copper">
+                <span>명상 리추얼 시작</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="t-med-player hidden" id="t-med-player">
+            <div class="t-med-stepper">
+              <div class="t-step-dot active" id="t-dot-1">1단계: 신체 접지 (60초)</div>
+              <div class="t-step-divider"></div>
+              <div class="t-step-dot" id="t-dot-2">2단계: 기적수업 용서 (60초)</div>
+              <div class="t-step-divider"></div>
+              <div class="t-step-dot" id="t-dot-3">3단계: 온전함 선언 (60초)</div>
+            </div>
+
+            <div class="t-med-clock-box">
+              <div class="t-med-clock-num" id="t-med-sec">60</div>
+              <div class="t-med-clock-label" id="t-med-stage-name">1단계: 신체 접지 안내</div>
+            </div>
+
+            <!-- 실시간 TTS 음성 상태 인디케이터 바 -->
+            <div class="t-med-voice-status" id="t-med-voice-status">
+              <div class="voice-wave-bars" id="voice-wave-bars">
+                <span class="wave-bar bar-1"></span>
+                <span class="wave-bar bar-2"></span>
+                <span class="wave-bar bar-3"></span>
+                <span class="wave-bar bar-4"></span>
+              </div>
+              <span id="voice-status-text" class="voice-status-text">🎙️ Dr. Z 음성 안내 준비 완료</span>
+              <button type="button" id="btn-replay-voice" class="btn-replay-voice" title="현재 단계 음성 다시 듣기">
+                <span>🔄 음성 다시 듣기</span>
+              </button>
+            </div>
+
+            <p class="t-med-guidance-text" id="t-med-guide">
+              가만히 눈을 감고 어깨의 힘을 뺍니다. 아랫배가 부풀어 오르고 가라앉는 숨의 온도를 느껴보세요.
+            </p>
+
+            <div style="display: flex; justify-content: center; gap: 12px; margin-top: 14px;">
+              <button id="btn-stop-ritual" class="nav-btn">명상 중단</button>
+              <button id="btn-next-stage" class="nav-btn" title="다음 단계로 바로 넘어가기">다음 단계 ➔</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Practice Studio Interactive Modal -->
+  <div id="modal-practice" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-window">
+      <div class="modal-top-bar">
+        <div class="modal-title-box">
+          <div class="modal-title-icon" id="studio-icon">🎯</div>
+          <div class="modal-title-text">
+            <span class="sync-drawer-chapter" id="studio-chapter">1장 · 머릿속 혼돈과 거리 두기</span>
+            <h2 id="studio-title">연습 1. 걱정 그리기</h2>
+          </div>
+        </div>
+        <button id="btn-close-studio" class="modal-close-icon-btn" aria-label="닫기">&times;</button>
+      </div>
+
+      <div class="modal-scrollable-body" id="studio-body">
+        <!-- Interactive Step Components dynamically injected -->
+      </div>
+
+      <div class="modal-bottom-bar">
+        <div class="stepper-dots-row" id="studio-stepper-dots">
+          <!-- Step dots -->
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button id="studio-prev-step" class="nav-btn">이전 단계</button>
+          <button id="studio-next-step" class="btn-copper">다음 단계</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 💊 3-Minute Emergency Prescription Studio Modal (오늘의 3분 마음 응급처방 전용 스튜디오) -->
+  <div id="modal-prescription" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-window prescription-modal-window">
+      <div class="modal-top-bar">
+        <div class="modal-title-box">
+          <div class="modal-title-icon" style="background: #fdf0e6; color: var(--copper-primary);">💊</div>
+          <div class="modal-title-text">
+            <h2>Dr. Z의 오늘의 3분 마음 처방</h2>
+            <p>180초 동안 신체를 이완하고 걱정을 털어내며 오늘의 처방전을 발급받습니다.</p>
+          </div>
+        </div>
+        <button id="btn-close-prescription" class="modal-close-icon-btn" aria-label="닫기">&times;</button>
+      </div>
+
+      <!-- 3분 타이머 및 단계 인디케이터 헤더 -->
+      <div class="rx-timer-banner">
+        <div class="rx-timer-clock">
+          <span id="rx-timer-digits">03:00</span>
+          <span class="rx-timer-label">남은 시간</span>
+        </div>
+        <div class="rx-steps-timeline">
+          <div class="rx-step-chip active" id="rx-chip-1">
+            <span class="rx-step-num">1</span>
+            <span class="rx-step-name">신체 이완 (45초)</span>
+          </div>
+          <div class="rx-step-divider"></div>
+          <div class="rx-step-chip" id="rx-chip-2">
+            <span class="rx-step-num">2</span>
+            <span class="rx-step-name">걱정 털어내기 (75초)</span>
+          </div>
+          <div class="rx-step-divider"></div>
+          <div class="rx-step-chip" id="rx-chip-3">
+            <span class="rx-step-num">3</span>
+            <span class="rx-step-name">처방전 발급 (60초)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-scrollable-body" id="rx-modal-body">
+        <!-- 1단계: 신체 이완 & 4-6 호흡 -->
+        <div class="rx-stage-view" id="rx-stage-1">
+          <div class="rx-guide-box">
+            <h3>🌿 1단계: 지금-여기 내 몸으로 돌아오기</h3>
+            <p>머릿속 생각의 폭풍에서 빠져나와 몸의 감각에 닻을 내립니다. 가슴에 한 손을 얹고 어깨의 긴장을 툭 내려놓으세요.</p>
+          </div>
+
+          <div class="rx-breath-circle-container">
+            <div class="rx-breath-circle" id="rx-breath-visual">
+              <div id="rx-breath-instruction">숨 들이쉬기</div>
+              <div class="rx-breath-sec" id="rx-breath-sec">4</div>
+            </div>
+          </div>
+
+          <p style="text-align: center; font-size: 0.9rem; color: var(--text-muted);">
+            4초간 코로 깊게 들이쉬고, 6초간 입으로 천천히 내쉽니다.
+          </p>
+        </div>
+
+        <!-- 2단계: 걱정 털어내기 & 파도 탈융합 -->
+        <div class="rx-stage-view hidden" id="rx-stage-2">
+          <div class="rx-guide-box">
+            <h3>🌊 2단계: 걱정을 파도에 흘려보내기</h3>
+            <p>오늘 나를 괴롭히는 생각, 두려움, 자책을 적어보세요. 그 생각은 '사실'이 아니라 마음을 스쳐가는 '파도'일 뿐입니다.</p>
+          </div>
+
+          <div class="rx-worry-shredder-box">
+            <div id="rx-worry-input-area">
+              <textarea id="rx-worry-text" rows="3" placeholder="예: 오늘 회의에서 실수할까 봐 너무 불안하고 심장이 뛰어..."></textarea>
+              <button id="btn-dissolve-worry" class="btn-copper" style="width: 100%; padding: 14px; font-size: 1rem;">
+                <span>🌊 이 생각을 파도에 녹여 흘려보내기</span>
+              </button>
+            </div>
+
+            <!-- 녹아내리는 애니메이션 뷰 -->
+            <div id="rx-dissolved-result" class="hidden">
+              <div class="rx-wave-animation">
+                <div class="rx-dissolved-quote">
+                  "방금 흘려보낸 생각은 당신 자신이 아닙니다.<br>
+                  감정의 파도는 스스로 정점을 찍고 바다로 가라앉습니다."
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3단계: 처방전 영수증 발급 -->
+        <div class="rx-stage-view hidden" id="rx-stage-3">
+          <div class="rx-receipt-card" id="rx-receipt-printable">
+            <div class="rx-receipt-header">
+              <div class="rx-receipt-badge">DR. Z's CLINICAL RX</div>
+              <h2>오늘의 3분 마음 처방전</h2>
+              <div class="rx-receipt-date" id="rx-receipt-date">2026. 09. 12</div>
+            </div>
+
+            <div class="rx-receipt-divider">--------------------------------</div>
+
+            <div class="rx-receipt-row">
+              <span class="rx-label">처방 대상:</span>
+              <span class="rx-val">지금 평온이 필요한 나</span>
+            </div>
+            <div class="rx-receipt-row">
+              <span class="rx-label">오늘의 상태:</span>
+              <span class="rx-val" id="rx-receipt-worry-label">긴장 및 불안 완화</span>
+            </div>
+
+            <div class="rx-receipt-box">
+              <div class="rx-rec-badge-mini" id="rx-rec-badge">1장 · 인지적 탈융합</div>
+              <h4 id="rx-rec-title">연습 1. 걱정 그리기 (18쪽)</h4>
+              <p id="rx-rec-desc">머릿속 혼돈에 형태와 무게를 부여해 나와 분리하는 연습입니다.</p>
+            </div>
+
+            <div class="rx-receipt-quote">
+              <span class="quote-mark">“</span>
+              <p id="rx-rec-quote">괜찮지 않아도 괜찮습니다. 생각은 통제할 수 없지만, 그 생각을 대하는 나의 태도는 선택할 수 있습니다.</p>
+            </div>
+
+            <div class="rx-receipt-footer">
+              <p>도서 《왜 나는 불안할까》 제이미 저커먼 박사 지식 연동</p>
+              <div class="rx-receipt-barcode">||| | |||| | ||| ||||| || | |||</div>
+            </div>
+          </div>
+
+          <div class="rx-receipt-actions">
+            <button id="btn-rx-save-journal" class="btn-copper">
+              <span>📓 내 워크북에 처방전 보관</span>
+            </button>
+            <button id="btn-rx-practice-now" class="btn-sage">
+              <span>🎯 처방된 연습 지금 실천하기</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-bottom-bar">
+        <button id="btn-rx-toggle-sound" class="nav-btn">
+          <span>🔔 싱잉볼 소리 켜기</span>
+        </button>
+        <div style="display: flex; gap: 10px;">
+          <button id="btn-rx-prev" class="nav-btn hidden">이전</button>
+          <button id="btn-rx-next" class="btn-copper">다음 단계</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Workbook Journal Modal -->
+  <div id="modal-journal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-window">
+      <div class="modal-top-bar">
+        <div class="modal-title-box">
+          <div class="modal-title-icon">📓</div>
+          <div class="modal-title-text">
+            <h2>나의 실천 워크북 기록장</h2>
+            <p>직접 실천하고 기록한 40가지 연습의 답변과 치유의 순간들입니다.</p>
+          </div>
+        </div>
+        <button id="btn-close-journal" class="modal-close-icon-btn" aria-label="닫기">&times;</button>
+      </div>
+
+      <div class="modal-scrollable-body" id="journal-entries-container">
+        <!-- Injected via JS -->
+      </div>
+
+      <div class="modal-bottom-bar" style="justify-content: flex-end;">
+        <button id="btn-export-journal" class="nav-btn" style="margin-right: auto;">📥 텍스트로 내보내기</button>
+        <button id="btn-clear-journal" class="nav-btn" style="color: #c44;">기록 전체 삭제</button>
+        <button id="btn-done-journal" class="btn-copper">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="./practice-data.js?v=29.0"></script>
+  <script src="./teachings-data.js?v=29.0"></script>
+  <script src="./audio-synth.js?v=29.0"></script>
+  <script src="./app.js?v=29.0"></script>
+</body>
+</html>

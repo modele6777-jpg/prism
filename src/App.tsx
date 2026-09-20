@@ -53,6 +53,7 @@ const LucyStandalonePage = lazyWithRetry(() => import("./pages/LucyStandalonePag
 const HandbookStandalonePage = lazyWithRetry(() => import("./pages/HandbookStandalonePage"));
 const OmniWarpPage = lazyWithRetry(() => import("./pages/OmniWarpPage"));
 const OrbGatewayPage = lazyWithRetry(() => import("./pages/OrbGatewayPage"));
+const CalmApp = lazyWithRetry(() => import("./pages/CalmApp"));
 // Legacy UnifiedChat replaced by full standalone LucyStandalonePage (/chat)
 import { resetAppScroll } from "./utils/scrollToTop";
 import { useAutoPrismSync } from "./hooks/useAutoPrismSync";
@@ -89,6 +90,8 @@ const ROUTES_MAP = [
   { path: "/orb", Component: OrbGatewayPage },
   { path: "/gateway", Component: OrbGatewayPage },
   { path: "/crystal", Component: OrbGatewayPage },
+  { path: "/calm", Component: CalmApp },
+  { path: "/key", Component: CalmApp },
 ];
 
 function ActivePage({ loc }: { loc: string }) {
@@ -118,6 +121,8 @@ function ActivePage({ loc }: { loc: string }) {
         <Route path="/orb"><OrbGatewayPage /></Route>
         <Route path="/gateway"><OrbGatewayPage /></Route>
         <Route path="/crystal"><OrbGatewayPage /></Route>
+        <Route path="/calm"><CalmApp /></Route>
+        <Route path="/key"><CalmApp /></Route>
       </Switch>
     </React.Suspense>
   );
@@ -325,8 +330,9 @@ function AppContent() {
     }
   })();
 
-  const isStandaloneChat = location === '/chat' || location === '/lucy' || location === '/handbook' || location === '/rebible' || location === '/orb' || location === '/gateway' || location === '/crystal' || location === '/key';
-  const isOrbSite = location === '/orb' || location === '/gateway' || location === '/crystal' || location === '/key';
+  const isStandaloneChat = location === '/chat' || location === '/lucy' || location === '/handbook' || location === '/rebible' || location === '/orb' || location === '/gateway' || location === '/crystal' || location === '/key' || location === '/calm';
+  const isOrbSite = location === '/orb' || location === '/gateway' || location === '/crystal';
+  const isCalmSite = location === '/calm' || location === '/key';
   const isChatView = location === '/chat' || location === '/lucy';
 
   if (!firebaseUser && !isStandaloneChat) {

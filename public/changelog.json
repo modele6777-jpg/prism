@@ -1,5 +1,18 @@
 [
   {
+    "version": "1.2.993",
+    "summary": "CALM 마음약방(40대 불안 치유 연습 & Dr.Z RAG)을 기존 Key 자리에 무손실 그대로 연동 이관",
+    "builtAt": "2026-09-20T01:15:00.000Z",
+    "items": [
+      "🧘 CALM 원작 애플리케이션 무손실 통합: CALM의 40대 마음 치유 실천 기법, 10대 가르침, 사운드스케이프 오디오 신디사이저, 앰비언트 플레이어를 /calm 정적 라우트 및 CalmApp 통합 뷰로 100% 무손실 이관",
+      "🔑 기존 Key 경로 자동 리다이렉트 및 라우트 연결: /key 및 /key/ 접근 시 즉시 CALM 마음약방(/calm)으로 이동하도록 Express 백엔드 및 클라이언트 라우터 완벽 연동",
+      "🤖 Dr. Z 3단계 내면 평화 AI 상담 & RAG 서버 연동: Somatic-ACIM-ACT 기반의 Dr. Z 상담 엔진(Gemini / OpenAI fallback) 및 도서 RAG 지식 검색 엔드포인트(/api/chat, /api/exercises, /api/book-info) 완벽 탑재",
+      "🎙️ 고품질 Gemini TTS 음성 생성 및 PCM 변환 캐싱: 마음 챙김 가이드 및 기법 오디오 생성을 위한 서버 사이드 Gemini TTS (/api/tts) 및 캐시 저장소 구축",
+      "🌌 프리즘 토스(Toss) & 옴니워프(Omniwarp) 생태계 통합: CALM 마음약방을 Prism 라우트 레지스트리 및 토스 데스티네이션(calm / key)으로 등록하여 언제 어디서나 바로 처방 화면으로 이동 가능",
+      "🍀 LucKey 홈 복귀 내비게이션 탑재: CALM 상단 헤더에 LucKey 홈으로 바로 복귀할 수 있는 전용 홈 버튼 추가"
+    ]
+  },
+  {
     "version": "1.2.992",
     "summary": "Key 요소 전면 삭제 및 크리스탈 오브(Orb) 순수 아이덴티티 완전 복원",
     "builtAt": "2026-09-20T01:04:30.000Z",

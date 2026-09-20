@@ -813,7 +813,7 @@ export function BigBangButton() {
             phase: 'blackhole',
             target: {
               id: 'orb',
-              name: 'Key',
+              name: '오브',
               destinationPath: '/orb',
               themeColor: '#38bdf8',
               eventHorizonMode: 'blackhole',
@@ -1070,7 +1070,7 @@ export function BigBangButton() {
               aria-label={
                 hasSelectionToss
                   ? '빅뱅 버튼 · 선택 내용 토스 대기중'
-                  : '빅뱅 버튼 · 탭: 루시 대화, 더블탭: 홈, 홀드: Key'
+                  : '빅뱅 버튼 · 탭: 루시 대화, 더블탭: 홈, 홀드: 오브'
               }
             >
               {/* 🌀 [웜홀] 빛비춤 + 어두운 심연 + 사건의 지평선 3원 동시 융합 전개 */}
