@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useApp, PersonaType } from '@/contexts/AppContext';
 import { useLocation } from 'wouter';
-import { playTTS, playTTSInChunks, playQAndATTS, stopTTS, useTTSActive, playConversation, subscribeTTS, prefetchTTS, normalizeTextForSpeech } from '@/utils/tts';
+import { playTTS, playTTSInChunks, playQAndATTS, stopTTS, useTTSActive, subscribeTTS, prefetchTTS, normalizeTextForSpeech } from '@/utils/tts';
 import { unlockAudioPlayback, primeTTSAudioElement } from '@/lib/audio';
 import { calculateDetailedSaju } from '@/lib/sajuAnalysis';
 import { getLocalDateKey } from '@/lib/rebibleStorage';
@@ -726,8 +726,6 @@ export default function LucyStandalonePage() {
     }
   }, [lucyMessages, isLucyGenerating, ttsInfo.isSpeaking, ttsInfo.isLoading]);
 
-  const isReadingAll = ttsInfo.isSpeaking && ttsInfo.activeText === '__CONVERSATION__';
-  const isReadingAllLoading = ttsInfo.isLoading && ttsInfo.activeText === '__CONVERSATION__';
 
   //  Dynamic PWA Manifest & iOS Home-screen Metadata Switcher
   useEffect(() => {
@@ -1150,31 +1148,6 @@ export default function LucyStandalonePage() {
     }
   };
 
-  const handlePlayAll = () => {
-    if (isReadingAll || isReadingAllLoading) {
-      stopTTS();
-      setPlayingMsgId(null);
-    } else {
-      unlockAudioPlayback();
-      primeTTSAudioElement();
-      const talkMessages = lucyMessages
-        .filter((m) => typeof m.content === 'string')
-        .map((m) => ({
-          id: m.id,
-          role: m.role,
-          content: m.role === 'user' ? cleanUserMessageDisplay(m.content as string) : (m.content as string),
-        }));
-      if (talkMessages.length > 0) {
-        // 화자(루시: Kore)와 타자(사용자: Fenrir) 교차 재생
-        playConversation(talkMessages, 'Kore', 'Fenrir', (_idx, m) => {
-          if (m.id) {
-            setPlayingMsgId(m.id);
-          }
-        });
-      }
-    }
-  };
-
   // Export full conversation as Markdown
   const handleExportChat = () => {
     if (lucyMessages.length === 0) {
@@ -1271,7 +1244,7 @@ export default function LucyStandalonePage() {
             </div>
           </div>
 
-          {/* Right Action Tools: 1. 검색 -> 2. 전체듣기 -> 3. 초기화 */}
+          {/* Right Action Tools: 1. 검색 -> 2. 자동 읽기 -> 3. 초기화 */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {/* 1. 검색 (Search Toggle) */}
             <button
@@ -1309,29 +1282,6 @@ export default function LucyStandalonePage() {
                 </>
               )}
             </button>
-
-            {/* 2. 전체듣기 (Play All Conversation TTS - Icon Only) */}
-            {lucyMessages.length > 0 && (
-              <button
-                onClick={handlePlayAll}
-                disabled={isReadingAllLoading}
-                className={`p-2 rounded-xl transition-all shadow-xs active:scale-95 cursor-pointer shrink-0 flex items-center justify-center ${
-                  isReadingAll
-                    ? 'bg-amber-500 text-white border border-amber-600 shadow-md animate-pulse'
-                    : 'bg-gradient-to-r from-amber-50 to-amber-100/70 hover:from-amber-100 hover:to-amber-200/70 text-amber-950 border border-amber-200/80 hover:border-amber-300'
-                }`}
-                title={isReadingAll ? '전체 대화 음성 읽기 중지' : '루시(여성)와 쭈(남성) 목소리를 구분하여 대화 전체 연속 듣기'}
-                aria-label={isReadingAll ? "낭독 중지" : "대화 전체 듣기"}
-              >
-                {isReadingAllLoading ? (
-                  <Loader2 size={16} className="animate-spin text-amber-600" />
-                ) : isReadingAll ? (
-                  <VolumeX size={16} className="text-white" />
-                ) : (
-                  <Volume2 size={16} className="text-amber-800" />
-                )}
-              </button>
-            )}
 
             {/* 초기화 (Clear / Reset Chat) */}
             {lucyMessages.length > 0 && (
