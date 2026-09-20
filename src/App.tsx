@@ -355,7 +355,7 @@ function AppContent() {
         )}
       </AnimatePresence>
 
-      <main className="flex-1 min-h-0 overflow-hidden flex flex-col relative w-full">
+      <main className="flex-1 min-h-0 overflow-x-clip flex flex-col relative w-full">
         <motion.div
           key={location ? location.split('?')[0].split('#')[0] : '/'}
           initial={{ opacity: 0.88 }}

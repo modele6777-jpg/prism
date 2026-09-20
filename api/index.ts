@@ -281,7 +281,7 @@ app.post("/api/sync/relay/create", async (req, res) => {
     const { payload, vaultId } = req.body || {};
     if (!payload) return res.status(400).json({ error: "Missing payload" });
     const { createRelayCode } = await import("../server/api-lib/syncRelay");
-    const result = createRelayCode(payload, vaultId);
+    const result = await createRelayCode(payload, vaultId);
     return res.status(200).json(result);
   } catch (e: any) {
     return res.status(500).json({ error: e.message });
@@ -293,7 +293,7 @@ app.post("/api/sync/relay/consume", async (req, res) => {
     const { code } = req.body || {};
     if (!code) return res.status(400).json({ error: "Missing code" });
     const { getRelayData } = await import("../server/api-lib/syncRelay");
-    const result = getRelayData(code);
+    const result = await getRelayData(code);
     return res.status(200).json(result);
   } catch (e: any) {
     return res.status(500).json({ error: e.message });

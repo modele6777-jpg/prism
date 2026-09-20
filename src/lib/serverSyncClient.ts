@@ -23,7 +23,7 @@ export function setPairedVaultId(vaultId: string | null): void {
   }
 }
 
-function fetchWithTimeout(url: string, options: RequestInit = {}, ms = 3500): Promise<Response> {
+function fetchWithTimeout(url: string, options: RequestInit = {}, ms = 8000): Promise<Response> {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), ms);
   return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(id));
@@ -36,7 +36,7 @@ export async function pushToServerVault(uid: string, state: SharedState): Promis
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ uid, payload: state }),
-    }, 3500);
+    }, 8000);
     return res.ok;
   } catch (e) {
     console.warn('[ServerVault] push failed:', e);
@@ -47,7 +47,7 @@ export async function pushToServerVault(uid: string, state: SharedState): Promis
 export async function pullFromServerVault(uid: string): Promise<SharedState | null> {
   if (!uid) return null;
   try {
-    const res = await fetchWithTimeout('/api/sync/vault/pull/' + encodeURIComponent(uid), {}, 3500);
+    const res = await fetchWithTimeout('/api/sync/vault/pull/' + encodeURIComponent(uid), {}, 8000);
     if (!res.ok) return null;
     const json = await res.json();
     if (json?.success && json?.data) {
@@ -79,8 +79,11 @@ export async function generatePairingCode(state: SharedState): Promise<{ code: s
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ payload: state, vaultId: currentVaultId || undefined }),
-    }, 4000);
-    if (!res.ok) return null;
+    }, 15000);
+    if (!res.ok) {
+      console.warn('[PairingRelay] generate response not ok:', res.status);
+      return null;
+    }
     const json = await res.json();
     if (json?.vaultId) {
       setPairedVaultId(json.vaultId);
@@ -94,19 +97,27 @@ export async function generatePairingCode(state: SharedState): Promise<{ code: s
 
 export async function importWithPairingCode(code: string): Promise<SharedState | null> {
   try {
-    const cleanCode = code.trim().replace(/[^0-9]/g, '');
+    const cleanCode = (code || '').trim().replace(/[^0-9]/g, '');
+    if (!cleanCode || cleanCode.length !== 6) {
+      console.warn('[PairingRelay] Invalid code format (must be 6 digits):', cleanCode);
+      return null;
+    }
     const res = await fetchWithTimeout('/api/sync/relay/consume', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code: cleanCode }),
-    }, 4000);
-    if (!res.ok) return null;
+    }, 15000);
+    if (!res.ok) {
+      console.warn('[PairingRelay] consume response not ok:', res.status);
+      return null;
+    }
     const json = await res.json();
     if (json?.success && json?.payload) {
       const assignedVaultId = json.vaultId || `pin_${cleanCode}`;
       setPairedVaultId(assignedVaultId);
       return json.payload as SharedState;
     }
+    console.warn('[PairingRelay] consume returned unsuccess payload:', json);
     return null;
   } catch (e) {
     console.warn('[PairingRelay] consume failed:', e);

@@ -589,15 +589,17 @@ export default function ProfileModal({ isOpen, onClose }: { isOpen: boolean; onC
                   <div className="flex gap-1.5">
                     <input
                       type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       maxLength={6}
-                      placeholder="6자리 코드"
+                      placeholder="6자리 숫자"
                       value={inputPairingCode}
-                      onChange={(e) => setInputPairingCode(e.target.value.trim())}
+                      onChange={(e) => setInputPairingCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
                       className="flex-1 px-3 py-1.5 bg-black/40 rounded-lg text-xs font-mono text-center text-white border border-white/10 outline-none focus:border-yellow-500/50"
                     />
                     <button
                       type="button"
-                      disabled={pairingLoading || inputPairingCode.length !== 6}
+                      disabled={pairingLoading || inputPairingCode.trim().length !== 6}
                       onClick={async () => {
                         setPairingLoading(true);
                         setPairingStatus('데이터 가져오는 중...');

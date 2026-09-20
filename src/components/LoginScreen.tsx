@@ -172,10 +172,12 @@ export function LoginScreen() {
                 <div className="flex gap-2">
                   <input
                     type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     maxLength={6}
                     placeholder="6자리 숫자"
                     value={pairingCode}
-                    onChange={(e) => setPairingCode(e.target.value.trim())}
+                    onChange={(e) => setPairingCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
                     className="flex-1 px-3 py-2 bg-black/50 rounded-xl text-sm font-mono tracking-widest text-center text-yellow-400 font-bold border border-white/15 outline-none focus:border-amber-400"
                   />
                   <button
