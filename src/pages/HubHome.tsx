@@ -435,9 +435,9 @@ export default function HubHome() {
 
 
   return (
-    <div className="h-app-full w-full flex flex-col relative overflow-hidden font-sans bg-transparent">
+    <div className="h-app-full w-full flex flex-col relative font-sans bg-transparent">
       {/* Header Info Bar - Always Fixed Outside Scroll Root */}
-      <div className="prism-hub-header fixed top-safe-2 left-2 sm:left-4 md:top-safe-4 md:left-6 pointer-events-auto z-[110] transition-all duration-300">
+      <div className="prism-hub-header fixed top-safe-2 left-2 sm:left-4 md:top-safe-4 md:left-6 pointer-events-auto z-[110] transition-all duration-300 isolate">
         <div className="flex items-center gap-2.5 sm:gap-3">
           <div 
             className="relative w-11 h-11 rounded-full border border-white/10 flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.05)] group backdrop-blur-md cursor-pointer transition-transform active:scale-95 shrink-0"

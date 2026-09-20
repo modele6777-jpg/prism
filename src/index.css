@@ -40,7 +40,10 @@
     min-height: 100%;
     min-height: -webkit-fill-available;
     background: oklch(0.035 0.03 275);
-    overflow: hidden;
+    /* overflow:clip = visually clips like hidden, but is NOT treated as a scroll
+       container by iOS WebKit, so fixed/absolute children get correct hit-tests.
+       Fallback to hidden on older WebKit via @supports below. */
+    overflow: clip;
     -webkit-tap-highlight-color: transparent;
     overscroll-behavior: none;
   }
@@ -48,7 +51,15 @@
   #root {
     min-height: 100%;
     min-height: -webkit-fill-available;
-    overflow: hidden;
+    overflow: clip;
+  }
+
+  /* Fallback: older WebKit (iOS <16 / Safari <15.4) doesn't support overflow:clip.
+     In those cases hidden is fine — the prism-app-shell fixed shell covers everything anyway. */
+  @supports not (overflow: clip) {
+    body, #root {
+      overflow: hidden;
+    }
   }
   .glass {
     backdrop-filter: blur(10px);
@@ -233,7 +244,11 @@
   [data-app-scroll-root] {
     padding-bottom: 0;
     scroll-padding-bottom: 0;
+    /* Explicitly tell iOS WebKit this container handles vertical pan gestures.
+       Prevents the fixed-layer compositing bug from swallowing scroll touch events. */
+    touch-action: pan-y;
   }
+
 
   .h-screen-dvh,
   .h-app-full {
