@@ -24,8 +24,17 @@ export default function SelectionBridgeToolbar({ currentPath: _currentPath }: Se
         // 🌟 일반 본문 및 input/textarea 빈칸 입력창 내부 선택 텍스트까지 포괄 추출
         const text = getLiveSelectedText();
 
+        // 🛡️ 만약 사용자가 빅뱅 버튼을 조작/터치 중이라면 pendingSelection을 섣불리 지우지 않고 보존!
+        const isBigBangActive = Boolean(
+          document.querySelector('#bigbang-omnibutton:active, [data-bigbang="true"]:active') ||
+          (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('bigbang_pressing') === 'true')
+        );
+        if (isBigBangActive) {
+          return;
+        }
+
         // 🎯 스크롤(선택) 취소 감지:
-        // 선택이 없거나 해제되었거나 2글자 미만이면 대기 토스모드 즉시 정리
+        // 선택이 없거나 해제되었거나 2글자 미만이면 대기 토스모드 정리
         if (!text || text.length < 2) {
           clearPendingSelection();
           return;
@@ -41,6 +50,10 @@ export default function SelectionBridgeToolbar({ currentPath: _currentPath }: Se
       // 🛡️ 빅뱅 버튼이나 토스 조작 트리거를 클릭/터치할 때는 selection을 지우지 않고 유지!
       const target = e.target as HTMLElement | null;
       if (target?.closest?.('#bigbang-omnibutton, [data-bigbang], [data-no-clear-selection]')) {
+        return;
+      }
+
+      if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('bigbang_pressing') === 'true') {
         return;
       }
 

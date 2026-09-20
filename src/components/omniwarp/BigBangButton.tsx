@@ -128,13 +128,20 @@ export function BigBangButton() {
     return '';
   }, []);
 
-  // 🌟 텍스트 드래그(선택) 감지: 탭 시 루시 토스, 홀드 시 오브 토스 지원
+  // 🌟 텍스트 드래그(선택) 감지: 탭 시 루시 토스, 홀드 시 Key 40가지 연습 토스 지원
   const [hasSelectionToss, setHasSelectionToss] = useState(false);
   const [selectionPreviewText, setSelectionPreviewText] = useState('');
+  const touchStartSelectionRef = useRef<string>('');
 
   useEffect(() => {
     const updateSelectionState = () => {
       if (typeof window === 'undefined') return;
+
+      // 🛡️ 조작 중일 때는 선택 상태를 강제 해제하지 않음
+      if (touchStartRef.current || (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('bigbang_pressing') === 'true')) {
+        return;
+      }
+
       const text = getActiveSelectionText();
 
       // 🎯 스크롤(선택) 취소 감지:
@@ -286,7 +293,7 @@ export function BigBangButton() {
     // 🎯 드래그(dist >= 38) 중일 때:
     // 7대 정규 앱 엄격 순환(Non-Repeating App Cycle) 추천 메뉴를 실시간 타깃으로 동기화 (글자 토스 포함)
     // 사용자가 스크롤 중이거나 가벼운 터치 시 추천 1순위가 미리 노출되지 않도록 보호
-    const textToToss = getActiveSelectionText();
+    const textToToss = touchStartSelectionRef.current || getActiveSelectionText();
 
     if (dist >= 38 && !isPageScrolling) {
       const contextCandidate = peekNextRecommendedMenuByCycle(location, textToToss || undefined);
@@ -300,9 +307,11 @@ export function BigBangButton() {
         title: contextCandidate.menu.name,
         actionType: isTextToss ? 'smart_toss' : 'navigate',
         previewLabel: isTextToss
-          ? `[글자 추천 토스 · 순환 ${contextCandidate.stats.visitedCount}/${contextCandidate.stats.totalCount}] ${contextCandidate.menu.name}`
+          ? `[추천 1위 토스 · 순환 ${contextCandidate.stats.visitedCount}/${contextCandidate.stats.totalCount}] ${contextCandidate.menu.name}`
           : `[맥락 추천 1위 · 순환 ${contextCandidate.stats.visitedCount}/${contextCandidate.stats.totalCount}] ${contextCandidate.menu.name}`,
-        previewDescription: contextCandidate.reason,
+        previewDescription: isTextToss
+          ? `"${textToToss.slice(0, 20)}..." ➔ ${contextCandidate.menu.name} 즉시 실행`
+          : contextCandidate.reason,
         destinationPath: contextCandidate.safePath,
         themeColor: contextCandidate.menu.themeColor,
         accentGlow: contextCandidate.menu.themeColor || 'rgba(56, 189, 248, 0.85)',
@@ -414,6 +423,14 @@ export function BigBangButton() {
       y: e.clientY,
     };
     currentPointerEventRef.current = e;
+    const initialSel = getActiveSelectionText();
+    touchStartSelectionRef.current = initialSel;
+    try {
+      sessionStorage.setItem('bigbang_pressing', 'true');
+      if (initialSel) {
+        savePendingSelection(initialSel, undefined, location);
+      }
+    } catch (_) {}
     lastPhaseRef.current = 'whitehole';
     lastEventHorizonModeRef.current = undefined;
     lastSectorRef.current = -1;
@@ -508,6 +525,9 @@ export function BigBangButton() {
     setDragDistance(0);
     setDragAngleDeg(0);
     setRadialSectorIndex(-1);
+    try {
+      sessionStorage.removeItem('bigbang_pressing');
+    } catch (_) {}
 
     if (metrics.isAborted || isAborted) {
       omniWarpAudio.playAbort();
@@ -600,10 +620,17 @@ export function BigBangButton() {
         omniWarpAudio.playWhiteHole();
 
         // 🌟 텍스트 드래그(선택) 연동: 글자를 스크롤/선택한 상태에서 빅뱅 탭 ➔ 루시에게 즉시 토스!
-        const textToToss = getActiveSelectionText();
+        const textToToss = touchStartSelectionRef.current || getActiveSelectionText();
 
         if (textToToss) {
           savePendingSelection(textToToss, 'lucy', location);
+          try {
+            sessionStorage.setItem(
+              'lucy_injected_auto_send',
+              `[선택 내용 토스 질의]\n"${textToToss}"\n\n이 내용에 대해 핵심 분석과 실천적인 마음 치유 및 지혜 조언을 해줘.`
+            );
+            sessionStorage.setItem('lucy_injected_input_draft', textToToss);
+          } catch (_) {}
           sendPrismToss({
             sourceApp: location || 'bigbang_button',
             targetApp: 'lucy',
@@ -682,7 +709,7 @@ export function BigBangButton() {
     lastTapTimeRef.current = 0;
 
     // [2] 홀드 (250ms 이상) 또는 드래그 릴리즈 분기
-    const textToToss = getActiveSelectionText();
+    const textToToss = touchStartSelectionRef.current || getActiveSelectionText();
 
     // 🎯 빅뱅 버튼 드래그 (dist >= 20):
     // 7대 핵심 정규 앱 엄격 순환(Non-Repeating App Cycle) 기반 추천 메뉴 도약 / 글자 토스 실행!
@@ -708,6 +735,7 @@ export function BigBangButton() {
         setActivePhase('idle');
         setGauge(0);
         setDurationMs(0);
+        touchStartSelectionRef.current = '';
         resetActiveContextPeek();
         return;
       }
@@ -717,10 +745,12 @@ export function BigBangButton() {
         : `순환 ${stats.visitedCount}/${stats.totalCount}`;
 
       const previewLabel = textToToss
-        ? `[글자 토스 · ${cycleLabel}] ${targetMenu.name}`
+        ? `[추천 1위 토스 · ${cycleLabel}] ${targetMenu.name}`
         : `[맥락 추천 1위 · ${cycleLabel}] ${targetMenu.name}`;
 
-      const previewDescription = stats.isFullCycleCompleted
+      const previewDescription = textToToss
+        ? `"${textToToss.slice(0, 20)}..." ➔ ${targetMenu.name} 즉시 실행`
+        : stats.isFullCycleCompleted
         ? `${reason} (🎉 전체 7대 앱 1사이클 완주! 새로운 순환이 시작됩니다.)`
         : `${reason} (${stats.cycleIndex}회차 순환 탐험: ${stats.visitedCount}/${stats.totalCount})`;
 
@@ -777,6 +807,7 @@ export function BigBangButton() {
         }, 240);
       }
 
+      touchStartSelectionRef.current = '';
       setActivePhase('idle');
       setGauge(0);
       setDurationMs(0);
@@ -788,9 +819,13 @@ export function BigBangButton() {
     triggerHaptic('blackhole');
     omniWarpAudio.playBlackHole();
 
-    // 🔑 텍스트 드래그(선택) 연동: 글자를 스크롤/선택한 상태에서 빅뱅 홀드 ➔ Key에게 즉시 토스!
+    // 🔑 텍스트 드래그(선택) 연동: 글자를 스크롤/선택한 상태에서 빅뱅 홀드 ➔ Key 40가지 연습으로 즉시 토스!
     if (textToToss) {
       savePendingSelection(textToToss, 'key', location);
+      try {
+        sessionStorage.setItem('key_tossed_text', textToToss);
+        sessionStorage.setItem('key_target_tab', 'tab-exercises');
+      } catch (_) {}
       sendPrismToss({
         sourceApp: location || 'bigbang_button',
         targetApp: 'key',
@@ -883,6 +918,10 @@ export function BigBangButton() {
     setActivePhase('idle');
     setGauge(0);
     setDurationMs(0);
+    touchStartSelectionRef.current = '';
+    try {
+      sessionStorage.removeItem('bigbang_pressing');
+    } catch (_) {}
   };
 
   useEffect(() => {
@@ -952,6 +991,26 @@ export function BigBangButton() {
           onPointerEnter={() => setIsHovered(true)}
           onPointerLeave={() => setIsHovered(false)}
         >
+          {/* 🌟 텍스트 선택(스크롤) 시 3대 토스 경로 안내 뱃지 표출 */}
+          <AnimatePresence>
+            {hasSelectionToss && !isPressing && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.85, y: 6 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.85, y: 4 }}
+                transition={{ duration: 0.15, ease: 'easeOut' }}
+                className="absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap px-3 py-1.5 rounded-full bg-slate-950/95 backdrop-blur-xl border border-cyan-400/60 text-[10px] font-bold text-cyan-200 shadow-[0_4px_24px_rgba(0,240,255,0.45)] pointer-events-none flex items-center gap-1.5 z-50 animate-pulse ring-1 ring-cyan-400/40"
+              >
+                <span className="text-xs">✨</span>
+                <span className="text-yellow-300 font-black">탭</span><span className="text-slate-300">▸루시</span>
+                <span className="text-slate-500">│</span>
+                <span className="text-cyan-300 font-black">홀드</span><span className="text-slate-300">▸Key(40연습)</span>
+                <span className="text-slate-500">│</span>
+                <span className="text-purple-300 font-black">드래그</span><span className="text-slate-300">▸추천1위</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* 🎯 드래그 시 실시간 맥락 추천 순환(Cycle) HUD 칩 */}
           <AnimatePresence>
             {isPressing && dragDistance >= 38 && !isAborted && !isPageScrolling && currentTarget && (

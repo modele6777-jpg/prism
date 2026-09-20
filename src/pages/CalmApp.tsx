@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation } from "wouter";
 import { AnimatePresence, motion } from "motion/react";
 import { KeyCosmicLoader } from "@/components/KeyCosmicLoader";
+import { savePendingSelection, clearPendingSelection } from "@/lib/selectionBridge";
+import { getPendingPrismToss, clearPrismToss } from "@/lib/prismToss";
 
 export default function CalmApp() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -17,7 +19,7 @@ export default function CalmApp() {
     const prevTitle = document.title;
     document.title = "Key - 40대 불안 치유 연습 & 마음약방";
 
-    // Handle messages from iframe (navigation to Lucy, or frame ready signal)
+    // Handle messages from iframe (navigation to Lucy, frame ready signal, or text selection)
     const handleMessage = (e: MessageEvent) => {
       if (!e.data) return;
 
@@ -28,7 +30,21 @@ export default function CalmApp() {
         return;
       }
 
-      // 2. Forward pending prism toss payload or navigation to Lucy
+      // 2. Iframe 내부 텍스트 선택(스크롤)을 상위 PRISM 빅뱅 토스 브릿지로 동기화
+      if (e.data.type === "PRISM_IFRAME_SELECTION") {
+        if (e.data.text && e.data.text.length >= 2) {
+          savePendingSelection(e.data.text, undefined, '/key');
+          window.dispatchEvent(
+            new CustomEvent('prism:selection_saved', { detail: { text: e.data.text, sourcePath: '/key' } })
+          );
+        } else {
+          clearPendingSelection();
+          window.dispatchEvent(new CustomEvent('prism:selection_cleared'));
+        }
+        return;
+      }
+
+      // 3. Forward pending prism toss payload or navigation to Lucy
       if (e.data.type === "NAVIGATE_LUCKEY") {
         if (e.data.text) {
           try {
@@ -63,13 +79,35 @@ export default function CalmApp() {
     });
   }, []);
 
-  // 전달받은 특정 실천 연습이 있으면 iframe 로드 후 즉시 실행 요청
+  // 전달받은 토스 텍스트 또는 특정 실천 연습이 있으면 iframe 로드 후 즉시 실행 요청
   useEffect(() => {
     if (iframeLoaded) {
       try {
         const urlParams = new URLSearchParams(window.location.search);
         const exParam = urlParams.get('ex') || sessionStorage.getItem('key_target_exercise');
+        const pendingToss = getPendingPrismToss('key');
+        const tossedText =
+          sessionStorage.getItem('key_tossed_text') ||
+          pendingToss?.contextMessage ||
+          pendingToss?.autoPrompt;
+
+        if (tossedText && !exParam) {
+          sessionStorage.removeItem('key_tossed_text');
+          clearPrismToss();
+          const timer = setTimeout(() => {
+            iframeRef.current?.contentWindow?.postMessage(
+              {
+                type: 'TOSS_TO_EXERCISES',
+                text: tossedText,
+              },
+              '*'
+            );
+          }, 350);
+          return () => clearTimeout(timer);
+        }
+
         if (exParam) {
+          sessionStorage.removeItem('key_target_exercise');
           const exIdx = parseInt(exParam, 10);
           if (exIdx) {
             const timer = setTimeout(() => {
@@ -83,7 +121,7 @@ export default function CalmApp() {
   }, [iframeLoaded]);
 
   const searchParams = typeof window !== 'undefined' ? window.location.search : '';
-  const iframeSrc = `/calm/index.html${searchParams ? searchParams + '&v=31.0' : '?v=31.0'}`;
+  const iframeSrc = `/calm/index.html${searchParams ? searchParams + '&v=32.0' : '?v=32.0'}`;
 
   return (
     <div className="fixed inset-0 w-full h-[100dvh] bg-[#fcf9f5] z-40 overflow-hidden flex flex-col">

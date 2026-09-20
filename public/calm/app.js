@@ -222,7 +222,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   window.addEventListener('message', (e) => {
-    if (e.data && e.data.type === 'START_PRACTICE') {
+    if (!e.data) return;
+    if (e.data.type === 'START_PRACTICE') {
       const exIdx = parseInt(e.data.exerciseIdx, 10);
       if (exIdx && typeof window.startPractice === 'function') {
         setTimeout(() => {
@@ -230,6 +231,61 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 150);
       }
     }
+
+    if (e.data.type === 'TOSS_TO_EXERCISES') {
+      const text = e.data.text || '';
+      // 1. 연습실 탭으로 전환
+      if (typeof switchTab === 'function') {
+        switchTab('tab-exercises');
+      } else {
+        const exercisesTabBtn = document.querySelector('.nav-tab-btn[data-tab="tab-exercises"]');
+        if (exercisesTabBtn) exercisesTabBtn.click();
+      }
+
+      // 2. 토스된 텍스트와 가장 알맞은 40가지 연습 매칭 및 자동 시작
+      if (text && window.PRACTICE_EXERCISES && window.PRACTICE_EXERCISES.length > 0) {
+        let bestEx = window.PRACTICE_EXERCISES[0];
+        let maxScore = 0;
+        const lower = text.toLowerCase();
+        const keywords = lower.match(/[가-힣a-zA-Z0-9]{2,}/g) || [];
+
+        window.PRACTICE_EXERCISES.forEach(ex => {
+          let score = 0;
+          const searchSpace = `${ex.title} ${ex.subtitle || ''} ${ex.tag || ''} ${ex.purpose || ''} ${ex.affirmation || ''} ${ex.clinicalTip || ''}`.toLowerCase();
+          keywords.forEach(kw => {
+            if (searchSpace.includes(kw)) score += 5;
+          });
+          if (score > maxScore) {
+            maxScore = score;
+            bestEx = ex;
+          }
+        });
+
+        if (typeof window.startPractice === 'function') {
+          setTimeout(() => {
+            window.startPractice(bestEx.globalIndex);
+          }, 250);
+        }
+      }
+    }
+  });
+
+  // 🌟 Key iframe 내부 텍스트 선택(스크롤)을 상위 PRISM 부모 창으로 전달
+  let iframeSelTimer = null;
+  document.addEventListener('selectionchange', () => {
+    if (iframeSelTimer) clearTimeout(iframeSelTimer);
+    iframeSelTimer = setTimeout(() => {
+      try {
+        const sel = window.getSelection();
+        const text = sel ? sel.toString().trim() : '';
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({
+            type: 'PRISM_IFRAME_SELECTION',
+            text: text && text.length >= 2 ? text : '',
+          }, '*');
+        }
+      } catch (_) {}
+    }, 120);
   });
 
   setTimeout(checkAutoLaunchPractice, 200);
