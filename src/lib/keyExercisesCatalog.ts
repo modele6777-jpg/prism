@@ -105,97 +105,195 @@ export const EXERCISE_ALIASES: Record<number, string[]> = {
 };
 
 /**
- * 40가지 Key 마음약방 실천 연습 중 사용자의 현재 고민(질문) 및 대화 답변 맥락에
- * 가장 정확하게 부합하는 1개의 실천 연습을 도출합니다.
- * 
- * 루시 답변(lucyText)에 특정 실천 연습이 명시되어 있다면 100% 일치를 위해
- * 해당 기법을 최우선으로 즉각 추출하여 반환합니다.
+ * 🔑 기법 추천을 위한 통일된 프롬프트 가이드라인 생성기
+ * 루시가 답변 본문에서 기법을 추천할 때 일관된 표준 태그 규격을 출력하도록 유도합니다.
  */
-export function findBestKeyExercise(userText: string = '', lucyText: string = ''): KeyExerciseItem {
-  const cleanLucy = (lucyText || '').toLowerCase();
+export function buildKeyExercisePromptGuideline(targetExercise?: KeyExerciseItem): string {
+  const targetDirective = targetExercise
+    ? `\n- 이번 답변에서 사용자의 고민(불안, 걱정, 스트레스, 신체 긴장, 감정 압박 등)을 완화할 실천 기법으로 반드시 공식 40가지 연습 중 다음 기법을 추천해:
+  👉 공식 명칭: '연습 ${targetExercise.globalIndex}. ${targetExercise.title}' (${targetExercise.tag} - ${targetExercise.subtitle})`
+    : `\n- 이번 답변에서 심리 치유, 호흡, 이완, 불안 극복 실천 기법을 추천할 경우, 공식 40가지 Key 연습 중 사용자의 고민에 가장 부합하는 단 1개의 연습을 추천해.`;
+
+  return `[🔑 LucKey 마음약방 40가지 실천 연습 추천 및 기법 연동 표준 가이드라인]:${targetDirective}
+- 🎯 [필수 표준 출력 태그 규격]:
+  답변 본문에서 추천 기법을 소개하거나 행동 조언을 맺을 때, 반드시 다음 정규 태그 형식을 명시해줘:
+  👉 [추천 기법: 연습 {번호}. {기법명}]
+  (예: [추천 기법: 연습 13. 풍선 호흡법], [추천 기법: 연습 18. 대지의 중심], [추천 기법: 연습 14. 5-4-3-2-1 기법])
+- 🚫 [엄격한 환각 금지]:
+  절대로 목록에 없는 가상의 연습 번호나 임의의 기법명을 지어내지 말고, 지정된 공식 번호와 제목을 100% 동일하게 표기해야 해.
+- 💡 [하단 카드 연동 안내 문구]:
+  답변 말미에 "답변 바로 아래 추천 카드의 [실천] 버튼을 누르면 이 연습실로 바로 연결돼!"라고 다정하게 덧붙여줘.`;
+}
+
+export interface KeyExerciseValidationResult {
+  isValid: boolean;
+  exercise: KeyExerciseItem;
+  matchedBy: 'standard_tag' | 'expected_confirmed' | 'explicit_number' | 'canonical_title' | 'alias' | 'user_explicit' | 'contextual';
+  rawMatchedSnippet?: string;
+  confidence: number;
+  isExactMatch: boolean;
+  validationNote?: string;
+}
+
+/**
+ * 🔍 루시의 답변 본문 및 사용자 질문에서 추천 기법을 정밀 검증 및 추출합니다.
+ * 
+ * 1. [최우선] 표준 태그 패턴 ([추천 기법: 연습 N. 제목]) 추출 및 40대 카탈로그 정합성 검증
+ * 2. [사전 지정 기법 확인] 프롬프트에 주입된 expectedIndex 기법이 답변에 실재하는지 우선 확증
+ * 3. [명시적 번호 패턴] "연습 N. 제목" 또는 "연습 N" 패턴 추출 (결론/추천 문맥 가중치 부여)
+ * 4. [정규 기법명] 40가지 연습의 정규 제목 매칭 (단순 2글자 일상 단어 오매칭 철저 배제)
+ * 5. [사용자 질문 명시] 사용자 질문에 연습 번호/기법이 직접 언급된 경우
+ * 6. [문맥 점수 매칭] 키워드 및 임상 팁 기반 종합 매칭
+ */
+export function validateAndExtractKeyExercise(
+  lucyText: string = '',
+  userText: string = '',
+  expectedIndex?: number
+): KeyExerciseValidationResult {
+  const rawLucy = lucyText || '';
+  const cleanLucy = rawLucy.toLowerCase();
   const cleanUser = (userText || '').toLowerCase();
 
-  // 1. [최우선 순위]: 루시 답변(lucyText)에 특정 실천 연습이 명시적으로 언급되었는지 정밀 검사
-  // 루시 답변과 바로 아래의 LucKey 연계 추천 카드는 항상 100% 일치해야 합니다.
-  if (cleanLucy) {
-    let earliestMatch: { ex: KeyExerciseItem; pos: number; length: number } | null = null;
+  const expectedEx = typeof expectedIndex === 'number' && expectedIndex >= 1 && expectedIndex <= 40
+    ? KEY_EXERCISES_CATALOG.find((e) => e.globalIndex === expectedIndex)
+    : undefined;
 
-    // 1-A. 모든 40가지 연습의 제목 및 별칭이 루시 답변에 출현하는 위치 조사
-    for (const ex of KEY_EXERCISES_CATALOG) {
-      const candidates = [
-        ex.title.toLowerCase(),
-        `연습 ${ex.globalIndex}`,
-        `연습${ex.globalIndex}`,
-        `연습 ${ex.index}`,
-        ...(EXERCISE_ALIASES[ex.globalIndex] || []).map((a) => a.toLowerCase()),
-      ];
+  // 1. [표준 태그 정밀 파싱]
+  // 형태: [추천 기법: 연습 13. 풍선 호흡법], [실천 기법: 연습 18. 대지의 중심], 추천 기법: 연습 13
+  const standardTagRegexes = [
+    /\[\s*(?:추천\s*기법|실천\s*기법|추천\s*연습|Key\s*추천|추천)\s*:\s*연습\s*([0-9]{1,2})[\.:\s\-]*([^\]]+)\]/i,
+    /(?:추천\s*기법|실천\s*기법|추천\s*연습|맞춤\s*연습)\s*[:：]\s*['"‘“]?연습\s*([0-9]{1,2})[\.:\s\-]*([^'"\n\r,)]+)['"’”]?/i,
+  ];
 
-      for (const cand of candidates) {
-        if (!cand || cand.length < 2) continue;
-        const pos = cleanLucy.indexOf(cand);
-        if (pos !== -1) {
-          // 답변 앞부분에 먼저 언급되었거나, 더 구체적이고 긴 키워드 매칭일 경우 우선
-          if (!earliestMatch || pos < earliestMatch.pos || (pos === earliestMatch.pos && cand.length > earliestMatch.length)) {
-            earliestMatch = { ex, pos, length: cand.length };
-          }
+  for (const regex of standardTagRegexes) {
+    const match = rawLucy.match(regex);
+    if (match) {
+      const parsedNum = parseInt(match[1], 10);
+      if (parsedNum >= 1 && parsedNum <= 40) {
+        const found = KEY_EXERCISES_CATALOG.find((e) => e.globalIndex === parsedNum);
+        if (found) {
+          return {
+            isValid: true,
+            exercise: found,
+            matchedBy: 'standard_tag',
+            rawMatchedSnippet: match[0],
+            confidence: 1.0,
+            isExactMatch: true,
+            validationNote: `표준 태그 [연습 ${found.globalIndex}. ${found.title}] 100% 일치 검증 성공`,
+          };
         }
-      }
-    }
-
-    if (earliestMatch) {
-      return earliestMatch.ex;
-    }
-
-    // 1-B. "연습 [0-9]+" 또는 "[0-9]+번 연습" 패턴 추출
-    const lucyNumberMatches = [...cleanLucy.matchAll(/연습\s*([0-9]{1,2})|([0-9]{1,2})\s*번\s*연습/g)];
-    for (const match of lucyNumberMatches) {
-      const rawNum = parseInt(match[1] || match[2], 10);
-      if (rawNum >= 1 && rawNum <= 40) {
-        const byGlobal = KEY_EXERCISES_CATALOG.find((e) => e.globalIndex === rawNum);
-        if (byGlobal) return byGlobal;
       }
     }
   }
 
-  // 2. [차순위]: 사용자 질문(userText)에 특정 실천 연습이 명시적으로 요청되었는지 검사
-  if (cleanUser) {
-    let earliestUserMatch: { ex: KeyExerciseItem; pos: number; length: number } | null = null;
+  // 2. [사전 지정된 expectedIndex 확인]
+  // 프롬프트에 주입된 기법을 루시가 본문에서 실제로 언급했는지 우선 확인
+  if (expectedEx) {
+    const exTitleLower = expectedEx.title.toLowerCase();
+    const explicitExPattern = new RegExp(`연습\\s*${expectedEx.globalIndex}\\b`, 'i');
+    const hasExplicitNum = explicitExPattern.test(cleanLucy);
+    const hasTitle = cleanLucy.includes(exTitleLower);
 
-    for (const ex of KEY_EXERCISES_CATALOG) {
-      const candidates = [
-        ex.title.toLowerCase(),
-        `연습 ${ex.globalIndex}`,
-        `연습${ex.globalIndex}`,
-        ...(EXERCISE_ALIASES[ex.globalIndex] || []).map((a) => a.toLowerCase()),
-      ];
+    if (hasExplicitNum || hasTitle) {
+      return {
+        isValid: true,
+        exercise: expectedEx,
+        matchedBy: 'expected_confirmed',
+        rawMatchedSnippet: hasExplicitNum ? `연습 ${expectedEx.globalIndex}` : expectedEx.title,
+        confidence: hasExplicitNum ? 0.98 : 0.92,
+        isExactMatch: true,
+        validationNote: `사전 추천 기법(연습 ${expectedEx.globalIndex}. ${expectedEx.title}) 본문 발화 확인 및 일치`,
+      };
+    }
+  }
 
-      for (const cand of candidates) {
-        if (!cand || cand.length < 2) continue;
-        const pos = cleanUser.indexOf(cand);
-        if (pos !== -1) {
-          if (!earliestUserMatch || pos < earliestUserMatch.pos || (pos === earliestUserMatch.pos && cand.length > earliestUserMatch.length)) {
-            earliestUserMatch = { ex, pos, length: cand.length };
-          }
+  // 3. [명시적 "연습 N" 패턴 추출 및 검증]
+  // 주의: 답변 서두의 일반적 언급보다 결론/실천 권유부(뒷부분)의 명시적 추천을 우선시
+  const explicitNumberMatches = [...cleanLucy.matchAll(/연습\s*([0-9]{1,2})/g)];
+  if (explicitNumberMatches.length > 0) {
+    // 뒤에서부터 탐색 (추천 조언은 대개 답변 하단부 결론에 위치)
+    for (let i = explicitNumberMatches.length - 1; i >= 0; i--) {
+      const match = explicitNumberMatches[i];
+      const parsedNum = parseInt(match[1], 10);
+      if (parsedNum >= 1 && parsedNum <= 40) {
+        const found = KEY_EXERCISES_CATALOG.find((e) => e.globalIndex === parsedNum);
+        if (found) {
+          return {
+            isValid: true,
+            exercise: found,
+            matchedBy: 'explicit_number',
+            rawMatchedSnippet: match[0],
+            confidence: 0.90,
+            isExactMatch: true,
+            validationNote: `본문 명시 번호(연습 ${found.globalIndex}. ${found.title}) 검증 추출`,
+          };
         }
-      }
-    }
-
-    if (earliestUserMatch) {
-      return earliestUserMatch.ex;
-    }
-
-    const userNumberMatches = [...cleanUser.matchAll(/연습\s*([0-9]{1,2})|([0-9]{1,2})\s*번\s*연습/g)];
-    for (const match of userNumberMatches) {
-      const rawNum = parseInt(match[1] || match[2], 10);
-      if (rawNum >= 1 && rawNum <= 40) {
-        const byGlobal = KEY_EXERCISES_CATALOG.find((e) => e.globalIndex === rawNum);
-        if (byGlobal) return byGlobal;
       }
     }
   }
 
-  // 3. [키워드 점수 기반 종합 매칭]: 질문과 답변의 문맥 의미 분석
-  let bestMatch: KeyExerciseItem = KEY_EXERCISES_CATALOG[0];
+  // 4. [정규 제목 매칭]
+  // 4글자 이상의 정규 제목이 루시 답변에 출현하는지 검사 (2글자 일상 단어 '자책', '관찰' 등의 조기 오매칭 방지)
+  let bestTitleMatch: { ex: KeyExerciseItem; pos: number; length: number } | null = null;
+  for (const ex of KEY_EXERCISES_CATALOG) {
+    const tLower = ex.title.toLowerCase();
+    if (tLower.length >= 3) {
+      const pos = cleanLucy.lastIndexOf(tLower);
+      if (pos !== -1) {
+        if (!bestTitleMatch || pos > bestTitleMatch.pos) {
+          bestTitleMatch = { ex, pos, length: tLower.length };
+        }
+      }
+    }
+  }
+
+  if (bestTitleMatch) {
+    return {
+      isValid: true,
+      exercise: bestTitleMatch.ex,
+      matchedBy: 'canonical_title',
+      rawMatchedSnippet: bestTitleMatch.ex.title,
+      confidence: 0.85,
+      isExactMatch: false,
+      validationNote: `정규 제목('${bestTitleMatch.ex.title}') 매칭`,
+    };
+  }
+
+  // 5. [사전 지정된 expectedIndex 잔존 시 우선 보존]
+  if (expectedEx) {
+    return {
+      isValid: true,
+      exercise: expectedEx,
+      matchedBy: 'expected_confirmed',
+      rawMatchedSnippet: `연습 ${expectedEx.globalIndex}`,
+      confidence: 0.80,
+      isExactMatch: false,
+      validationNote: `사전 추천 기법(연습 ${expectedEx.globalIndex}) 컨텍스트 보존`,
+    };
+  }
+
+  // 6. [사용자 질문 명시 연습 추출]
+  const userNumMatches = [...cleanUser.matchAll(/연습\s*([0-9]{1,2})/g)];
+  if (userNumMatches.length > 0) {
+    const rawNum = parseInt(userNumMatches[0][1], 10);
+    if (rawNum >= 1 && rawNum <= 40) {
+      const byUser = KEY_EXERCISES_CATALOG.find((e) => e.globalIndex === rawNum);
+      if (byUser) {
+        return {
+          isValid: true,
+          exercise: byUser,
+          matchedBy: 'user_explicit',
+          rawMatchedSnippet: userNumMatches[0][0],
+          confidence: 0.88,
+          isExactMatch: true,
+          validationNote: `사용자 질문 명시 번호(연습 ${byUser.globalIndex}) 일치`,
+        };
+      }
+    }
+  }
+
+  // 7. [키워드 점수 기반 종합 매칭 fallback]
+  let bestScoreEx: KeyExerciseItem = KEY_EXERCISES_CATALOG[0];
   let maxScore = -1;
 
   for (const ex of KEY_EXERCISES_CATALOG) {
@@ -205,24 +303,20 @@ export function findBestKeyExercise(userText: string = '', lucyText: string = ''
     const tagLower = ex.tag.toLowerCase();
     const subLower = (ex.subtitle || '').toLowerCase();
 
-    // 1. 사용자 질문 직접 키워드
     if (cleanUser.includes(titleLower)) score += 30;
     if (cleanUser.includes(tagLower)) score += 20;
     if (subLower && cleanUser.includes(subLower)) score += 15;
 
-    // 루시 답변 언급
     if (cleanLucy.includes(titleLower)) score += 25;
     if (cleanLucy.includes(tagLower)) score += 15;
     if (subLower && cleanLucy.includes(subLower)) score += 10;
 
-    // 2. 특화 키워드 매칭
     const keywords = KEYWORD_MAP[ex.globalIndex] || [];
     for (const kw of keywords) {
       if (cleanUser.includes(kw)) score += 8;
       if (cleanLucy.includes(kw)) score += 6;
     }
 
-    // 3. 목적 및 임상 팁 단어 매칭
     const tokens = (ex.purpose + ' ' + ex.clinicalTip).split(/[\s,·.]+/);
     for (const tok of tokens) {
       if (tok.length >= 2) {
@@ -233,15 +327,29 @@ export function findBestKeyExercise(userText: string = '', lucyText: string = ''
 
     if (score > maxScore) {
       maxScore = score;
-      bestMatch = ex;
+      bestScoreEx = ex;
     }
   }
 
-  // 매칭 점수가 극히 낮은 경우(0점 등) 기본으로 가장 보편적인 수용 연습(Ex 13 풍선 호흡법) 제공
-  if (maxScore <= 0) {
-    const defaultEx = KEY_EXERCISES_CATALOG.find((e) => e.globalIndex === 13) || KEY_EXERCISES_CATALOG[0];
-    return defaultEx;
-  }
-
-  return bestMatch;
+  const finalEx = maxScore > 0 ? bestScoreEx : (KEY_EXERCISES_CATALOG.find((e) => e.globalIndex === 13) || KEY_EXERCISES_CATALOG[0]);
+  return {
+    isValid: true,
+    exercise: finalEx,
+    matchedBy: 'contextual',
+    confidence: 0.65,
+    isExactMatch: false,
+    validationNote: `문맥 키워드 점수 기반 매칭 (점수: ${maxScore})`,
+  };
 }
+
+/**
+ * 40가지 Key 마음약방 실천 연습 중 맥락에 가장 정확하게 부합하는 1개의 실천 연습을 도출합니다.
+ */
+export function findBestKeyExercise(
+  userText: string = '',
+  lucyText: string = '',
+  expectedIndex?: number
+): KeyExerciseItem {
+  return validateAndExtractKeyExercise(lucyText, userText, expectedIndex).exercise;
+}
+

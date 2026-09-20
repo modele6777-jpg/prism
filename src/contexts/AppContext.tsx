@@ -39,6 +39,7 @@ export interface UnifiedMessage {
   channel?: string;
   channels?: string[];
   mode?: string;
+  keyExerciseIndex?: number;
 }
 
 export interface SendUnifiedMessageOptions {
@@ -51,6 +52,7 @@ export interface SendUnifiedMessageOptions {
   mode?: string;
   force?: boolean;
   oracleContext?: string;
+  keyExerciseIndex?: number;
 }
 
 interface AppContextValue {
@@ -1352,12 +1354,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
    - 다정한 친구 같은 설명과 함께 반드시 다음 형식의 고화질 이미지 마크다운 태그를 답변 본문에 포함하여 즉시 원화를 그려줘:
      ![이미지 설명](https://image.pollinations.ai/prompt/영문_상세_프롬프트?width=768&height=576&seed=랜덤숫자&nologo=true&model=flux)
    - 영문_상세_프롬프트는 사용자의 요청 주제를 시각적으로 매우 아름답고 정교하며 예술적인 고품질 영어 프롬프트(예: ethereal lighting, 8k resolution, masterpiece, detailed digital concept art 등)로 풍부하게 확장하여 URL-인코딩 형태로 작성해.
-7. [🔑 Key 마음약방 40가지 불안 치유 연습 추천 및 상호 연동]:
+7. [🔑 Key 마음약방 40가지 불안 치유 연습 추천 및 상호 연동 표준 규격]:
    - 사용자가 불안, 걱정, 공황, 초조, 과도한 생각의 꼬리물기, 신체 긴장, 감정 압박을 호소하거나 Key 마음약방 관련 질문을 할 때:
      1) 따뜻하고 다정한 친구(반말)로서 깊은 공감과 인지적 안도감을 먼저 건네줘.
      2) 사용자의 현재 고민이나 감정에 가장 완벽하게 매칭되는 40가지 공식 연습 중 '단 하나의 맞춤 실천 연습'을 꼭 집어 추천하고 그 이유를 다정하게 설명해줘.
-     3) 절대로 없는 가상의 번호나 기법명을 지어내지 말고, 반드시 공식 40가지 연습 명칭(예: '연습 1. 걱정 그리기', '연습 9. 자기비판', '연습 13. 풍선 호흡법', '연습 14. 5-4-3-2-1 기법', '연습 18. 대지의 중심', '연습 20. 보디 스캔', '연습 21. 근육 재정비' 등)을 정확한 번호와 함께 사용해줘. 만약 프롬프트에 특정 연습이 지정되어 있다면 반드시 그 지정된 기법을 추천해.
-     4) 답변 말미에 "답변 바로 아래 추천 카드의 [실천] 버튼을 누르면 Key 연습실에서 방금 추천한 연습이 바로 열릴 거야!"라고 안내해줘.`;
+     3) 🎯 [필수 표준 출력 태그 규격]:
+        추천 기법을 제시하거나 행동 조언을 맺을 때, 반드시 다음 정규 태그 형식을 명시해줘:
+        👉 [추천 기법: 연습 {번호}. {기법명}]
+        (예: [추천 기법: 연습 13. 풍선 호흡법], [추천 기법: 연습 18. 대지의 중심], [추천 기법: 연습 14. 5-4-3-2-1 기법])
+     4) 절대로 없는 가상의 번호나 기법명을 지어내지 말고, 반드시 공식 40가지 연습 명칭(예: '연습 1. 걱정 그리기', '연습 9. 자기비판', '연습 13. 풍선 호흡법', '연습 14. 5-4-3-2-1 기법', '연습 18. 대지의 중심', '연습 20. 보디 스캔', '연습 21. 근육 재정비' 등)을 정확한 번호와 함께 사용해줘. 만약 프롬프트에 특정 연습이 지정되어 있다면 반드시 그 지정된 기법을 추천해.
+     5) 답변 말미에 "답변 바로 아래 추천 카드의 [실천] 버튼을 누르면 이 연습실로 바로 연결돼!"라고 안내해줘.`;
     
     // Format conversation properly for the API (only user/assistant roles after system)
     const sanitizeHistoryItem = (rawContent: any, isLatest: boolean) => {
@@ -1455,7 +1461,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                   persona: sourcePersona,
                   channel: options?.channel || m.channel,
                   channels: options?.channels || m.channels,
-                  mode: options?.mode || m.mode
+                  mode: options?.mode || m.mode,
+                  keyExerciseIndex: options?.keyExerciseIndex ?? m.keyExerciseIndex
                 };
               }
               return m;
@@ -1469,7 +1476,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 persona: sourcePersona,
                 channel: options?.channel,
                 channels: options?.channels,
-                mode: options?.mode
+                mode: options?.mode,
+                keyExerciseIndex: options?.keyExerciseIndex
               });
             }
             pushChatThreadsToFirestore(updated);
