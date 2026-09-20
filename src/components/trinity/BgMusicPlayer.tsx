@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Play, Pause, Disc, SkipForward, Volume2, VolumeX, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Music, Headphones, Shuffle, Repeat, Repeat1, RefreshCw, Trash2, EyeOff, RotateCcw, GripVertical, PanelRightClose, PanelLeftClose } from "lucide-react";
+import { Play, Pause, Disc, SkipForward, Volume2, VolumeX, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Music, Headphones, Shuffle, Repeat, Repeat1, RefreshCw, Trash2, EyeOff, RotateCcw, GripVertical } from "lucide-react";
 import {
   getSharedAudioContext,
   getAmbientAudioBus,
@@ -315,14 +315,29 @@ export function BgMusicPlayer() {
       }
     };
 
-    const handlePointerUp = () => {
+    const handlePointerUp = (e: PointerEvent) => {
       if (dragStartRef.current) {
         if (dragStartRef.current.hasMoved) {
+          const endX = e.clientX;
+          const endY = dragStartRef.current.initialY + (e.clientY - dragStartRef.current.startY);
+          const clampedY = Math.max(10, Math.min(window.innerHeight - 70, endY));
+          const side: "left" | "right" = endX < window.innerWidth / 2 ? "left" : "right";
+
+          // 화면 가장자리(좌우 75px 이내 또는 화면 폭의 18% 이내)로 드래그하면 바로 엣지에 도킹!
+          const edgeThreshold = Math.min(75, window.innerWidth * 0.18);
+          const shouldDock = endX < edgeThreshold || endX > (window.innerWidth - edgeThreshold);
+
           saveBgmPos({
-            y: bgmPosRef.current.y,
-            dockSide: bgmPosRef.current.dockSide,
-            isDocked: false,
+            y: clampedY,
+            dockSide: side,
+            isDocked: shouldDock,
           });
+
+          // 도킹 시 자동으로 접어두어 가장자리에서 미니 LP 탭만 우아하게 노출
+          if (shouldDock) {
+            setIsCollapsed(true);
+          }
+
           // brief timeout to prevent triggering click on children
           setTimeout(() => setIsDragging(false), 50);
         } else {
@@ -3423,11 +3438,12 @@ export function BgMusicPlayer() {
       {/* When Edge-Docked: Show minimalist unobtrusive peeking tab */}
       {bgmPos.isDocked ? (
         <div
+          onPointerDown={handlePointerDown}
           onClick={() => toggleDock()}
           className={`flex items-center gap-1.5 py-1.5 px-2.5 rounded-full cursor-pointer bg-black/80 hover:bg-black/95 backdrop-blur-2xl border border-amber-400/40 shadow-[0_4px_25px_rgba(251,191,36,0.35)] transition-transform hover:scale-105 active:scale-95 group ${
             isRightDock ? "pr-4" : "pl-4"
           }`}
-          title="엣지에서 배경음 플레이어 꺼내기 (클릭)"
+          title="엣지에서 배경음 플레이어 꺼내기 (클릭 또는 화면 안쪽으로 드래그)"
         >
           {isRightDock && <ChevronLeft size={13} className="text-amber-300 animate-pulse shrink-0" />}
           <div className="relative flex items-center justify-center">
@@ -3448,7 +3464,7 @@ export function BgMusicPlayer() {
           <div
             onPointerDown={handlePointerDown}
             className="cursor-grab active:cursor-grabbing p-1.5 text-white/30 hover:text-white/80 rounded-full transition-colors shrink-0"
-            title="길게 누르거나 드래그하여 위치 이동"
+            title="드래그하여 위치 이동 또는 화면 끝으로 끌어 엣지에 가리기"
           >
             <GripVertical size={13} />
           </div>
@@ -3474,17 +3490,6 @@ export function BgMusicPlayer() {
             aria-label={isPlaying ? "배경음 일시정지" : "배경음 재생"}
           >
             <LPRecordDisc isPlaying={isPlaying} isBuffering={isBuffering} size="lg" />
-          </button>
-
-          {/* Edge Dock Button */}
-          <button
-            type="button"
-            onClick={(e) => toggleDock(e)}
-            className="p-1.5 text-white/30 hover:text-amber-300 hover:bg-white/10 rounded-full transition-all shrink-0"
-            title="화면 가장자리(엣지)에 가리기"
-            aria-label="화면 엣지에 가리기"
-          >
-            {isRightDock ? <PanelRightClose size={12} /> : <PanelLeftClose size={12} />}
           </button>
         </div>
       ) : (
@@ -3651,17 +3656,6 @@ export function BgMusicPlayer() {
           aria-label={isPlaying ? "배경음 일시정지" : "배경음 재생"}
         >
           <LPRecordDisc isPlaying={isPlaying} isBuffering={isBuffering} size="lg" />
-        </button>
-
-        {/* Edge Dock Button */}
-        <button
-          type="button"
-          onClick={(e) => toggleDock(e)}
-          className="p-1.5 text-white/30 hover:text-amber-300 hover:bg-white/10 rounded-full transition-all shrink-0"
-          title="화면 가장자리(엣지)에 가리기"
-          aria-label="화면 엣지에 가리기"
-        >
-          {isRightDock ? <PanelRightClose size={13} /> : <PanelLeftClose size={13} />}
         </button>
 
         {/* --- PREMIUM PLAYLIST DROPDOWN MENU (pops down below widget, aligned to dock side) --- */}
