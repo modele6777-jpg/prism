@@ -1,12 +1,12 @@
 {
   "name": "luckey",
-  "version": "1.4.30",
-  "summary": "배포 빌드 프로세스 오류(ETARGET @google/genai & lockfile sync) 긴급 수정 및 클라우드 빌드 복구 완료",
-  "builtAt": "2026-09-20T21:45:00.000Z",
+  "version": "1.4.31",
+  "summary": "컨테이너 부팅 지연 및 프로덕션 정적 서빙 안정화 (Instant Health Probe & Zero-Latency Static Boot)",
+  "builtAt": "2026-09-20T21:55:00.000Z",
   "items": [
-    "🔧 @google/genai 의존성 버전 정합성 복구: npm 레지스트리에 존재하지 않는 ^0.1.1에서 실제 지원 및 lockfile 표준인 ^1.29.0으로 긴급 교체하여 npm ci 패키지 해석 충돌(ETARGET) 원천 차단",
-    "📦 package-lock.json 완벽 재동기화: package.json과 package-lock.json 간 누락 종속성 일괄 정합성 검증 및 재작성 완료",
-    "🛡️ Cloud Build 복원력 강화(cloudbuild.yaml): 클라우드 빌드 파이프라인에서 npm ci 실패 시 npm install로 자동 복구(npm ci || npm install)되도록 fallback 체계 구축"
+    "🚀 컨테이너 프로덕션 부팅 최적화: dist/server.cjs 구동 시 Vite 개발 미들웨어 로딩을 배제하고 빌드된 dist 정적 에셋을 지연 없이 즉시 제공하도록 환경 판별 로직(isProduction) 고도화",
+    "🩺 즉각 응답 헬스체크 라우트 구축 (/healthz, /health, /api/health): Cloud Run 및 AI Studio 프리뷰의 가동성(Liveness/Readiness) 프로브에 대해 라우터 최상단에서 200 OK를 즉각 반환하여 시작 지연 및 타임아웃 원천 차단",
+    "🛡️ 포트 오류 핸들러 안정화: EADDRINUSE 발생 시 미시작 소켓에 대한 비정상 server.close() 호출을 방지하고 임시 포트로 안전하게 폴백 바인딩"
   ],
   "author": "Antigravity AI Agent",
   "buildEnvironment": "cloud-run"
