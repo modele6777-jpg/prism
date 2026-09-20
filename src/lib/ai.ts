@@ -1118,56 +1118,80 @@ async function invokeLLMStreamInner(params: {
       ].filter((m, i, arr): m is string => Boolean(m) && arr.indexOf(m) === i);
 
       let hasEmittedToCaller = false;
+      // 빈 응답 자동 재시도: 최대 2회
+      const MAX_EMPTY_RETRIES = 2;
+      let emptyRetryCount = 0;
 
       for (const currentModel of modelsToTry) {
         // If we already emitted partial chunks from a failed model, don't blindly append from a second model
         if (hasEmittedToCaller) break;
 
         try {
-          const responseStream = await genAI.models.generateContentStream({
-            model: currentModel,
-            contents: contents.map(m => ({
-              role: m.role === "assistant" ? "model" : m.role as any,
-              parts: Array.isArray(m.content) 
-                ? m.content.map(p => {
-                    if (p.type === 'text' || !p.image_url?.url) return { text: p.text || '' };
-                    const img = parseImageDataUrl(p.image_url.url);
-                    return img ? { inlineData: { data: img.data, mimeType: img.mimeType } } : { text: '' };
-                  })
-                : [{ text: String(m.content || '') }],
-            })),
-            config: {
-              systemInstruction: systemMessage?.content as string,
-              temperature: 0.7,
-              maxOutputTokens: 2500,
-            }
-          });
-
-          let fullContent = "";
-          for await (const chunk of responseStream) {
-            const chunkText = chunk.text || "";
-            if (chunkText) {
-              const candidate = fullContent + chunkText;
-              const loopCheck = checkRepetitionLoop(candidate);
-              if (loopCheck.isLoop) {
-                console.warn("[invokeLLMStream] Degeneration Loop detected in Gemini stream! Tripping circuit breaker.");
-                fullContent = loopCheck.cleaned || "마음속에 무거운 감정이 밀려왔나 봐. 천천히 숨을 고르고, 편안하게 이야기해 줘.";
-                break;
+          let modelFullContent = "";
+          let modelRetry = 0;
+          while (modelRetry <= MAX_EMPTY_RETRIES) {
+            const responseStream = await genAI.models.generateContentStream({
+              model: currentModel,
+              contents: contents.map(m => ({
+                role: m.role === "assistant" ? "model" : m.role as any,
+                parts: Array.isArray(m.content) 
+                  ? m.content.map(p => {
+                      if (p.type === 'text' || !p.image_url?.url) return { text: p.text || '' };
+                      const img = parseImageDataUrl(p.image_url.url);
+                      return img ? { inlineData: { data: img.data, mimeType: img.mimeType } } : { text: '' };
+                    })
+                  : [{ text: String(m.content || '') }],
+              })),
+              config: {
+                systemInstruction: systemMessage?.content as string,
+                temperature: modelRetry > 0 ? 0.8 : 0.7, // 재시도 시 온도 약간 올려서 빈 응답 방지
+                maxOutputTokens: 2500,
               }
-              fullContent += chunkText;
-              hasEmittedToCaller = true;
-              params.onChunk(chunkText);
+            });
+
+            let attemptContent = "";
+            for await (const chunk of responseStream) {
+              const chunkText = chunk.text || "";
+              if (chunkText) {
+                const candidate = attemptContent + chunkText;
+                const loopCheck = checkRepetitionLoop(candidate);
+                if (loopCheck.isLoop) {
+                  console.warn("[invokeLLMStream] Degeneration Loop detected in Gemini stream! Tripping circuit breaker.");
+                  attemptContent = loopCheck.cleaned || "마음속에 무거운 감정이 밀려왔나 봐. 천천히 숨을 고르고, 편안하게 이야기해 줘.";
+                  break;
+                }
+                attemptContent += chunkText;
+                hasEmittedToCaller = true;
+                params.onChunk(chunkText);
+              }
             }
+
+            if (attemptContent && attemptContent.trim().length > 0) {
+              modelFullContent = attemptContent;
+              break;
+            }
+            // 빈 응답 — 재시도
+            modelRetry++;
+            emptyRetryCount++;
+            console.warn(`[invokeLLMStream] Gemini model ${currentModel} returned empty response. Retry ${modelRetry}/${MAX_EMPTY_RETRIES}`);
           }
 
-          if (fullContent && fullContent.trim().length > 0) {
-            const finalCleaned = checkRepetitionLoop(fullContent).cleaned || "마음속에 무거운 감정이 밀려왔나 봐. 천천히 숨을 고르고, 편안하게 이야기해 줘.";
+          if (modelFullContent && modelFullContent.trim().length > 0) {
+            const finalCleaned = checkRepetitionLoop(modelFullContent).cleaned || "마음속에 무거운 감정이 밀려왔나 봐. 천천히 숨을 고르고, 편안하게 이야기해 줘.";
             params.onFinish?.(finalCleaned);
             return finalCleaned;
           }
         } catch (streamModelErr: any) {
           console.warn(`[invokeLLMStream] Gemini stream model ${currentModel} error:`, streamModelErr?.message || streamModelErr);
         }
+      }
+
+      // 모든 Gemini 모델이 빈 응답 반환 → 즉시 폴백 메시지로 응답하여 UI 멈춤 방지
+      if (emptyRetryCount > 0 && !hasEmittedToCaller) {
+        const fallback = "지금 잠깐 연결이 흔들렸어. 다시 한번 말해줄래? 🙏";
+        params.onChunk(fallback);
+        params.onFinish?.(fallback);
+        return fallback;
       }
     } catch (geminiStreamErr) {
       console.warn("[invokeLLMStream] Gemini direct stream attempt failed:", geminiStreamErr);

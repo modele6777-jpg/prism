@@ -25,6 +25,7 @@ import {
 } from '../utils/suggestions';
 import { hasUnlockedPinToday, markPinUnlockedToday, getTodayDateKey } from '../lib/dailyCache';
 import { PERSONA_GREETINGS, PRISM_VOICE_RULES, LUCY_CHAT_VOICE_RULES } from '../lib/copyTone';
+import { isPerfReduced, isStandalonePWA } from '../lib/perfMode';
 
 export type PersonaType = 'lucy' | 'orange' | 'trinity' | 'aura' | 'bluebird' | 'muse';
 
@@ -1281,26 +1282,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // Append cross-app real-time remembrance
     systemPrompt += getCrossAppRecentDialogueContext();
 
+    // Safari PWA / reduced 성능 기기에서는 무거운 지식 엔진을 생략하여 멈춤 방지
+    const _isPerfReduced = isPerfReduced() || isStandalonePWA();
+
     // Append full PRISM omniscient ecosystem feature results
     systemPrompt += buildPrismOmniscientContext(sharedState, firebaseUser?.uid || null);
 
-    // 🪷 Append Early Buddhism (Nikāya) canonical wisdom engine
-    systemPrompt += `\n\n${buildEarlyBuddhismSystemPrompt()}`;
+    if (!_isPerfReduced) {
+      // 🪷 Append Early Buddhism (Nikāya) canonical wisdom engine
+      systemPrompt += `\n\n${buildEarlyBuddhismSystemPrompt()}`;
 
-    // 🌌 Append Gnosticism (Nag Hammadi & Gnosis) esoteric wisdom engine
-    systemPrompt += `\n\n${buildGnosticSystemPrompt()}`;
+      // 🌌 Append Gnosticism (Nag Hammadi & Gnosis) esoteric wisdom engine
+      systemPrompt += `\n\n${buildGnosticSystemPrompt()}`;
 
-    // 🕊️ Append A Course in Miracles (ACIM) forgiveness & peace engine
-    systemPrompt += `\n\n${buildAcimSystemPrompt()}`;
+      // 🕊️ Append A Course in Miracles (ACIM) forgiveness & peace engine
+      systemPrompt += `\n\n${buildAcimSystemPrompt()}`;
 
-    // 🧠 Append Psychological Distancing (Self-Distancing & Cognitive Defusion) Master engine
-    systemPrompt += `\n\n${buildDistancingSystemPrompt()}`;
+      // 🧠 Append Psychological Distancing (Self-Distancing & Cognitive Defusion) Master engine
+      systemPrompt += `\n\n${buildDistancingSystemPrompt()}`;
 
-    // 🕊️ Append Sedona Method (5 Questions & Releasing) Master engine
-    systemPrompt += `\n\n${buildSedonaSystemPrompt()}`;
+      // 🕊️ Append Sedona Method (5 Questions & Releasing) Master engine
+      systemPrompt += `\n\n${buildSedonaSystemPrompt()}`;
 
-    // ☀️ Append David R. Hawkins Letting Go (Surrender) Master engine
-    systemPrompt += `\n\n${buildLettingGoSystemPrompt()}`;
+      // ☀️ Append David R. Hawkins Letting Go (Surrender) Master engine
+      systemPrompt += `\n\n${buildLettingGoSystemPrompt()}`;
+    }
 
     // 📖 Append Permanent Background Memory & Long-term Episodic Archive
     systemPrompt += `\n\n${buildPermanentMemoryPromptContext()}`;
@@ -1354,7 +1360,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
 
     // 사용자와의 대화 맥락과 기억을 충분히 보존하면서 최신 대화에 가장 민첩하게 실시간 반응할 수 있도록 전달 (최근 10개 메시지)
-    const historySlice = [...unifiedMessages, userMsg].filter((message) => !isLegacyAIErrorMessage(message)).slice(-10);
+    // Safari PWA / 저성능 기기: 대화 기록을 줄여 메모리 과부하 방지
+    const historyLimit = _isPerfReduced ? 6 : 10;
+    const historySlice = [...unifiedMessages, userMsg].filter((message) => !isLegacyAIErrorMessage(message)).slice(-historyLimit);
     const conversationForAPI: Message[] = [
       { role: 'system', content: systemPrompt },
       ...historySlice.map((m, idx) => {
