@@ -515,7 +515,7 @@ export default function LucyStandalonePage() {
         stopTTS();
         setPlayingMsgId(null);
       }
-      setAutoTtsToast(next ? '🔊 질문자(남성)와 루시 답변(여성) 연속 자동 음성 읽기가 켜졌습니다.' : '🔇 자동 음성 읽기가 꺼졌습니다.');
+      setAutoTtsToast(next ? '🔊 루시 답변 자동 음성 읽기가 켜졌습니다.' : '🔇 자동 음성 읽기가 꺼졌습니다.');
       setTimeout(() => setAutoTtsToast(null), 2500);
       return next;
     });
@@ -718,21 +718,9 @@ export default function LucyStandalonePage() {
         lastAutoSpokenMsgIdRef.current = lastMsg.id;
         const cleanAnswer = normalizeTextForSpeech(lastMsg.content);
         if (cleanAnswer) {
-          const prevUserMsg = lucyMessages.slice(0, -1).reverse().find((m) => m.role === 'user');
-          const cleanQuestion = prevUserMsg && typeof prevUserMsg.content === 'string'
-            ? normalizeTextForSpeech(cleanUserMessageDisplay(prevUserMsg.content))
-            : '';
-
           stopTTS();
-          playQAndATTS(
-            { text: cleanQuestion, id: prevUserMsg?.id },
-            { text: cleanAnswer, id: lastMsg.id },
-            'Fenrir',
-            'Kore',
-            (_speaker, msg) => {
-              if (msg.id) setPlayingMsgId(msg.id);
-            }
-          ).catch((err) => {
+          setPlayingMsgId(lastMsg.id);
+          playTTSInChunks(cleanAnswer, 'Kore', 180, '다정').catch((err) => {
             console.warn('[Auto-TTS Fallback] Play error:', err);
           });
         }
@@ -1017,22 +1005,13 @@ export default function LucyStandalonePage() {
         if (isAutoTtsRef.current && fullText && fullText.trim()) {
           try {
             const cleanAnswer = normalizeTextForSpeech(fullText);
-            const rawQuestion = sentText || userCleanText || '';
-            const cleanQuestion = normalizeTextForSpeech(cleanUserMessageDisplay(rawQuestion));
             if (cleanAnswer) {
               if (replyMsgId) {
                 lastAutoSpokenMsgIdRef.current = replyMsgId;
+                setPlayingMsgId(replyMsgId);
               }
               stopTTS();
-              await playQAndATTS(
-                { text: cleanQuestion, id: undefined },
-                { text: cleanAnswer, id: replyMsgId },
-                'Fenrir',
-                'Kore',
-                (_speaker, msg) => {
-                  if (msg.id) setPlayingMsgId(msg.id);
-                }
-              );
+              await playTTSInChunks(cleanAnswer, 'Kore', 180, '다정');
             }
           } catch (ttsErr) {
             console.warn('[Auto-TTS] Immediate voice playback error:', ttsErr);

@@ -463,17 +463,16 @@ export const playTTS = async (
     }
     throw new Error('No audio content returned');
   } catch (error) {
-    if (sessionToVerify && ttsState.activeSessionId !== sessionToVerify) return;
-
     if (sequenceSessionId) {
-      // In sequence streaming mode, retry up to 3 times with fresh requests to avoid skipping chunks and avoid voice switching
-      for (let retryCount = 1; retryCount <= 3; retryCount++) {
+      // In sequence streaming mode, retry up to 4 times with fresh requests to preserve voice timbre consistency
+      for (let retryCount = 1; retryCount <= 4; retryCount++) {
         if (sessionToVerify && ttsState.activeSessionId !== sessionToVerify) return;
         try {
-          console.warn(`[TTS] Sequence chunk API call attempt ${retryCount}/3 failed, retrying in ${retryCount * 500}ms...`, error);
-          await new Promise((r) => setTimeout(r, retryCount * 500));
+          console.warn(`[TTS] Sequence chunk API call attempt ${retryCount}/4 failed, retrying in ${retryCount * 400}ms...`, error);
+          await new Promise((r) => setTimeout(r, retryCount * 400));
+          if (sessionToVerify && ttsState.activeSessionId !== sessionToVerify) return;
           const retryController = new AbortController();
-          const retryTimeoutId = setTimeout(() => retryController.abort(), 20000);
+          const retryTimeoutId = setTimeout(() => retryController.abort(), 25000);
           const retryRes = await fetch('/api/ai/tts', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -501,15 +500,12 @@ export const playTTS = async (
           console.warn(`[TTS] Sequence chunk retry ${retryCount} error:`, retryErr);
         }
       }
-      // Fall back to native browser speech synthesis to ensure the reading never abruptly cuts off
-      console.warn('[TTS] Sequence chunk API generation failed after retries, falling back to Native Browser Speech to avoid cutoff');
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        try { window.speechSynthesis.cancel(); } catch (_) {}
-      }
-      return playNativeBrowserSpeech(cleanText, wait, sessionToVerify, isSequenceChunk, voice);
+      // If server-side TTS fails after 4 retries, log warning and avoid switching mid-sentence to a completely different browser voice
+      console.warn('[TTS] Sequence chunk API generation failed after all retries; skipping chunk to preserve voice consistency');
+      return;
     }
 
-    console.warn('[TTS] API generation failed, falling back to Native Browser Speech...', error);
+    console.warn('[TTS] Standalone API generation failed, falling back to Native Browser Speech...', error);
     return playNativeBrowserSpeech(cleanText, wait, sessionToVerify, isSequenceChunk, voice);
   }
 };
@@ -641,10 +637,7 @@ export const playTTSInChunks = async (
           cleanText,    // preserve activeFullText for UI synchronization
         );
       } catch (chunkErr) {
-        console.warn(`[TTS] Sequence chunk ${i + 1}/${chunks.length} error, recovering with fallback:`, chunkErr);
-        if (ttsState.activeSessionId === sequenceSessionId && isPlayingSequence) {
-          await playNativeBrowserSpeech(chunks[i], true, sequenceSessionId, !isLastChunk, voice).catch(() => {});
-        }
+        console.warn(`[TTS] Sequence chunk ${i + 1}/${chunks.length} error:`, chunkErr);
       }
 
       if (ttsState.activeSessionId !== sequenceSessionId || !isPlayingSequence) {
@@ -862,10 +855,7 @@ export const playQAndATTS = async (
         try {
           await playTTS(aChunks[i], aiVoice, true, '다정', sequenceSessionId, !isLastChunk, cleanAnswer);
         } catch (chunkErr) {
-          console.warn(`[TTS] QA chunk ${i + 1}/${aChunks.length} error, recovering:`, chunkErr);
-          if (ttsState.activeSessionId === sequenceSessionId && isPlayingSequence) {
-            await playNativeBrowserSpeech(aChunks[i], true, sequenceSessionId, !isLastChunk, aiVoice).catch(() => {});
-          }
+          console.warn(`[TTS] QA chunk ${i + 1}/${aChunks.length} error:`, chunkErr);
         }
 
         if (ttsState.activeSessionId !== sequenceSessionId || !isPlayingSequence) break;

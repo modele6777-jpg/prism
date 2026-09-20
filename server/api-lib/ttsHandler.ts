@@ -130,14 +130,14 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
     };
 
     let finalBuffer: Buffer | null = null;
-    for (let attempt = 1; attempt <= 2; attempt++) {
+    for (let attempt = 1; attempt <= 3; attempt++) {
       try {
         finalBuffer = await generateWithEdgeTTS(cleanText);
         if (finalBuffer && finalBuffer.length > 0) break;
       } catch (attemptErr) {
-        console.warn(`[TTS] EdgeTTS attempt ${attempt}/2 warning:`, attemptErr);
-        if (attempt < 2) {
-          await new Promise((r) => setTimeout(r, 300 * attempt));
+        console.warn(`[TTS] EdgeTTS attempt ${attempt}/3 warning:`, attemptErr);
+        if (attempt < 3) {
+          await new Promise((r) => setTimeout(r, 400 * attempt));
         }
       }
     }
