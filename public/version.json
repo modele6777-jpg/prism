@@ -1,13 +1,12 @@
 {
   "name": "luckey",
-  "version": "1.4.29",
-  "summary": "내면의 쉼표 3분 체화 명상 TTS 클라우드 고품질 뉴럴 엔진(Edge Neural & Gemini WAV) 전면 직결 및 안정적 재생 보장",
-  "builtAt": "2026-09-20T13:59:00.000Z",
+  "version": "1.4.30",
+  "summary": "배포 빌드 프로세스 오류(ETARGET @google/genai & lockfile sync) 긴급 수정 및 클라우드 빌드 복구 완료",
+  "builtAt": "2026-09-20T21:45:00.000Z",
   "items": [
-    "🧘 내면의 쉼표 명상 클라우드 뉴럴 TTS 연동: 로컬 기기 Web Speech API 의존도를 해소하고, 고품질 Edge Neural TTS(순복·선희·인준·현수) 및 Gemini Cloud 엔진을 기본 탑재하여 깊고 차분한 명상 톤(-8% rate, -1.0Hz pitch) 적용",
-    "🛡️ PCM to WAV 자동 변환 엔진 내장(pcmToWav): Gemini 등 클라우드 AI 엔진이 원시 PCM을 반환하더라도 표준 WAV 헤더를 자동 합성하여 모든 브라우저 및 오디오 엘리먼트에서 100% 끊김 없는 재생 보장",
-    "⚡ 전용 오디오 엘리먼트 사전 언락 & WebAudio 이중 복구망: 첫 시작 제스처 시 오디오 컨텍스트를 사전 언락하여 모바일/iOS 사파리의 백그라운드 Autoplay 차단 문제를 완벽 방어하고, HTML5 Audio 및 Web Audio BufferSource 이중 재생 체계 구축",
-    "🚀 4단계 명상 스크립트 백그라운드 선행 프리로딩: 1단계 시작 시 2·3단계 및 완료 안내 음성을 병렬로 사전 캐싱하여 타이머 전환 시 네트워크 지연 없이 즉각 재생"
+    "🔧 @google/genai 의존성 버전 정합성 복구: npm 레지스트리에 존재하지 않는 ^0.1.1에서 실제 지원 및 lockfile 표준인 ^1.29.0으로 긴급 교체하여 npm ci 패키지 해석 충돌(ETARGET) 원천 차단",
+    "📦 package-lock.json 완벽 재동기화: package.json과 package-lock.json 간 누락 종속성 일괄 정합성 검증 및 재작성 완료",
+    "🛡️ Cloud Build 복원력 강화(cloudbuild.yaml): 클라우드 빌드 파이프라인에서 npm ci 실패 시 npm install로 자동 복구(npm ci || npm install)되도록 fallback 체계 구축"
   ],
   "author": "Antigravity AI Agent",
   "buildEnvironment": "cloud-run"

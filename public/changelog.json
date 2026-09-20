@@ -1,5 +1,15 @@
 [
   {
+    "version": "1.4.30",
+    "summary": "배포 빌드 프로세스 오류(ETARGET @google/genai & lockfile sync) 긴급 수정 및 클라우드 빌드 복구 완료",
+    "builtAt": "2026-09-20T21:45:00.000Z",
+    "items": [
+      "🔧 @google/genai 의존성 버전 정합성 복구: npm 레지스트리에 존재하지 않는 ^0.1.1에서 실제 지원 및 lockfile 표준인 ^1.29.0으로 긴급 교체하여 npm ci 패키지 해석 충돌(ETARGET) 원천 차단",
+      "📦 package-lock.json 완벽 재동기화: package.json과 package-lock.json 간 누락 종속성 일괄 정합성 검증 및 재작성 완료",
+      "🛡️ Cloud Build 복원력 강화(cloudbuild.yaml): 클라우드 빌드 파이프라인에서 npm ci 실패 시 npm install로 자동 복구(npm ci || npm install)되도록 fallback 체계 구축"
+    ]
+  },
+  {
     "version": "1.4.29",
     "summary": "내면의 쉼표 3분 체화 명상 TTS 클라우드 고품질 뉴럴 엔진(Edge Neural & Gemini WAV) 전면 직결 및 안정적 재생 보장",
     "builtAt": "2026-09-20T13:59:00.000Z",
