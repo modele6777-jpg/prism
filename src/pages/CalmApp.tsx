@@ -15,7 +15,7 @@ export default function CalmApp() {
 
   useEffect(() => {
     const prevTitle = document.title;
-    document.title = "Key - 40대 불안 치유 연습 & Dr.Z RAG";
+    document.title = "Key - 40대 불안 치유 연습 & 마음약방";
 
     // Handle messages from iframe (navigation to Lucy, or frame ready signal)
     const handleMessage = (e: MessageEvent) => {

@@ -175,154 +175,438 @@ button, a, input, textarea, select {
   letter-spacing: -0.01em;
 }
 
-/* Soundscape Bar in Top Nav */
-/* Soundscape Bar in Top Nav (심리상담실 힐링 사운드스케이프 바) */
-.soundscape-pill-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(12px);
-  padding: 4px 10px;
-  border-radius: 30px;
-  border: 1px solid var(--border-linen);
-  box-shadow: var(--shadow-sm);
-  max-width: 660px;
+/* =========================================================
+   LP Vinyl Record Disc & Soundscape Player (PRISM 동일 스타일)
+   ========================================================= */
+@keyframes lp-vinyl-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.sound-title-tag {
-  font-size: 0.74rem;
-  font-weight: 700;
-  color: var(--copper-primary);
-  white-space: nowrap;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 4px;
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.sound-scroll-track {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-  padding: 2px 2px;
-  max-width: 440px;
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.92);
+  }
 }
 
-.sound-scroll-track::-webkit-scrollbar {
-  display: none;
+@keyframes ping {
+  75%, 100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
 }
 
-.sound-btn {
-  background: transparent;
-  border: none;
-  font-size: 0.76rem;
-  padding: 4px 9px;
-  border-radius: 14px;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+.key-lp-player-wrapper {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  white-space: nowrap;
-  flex-shrink: 0;
-  border: 1px solid transparent;
 }
 
-.sound-btn:hover {
-  background: var(--bg-canvas-subtle);
-  color: var(--copper-primary);
-  border-color: rgba(184, 115, 87, 0.2);
+.key-lp-disc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--border-linen);
+  padding: 3px 10px 3px 4px;
+  border-radius: 9999px;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.sound-btn.active {
-  background: var(--copper-primary);
-  color: #ffffff;
-  font-weight: 600;
-  box-shadow: 0 2px 8px rgba(184, 115, 87, 0.35);
+.key-lp-disc-btn:hover {
+  background: #ffffff;
+  border-color: rgba(184, 115, 87, 0.4);
+  box-shadow: 0 4px 14px rgba(162, 89, 59, 0.12);
   transform: translateY(-1px);
 }
 
-.sound-controls-group {
+.key-lp-disc-btn.playing {
+  border-color: rgba(245, 158, 11, 0.7);
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.3);
+}
+
+.key-lp-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-body);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  max-width: 85px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* LP Disc & Grooves */
+.lp-vinyl-disc {
+  width: 36px;
+  height: 36px;
+  position: relative;
+  border-radius: 9999px;
+  background: radial-gradient(circle at center, #27272a 0%, #18181b 45%, #09090b 80%, #000000 100%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2), 0 3px 10px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  user-select: none;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding-left: 6px;
-  border-left: 1px solid var(--border-linen);
-  flex-shrink: 0;
+  justify-content: center;
 }
 
-.sound-vol-label {
-  font-size: 0.8rem;
-  cursor: default;
-  user-select: none;
+.lp-vinyl-grooves {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background:
+    repeating-radial-gradient(
+      circle at center,
+      transparent 0,
+      transparent 2px,
+      rgba(255, 255, 255, 0.05) 2.5px,
+      transparent 3.5px
+    ),
+    conic-gradient(
+      from 0deg,
+      rgba(255, 255, 255, 0.18) 0deg,
+      transparent 45deg,
+      rgba(255, 255, 255, 0.04) 90deg,
+      transparent 135deg,
+      rgba(255, 255, 255, 0.18) 180deg,
+      transparent 225deg,
+      rgba(255, 255, 255, 0.04) 270deg,
+      transparent 315deg,
+      rgba(255, 255, 255, 0.18) 360deg
+    );
+  pointer-events: none;
 }
 
-.sound-vol-range {
-  width: 52px;
-  height: 4px;
-  -webkit-appearance: none;
-  appearance: none;
-  background: var(--border-linen);
-  border-radius: 2px;
-  outline: none;
-  cursor: pointer;
+.lp-spinning {
+  animation: lp-vinyl-spin 3.2s linear infinite;
+  animation-play-state: running;
+  will-change: transform;
 }
 
-.sound-vol-range::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--copper-primary);
-  cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
-  transition: transform 0.15s;
+.lp-paused {
+  animation: lp-vinyl-spin 3.2s linear infinite;
+  animation-play-state: paused;
+  will-change: transform;
 }
 
-.sound-vol-range::-webkit-slider-thumb:hover {
-  transform: scale(1.25);
+.lp-groove-ring-1 {
+  position: absolute;
+  inset: 4px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  pointer-events: none;
 }
 
-.sound-vol-range::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--copper-primary);
-  cursor: pointer;
-  border: none;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+.lp-groove-ring-2 {
+  position: absolute;
+  inset: 8px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  pointer-events: none;
 }
 
-.sound-btn-stop {
-  background: #fee2e2;
-  color: #dc2626;
-  border: 1px solid #fca5a5;
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s;
-  display: inline-flex;
+.lp-center-label {
+  position: relative;
+  z-index: 10;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #f59e0b 0%, #f43f5e 50%, #6366f1 100%);
+  display: flex;
   align-items: center;
-  gap: 2px;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
-.sound-btn-stop:hover {
-  background: #fecaca;
-  color: #b91c1c;
-  transform: scale(1.04);
+.lp-spindle-hole {
+  width: 4.5px;
+  height: 4.5px;
+  border-radius: 9999px;
+  background: #09090b;
+  border: 1px solid rgba(255, 255, 255, 0.45);
 }
 
-.sound-btn-stop.hidden {
-  display: none !important;
+.lp-tonearm {
+  position: absolute;
+  top: 1px;
+  right: 2px;
+  width: 9px;
+  height: 13px;
+  transform-origin: top right;
+  transition: transform 0.4s ease, opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 20;
+  transform: rotate(-25deg) translateX(3px);
+  opacity: 0.55;
+}
+
+.lp-tonearm.active {
+  transform: rotate(10deg) translateX(0);
+  opacity: 1;
+}
+
+.lp-tonearm-bar {
+  width: 1.5px;
+  height: 11px;
+  background: linear-gradient(to bottom, #ffffff, #a1a1aa, #f59e0b);
+  border-radius: 9999px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.lp-tonearm-head {
+  width: 3.5px;
+  height: 3.5px;
+  border-radius: 9999px;
+  background: #fbbf24;
+  box-shadow: 0 0 4px #fbbf24;
+  margin-left: -1px;
+}
+
+/* Soundscape Popover Dropdown */
+.key-lp-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 280px;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-linen);
+  border-radius: 20px;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  z-index: 1000;
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  animation: key-dropdown-pop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.key-lp-dropdown.open {
+  display: flex;
+}
+
+@keyframes key-dropdown-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.key-lp-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--copper-primary);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-linen);
+}
+
+.key-lp-stop-btn {
+  background: var(--copper-light);
+  border: none;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--copper-primary);
+  padding: 3px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.key-lp-stop-btn:hover {
+  background: var(--copper-primary);
+  color: #ffffff;
+}
+
+.key-lp-track-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 5px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.key-lp-track-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 8px;
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--text-body);
+  background: var(--bg-canvas);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.key-lp-track-btn:hover {
+  background: var(--copper-light);
+  color: var(--copper-primary);
+  border-color: rgba(184, 115, 87, 0.25);
+}
+
+.key-lp-track-btn.active {
+  background: var(--copper-primary);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(162, 89, 59, 0.3);
+}
+
+.key-lp-vol-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-linen);
+}
+
+.key-lp-vol-bar input[type="range"] {
+  flex: 1;
+  accent-color: var(--copper-primary);
+}
+
+/* =========================================================
+   Floating BigBang Button (홈 버튼 -> 빅뱅 버튼 변환)
+   ========================================================= */
+.key-bigbang-container {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  z-index: 9999;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.key-bigbang-btn {
+  width: 72px;
+  height: 72px;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 35% 30%, #171833 0%, #0e0f21 45%, #060712 80%, #020207 100%);
+  border: 1.5px solid rgba(56, 189, 248, 0.55);
+  box-shadow:
+    inset 0 0 16px rgba(56, 189, 248, 0.25),
+    inset -4px -4px 14px rgba(0, 0, 0, 0.85),
+    0 0 24px rgba(56, 189, 248, 0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.key-bigbang-btn:hover {
+  transform: scale(1.08);
+  border-color: rgba(56, 189, 248, 0.9);
+  box-shadow:
+    inset 0 0 20px rgba(56, 189, 248, 0.4),
+    0 0 32px rgba(56, 189, 248, 0.6);
+}
+
+.key-bigbang-btn:active {
+  transform: scale(0.94);
+}
+
+.key-bigbang-orbit {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  pointer-events: none;
+  background: conic-gradient(from 0deg, rgba(168,85,247,0.6) 0deg, rgba(15,17,36,0.9) 120deg, rgba(192,132,252,0.5) 240deg, rgba(168,85,247,0.6) 360deg);
+  opacity: 0.45;
+  animation: spin 12s linear infinite;
+}
+
+.key-bigbang-core {
+  position: absolute;
+  inset: 10px;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 45% 35%, #101228 0%, #090a1a 55%, #03030a 100%);
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.key-bigbang-star {
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: #38bdf8;
+  box-shadow: 0 0 14px #38bdf8, 0 0 22px rgba(56, 189, 248, 0.8);
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.key-bigbang-pulse-1 {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  animation: ping 2.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.key-bigbang-pulse-2 {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.key-bigbang-label {
+  position: relative;
+  z-index: 10;
+  font-size: 8.5px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-top: 24px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 0 8px rgba(56, 189, 248, 0.6);
 }
 
 /* Navigation Actions */
@@ -330,7 +614,6 @@ button, a, input, textarea, select {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding-right: 64px; /* Space for the floating BgMusicPlayer (LP Vinyl Disc) */
 }
 
 .nav-btn {
@@ -2626,60 +2909,29 @@ button, a, input, textarea, select {
 
   .nav-actions {
     gap: 6px;
-    padding-right: 54px;
+    padding-right: 0;
   }
 
   .nav-btn {
-    padding: 7px 12px;
-    font-size: 0.8rem;
-    min-height: 38px;
-    border-radius: 18px;
-  }
-
-  /* Soundscape Bar: Full width horizontal scroll strip with momentum scrolling */
-  .soundscape-pill-bar {
-    order: 3;
-    width: 100%;
-    max-width: 100%;
-    justify-content: space-between;
-    padding: 5px 8px;
-    gap: 6px;
-    border-radius: 20px;
-  }
-
-  .sound-scroll-track {
-    max-width: calc(100% - 140px);
-    flex: 1;
-    min-width: 0;
-  }
-
-  .sound-controls-group {
-    padding-left: 4px;
-    gap: 4px;
-  }
-
-  .sound-vol-range {
-    width: 42px;
-  }
-
-  .soundscape-pill-bar::-webkit-scrollbar,
-  .sound-scroll-track::-webkit-scrollbar {
-    display: none;
-  }
-
-  .sound-title-tag {
-    flex-shrink: 0;
-    font-size: 0.72rem;
-    margin-right: 2px;
-  }
-
-  .sound-btn {
-    flex-shrink: 0;
-    white-space: nowrap;
-    font-size: 0.78rem;
-    padding: 6px 11px;
+    padding: 6px 10px;
+    font-size: 0.76rem;
     min-height: 34px;
-    border-radius: 14px;
+    border-radius: 16px;
+  }
+
+  /* Key LP Vinyl Player Mobile */
+  .key-lp-player-wrapper {
+    position: relative;
+  }
+
+  .key-lp-title {
+    max-width: 60px;
+    font-size: 0.72rem;
+  }
+
+  .key-lp-dropdown {
+    width: min(280px, calc(100vw - 24px));
+    right: -10px;
   }
 
   /* 2. Main Wrapper */

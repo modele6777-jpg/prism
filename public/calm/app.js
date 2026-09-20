@@ -94,56 +94,144 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  const heroBtnChat = document.getElementById('hero-btn-chat');
-  if (heroBtnChat) {
-    heroBtnChat.addEventListener('click', () => {
-      askLucyWithText('루시야, 마음이 불안하고 초조한데 나에게 맞는 따뜻한 위로와 Key 마음약방 연습을 추천해 줘.');
-    });
-  }
-
   const navBrand = document.getElementById('nav-brand');
   if (navBrand) {
     navBrand.addEventListener('click', () => {
-      switchTab('tab-chat');
+      switchTab('tab-exercises');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   }
 
-  // 4. Soundscape Pills (심리상담실 치유 배경음 14선 & 볼륨 제어)
-  const soundBtns = document.querySelectorAll('.soundscape-pill-bar .sound-btn');
-  const btnSoundStop = document.getElementById('sound-btn-stop');
-  const soundVolSlider = document.getElementById('sound-vol-slider');
+  // 4. LP Vinyl Record BGM Player (PRISM 동일 턴테이블 스타일 & 14선 사운드)
+  const lpDiscBtn = document.getElementById('key-lp-disc-btn');
+  const lpGrooves = document.getElementById('key-lp-grooves');
+  const lpTonearm = document.getElementById('key-lp-tonearm');
+  const lpTitle = document.getElementById('key-lp-title');
+  const lpDropdown = document.getElementById('key-lp-dropdown');
+  const lpStopBtn = document.getElementById('key-lp-stop-btn');
+  const lpVolSlider = document.getElementById('key-lp-vol-slider');
+  const lpTrackBtns = document.querySelectorAll('.key-lp-track-btn');
 
-  soundBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const soundType = btn.getAttribute('data-sound');
-      if (!soundType || !window.soundscapeEngine) return;
-      const isPlaying = window.soundscapeEngine.play(soundType);
+  const SOUND_NAMES = {
+    ocean: '🌊 파도',
+    rain: '🌧️ 빗소리',
+    stream: '🏞️ 시냇물',
+    forest: '🍃 숲바람',
+    fire: '🪵 벽난로',
+    bowl: '🔔 싱잉볼',
+    freq432: '✨ 432Hz',
+    freq528: '💖 528Hz',
+    om: '🧘 젠 옴',
+    chime: '🎐 풍경',
+    musicbox: '🎶 오르골',
+    crickets: '🌙 풀벌레',
+    pink: '🔕 핑크노이즈',
+    thunder: '⛈️ 먼 천둥',
+  };
 
-      soundBtns.forEach(b => b.classList.remove('active'));
-      if (isPlaying) {
+  let activeSoundType = 'ocean';
+
+  function updateLpPlayerUI(isPlaying, soundType) {
+    if (isPlaying) {
+      if (lpDiscBtn) lpDiscBtn.classList.add('playing');
+      if (lpGrooves) {
+        lpGrooves.classList.remove('lp-paused');
+        lpGrooves.classList.add('lp-spinning');
+      }
+      if (lpTonearm) lpTonearm.classList.add('active');
+      if (lpTitle && soundType) {
+        lpTitle.textContent = SOUND_NAMES[soundType] || '재생 중';
+      }
+    } else {
+      if (lpDiscBtn) lpDiscBtn.classList.remove('playing');
+      if (lpGrooves) {
+        lpGrooves.classList.remove('lp-spinning');
+        lpGrooves.classList.add('lp-paused');
+      }
+      if (lpTonearm) lpTonearm.classList.remove('active');
+      if (lpTitle) {
+        lpTitle.textContent = '치유 배경음';
+      }
+    }
+
+    lpTrackBtns.forEach(btn => {
+      if (isPlaying && btn.getAttribute('data-sound') === soundType) {
         btn.classList.add('active');
-        if (btnSoundStop) btnSoundStop.classList.remove('hidden');
       } else {
-        if (btnSoundStop) btnSoundStop.classList.add('hidden');
+        btn.classList.remove('active');
       }
-    });
-  });
-
-  if (btnSoundStop) {
-    btnSoundStop.addEventListener('click', () => {
-      if (window.soundscapeEngine) {
-        window.soundscapeEngine.stop();
-      }
-      soundBtns.forEach(b => b.classList.remove('active'));
-      btnSoundStop.classList.add('hidden');
     });
   }
 
-  if (soundVolSlider) {
-    soundVolSlider.addEventListener('input', (e) => {
+  if (lpDiscBtn) {
+    lpDiscBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!window.soundscapeEngine) return;
+      const isCurrentlyPlaying = !!window.soundscapeEngine.currentSound;
+      if (isCurrentlyPlaying) {
+        // Toggle dropdown open/close when playing
+        if (lpDropdown) lpDropdown.classList.toggle('open');
+      } else {
+        // Start playing activeSoundType
+        const playing = window.soundscapeEngine.play(activeSoundType);
+        updateLpPlayerUI(playing, activeSoundType);
+      }
+    });
+  }
+
+  lpTrackBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const soundType = btn.getAttribute('data-sound');
+      if (!soundType || !window.soundscapeEngine) return;
+      activeSoundType = soundType;
+      const isPlaying = window.soundscapeEngine.play(soundType);
+      updateLpPlayerUI(isPlaying, soundType);
+    });
+  });
+
+  if (lpStopBtn) {
+    lpStopBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (window.soundscapeEngine) {
+        window.soundscapeEngine.stop();
+      }
+      updateLpPlayerUI(false, null);
+      if (lpDropdown) lpDropdown.classList.remove('open');
+    });
+  }
+
+  if (lpVolSlider) {
+    lpVolSlider.addEventListener('input', (e) => {
       if (window.soundscapeEngine) {
         window.soundscapeEngine.setVolume(e.target.value);
+      }
+    });
+  }
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (lpDropdown && lpDropdown.classList.contains('open')) {
+      const wrapper = document.getElementById('key-lp-player-wrapper');
+      if (wrapper && !wrapper.contains(e.target)) {
+        lpDropdown.classList.remove('open');
+      }
+    }
+  });
+
+  // 4-1. Floating BigBang Button (빅뱅 홈 복귀 버튼 클릭 리스너)
+  const keyBigBangBtn = document.getElementById('key-bigbang-btn');
+  if (keyBigBangBtn) {
+    keyBigBangBtn.addEventListener('click', () => {
+      // 1. PostMessage to parent frame (PRISM CalmApp router)
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'NAVIGATE_LUCKEY', path: '/' }, '*');
+      }
+      // 2. Direct top navigation fallback
+      if (window.top) {
+        window.top.location.href = '/';
+      } else {
+        window.location.href = '/';
       }
     });
   }
@@ -566,9 +654,12 @@ document.addEventListener('DOMContentLoaded', () => {
   window.askAboutPractice = function(globalIdx) {
     const ex = window.PRACTICE_EXERCISES.find(e => e.globalIndex === globalIdx);
     if (!ex) return;
-    switchTab('tab-chat');
-    userInput.value = `책 ${ex.page}쪽의 '연습 ${ex.index}. ${ex.title}'에 대해 저자의 핵심 의도와 실천 팁을 자세히 설명해 줘.`;
-    chatForm.dispatchEvent(new Event('submit'));
+    const text = `책 ${ex.page}쪽의 '연습 ${ex.index}. ${ex.title}'에 대해 저자의 핵심 의도와 실천 팁을 자세히 설명해 줘.`;
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type: 'NAVIGATE_LUCKEY', path: '/chat', text }, '*');
+    } else {
+      window.location.href = '/chat';
+    }
   };
 
   // 8. Balloon Breathing (유기적 5초 호흡)
@@ -1926,13 +2017,11 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnAskTeaching) {
     btnAskTeaching.addEventListener('click', () => {
       if (!currentTeaching) return;
-      switchTab('tab-chat');
       const questionPrompt = `오늘 내면의 쉼표 가르침 [${currentTeaching.theme}]: "${currentTeaching.headline}" 가르침을 읽었습니다. ${currentTeaching.reflectionQuestion}에 대해 제 상황을 나누고, 불안을 내려놓는 지혜를 얻고 싶어요.`;
-      if (userInput && chatForm) {
-        userInput.value = questionPrompt;
-        userInput.style.height = 'auto';
-        userInput.style.height = Math.min(userInput.scrollHeight, 120) + 'px';
-        chatForm.dispatchEvent(new Event('submit'));
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'NAVIGATE_LUCKEY', path: '/chat', text: questionPrompt }, '*');
+      } else {
+        window.location.href = '/chat';
       }
     });
   }
@@ -2396,11 +2485,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // 초기 워크북 피드 및 통계 렌더링
   renderWorkbook();
 
-  // 기본 활성 탭: Dr. Z 마음 대화(tab-chat) 안전 활성화 (모든 모듈 로드 완료 후 실행)
-  let initialTab = 'tab-chat';
+  // 기본 활성 탭: 40가지 실천 연습실(tab-exercises) 안전 활성화 (모든 모듈 로드 완료 후 실행)
+  let initialTab = 'tab-exercises';
   try {
     const saved = localStorage.getItem('calm_active_tab');
-    if (saved && saved !== 'tab-book' && saved !== 'tab-qa' && document.getElementById(saved)) {
+    if (saved && saved !== 'tab-chat' && saved !== 'tab-book' && saved !== 'tab-qa' && document.getElementById(saved)) {
       initialTab = saved;
     }
   } catch (e) {}

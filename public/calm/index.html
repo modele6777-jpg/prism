@@ -117,38 +117,56 @@
       </div>
     </div>
 
-    <!-- Soundscape Pill Bar (심리상담실 치유 배경음 14선) -->
-    <div class="soundscape-pill-bar" id="soundscape-bar">
-      <span class="sound-title-tag">🎧 상담실 배경음</span>
-      <div class="sound-scroll-track" id="sound-scroll-track">
-        <button type="button" class="sound-btn" data-sound="ocean" title="깊은 바다 파도 소리 (부교감 신경 이완)">🌊 파도</button>
-        <button type="button" class="sound-btn" data-sound="rain" title="마음을 씻어내는 온화한 빗소리">🌧️ 빗소리</button>
-        <button type="button" class="sound-btn" data-sound="stream" title="산속 옹달샘 맑은 시냇물 (심박수 안정)">🏞️ 시냇물</button>
-        <button type="button" class="sound-btn" data-sound="forest" title="아늑한 숲바람과 나뭇잎 솔바람">🍃 숲바람</button>
-        <button type="button" class="sound-btn" data-sound="fire" title="따뜻한 벽난로 장작 타는 소리 (심리적 안정감)">🪵 벽난로</button>
-        <button type="button" class="sound-btn" data-sound="bowl" title="티베트 싱잉볼 깊은 명상 울림 (뇌파 안정)">🔔 싱잉볼</button>
-        <button type="button" class="sound-btn" data-sound="freq432" title="432Hz 치유 주파수 (알파파 유도 & 근육 이완)">✨ 432Hz 치유</button>
-        <button type="button" class="sound-btn" data-sound="freq528" title="528Hz 평온·스트레스 호르몬 감소 주파수">💖 528Hz 평온</button>
-        <button type="button" class="sound-btn" data-sound="om" title="깊은 젠 옴(Om) 명상 호흡 공명음">🧘 젠 옴 드론</button>
-        <button type="button" class="sound-btn" data-sound="chime" title="청아한 크리스탈 풍경 윈드차임">🎐 풍경 차임</button>
-        <button type="button" class="sound-btn" data-sound="musicbox" title="마음 치유 펜타토닉 힐링 오르골">🎶 치유 오르골</button>
-        <button type="button" class="sound-btn" data-sound="crickets" title="고요한 여름밤의 안식 풀벌레 소리">🌙 밤의 풀벌레</button>
-        <button type="button" class="sound-btn" data-sound="pink" title="임상 심리상담실 차음 핑크 노이즈 (잡념 차단)">🔕 핑크 노이즈</button>
-        <button type="button" class="sound-btn" data-sound="thunder" title="창밖 빗소리와 아늑한 먼 천둥소리">⛈️ 먼 천둥</button>
-      </div>
-      <div class="sound-controls-group">
-        <label for="sound-vol-slider" class="sound-vol-label" title="배경음 볼륨 조절">🔊</label>
-        <input type="range" id="sound-vol-slider" class="sound-vol-range" min="0" max="1" step="0.05" value="0.45" aria-label="배경음 음량" title="배경음 볼륨 조절">
-        <button type="button" id="sound-btn-stop" class="sound-btn-stop hidden" title="배경음 끄기">⏹️ 끄기</button>
-      </div>
-    </div>
-
-    <!-- Action Buttons -->
+    <!-- Action Buttons & LP Vinyl BGM Player -->
     <div class="nav-actions">
-      <a href="/" class="nav-btn" style="text-decoration: none; color: inherit; display: inline-flex; align-items: center; gap: 5px;" title="LucKey 홈으로 이동">
-        <span>🍀</span>
-        <span>LucKey</span>
-      </a>
+      <!-- LP Vinyl Disc BGM Player (PRISM 동일 턴테이블 스타일) -->
+      <div class="key-lp-player-wrapper" id="key-lp-player-wrapper">
+        <button type="button" id="key-lp-disc-btn" class="key-lp-disc-btn" aria-label="치유 배경음 LP 플레이어">
+          <div class="lp-vinyl-disc" id="key-lp-disc">
+            <div class="lp-vinyl-grooves lp-paused" id="key-lp-grooves"></div>
+            <div class="lp-groove-ring-1"></div>
+            <div class="lp-groove-ring-2"></div>
+            <div class="lp-center-label">
+              <div class="lp-spindle-hole"></div>
+            </div>
+            <div class="lp-tonearm" id="key-lp-tonearm">
+              <div class="lp-tonearm-bar"></div>
+              <div class="lp-tonearm-head"></div>
+            </div>
+          </div>
+          <span class="key-lp-title" id="key-lp-title">치유 배경음</span>
+          <span style="font-size: 10px; opacity: 0.6; margin-left: -2px;">▾</span>
+        </button>
+
+        <!-- Dropdown / Popover Sound Selector -->
+        <div class="key-lp-dropdown" id="key-lp-dropdown">
+          <div class="key-lp-dropdown-header">
+            <span>🎧 치유 배경음 선택 (14선)</span>
+            <button type="button" id="key-lp-stop-btn" class="key-lp-stop-btn">⏹️ 정지</button>
+          </div>
+          <div class="key-lp-track-list" id="key-lp-track-list">
+            <button type="button" class="key-lp-track-btn" data-sound="ocean">🌊 파도</button>
+            <button type="button" class="key-lp-track-btn" data-sound="rain">🌧️ 빗소리</button>
+            <button type="button" class="key-lp-track-btn" data-sound="stream">🏞️ 시냇물</button>
+            <button type="button" class="key-lp-track-btn" data-sound="forest">🍃 숲바람</button>
+            <button type="button" class="key-lp-track-btn" data-sound="fire">🪵 벽난로</button>
+            <button type="button" class="key-lp-track-btn" data-sound="bowl">🔔 싱잉볼</button>
+            <button type="button" class="key-lp-track-btn" data-sound="freq432">✨ 432Hz 치유</button>
+            <button type="button" class="key-lp-track-btn" data-sound="freq528">💖 528Hz 평온</button>
+            <button type="button" class="key-lp-track-btn" data-sound="om">🧘 젠 옴</button>
+            <button type="button" class="key-lp-track-btn" data-sound="chime">🎐 풍경 차임</button>
+            <button type="button" class="key-lp-track-btn" data-sound="musicbox">🎶 치유 오르골</button>
+            <button type="button" class="key-lp-track-btn" data-sound="crickets">🌙 풀벌레</button>
+            <button type="button" class="key-lp-track-btn" data-sound="pink">🔕 핑크 노이즈</button>
+            <button type="button" class="key-lp-track-btn" data-sound="thunder">⛈️ 먼 천둥</button>
+          </div>
+          <div class="key-lp-vol-bar">
+            <span>🔊</span>
+            <input type="range" id="key-lp-vol-slider" min="0" max="1" step="0.05" value="0.45" aria-label="배경음 음량" title="배경음 볼륨">
+          </div>
+        </div>
+      </div>
+
       <button id="btn-install-pwa" class="nav-btn hidden" title="홈 화면에 앱 설치하기">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
         <span>앱 설치</span>
@@ -181,9 +199,6 @@
         <button id="hero-btn-explore" class="nav-btn">
           <span>🎯 40가지 실천 연습실</span>
         </button>
-        <button id="hero-btn-chat" class="nav-btn">
-          <span>💬 루시에게 질문하기</span>
-        </button>
       </div>
     </header>
 
@@ -196,19 +211,13 @@
       </div>
       <div class="sync-drawer-buttons">
         <button id="btn-sync-practice" class="btn-copper">🎯 지금 바로 실천하기</button>
-        <button id="btn-sync-ask" class="btn-sage">💬 루시에게 질문하기</button>
       </div>
     </div>
 
     <!-- Segmented Navigation Tabs -->
     <div class="view-tabs-container">
       <div class="segmented-tabs" role="tablist">
-        <button class="tab-pill active" data-tab="tab-chat" role="tab">
-          <span class="tab-pill-icon">💬</span>
-          <span class="tab-label-full">Dr. Z 마음 대화</span>
-          <span class="tab-label-short">마음 대화</span>
-        </button>
-        <button class="tab-pill" data-tab="tab-exercises" role="tab">
+        <button class="tab-pill active" data-tab="tab-exercises" role="tab">
           <span class="tab-pill-icon">🎯</span>
           <span class="tab-label-full">40가지 실천 연습실</span>
           <span class="tab-label-short">40개 연습</span>
@@ -231,76 +240,8 @@
       </div>
     </div>
 
-    <!-- TAB 1: Chat Interface -->
-    <section id="tab-chat" class="tab-view-section active">
-      <div class="chat-card">
-        <div class="chat-card-header">
-          <div class="chat-author-meta">
-            <div class="author-avatar">
-              <img src="/favicon.png?v=3.0" alt="Z">
-            </div>
-            <div class="author-names">
-              <h3>제이미 저커먼 박사 AI 상담실</h3>
-              <p>도서 전문 지식 & 수용전념치료(ACT) 기반 마음 치유 동반자</p>
-            </div>
-          </div>
-          <button id="btn-clear-chat" class="nav-btn" style="padding: 5px 12px; font-size: 0.78rem;" title="대화 지우기">대화 초기화</button>
-        </div>
-
-        <div id="chat-messages" class="chat-flow-container">
-          <div class="chat-bubble-row assistant">
-            <div class="author-avatar" style="width: 34px; height: 34px; flex-shrink: 0;">
-              <img src="/favicon.png?v=3.0" alt="Z" style="width: 20px; height: 20px;">
-            </div>
-            <div class="bubble-content">
-              <p>반갑습니다. 《<strong>FIND YOUR 왜 나는 불안할까</strong>》 도서 지식과 <strong>내면의 쉼표 3단계 치유</strong>(신체 접지 · 기적수업 용서 · 온전함 선언)가 통합된 마음 치유 동반자입니다.</p>
-              <p>책을 읽다 마음에 걸린 문장이나 지금 마음에 이는 어떤 파도든 편안하게 들려주세요. 질문하시면 아래의 <strong>3단계 통합 치유 카드</strong>와 <strong>맞춤 실천 연습</strong>을 즉시 처방해 드립니다:</p>
-              
-              <div class="stage-cards-container" style="margin: 12px 0;">
-                <div class="stage-card grounding" style="padding: 12px 16px;">
-                  <span class="stage-badge">🌿 1. 신체 접지</span>
-                  <div style="font-size: 0.85rem; color: var(--text-muted);">몸의 긴장을 알아차리고 지금-여기로 호흡 닻 내리기</div>
-                </div>
-                <div class="stage-card healing" style="padding: 12px 16px;">
-                  <span class="stage-badge">💧 2. 기적수업 용서 & ACT</span>
-                  <div style="font-size: 0.85rem; color: var(--text-muted);">두려운 해석 내려놓기와 생각과 나를 분리하는 수용</div>
-                </div>
-                <div class="stage-card liberation" style="padding: 12px 16px;">
-                  <span class="stage-badge">✨ 3. 본래의 온전함</span>
-                  <div style="font-size: 0.85rem; color: var(--text-muted);">외부 조건에 결코 훼손되지 않는 내면의 순수한 평화 선언</div>
-                </div>
-              </div>
-
-              <blockquote>"감정은 바다의 파도와 같습니다. 맞서 싸우면 휩쓸리지만, 서핑하듯 관찰하면 스스로 정점을 찍고 가라앉습니다."</blockquote>
-              
-              <div class="prompt-chips-row">
-                <button class="chip-btn" data-prompt="발표를 앞두고 있어서 심장이 너무 뛰고 두려워요.">🎤 발표 앞두고 심장이 뜀</button>
-                <button class="chip-btn" data-prompt="자꾸 나쁜 생각과 걱정이 꼬리를 물고 멈추지 않아요.">🌀 꼬리 무는 생각과 반추</button>
-                <button class="chip-btn" data-prompt="해야 할 일을 자꾸 미루고 나 자신을 자책하게 돼요.">⏳ 완벽주의와 과제 미루기</button>
-                <button class="chip-btn" data-prompt="남들의 시선과 평가가 너무 두렵고 눈치 보여요.">👥 타인의 시선과 가면 증후군</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="chat-composer-bar">
-          <form id="chat-form" style="display: flex; flex-direction: column; gap: 8px;">
-            <div class="composer-input-box">
-              <textarea id="user-input" rows="1" placeholder="지금 어떤 생각이나 감정이 머무르고 있나요? (Enter 전송, Shift+Enter 줄바꿈)" required></textarea>
-              <button type="submit" id="send-btn" class="composer-send-btn" aria-label="전송">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="22" y1="2" x2="11" y2="13"></line>
-                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                </svg>
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </section>
-
-    <!-- TAB 2: 40 Exercises Studio Grid -->
-    <section id="tab-exercises" class="tab-view-section">
+    <!-- TAB 1: 40 Exercises Studio Grid -->
+    <section id="tab-exercises" class="tab-view-section active">
       <div class="exercises-view-wrapper">
         <div class="exercises-filter-strip">
           <button class="filter-pill-btn active" data-chapter="all">전체 (40개 연습)</button>
@@ -843,46 +784,17 @@
   <script src="./teachings-data.js?v=29.0"></script>
   <script src="./audio-synth.js?v=29.0"></script>
   <script src="./app.js?v=29.0"></script>
-  <!-- Standalone Mode Fallback: BigBang button and BGM Player if opened directly outside iframe -->
-  <script>
-    (function() {
-      if (window.self !== window.top) return;
-      
-      // 1. Standalone BigBang Button
-      var bbBtn = document.createElement('div');
-      bbBtn.id = 'standalone-bigbang-button';
-      bbBtn.innerHTML = `
-        <button type="button" aria-label="빅뱅 버튼 · 프리즘 홈 복귀" style="width: 68px; height: 68px; border-radius: 9999px; background: radial-gradient(circle at 40% 35%, #38bdf8 0%, #0284c7 45%, #030514 100%); border: 2px solid rgba(56, 189, 248, 0.6); box-shadow: 0 0 24px rgba(56, 189, 248, 0.4), inset 0 0 16px rgba(255, 255, 255, 0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; outline: none; position: relative; overflow: hidden;">
-          <span style="position: relative; z-index: 10; font-size: 24px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));">🌀</span>
-          <span style="position: relative; z-index: 10; font-size: 8px; font-weight: 800; color: #ffffff; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 1px;">Home</span>
-        </button>
-      `;
-      bbBtn.style.cssText = 'position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); z-index: 9999; pointer-events: auto; display: flex; align-items: center; justify-content: center;';
-      bbBtn.querySelector('button').addEventListener('click', function() {
-        window.location.href = '/';
-      });
-      document.body.appendChild(bbBtn);
-
-      // 2. Standalone BgMusic Button (top-right vinyl disc)
-      var bgmBtn = document.createElement('div');
-      bgmBtn.id = 'standalone-bgm-button';
-      bgmBtn.innerHTML = `
-        <button type="button" aria-label="배경음 버튼" style="width: 42px; height: 42px; border-radius: 9999px; background: #0f172a; border: 1.5px solid rgba(255,255,255,0.25); box-shadow: 0 4px 14px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; outline: none;">
-          <span style="font-size: 18px; display: inline-block;">💿</span>
-        </button>
-      `;
-      bgmBtn.style.cssText = 'position: fixed; top: calc(env(safe-area-inset-top, 0px) + 12px); right: 16px; z-index: 9999; pointer-events: auto;';
-      var isPlaying = false;
-      bgmBtn.querySelector('button').addEventListener('click', function() {
-        var firstSound = document.querySelector('.sound-btn[data-sound="ocean"]') || document.querySelector('.sound-btn');
-        if (firstSound) {
-          firstSound.click();
-          isPlaying = !isPlaying;
-          bgmBtn.querySelector('span').style.animation = isPlaying ? 'spin 3s linear infinite' : 'none';
-        }
-      });
-      document.body.appendChild(bgmBtn);
-    })();
-  </script>
+  <!-- Floating BigBang Button (홈 버튼 -> 빅뱅 버튼 변환) -->
+  <div id="key-bigbang-fab" class="key-bigbang-container" aria-label="빅뱅 홈 복귀">
+    <button type="button" id="key-bigbang-btn" class="key-bigbang-btn" aria-label="빅뱅 홈으로 이동">
+      <div class="key-bigbang-orbit"></div>
+      <div class="key-bigbang-core">
+        <div class="key-bigbang-star"></div>
+        <div class="key-bigbang-pulse-1"></div>
+        <div class="key-bigbang-pulse-2"></div>
+      </div>
+      <span class="key-bigbang-label">HOME</span>
+    </button>
+  </div>
 </body>
 </html>
