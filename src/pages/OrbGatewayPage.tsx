@@ -16,7 +16,6 @@ import {
   Send,
   Radio,
   ExternalLink,
-  KeyRound,
   MessageCircle,
   TreeDeciduous,
   Compass,
@@ -325,10 +324,10 @@ export default function OrbGatewayPage() {
     setIsStandalone(!!standalone);
   }, []);
 
-  // Set Document Title & Manifest for Key PWA
+  // Set Document Title & Manifest for Orb PWA
   useEffect(() => {
     const prevTitle = document.title;
-    document.title = "Key";
+    document.title = "오브 (Orb)";
 
     const manifestTag = document.querySelector('link[rel="manifest"]') as HTMLLinkElement | null;
     const prevManifestHref = manifestTag ? manifestTag.getAttribute("href") : null;
@@ -422,16 +421,16 @@ export default function OrbGatewayPage() {
       id: `toss-received-${Date.now()}`,
       category: "oracle",
       categoryLabel: "✨ 스크롤 토스 수신",
-      iconType: "key",
+      iconType: "orb",
       badgeColor: "text-amber-300 bg-amber-500/20 border-amber-400/40",
       glowColor: "rgba(251, 191, 36, 0.6)",
       title: "스크롤 토스된 영감·질문",
       keypoint: text.length > 130 ? text.slice(0, 127) + "..." : text,
-      fullText: `스크롤을 통해 Key로 토스된 영감입니다. ${text}`,
+      fullText: `스크롤을 통해 오브로 토스된 영감입니다. ${text}`,
       dateStr: getTodayDateKey(),
       timeStr: new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" }),
       timestamp: Date.now(),
-      sourceLabel: "LucKey 스크롤 토스 연계",
+      sourceLabel: "스크롤 토스 연계",
       tags: ["#스크롤토스", "#영시수신", "#직관조율"],
     };
 
@@ -445,7 +444,7 @@ export default function OrbGatewayPage() {
     omniWarpAudio.playWhiteHole();
     sacredAudio.playSingingBowl(528);
     triggerHaptic("whitehole");
-    setTossNotice("✨ 스크롤 선택 텍스트가 Key의 수정구슬로 토스되었습니다!");
+    setTossNotice("✨ 스크롤 선택 텍스트가 오브의 수정구슬로 토스되었습니다!");
 
     setTimeout(() => {
       setIsResonating(false);
@@ -783,13 +782,13 @@ export default function OrbGatewayPage() {
       } catch (_) {}
 
       // 2. 현재 양피지 영시 본문 추출 (토스 페이로드)
-      const title = currentMemory?.title || "Key 크리스탈 오브 영시";
+      const title = currentMemory?.title || "크리스탈 오브 영시";
       const keypoint = currentMemory?.keypoint || "";
       const guidance = currentMemory?.actionGuidance || "";
       const fullText = currentMemory?.fullText || "";
 
       const tossMessage = [
-        `[Key 영시 신탁] ${title}`,
+        `[오브 영시 신탁] ${title}`,
         keypoint ? `[핵심 통찰] ${keypoint}` : "",
         guidance ? `[실천 지침] ${guidance}` : "",
         fullText ? `[원문]\n${fullText}` : "",
@@ -857,11 +856,11 @@ export default function OrbGatewayPage() {
           <LucKeyLogoText size="sm" />
         </button>
 
-        {/* Center Title: Sophisticated Luxury KEY Emblem */}
-        <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-[#171008]/90 via-[#0d0a06]/90 to-[#171008]/90 border border-amber-400/40 backdrop-blur-2xl shadow-[0_4px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.12)]">
-          <KeyRound size={13} className="text-amber-300 drop-shadow-[0_0_6px_rgba(251,191,36,0.8)]" />
-          <span className="text-xs sm:text-[13px] font-serif font-bold tracking-[0.25em] text-amber-100 uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
-            KEY
+        {/* Center Title: Crystal Orb Gateway */}
+        <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-400/30 backdrop-blur-2xl shadow-[0_4px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.12)]">
+          <CrystalOrbIcon size={14} className="shrink-0 text-cyan-300 animate-pulse drop-shadow-[0_0_6px_rgba(56,189,248,0.8)]" />
+          <span className="text-xs sm:text-[13px] font-medium tracking-[0.2em] text-cyan-100 uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+            ORB
           </span>
         </div>
 
@@ -1366,10 +1365,9 @@ export default function OrbGatewayPage() {
                     transition={{ duration: 0.45, ease: "easeOut" }}
                     className="flex flex-col items-center w-full"
                   >
-                    {/* Glowing Astral Key Crest */}
-                    {/* Glowing Sacred Golden Key Seal inside Orb */}
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-amber-500/20 via-amber-400/30 to-amber-600/20 border border-amber-300/60 mb-1 shadow-[0_0_20px_rgba(251,191,36,0.6),inset_0_1px_2px_rgba(255,255,255,0.4)]">
-                      <KeyRound size={17} className="text-amber-200 animate-pulse drop-shadow-[0_0_6px_rgba(251,191,36,0.9)]" />
+                    {/* Glowing Sacred Crystal Orb Seal inside Orb */}
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500/20 via-cyan-400/30 to-blue-600/20 border border-cyan-300/60 mb-1 shadow-[0_0_20px_rgba(56,189,248,0.6),inset_0_1px_2px_rgba(255,255,255,0.4)]">
+                      <CrystalOrbIcon size={18} className="text-cyan-200 animate-pulse drop-shadow-[0_0_6px_rgba(56,189,248,0.9)]" />
                     </div>
 
                     {/* Category Capsule Badge */}
@@ -1405,14 +1403,14 @@ export default function OrbGatewayPage() {
                     animate={{ opacity: 1 }}
                     className="flex flex-col items-center"
                   >
-                    <div className="w-10 h-10 rounded-full bg-amber-500/15 border border-amber-400/40 flex items-center justify-center mb-1.5 shadow-[0_0_18px_rgba(251,191,36,0.4)]">
-                      <KeyRound size={18} className="text-amber-300" />
+                    <div className="w-10 h-10 rounded-full bg-cyan-500/15 border border-cyan-400/40 flex items-center justify-center mb-1.5 shadow-[0_0_18px_rgba(56,189,248,0.4)]">
+                      <CrystalOrbIcon size={18} className="text-cyan-300" />
                     </div>
-                    <span className="text-amber-100 text-sm sm:text-base font-serif font-bold tracking-[0.22em] drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
-                      KEY
+                    <span className="text-cyan-100 text-sm sm:text-base font-bold tracking-[0.22em] drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
+                      ORB
                     </span>
-                    <span className="text-[8.5px] font-mono uppercase tracking-[0.2em] text-amber-300/70 mt-0.5">
-                      DIVINE ARCHIVE
+                    <span className="text-[8.5px] font-mono uppercase tracking-[0.2em] text-cyan-300/70 mt-0.5">
+                      DIVINE SANCTUARY
                     </span>
                   </motion.div>
                 )}
@@ -1459,9 +1457,9 @@ export default function OrbGatewayPage() {
                     {/* Center Scroll Body & Carmine Wax Seal */}
                     <div className="flex-1 flex items-center justify-between min-w-0 px-1">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        {/* Royal Carmine Wax Seal with Gold Key */}
+                        {/* Royal Carmine Wax Seal with Crystal Orb */}
                         <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-[#991b1b] via-[#dc2626] to-[#450a0a] border-2 border-amber-300 flex items-center justify-center shadow-[0_0_18px_rgba(220,38,38,0.7),inset_0_2px_4px_rgba(255,255,255,0.4)] shrink-0">
-                          <KeyRound size={16} className="text-amber-100 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" />
+                          <CrystalOrbIcon size={15} className="text-amber-100 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" />
                           <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-300 animate-ping" />
                         </div>
 
@@ -1787,7 +1785,7 @@ export default function OrbGatewayPage() {
                   </div>
                   <div>
                     <h2 className="text-sm sm:text-base font-serif font-bold text-amber-100 flex items-center gap-1.5">
-                      Key 영시 보관함
+                      오브 영시 보관함
                       <span className="text-xs font-mono text-amber-300 font-normal">
                         ({archiveItems.length})
                       </span>

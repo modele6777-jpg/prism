@@ -20,7 +20,7 @@ export interface KeyArchiveItem {
   id: string;
   category: 'pharmacy' | 'lucy' | 'tarot' | 'saju' | 'healing' | 'muse' | 'oracle';
   categoryLabel: string;
-  iconType: 'lucy' | 'tarot' | 'saju' | 'healing' | 'muse' | 'oracle' | 'key';
+  iconType: 'lucy' | 'tarot' | 'saju' | 'healing' | 'muse' | 'oracle' | 'key' | 'orb';
   badgeColor: string;
   glowColor: string;
   title: string;

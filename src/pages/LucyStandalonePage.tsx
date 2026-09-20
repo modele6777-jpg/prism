@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Send, Trash2, Search, X, ChevronDown, Check, Volume2, VolumeX, Square,
   Download, User, Sparkles, Sun, TreeDeciduous, Activity, Bird, Music, Zap, Flame, Compass,
-  Loader2, Copy, RefreshCw, Camera, MicOff, Mic, BookOpen, BookMarked, KeyRound
+  Loader2, Copy, RefreshCw, Camera, MicOff, Mic, BookOpen, BookMarked
 } from 'lucide-react';
 import { useApp, PersonaType } from '@/contexts/AppContext';
 import { useLocation } from 'wouter';
@@ -14,7 +14,6 @@ import { getLocalDateKey } from '@/lib/rebibleStorage';
 import ReactMarkdown from 'react-markdown';
 import { LucyProTypewriter } from '@/components/LucyProTypewriter';
 import { ChatInsightsBoardModal } from '@/components/ChatInsightsBoardModal';
-import { KeyRolledScrollModal } from '@/components/KeyRolledScrollModal';
 import { LucyAuraLoader } from '@/components/LucyAuraLoader';
 import remarkGfm from 'remark-gfm';
 import { safeSessionStorage } from '@/utils/safeStorage';
@@ -466,7 +465,6 @@ export default function LucyStandalonePage() {
   const [isRecording, setIsRecording] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isKeyScrollModalOpen, setIsKeyScrollModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [resetToast, setResetToast] = useState<string | null>(null);
@@ -1247,20 +1245,9 @@ export default function LucyStandalonePage() {
             </div>
           </div>
 
-          {/* Right Action Tools: 1. Key 40기법 맞춤 두루마리 -> 2. 검색 -> 3. 전체듣기 -> 4. 초기화 */}
+          {/* Right Action Tools: 1. 검색 -> 2. 전체듣기 -> 3. 초기화 */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            {/* 1. 🗝️ Key 모양 버튼: 루시 대화 고민 맞춤 40기법 두루마리 직통 발현 */}
-            <button
-              onClick={() => setIsKeyScrollModalOpen(true)}
-              className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 via-yellow-500/15 to-amber-600/20 hover:from-amber-500/30 hover:to-amber-600/30 border border-amber-500/50 text-amber-900 font-bold text-xs shadow-xs transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
-              title="루시 대화 고민 맞춤 40기법 Key 신탁 두루마리 조제"
-              aria-label="Key 두루마리"
-            >
-              <KeyRound size={14} className="text-amber-700 animate-pulse" />
-              <span className="font-serif font-bold tracking-wider">Key</span>
-            </button>
-
-            {/* 2. 검색 (Search Toggle) */}
+            {/* 1. 검색 (Search Toggle) */}
             <button
               onClick={() => setIsSearchOpen(!isSearchOpen)}
               className={`p-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center ${
@@ -1959,17 +1946,7 @@ export default function LucyStandalonePage() {
         )}
       </AnimatePresence>
 
-      {/* 🗝️ Key 40기법 맞춤 두루마리 모달 */}
-      <KeyRolledScrollModal
-        isOpen={isKeyScrollModalOpen}
-        onClose={() => setIsKeyScrollModalOpen(false)}
-        messages={lucyMessages}
-        onNavigateToKey={() => {
-          setIsKeyScrollModalOpen(false);
-          stopTTS();
-          navigate('/key');
-        }}
-      />
+      {/* End of content */}
 
     </div>
   );

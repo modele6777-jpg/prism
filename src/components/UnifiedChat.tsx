@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { 
   X, Send, Sparkles, TreeDeciduous, Moon, Activity, Bird, Music, Trash2, ChevronRight, ChevronLeft, ChevronDown, HelpCircle, AlertCircle,
-  Volume2, VolumeX, Loader2, Sun, Camera, Paperclip, Copy, Check, FileText, FileCode, KeyRound
+  Volume2, VolumeX, Loader2, Sun, Camera, Paperclip, Copy, Check, FileText, FileCode
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useApp, PersonaType } from "../contexts/AppContext";
@@ -13,7 +13,6 @@ import { getContextAwarePrompts } from "../utils/dynamicContextSuggestions";
 import { calculateDetailedSaju } from "../lib/sajuAnalysis";
 import { cleanUserMessageDisplay } from "../utils/cleanMessage";
 import { ChatInsightsBoardModal } from "./ChatInsightsBoardModal";
-import { KeyRolledScrollModal } from "./KeyRolledScrollModal";
 import { saveLucyChatSummary } from "../lib/prismOmniSync";
 import { invokeLLM } from "../lib/ai";
 
@@ -320,7 +319,6 @@ export function UnifiedChat() {
 
   const [input, setInput] = useState("");
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
-  const [isKeyScrollModalOpen, setIsKeyScrollModalOpen] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [summaryDone, setSummaryDone] = useState(false);
 
@@ -883,19 +881,8 @@ export function UnifiedChat() {
                 </div>
               </div>
 
-              {/* Actions: Key 40-Technique Scroll, Standalone Install, Play All TTS, Close */}
+              {/* Actions: Standalone Install, Play All TTS, Close */}
               <div className="flex items-center gap-2 shrink-0">
-                {/* 🗝️ Key 모양 버튼: 고민 맞춤 40기법 두루마리 직통 발현 */}
-                <button
-                  type="button"
-                  onClick={() => setIsKeyScrollModalOpen(true)}
-                  className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/25 to-yellow-500/25 hover:from-amber-500/35 hover:to-yellow-500/35 border border-amber-400/50 text-amber-200 font-bold text-[11px] sm:text-xs shadow-[0_0_15px_rgba(251,191,36,0.2)] transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shrink-0"
-                  title="루시 대화 고민 맞춤 40기법 Key 신탁 두루마리 조제"
-                >
-                  <KeyRound size={13} className="text-amber-300 animate-pulse" />
-                  <span className="font-serif tracking-wider font-bold">Key</span>
-                </button>
-
                 {/* 대화 요약 버튼 (루시→오브 싱크) */}
                 {currentMessages.length >= 2 && (
                   <button
@@ -907,7 +894,7 @@ export function UnifiedChat() {
                         ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
                         : 'bg-sky-500/20 hover:bg-sky-500/30 border-sky-500/40 text-sky-200'
                     }`}
-                    title="대화 요약 → Key 사이트에 공유"
+                    title="대화 요약 → 오브에 공유"
                   >
                     {isSummarizing ? (
                       <Loader2 size={13} className="animate-spin" />
@@ -1323,18 +1310,6 @@ export function UnifiedChat() {
               )}
             </AnimatePresence>
 
-            {/* 🗝️ Key 40기법 맞춤 두루마리 모달 */}
-            <KeyRolledScrollModal
-              isOpen={isKeyScrollModalOpen}
-              onClose={() => setIsKeyScrollModalOpen(false)}
-              messages={currentMessages}
-              onNavigateToKey={() => {
-                setIsKeyScrollModalOpen(false);
-                setIsChatOpen(false);
-                stopTTS();
-                navigate('/key');
-              }}
-            />
           </motion.div>
         </div>
       )}
