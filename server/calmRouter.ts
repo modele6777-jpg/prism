@@ -278,7 +278,7 @@ calmRouter.post("/api/tts", async (req: Request, res: Response) => {
     const { handleTTS } = await import("./api-lib/ttsHandler");
     const result = await handleTTS({ text: cleanText, voice, emotion });
     if (result?.audioContent) {
-      const mime = result.encoding === "pcm" ? "audio/pcm" : "audio/mp3";
+      const mime = result.encoding === "wav" ? "audio/wav" : result.encoding === "pcm" ? "audio/wav" : "audio/mp3";
       const audioDataUrl = `data:${mime};base64,${result.audioContent}`;
 
       if (ttsCache.size > 100) {

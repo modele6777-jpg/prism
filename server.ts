@@ -1296,7 +1296,7 @@ ${content}
     try {
       const { handleTTS } = await import('./server/api-lib/ttsHandler');
       const result = await handleTTS({ text, voice, emotion, rate, pitch });
-      const mime = result.encoding === "pcm" ? "audio/pcm" : "audio/mp3";
+      const mime = result.encoding === "wav" ? "audio/wav" : result.encoding === "pcm" ? "audio/wav" : "audio/mp3";
       const audioDataUrl = `data:${mime};base64,${result.audioContent}`;
       return res.status(200).json({
         ...result,
