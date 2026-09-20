@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useApp, PersonaType } from '@/contexts/AppContext';
 import { useLocation } from 'wouter';
-import { playTTS, playTTSInChunks, stopTTS, useTTSActive, playConversation, subscribeTTS, prefetchTTS, normalizeTextForSpeech } from '@/utils/tts';
+import { playTTS, playTTSInChunks, playQAndATTS, stopTTS, useTTSActive, playConversation, subscribeTTS, prefetchTTS, normalizeTextForSpeech } from '@/utils/tts';
 import { unlockAudioPlayback, primeTTSAudioElement } from '@/lib/audio';
 import { calculateDetailedSaju } from '@/lib/sajuAnalysis';
 import { getLocalDateKey } from '@/lib/rebibleStorage';
@@ -501,7 +501,7 @@ export default function LucyStandalonePage() {
         stopTTS();
         setPlayingMsgId(null);
       }
-      setAutoTtsToast(next ? '🔊 루시 답변 자동 음성 재생(TTS)이 켜졌습니다.' : '🔇 루시 답변 자동 음성 재생(TTS)이 꺼졌습니다.');
+      setAutoTtsToast(next ? '🔊 질문자(남성)와 루시 답변(여성) 연속 자동 음성 읽기가 켜졌습니다.' : '🔇 자동 음성 읽기가 꺼졌습니다.');
       setTimeout(() => setAutoTtsToast(null), 2500);
       return next;
     });
@@ -702,11 +702,23 @@ export default function LucyStandalonePage() {
       const isRecent = Date.now() - msgTime < 20000;
       if (isRecent) {
         lastAutoSpokenMsgIdRef.current = lastMsg.id;
-        const clean = normalizeTextForSpeech(lastMsg.content);
-        if (clean) {
-          setPlayingMsgId(lastMsg.id);
+        const cleanAnswer = normalizeTextForSpeech(lastMsg.content);
+        if (cleanAnswer) {
+          const prevUserMsg = lucyMessages.slice(0, -1).reverse().find((m) => m.role === 'user');
+          const cleanQuestion = prevUserMsg && typeof prevUserMsg.content === 'string'
+            ? normalizeTextForSpeech(cleanUserMessageDisplay(prevUserMsg.content))
+            : '';
+
           stopTTS();
-          playTTSInChunks(clean, 'Kore', 350, '다정').catch((err) => {
+          playQAndATTS(
+            { text: cleanQuestion, id: prevUserMsg?.id },
+            { text: cleanAnswer, id: lastMsg.id },
+            'Fenrir',
+            'Kore',
+            (_speaker, msg) => {
+              if (msg.id) setPlayingMsgId(msg.id);
+            }
+          ).catch((err) => {
             console.warn('[Auto-TTS Fallback] Play error:', err);
           });
         }
@@ -989,17 +1001,26 @@ export default function LucyStandalonePage() {
       channels: channels,
       mode: isMaster ? 'master' : (isCasual ? 'casual' : (isSingle ? channels[0] : 'synergy')),
       channel: isSingle ? channels[0] : undefined,
-      onFinish: async (fullText, _sentText, replyMsgId) => {
+      onFinish: async (fullText, sentText, replyMsgId) => {
         if (isAutoTtsRef.current && fullText && fullText.trim()) {
           try {
-            const clean = normalizeTextForSpeech(fullText);
-            if (clean) {
+            const cleanAnswer = normalizeTextForSpeech(fullText);
+            const rawQuestion = sentText || userCleanText || '';
+            const cleanQuestion = normalizeTextForSpeech(cleanUserMessageDisplay(rawQuestion));
+            if (cleanAnswer) {
               if (replyMsgId) {
                 lastAutoSpokenMsgIdRef.current = replyMsgId;
-                setPlayingMsgId(replyMsgId);
               }
               stopTTS();
-              await playTTSInChunks(clean, 'Kore', 350, '다정');
+              await playQAndATTS(
+                { text: cleanQuestion, id: undefined },
+                { text: cleanAnswer, id: replyMsgId },
+                'Fenrir',
+                'Kore',
+                (_speaker, msg) => {
+                  if (msg.id) setPlayingMsgId(msg.id);
+                }
+              );
             }
           } catch (ttsErr) {
             console.warn('[Auto-TTS] Immediate voice playback error:', ttsErr);
@@ -1273,8 +1294,8 @@ export default function LucyStandalonePage() {
                   ? 'bg-gradient-to-r from-emerald-50 to-teal-100/80 text-emerald-800 border border-emerald-300 shadow-2xs font-semibold'
                   : 'bg-slate-100/90 text-slate-400 hover:text-slate-600 border border-slate-200/80'
               }`}
-              title={isAutoTts ? '루시 답변 자동 음성 읽기(TTS 바로재생) 켜짐 - 클릭하여 끄기' : '루시 답변 자동 음성 읽기(TTS 바로재생) 꺼짐 - 클릭하여 켜기'}
-              aria-label={isAutoTts ? '답변 자동 음성 읽기 켜짐' : '답변 자동 음성 읽기 꺼짐'}
+              title={isAutoTts ? '질문자(남성) 및 루시 답변(여성) 연속 자동 음성 읽기 켜짐 - 클릭하여 끄기' : '자동 음성 읽기 꺼짐 - 클릭하여 켜기'}
+              aria-label={isAutoTts ? '질문·답변 연속 자동 음성 읽기 켜짐' : '자동 음성 읽기 꺼짐'}
             >
               {isAutoTts ? (
                 <>
@@ -1749,8 +1770,8 @@ export default function LucyStandalonePage() {
                   ? 'text-emerald-600 bg-emerald-100/80 border border-emerald-300 shadow-2xs'
                   : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/70'
               }`}
-              title={isAutoTts ? '답변 자동 음성 바로재생 켜짐 (클릭 시 끄기)' : '답변 자동 음성 바로재생 꺼짐 (클릭 시 켜기)'}
-              aria-label={isAutoTts ? '음성 자동 재생 켜짐' : '음성 자동 재생 꺼짐'}
+              title={isAutoTts ? '질문자(남성) 및 루시 답변(여성) 연속 자동 음성 읽기 켜짐 (클릭 시 끄기)' : '자동 음성 읽기 꺼짐 (클릭 시 켜기)'}
+              aria-label={isAutoTts ? '음성 자동 연속 읽기 켜짐' : '음성 자동 읽기 꺼짐'}
             >
               {isAutoTts ? <Volume2 size={16} className="text-emerald-600 animate-pulse" /> : <VolumeX size={16} />}
             </button>

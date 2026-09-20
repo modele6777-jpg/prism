@@ -718,6 +718,172 @@ export const playConversation = async (
   }
 };
 
+export interface QAndAMessageItem {
+  text: string;
+  id?: string;
+}
+
+/**
+ * 🎙️ 질문(남성 음성) ➔ 루시 답변(여성 음성) 자동 연속 음성 재생
+ * - 질문자의 질문을 남성 보이스(Fenrir / InJoon)로 먼저 낭독
+ * - 자연스러운 호흡 텀(360ms) 후
+ * - 루시의 답변을 여성 보이스(Kore / SunHi, '다정')로 청크 단위 안정적 연속 낭독
+ */
+export const playQAndATTS = async (
+  question: QAndAMessageItem,
+  answer: QAndAMessageItem,
+  userVoice: string = 'Fenrir',
+  aiVoice: string = 'Kore',
+  onSpeakerChange?: (speaker: 'user' | 'assistant', msg: QAndAMessageItem) => void,
+): Promise<void> => {
+  if (ttsState.isSpeaking || ttsState.isLoading) {
+    stopTTS();
+    return;
+  }
+
+  const cleanQuestion = prepareNaturalSpeechText(question.text || '');
+  const cleanAnswer = prepareNaturalSpeechText(answer.text || '');
+  if (!cleanAnswer && !cleanQuestion) return;
+
+  stopTTS();
+  const sequenceSessionId = `qa_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  updateTTSState({
+    isLoading: true,
+    isSpeaking: true,
+    activeText: cleanQuestion || cleanAnswer.slice(0, 50),
+    activeFullText: cleanQuestion ? `${cleanQuestion}\n\n${cleanAnswer}` : cleanAnswer,
+    activeSessionId: sequenceSessionId,
+  });
+  isPlayingSequence = true;
+  acquireScreenWakeLock().catch(() => {});
+
+  try {
+    // 1. 질문자의 음성 (남성 보이스) 재생
+    if (cleanQuestion) {
+      if (onSpeakerChange) {
+        onSpeakerChange('user', { text: cleanQuestion, id: question.id });
+      }
+
+      // 질문 텍스트 청크 분할 (보통 1~2개)
+      const qChunks: string[] = [];
+      const qSentences = cleanQuestion.match(/[^.!?。！？\n]+[.!?。！？\n]?/g) || [cleanQuestion];
+      let curQ = '';
+      for (const sent of qSentences) {
+        const s = sent.trim();
+        if (!s) continue;
+        if (curQ && curQ.length + s.length > 150) {
+          qChunks.push(curQ);
+          curQ = s;
+        } else {
+          curQ = curQ ? `${curQ} ${s}` : s;
+        }
+      }
+      if (curQ) qChunks.push(curQ);
+
+      for (let i = 0; i < qChunks.length; i++) {
+        if (ttsState.activeSessionId !== sequenceSessionId || !isPlayingSequence) break;
+        await playTTS(qChunks[i], userVoice, true, undefined, sequenceSessionId, true, cleanQuestion);
+        if (i < qChunks.length - 1) {
+          await new Promise((r) => setTimeout(r, 60));
+        }
+      }
+
+      // 질문과 답변 사이 자연스러운 턴 전환 침묵 (360ms)
+      if (ttsState.activeSessionId === sequenceSessionId && isPlayingSequence && cleanAnswer) {
+        await new Promise((r) => setTimeout(r, 360));
+      }
+    }
+
+    // 2. 루시의 답변 음성 (여성 보이스) 청크 연속 재생
+    if (cleanAnswer && ttsState.activeSessionId === sequenceSessionId && isPlayingSequence) {
+      if (onSpeakerChange) {
+        onSpeakerChange('assistant', { text: cleanAnswer, id: answer.id });
+      }
+
+      const rawSentences = cleanAnswer.match(/[^.!?。！？\n]+[.!?。！？\n]?/g) || [cleanAnswer];
+      const aChunks: string[] = [];
+      let currentChunk = '';
+      const maxChunkLength = 150;
+
+      for (const sentence of rawSentences) {
+        const s = sentence.trim();
+        if (!s) continue;
+        const hasMeaningfulText = /[가-힣a-zA-Z0-9]/.test(s);
+        if (!hasMeaningfulText) {
+          currentChunk = currentChunk ? `${currentChunk} ${s}` : s;
+          continue;
+        }
+        if (s.length > maxChunkLength) {
+          if (currentChunk.trim()) {
+            aChunks.push(currentChunk.trim());
+            currentChunk = '';
+          }
+          const clauses = s.match(/[^,，;；]+[,，;；]?/g) || [s];
+          for (const clause of clauses) {
+            const c = clause.trim();
+            if (!c) continue;
+            if (currentChunk && (currentChunk.length + c.length + 1 > maxChunkLength)) {
+              aChunks.push(currentChunk.trim());
+              currentChunk = c;
+            } else {
+              currentChunk = currentChunk ? `${currentChunk} ${c}` : c;
+            }
+          }
+          continue;
+        }
+        const next = currentChunk ? `${currentChunk} ${s}` : s;
+        if (currentChunk && next.length > maxChunkLength) {
+          aChunks.push(currentChunk.trim());
+          currentChunk = s;
+        } else {
+          currentChunk = next;
+        }
+      }
+      if (currentChunk.trim()) {
+        aChunks.push(currentChunk.trim());
+      }
+
+      // Pre-warm audio and prefetch
+      try {
+        const ctx = getSharedAudioContext();
+        if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+        primeTTSAudioElement();
+      } catch (_) {}
+
+      if (aChunks.length > 1) prefetchTTS(aChunks[1], aiVoice, '다정').catch(() => {});
+      if (aChunks.length > 2) prefetchTTS(aChunks[2], aiVoice, '다정').catch(() => {});
+
+      for (let i = 0; i < aChunks.length; i++) {
+        if (ttsState.activeSessionId !== sequenceSessionId || !isPlayingSequence) break;
+        if (i + 1 < aChunks.length) prefetchTTS(aChunks[i + 1], aiVoice, '다정').catch(() => {});
+        if (i + 2 < aChunks.length) prefetchTTS(aChunks[i + 2], aiVoice, '다정').catch(() => {});
+
+        const isLastChunk = i === aChunks.length - 1;
+        try {
+          await playTTS(aChunks[i], aiVoice, true, '다정', sequenceSessionId, !isLastChunk, cleanAnswer);
+        } catch (chunkErr) {
+          console.warn(`[TTS] QA chunk ${i + 1}/${aChunks.length} error, recovering:`, chunkErr);
+          if (ttsState.activeSessionId === sequenceSessionId && isPlayingSequence) {
+            await playNativeBrowserSpeech(aChunks[i], true, sequenceSessionId, !isLastChunk, aiVoice).catch(() => {});
+          }
+        }
+
+        if (ttsState.activeSessionId !== sequenceSessionId || !isPlayingSequence) break;
+        if (!isLastChunk) {
+          await new Promise((r) => setTimeout(r, 60));
+        }
+      }
+    }
+  } catch (err) {
+    console.error("[TTS] playQAndATTS error:", err);
+  } finally {
+    if (ttsState.activeSessionId === sequenceSessionId) {
+      isPlayingSequence = false;
+      stopTTS();
+    }
+  }
+};
+
 export const useTTSActive = () => {
   const [active, setActive] = useState(false);
   useEffect(() => {
