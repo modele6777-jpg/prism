@@ -15,45 +15,20 @@ interface TTSCacheEntry {
 }
 const ttsServerCache = new Map<string, TTSCacheEntry>();
 
-export function pcmToWav(pcmBuffer: Buffer, sampleRate = 24000, numChannels = 1, bitDepth = 16): Buffer {
-  const byteRate = (sampleRate * numChannels * bitDepth) / 8;
-  const blockAlign = (numChannels * bitDepth) / 8;
-  const buffer = Buffer.alloc(44 + pcmBuffer.length);
-
-  buffer.write("RIFF", 0);
-  buffer.writeUInt32LE(36 + pcmBuffer.length, 4);
-  buffer.write("WAVE", 8);
-  buffer.write("fmt ", 12);
-  buffer.writeUInt32LE(16, 16);
-  buffer.writeUInt16LE(1, 20); // PCM
-  buffer.writeUInt16LE(numChannels, 22);
-  buffer.writeUInt32LE(sampleRate, 24);
-  buffer.writeUInt32LE(byteRate, 28);
-  buffer.writeUInt16LE(blockAlign, 32);
-  buffer.writeUInt16LE(bitDepth, 34);
-  buffer.write("data", 36);
-  buffer.writeUInt32LE(pcmBuffer.length, 40);
-  pcmBuffer.copy(buffer, 44);
-
-  return buffer;
-}
-
 export interface TTSHandlerOptions {
   text: string;
   voice?: string;
   emotion?: string;
-  rate?: string;
-  pitch?: string;
 }
 
 export interface TTSHandlerResult {
   audioContent: string;
-  encoding: "mp3" | "pcm" | "wav";
+  encoding: "mp3" | "pcm";
   sampleRate?: number;
 }
 
 export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerResult> {
-  const { text, voice = "Kore", emotion, rate: customRate, pitch: customPitch } = options;
+  const { text, voice = "Kore", emotion } = options;
   if (!text) {
     throw new Error("Empty speech text");
   }
@@ -64,7 +39,7 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
   }
 
   const resolvedVoiceKey = voice || "Kore";
-  const cacheKey = `${resolvedVoiceKey}_${emotion || ""}_${customRate || ""}_${customPitch || ""}_${cleanText}`;
+  const cacheKey = `${resolvedVoiceKey}_${emotion || ""}_${cleanText}`;
 
   // 1. Check in-memory cache
   const cached = ttsServerCache.get(cacheKey);
@@ -79,38 +54,18 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
   const isKorean = /[가-힣]/.test(cleanText);
   const isMaleVoice =
     voice === "Fenrir" ||
-    voice === "Puck" ||
     voice === "Charon" ||
     voice === "Michael" ||
     voice === "Guy" ||
     voice === "onyx" ||
     voice === "user" ||
     voice === "male" ||
-    voice === "InJoon" ||
-    voice === "injoon" ||
-    voice === "Hyunsu" ||
-    voice === "hyunsu" ||
     voice === "ko-KR-InJoonNeural" ||
-    voice === "ko-KR-HyunsuNeural" ||
-    voice === "ko-KR-GookMinNeural" ||
     voice === "en-US-GuyNeural";
 
   // 2. Primary Engine: Edge Neural TTS (100% consistent timbre and prosody across sequential chunks)
   try {
-    let voiceName = "ko-KR-SunHiNeural";
-    if (voice && (voice.includes("Neural") || voice.startsWith("ko-KR-") || voice.startsWith("en-US-"))) {
-      voiceName = voice;
-    } else if (voice === "SoonBok" || voice === "soonbok" || voice === "Zephyr" || voice === "zephyr") {
-      voiceName = "ko-KR-SoonBokNeural"; // 깊고 차분한 명상 전문 뉴럴 음성
-    } else if (voice === "Hyunsu" || voice === "hyunsu") {
-      voiceName = "ko-KR-HyunsuNeural";
-    } else if (voice === "InJoon" || voice === "injoon" || voice === "Puck" || voice === "puck") {
-      voiceName = "ko-KR-InJoonNeural";
-    } else if (voice === "SunHi" || voice === "sunhi" || voice === "Kore" || voice === "kore") {
-      voiceName = "ko-KR-SunHiNeural";
-    } else if (isMaleVoice) {
-      voiceName = "ko-KR-InJoonNeural";
-    }
+    let voiceName = isMaleVoice ? "ko-KR-InJoonNeural" : "ko-KR-SunHiNeural";
     let lang = "ko-KR";
     let rate = "+0%";
     let pitch = "+0Hz";
@@ -122,41 +77,21 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
 
     if (emotion) {
       const emo = String(emotion).trim().toLowerCase();
-      const slowHealingList = [
-        "공감", "위로", "치유", "차분", "평온", "슬픔", "따뜻", "이완", "호흡", "안식",
-        "명상", "쉼표", "체화", "접지", "방하착", "comfort", "healing", "calm", "peace",
-        "sadness", "sad", "warm", "relax", "meditation"
-      ];
-      const brightJoyList = ["기쁨", "응원", "설렘", "위트", "밝음", "재미", "신남", "환희", "행복", "축하", "joy", "cheer", "cheering", "excited", "witty", "happy", "fun", "bright"];
-      const mysteryTarotList = ["신비", "진지", "경고", "몽환", "오라클", "타로", "운명", "사주", "mystery", "serious", "warning", "dreamy", "mystic", "oracle", "tarot"];
-      const emphasisList = ["확신", "결단", "강조", "1원칙", "전략", "목표", "실행", "emphasis", "focus", "strategy", "confidence"];
-      const vitalityList = ["활력", "생기", "에너지", "역동", "vitality", "energy", "active"];
-      const friendlyList = ["다정", "친근", "친구", "friendly", "natural"];
+      const slowHealingList = ["공감", "위로", "치유", "차분", "평온", "슬픔", "따뜻", "empathy", "comfort", "healing", "calm", "peace", "sadness", "sad", "warm"];
+      const brightJoyList = ["기쁨", "응원", "설렘", "위트", "밝음", "재미", "신남", "joy", "cheer", "cheering", "excited", "witty", "happy", "fun", "bright"];
+      const mysteryTarotList = ["신비", "진지", "경고", "몽환", "mystery", "serious", "warning", "dreamy", "mystic"];
 
       if (slowHealingList.some((item) => emo.includes(item))) {
-        rate = "-8%";
-        pitch = voiceName.includes("SoonBok") ? "-1.0Hz" : voiceName.includes("SunHi") ? "-1.2Hz" : "-1.5Hz";
-      } else if (brightJoyList.some((item) => emo.includes(item))) {
-        rate = "+4%";
-        pitch = voiceName.includes("SunHi") ? "+1.5Hz" : "+1.8Hz";
-      } else if (mysteryTarotList.some((item) => emo.includes(item))) {
         rate = "-5%";
-        pitch = "-0.8Hz";
-      } else if (emphasisList.some((item) => emo.includes(item))) {
+        pitch = voiceName.includes("SunHi") ? "-1Hz" : "-1.5Hz";
+      } else if (brightJoyList.some((item) => emo.includes(item))) {
         rate = "+2%";
-        pitch = "+0.8Hz";
-      } else if (vitalityList.some((item) => emo.includes(item))) {
-        rate = "+5%";
-        pitch = "+1.2Hz";
-      } else if (friendlyList.some((item) => emo.includes(item))) {
-        rate = "+0%";
-        pitch = "+0.4Hz";
+        pitch = "+1Hz";
+      } else if (mysteryTarotList.some((item) => emo.includes(item))) {
+        rate = "-4%";
+        pitch = "-1Hz";
       }
     }
-
-    // Explicit rate/pitch parameters override preset values
-    if (customRate) rate = customRate;
-    if (customPitch) pitch = customPitch;
 
     const generateWithEdgeTTS = async (textToSpeak: string): Promise<Buffer | null> => {
       // Strip any stray emojis or non-speech symbols that might disrupt EdgeTTS websocket
@@ -194,14 +129,14 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
     };
 
     let finalBuffer: Buffer | null = null;
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    for (let attempt = 1; attempt <= 2; attempt++) {
       try {
         finalBuffer = await generateWithEdgeTTS(cleanText);
         if (finalBuffer && finalBuffer.length > 0) break;
       } catch (attemptErr) {
-        console.warn(`[TTS] EdgeTTS attempt ${attempt}/3 warning:`, attemptErr);
-        if (attempt < 3) {
-          await new Promise((r) => setTimeout(r, 400 * attempt));
+        console.warn(`[TTS] EdgeTTS attempt ${attempt}/2 warning:`, attemptErr);
+        if (attempt < 2) {
+          await new Promise((r) => setTimeout(r, 300 * attempt));
         }
       }
     }
@@ -256,11 +191,9 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
       if (audioPart?.inlineData?.data) {
         const base64 = audioPart.inlineData.data;
         const mimeType = String(audioPart.inlineData.mimeType || "").toLowerCase();
-        let encoding: "pcm" | "mp3" | "wav" = "pcm";
-        if (mimeType.includes("mp3") || mimeType.includes("mpeg")) {
+        let encoding: "pcm" | "mp3" = "pcm";
+        if (mimeType.includes("mp3") || mimeType.includes("mpeg") || mimeType.includes("wav")) {
           encoding = "mp3";
-        } else if (mimeType.includes("wav")) {
-          encoding = "wav";
         }
         let sampleRate = 24000;
         if (mimeType.includes("rate=")) {
@@ -268,27 +201,14 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
           if (match) sampleRate = parseInt(match[1], 10);
         }
 
-        let finalBase64 = base64;
-        let finalEncoding: "mp3" | "pcm" | "wav" = encoding;
-        if (encoding === "pcm") {
-          try {
-            const pcmBuf = Buffer.from(base64, "base64");
-            const wavBuf = pcmToWav(pcmBuf, sampleRate, 1, 16);
-            finalBase64 = wavBuf.toString("base64");
-            finalEncoding = "wav";
-          } catch (convErr) {
-            console.warn("[TTS] PCM to WAV conversion notice:", convErr);
-          }
-        }
-
         if (ttsServerCache.size > 500) {
           const oldestKey = ttsServerCache.keys().next().value;
           if (oldestKey) ttsServerCache.delete(oldestKey);
         }
-        ttsServerCache.set(cacheKey, { base64: finalBase64, encoding: finalEncoding === "wav" ? "mp3" : finalEncoding, sampleRate, timestamp: Date.now() });
+        ttsServerCache.set(cacheKey, { base64, encoding, sampleRate, timestamp: Date.now() });
         return {
-          audioContent: finalBase64,
-          encoding: finalEncoding,
+          audioContent: base64,
+          encoding,
           sampleRate,
         };
       }

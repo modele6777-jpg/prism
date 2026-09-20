@@ -85,28 +85,20 @@ app.post([/.*\/chat\/completions$/, "/api/openai/v1/chat/completions", "/openai/
 // TTS generation endpoint with resilient fallbacks (EdgeTTS -> Google TTS -> OpenAI TTS)
 import { handleTTS } from "../server/api-lib/ttsHandler";
 
-const handleTTSRequest = async (req: any, res: any) => {
-  const { text, voice = "Kore", emotion, rate, pitch } = req.body;
+app.post("/api/ai/tts", async (req, res) => {
+  const { text, voice = "Kore", emotion } = req.body || {};
   if (!text) {
     return res.status(400).json({ error: "Empty speech text" });
   }
 
   try {
-    const result = await handleTTS({ text, voice, emotion, rate, pitch });
-    const mime = result.encoding === "pcm" ? "audio/pcm" : "audio/mp3";
-    const audioDataUrl = `data:${mime};base64,${result.audioContent}`;
-    return res.status(200).json({
-      ...result,
-      audio: audioDataUrl,
-    });
+    const result = await handleTTS({ text, voice, emotion });
+    return res.status(200).json(result);
   } catch (err: any) {
     console.error("Vercel TTS generation error:", err);
     return res.status(500).json({ error: err.message || "Failed to generate TTS" });
   }
-};
-
-app.post("/api/ai/tts", handleTTSRequest);
-app.post("/api/tts", handleTTSRequest);
+});
 
 // Image generation endpoint using free Pollinations AI on Vercel
 app.post("/api/ai/image", async (req, res) => {

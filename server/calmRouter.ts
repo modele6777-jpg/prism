@@ -260,9 +260,9 @@ ${exercisesContext}
   });
 });
 
-// 4. POST /api/tts (통합 다중 엔진: Edge Neural TTS -> Google TTS -> Gemini -> OpenAI)
+// 4. POST /api/tts
 calmRouter.post("/api/tts", async (req: Request, res: Response) => {
-  const { text, voice = "Kore", emotion } = req.body;
+  const { text, voice = "Kore" } = req.body;
   if (!text || typeof text !== "string") {
     return res.status(400).json({ error: "음성으로 변환할 텍스트를 입력해주세요." });
   }
@@ -272,24 +272,6 @@ calmRouter.post("/api/tts", async (req: Request, res: Response) => {
 
   if (ttsCache.has(cacheKey)) {
     return res.json({ audio: ttsCache.get(cacheKey), cached: true });
-  }
-
-  try {
-    const { handleTTS } = await import("./api-lib/ttsHandler");
-    const result = await handleTTS({ text: cleanText, voice, emotion });
-    if (result?.audioContent) {
-      const mime = result.encoding === "wav" ? "audio/wav" : result.encoding === "pcm" ? "audio/wav" : "audio/mp3";
-      const audioDataUrl = `data:${mime};base64,${result.audioContent}`;
-
-      if (ttsCache.size > 100) {
-        const firstKey = ttsCache.keys().next().value;
-        if (firstKey) ttsCache.delete(firstKey);
-      }
-      ttsCache.set(cacheKey, audioDataUrl);
-      return res.json({ audio: audioDataUrl, audioContent: result.audioContent, encoding: result.encoding, cached: false });
-    }
-  } catch (ttsHandlerErr: any) {
-    console.warn("[calmRouter] handleTTS notice, trying Gemini fallback:", ttsHandlerErr?.message || ttsHandlerErr);
   }
 
   const geminiKey = getGeminiApiKey();
@@ -321,7 +303,7 @@ calmRouter.post("/api/tts", async (req: Request, res: Response) => {
     const wavBuf = pcmToWav(pcmBuf, 24000, 1, 16);
     const audioDataUrl = `data:audio/wav;base64,${wavBuf.toString("base64")}`;
 
-    if (ttsCache.size > 100) {
+    if (ttsCache.size > 80) {
       const firstKey = ttsCache.keys().next().value;
       if (firstKey) ttsCache.delete(firstKey);
     }

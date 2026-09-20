@@ -3,11 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Send, Trash2, Search, X, ChevronDown, Check, Volume2, VolumeX, Square,
   Download, User, Sparkles, Sun, TreeDeciduous, Activity, Bird, Music, Zap, Flame, Compass,
-  Loader2, Copy, RefreshCw, Camera, MicOff, Mic, BookOpen, BookMarked, AlertCircle
+  Loader2, Copy, RefreshCw, Camera, MicOff, Mic, BookOpen, BookMarked
 } from 'lucide-react';
 import { useApp, PersonaType } from '@/contexts/AppContext';
 import { useLocation } from 'wouter';
-import { playTTS, playTTSInChunks, playQAndATTS, stopTTS, useTTSActive, subscribeTTS, prefetchTTS, normalizeTextForSpeech, detectLucyResponseEmotion } from '@/utils/tts';
+import { playTTS, playTTSInChunks, playQAndATTS, stopTTS, useTTSActive, subscribeTTS, prefetchTTS, normalizeTextForSpeech } from '@/utils/tts';
 import { unlockAudioPlayback, primeTTSAudioElement } from '@/lib/audio';
 import { calculateDetailedSaju } from '@/lib/sajuAnalysis';
 import { getLocalDateKey } from '@/lib/rebibleStorage';
@@ -22,8 +22,6 @@ import { detectLucyChannelsFromText } from '@/lib/lucyAutoModeDetector';
 import { triggerHaptic } from '@/lib/omniWarp/omniWarpHaptics';
 import { getAndClearPendingSelection } from '@/lib/selectionBridge';
 import { LucyResponseRecommendation } from '@/components/LucyResponseRecommendation';
-import { findBestKeyExercise, buildKeyExercisePromptGuideline, validateAndExtractKeyExercise } from '@/lib/keyExercisesCatalog';
-import { saveChatInputDraft, loadChatInputDraft, clearChatInputDraft, isOnline, subscribeNetworkStatus } from '@/lib/chatRetryManager';
 
 // Helper: Compress uploaded images to prevent UI stutter and huge payload overhead
 function compressImageIfNeeded(file: File): Promise<string> {
@@ -405,7 +403,6 @@ export default function LucyStandalonePage() {
     firebaseUser, 
     signInWithGoogle, 
     sendUnifiedMessage, 
-    retryUnifiedMessage,
     personaMessages, 
     isGenerating,
     abortGenerating,
@@ -445,19 +442,7 @@ export default function LucyStandalonePage() {
       safeLocalStorage.setItem('lucy_active_channels', JSON.stringify(activeChannels));
     } catch (_) {}
   }, [activeChannels]);
-
-  // 📝 사용자 입력(Draft) 로컬 임시 저장 및 네트워크 상태 감지
-  const [input, setInput] = useState(() => loadChatInputDraft());
-  const [isDeviceOnline, setIsDeviceOnline] = useState(isOnline());
-
-  useEffect(() => {
-    return subscribeNetworkStatus(setIsDeviceOnline);
-  }, []);
-
-  useEffect(() => {
-    saveChatInputDraft(input);
-  }, [input]);
-
+  const [input, setInput] = useState('');
   const isAutoDetect = true;
   const [autoDetectedTitle, setAutoDetectedTitle] = useState<string | null>(null);
 
@@ -530,7 +515,7 @@ export default function LucyStandalonePage() {
         stopTTS();
         setPlayingMsgId(null);
       }
-      setAutoTtsToast(next ? '🔊 루시 답변 자동 음성 읽기가 켜졌습니다.' : '🔇 자동 음성 읽기가 꺼졌습니다.');
+      setAutoTtsToast(next ? '🔊 질문자(남성)와 루시 답변(여성) 연속 자동 음성 읽기가 켜졌습니다.' : '🔇 자동 음성 읽기가 꺼졌습니다.');
       setTimeout(() => setAutoTtsToast(null), 2500);
       return next;
     });
@@ -733,10 +718,21 @@ export default function LucyStandalonePage() {
         lastAutoSpokenMsgIdRef.current = lastMsg.id;
         const cleanAnswer = normalizeTextForSpeech(lastMsg.content);
         if (cleanAnswer) {
+          const prevUserMsg = lucyMessages.slice(0, -1).reverse().find((m) => m.role === 'user');
+          const cleanQuestion = prevUserMsg && typeof prevUserMsg.content === 'string'
+            ? normalizeTextForSpeech(cleanUserMessageDisplay(prevUserMsg.content))
+            : '';
+
           stopTTS();
-          setPlayingMsgId(lastMsg.id);
-          const detected = detectLucyResponseEmotion(cleanAnswer);
-          playTTSInChunks(cleanAnswer, 'Kore', 180, detected.emotion).catch((err) => {
+          playQAndATTS(
+            { text: cleanQuestion, id: prevUserMsg?.id },
+            { text: cleanAnswer, id: lastMsg.id },
+            'Fenrir',
+            'Kore',
+            (_speaker, msg) => {
+              if (msg.id) setPlayingMsgId(msg.id);
+            }
+          ).catch((err) => {
             console.warn('[Auto-TTS Fallback] Play error:', err);
           });
         }
@@ -998,18 +994,7 @@ export default function LucyStandalonePage() {
       targetPersona = 'lucy';
     }
 
-    // 🔑 사용자 고민에 가장 알맞은 Key 실천 연습을 사전 매칭하여 시스템 지침으로 주입
-    // 이를 통해 루시 답변에서 추천하는 기법과 하단 LucKey 연계 카드가 100% 동일한 기법을 추천하도록 보장
-    let targetKeyExIndex: number | undefined = undefined;
-    if (!isCasual && userCleanText) {
-      const targetKeyEx = findBestKeyExercise(userCleanText, '');
-      targetKeyExIndex = targetKeyEx.globalIndex;
-      const keySyncDirective = buildKeyExercisePromptGuideline(targetKeyEx);
-      extraSystemContext = extraSystemContext ? `${extraSystemContext}\n\n${keySyncDirective}` : keySyncDirective;
-    }
-
     setInput('');
-    clearChatInputDraft();
     const imgToSend = attachedImage || undefined;
     setAttachedImage(null);
     if (isRecording && recognitionRef.current) {
@@ -1028,33 +1013,26 @@ export default function LucyStandalonePage() {
       channels: channels,
       mode: isMaster ? 'master' : (isCasual ? 'casual' : (isSingle ? channels[0] : 'synergy')),
       channel: isSingle ? channels[0] : undefined,
-      keyExerciseIndex: targetKeyExIndex,
       onFinish: async (fullText, sentText, replyMsgId) => {
-        if (fullText && targetKeyExIndex) {
-          const verified = validateAndExtractKeyExercise(fullText, userCleanText, targetKeyExIndex);
-          if (process.env.NODE_ENV !== 'production') {
-            console.log('[LucKey Verification onFinish]', {
-              expected: targetKeyExIndex,
-              extracted: verified.exercise.globalIndex,
-              title: verified.exercise.title,
-              matchedBy: verified.matchedBy,
-              isValid: verified.isValid,
-              isExactMatch: verified.isExactMatch,
-              validationNote: verified.validationNote,
-            });
-          }
-        }
         if (isAutoTtsRef.current && fullText && fullText.trim()) {
           try {
             const cleanAnswer = normalizeTextForSpeech(fullText);
+            const rawQuestion = sentText || userCleanText || '';
+            const cleanQuestion = normalizeTextForSpeech(cleanUserMessageDisplay(rawQuestion));
             if (cleanAnswer) {
               if (replyMsgId) {
                 lastAutoSpokenMsgIdRef.current = replyMsgId;
-                setPlayingMsgId(replyMsgId);
               }
               stopTTS();
-              const detected = detectLucyResponseEmotion(cleanAnswer, isSingle ? channels[0] : undefined);
-              await playTTSInChunks(cleanAnswer, 'Kore', 180, detected.emotion);
+              await playQAndATTS(
+                { text: cleanQuestion, id: undefined },
+                { text: cleanAnswer, id: replyMsgId },
+                'Fenrir',
+                'Kore',
+                (_speaker, msg) => {
+                  if (msg.id) setPlayingMsgId(msg.id);
+                }
+              );
             }
           } catch (ttsErr) {
             console.warn('[Auto-TTS] Immediate voice playback error:', ttsErr);
@@ -1172,7 +1150,7 @@ export default function LucyStandalonePage() {
     setTimeout(() => setCopiedId(null), 1500);
   };
 
-  const handleVoicePlay = (id: string, text: string, voice: string = 'Kore', channelHint?: string) => {
+  const handleVoicePlay = (id: string, text: string, voice: string = 'Kore') => {
     const clean = normalizeTextForSpeech(text);
     if (playingMsgId === id && (ttsInfo.isSpeaking || ttsInfo.isLoading)) {
       stopTTS();
@@ -1180,8 +1158,7 @@ export default function LucyStandalonePage() {
     } else {
       stopTTS();
       setPlayingMsgId(id);
-      const detected = detectLucyResponseEmotion(clean, channelHint);
-      playTTSInChunks(clean, voice, 350, detected.emotion);
+      playTTSInChunks(clean, voice, 350, '다정');
     }
   };
 
@@ -1393,14 +1370,6 @@ export default function LucyStandalonePage() {
         </AnimatePresence>
       </header>
 
-      {/* 🌐 오프라인 알림 배너 */}
-      {!isDeviceOnline && (
-        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-center text-xs text-amber-800 font-medium flex items-center justify-center gap-1.5 shadow-xs">
-          <AlertCircle size={14} className="text-amber-600 shrink-0" />
-          <span>네트워크 연결이 일시적으로 끊겼습니다. 작성 중인 메시지는 로컬에 안전하게 보관됩니다.</span>
-        </div>
-      )}
-
       {/* Chat Messages Stream */}
       <main ref={messagesContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-6 w-full max-w-5xl xl:max-w-6xl 2xl:max-w-7xl mx-auto select-text">
         <div ref={messagesWrapperRef} className="space-y-3 sm:space-y-4 pb-28 sm:pb-32">
@@ -1523,41 +1492,9 @@ export default function LucyStandalonePage() {
                               lucyAnswer={textContent}
                               currentChannels={activeChannels}
                               isCasual={msgModeInfo.isCasual}
-                              expectedKeyExerciseIndex={(() => {
-                                if ((filteredMessages[index] as any)?.keyExerciseIndex) {
-                                  return (filteredMessages[index] as any).keyExerciseIndex;
-                                }
-                                const prev = filteredMessages.slice(0, index).reverse().find((m: any) => m.role === 'user');
-                                if ((prev as any)?.keyExerciseIndex) {
-                                  return (prev as any).keyExerciseIndex;
-                                }
-                                const prevText = typeof prev?.content === 'string' ? prev.content : '';
-                                if (prevText) {
-                                  return findBestKeyExercise(prevText, '').globalIndex;
-                                }
-                                return undefined;
-                              })()}
                               onSwitchChannel={(channels, isMaster, label) => handleActivateMessageMode(channels, isMaster, label)}
                               onNavigate={(path) => navigate(path)}
                             />
-                          </div>
-                        )}
-
-                        {/* ⚠️ 일시적 네트워크 오류 발생 시 재시도 버튼 */}
-                        {((msg as any)?.isRetryable || textContent.includes('일시적인 네트워크 지연') || textContent.includes('네트워크 오류')) && !isLucyGenerating && (
-                          <div className="mt-2.5 pt-2 border-t border-slate-200/70 flex items-center justify-between gap-2">
-                            <span className="text-xs text-amber-700 font-medium flex items-center gap-1">
-                              <AlertCircle size={12} className="shrink-0 text-amber-600" />
-                              네트워크 통신 지연 발생
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => retryUnifiedMessage(msgId)}
-                              className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs flex items-center gap-1 shadow-xs transition-all active:scale-95 cursor-pointer"
-                            >
-                              <RefreshCw size={11} />
-                              <span>다시 시도</span>
-                            </button>
                           </div>
                         )}
                       </>
@@ -1574,8 +1511,8 @@ export default function LucyStandalonePage() {
                       {copiedId === msgId ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                     </button>
                     <button
-                      onClick={() => handleVoicePlay(msgId, textContent, isUser ? 'Fenrir' : 'Kore', msgModeInfo.channels?.[0])}
-                      className={`p-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 ${
+                      onClick={() => handleVoicePlay(msgId, textContent, isUser ? 'Fenrir' : 'Kore')}
+                      className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
                         playingMsgId === msgId && (ttsInfo.isSpeaking || ttsInfo.isLoading)
                           ? 'text-amber-600 bg-amber-50'
                           : 'text-slate-400 hover:text-amber-600 hover:bg-slate-100'
@@ -1585,10 +1522,7 @@ export default function LucyStandalonePage() {
                           ? "음성 준비 중..."
                           : playingMsgId === msgId && ttsInfo.isSpeaking
                           ? "음성 멈추기"
-                          : (() => {
-                              const detected = !isUser ? detectLucyResponseEmotion(textContent, msgModeInfo.channels?.[0]) : null;
-                              return detected ? `음성으로 듣기 (${detected.label} • 톤/속도 조절)` : "음성으로 듣기";
-                            })()
+                          : "음성으로 듣기"
                       }
                     >
                       {playingMsgId === msgId && ttsInfo.isLoading ? (
@@ -1597,11 +1531,6 @@ export default function LucyStandalonePage() {
                         <VolumeX size={14} className="animate-pulse" />
                       ) : (
                         <Volume2 size={14} />
-                      )}
-                      {playingMsgId === msgId && ttsInfo.isSpeaking && !isUser && (
-                        <span className="text-[10px] font-semibold text-amber-700 bg-amber-200/80 px-1.5 py-0.5 rounded-full animate-pulse">
-                          {detectLucyResponseEmotion(textContent, msgModeInfo.channels?.[0]).label}
-                        </span>
                       )}
                     </button>
                   </div>
@@ -1619,13 +1548,7 @@ export default function LucyStandalonePage() {
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-bounce delay-200" />
               </div>
               <span className="text-xs sm:text-sm text-emerald-950 font-bold ml-1">
-                {(lucyMessages[lucyMessages.length - 1] as any)?.isRetrying ? (
-                  <span className="text-amber-700">
-                    네트워크 재연결 중... (재시도 {(lucyMessages[lucyMessages.length - 1] as any)?.retryAttempt || 1}/3)
-                  </span>
-                ) : (
-                  'Lucy가 답변을 작성하고 있습니다...'
-                )}
+                Lucy가 답변을 작성하고 있습니다...
               </span>
             </div>
           )}

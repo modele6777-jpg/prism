@@ -315,11 +315,6 @@ async function startServer() {
   const app = express();
   const PORT = Number.parseInt(process.env.PORT || "3000", 10) || 3000;
 
-  // Instant Health Check Endpoints (for Cloud Run, Kubernetes, and AI Studio readiness probes)
-  app.get(["/healthz", "/health", "/api/health"], (_req, res) => {
-    res.status(200).json({ status: "ok", version: "1.4.31", timestamp: new Date().toISOString() });
-  });
-
   app.use(express.json({ limit: '50mb' }));
 
   // CORS, Iframe Permissions & OPTIONS Preflight Handler (for AI Studio & Cloud Run)
@@ -1294,27 +1289,19 @@ ${content}
     });
   });
 
-  // TTS - 고품질 Edge Neural TTS + Google TTS 다중 엔진 통합 엔드포인트 (/api/ai/tts 및 /api/tts 모두 지원)
-  const commonTTSHandler = async (req: express.Request, res: express.Response) => {
-    const { text, voice = 'Kore', emotion, rate, pitch } = req.body;
+  // TTS - 고품질 Edge Neural TTS + Google TTS 다중 엔진 통합 엔드포인트
+  app.post("/api/ai/tts", async (req, res) => {
+    const { text, voice = 'Kore', emotion } = req.body;
 
     try {
       const { handleTTS } = await import('./server/api-lib/ttsHandler');
-      const result = await handleTTS({ text, voice, emotion, rate, pitch });
-      const mime = result.encoding === "wav" ? "audio/wav" : result.encoding === "pcm" ? "audio/wav" : "audio/mp3";
-      const audioDataUrl = `data:${mime};base64,${result.audioContent}`;
-      return res.status(200).json({
-        ...result,
-        audio: audioDataUrl,
-      });
+      const result = await handleTTS({ text, voice, emotion });
+      return res.status(200).json(result);
     } catch (error: any) {
       console.error("TTS generation error:", error);
       return res.status(500).json({ error: error?.message || "TTS generation failed" });
     }
-  };
-
-  app.post("/api/ai/tts", commonTTSHandler);
-  app.post("/api/tts", commonTTSHandler);
+  });
 
 
 
@@ -2111,13 +2098,6 @@ ${content}
   app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
   const distPath = path.join(process.cwd(), 'dist');
-  const isCjsBundle = typeof __filename !== "undefined" && (__filename.endsWith("server.cjs") || __filename.endsWith("server.js"));
-  const isRunningTsx = process.argv.some(arg => arg.includes("server.ts") || arg.includes("tsx"));
-  const isProduction = process.env.NODE_ENV === "production" || isCjsBundle || (!isRunningTsx && fs.existsSync(path.join(distPath, "index.html")));
-
-  if (isProduction && process.env.NODE_ENV !== "production") {
-    process.env.NODE_ENV = "production";
-  }
 
   // Explicit Service Worker Route Support (Prevents stale precache issues in dev mode)
   app.get(['/sw.js', '/registerSW.js'], (req, res) => {
@@ -2126,7 +2106,7 @@ ${content}
     const pubSw = path.join(process.cwd(), 'public', filename);
 
     res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-    if (!isProduction) {
+    if (process.env.NODE_ENV !== "production") {
       return res.send(`
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => {
@@ -2143,7 +2123,7 @@ self.addEventListener('activate', (e) => {
     } else if (fs.existsSync(pubSw)) {
       res.sendFile(pubSw);
     } else {
-      res.send('// Fallback service worker\nself.addEventListener("install", () => self.skipWaiting());\nself.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));');
+      res.send('// Fallback service worker\\nself.addEventListener("install", () => self.skipWaiting());\\nself.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));');
     }
   });
 
@@ -2153,7 +2133,7 @@ self.addEventListener('activate', (e) => {
   app.get(["/key", "/key/", "/orb", "/orb/", "/orb.html", "/gateway", "/crystal"], (_req, res) => res.redirect(302, "/calm/"));
   app.use(calmRouter);
 
-  if (!isProduction) {
+  if (process.env.NODE_ENV !== "production") {
     if (fs.existsSync(distPath)) {
       app.use('/assets', express.static(path.join(distPath, 'assets')));
     }
@@ -2193,9 +2173,6 @@ self.addEventListener('activate', (e) => {
   } else {
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
-      if (req.path.startsWith('/api/')) {
-        return res.status(404).json({ error: `Endpoint not found: ${req.path}` });
-      }
       if (req.path.startsWith('/chat')) {
         const chatPath = path.join(distPath, 'chat.html');
         if (fs.existsSync(chatPath)) return res.sendFile(chatPath);
@@ -2227,27 +2204,29 @@ self.addEventListener('activate', (e) => {
   }
 
   const server = app.listen(PORT, "0.0.0.0", () => {
-    const address = server.address();
-    const activePort = typeof address === "object" && address ? address.port : PORT;
-    console.log(`Server running on http://localhost:${activePort} | Mode = ${isProduction ? 'production' : 'development'} | AI_TYPE = ${process.env.AI_TYPE || 'grok'}`);
+  const address = server.address();
+  const activePort = typeof address === "object" && address ? address.port : PORT;
+  console.log(`Server running on http://localhost:${activePort} | AI_TYPE = ${process.env.AI_TYPE || 'grok'}`);
   });
 
   server.on("error", (error: NodeJS.ErrnoException) => {
-    if (error.code !== "EADDRINUSE") {
-      console.error("[server] Failed to start:", error);
-      return;
-    }
+  if (error.code !== "EADDRINUSE") {
+  console.error("[server] Failed to start:", error);
+  return;
+  }
 
-    console.warn(`[server] Port ${PORT} is already in use; retrying on an ephemeral port.`);
-    const fallbackServer = app.listen(0, "0.0.0.0", () => {
-      const address = fallbackServer.address();
-      const activePort = typeof address === "object" && address ? address.port : 0;
-      console.log(`Server running on fallback http://localhost:${activePort} | AI_TYPE = ${process.env.AI_TYPE || 'grok'}`);
-    });
+  console.warn(`[server] Port ${PORT} is already in use; retrying on an ephemeral port.`);
+  server.close(() => {
+  const fallbackServer = app.listen(0, "0.0.0.0", () => {
+  const address = fallbackServer.address();
+  const activePort = typeof address === "object" && address ? address.port : 0;
+  console.log(`Server running on http://localhost:${activePort} | AI_TYPE = ${process.env.AI_TYPE || 'grok'}`);
+  });
 
-    fallbackServer.on("error", (fallbackError) => {
-      console.error("[server] Failed to start on fallback port:", fallbackError);
-    });
+  fallbackServer.on("error", (fallbackError) => {
+  console.error("[server] Failed to start on fallback port:", fallbackError);
+  });
+  });
   });
 }
 

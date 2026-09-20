@@ -8,7 +8,7 @@ import { safeLocalStorage } from '@/utils/safeStorage';
 import { sendPrismToss } from '@/lib/prismToss';
 import { triggerHaptic } from '@/lib/omniWarp/omniWarpHaptics';
 import { resolveCanonicalPath } from '@/lib/prismRouteRegistry';
-import { findBestKeyExercise, validateAndExtractKeyExercise, KeyExerciseValidationResult } from '@/lib/keyExercisesCatalog';
+import { findBestKeyExercise } from '@/lib/keyExercisesCatalog';
 import type { SpecialChannel } from '@/pages/LucyStandalonePage';
 
 export interface LucyResponseRecommendationProps {
@@ -16,7 +16,6 @@ export interface LucyResponseRecommendationProps {
   lucyAnswer: string;
   currentChannels: SpecialChannel[];
   isCasual?: boolean;
-  expectedKeyExerciseIndex?: number;
   onSwitchChannel: (channels: SpecialChannel[], isMaster: boolean, label: string) => void;
   onNavigate?: (path: string) => void;
 }
@@ -235,7 +234,6 @@ export function LucyResponseRecommendation({
   lucyAnswer,
   currentChannels = [],
   isCasual = false,
-  expectedKeyExerciseIndex,
   onSwitchChannel,
   onNavigate,
 }: LucyResponseRecommendationProps) {
@@ -252,17 +250,12 @@ export function LucyResponseRecommendation({
   }
 
   // 2. 질문과 답변의 맥락 정밀 분석을 통해 최적의 단일 추천 채널 및 Key 실천 기법 도출
-  const { recommendedChannel, recommendedFeature, themeReason, isExactSync } = useMemo(() => {
+  const { recommendedChannel, recommendedFeature, themeReason } = useMemo(() => {
     const cleanUser = (userQuery || '').toLowerCase();
     const cleanLucy = (lucyAnswer || '').toLowerCase();
 
-    // 40대 Key 마음약방 실천 연습 중 루시 메인 답변의 기법과 100% 일치하도록 정밀 검증 추출
-    const validation: KeyExerciseValidationResult = validateAndExtractKeyExercise(
-      lucyAnswer,
-      userQuery,
-      expectedKeyExerciseIndex
-    );
-    const bestEx = validation.exercise;
+    // 40대 Key 마음약방 실천 연습 중 맥락에 가장 부합하는 1개 기법 먼저 정밀 추출
+    const bestEx = findBestKeyExercise(cleanUser, cleanLucy);
 
     // 각 채널별 정밀 도메인 키워드 사전
     const CHANNEL_KEYWORDS: Record<SpecialChannel, string[]> = {
@@ -350,8 +343,8 @@ export function LucyResponseRecommendation({
     const keyFeature: FeatureAppMeta = {
       id: 'key',
       name: 'KEY 마음약방',
-      shortName: `연습 ${bestEx.globalIndex}. ${bestEx.title}`,
-      featureTitle: `40대 치유 연습 중 맞춤 추천: 연습 ${bestEx.globalIndex}. ${bestEx.title} (${bestEx.chapter}장 · ${bestEx.page}쪽)`,
+      shortName: `연습 ${bestEx.index}. ${bestEx.title}`,
+      featureTitle: `40대 치유 연습 중 맞춤 추천: 연습 ${bestEx.index}. ${bestEx.title} (${bestEx.page}쪽)`,
       path: `/key?ex=${bestEx.globalIndex}`,
       iconText: bestEx.icon || '🔑',
       runeSymbol: 'ᛟ',
@@ -363,16 +356,14 @@ export function LucyResponseRecommendation({
       keywords: [],
     };
 
-    const matchBadge = validation.isExactMatch ? '✓ 답변 100% 일치' : '맞춤 연계';
-    const reasonText = `[${bestEx.tag}·${primaryChannel.badgeLabel}] ${primaryChannel.shortName} 채널 × Key ${bestEx.title} (${matchBadge})`;
+    const reasonText = `[${bestEx.tag}·${primaryChannel.badgeLabel}] ${primaryChannel.shortName} 채널 × Key ${bestEx.title} 맞춤 연계`;
 
     return {
       recommendedChannel: primaryChannel,
       recommendedFeature: keyFeature,
       themeReason: reasonText,
-      isExactSync: validation.isExactMatch,
     };
-  }, [userQuery, lucyAnswer, currentChannels, expectedKeyExerciseIndex]);
+  }, [userQuery, lucyAnswer, currentChannels]);
 
   // 추천 기능으로 도약 실행 (오브의 handleTossToDimension과 동일한 유기적 토스 연동)
   const handleLeapToFeature = (feature: FeatureAppMeta) => {
@@ -492,16 +483,9 @@ export function LucyResponseRecommendation({
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5 flex-wrap">
-                {isExactSync ? (
-                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-400/40 shrink-0 flex items-center gap-1">
-                    <Check size={10} className="text-emerald-400" />
-                    루시 답변 일치
-                  </span>
-                ) : (
-                  <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-cyan-400/20 text-cyan-300 font-bold border border-cyan-400/40 shrink-0">
-                    Key 추천 기법
-                  </span>
-                )}
+                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-cyan-400/20 text-cyan-300 font-bold border border-cyan-400/40 shrink-0">
+                  Key 추천 기법
+                </span>
                 <span className="text-xs font-bold text-white truncate group-hover:text-cyan-200 transition-colors">
                   {recommendedFeature.shortName}
                 </span>

@@ -4,7 +4,7 @@ steps:
     args:
       - -ceu
       - |
-        npm ci || npm install
+        npm ci
         npm run build
 
 options:

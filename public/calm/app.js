@@ -1995,11 +1995,10 @@ document.addEventListener('DOMContentLoaded', () => {
   let ritualStage = 1;
   let ritualSecondsLeft = 60;
   let ttsEnabled = true;
-  let ttsVoice = 'ko-KR-SoonBokNeural';
+  let ttsVoice = 'Kore'; // 'Kore' | 'Puck' | 'Zephyr' | 'browser'
   let activeTtsAudio = null;
   let activeUtterance = null;
   const clientTtsCache = new Map();
-  const ritualAudioEl = document.getElementById('ritual-tts-audio');
 
   // 단계별 텍스트 가이드
   const RITUAL_STAGE_INFO = {
@@ -2029,7 +2028,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // 사운드스케이프 배경음 볼륨 덕킹 (음성 재생 시 배경음 부드럽게 낮춤)
-  function duckSoundscapeVolume(targetVol = 0.12) {
+  function duckSoundscapeVolume(targetVol = 0.15) {
     if (window.soundscapeEngine && window.soundscapeEngine.masterGain && window.soundscapeEngine.ctx) {
       try {
         window.soundscapeEngine.masterGain.gain.linearRampToValueAtTime(targetVol, window.soundscapeEngine.ctx.currentTime + 0.3);
@@ -2053,16 +2052,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (state === 'speaking') {
       tMedVoiceStatus.classList.add('speaking');
-      if (voiceStatusText) voiceStatusText.textContent = customText || '🎙️ 클라우드 뉴럴 명상 음성 안내 중...';
+      if (voiceStatusText) voiceStatusText.textContent = customText || '🎙️ Dr. Z 음성 안내 재생 중...';
     } else if (state === 'loading') {
       tMedVoiceStatus.classList.add('loading');
-      if (voiceStatusText) voiceStatusText.textContent = customText || '⏳ 고품질 클라우드 음성 불러오는 중...';
+      if (voiceStatusText) voiceStatusText.textContent = customText || '⏳ 음성 안내 불러오는 중...';
     } else if (state === 'completed') {
       if (voiceStatusText) voiceStatusText.textContent = customText || '✅ 음성 안내 완료 (깊은 호흡을 이어가세요)';
     } else if (state === 'disabled') {
       if (voiceStatusText) voiceStatusText.textContent = '🔇 음성 안내 꺼짐 (타이머 진행 중)';
     } else {
-      if (voiceStatusText) voiceStatusText.textContent = customText || '🎙️ 클라우드 뉴럴 음성 안내 준비 완료';
+      if (voiceStatusText) voiceStatusText.textContent = customText || '🎙️ Dr. Z 음성 안내 준비 완료';
     }
   }
 
@@ -2075,12 +2074,6 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch (e) {}
       activeTtsAudio = null;
     }
-    if (ritualAudioEl) {
-      try {
-        ritualAudioEl.pause();
-        ritualAudioEl.currentTime = 0;
-      } catch (e) {}
-    }
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       try {
         window.speechSynthesis.cancel();
@@ -2091,7 +2084,7 @@ document.addEventListener('DOMContentLoaded', () => {
     restoreSoundscapeVolume();
   }
 
-  // 브라우저 Web Speech API 로컬 발화 (오프라인 비상용 fallback)
+  // 브라우저 Web Speech API 로컬 발화 (오프라인 / fallback)
   function playBrowserTts(text) {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
       setVoiceIndicatorStatus('completed', '💡 브라우저 음성 미지원 환경');
@@ -2103,15 +2096,15 @@ document.addEventListener('DOMContentLoaded', () => {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'ko-KR';
-      utterance.rate = 0.88; // 명상에 최적화된 편안하고 느린 템포
-      utterance.pitch = 0.95;
+      utterance.rate = 0.90; // 명상에 최적화된 편안하고 느린 템포
+      utterance.pitch = 1.0;
 
       const voices = window.speechSynthesis.getVoices();
       const koVoice = voices.find(v => v.lang && (v.lang.startsWith('ko') || v.lang.includes('KR')));
       if (koVoice) utterance.voice = koVoice;
 
       activeUtterance = utterance;
-      setVoiceIndicatorStatus('speaking', '🎙️ 오프라인 로컬 음성 안내 중...');
+      setVoiceIndicatorStatus('speaking', '🎙️ 브라우저 로컬 음성 안내 중...');
 
       utterance.onend = () => {
         activeUtterance = null;
@@ -2132,70 +2125,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Web Audio Context를 통한 버퍼 직접 디코딩 재생 (Autoplay 잠금 면역)
-  function tryPlayWithWebAudio(audioUrl, fallbackScript) {
-    if (!window.soundscapeEngine || !window.soundscapeEngine.ctx) {
-      if (!navigator.onLine) {
-        playBrowserTts(fallbackScript);
-      } else {
-        setVoiceIndicatorStatus('completed');
-        restoreSoundscapeVolume();
-      }
-      return;
-    }
-
-    try {
-      const ctx = window.soundscapeEngine.ctx;
-      if (ctx.state === 'suspended') {
-        ctx.resume().catch(() => {});
-      }
-
-      fetch(audioUrl)
-        .then(r => r.arrayBuffer())
-        .then(ab => ctx.decodeAudioData(ab))
-        .then(audioBuffer => {
-          const source = ctx.createBufferSource();
-          source.buffer = audioBuffer;
-          const gainNode = ctx.createGain();
-          gainNode.gain.value = 1.0;
-          source.connect(gainNode);
-          gainNode.connect(ctx.destination);
-
-          setVoiceIndicatorStatus('speaking', '🎙️ 클라우드 뉴럴 명상 음성 안내 중...');
-
-          source.onended = () => {
-            setVoiceIndicatorStatus('completed');
-            restoreSoundscapeVolume();
-          };
-
-          source.start(0);
-        })
-        .catch(err => {
-          console.warn('[TTS] Web Audio decoding failed:', err);
-          if (!navigator.onLine) {
-            playBrowserTts(fallbackScript);
-          } else {
-            setVoiceIndicatorStatus('idle');
-            restoreSoundscapeVolume();
-          }
-        });
-    } catch (err) {
-      console.warn('[TTS] tryPlayWithWebAudio error:', err);
-      if (!navigator.onLine) {
-        playBrowserTts(fallbackScript);
-      } else {
-        setVoiceIndicatorStatus('idle');
-        restoreSoundscapeVolume();
-      }
-    }
-  }
-
-  // Audio URL(Base64 WAV/MP3) 재생 (전용 오디오 엘리먼트 + WebAudio 이중 복구망)
+  // Audio URL(Base64 WAV) 재생
   function playAudioUrl(audioUrl, fallbackScript) {
     try {
-      const audio = ritualAudioEl || new Audio();
+      const audio = new Audio(audioUrl);
       activeTtsAudio = audio;
-      setVoiceIndicatorStatus('speaking', '🎙️ 클라우드 뉴럴 명상 음성 안내 중...');
+      setVoiceIndicatorStatus('speaking');
 
       audio.onended = () => {
         activeTtsAudio = null;
@@ -2204,29 +2139,23 @@ document.addEventListener('DOMContentLoaded', () => {
       };
 
       audio.onerror = () => {
-        console.warn('[TTS] Audio element error, trying Web Audio decoding...');
         activeTtsAudio = null;
-        tryPlayWithWebAudio(audioUrl, fallbackScript);
+        playBrowserTts(fallbackScript);
       };
-
-      audio.src = audioUrl;
-      audio.currentTime = 0;
-      audio.playbackRate = 1.0;
 
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         playPromise.catch(e => {
-          console.warn('[TTS] Audio play() blocked, trying Web Audio fallback:', e);
-          tryPlayWithWebAudio(audioUrl, fallbackScript);
+          console.warn('Audio 자동 재생 차단 또는 오류:', e);
+          playBrowserTts(fallbackScript);
         });
       }
     } catch (e) {
-      console.warn('[TTS] playAudioUrl exception:', e);
-      tryPlayWithWebAudio(audioUrl, fallbackScript);
+      playBrowserTts(fallbackScript);
     }
   }
 
-  // 단계별 TTS 실행 함수 (클라우드 고품질 뉴럴 엔진 우선 연동)
+  // 단계별 TTS 실행 함수
   function speakRitualScript(stageKey) {
     if (!ttsEnabled) {
       setVoiceIndicatorStatus('disabled');
@@ -2237,7 +2166,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!script) return;
 
     stopActiveTts();
-    duckSoundscapeVolume(0.12);
+    duckSoundscapeVolume(0.15);
+
+    if (ttsVoice === 'browser') {
+      playBrowserTts(script);
+      return;
+    }
 
     const cacheKey = `${ttsVoice}:${script}`;
     if (clientTtsCache.has(cacheKey)) {
@@ -2245,69 +2179,32 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    setVoiceIndicatorStatus('loading', '⏳ 고품질 클라우드 음성 불러오는 중...');
+    setVoiceIndicatorStatus('loading');
 
-    const ttsEndpoints = ['/api/tts', '/api/ai/tts'];
-    const payload = {
-      text: script,
-      voice: ttsVoice,
-      emotion: 'meditation',
-      rate: '-8%',
-      pitch: '-1.0Hz'
-    };
-
-    const callTTS = async (retryCount = 0) => {
-      for (const endpoint of ttsEndpoints) {
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 15000);
-          const res = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-            signal: controller.signal
-          });
-          clearTimeout(timeoutId);
-
-          if (!res.ok) continue;
-          const data = await res.json();
-          let finalAudioUrl = data.audio;
-          if (!finalAudioUrl && data.audioContent) {
-            const mime = data.encoding === 'wav' ? 'audio/wav' : data.encoding === 'pcm' ? 'audio/wav' : 'audio/mp3';
-            finalAudioUrl = `data:${mime};base64,${data.audioContent}`;
-          }
-          if (finalAudioUrl) {
-            clientTtsCache.set(cacheKey, finalAudioUrl);
-            playAudioUrl(finalAudioUrl, script);
-            return;
-          }
-        } catch (e) {
-          console.warn(`[TTS] ${endpoint} 호출 실패, 다음 엔드포인트 시도:`, e);
+    fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: script, voice: ttsVoice })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.audio) {
+          clientTtsCache.set(cacheKey, data.audio);
+          playAudioUrl(data.audio, script);
+        } else {
+          // Gemini TTS 오류 또는 fallback 플래그 수신 시 브라우저 TTS 실행
+          playBrowserTts(script);
         }
-      }
-
-      // 일시적 통신 지연 시 1회 지연 재시도
-      if (retryCount < 1 && navigator.onLine) {
-        setTimeout(() => {
-          callTTS(retryCount + 1);
-        }, 600);
-        return;
-      }
-
-      // 오프라인 상태일 때만 비상용 브라우저 음성 사용
-      if (!navigator.onLine) {
+      })
+      .catch(err => {
+        console.warn('TTS API 호출 실패, 브라우저 음성으로 대체:', err);
         playBrowserTts(script);
-      } else {
-        setVoiceIndicatorStatus('idle', '💡 클라우드 음성 연결 지연');
-        restoreSoundscapeVolume();
-      }
-    };
-    callTTS();
+      });
   }
 
   // 다음 단계 TTS 오디오 백그라운드 프리로딩 (무지연 재생 보장)
   function preloadRitualTts() {
-    if (!ttsEnabled) return;
+    if (!ttsEnabled || ttsVoice === 'browser') return;
     [1, 2, 3, 'done'].forEach(key => {
       const script = RITUAL_TTS_SCRIPTS[key];
       const cacheKey = `${ttsVoice}:${script}`;
@@ -2315,22 +2212,11 @@ document.addEventListener('DOMContentLoaded', () => {
         fetch('/api/tts', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            text: script,
-            voice: ttsVoice,
-            emotion: 'meditation',
-            rate: '-8%',
-            pitch: '-1.0Hz'
-          })
+          body: JSON.stringify({ text: script, voice: ttsVoice })
         })
           .then(r => r.json())
           .then(d => {
-            let url = d.audio;
-            if (!url && d.audioContent) {
-              const mime = d.encoding === 'wav' ? 'audio/wav' : d.encoding === 'pcm' ? 'audio/wav' : 'audio/mp3';
-              url = `data:${mime};base64,${d.audioContent}`;
-            }
-            if (url) clientTtsCache.set(cacheKey, url);
+            if (d.audio) clientTtsCache.set(cacheKey, d.audio);
           })
           .catch(() => {});
       }
@@ -2362,21 +2248,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function startRitual() {
     if (ritualTimer) clearInterval(ritualTimer);
     stopActiveTts();
-
-    // 사용자 클릭 제스처 시점에 전용 오디오 엘리먼트 및 Web Audio 사전 언락 (모바일/iOS 자동 재생 보장)
-    if (ritualAudioEl) {
-      try {
-        ritualAudioEl.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
-        ritualAudioEl.volume = 1.0;
-        const unlockP = ritualAudioEl.play();
-        if (unlockP !== undefined) {
-          unlockP.then(() => ritualAudioEl.pause()).catch(() => {});
-        }
-      } catch (_) {}
-    }
-    if (window.soundscapeEngine && window.soundscapeEngine.ctx && window.soundscapeEngine.ctx.state === 'suspended') {
-      window.soundscapeEngine.ctx.resume().catch(() => {});
-    }
 
     ritualStage = 1;
     ritualSecondsLeft = 60;
@@ -2469,8 +2340,8 @@ document.addEventListener('DOMContentLoaded', () => {
         btnRitualVoiceToggle.classList.add('active');
         if (voiceToggleIcon) voiceToggleIcon.textContent = '🔊';
         if (voiceToggleText) voiceToggleText.textContent = '음성 안내 ON';
-        setVoiceIndicatorStatus('idle', '🎙️ 클라우드 뉴럴 음성 켜짐');
-        preloadRitualTts();
+        setVoiceIndicatorStatus('idle', '🎙️ 음성 안내 켜짐');
+        // 현재 리추얼 진행 중이면 현재 단계 음성 재생
         if (ritualTimer && !tMedPlayer.classList.contains('hidden')) {
           speakRitualScript(ritualStage);
         }
@@ -2488,7 +2359,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (ritualVoiceSelect) {
     ritualVoiceSelect.addEventListener('change', (e) => {
       ttsVoice = e.target.value;
-      preloadRitualTts();
       if (ttsEnabled && ritualTimer && !tMedPlayer.classList.contains('hidden')) {
         speakRitualScript(ritualStage);
       }
@@ -2545,11 +2415,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 초기 워크북 피드 및 통계 렌더링
   renderWorkbook();
-
-  // 내면의 쉼표 명상 클라우드 뉴럴 음성 사전 캐싱 (백그라운드 비동기)
-  setTimeout(() => {
-    preloadRitualTts();
-  }, 1200);
 
   // 기본 활성 탭: 40가지 실천 연습실(tab-exercises) 안전 활성화 (모든 모듈 로드 완료 후 실행)
   let initialTab = 'tab-exercises';
