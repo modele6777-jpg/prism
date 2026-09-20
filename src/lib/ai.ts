@@ -520,26 +520,22 @@ const EPILOGUE_FALLBACK_MARKERS = [
 ] as const;
 /**
  * Real-time Repetition / Degeneration Loop Detector
- * Detects runaway token repetition (e.g. "shame shame shame shame..." or short phrase looping)
+ * Detects runaway token repetition (e.g. "shame shame shame shame...") strictly at the trailing end of generation.
+ * Carefully avoids false positives on normal speech and ensures responses are never cut off prematurely.
  */
 export function checkRepetitionLoop(text: string): { isLoop: boolean; cleaned: string } {
-  if (!text || text.length < 12) return { isLoop: false, cleaned: text };
+  if (!text || text.length < 30) return { isLoop: false, cleaned: text };
 
-  // 1. Single word repeated 4+ times consecutively (e.g., "shame shame shame shame")
-  const wordRepetitionRegex = /\b([a-zA-Z가-힣]{2,})\b(?:\s*[,.\s-]*\s*\1){3,}/i;
-  const wordMatch = wordRepetitionRegex.exec(text);
-  if (wordMatch) {
-    const cutIndex = wordMatch.index;
-    const cleaned = text.slice(0, cutIndex).trim();
-    return { isLoop: true, cleaned };
-  }
+  // Only check the active tail of the generation (last 300 chars) where a runaway loop occurs
+  const tail = text.slice(-300);
 
-  // 2. Short phrase (2~4 words) repeated 3+ times
-  const phraseRepetitionRegex = /((?:[a-zA-Z가-힣0-9]{2,}\s+){1,4}[a-zA-Z가-힣0-9]{2,})(?:\s*[,.\s-]*\s*\1){2,}/i;
-  const phraseMatch = phraseRepetitionRegex.exec(text);
-  if (phraseMatch) {
-    const cutIndex = phraseMatch.index;
-    const cleaned = text.slice(0, cutIndex).trim();
+  // Same word (at least 2 letters) repeating 5 or more times consecutively at the tail
+  const tailLoopRegex = /(?:^|\s)([a-zA-Z가-힣]{2,})(?:[\s,.-]+\1){4,}[\s,.-]*$/i;
+  const match = tailLoopRegex.exec(tail);
+  if (match) {
+    const cutPosInTail = match.index;
+    const fullCutIndex = (text.length - 300) + cutPosInTail;
+    const cleaned = text.slice(0, fullCutIndex).trim();
     return { isLoop: true, cleaned };
   }
 
@@ -1143,7 +1139,7 @@ async function invokeLLMStreamInner(params: {
             config: {
               systemInstruction: systemMessage?.content as string,
               temperature: 0.7,
-              maxOutputTokens: 800,
+              maxOutputTokens: 2500,
             }
           });
 
@@ -1214,7 +1210,7 @@ async function invokeLLMStreamInner(params: {
               messages,
               stream: true,
               temperature: 0.7,
-              max_tokens: 800,
+              max_tokens: 2500,
               presence_penalty: 0.3,
               frequency_penalty: 0.5,
             }),

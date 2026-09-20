@@ -47,8 +47,8 @@ export function cleanChatDisplayText(text: string): string {
   cleaned = cleaned.replace(/\[SUGGESTIONS:\s*[^\]]*$/i, "");
   cleaned = cleaned.replace(/\[SOUL_UPDATE:\s*[^\]]*$/i, "");
 
-  // 3. Remove degenerate repeating tokens / words (e.g., "shame shame shame shame...")
-  cleaned = cleaned.replace(/\b([a-zA-Z가-힣]{2,})\b(?:\s*[,.\s-]*\s*\1){3,}/gi, "");
+  // 3. Remove degenerate repeating tokens / words only if runaway at the trailing end
+  cleaned = cleaned.replace(/(?:^|\s)([a-zA-Z가-힣]{2,})(?:[\s,.-]+\1){4,}[\s,.-]*$/i, "");
 
   return cleaned.trim();
 }

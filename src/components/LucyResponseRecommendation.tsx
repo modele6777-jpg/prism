@@ -30,6 +30,7 @@ interface ChannelMeta {
   badgeClass: string;
   hoverClass: string;
   reason: string;
+  path: string;
 }
 
 const CHANNELS_META: Record<SpecialChannel, ChannelMeta> = {
@@ -44,6 +45,7 @@ const CHANNELS_META: Record<SpecialChannel, ChannelMeta> = {
     badgeClass: 'bg-orange-500/15 border-orange-500/30 text-orange-700 dark:text-orange-300',
     hoverClass: 'hover:bg-orange-500/25 hover:border-orange-500/50',
     reason: '1원칙 사고와 근본 원인 분석, 실행 전략에 특화된 채널',
+    path: '/orange',
   },
   trinity: {
     id: 'trinity',
@@ -56,6 +58,7 @@ const CHANNELS_META: Record<SpecialChannel, ChannelMeta> = {
     badgeClass: 'bg-purple-500/15 border-purple-500/30 text-purple-700 dark:text-purple-300',
     hoverClass: 'hover:bg-purple-500/25 hover:border-purple-500/50',
     reason: '사주 명리와 타로 상징, 우주적 동시성에 특화된 채널',
+    path: '/trinity',
   },
   aura: {
     id: 'aura',
@@ -68,6 +71,7 @@ const CHANNELS_META: Record<SpecialChannel, ChannelMeta> = {
     badgeClass: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-300',
     hoverClass: 'hover:bg-emerald-500/25 hover:border-emerald-500/50',
     reason: '신체 긴장 완화, 1분 호흡, 방하착 이완에 특화된 채널',
+    path: '/heal',
   },
   bluebird: {
     id: 'bluebird',
@@ -80,6 +84,7 @@ const CHANNELS_META: Record<SpecialChannel, ChannelMeta> = {
     badgeClass: 'bg-cyan-500/15 border-cyan-500/30 text-cyan-700 dark:text-cyan-300',
     hoverClass: 'hover:bg-cyan-500/25 hover:border-cyan-500/50',
     reason: '내면아이 보듬기, 호오포노포노 정화와 공감 위로에 특화된 채널',
+    path: '/bluebird',
   },
   muse: {
     id: 'muse',
@@ -92,6 +97,7 @@ const CHANNELS_META: Record<SpecialChannel, ChannelMeta> = {
     badgeClass: 'bg-pink-500/15 border-pink-500/30 text-pink-700 dark:text-pink-300',
     hoverClass: 'hover:bg-pink-500/25 hover:border-pink-500/50',
     reason: '명화와 명곡 처방, 시적 은유와 창작 영감에 특화된 채널',
+    path: '/muse',
   },
 };
 
@@ -388,8 +394,8 @@ export function LucyResponseRecommendation({
       {/* 1. 상단 라벨 & 주제 안내 */}
       <div className="flex items-center justify-between gap-2 px-1">
         <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-700 dark:text-amber-400">
-          <Orbit size={13} className="animate-spin text-amber-500" style={{ animationDuration: '10s' }} />
-          <span>오브 연계 추천 경로</span>
+          <Sparkles size={13} className="text-amber-500 animate-pulse" />
+          <span>LucKey 연계 추천 경로</span>
         </div>
         <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
           {themeReason}
@@ -400,42 +406,63 @@ export function LucyResponseRecommendation({
       <div className="flex items-center gap-2 flex-wrap bg-amber-50/60 dark:bg-amber-950/20 p-2.5 rounded-2xl border border-amber-200/60 dark:border-amber-500/20">
         <div className="flex items-center gap-1.5 shrink-0">
           <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-amber-200/70 dark:bg-amber-900/50 text-amber-900 dark:text-amber-200 font-bold">
-            추천 채널
+            LucKey 채널
           </span>
         </div>
 
         <button
           type="button"
-          onClick={() => onSwitchChannel([recommendedChannel.id], false, recommendedChannel.name)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-2xs ${
-            isCurrentChannelActive
-              ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500/40 text-emerald-800 dark:text-emerald-300 ring-1 ring-emerald-400/30'
-              : `${recommendedChannel.badgeClass} ${recommendedChannel.hoverClass} active:scale-95`
-          }`}
-          title={isCurrentChannelActive ? '현재 이 채널로 대화 중입니다.' : `클릭 시 [${recommendedChannel.name}] 채널로 즉시 전환됩니다.`}
+          onClick={() => {
+            handleLeapToFeature({
+              id: recommendedChannel.id,
+              name: recommendedChannel.name,
+              shortName: recommendedChannel.shortName,
+              featureTitle: `${recommendedChannel.name} 전문 채널`,
+              path: recommendedChannel.path,
+              iconText: '✨',
+              runeSymbol: 'ᛟ',
+              runeName: recommendedChannel.shortName,
+              color: recommendedChannel.color,
+              glowColor: recommendedChannel.color,
+              description: recommendedChannel.tagline,
+              actionLabel: `${recommendedChannel.shortName} 채널 입장`,
+              keywords: [],
+            });
+          }}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-2xs ${recommendedChannel.badgeClass} ${recommendedChannel.hoverClass} active:scale-95`}
+          title={`클릭 시 [${recommendedChannel.name}] LucKey 채널로 입장합니다.`}
         >
           <RecChannelIcon size={13} className="shrink-0" />
-          <span>{recommendedChannel.shortName} 채널</span>
-          {isCurrentChannelActive ? (
-            <span className="flex items-center gap-0.5 text-[10px] font-normal text-emerald-600 dark:text-emerald-400">
-              <Check size={11} />
-              <span>활성 중</span>
-            </span>
-          ) : (
-            <span className="text-[10px] opacity-75 font-normal">전환 ➔</span>
-          )}
+          <span>{recommendedChannel.shortName} 채널 입장</span>
+          <span className="text-[10px] opacity-75 font-normal">➔</span>
         </button>
 
         {/* 보조 추천 채널이 있고 현재 채널과 다를 경우 추가 제공 */}
         {secondaryChannel && secondaryChannel.id !== recommendedChannel.id && (
           <button
             type="button"
-            onClick={() => onSwitchChannel([secondaryChannel.id], false, secondaryChannel.name)}
+            onClick={() => {
+              handleLeapToFeature({
+                id: secondaryChannel.id,
+                name: secondaryChannel.name,
+                shortName: secondaryChannel.shortName,
+                featureTitle: `${secondaryChannel.name} 전문 채널`,
+                path: secondaryChannel.path,
+                iconText: '✨',
+                runeSymbol: 'ᛟ',
+                runeName: secondaryChannel.shortName,
+                color: secondaryChannel.color,
+                glowColor: secondaryChannel.color,
+                description: secondaryChannel.tagline,
+                actionLabel: `${secondaryChannel.shortName} 채널 입장`,
+                keywords: [],
+              });
+            }}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer opacity-90 hover:opacity-100 ${secondaryChannel.badgeClass} ${secondaryChannel.hoverClass} active:scale-95`}
-            title={`[${secondaryChannel.name}] 채널로 전환`}
+            title={`[${secondaryChannel.name}] LucKey 채널로 입장`}
           >
             <span>{secondaryChannel.shortName} 채널</span>
-            <span className="text-[10px] opacity-60">전환</span>
+            <span className="text-[10px] opacity-60">입장 ➔</span>
           </button>
         )}
 
