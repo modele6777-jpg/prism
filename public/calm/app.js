@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const heroBtnChat = document.getElementById('hero-btn-chat');
   if (heroBtnChat) {
     heroBtnChat.addEventListener('click', () => {
-      switchTab('tab-chat');
+      askLucyWithText('루시야, 마음이 불안하고 초조한데 나에게 맞는 따뜻한 위로와 Key 마음약방 연습을 추천해 줘.');
     });
   }
 
@@ -185,6 +185,24 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function askLucyWithText(text) {
+    try {
+      sessionStorage.setItem('lucy_injected_auto_send', text);
+      sessionStorage.setItem('lucy_injected_input_draft', text);
+    } catch (_) {}
+
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({
+        type: 'NAVIGATE_LUCKEY',
+        path: '/chat',
+        text: text
+      }, '*');
+    } else {
+      window.location.href = '/chat';
+    }
+  }
+  window.askLucyWithText = askLucyWithText;
+
   if (btnSyncPractice) {
     btnSyncPractice.addEventListener('click', () => {
       window.startPractice(currentSyncedExIdx);
@@ -193,11 +211,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnSyncAsk) {
     btnSyncAsk.addEventListener('click', () => {
-      const page = companionPageInput.value;
-      const text = `책 ${page}쪽에 나오는 '${syncTitleText.textContent}'에 대해 더 깊이 설명해 주시고, 실제 일상에서 불안할 때 어떻게 써먹을 수 있는지 알려주세요.`;
-      switchTab('tab-chat');
-      userInput.value = text;
-      chatForm.dispatchEvent(new Event('submit'));
+      const exerciseTitle = syncTitleText ? syncTitleText.textContent : '불안 치유 연습';
+      const text = `루시야, Key 마음약방의 '${exerciseTitle}'에 대해 질문하고 싶어. 실제 일상에서 불안하거나 마음이 초조할 때 어떻게 실천하면 효과가 좋은지 따뜻하게 안내해 줘.`;
+      askLucyWithText(text);
     });
   }
 
@@ -1316,7 +1332,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span>🎯 다시 실천하기</span>
               </button>
               <button class="wb-btn-action consult" onclick="window.askDrZAboutJournal(${r.id})">
-                <span>💬 Dr. Z에게 상담하기</span>
+                <span>💬 루시에게 질문하기</span>
               </button>
               <button class="wb-btn-action del" onclick="window.deleteJournalRecord(${r.id})">
                 <span>🗑️ 삭제</span>
@@ -1342,7 +1358,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderWorkbook();
   };
 
-  // Dr. Z에게 워크북 기록으로 질문하기
+  // 루시에게 워크북 실천 기록으로 질문하기
   window.askDrZAboutJournal = function(recordId) {
     const records = JSON.parse(localStorage.getItem('calm_journal_records') || '[]');
     const r = records.find(item => item.id === recordId);
@@ -1355,12 +1371,19 @@ document.addEventListener('DOMContentLoaded', () => {
         .join(', ');
     }
 
-    switchTab('tab-chat');
-    if (userInput) {
-      userInput.value = `책 ${r.page}쪽 '연습 ${r.exerciseIdx}. ${r.title}'을 실천하고 다음과 같이 기록했습니다:\n\n[실천 내용: ${ansSummary}]\n\n이 기록을 임상심리학적 관점에서 분석해주고, 불안에 대처하는 저에게 건네줄 수 있는 따뜻한 피드백과 조언을 부탁드립니다.`;
-      userInput.style.height = 'auto';
-      userInput.style.height = Math.min(userInput.scrollHeight, 120) + 'px';
-      chatForm.dispatchEvent(new Event('submit'));
+    const text = `Key 마음약방에서 '${r.title}'을 실천하고 다음과 같이 기록했어:\n\n[실천 내용: ${ansSummary}]\n\n이 기록을 바탕으로 루시의 다정한 통찰과 함께 불안을 이겨낼 수 있는 피드백과 조언을 들려줘.`;
+    if (typeof askLucyWithText === 'function') {
+      askLucyWithText(text);
+    } else {
+      try {
+        sessionStorage.setItem('lucy_injected_auto_send', text);
+        sessionStorage.setItem('lucy_injected_input_draft', text);
+      } catch (_) {}
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'NAVIGATE_LUCKEY', path: '/chat', text: text }, '*');
+      } else {
+        window.location.href = '/chat';
+      }
     }
   };
 

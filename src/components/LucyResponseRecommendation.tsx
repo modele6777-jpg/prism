@@ -203,19 +203,22 @@ const FEATURE_APPS: FeatureAppMeta[] = [
     keywords: ['일기', '회고', '마감', '하루', '밤', '서재', '기록', '정리', '마무리', '취침', '오늘'],
   },
   {
-    id: 'orb',
-    name: 'LUCKEY (LUCY KEY)',
-    shortName: 'LucKey',
-    featureTitle: '대화 Key 응축 & 직관 신탁',
-    path: '/orb',
+    id: 'key',
+    name: 'KEY 마음약방',
+    shortName: 'Key 실천 연습',
+    featureTitle: '40가지 불안 치유 연습실 & Dr. Z 임상 솔루션',
+    path: '/key',
     iconText: '🔑',
     runeSymbol: 'ᛟ',
     runeName: 'Othala',
     color: '#38bdf8',
     glowColor: 'rgba(56, 189, 248, 0.9)',
-    description: '루시와의 대화 속 3대 핵심 키포인트를 응축하고 직관적 해답을 비춥니다',
-    actionLabel: 'LucKey 도약',
-    keywords: ['즉문즉답', '루키', '럭키', 'luckey', '키', 'key', '오브', '신탁', '결정', '궁금', '답', '예스', '노', '직관', '오라클', '요약', '키포인트'],
+    description: '불안, 걱정, 공황, 신체 긴장을 즉각 다스리는 40가지 수용전념치료(ACT) 행동 실천 연습실',
+    actionLabel: 'Key 실천 연습실 도약',
+    keywords: [
+      '불안', '걱정', '공황', '초조', '두려움', '스트레스', '긴장', '마음약방', '처방', '연습',
+      '실천', '키', 'key', '저커먼', '인지치료', 'act', '호흡연습', '신체감각', '마음챙김', '접지', '탈융합'
+    ],
   },
 ];
 

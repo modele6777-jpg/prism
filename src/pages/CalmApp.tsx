@@ -14,10 +14,16 @@ export default function CalmApp() {
     const prevTitle = document.title;
     document.title = "Key - 40대 불안 치유 연습 & Dr.Z RAG";
 
-    // Forward any pending prism toss payload to calm iframe
+    // Forward any pending prism toss payload or navigation to Lucy
     const handleMessage = (e: MessageEvent) => {
       if (e.data && e.data.type === "NAVIGATE_LUCKEY") {
-        navigate("/");
+        if (e.data.text) {
+          try {
+            sessionStorage.setItem('lucy_injected_auto_send', e.data.text);
+            sessionStorage.setItem('lucy_injected_input_draft', e.data.text);
+          } catch (_) {}
+        }
+        navigate(e.data.path || "/chat");
       }
     };
     window.addEventListener("message", handleMessage);
