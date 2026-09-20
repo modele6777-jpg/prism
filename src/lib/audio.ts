@@ -318,7 +318,7 @@ export async function safeDecodeAudioData(
  * This is 100% immune to browser autoplay restrictions that block HTMLAudioElement
  * when played asynchronously after a fetch request.
  */
-export async function playCompressedAudio(base64: string, playbackRate: number = 1.0): Promise<void> {
+export async function playCompressedAudio(base64: string, playbackRate: number = 1.0, detune: number = 0): Promise<void> {
   try {
     // Stop any existing raw PCM source
     stopRawPCM();
@@ -357,6 +357,13 @@ export async function playCompressedAudio(base64: string, playbackRate: number =
     if (playbackRate && playbackRate !== 1.0) {
       try {
         source.playbackRate.value = playbackRate;
+      } catch (_) {}
+    }
+    if (detune && detune !== 0) {
+      try {
+        if ('detune' in source) {
+          source.detune.value = detune;
+        }
       } catch (_) {}
     }
 
@@ -616,12 +623,14 @@ export function stopTTSPlayback(): void {
 }
 
 export type TTSEmotionType =
-  | 'joy'        // 기쁨, 축하, 설렘, 활기
-  | 'calm'       // 평온, 안식, 이완, 치유
-  | 'emphasis'   // 강조, 결의, 확신, 통찰
-  | 'sadness'    // 슬픔, 위로, 애도, 비움
-  | 'mystic'     // 신비, 오라클, 우주, 영혼
-  | 'vitality'   // 생체활력, 역동, 에너지
+  | 'joy'        // 기쁨, 축하, 설렘, 활기 (밝고 살짝 빠른 톤)
+  | 'calm'       // 평온, 이완, 호흡, 명상, 방하착 (차분하고 부드러운 느린 템포)
+  | 'comfort'    // 위로, 공감, 다독임, 따뜻함, 치유 (온화하고 포근하며 여유로운 톤)
+  | 'emphasis'   // 강조, 결의, 확신, 통찰, 1원칙 전략 (명료하고 당찬 표준 템포)
+  | 'sadness'    // 슬픔, 눈물, 애도, 비움
+  | 'mystic'     // 신비, 오라클, 우주, 영혼, 타로, 사주 (깊이 있고 신비로운 여운)
+  | 'vitality'   // 생체활력, 역동, 에너지, 실천 (생기발랄하고 역동적인 템포)
+  | 'friendly'   // 다정한 친구, 친근한 일상 대화
   | 'neutral';   // 기본, 중립
 
 export interface TTSEmotionProfile {
@@ -636,27 +645,35 @@ export interface TTSEmotionProfile {
 export const TTS_EMOTION_PROFILES: Record<TTSEmotionType, TTSEmotionProfile> = {
   joy: {
     emotion: 'joy',
-    playbackRate: 1.07,
-    detune: 120,
-    pitchHzOffset: 2,
+    playbackRate: 1.05,
+    detune: 90,
+    pitchHzOffset: 1.5,
     preservesPitch: true,
     label: '기쁨과 환희',
   },
   calm: {
     emotion: 'calm',
-    playbackRate: 0.93,
-    detune: -60,
-    pitchHzOffset: -1,
+    playbackRate: 0.92,
+    detune: -50,
+    pitchHzOffset: -1.2,
     preservesPitch: true,
-    label: '평온과 안식',
+    label: '평온과 이완',
+  },
+  comfort: {
+    emotion: 'comfort',
+    playbackRate: 0.93,
+    detune: -40,
+    pitchHzOffset: -1.0,
+    preservesPitch: true,
+    label: '다정한 위로',
   },
   emphasis: {
     emotion: 'emphasis',
-    playbackRate: 0.97,
-    detune: -30,
-    pitchHzOffset: 0,
+    playbackRate: 1.02,
+    detune: 30,
+    pitchHzOffset: 0.8,
     preservesPitch: true,
-    label: '강조와 확신',
+    label: '확신과 결단',
   },
   sadness: {
     emotion: 'sadness',
@@ -668,19 +685,27 @@ export const TTS_EMOTION_PROFILES: Record<TTSEmotionType, TTSEmotionProfile> = {
   },
   mystic: {
     emotion: 'mystic',
-    playbackRate: 0.92,
-    detune: 30,
-    pitchHzOffset: 1,
+    playbackRate: 0.94,
+    detune: -20,
+    pitchHzOffset: -0.8,
     preservesPitch: true,
-    label: '신비와 오라클',
+    label: '신비와 통찰',
   },
   vitality: {
     emotion: 'vitality',
-    playbackRate: 1.05,
+    playbackRate: 1.06,
     detune: 80,
-    pitchHzOffset: 2,
+    pitchHzOffset: 1.2,
     preservesPitch: true,
     label: '활력과 생기',
+  },
+  friendly: {
+    emotion: 'friendly',
+    playbackRate: 1.00,
+    detune: 15,
+    pitchHzOffset: 0.4,
+    preservesPitch: true,
+    label: '친근한 대화',
   },
   neutral: {
     emotion: 'neutral',
@@ -701,75 +726,136 @@ export function analyzeTextEmotion(text: string, explicitEmotion?: string): TTSE
     if (norm.includes('joy') || norm.includes('기쁨') || norm.includes('환희') || norm.includes('행복') || norm.includes('축하') || norm.includes('happy')) {
       return TTS_EMOTION_PROFILES.joy;
     }
-    if (norm.includes('calm') || norm.includes('평온') || norm.includes('안식') || norm.includes('이완') || norm.includes('치유') || norm.includes('peace') || norm.includes('relax')) {
+    if (norm.includes('comfort') || norm.includes('위로') || norm.includes('공감') || norm.includes('따뜻') || norm.includes('토닥') || norm.includes('empathy')) {
+      return TTS_EMOTION_PROFILES.comfort;
+    }
+    if (norm.includes('calm') || norm.includes('평온') || norm.includes('안식') || norm.includes('이완') || norm.includes('치유') || norm.includes('호흡') || norm.includes('peace') || norm.includes('relax')) {
       return TTS_EMOTION_PROFILES.calm;
     }
-    if (norm.includes('emphasis') || norm.includes('강조') || norm.includes('확신') || norm.includes('결단') || norm.includes('focus') || norm.includes('insight')) {
+    if (norm.includes('emphasis') || norm.includes('강조') || norm.includes('확신') || norm.includes('결단') || norm.includes('1원칙') || norm.includes('전략') || norm.includes('focus') || norm.includes('insight')) {
       return TTS_EMOTION_PROFILES.emphasis;
     }
-    if (norm.includes('sad') || norm.includes('슬픔') || norm.includes('위로') || norm.includes('비움') || norm.includes('grief')) {
+    if (norm.includes('sad') || norm.includes('슬픔') || norm.includes('비움') || norm.includes('grief')) {
       return TTS_EMOTION_PROFILES.sadness;
     }
-    if (norm.includes('mystic') || norm.includes('신비') || norm.includes('오라클') || norm.includes('우주') || norm.includes('oracle') || norm.includes('tarot')) {
+    if (norm.includes('mystic') || norm.includes('신비') || norm.includes('오라클') || norm.includes('우주') || norm.includes('타로') || norm.includes('사주') || norm.includes('oracle') || norm.includes('tarot')) {
       return TTS_EMOTION_PROFILES.mystic;
     }
     if (norm.includes('vitality') || norm.includes('활력') || norm.includes('생기') || norm.includes('에너지') || norm.includes('energy')) {
       return TTS_EMOTION_PROFILES.vitality;
+    }
+    if (norm.includes('friendly') || norm.includes('다정') || norm.includes('친근') || norm.includes('친구') || norm.includes('반말')) {
+      return TTS_EMOTION_PROFILES.friendly;
     }
     if (norm in TTS_EMOTION_PROFILES) {
       return TTS_EMOTION_PROFILES[norm as TTSEmotionType];
     }
   }
 
+  return detectLucyResponseEmotion(text);
+}
+
+/**
+ * 💡 루시(Lucy) 답변 텍스트의 감정과 맥락을 정밀 분석하여
+ * 가장 알맞은 목소리 톤(pitch)과 속도(rate)를 자동 도출합니다.
+ */
+export function detectLucyResponseEmotion(text: string, currentChannel?: string): TTSEmotionProfile {
   if (!text || typeof text !== 'string') {
-    return TTS_EMOTION_PROFILES.neutral;
+    return TTS_EMOTION_PROFILES.friendly;
+  }
+
+  // 1. 명시적 감정 태그 검사: [EMOTION: xxx] 또는 {EMOTION: xxx}
+  const explicitMatch = text.match(/[\[{]EMOTION:\s*([a-zA-Z가-힣_\s]+)[\]}]/i);
+  if (explicitMatch) {
+    return analyzeTextEmotion('', explicitMatch[1]);
   }
 
   const clean = text.toLowerCase();
 
-  let joyScore = 0;
+  let comfortScore = 0;
   let calmScore = 0;
+  let joyScore = 0;
   let emphasisScore = 0;
-  let sadnessScore = 0;
   let mysticScore = 0;
   let vitalityScore = 0;
+  let friendlyScore = 1; // 기본 친근한 다정함 점수
 
-  const joyKeywords = ['기쁨', '행복', '환희', '축하', '설렘', '즐거', '반가', '웃음', '신나', '빛나', '희망', '감사', '사랑', '대단', '좋아', '멋진', '축복', '환대'];
-  const calmKeywords = ['평온', '안식', '이완', '고요', '쉼', '휴식', '편안', '잠시', '호흡', '부드럽', '따뜻', '차분', '비우', '흘러', '정화', '다정', '안아', '안정', '느슨'];
-  const emphasisKeywords = ['중요', '반드시', '기억', '확신', '결단', '핵심', '명심', '결코', '도전', '의지', '성공', '달성', '도약', '강력', '성찰', '통찰', '진실', '분명', '결정'];
-  const sadnessKeywords = ['슬픔', '눈물', '아픔', '상처', '외로', '지친', '힘든', '버거운', '애도', '위로', '고단', '그리움', '상실'];
-  const mysticKeywords = ['운명', '우주', '오라클', '타로', '별자리', '영혼', '직관', '신비', '차원', '공명', '시공간', '비밀', '흐름', '기운', '성좌'];
-  const vitalityKeywords = ['활력', '에너지', '생기', '생체', '역동', '운동', '스트레칭', '기운', '움직', '파워', '깨어나', '시작', '실행', '리듬', '생명', '건강'];
+  // A. 깊은 위로, 공감, 정화 (Bluebird 및 감정 케어)
+  const comfortKeywords = [
+    '힘들었', '속상', '마음 아파', '괜찮아', '토닥', '안아줄', '위로', '외로', '눈물', '울어도',
+    '지쳤', '버거', '상처', '마음고생', '안쓰러', '따뜻한 온기', '내가 곁에', '함께할게', '호오포노포노',
+    '미안해', '사랑해', '고마워', '용서'
+  ];
+  comfortKeywords.forEach(k => { if (clean.includes(k)) comfortScore += 2; });
 
-  joyKeywords.forEach(k => { if (clean.includes(k)) joyScore++; });
-  calmKeywords.forEach(k => { if (clean.includes(k)) calmScore++; });
-  emphasisKeywords.forEach(k => { if (clean.includes(k)) emphasisScore++; });
-  sadnessKeywords.forEach(k => { if (clean.includes(k)) sadnessScore++; });
-  mysticKeywords.forEach(k => { if (clean.includes(k)) mysticScore++; });
-  vitalityKeywords.forEach(k => { if (clean.includes(k)) vitalityScore++; });
+  // B. 호흡, 명상, 신체 이완, 평온, 방하착 (Aura 및 Key 신체 감각 연습)
+  const calmKeywords = [
+    '호흡', '숨을', '내쉬', '들이쉬', '풍선 호흡', '복식호흡', '방하착', '내려놓', '이완',
+    '눈을 감', '천천히', '고요', '대지의 중심', '발바닥', '보디 스캔', '바디 스캔', '쉼표',
+    '근육을 풀', '어깨를 낮', '편안하게 머물', '감각에 집중', '오감'
+  ];
+  calmKeywords.forEach(k => { if (clean.includes(k)) calmScore += 2; });
 
-  if (text.includes('!')) {
-    joyScore += 0.5;
-    vitalityScore += 0.5;
-    emphasisScore += 0.5;
+  // C. 축하, 기쁨, 칭찬, 환희 (반가움, 설렘, 성취)
+  const joyKeywords = [
+    '축하', '기뻐', '환희', '대단해', '멋져', '최고야', '신나', '반가워', '웃음', '설레',
+    '좋은 소식', '뿌듯', '자랑스러', '와아', '대박', '행복', '빛나', '짝짝', '화이팅'
+  ];
+  joyKeywords.forEach(k => { if (clean.includes(k)) joyScore += 2; });
+
+  // D. 1원칙, 전략, 확신, 결단, 우선순위 (Orange 채널 및 실행 지침)
+  const emphasisKeywords = [
+    '1원칙', '전략', '핵심', '결단', '우선순위', '목표', '분석', '확신', '실행해', '도전',
+    '명심', '선택과 집중', '로드맵', '원인 규명', '방향성', '행동해야', '확실히'
+  ];
+  emphasisKeywords.forEach(k => { if (clean.includes(k)) emphasisScore += 2; });
+
+  // E. 신비, 타로, 사주, 오라클, 영혼 (Trinity 채널 및 운명 통찰)
+  const mysticKeywords = [
+    '타로', '사주', '대운', '운명', '오라클', '우주', '동시성', '원국', '카드', '카르마',
+    '별자리', '무의식', '신비', '영혼', '시공간', '차원', '성좌', '점괘'
+  ];
+  mysticKeywords.forEach(k => { if (clean.includes(k)) mysticScore += 2; });
+
+  // F. 활력, 운동, 생체 에너지
+  const vitalityKeywords = [
+    '활력', '에너지', '생기', '움직여', '스트레칭', '달리기', '파워', '기운 내', '기지개'
+  ];
+  vitalityKeywords.forEach(k => { if (clean.includes(k)) vitalityScore += 2; });
+
+  // 감탄부호 및 이모지 보너스
+  if (text.includes('!!') || text.includes('! ✨') || text.includes('🎉') || text.includes('👏')) {
+    joyScore += 1.5;
+    vitalityScore += 1;
+  }
+
+  // 2. 현재 대화 채널과의 연속성 가중치
+  if (currentChannel) {
+    const ch = currentChannel.toLowerCase();
+    if (ch.includes('aura') || ch.includes('heal')) calmScore += 1.5;
+    else if (ch.includes('bluebird')) comfortScore += 1.5;
+    else if (ch.includes('trinity')) mysticScore += 1.5;
+    else if (ch.includes('orange')) emphasisScore += 1.5;
+    else if (ch.includes('muse')) joyScore += 1.0;
   }
 
   const scores = [
-    { type: 'joy' as TTSEmotionType, score: joyScore },
+    { type: 'comfort' as TTSEmotionType, score: comfortScore },
     { type: 'calm' as TTSEmotionType, score: calmScore },
+    { type: 'joy' as TTSEmotionType, score: joyScore },
     { type: 'emphasis' as TTSEmotionType, score: emphasisScore },
-    { type: 'sadness' as TTSEmotionType, score: sadnessScore },
     { type: 'mystic' as TTSEmotionType, score: mysticScore },
     { type: 'vitality' as TTSEmotionType, score: vitalityScore },
+    { type: 'friendly' as TTSEmotionType, score: friendlyScore },
   ];
 
   scores.sort((a, b) => b.score - a.score);
 
-  if (scores[0].score > 0) {
+  if (scores[0].score >= 2) {
     return TTS_EMOTION_PROFILES[scores[0].type];
   }
 
-  return TTS_EMOTION_PROFILES.neutral;
+  return TTS_EMOTION_PROFILES.friendly;
 }
 
 export function isMobileDevice(): boolean {
@@ -836,7 +922,7 @@ export async function playTTSAudio(
     if (!isCompressed && encoding === 'pcm') {
       await playRawPCM(base64, sampleRate);
     } else {
-      await playCompressedAudio(base64, profile.playbackRate || 1.0);
+      await playCompressedAudio(base64, profile.playbackRate || 1.0, profile.detune || 0);
     }
     if (activePlaybackId === ttsPlaybackId && !isSequenceChunk) {
       ttsShouldBePlaying = false;
@@ -872,8 +958,8 @@ export async function playTTSAudio(
   audio.src = ttsBlobUrl;
 
   try {
-    audio.playbackRate = 1.0;
-    audio.defaultPlaybackRate = 1.0;
+    audio.playbackRate = profile.playbackRate || 1.0;
+    audio.defaultPlaybackRate = profile.playbackRate || 1.0;
     if ('preservesPitch' in audio) {
       (audio as any).preservesPitch = true;
     }

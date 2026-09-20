@@ -1291,11 +1291,11 @@ ${content}
 
   // TTS - 고품질 Edge Neural TTS + Google TTS 다중 엔진 통합 엔드포인트 (/api/ai/tts 및 /api/tts 모두 지원)
   const commonTTSHandler = async (req: express.Request, res: express.Response) => {
-    const { text, voice = 'Kore', emotion } = req.body;
+    const { text, voice = 'Kore', emotion, rate, pitch } = req.body;
 
     try {
       const { handleTTS } = await import('./server/api-lib/ttsHandler');
-      const result = await handleTTS({ text, voice, emotion });
+      const result = await handleTTS({ text, voice, emotion, rate, pitch });
       const mime = result.encoding === "pcm" ? "audio/pcm" : "audio/mp3";
       const audioDataUrl = `data:${mime};base64,${result.audioContent}`;
       return res.status(200).json({

@@ -86,13 +86,13 @@ app.post([/.*\/chat\/completions$/, "/api/openai/v1/chat/completions", "/openai/
 import { handleTTS } from "../server/api-lib/ttsHandler";
 
 const handleTTSRequest = async (req: any, res: any) => {
-  const { text, voice = "Kore", emotion } = req.body || {};
+  const { text, voice = "Kore", emotion, rate, pitch } = req.body;
   if (!text) {
     return res.status(400).json({ error: "Empty speech text" });
   }
 
   try {
-    const result = await handleTTS({ text, voice, emotion });
+    const result = await handleTTS({ text, voice, emotion, rate, pitch });
     const mime = result.encoding === "pcm" ? "audio/pcm" : "audio/mp3";
     const audioDataUrl = `data:${mime};base64,${result.audioContent}`;
     return res.status(200).json({

@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useApp, PersonaType } from '@/contexts/AppContext';
 import { useLocation } from 'wouter';
-import { playTTS, playTTSInChunks, playQAndATTS, stopTTS, useTTSActive, subscribeTTS, prefetchTTS, normalizeTextForSpeech } from '@/utils/tts';
+import { playTTS, playTTSInChunks, playQAndATTS, stopTTS, useTTSActive, subscribeTTS, prefetchTTS, normalizeTextForSpeech, detectLucyResponseEmotion } from '@/utils/tts';
 import { unlockAudioPlayback, primeTTSAudioElement } from '@/lib/audio';
 import { calculateDetailedSaju } from '@/lib/sajuAnalysis';
 import { getLocalDateKey } from '@/lib/rebibleStorage';
@@ -721,7 +721,8 @@ export default function LucyStandalonePage() {
         if (cleanAnswer) {
           stopTTS();
           setPlayingMsgId(lastMsg.id);
-          playTTSInChunks(cleanAnswer, 'Kore', 180, '다정').catch((err) => {
+          const detected = detectLucyResponseEmotion(cleanAnswer);
+          playTTSInChunks(cleanAnswer, 'Kore', 180, detected.emotion).catch((err) => {
             console.warn('[Auto-TTS Fallback] Play error:', err);
           });
         }
@@ -1024,7 +1025,8 @@ export default function LucyStandalonePage() {
                 setPlayingMsgId(replyMsgId);
               }
               stopTTS();
-              await playTTSInChunks(cleanAnswer, 'Kore', 180, '다정');
+              const detected = detectLucyResponseEmotion(cleanAnswer, isSingle ? channels[0] : undefined);
+              await playTTSInChunks(cleanAnswer, 'Kore', 180, detected.emotion);
             }
           } catch (ttsErr) {
             console.warn('[Auto-TTS] Immediate voice playback error:', ttsErr);
@@ -1142,7 +1144,7 @@ export default function LucyStandalonePage() {
     setTimeout(() => setCopiedId(null), 1500);
   };
 
-  const handleVoicePlay = (id: string, text: string, voice: string = 'Kore') => {
+  const handleVoicePlay = (id: string, text: string, voice: string = 'Kore', channelHint?: string) => {
     const clean = normalizeTextForSpeech(text);
     if (playingMsgId === id && (ttsInfo.isSpeaking || ttsInfo.isLoading)) {
       stopTTS();
@@ -1150,7 +1152,8 @@ export default function LucyStandalonePage() {
     } else {
       stopTTS();
       setPlayingMsgId(id);
-      playTTSInChunks(clean, voice, 350, '다정');
+      const detected = detectLucyResponseEmotion(clean, channelHint);
+      playTTSInChunks(clean, voice, 350, detected.emotion);
     }
   };
 
@@ -1503,8 +1506,8 @@ export default function LucyStandalonePage() {
                       {copiedId === msgId ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                     </button>
                     <button
-                      onClick={() => handleVoicePlay(msgId, textContent, isUser ? 'Fenrir' : 'Kore')}
-                      className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                      onClick={() => handleVoicePlay(msgId, textContent, isUser ? 'Fenrir' : 'Kore', msgModeInfo.channels?.[0])}
+                      className={`p-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 ${
                         playingMsgId === msgId && (ttsInfo.isSpeaking || ttsInfo.isLoading)
                           ? 'text-amber-600 bg-amber-50'
                           : 'text-slate-400 hover:text-amber-600 hover:bg-slate-100'
@@ -1514,7 +1517,10 @@ export default function LucyStandalonePage() {
                           ? "음성 준비 중..."
                           : playingMsgId === msgId && ttsInfo.isSpeaking
                           ? "음성 멈추기"
-                          : "음성으로 듣기"
+                          : (() => {
+                              const detected = !isUser ? detectLucyResponseEmotion(textContent, msgModeInfo.channels?.[0]) : null;
+                              return detected ? `음성으로 듣기 (${detected.label} • 톤/속도 조절)` : "음성으로 듣기";
+                            })()
                       }
                     >
                       {playingMsgId === msgId && ttsInfo.isLoading ? (
@@ -1523,6 +1529,11 @@ export default function LucyStandalonePage() {
                         <VolumeX size={14} className="animate-pulse" />
                       ) : (
                         <Volume2 size={14} />
+                      )}
+                      {playingMsgId === msgId && ttsInfo.isSpeaking && !isUser && (
+                        <span className="text-[10px] font-semibold text-amber-700 bg-amber-200/80 px-1.5 py-0.5 rounded-full animate-pulse">
+                          {detectLucyResponseEmotion(textContent, msgModeInfo.channels?.[0]).label}
+                        </span>
                       )}
                     </button>
                   </div>

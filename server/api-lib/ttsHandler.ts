@@ -19,6 +19,8 @@ export interface TTSHandlerOptions {
   text: string;
   voice?: string;
   emotion?: string;
+  rate?: string;
+  pitch?: string;
 }
 
 export interface TTSHandlerResult {
@@ -28,7 +30,7 @@ export interface TTSHandlerResult {
 }
 
 export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerResult> {
-  const { text, voice = "Kore", emotion } = options;
+  const { text, voice = "Kore", emotion, rate: customRate, pitch: customPitch } = options;
   if (!text) {
     throw new Error("Empty speech text");
   }
@@ -39,7 +41,7 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
   }
 
   const resolvedVoiceKey = voice || "Kore";
-  const cacheKey = `${resolvedVoiceKey}_${emotion || ""}_${cleanText}`;
+  const cacheKey = `${resolvedVoiceKey}_${emotion || ""}_${customRate || ""}_${customPitch || ""}_${cleanText}`;
 
   // 1. Check in-memory cache
   const cached = ttsServerCache.get(cacheKey);
@@ -78,21 +80,37 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
 
     if (emotion) {
       const emo = String(emotion).trim().toLowerCase();
-      const slowHealingList = ["공감", "위로", "치유", "차분", "평온", "슬픔", "따뜻", "empathy", "comfort", "healing", "calm", "peace", "sadness", "sad", "warm"];
-      const brightJoyList = ["기쁨", "응원", "설렘", "위트", "밝음", "재미", "신남", "joy", "cheer", "cheering", "excited", "witty", "happy", "fun", "bright"];
-      const mysteryTarotList = ["신비", "진지", "경고", "몽환", "mystery", "serious", "warning", "dreamy", "mystic"];
+      const slowHealingList = ["공감", "위로", "치유", "차분", "평온", "슬픔", "따뜻", "이완", "호흡", "안식", "comfort", "healing", "calm", "peace", "sadness", "sad", "warm", "relax"];
+      const brightJoyList = ["기쁨", "응원", "설렘", "위트", "밝음", "재미", "신남", "환희", "행복", "축하", "joy", "cheer", "cheering", "excited", "witty", "happy", "fun", "bright"];
+      const mysteryTarotList = ["신비", "진지", "경고", "몽환", "오라클", "타로", "운명", "사주", "mystery", "serious", "warning", "dreamy", "mystic", "oracle", "tarot"];
+      const emphasisList = ["확신", "결단", "강조", "1원칙", "전략", "목표", "실행", "emphasis", "focus", "strategy", "confidence"];
+      const vitalityList = ["활력", "생기", "에너지", "역동", "vitality", "energy", "active"];
+      const friendlyList = ["다정", "친근", "친구", "friendly", "natural"];
 
       if (slowHealingList.some((item) => emo.includes(item))) {
-        rate = "-5%";
-        pitch = voiceName.includes("SunHi") ? "-1Hz" : "-1.5Hz";
+        rate = "-7%";
+        pitch = voiceName.includes("SunHi") ? "-1.2Hz" : "-1.5Hz";
       } else if (brightJoyList.some((item) => emo.includes(item))) {
-        rate = "+2%";
-        pitch = "+1Hz";
+        rate = "+4%";
+        pitch = voiceName.includes("SunHi") ? "+1.5Hz" : "+1.8Hz";
       } else if (mysteryTarotList.some((item) => emo.includes(item))) {
-        rate = "-4%";
-        pitch = "-1Hz";
+        rate = "-5%";
+        pitch = "-0.8Hz";
+      } else if (emphasisList.some((item) => emo.includes(item))) {
+        rate = "+2%";
+        pitch = "+0.8Hz";
+      } else if (vitalityList.some((item) => emo.includes(item))) {
+        rate = "+5%";
+        pitch = "+1.2Hz";
+      } else if (friendlyList.some((item) => emo.includes(item))) {
+        rate = "+0%";
+        pitch = "+0.4Hz";
       }
     }
+
+    // Explicit rate/pitch parameters override preset values
+    if (customRate) rate = customRate;
+    if (customPitch) pitch = customPitch;
 
     const generateWithEdgeTTS = async (textToSpeak: string): Promise<Buffer | null> => {
       // Strip any stray emojis or non-speech symbols that might disrupt EdgeTTS websocket
