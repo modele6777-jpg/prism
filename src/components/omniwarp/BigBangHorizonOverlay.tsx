@@ -16,17 +16,17 @@ export interface BigBangHorizonOverlayProps {
 export const GLOBAL_HORIZON_SCOPE = {
   name: '전체 7대 앱 우주',
   wh: {
-    title: '☀️ 트리니티 오라클 운명 나침반',
+    title: '트리니티 오라클 운명 나침반',
     desc: '좌뇌 · 이성: 사주와 타로로 마주하는 운명과 무의식 계시',
     path: '/trinity',
   },
   mh: {
-    title: '🪞 프리즘 홈',
+    title: '프리즘 홈',
     desc: '유리 테마: 모든 여정과 차원의 시초 허브로 귀환',
     path: '/',
   },
   bh: {
-    title: '🕳️ 뮤즈 예술처방 심미 공명',
+    title: '뮤즈 예술처방 심미 공명',
     desc: '우뇌 · 감성: 명화·명시·명곡 삼위일체 예술적 카타르시스',
     path: '/muse',
   },
@@ -50,7 +50,7 @@ export function BigBangHorizonOverlay({
 
   const whData = subMenus
     ? {
-        title: `☀️ ${subMenus.whitehole.name}`,
+        title: subMenus.whitehole.name,
         desc: subMenus.whitehole.description,
         path: subMenus.whitehole.path,
       }
@@ -58,7 +58,7 @@ export function BigBangHorizonOverlay({
 
   const mhData = subMenus
     ? {
-        title: `🪞 ${subMenus.mirrorhole.name}`,
+        title: subMenus.mirrorhole.name,
         desc: subMenus.mirrorhole.description,
         path: subMenus.mirrorhole.path,
       }
@@ -66,7 +66,7 @@ export function BigBangHorizonOverlay({
 
   const bhData = subMenus
     ? {
-        title: `🕳️ ${subMenus.blackhole.name}`,
+        title: subMenus.blackhole.name,
         desc: subMenus.blackhole.description,
         path: subMenus.blackhole.path,
       }

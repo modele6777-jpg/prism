@@ -23,6 +23,7 @@ import { peekPendingSelection, savePendingSelection, clearPendingSelection, getL
 import { sendPrismToss } from '@/lib/prismToss';
 import { tossSelectionToMenu } from '@/lib/selectionContextRecommender';
 import { BigBangCircularMeter } from './BigBangCircularMeter';
+import { PrismAppIcon } from './PrismAppIcon';
 
 export function BigBangButton() {
   let location = '/';
@@ -299,8 +300,8 @@ export function BigBangButton() {
         title: contextCandidate.menu.name,
         actionType: isTextToss ? 'smart_toss' : 'navigate',
         previewLabel: isTextToss
-          ? `[글자 추천 토스 · 순환 ${contextCandidate.stats.visitedCount}/${contextCandidate.stats.totalCount}] ${contextCandidate.menu.emoji} ${contextCandidate.menu.name}`
-          : `[맥락 추천 1위 · 순환 ${contextCandidate.stats.visitedCount}/${contextCandidate.stats.totalCount}] ${contextCandidate.menu.emoji} ${contextCandidate.menu.name}`,
+          ? `[글자 추천 토스 · 순환 ${contextCandidate.stats.visitedCount}/${contextCandidate.stats.totalCount}] ${contextCandidate.menu.name}`
+          : `[맥락 추천 1위 · 순환 ${contextCandidate.stats.visitedCount}/${contextCandidate.stats.totalCount}] ${contextCandidate.menu.name}`,
         previewDescription: contextCandidate.reason,
         destinationPath: contextCandidate.safePath,
         themeColor: contextCandidate.menu.themeColor,
@@ -716,8 +717,8 @@ export function BigBangButton() {
         : `순환 ${stats.visitedCount}/${stats.totalCount}`;
 
       const previewLabel = textToToss
-        ? `[글자 토스 · ${cycleLabel}] ${targetMenu.emoji} ${targetMenu.name}`
-        : `[맥락 추천 1위 · ${cycleLabel}] ${targetMenu.emoji} ${targetMenu.name}`;
+        ? `[글자 토스 · ${cycleLabel}] ${targetMenu.name}`
+        : `[맥락 추천 1위 · ${cycleLabel}] ${targetMenu.name}`;
 
       const previewDescription = stats.isFullCycleCompleted
         ? `${reason} (🎉 전체 7대 앱 1사이클 완주! 새로운 순환이 시작됩니다.)`
@@ -962,7 +963,12 @@ export function BigBangButton() {
                 className="absolute -top-16 left-1/2 -translate-x-1/2 pointer-events-none z-50 flex flex-col items-center whitespace-nowrap select-none"
               >
                 <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-950/90 backdrop-blur-md border border-cyan-400/50 shadow-[0_0_24px_rgba(56,189,248,0.4)]">
-                  <span className="text-base leading-none drop-shadow">{currentTarget.icon || '🌀'}</span>
+                  <PrismAppIcon
+                    nameOrId={currentTarget.id || currentTarget.destinationPath || currentTarget.name || currentTarget.title}
+                    size={18}
+                    className="shrink-0 drop-shadow"
+                    color={currentTarget.themeColor || '#38bdf8'}
+                  />
                   <span className="text-xs font-bold text-white tracking-tight">
                     {currentTarget.title || currentTarget.name}
                   </span>

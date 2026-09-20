@@ -42,11 +42,12 @@ export function PrismAppIcon({
 
   // 0. Key (마음약방)
   if (
-    normalized === 'key' ||
-    normalized === '/key' ||
-    normalized === 'calm' ||
-    normalized === '/calm' ||
+    normalized.startsWith('key') ||
+    normalized.startsWith('/key') ||
+    normalized.startsWith('calm') ||
+    normalized.startsWith('/calm') ||
     normalized.includes('열쇠') ||
+    normalized.includes('마음약방') ||
     normalized === '🔑'
   ) {
     return (
@@ -59,10 +60,9 @@ export function PrismAppIcon({
     );
   }
   if (
-    normalized === 'orb' ||
-    normalized === 'crystal' ||
-    normalized === '/orb' ||
-    normalized === 'crystalorb' ||
+    normalized.startsWith('orb') ||
+    normalized.startsWith('crystal') ||
+    normalized.startsWith('/orb') ||
     normalized.includes('오브') ||
     normalized === '🔮'
   ) {
@@ -79,7 +79,7 @@ export function PrismAppIcon({
   // 2. Hub / Prologue
   if (
     normalized === 'hub' ||
-    normalized === 'prologue' ||
+    normalized.startsWith('prologue') ||
     normalized === '/' ||
     normalized === 'universe' ||
     normalized.includes('프롤로그') ||
@@ -98,8 +98,8 @@ export function PrismAppIcon({
 
   // 3. Orange
   if (
-    normalized === 'orange' ||
-    normalized === '/orange' ||
+    normalized.startsWith('orange') ||
+    normalized.startsWith('/orange') ||
     normalized.includes('오렌지') ||
     normalized.includes('성찰') ||
     normalized.includes('소원') ||
@@ -117,9 +117,9 @@ export function PrismAppIcon({
 
   // 4. Trinity
   if (
-    normalized === 'trinity' ||
-    normalized === '/trinity' ||
-    normalized === '/oracle' ||
+    normalized.startsWith('trinity') ||
+    normalized.startsWith('/trinity') ||
+    normalized.startsWith('/oracle') ||
     normalized.includes('트리니티') ||
     normalized.includes('오라클') ||
     normalized.includes('타로') ||
@@ -138,9 +138,9 @@ export function PrismAppIcon({
 
   // 5. Aura / Heal
   if (
-    normalized === 'heal' ||
-    normalized === 'aura' ||
-    normalized === '/heal' ||
+    normalized.startsWith('heal') ||
+    normalized.startsWith('aura') ||
+    normalized.startsWith('/heal') ||
     normalized.includes('아우라') ||
     normalized.includes('치유') ||
     normalized.includes('호흡')
@@ -157,8 +157,8 @@ export function PrismAppIcon({
 
   // 6. Bluebird
   if (
-    normalized === 'bluebird' ||
-    normalized === '/bluebird' ||
+    normalized.startsWith('bluebird') ||
+    normalized.startsWith('/bluebird') ||
     normalized.includes('블루버드') ||
     normalized.includes('파랑새') ||
     normalized.includes('메신저') ||
@@ -176,8 +176,8 @@ export function PrismAppIcon({
 
   // 7. Muse
   if (
-    normalized === 'muse' ||
-    normalized === '/muse' ||
+    normalized.startsWith('muse') ||
+    normalized.startsWith('/muse') ||
     normalized.includes('뮤즈') ||
     normalized.includes('예술') ||
     normalized.includes('영감') ||
@@ -195,8 +195,8 @@ export function PrismAppIcon({
 
   // 8. Epilogue
   if (
-    normalized === 'epilogue' ||
-    normalized === '/epilogue' ||
+    normalized.startsWith('epilogue') ||
+    normalized.startsWith('/epilogue') ||
     normalized.includes('에필로그') ||
     normalized.includes('서재') ||
     normalized.includes('회고') ||
@@ -214,9 +214,9 @@ export function PrismAppIcon({
 
   // 9. Lucy Chat (원래 루시 버튼 아이콘: 별빛 스파클 Sparkles)
   if (
-    normalized === 'lucy' ||
-    normalized === 'chat' ||
-    normalized === '/chat' ||
+    normalized.startsWith('lucy') ||
+    normalized.startsWith('chat') ||
+    normalized.startsWith('/chat') ||
     normalized.includes('루시') ||
     normalized === '💬' ||
     normalized === '✨'

@@ -203,7 +203,7 @@ export function BigBangPreviewWindow({
           )}
           <div className="flex flex-col min-w-0 text-left">
             <span className="text-[11px] font-extrabold text-cyan-200 truncate flex items-center gap-1">
-              {currentTarget ? currentTarget.previewLabel : isMirrorhole ? '[미러홀 투영] 🪞 LucKey 홈' : `다음 도약: ${nextDest.name}`}
+              {currentTarget ? currentTarget.previewLabel : isMirrorhole ? '[미러홀 투영] LucKey 홈' : `다음 도약: ${nextDest.name}`}
             </span>
             <span className="text-[8.5px] text-white/80 truncate mt-0.5">
               {currentTarget?.previewDescription || (isMirrorhole ? '투명한 크리스탈 유리 거울 면을 통과하여 프리즘 홈 허브로 즉시 귀환합니다.' : nextDest.description)}
