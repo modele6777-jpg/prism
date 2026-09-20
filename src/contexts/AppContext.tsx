@@ -10,12 +10,13 @@ import { safeLocalStorage, safeSessionStorage } from '../utils/safeStorage';
 import { invokeLLMStream, PERSONAS, type Message, getCrossAppRecentDialogueContext } from '../lib/ai';
 import { buildPrismOmniscientContext } from '../lib/prismOmniSync';
 import { calculateDetailedSaju } from '../lib/sajuAnalysis';
-import { buildEarlyBuddhismSystemPrompt } from '../lib/earlyBuddhismWisdom';
-import { buildGnosticSystemPrompt } from '../lib/gnosticWisdom';
-import { buildAcimSystemPrompt } from '../lib/acimWisdom';
-import { buildDistancingSystemPrompt } from '../lib/distancingWisdom';
-import { buildSedonaSystemPrompt } from '../lib/sedonaWisdom';
-import { buildLettingGoSystemPrompt } from '../lib/lettingGoWisdom';
+// Heavy wisdom engines are dynamically imported on first chat use to reduce initial bundle parse time
+// import { buildEarlyBuddhismSystemPrompt } from '../lib/earlyBuddhismWisdom';
+// import { buildGnosticSystemPrompt } from '../lib/gnosticWisdom';
+// import { buildAcimSystemPrompt } from '../lib/acimWisdom';
+// import { buildDistancingSystemPrompt } from '../lib/distancingWisdom';
+// import { buildSedonaSystemPrompt } from '../lib/sedonaWisdom';
+// import { buildLettingGoSystemPrompt } from '../lib/lettingGoWisdom';
 import { loadSavedUnifiedMessages, saveUnifiedMessagesSafely, mergeUnifiedMessages, hasRealUserConversation, createDefaultGreeting } from '../lib/chatHistorySync';
 import { processDailyChatArchival, buildPermanentMemoryPromptContext, archiveAndResetChat } from '../lib/chatMemoryArchive';
 import {
@@ -1289,6 +1290,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     systemPrompt += buildPrismOmniscientContext(sharedState, firebaseUser?.uid || null);
 
     if (!_isPerfReduced) {
+      // 동적 import: 채팅 첫 전송 시에만 로드 (앱 초기 번들 파싱 부담 제거)
+      const [
+        { buildEarlyBuddhismSystemPrompt },
+        { buildGnosticSystemPrompt },
+        { buildAcimSystemPrompt },
+        { buildDistancingSystemPrompt },
+        { buildSedonaSystemPrompt },
+        { buildLettingGoSystemPrompt },
+      ] = await Promise.all([
+        import('../lib/earlyBuddhismWisdom'),
+        import('../lib/gnosticWisdom'),
+        import('../lib/acimWisdom'),
+        import('../lib/distancingWisdom'),
+        import('../lib/sedonaWisdom'),
+        import('../lib/lettingGoWisdom'),
+      ]);
+
       // 🪷 Append Early Buddhism (Nikāya) canonical wisdom engine
       systemPrompt += `\n\n${buildEarlyBuddhismSystemPrompt()}`;
 
