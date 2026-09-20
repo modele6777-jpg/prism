@@ -1,5 +1,15 @@
 [
   {
+    "version": "1.4.32",
+    "summary": "로컬 개발 서버(Dev Server) 데몬 백그라운드 구동 활성화 및 프리뷰 연결 안정화",
+    "builtAt": "2026-09-20T22:00:00.000Z",
+    "items": [
+      "⚡ Vite 개발 서버 데몬 백그라운드 활성화: IDE 내 웹 프리뷰 및 브라우저 세션을 위한 npm run dev 백그라운드 데몬 프로세스 상시 구동",
+      "🔄 의존성 사전 최적화(optimizeDeps) 정합성 확인: 락파일 갱신 후 발생할 수 있는 클라이언트 재번들링 지연을 해소하고 포트 3000 바인딩 즉각 대기",
+      "🛡️ 헬스체크 및 개발 서버 응답 신뢰성 검증: localhost:3000 및 /healthz 엔드포인트 HTTP 200 정상 응답 확인"
+    ]
+  },
+  {
     "version": "1.4.31",
     "summary": "컨테이너 부팅 지연 및 프로덕션 정적 서빙 안정화 (Instant Health Probe & Zero-Latency Static Boot)",
     "builtAt": "2026-09-20T21:55:00.000Z",

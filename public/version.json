@@ -1,12 +1,12 @@
 {
   "name": "luckey",
-  "version": "1.4.31",
-  "summary": "컨테이너 부팅 지연 및 프로덕션 정적 서빙 안정화 (Instant Health Probe & Zero-Latency Static Boot)",
-  "builtAt": "2026-09-20T21:55:00.000Z",
+  "version": "1.4.32",
+  "summary": "로컬 개발 서버(Dev Server) 데몬 백그라운드 구동 활성화 및 프리뷰 연결 안정화",
+  "builtAt": "2026-09-20T22:00:00.000Z",
   "items": [
-    "🚀 컨테이너 프로덕션 부팅 최적화: dist/server.cjs 구동 시 Vite 개발 미들웨어 로딩을 배제하고 빌드된 dist 정적 에셋을 지연 없이 즉시 제공하도록 환경 판별 로직(isProduction) 고도화",
-    "🩺 즉각 응답 헬스체크 라우트 구축 (/healthz, /health, /api/health): Cloud Run 및 AI Studio 프리뷰의 가동성(Liveness/Readiness) 프로브에 대해 라우터 최상단에서 200 OK를 즉각 반환하여 시작 지연 및 타임아웃 원천 차단",
-    "🛡️ 포트 오류 핸들러 안정화: EADDRINUSE 발생 시 미시작 소켓에 대한 비정상 server.close() 호출을 방지하고 임시 포트로 안전하게 폴백 바인딩"
+    "⚡ Vite 개발 서버 데몬 백그라운드 활성화: IDE 내 웹 프리뷰 및 브라우저 세션을 위한 npm run dev 백그라운드 데몬 프로세스 상시 구동",
+    "🔄 의존성 사전 최적화(optimizeDeps) 정합성 확인: 락파일 갱신 후 발생할 수 있는 클라이언트 재번들링 지연을 해소하고 포트 3000 바인딩 즉각 대기",
+    "🛡️ 헬스체크 및 개발 서버 응답 신뢰성 검증: localhost:3000 및 /healthz 엔드포인트 HTTP 200 정상 응답 확인"
   ],
   "author": "Antigravity AI Agent",
   "buildEnvironment": "cloud-run"
