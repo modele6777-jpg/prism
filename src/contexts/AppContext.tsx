@@ -27,6 +27,7 @@ import {
 import { hasUnlockedPinToday, markPinUnlockedToday, getTodayDateKey } from '../lib/dailyCache';
 import { PERSONA_GREETINGS, PRISM_VOICE_RULES, LUCY_CHAT_VOICE_RULES } from '../lib/copyTone';
 import { isPerfReduced, isStandalonePWA } from '../lib/perfMode';
+import { validateAndExtractKeyExercise } from '../lib/keyExercisesCatalog';
 
 export type PersonaType = 'lucy' | 'orange' | 'trinity' | 'aura' | 'bluebird' | 'muse';
 
@@ -39,6 +40,7 @@ export interface UnifiedMessage {
   channel?: string;
   channels?: string[];
   mode?: string;
+  keyExerciseIndex?: number;
 }
 
 export interface SendUnifiedMessageOptions {
@@ -49,6 +51,7 @@ export interface SendUnifiedMessageOptions {
   channel?: string;
   channels?: string[];
   mode?: string;
+  keyExerciseIndex?: number;
   force?: boolean;
   oracleContext?: string;
 }
@@ -1443,6 +1446,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           }
 
           const cleanFullText = cleanChatDisplayText(fullText);
+          const verifiedEx = validateAndExtractKeyExercise(cleanFullText, text, options?.keyExerciseIndex);
+          const resolvedKeyExIndex = verifiedEx.isValid ? verifiedEx.exercise.globalIndex : options?.keyExerciseIndex;
+
           setUnifiedMessages(prev => {
             let found = false;
             const updated = prev.map(m => {
@@ -1454,7 +1460,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                   persona: sourcePersona,
                   channel: options?.channel || m.channel,
                   channels: options?.channels || m.channels,
-                  mode: options?.mode || m.mode
+                  mode: options?.mode || m.mode,
+                  keyExerciseIndex: resolvedKeyExIndex ?? m.keyExerciseIndex
                 };
               }
               return m;
@@ -1468,7 +1475,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 persona: sourcePersona,
                 channel: options?.channel,
                 channels: options?.channels,
-                mode: options?.mode
+                mode: options?.mode,
+                keyExerciseIndex: resolvedKeyExIndex
               });
             }
             pushChatThreadsToFirestore(updated);

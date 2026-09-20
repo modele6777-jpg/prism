@@ -836,6 +836,8 @@ export async function playTTSAudio(
     if (!isCompressed && encoding === 'pcm') {
       await playRawPCM(base64, sampleRate);
     } else {
+      // For compressed cloud TTS (EdgeTTS / Google), pitch is already synthesized cleanly.
+      // Set detune to 0 to prevent unnatural pitch shifts and voice distortion between chunks.
       await playCompressedAudio(base64, profile.playbackRate || 1.0);
     }
     if (activePlaybackId === ttsPlaybackId && !isSequenceChunk) {

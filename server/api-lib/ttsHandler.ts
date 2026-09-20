@@ -65,7 +65,30 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
 
   // 2. Primary Engine: Edge Neural TTS (100% consistent timbre and prosody across sequential chunks)
   try {
-    let voiceName = isMaleVoice ? "ko-KR-InJoonNeural" : "ko-KR-SunHiNeural";
+    let voiceName = "ko-KR-SunHiNeural";
+    if (voice && (voice.includes("Neural") || voice.startsWith("ko-KR-") || voice.startsWith("en-US-"))) {
+      if (voice.includes("SoonBok") || voice.includes("soonbok") || voice.includes("Zephyr") || voice.includes("zephyr")) {
+        voiceName = "ko-KR-SunHiNeural"; // SoonBok은 EdgeTTS 미지원 음성이므로 최고 품질 명상 특화 SunHi로 안전 매핑
+      } else if (voice.includes("InJoon") || voice.includes("injoon") || voice.includes("Puck")) {
+        voiceName = "ko-KR-InJoonNeural";
+      } else if (voice.includes("Hyunsu") || voice.includes("hyunsu")) {
+        voiceName = "ko-KR-HyunsuNeural";
+      } else if (voice.includes("SunHi") || voice.includes("sunhi") || voice.includes("Kore")) {
+        voiceName = "ko-KR-SunHiNeural";
+      } else {
+        voiceName = isMaleVoice ? "ko-KR-InJoonNeural" : "ko-KR-SunHiNeural";
+      }
+    } else if (voice === "SoonBok" || voice === "soonbok" || voice === "Zephyr" || voice === "zephyr") {
+      voiceName = "ko-KR-SunHiNeural"; // 차분한 명상 특화
+    } else if (voice === "Hyunsu" || voice === "hyunsu") {
+      voiceName = "ko-KR-HyunsuNeural";
+    } else if (voice === "InJoon" || voice === "injoon" || voice === "Puck" || voice === "puck") {
+      voiceName = "ko-KR-InJoonNeural";
+    } else if (voice === "SunHi" || voice === "sunhi" || voice === "Kore" || voice === "kore") {
+      voiceName = "ko-KR-SunHiNeural";
+    } else if (isMaleVoice) {
+      voiceName = "ko-KR-InJoonNeural";
+    }
     let lang = "ko-KR";
     let rate = "+0%";
     let pitch = "+0Hz";
@@ -82,11 +105,11 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
       const mysteryTarotList = ["신비", "진지", "경고", "몽환", "mystery", "serious", "warning", "dreamy", "mystic"];
 
       if (slowHealingList.some((item) => emo.includes(item))) {
-        rate = "-5%";
-        pitch = voiceName.includes("SunHi") ? "-1Hz" : "-1.5Hz";
+        rate = "-8%";
+        pitch = voiceName.includes("SunHi") ? "-1.2Hz" : "-1.5Hz";
       } else if (brightJoyList.some((item) => emo.includes(item))) {
-        rate = "+2%";
-        pitch = "+1Hz";
+        rate = "+4%";
+        pitch = voiceName.includes("SunHi") ? "+1.5Hz" : "+1.8Hz";
       } else if (mysteryTarotList.some((item) => emo.includes(item))) {
         rate = "-4%";
         pitch = "-1Hz";
@@ -116,7 +139,7 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
       try {
         await Promise.race([
           tts.ttsPromise(safeText, tempPath),
-          new Promise((_, reject) => setTimeout(() => reject(new Error("EdgeTTS timeout (20000ms)")), 20000)),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("EdgeTTS timeout (4500ms)")), 4500)),
         ]);
 
         const buf = await fsPromises.readFile(tempPath);
@@ -136,7 +159,7 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
       } catch (attemptErr) {
         console.warn(`[TTS] EdgeTTS attempt ${attempt}/2 warning:`, attemptErr);
         if (attempt < 2) {
-          await new Promise((r) => setTimeout(r, 300 * attempt));
+          await new Promise((r) => setTimeout(r, 150));
         }
       }
     }

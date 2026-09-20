@@ -431,7 +431,7 @@ export const playTTS = async (
           if (encoding === 'pcm') {
             await playRawPCM(data!.audioContent, data!.sampleRate ?? 24000);
           } else {
-            await playCompressedAudio(data!.audioContent);
+            await playCompressedAudio(data!.audioContent, 1.0);
           }
         }
       };
@@ -637,7 +637,7 @@ export const playTTSInChunks = async (
           true,
           emotion,
           sequenceSessionId,
-          !isLastChunk, // keep session alive until final chunk
+          true, // keep sequence session context intact across all chunks; cleanup is handled in sequence finally block
           cleanText,    // preserve activeFullText for UI synchronization
         );
       } catch (chunkErr) {
