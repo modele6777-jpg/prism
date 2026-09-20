@@ -232,15 +232,15 @@ const FEATURE_APPS: FeatureAppMeta[] = [
 export function LucyResponseRecommendation({
   userQuery = '',
   lucyAnswer,
-  currentChannels,
-  isCasual = false,
+  currentChannels = [],
+  isCasual: _isCasual = false,
   onSwitchChannel,
   onNavigate,
 }: LucyResponseRecommendationProps) {
   const [isLeaping, setIsLeaping] = useState(false);
 
-  // 수다 모드에서는 추천 기능(추천 채널 및 추천 차원 도약) 적용하지 않음
-  if (isCasual || currentChannels.length === 0) {
+  // 답변 텍스트가 10자 이상인 경우 항시 추천 제공 (나갔다 들어와도 유지)
+  if (!lucyAnswer || lucyAnswer.trim().length < 10) {
     return null;
   }
 
@@ -415,7 +415,7 @@ export function LucyResponseRecommendation({
     }, 280);
   };
 
-  const isCurrentChannelActive = currentChannels.includes(recommendedChannel.id);
+  const isCurrentChannelActive = (currentChannels || []).includes(recommendedChannel.id);
   const RecChannelIcon = recommendedChannel.icon;
 
   return (

@@ -16,7 +16,7 @@ import { LucyProTypewriter } from '@/components/LucyProTypewriter';
 import { ChatInsightsBoardModal } from '@/components/ChatInsightsBoardModal';
 import { LucyAuraLoader } from '@/components/LucyAuraLoader';
 import remarkGfm from 'remark-gfm';
-import { safeSessionStorage } from '@/utils/safeStorage';
+import { safeSessionStorage, safeLocalStorage } from '@/utils/safeStorage';
 import { cleanUserMessageDisplay } from '@/utils/cleanMessage';
 import { detectLucyChannelsFromText } from '@/lib/lucyAutoModeDetector';
 import { triggerHaptic } from '@/lib/omniWarp/omniWarpHaptics';
@@ -417,17 +417,31 @@ export default function LucyStandalonePage() {
     } catch (_) {}
   }, [abortGenerating]);
 
-  // 🎛️ Multi-select active channels state (Default: [] empty array → Casual Chat, or load pending channel)
+  // 🎛️ Multi-select active channels state (나갔다 들어와도 유지되도록 safeLocalStorage 복원 지원)
   const [activeChannels, setActiveChannels] = useState<SpecialChannel[]>(() => {
     try {
       const pending = safeSessionStorage.getItem('lucy_pro_pending_channel');
       if (pending) {
         safeSessionStorage.removeItem('lucy_pro_pending_channel');
-        return parsePendingChannels(pending);
+        const parsed = parsePendingChannels(pending);
+        safeLocalStorage.setItem('lucy_active_channels', JSON.stringify(parsed));
+        return parsed;
+      }
+      const saved = safeLocalStorage.getItem('lucy_active_channels');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (_) {}
     return [];
   });
+
+  // 채널 변경 시 safeLocalStorage에 영구 동기화
+  useEffect(() => {
+    try {
+      safeLocalStorage.setItem('lucy_active_channels', JSON.stringify(activeChannels));
+    } catch (_) {}
+  }, [activeChannels]);
   const [input, setInput] = useState('');
   const isAutoDetect = true;
   const [autoDetectedTitle, setAutoDetectedTitle] = useState<string | null>(null);
@@ -1459,11 +1473,8 @@ export default function LucyStandalonePage() {
                           isLatest={index === filteredMessages.length - 1}
                           isGenerating={isLucyGenerating && index === filteredMessages.length - 1}
                         />
-                        {/* 🔮 오브 연계 추천 채널 및 추천 기능 도약 바: 가장 최신 어시스턴트 메시지에만 단 1개 노출 (수다 모드에서는 비노출) */}
-                        {index === filteredMessages.length - 1 &&
-                          !isLucyGenerating &&
-                          !msgModeInfo.isCasual &&
-                          activeChannels.length > 0 &&
+                        {/* 🔮 LucKey 연계 추천 채널 및 Key 실천 도약 바: 나갔다 들어와도 영구 보존 */}
+                        {(!isLucyGenerating || index < filteredMessages.length - 1) &&
                           textContent &&
                           textContent.trim().length > 10 && (
                           <div className="mt-2.5">
@@ -1479,7 +1490,7 @@ export default function LucyStandalonePage() {
                               })()}
                               lucyAnswer={textContent}
                               currentChannels={activeChannels}
-                              isCasual={msgModeInfo.isCasual || activeChannels.length === 0}
+                              isCasual={false}
                               onSwitchChannel={(channels, isMaster, label) => handleActivateMessageMode(channels, isMaster, label)}
                               onNavigate={(path) => navigate(path)}
                             />
