@@ -228,7 +228,16 @@
     display: flex;
     flex-direction: column;
     width: 100%;
-    overflow: hidden;
+    /* FIX: overflow:clip instead of overflow:hidden.
+       overflow:hidden on a position:fixed element causes iOS WebKit to treat it
+       as a scroll container, which triggers a compositor hit-test bug that
+       swallows all touch events — making the entire app feel frozen.
+       overflow:clip visually clips identically but does NOT create a scroll container. */
+    overflow: clip;
+    /* Fallback for iOS < 16 / Safari < 15.4 that don't support overflow:clip */
+    @supports not (overflow: clip) {
+      overflow: hidden;
+    }
   }
 
   .prism-bottom-nav {
@@ -406,7 +415,11 @@
   .prism-app-shell {
     width: 100%;
     max-width: 100vw;
-    overflow-x: hidden;
+    /* overflow-x:clip is safe here — doesn't create scroll container */
+    overflow-x: clip;
+    @supports not (overflow: clip) {
+      overflow-x: hidden;
+    }
   }
 
   .prism-xs-pad {
@@ -803,12 +816,26 @@ html.perf-legacy {
   --font-serif: "Noto Serif KR", Georgia, serif;
 }
 
-html.perf-legacy *,
-html.perf-legacy *::before,
-html.perf-legacy *::after {
-  animation-duration: 0.01ms !important;
-  animation-iteration-count: 1 !important;
-  transition-duration: 0.01ms !important;
+/* FIX: perf-legacy animation kill was too aggressive — it froze ALL transitions
+   including button taps, making the UI feel completely unresponsive on modern iPhones
+   that were incorrectly matched by isIPhoneXSClass(). Now only disables the MOST
+   expensive animations (background gradient sweeps, complex multi-property keyframes)
+   while keeping interactive transitions alive so buttons/taps feel responsive. */
+html.perf-legacy .prism-rainbow-btn,
+html.perf-legacy .celestial-tarot-btn,
+html.perf-legacy .aura-orb-1,
+html.perf-legacy .aura-orb-2,
+html.perf-legacy .aura-orb-3,
+html.perf-legacy .cosmic-star-twinkle,
+html.perf-legacy .cosmic-constellations,
+html.perf-legacy .cosmic-star-flare,
+html.perf-legacy .animate-ping {
+  animation: none !important;
+  opacity: 0 !important;
+}
+
+html.perf-legacy .animate-pulse {
+  animation: none !important;
 }
 
 html.perf-legacy .animate-spin {
@@ -1246,6 +1273,3 @@ html.perf-reduced .cosmic-star-flare {
 .animate-rainbow-wave {
   animation: rainbow-wave 4s ease infinite;
 }
-
-
-
