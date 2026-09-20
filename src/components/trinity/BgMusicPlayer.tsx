@@ -293,20 +293,18 @@ export function BgMusicPlayer() {
       initialY: bgmPosRef.current.y,
       hasMoved: false,
     };
-  }, []);
 
-  useEffect(() => {
-    const handlePointerMove = (e: PointerEvent) => {
+    const handlePointerMove = (moveEvent: PointerEvent) => {
       if (!dragStartRef.current) return;
-      const dx = e.clientX - dragStartRef.current.startX;
-      const dy = e.clientY - dragStartRef.current.startY;
+      const dx = moveEvent.clientX - dragStartRef.current.startX;
+      const dy = moveEvent.clientY - dragStartRef.current.startY;
       if (!dragStartRef.current.hasMoved && Math.hypot(dx, dy) > 5) {
         dragStartRef.current.hasMoved = true;
         setIsDragging(true);
       }
       if (dragStartRef.current.hasMoved) {
         const clampedY = Math.max(10, Math.min(window.innerHeight - 70, dragStartRef.current.initialY + dy));
-        const side: "left" | "right" = e.clientX < window.innerWidth / 2 ? "left" : "right";
+        const side: "left" | "right" = moveEvent.clientX < window.innerWidth / 2 ? "left" : "right";
         setBgmPos((prev) => ({
           ...prev,
           y: clampedY,
@@ -315,11 +313,15 @@ export function BgMusicPlayer() {
       }
     };
 
-    const handlePointerUp = (e: PointerEvent) => {
+    const handlePointerUp = (upEvent: PointerEvent) => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointercancel", handlePointerUp);
+
       if (dragStartRef.current) {
         if (dragStartRef.current.hasMoved) {
-          const endX = e.clientX;
-          const endY = dragStartRef.current.initialY + (e.clientY - dragStartRef.current.startY);
+          const endX = upEvent.clientX;
+          const endY = dragStartRef.current.initialY + (upEvent.clientY - dragStartRef.current.startY);
           const clampedY = Math.max(10, Math.min(window.innerHeight - 70, endY));
           const side: "left" | "right" = endX < window.innerWidth / 2 ? "left" : "right";
 
@@ -347,14 +349,9 @@ export function BgMusicPlayer() {
       }
     };
 
-    window.addEventListener("pointermove", handlePointerMove);
-    window.addEventListener("pointerup", handlePointerUp);
-    window.addEventListener("pointercancel", handlePointerUp);
-    return () => {
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerup", handlePointerUp);
-      window.removeEventListener("pointercancel", handlePointerUp);
-    };
+    window.addEventListener("pointermove", handlePointerMove, { passive: true });
+    window.addEventListener("pointerup", handlePointerUp, { passive: true });
+    window.addEventListener("pointercancel", handlePointerUp, { passive: true });
   }, [saveBgmPos]);
 
   const toggleDock = useCallback((e?: React.MouseEvent) => {
@@ -3421,7 +3418,6 @@ export function BgMusicPlayer() {
         top: `${bgmPos.y}px`,
         right: isRightDock ? (bgmPos.isDocked ? "-42px" : "12px") : undefined,
         left: !isRightDock ? (bgmPos.isDocked ? "-42px" : "12px") : undefined,
-        touchAction: "none",
       }}
     >
       {/* Invisible HTML5 Audio Node for Legacy MP3s */}
@@ -3440,7 +3436,7 @@ export function BgMusicPlayer() {
         <div
           onPointerDown={handlePointerDown}
           onClick={() => toggleDock()}
-          className={`flex items-center gap-1.5 py-1.5 px-2.5 rounded-full cursor-pointer bg-black/80 hover:bg-black/95 backdrop-blur-2xl border border-amber-400/40 shadow-[0_4px_25px_rgba(251,191,36,0.35)] transition-transform hover:scale-105 active:scale-95 group ${
+          className={`flex items-center gap-1.5 py-1.5 px-2.5 rounded-full cursor-pointer touch-none bg-black/80 hover:bg-black/95 backdrop-blur-2xl border border-amber-400/40 shadow-[0_4px_25px_rgba(251,191,36,0.35)] transition-transform hover:scale-105 active:scale-95 group ${
             isRightDock ? "pr-4" : "pl-4"
           }`}
           title="엣지에서 배경음 플레이어 꺼내기 (클릭 또는 화면 안쪽으로 드래그)"
@@ -3463,7 +3459,7 @@ export function BgMusicPlayer() {
           {/* Drag Handle */}
           <div
             onPointerDown={handlePointerDown}
-            className="cursor-grab active:cursor-grabbing p-1.5 text-white/30 hover:text-white/80 rounded-full transition-colors shrink-0"
+            className="cursor-grab active:cursor-grabbing p-1.5 text-white/30 hover:text-white/80 rounded-full transition-colors shrink-0 touch-none"
             title="드래그하여 위치 이동 또는 화면 끝으로 끌어 엣지에 가리기"
           >
             <GripVertical size={13} />
@@ -3500,7 +3496,7 @@ export function BgMusicPlayer() {
         {/* Drag Handle */}
         <div
           onPointerDown={handlePointerDown}
-          className="cursor-grab active:cursor-grabbing p-1 text-white/30 hover:text-white/80 rounded-full transition-colors shrink-0"
+          className="cursor-grab active:cursor-grabbing p-1 text-white/30 hover:text-white/80 rounded-full transition-colors shrink-0 touch-none"
           title="길게 누르거나 드래그하여 위치 이동"
         >
           <GripVertical size={13} />

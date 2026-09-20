@@ -429,7 +429,7 @@ export function getSharedStateSignature(s: SharedState | null | undefined): stri
   const luckyKeys = s.trinityDailyLucky ? Object.keys(s.trinityDailyLucky).sort().join(',') : '';
   const hopoKeys = s.hoponoponoDaily ? Object.keys(s.hoponoponoDaily).sort().join(',') : '';
   const hLen = `${s.featureHistory?.length || 0}_${s.orangeHistory?.length || 0}_${s.museHistory?.length || 0}_${s.bluebirdHistory?.length || 0}_${s.favoriteInsightIds?.length || 0}_${s.rebibleVerses?.length || 0}_${(s as any).epilogueHistory?.length || 0}`;
-  return `${s.unifiedAppVersion || ''}|${s.lastAppSyncAt || 0}|${profStr}|${s.themeColor || ''}|${s.currentVibe || ''}|${oracleKeys}|${secretKeys}|${artKeys}|${luckyKeys}|${hopoKeys}|${hLen}`;
+  return `${s.unifiedAppVersion || ''}|${profStr}|${s.themeColor || ''}|${s.currentVibe || ''}|${oracleKeys}|${secretKeys}|${artKeys}|${luckyKeys}|${hopoKeys}|${hLen}`;
 }
 
 let lastHydratedSignature = '';

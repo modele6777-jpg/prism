@@ -80,6 +80,50 @@
     -webkit-backdrop-filter: blur(8px) !important;
   }
 
+  /* Mobile GPU & Compositor Optimization: Prevents WebKit offscreen render-pass thrashing */
+  @media screen and (max-width: 768px) {
+    .backdrop-blur-3xl,
+    .backdrop-blur-2xl,
+    .backdrop-blur-xl {
+      backdrop-filter: blur(6px) !important;
+      -webkit-backdrop-filter: blur(6px) !important;
+    }
+    .backdrop-blur-lg,
+    .backdrop-blur-md,
+    .backdrop-blur {
+      backdrop-filter: blur(4px) !important;
+      -webkit-backdrop-filter: blur(4px) !important;
+    }
+    .glass {
+      backdrop-filter: blur(6px) !important;
+      -webkit-backdrop-filter: blur(6px) !important;
+    }
+  }
+
+  .perf-mobile .backdrop-blur-3xl,
+  .perf-mobile .backdrop-blur-2xl,
+  .perf-mobile .backdrop-blur-xl,
+  .perf-reduced .backdrop-blur-3xl,
+  .perf-reduced .backdrop-blur-2xl,
+  .perf-reduced .backdrop-blur-xl {
+    backdrop-filter: blur(6px) !important;
+    -webkit-backdrop-filter: blur(6px) !important;
+  }
+  .perf-mobile .backdrop-blur-lg,
+  .perf-mobile .backdrop-blur-md,
+  .perf-mobile .backdrop-blur,
+  .perf-reduced .backdrop-blur-lg,
+  .perf-reduced .backdrop-blur-md,
+  .perf-reduced .backdrop-blur {
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
+  }
+  .perf-mobile .glass,
+  .perf-reduced .glass {
+    backdrop-filter: blur(6px) !important;
+    -webkit-backdrop-filter: blur(6px) !important;
+  }
+
   /* Global touch responsiveness & scrolling smoothness */
   button, a, input, select, textarea, [role="button"] {
     touch-action: manipulation;

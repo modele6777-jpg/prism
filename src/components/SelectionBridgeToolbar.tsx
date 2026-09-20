@@ -1,37 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { savePendingSelection, clearPendingSelection, getLiveSelectedText } from '../lib/selectionBridge';
-
-/**
- * 텍스트 클립보드 즉시 복사 유틸리티 (브라우저 및 보안 컨텍스트 호환)
- */
-const copyToClipboard = async (textToCopy: string): Promise<boolean> => {
-  if (!textToCopy) return false;
-  try {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(textToCopy);
-      return true;
-    }
-  } catch (_) {
-    // fallback 아래로 진행
-  }
-
-  try {
-    const textArea = document.createElement('textarea');
-    textArea.value = textToCopy;
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-999999px';
-    textArea.style.top = '-999999px';
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    const successful = document.execCommand('copy');
-    document.body.removeChild(textArea);
-    return successful;
-  } catch (err) {
-    console.warn('[Clipboard] Failed to copy text:', err);
-    return false;
-  }
-};
 
 interface SelectionBridgeToolbarProps {
   currentPath?: string;
@@ -40,11 +8,10 @@ interface SelectionBridgeToolbarProps {
 /**
  * 🌟 SelectionBridgeToolbar (선택 텍스트 백그라운드 브릿지)
  * - 일반 본문 텍스트뿐만 아니라 input, textarea (빈칸 입력창) 및 모든 텍스트 선택(스크롤)을 포착하여
- *   빅뱅 버튼 토스 연동 및 자동 복사 파이프라인을 백그라운드에서 안전하게 구동합니다.
+ *   빅뱅 버튼 토스 연동 파이프라인을 백그라운드에서 안전하게 구동합니다.
  * - 스크롤 취소/해제 시 clearPendingSelection()을 호출하여 대기 토스 모드를 안전하게 초기화합니다.
  */
 export default function SelectionBridgeToolbar({ currentPath: _currentPath }: SelectionBridgeToolbarProps) {
-  const lastCopiedTextRef = useRef<string>('');
 
   useEffect(() => {
     let debounceTimer: NodeJS.Timeout | null = null;
@@ -66,13 +33,7 @@ export default function SelectionBridgeToolbar({ currentPath: _currentPath }: Se
 
         // 유효한 선택 텍스트 백그라운드 저장 (빅뱅 버튼 연동용)
         savePendingSelection(text, undefined, window.location.pathname);
-
-        // 📋 스크롤/선택 시 클립보드에 자동 복사
-        if (text && lastCopiedTextRef.current !== text) {
-          lastCopiedTextRef.current = text;
-          copyToClipboard(text);
-        }
-      }, 80);
+      }, 120);
     };
 
     let clearTimer: NodeJS.Timeout | null = null;

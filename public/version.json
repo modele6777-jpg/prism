@@ -1,12 +1,14 @@
 {
   "name": "luckey",
-  "version": "1.4.1",
-  "summary": "빅뱅 드래그 미리보기 HUD 이모티콘 배제 및 정통 벡터 기본 아이콘 표시 적용",
-  "builtAt": "2026-09-20T16:51:00.000Z",
+  "version": "1.4.2",
+  "summary": "모바일 간헐적 멈춤/먹통 오류 근본 진단 및 메인 스레드·GPU 렌더링 최적화",
+  "builtAt": "2026-09-20T17:00:00.000Z",
   "items": [
-    "🎨 빅뱅 드래그 미리보기 아이콘 교체: 드래그 시 추천 목적지를 안내하는 상단 HUD 칩에서 이모티콘(🌀/🍊/🔺 등)을 배제하고 프리즘 디자인 시스템 정통 기본 벡터 아이콘(PrismAppIcon)으로 변경",
-    "🛡️ PrismAppIcon 라우트/서브메뉴 프리픽스 매칭 고도화: 39대 하위 메뉴 ID 및 세부 경로에서도 해당 코어 앱의 고유 벡터 심볼과 테마 컬러가 정확하게 렌더링되도록 확장",
-    "✨ 텍스트 라벨 미니멀화: 미리보기 라벨 텍스트에 섞여 있던 불필요한 이모티콘 기호를 제거하여 가독성 및 시각적 완성도 극대화"
+    "⚡ 동기화 시그니처 루프 차단: getSharedStateSignature에서 변경 타임스탬프(lastAppSyncAt)를 분리하여 데이터 불변 시 수백 회의 localStorage 동기 I/O 및 하위 뷰 강제 리렌더링 차단",
+    "📱 모바일 오프스크린 포커스 트랩 제거: SelectionBridgeToolbar에서 텍스트 선택 시 오프스크린 textarea.focus() 및 클립보드 강제 복사 제거로 iOS WebKit 터치 제스처 드랍 원천 차단",
+    "🎨 모바일 GPU 블러 쓰로틀링: 모바일 화면(@media max-width: 768px 및 perf-mobile)에서 backdrop-filter blur를 4~6px로 최적화하여 3x Retina DPR GPU 필레이트 과부하 방지",
+    "🎵 배경음 플레이어 터치 및 리스너 격리: 루트 컨테이너의 touchAction: none을 제거하고 드래그 핸들에만 격리 적용하여 트랙 리스트 모바일 스크롤 복원 및 포인터 리스너 온디맨드 전환",
+    "⏳ 사용자 인터랙션 보호 백그라운드 동기화: 사용자가 터치나 스크롤 중일 때(2.5초 이내) 백그라운드 클라우드 동기화를 유예하고 requestIdleCallback으로 양보"
   ],
   "author": "Antigravity AI Agent",
   "buildEnvironment": "cloud-run"

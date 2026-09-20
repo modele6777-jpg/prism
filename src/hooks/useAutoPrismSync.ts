@@ -36,6 +36,7 @@ export function useAutoPrismSync({
   syncRef.current = sync;
   const isSessionBusyRef = useRef(isSessionBusy);
   isSessionBusyRef.current = isSessionBusy;
+  const lastInteractionAtRef = useRef(0);
   const debounceTimerRef = useRef<number | null>(null);
 
   const applyReload = useCallback(async (result: PrismSyncResult, silent: boolean) => {
@@ -76,13 +77,33 @@ export function useAutoPrismSync({
     const minGap = getPairedVaultId() ? PAIRED_MIN_SYNC_GAP_MS : DEFAULT_MIN_SYNC_GAP_MS;
     if (!opts?.force && now - lastSyncAtRef.current < minGap) return undefined;
 
+    // Mobile gesture protection: If user is actively tapping or scrolling, defer sync
+    if (!opts?.force) {
+      if (isSessionBusyRef.current()) {
+        return undefined;
+      }
+      const timeSinceInteraction = now - lastInteractionAtRef.current;
+      if (timeSinceInteraction < 2500) {
+        scheduleDebouncedSync(3000);
+        return undefined;
+      }
+    }
+
     runningRef.current = true;
     lastSyncAtRef.current = now;
     const silent = opts?.silent !== false;
     if (!silent) onCheckingChange?.(true);
 
-    let willReload = false;
     try {
+      // Yield to mobile browser compositor and ongoing frame painting
+      if (!opts?.force && typeof window !== 'undefined') {
+        if ('requestIdleCallback' in window) {
+          await new Promise((resolve) => (window as any).requestIdleCallback(resolve, { timeout: 1500 }));
+        } else {
+          await new Promise((resolve) => setTimeout(resolve, 60));
+        }
+      }
+
       const syncTimeoutPromise = new Promise<PrismSyncResult>((_, reject) =>
         setTimeout(() => reject(new Error('Sync timeout')), 10000)
       );
@@ -122,7 +143,7 @@ export function useAutoPrismSync({
       onCheckingChange?.(false);
       runningRef.current = false;
     }
-  }, [enabled, applyReload, onMessage, onCheckingChange]);
+  }, [enabled, onMessage, onCheckingChange]);
 
   const runSyncRef = useRef(runSync);
   runSyncRef.current = runSync;
@@ -173,12 +194,19 @@ export function useAutoPrismSync({
       }
     };
 
+    const recordInteraction = () => {
+      lastInteractionAtRef.current = Date.now();
+    };
+
     // Note: Do NOT listen to 'prism:daily_oracle_updated', 'prism:feature_updated', or 'storage' here!
     // Those events are dispatched by local unpack and state hydration, which would cause an infinite feedback loop.
     window.addEventListener('prism:state_changed', handleStateEvent);
     window.addEventListener('online', onResume);
     document.addEventListener('visibilitychange', onResume);
     window.addEventListener('focus', onResume);
+    window.addEventListener('touchstart', recordInteraction, { passive: true });
+    window.addEventListener('pointerdown', recordInteraction, { passive: true });
+    window.addEventListener('scroll', recordInteraction, { passive: true });
 
     // Cross-Tab Realtime Broadcast Channel Listener
     let channel: BroadcastChannel | null = null;
@@ -194,6 +222,9 @@ export function useAutoPrismSync({
       window.removeEventListener('online', onResume);
       document.removeEventListener('visibilitychange', onResume);
       window.removeEventListener('focus', onResume);
+      window.removeEventListener('touchstart', recordInteraction);
+      window.removeEventListener('pointerdown', recordInteraction);
+      window.removeEventListener('scroll', recordInteraction);
       if (channel) {
         try { channel.close(); } catch (_) {}
       }
