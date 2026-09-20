@@ -699,7 +699,8 @@ export const playConversation = async (
         onMessageStart(i, m);
       }
 
-      await playTTS(m.content, voice, true);
+      const isLastMsg = i === messages.length - 1;
+      await playTTS(m.content, voice, true, undefined, mySessionId, !isLastMsg);
       if (ttsState.activeSessionId !== mySessionId) break;
 
       // Natural pause between speaker turns
