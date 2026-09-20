@@ -7,6 +7,7 @@ import { auth } from "./firebase";
 import { loadChatFromLocal } from "./lucyChatSync";
 import { UserProfile } from "./sharedState";
 import { calculateDetailedSaju } from "./sajuAnalysis";
+import { retryWithBackoff, isTransientNetworkError } from "./chatRetryManager";
 
 // Initialization 
 export function getApiBaseUrl(): string {
@@ -1436,13 +1437,17 @@ export async function invokeLLMStream(params: {
   timeoutMs?: number;
   signal?: AbortSignal;
   maxOutputTokens?: number;
+  maxRetries?: number;
+  onRetry?: (attempt: number, delayMs: number, error: any) => void;
 }) {
   const maxDurationMs = params.timeoutMs ?? 60000;
   const idleTimeoutMs = 30000;
   let lastActivity = Date.now();
+  let hasEmittedChunks = false;
 
   const wrappedOnChunk = (chunk: string) => {
     lastActivity = Date.now();
+    hasEmittedChunks = true;
     params.onChunk(chunk);
   };
 
@@ -1487,10 +1492,25 @@ export async function invokeLLMStream(params: {
       }, { once: true });
     }
 
-    invokeLLMStreamInner({
-      ...params,
-      onChunk: wrappedOnChunk,
-    })
+    retryWithBackoff(
+      async () => {
+        return await invokeLLMStreamInner({
+          ...params,
+          onChunk: wrappedOnChunk,
+        });
+      },
+      {
+        maxRetries: params.maxRetries ?? 2,
+        initialDelayMs: 1200,
+        maxDelayMs: 6000,
+        shouldRetry: (err) => {
+          if (hasEmittedChunks) return false;
+          return isTransientNetworkError(err);
+        },
+        onRetry: params.onRetry,
+        signal: params.signal,
+      }
+    )
       .then((res) => {
         if (!isResolved) {
           isResolved = true;

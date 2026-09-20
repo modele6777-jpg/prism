@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Send, Trash2, Search, X, ChevronDown, Check, Volume2, VolumeX, Square,
   Download, User, Sparkles, Sun, TreeDeciduous, Activity, Bird, Music, Zap, Flame, Compass,
-  Loader2, Copy, RefreshCw, Camera, MicOff, Mic, BookOpen, BookMarked
+  Loader2, Copy, RefreshCw, Camera, MicOff, Mic, BookOpen, BookMarked, AlertCircle
 } from 'lucide-react';
 import { useApp, PersonaType } from '@/contexts/AppContext';
 import { useLocation } from 'wouter';
@@ -23,6 +23,7 @@ import { triggerHaptic } from '@/lib/omniWarp/omniWarpHaptics';
 import { getAndClearPendingSelection } from '@/lib/selectionBridge';
 import { LucyResponseRecommendation } from '@/components/LucyResponseRecommendation';
 import { findBestKeyExercise, buildKeyExercisePromptGuideline, validateAndExtractKeyExercise } from '@/lib/keyExercisesCatalog';
+import { saveChatInputDraft, loadChatInputDraft, clearChatInputDraft, isOnline, subscribeNetworkStatus } from '@/lib/chatRetryManager';
 
 // Helper: Compress uploaded images to prevent UI stutter and huge payload overhead
 function compressImageIfNeeded(file: File): Promise<string> {
@@ -404,6 +405,7 @@ export default function LucyStandalonePage() {
     firebaseUser, 
     signInWithGoogle, 
     sendUnifiedMessage, 
+    retryUnifiedMessage,
     personaMessages, 
     isGenerating,
     abortGenerating,
@@ -443,7 +445,19 @@ export default function LucyStandalonePage() {
       safeLocalStorage.setItem('lucy_active_channels', JSON.stringify(activeChannels));
     } catch (_) {}
   }, [activeChannels]);
-  const [input, setInput] = useState('');
+
+  // 📝 사용자 입력(Draft) 로컬 임시 저장 및 네트워크 상태 감지
+  const [input, setInput] = useState(() => loadChatInputDraft());
+  const [isDeviceOnline, setIsDeviceOnline] = useState(isOnline());
+
+  useEffect(() => {
+    return subscribeNetworkStatus(setIsDeviceOnline);
+  }, []);
+
+  useEffect(() => {
+    saveChatInputDraft(input);
+  }, [input]);
+
   const isAutoDetect = true;
   const [autoDetectedTitle, setAutoDetectedTitle] = useState<string | null>(null);
 
@@ -995,6 +1009,7 @@ export default function LucyStandalonePage() {
     }
 
     setInput('');
+    clearChatInputDraft();
     const imgToSend = attachedImage || undefined;
     setAttachedImage(null);
     if (isRecording && recognitionRef.current) {
@@ -1378,6 +1393,14 @@ export default function LucyStandalonePage() {
         </AnimatePresence>
       </header>
 
+      {/* 🌐 오프라인 알림 배너 */}
+      {!isDeviceOnline && (
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-center text-xs text-amber-800 font-medium flex items-center justify-center gap-1.5 shadow-xs">
+          <AlertCircle size={14} className="text-amber-600 shrink-0" />
+          <span>네트워크 연결이 일시적으로 끊겼습니다. 작성 중인 메시지는 로컬에 안전하게 보관됩니다.</span>
+        </div>
+      )}
+
       {/* Chat Messages Stream */}
       <main ref={messagesContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-6 w-full max-w-5xl xl:max-w-6xl 2xl:max-w-7xl mx-auto select-text">
         <div ref={messagesWrapperRef} className="space-y-3 sm:space-y-4 pb-28 sm:pb-32">
@@ -1519,6 +1542,24 @@ export default function LucyStandalonePage() {
                             />
                           </div>
                         )}
+
+                        {/* ⚠️ 일시적 네트워크 오류 발생 시 재시도 버튼 */}
+                        {((msg as any)?.isRetryable || textContent.includes('일시적인 네트워크 지연') || textContent.includes('네트워크 오류')) && !isLucyGenerating && (
+                          <div className="mt-2.5 pt-2 border-t border-slate-200/70 flex items-center justify-between gap-2">
+                            <span className="text-xs text-amber-700 font-medium flex items-center gap-1">
+                              <AlertCircle size={12} className="shrink-0 text-amber-600" />
+                              네트워크 통신 지연 발생
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => retryUnifiedMessage(msgId)}
+                              className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs flex items-center gap-1 shadow-xs transition-all active:scale-95 cursor-pointer"
+                            >
+                              <RefreshCw size={11} />
+                              <span>다시 시도</span>
+                            </button>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>
@@ -1578,7 +1619,13 @@ export default function LucyStandalonePage() {
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-bounce delay-200" />
               </div>
               <span className="text-xs sm:text-sm text-emerald-950 font-bold ml-1">
-                Lucy가 답변을 작성하고 있습니다...
+                {(lucyMessages[lucyMessages.length - 1] as any)?.isRetrying ? (
+                  <span className="text-amber-700">
+                    네트워크 재연결 중... (재시도 {(lucyMessages[lucyMessages.length - 1] as any)?.retryAttempt || 1}/3)
+                  </span>
+                ) : (
+                  'Lucy가 답변을 작성하고 있습니다...'
+                )}
               </span>
             </div>
           )}

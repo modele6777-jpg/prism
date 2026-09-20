@@ -18,6 +18,7 @@ import { calculateDetailedSaju } from '../lib/sajuAnalysis';
 // import { buildSedonaSystemPrompt } from '../lib/sedonaWisdom';
 // import { buildLettingGoSystemPrompt } from '../lib/lettingGoWisdom';
 import { loadSavedUnifiedMessages, saveUnifiedMessagesSafely, mergeUnifiedMessages, hasRealUserConversation, createDefaultGreeting } from '../lib/chatHistorySync';
+import { savePendingChatMessage, removePendingChatMessage, updatePendingChatMessageStatus } from '../lib/chatRetryManager';
 import { processDailyChatArchival, buildPermanentMemoryPromptContext, archiveAndResetChat } from '../lib/chatMemoryArchive';
 import {
   SUGGESTIONS_SYSTEM_SUFFIX,
@@ -40,6 +41,11 @@ export interface UnifiedMessage {
   channels?: string[];
   mode?: string;
   keyExerciseIndex?: number;
+  isRetrying?: boolean;
+  retryAttempt?: number;
+  isRetryable?: boolean;
+  failedUserText?: string;
+  failedOptions?: SendUnifiedMessageOptions;
 }
 
 export interface SendUnifiedMessageOptions {
@@ -88,6 +94,7 @@ interface AppContextValue {
   ) => void;
   openHandbook: (theme?: string) => void;
   clearPersonaMessages: (persona?: PersonaType) => void;
+  retryUnifiedMessage: (failedMsgId: string) => Promise<void>;
   generateDevicePairingCode: () => Promise<{ code: string; expiresAt: number } | null>;
   importDevicePairingCode: (code: string) => Promise<{ success: boolean; message: string }>;
 }
@@ -1209,6 +1216,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
     ]);
     
+    // 1-B. Save pending message locally in retry queue
+    savePendingChatMessage({
+      id: assistMsgId,
+      userText: text,
+      persona: sourcePersona,
+      channels: options?.channels,
+      mode: options?.mode,
+      keyExerciseIndex: options?.keyExerciseIndex,
+      imageUrl: attachedImage,
+      timestamp: Date.now(),
+      status: 'pending',
+      retryCount: 0,
+    });
+
     // 2. Set generating status and register AbortController
     if (abortControllersRef.current[sourcePersona]) {
       try { abortControllersRef.current[sourcePersona]?.abort(); } catch (_) {}
@@ -1426,6 +1447,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         messages: conversationForAPI,
         signal: currentAbortController.signal,
         timeoutMs: 60000,
+        maxRetries: 3,
+        onRetry: (attempt, delayMs, error) => {
+          console.warn(`[sendUnifiedMessage] Reconnecting... attempt ${attempt}/3 (${Math.round(delayMs)}ms):`, error?.message || error);
+          updatePendingChatMessageStatus(assistMsgId, 'retrying', error?.message);
+          setUnifiedMessages(prev => prev.map(m => {
+            if (m.id === assistMsgId && (!m.content || typeof m.content !== 'string' || m.content.length === 0)) {
+              return {
+                ...m,
+                isRetrying: true,
+                retryAttempt: attempt,
+              };
+            }
+            return m;
+          }));
+        },
         onChunk: (chunk: string) => {
           replyText += chunk;
           latestCleanReply = cleanChatDisplayText(replyText);
@@ -1484,6 +1520,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             return updated;
           });
 
+          // Successfully completed: remove from local pending queue
+          removePendingChatMessage(assistMsgId);
+
           // Save firestore history under appropriate app schema if not developer bypass
           const fUser = auth.currentUser;
           if (fUser && safeLocalStorage.getItem('developer_bypass') !== 'true') {
@@ -1527,6 +1566,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       isGeneratingRef.current[sourcePersona] = false;
       setIsGenerating(prev => ({ ...prev, [sourcePersona]: false }));
 
+      // Update pending queue with failure state
+      updatePendingChatMessageStatus(assistMsgId, 'failed', err?.message);
+
       const errStr = (err?.message || "") + JSON.stringify(err);
       let errorMsg = "(※ 일시적인 네트워크 지연이 발생했습니다. 다시 메시지를 보내주시면 정성껏 답변해 드릴게요.)";
 
@@ -1548,7 +1590,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             return { 
               ...m, 
               content: errorMsg,
-              persona: sourcePersona
+              persona: sourcePersona,
+              isRetryable: true,
+              failedUserText: text,
+              failedOptions: options
             };
           }
           return m;
@@ -1559,7 +1604,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             role: 'model' as const,
             content: errorMsg,
             timestamp: Date.now(),
-            persona: sourcePersona
+            persona: sourcePersona,
+            isRetryable: true,
+            failedUserText: text,
+            failedOptions: options
           });
         }
         pushChatThreadsToFirestore(updated);
@@ -1575,6 +1623,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [activePersona, buildPrismOmniscientContext, calculateDetailedSaju, firebaseUser, isGeneratingRef, pushChatThreadsToFirestore, sharedState, unifiedMessages]);
 
+  const retryUnifiedMessage = useCallback(async (msgId: string) => {
+    const targetMsg = unifiedMessages.find(m => m.id === msgId);
+    let textToResend = targetMsg?.failedUserText;
+    if (!textToResend) {
+      const idx = unifiedMessages.findIndex(m => m.id === msgId);
+      const prevUser = idx !== -1 ? unifiedMessages.slice(0, idx).reverse().find(m => m.role === 'user') : null;
+      textToResend = typeof prevUser?.content === 'string' ? prevUser.content : '';
+    }
+    if (!textToResend) return;
+
+    setUnifiedMessages(prev => prev.filter(m => m.id !== msgId));
+    await sendUnifiedMessage(textToResend, targetMsg?.persona || 'lucy', undefined, targetMsg?.failedOptions);
+  }, [unifiedMessages, sendUnifiedMessage]);
+
   return (
     <AppContext.Provider value={{
       firebaseUser, isAuthReady, isUnlocked, unlock,
@@ -1583,7 +1645,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       isChatOpen, setIsChatOpen,
       activePersona, setActivePersona,
       personaMessages, setPersonaMessages,
-      isGenerating, abortGenerating, sendUnifiedMessage, chatSuggestions, openLucyChat,
+      isGenerating, abortGenerating, sendUnifiedMessage, retryUnifiedMessage, chatSuggestions, openLucyChat,
       openHandbook, clearPersonaMessages,
       generateDevicePairingCode, importDevicePairingCode,
     }}>
