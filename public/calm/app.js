@@ -247,6 +247,36 @@ document.addEventListener('DOMContentLoaded', () => {
   // 초기 18페이지 싱크 실행
   syncPage(18);
 
+  // 5-1. 외부(루시 채팅 등)에서 특정 실천 연습 즉시 실행 요청 처리
+  function checkAutoLaunchPractice() {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const exParam = urlParams.get('ex') || sessionStorage.getItem('key_target_exercise');
+      if (exParam) {
+        sessionStorage.removeItem('key_target_exercise');
+        const exIdx = parseInt(exParam, 10);
+        if (exIdx && typeof window.startPractice === 'function') {
+          setTimeout(() => {
+            window.startPractice(exIdx);
+          }, 350);
+        }
+      }
+    } catch (_) {}
+  }
+
+  window.addEventListener('message', (e) => {
+    if (e.data && e.data.type === 'START_PRACTICE') {
+      const exIdx = parseInt(e.data.exerciseIdx, 10);
+      if (exIdx && typeof window.startPractice === 'function') {
+        setTimeout(() => {
+          window.startPractice(exIdx);
+        }, 150);
+      }
+    }
+  });
+
+  setTimeout(checkAutoLaunchPractice, 200);
+
   // 6. Chat Interface
   const chatMessages = document.getElementById('chat-messages');
   const chatForm = document.getElementById('chat-form');

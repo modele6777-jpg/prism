@@ -52,6 +52,25 @@ export default function CalmApp() {
     }
   }, [minTimerDone, iframeLoaded]);
 
+  // 전달받은 특정 실천 연습이 있으면 iframe 로드 후 즉시 실행 요청
+  useEffect(() => {
+    if (iframeLoaded) {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const exParam = urlParams.get('ex') || sessionStorage.getItem('key_target_exercise');
+        if (exParam) {
+          const exIdx = parseInt(exParam, 10);
+          if (exIdx) {
+            const timer = setTimeout(() => {
+              iframeRef.current?.contentWindow?.postMessage({ type: 'START_PRACTICE', exerciseIdx: exIdx }, '*');
+            }, 350);
+            return () => clearTimeout(timer);
+          }
+        }
+      } catch (_) {}
+    }
+  }, [iframeLoaded]);
+
   return (
     <div className="fixed inset-0 w-full h-[100dvh] bg-[#fcf9f5] z-40 overflow-hidden flex flex-col">
       <AnimatePresence mode="wait">
@@ -73,7 +92,7 @@ export default function CalmApp() {
       </AnimatePresence>
       <iframe
         ref={iframeRef}
-        src="/calm/index.html"
+        src={`/calm/index.html${typeof window !== 'undefined' ? window.location.search : ''}`}
         title="Key"
         className="w-full h-full border-0 m-0 p-0 flex-1"
         allow="autoplay; microphone"

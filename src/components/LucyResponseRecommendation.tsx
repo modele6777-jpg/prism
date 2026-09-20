@@ -8,6 +8,7 @@ import { safeLocalStorage } from '@/utils/safeStorage';
 import { sendPrismToss } from '@/lib/prismToss';
 import { triggerHaptic } from '@/lib/omniWarp/omniWarpHaptics';
 import { resolveCanonicalPath } from '@/lib/prismRouteRegistry';
+import { findBestKeyExercise } from '@/lib/keyExercisesCatalog';
 import type { SpecialChannel } from '@/pages/LucyStandalonePage';
 
 export interface LucyResponseRecommendationProps {
@@ -292,24 +293,48 @@ export function LucyResponseRecommendation({
       }
     }
 
-    if (maxFeatureScore <= 0) {
+    // Key 40가지 실천 연습 특화 매칭: 질문이나 답변에 불안, 걱정, 스트레스, 실천, 연습 관련 내용이 있거나 bestFeature가 key인 경우
+    const isAnxietyOrKeyIntent = /불안|걱정|공황|초조|두려움|스트레스|긴장|마음약방|처방|연습|실천|키\b|key|호흡|탈융합|수용|잡념|자책/i.test(combined);
+
+    let reasonText = '질문과 답변의 맥락에 맞춘 최적화 추천';
+
+    if (bestFeature.id === 'key' || isAnxietyOrKeyIntent) {
+      const bestEx = findBestKeyExercise(userQuery, lucyAnswer);
+      bestFeature = {
+        id: 'key',
+        name: 'KEY 마음약방',
+        shortName: `연습 ${bestEx.index}. ${bestEx.title}`,
+        featureTitle: `40대 치유 연습 중 맞춤 추천: 연습 ${bestEx.index}. ${bestEx.title} (${bestEx.page}쪽)`,
+        path: `/key?ex=${bestEx.globalIndex}`,
+        iconText: bestEx.icon || '🔑',
+        runeSymbol: 'ᛟ',
+        runeName: 'Othala',
+        color: '#38bdf8',
+        glowColor: 'rgba(56, 189, 248, 0.9)',
+        description: `[${bestEx.tag}] ${bestEx.purpose}`,
+        actionLabel: `🎯 [연습 ${bestEx.index}. ${bestEx.title}] 바로 실천하기`,
+        keywords: [],
+      };
+      reasonText = `마음에 가장 필요한 Key '연습 ${bestEx.index}. ${bestEx.title}' 맞춤 처방`;
+    } else if (maxFeatureScore <= 0) {
       // 매칭되는 키워드가 적을 때 상위 추천 채널과 동일한 앱 매핑
       const fallbackApp = FEATURE_APPS.find((a) => a.id === topChannelKey) || FEATURE_APPS[0];
       bestFeature = fallbackApp;
     }
 
-    let reason = '질문과 답변의 맥락에 맞춘 최적화 추천';
-    if (topChannelKey === 'trinity') reason = '운명과 무의식 상징을 깊이 해독하는 추천';
-    else if (topChannelKey === 'orange') reason = '1원칙 논리와 실행 전략에 집중하는 추천';
-    else if (topChannelKey === 'aura') reason = '몸의 감각과 호흡, 긴장 완화를 돕는 추천';
-    else if (topChannelKey === 'bluebird') reason = '상처받은 마음에 온기와 정화를 불어넣는 추천';
-    else if (topChannelKey === 'muse') reason = '예술적 영감과 감성을 일깨우는 추천';
+    if (!isAnxietyOrKeyIntent && bestFeature.id !== 'key') {
+      if (topChannelKey === 'trinity') reasonText = '운명과 무의식 상징을 깊이 해독하는 추천';
+      else if (topChannelKey === 'orange') reasonText = '1원칙 논리와 실행 전략에 집중하는 추천';
+      else if (topChannelKey === 'aura') reasonText = '몸의 감각과 호흡, 긴장 완화를 돕는 추천';
+      else if (topChannelKey === 'bluebird') reasonText = '상처받은 마음에 온기와 정화를 불어넣는 추천';
+      else if (topChannelKey === 'muse') reasonText = '예술적 영감과 감성을 일깨우는 추천';
+    }
 
     return {
       recommendedChannel: CHANNELS_META[topChannelKey],
       secondaryChannel: CHANNELS_META[secondChannelKey],
       recommendedFeature: bestFeature,
-      themeReason: reason,
+      themeReason: reasonText,
     };
   }, [userQuery, lucyAnswer]);
 
@@ -323,6 +348,14 @@ export function LucyResponseRecommendation({
     const queryStr = userQuery || '루시와의 대화';
     const keyThemeStr = feature.shortName;
     const directAnswerStr = lucyAnswer ? lucyAnswer.slice(0, 180) : '';
+
+    if (feature.id === 'key' || feature.path.includes('/key')) {
+      const match = feature.path.match(/ex=(\d+)/);
+      const exIdx = match ? match[1] : '1';
+      try {
+        sessionStorage.setItem('key_target_exercise', exIdx);
+      } catch (_) {}
+    }
 
     try {
       const tossPayload = {
