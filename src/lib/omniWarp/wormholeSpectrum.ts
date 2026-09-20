@@ -54,6 +54,8 @@ export const DISALLOWED_WARP_PATHS = new Set([
   '/orb.html',
   '/crystal',
   '/gateway',
+  '/key',
+  '/calm',
   '/chat',
   '/chat.html',
   '/lucy',
@@ -91,6 +93,14 @@ export function isDisallowedWarpDestination(destIdOrPath: string): boolean {
     norm === 'crystal' ||
     raw === 'gateway' ||
     norm === 'gateway' ||
+    raw === 'key' ||
+    norm === 'key' ||
+    raw.includes('key') ||
+    raw.startsWith('/key') ||
+    raw === 'calm' ||
+    norm === 'calm' ||
+    raw.includes('calm') ||
+    raw.startsWith('/calm') ||
     raw === 'chat' ||
     norm === 'chat' ||
     raw.includes('chat') ||

@@ -87,9 +87,9 @@ const ROUTES_MAP = [
   { path: "/lucy", Component: LucyStandalonePage },
   { path: "/omniwarp", Component: OmniWarpPage },
   { path: "/bigbang", Component: OmniWarpPage },
-  { path: "/orb", Component: OrbGatewayPage },
-  { path: "/gateway", Component: OrbGatewayPage },
-  { path: "/crystal", Component: OrbGatewayPage },
+  { path: "/orb", Component: CalmApp },
+  { path: "/gateway", Component: CalmApp },
+  { path: "/crystal", Component: CalmApp },
   { path: "/calm", Component: CalmApp },
   { path: "/key", Component: CalmApp },
 ];
@@ -118,9 +118,9 @@ function ActivePage({ loc }: { loc: string }) {
         <Route path="/lucy"><LucyStandalonePage /></Route>
         <Route path="/omniwarp"><OmniWarpPage /></Route>
         <Route path="/bigbang"><OmniWarpPage /></Route>
-        <Route path="/orb"><OrbGatewayPage /></Route>
-        <Route path="/gateway"><OrbGatewayPage /></Route>
-        <Route path="/crystal"><OrbGatewayPage /></Route>
+        <Route path="/orb"><CalmApp /></Route>
+        <Route path="/gateway"><CalmApp /></Route>
+        <Route path="/crystal"><CalmApp /></Route>
         <Route path="/calm"><CalmApp /></Route>
         <Route path="/key"><CalmApp /></Route>
       </Switch>
@@ -250,7 +250,7 @@ function AppContent() {
       navigate("/");
     }
     if (cleanCurrent === '/orb' || cleanCurrent === '/gateway' || cleanCurrent === '/crystal') {
-      window.location.replace('/orb.html' + window.location.search + window.location.hash);
+      navigate('/key');
     }
   }, [location, navigate]);
 

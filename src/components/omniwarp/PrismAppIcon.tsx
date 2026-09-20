@@ -13,6 +13,7 @@ import {
   MessageCircle,
   Eye,
   Triangle,
+  KeyRound,
   LucideProps,
 } from 'lucide-react';
 import { OrbShapeIcon } from '@/components/icons/OrbShapeIcon';
@@ -39,7 +40,24 @@ export function PrismAppIcon({
 }: PrismAppIconProps) {
   const normalized = (nameOrId || '').toLowerCase().trim();
 
-  // 1. Crystal Orb (오브 모양)
+  // 0. Key (마음약방)
+  if (
+    normalized === 'key' ||
+    normalized === '/key' ||
+    normalized === 'calm' ||
+    normalized === '/calm' ||
+    normalized.includes('열쇠') ||
+    normalized === '🔑'
+  ) {
+    return (
+      <KeyRound
+        size={size}
+        className={className}
+        color={color || '#0ea5e9'}
+        strokeWidth={strokeWidth}
+      />
+    );
+  }
   if (
     normalized === 'orb' ||
     normalized === 'crystal' ||

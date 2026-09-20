@@ -2130,7 +2130,7 @@ self.addEventListener('activate', (e) => {
   // 🌿 CALM (40대 마음약방) Standalone Static & API Mounting
   const calmPublicPath = path.resolve(process.cwd(), "public", "calm");
   app.use("/calm", express.static(calmPublicPath, { index: "index.html" }));
-  app.get(["/key", "/key/"], (_req, res) => res.redirect(302, "/calm/"));
+  app.get(["/key", "/key/", "/orb", "/orb/", "/orb.html", "/gateway", "/crystal"], (_req, res) => res.redirect(302, "/calm/"));
   app.use(calmRouter);
 
   if (process.env.NODE_ENV !== "production") {
@@ -2155,14 +2155,11 @@ self.addEventListener('activate', (e) => {
     app.get('*', async (req, res, next) => {
       if (req.path.startsWith('/api/') || (path.extname(req.path) && !req.path.endsWith('.html'))) return next();
 
-      const isOrbRoute = req.path.startsWith('/orb') || req.path.startsWith('/gateway') || req.path.startsWith('/crystal');
       const entryFile = req.path.startsWith('/chat')
         ? 'chat.html'
         : req.path.startsWith('/handbook')
           ? 'handbook.html'
-          : isOrbRoute
-            ? 'orb.html'
-            : 'index.html';
+          : 'index.html';
       const entryPath = path.resolve(process.cwd(), entryFile);
 
       try {
@@ -2190,12 +2187,8 @@ self.addEventListener('activate', (e) => {
         const devCalmPath = path.join(process.cwd(), 'public', 'calm', 'index.html');
         if (fs.existsSync(devCalmPath)) return res.sendFile(devCalmPath);
       }
-      if (req.path === '/key' || req.path === '/key/') {
+      if (req.path === '/key' || req.path === '/key/' || req.path.startsWith('/orb') || req.path.startsWith('/gateway') || req.path.startsWith('/crystal')) {
         return res.redirect(302, '/calm/');
-      }
-      if (req.path.startsWith('/orb') || req.path.startsWith('/gateway') || req.path.startsWith('/crystal')) {
-        const orbPath = path.join(distPath, 'orb.html');
-        if (fs.existsSync(orbPath)) return res.sendFile(orbPath);
       }
       return res.sendFile(path.join(distPath, 'index.html'));
     });

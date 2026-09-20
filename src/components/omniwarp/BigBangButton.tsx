@@ -42,11 +42,17 @@ export function BigBangButton() {
     }
   }
 
-  const isOrbSite =
+  const isKeySite =
+    location === '/key' ||
+    location === '/calm' ||
     location === '/orb' ||
     location === '/gateway' ||
     location === '/crystal' ||
-    (typeof window !== 'undefined' && window.location.pathname.includes('orb'));
+    (typeof window !== 'undefined' && (
+      window.location.pathname.includes('key') ||
+      window.location.pathname.includes('calm') ||
+      window.location.pathname.includes('orb')
+    ));
 
   const isChatView =
     location === '/chat' ||
@@ -567,7 +573,7 @@ export function BigBangButton() {
         }
 
         // 프리즘 메인('/')으로 즉시 도약
-        if (typeof window !== 'undefined' && window.location.pathname.includes('orb')) {
+        if (typeof window !== 'undefined' && (window.location.pathname.includes('key') || window.location.pathname.includes('calm') || window.location.pathname.includes('orb'))) {
           window.location.href = '/';
         } else {
           navigate('/');
@@ -640,7 +646,7 @@ export function BigBangButton() {
           const returnPath = safeSessionStorage.getItem('prism_chat_return_path') || '/';
           safeSessionStorage.removeItem('prism_chat_return_path');
           const finalDest = returnPath.includes('chat') ? '/' : returnPath;
-          if (isOrbSite) {
+          if (isKeySite) {
             window.location.href = finalDest;
           } else {
             navigate(finalDest);
@@ -651,7 +657,7 @@ export function BigBangButton() {
           // 일반 페이지(또는 텍스트를 들고 있을 때)는 루시 채팅 열기 & 토스 연계
           const currentPath = location || '/';
           safeSessionStorage.setItem('prism_chat_return_path', currentPath);
-          if (isOrbSite) {
+          if (isKeySite) {
             window.location.href = '/chat';
           } else {
             navigate('/chat');
@@ -743,7 +749,7 @@ export function BigBangButton() {
       if (textToToss) {
         // 대상 메뉴로 즉각 토스 & 네비게이션 실행
         tossSelectionToMenu(textToToss, targetMenu, location, (targetPath) => {
-          if (isOrbSite) {
+          if (isKeySite) {
             window.location.href = targetPath;
           } else {
             navigate(targetPath);
@@ -753,7 +759,7 @@ export function BigBangButton() {
         });
       } else {
         setTimeout(() => {
-          if (isOrbSite) {
+          if (isKeySite) {
             window.location.href = safePath;
           } else {
             navigate(safePath);
@@ -777,16 +783,16 @@ export function BigBangButton() {
       return;
     }
 
-    // C. 제자리 홀드 후 떼기 (dist < 20): 어두운 심연(블랙홀) 효과 발동 및 크리스탈 오브 들어가기 / 나가기 토글!
+    // C. 제자리 홀드 후 떼기 (dist < 20): Key(마음약방) 들어가기 / 나가기 토글!
     triggerHaptic('blackhole');
     omniWarpAudio.playBlackHole();
 
-    // 🔮 텍스트 드래그(선택) 연동: 글자를 스크롤/선택한 상태에서 빅뱅 홀드 ➔ 오브에게 즉시 토스!
+    // 🔑 텍스트 드래그(선택) 연동: 글자를 스크롤/선택한 상태에서 빅뱅 홀드 ➔ Key에게 즉시 토스!
     if (textToToss) {
-      savePendingSelection(textToToss, 'orb', location);
+      savePendingSelection(textToToss, 'key', location);
       sendPrismToss({
         sourceApp: location || 'bigbang_button',
-        targetApp: 'orb',
+        targetApp: 'key',
         actionType: 'smart_toss',
         contextMessage: textToToss,
         autoPrompt: textToToss,
@@ -795,12 +801,12 @@ export function BigBangButton() {
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
           new CustomEvent('prism:selection_tossed', {
-            detail: { text: textToToss, target: 'orb', sourcePath: location },
+            detail: { text: textToToss, target: 'key', sourcePath: location },
           })
         );
         window.dispatchEvent(
           new CustomEvent('prism:selection_saved', {
-            detail: { text: textToToss, target: 'orb', sourcePath: location },
+            detail: { text: textToToss, target: 'key', sourcePath: location },
           })
         );
       }
@@ -812,10 +818,10 @@ export function BigBangButton() {
           detail: {
             phase: 'blackhole',
             target: {
-              id: 'orb',
-              name: '오브',
-              destinationPath: '/orb',
-              themeColor: '#38bdf8',
+              id: 'key',
+              name: 'Key',
+              destinationPath: '/key',
+              themeColor: '#0ea5e9',
               eventHorizonMode: 'blackhole',
             },
             context,
@@ -827,12 +833,12 @@ export function BigBangButton() {
     }
 
     setTimeout(() => {
-      if (isOrbSite && !textToToss) {
-        // 오브 사이트 나가기 -> 프리즘 귀환
-        const returnPath = safeSessionStorage.getItem('prism_orb_return_path') || '/';
-        safeSessionStorage.removeItem('prism_orb_return_path');
-        const finalDest = returnPath.includes('orb') ? '/' : returnPath;
-        if (typeof window !== 'undefined' && window.location.pathname.includes('orb')) {
+      if (isKeySite && !textToToss) {
+        // Key 사이트 나가기 -> 프리즘 귀환
+        const returnPath = safeSessionStorage.getItem('prism_key_return_path') || '/';
+        safeSessionStorage.removeItem('prism_key_return_path');
+        const finalDest = (returnPath.includes('key') || returnPath.includes('calm') || returnPath.includes('orb')) ? '/' : returnPath;
+        if (typeof window !== 'undefined' && (window.location.pathname.includes('key') || window.location.pathname.includes('calm') || window.location.pathname.includes('orb'))) {
           window.location.href = finalDest;
         } else {
           navigate(finalDest);
@@ -840,13 +846,13 @@ export function BigBangButton() {
           window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: finalDest } }));
         }
       } else {
-        // 오브 사이트 들어가기 -> /orb.html 입장 & 토스 수신
+        // Key 사이트 들어가기 -> /key 입장 & 토스 수신
         const currentPath = location || '/';
-        safeSessionStorage.setItem('prism_orb_return_path', currentPath);
+        safeSessionStorage.setItem('prism_key_return_path', currentPath);
         if (typeof window !== 'undefined') {
-          window.location.href = '/orb.html';
+          window.location.href = '/key';
         } else {
-          navigate('/orb');
+          navigate('/key');
         }
       }
     }, 240);
@@ -912,10 +918,10 @@ export function BigBangButton() {
     if (activePhase === 'wormhole') return 'omniwarp';
     // 🌌 사건의 지평선 상태 (조준 중): 해당 조준 채널의 아이콘을 최우선으로 표출!
     if (radialSectorIndex >= 0) return RADIAL_WARP_APPS[radialSectorIndex]?.id || 'hub';
-    // 🪞 제자리 홀드 - 오브 사이트에서는 프리즘 홈 귀환
-    if (isOrbSite) return 'hub';
-    // 🔮 제자리 홀드 - 프리즘 페이지에서는 크리스탈 오브 입장
-    return 'orb';
+    // 🪞 제자리 홀드 - Key 사이트에서는 프리즘 홈 귀환
+    if (isKeySite) return 'hub';
+    // 🔑 제자리 홀드 - 프리즘 페이지에서는 Key 입장
+    return 'key';
   })();
 
   const activeAppName = (() => {
@@ -928,10 +934,10 @@ export function BigBangButton() {
       const subTitle = currentTarget?.title || '';
       return subTitle ? `${channel?.name || ''} · ${subTitle}` : (channel?.name || '');
     }
-    // 🪞 제자리 홀드 - LucKey 화면에서는 프리즘 귀환
-    if (isOrbSite) return '프리즘 귀환 (LucKey 나가기)';
-    // 🔮 제자리 홀드 - 프리즘 페이지에서는 LucKey 입장
-    return 'LucKey (입장)';
+    // 🪞 제자리 홀드 - Key 화면에서는 프리즘 귀환
+    if (isKeySite) return '프리즘 귀환 (Key 나가기)';
+    // 🔑 제자리 홀드 - 프리즘 페이지에서는 Key 입장
+    return 'Key (마음약방 입장)';
   })();
 
   return (
@@ -1070,7 +1076,7 @@ export function BigBangButton() {
               aria-label={
                 hasSelectionToss
                   ? '빅뱅 버튼 · 선택 내용 토스 대기중'
-                  : '빅뱅 버튼 · 탭: 루시 대화, 더블탭: 홈, 홀드: 오브'
+                  : '빅뱅 버튼 · 탭: 루시 대화, 더블탭: 홈, 홀드: Key'
               }
             >
               {/* 🌀 [웜홀] 빛비춤 + 어두운 심연 + 사건의 지평선 3원 동시 융합 전개 */}
