@@ -1217,7 +1217,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     isGeneratingRef.current[sourcePersona] = true;
     setIsGenerating(prev => ({ ...prev, [sourcePersona]: true }));
 
-    // 25-second Safety Watchdog Timer: prevents UI from hanging indefinitely on network loss/stalls
+    // 60-second Safety Watchdog Timer: prevents UI from hanging indefinitely on network loss/stalls while allowing full generation for complex queries
     const watchdogTimer = setTimeout(() => {
       if (isGeneratingRef.current[sourcePersona]) {
         console.warn(`[AppContext] Safety watchdog auto-released isGenerating for ${sourcePersona}`);
@@ -1225,7 +1225,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         isGeneratingRef.current[sourcePersona] = false;
         setIsGenerating(prev => ({ ...prev, [sourcePersona]: false }));
       }
-    }, 25000);
+    }, 60000);
     
     // 3. Prepare AI Prompt
     const profile = sharedState?.userProfile || getPersistentUserProfile();
@@ -1418,6 +1418,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       await invokeLLMStream({
         messages: conversationForAPI,
         signal: currentAbortController.signal,
+        timeoutMs: 60000,
         onChunk: (chunk: string) => {
           replyText += chunk;
           latestCleanReply = cleanChatDisplayText(replyText);

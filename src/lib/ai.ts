@@ -1095,9 +1095,10 @@ async function invokeLLMStreamInner(params: {
   onFinish?: (fullText: string) => void,
   timeoutMs?: number,
   signal?: AbortSignal,
+  maxOutputTokens?: number,
 }) {
-  const requestTimeoutMs = params.timeoutMs ?? 45000;
-  const idleTimeoutMs = 18000;
+  const requestTimeoutMs = params.timeoutMs ?? 60000;
+  const idleTimeoutMs = 30000;
 
   // 1. Direct High-Speed Gemini SDK Streaming (Fastest & Most Reliable)
   if (genAI) {
@@ -1145,7 +1146,7 @@ async function invokeLLMStreamInner(params: {
               config: {
                 systemInstruction: systemMessage?.content as string,
                 temperature: modelRetry > 0 ? 0.8 : 0.7, // 재시도 시 온도 약간 올려서 빈 응답 방지
-                maxOutputTokens: 2500,
+                maxOutputTokens: params.maxOutputTokens || 8192,
               }
             });
 
@@ -1234,7 +1235,7 @@ async function invokeLLMStreamInner(params: {
               messages,
               stream: true,
               temperature: 0.7,
-              max_tokens: 2500,
+              max_tokens: params.maxOutputTokens || 6000,
               presence_penalty: 0.3,
               frequency_penalty: 0.5,
             }),
@@ -1312,13 +1313,13 @@ async function invokeLLMStreamInner(params: {
               break;
             }
 
-            // Read with 12-second individual chunk timeout to prevent infinite blocking
+            // Read with 30-second individual chunk timeout to prevent infinite blocking while tolerating complex reasoning latency
             let readResult: ReadableStreamReadResult<Uint8Array>;
             try {
               readResult = await Promise.race([
                 reader.read(),
                 new Promise<never>((_, reject) =>
-                  setTimeout(() => reject(new Error("Stream chunk read timeout")), 12000)
+                  setTimeout(() => reject(new Error("Stream chunk read timeout")), 30000)
                 ),
               ]);
             } catch (chunkTimeoutErr) {
@@ -1434,9 +1435,10 @@ export async function invokeLLMStream(params: {
   onFinish?: (fullText: string) => void;
   timeoutMs?: number;
   signal?: AbortSignal;
+  maxOutputTokens?: number;
 }) {
-  const maxDurationMs = params.timeoutMs ?? 45000;
-  const idleTimeoutMs = 18000;
+  const maxDurationMs = params.timeoutMs ?? 60000;
+  const idleTimeoutMs = 30000;
   let lastActivity = Date.now();
 
   const wrappedOnChunk = (chunk: string) => {

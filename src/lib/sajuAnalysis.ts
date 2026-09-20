@@ -902,6 +902,20 @@ ${specialStrText || '• 안정적인 오행 순환 구조'}
   }
 }
 
+export interface DailyRemedyInfo {
+  luckyColor: string;
+  luckyColorDetail?: string;
+  luckyFood: string;
+  luckyActivity: string;
+  actionTip: string;
+  luckyTea: string;
+  luckyTime: string;
+  prescriptionTitle: string;
+  prescriptionReason: string;
+  elementFocus: FiveElement;
+  elementName: string;
+}
+
 export interface DailySajuReport {
   dateStr: string;
   year: number;
@@ -931,20 +945,240 @@ export interface DailySajuReport {
   todayTheme: string;
   todayAdvice: string;
   harmonySummary: string;
-  remedy: {
-    luckyColor: string;
-    luckyFood: string;
-    luckyActivity: string;
-    actionTip: string;
-  };
+  remedy: DailyRemedyInfo;
   speechText: string;
 }
 
+// 오행별 다채로운 오늘의 행운 보약 데이터셋
+const DYNAMIC_REMEDY_DATA: Record<FiveElement, {
+  titles: string[];
+  colors: Array<{ name: string; detail: string }>;
+  foods: string[];
+  teas: string[];
+  activities: string[];
+}> = {
+  목: {
+    titles: [
+      '청목생기(靑木生氣) 활력 보약 처방',
+      '목화통명(木火通明) 창의 보약 처방',
+      '수생목(水生木) 심신 안정 보약 처방',
+      '수목상생(水木相生) 성장 보약 처방'
+    ],
+    colors: [
+      { name: '포레스트 에메랄드 & 민트', detail: '생기와 활력을 북돋는 자연 친화적 힐링 컬러' },
+      { name: '올리브 카키 & 린넨 화이트', detail: '차분하고 정돈된 신뢰감을 선사하는 데일리 룩' },
+      { name: '세이지 그린 & 라이트 그레이', detail: '지적인 집중력과 맑은 통찰을 돕는 조합' },
+      { name: '애플 그린 & 소프트 아이보리', detail: '새로운 시작과 유연한 사고를 여는 상쾌한 톤' }
+    ],
+    foods: [
+      '신선한 루꼴라 아보카도 샐러드 & 유자 드레싱 (간 피로 해독 & 생기 충전)',
+      '향긋한 제철 미나리 전골 & 메밀면 (탁한 기운을 씻어내는 맑은 약선)',
+      '영양 듬뿍 시금치 조개 된장국 & 보리밥 (속을 편안하게 깨우는 신진대사식)',
+      '신선한 키위 바나나 그린 스무디 (오후 피로를 날리는 비타민 충전)',
+      '달래 오이무침과 구운 두부 스테이크 (답답한 기운을 시원하게 소통)'
+    ],
+    teas: [
+      '심신을 정화하는 따뜻한 제주 유기농 녹차',
+      '머리를 맑게 깨우는 박하 페퍼민트 티',
+      '눈의 피로를 풀어주는 결명자 구기자차'
+    ],
+    activities: [
+      '점심시간 15분 햇살 산책하며 초록 잎과 하늘 바라보기',
+      '업무 공간에 작은 초록 식물이나 꽃 한 송이 두고 환기하기',
+      '가벼운 목과 어깨 스트레칭으로 굳은 상체 이완하기',
+      '평소 관심 있던 새로운 배움이나 책의 한 챕터 읽기'
+    ]
+  },
+  화: {
+    titles: [
+      '적화온양(赤火溫養) 열정 보약 처방',
+      '목생화(木生火) 추진력 보약 처방',
+      '수화기제(水火旣濟) 밸런스 보약 처방',
+      '태양광휘(太陽光輝) 명예 보약 처방'
+    ],
+    colors: [
+      { name: '선셋 오렌지 & 웜 코랄', detail: '열정과 대인관계 호감도를 높여주는 화사한 컬러' },
+      { name: '로즈 레드 & 버건디 와인', detail: '당당한 자신감과 결단력을 실어주는 포인트' },
+      { name: '따뜻한 테라코타 & 크림', detail: '포근하고 부드러운 온기를 전하는 세련된 룩' },
+      { name: '소프트 피치 핑크 & 골드', detail: '밝은 긍정 에너지와 대인 관계의 윤활유' }
+    ],
+    foods: [
+      '항산화 완숙 토마토 스튜 & 구운 파프리카 (심장 원기 강화 & 혈행 개선)',
+      '따뜻한 대추 계피차 & 구운 호두 (온기를 돌게 하는 마음 안정 보약)',
+      '기운을 돋우는 소고기 안심 구이 & 아스파라거스 (추진력과 신체 활력 회복)',
+      '새콤달콤한 생오미자 에이드 & 생딸기 (심신의 번열을 다스리고 집중력 강화)',
+      '구운 단호박과 매콤달콤한 연어 구이 (따뜻한 활력과 면역력 증진)'
+    ],
+    teas: [
+      '온기를 불어넣는 따뜻한 대추 생강차',
+      '기분을 상쾌하게 띄우는 히비스커스 로즈힙 티',
+      '마음을 편안하게 감싸주는 루이보스 시나몬 티'
+    ],
+    activities: [
+      '소중한 사람에게 마음이 담긴 따뜻한 칭찬이나 안부 인사 전하기',
+      '신나는 음악 한 곡을 들으며 가벼운 유산소 율동 즐기기',
+      '어두운 방에 따뜻한 무드등이나 캔들을 켜고 5분간 불멍하기',
+      '오늘 꼭 성취하고 싶은 1가지 목표를 선명히 시각화하기'
+    ]
+  },
+  토: {
+    titles: [
+      '황토포용(黃土包容) 중심 보약 처방',
+      '화생토(火生土) 원기 보약 처방',
+      '토생금(土生金) 결실 보약 처방',
+      '대지평온(大地平穩) 안식 보약 처방'
+    ],
+    colors: [
+      { name: '카멜 브라운 & 웜 샌드', detail: '흔들리지 않는 내면의 중심과 든든한 포용력' },
+      { name: '머스터드 옐로우 & 내추럴 우드', detail: '친근한 신뢰감과 실질적인 안정을 주는 톤' },
+      { name: '포근한 오트밀 & 모카 베이지', detail: '부드러운 소통과 감정 마찰을 누그러뜨리는 색' },
+      { name: '앰버 골드 & 딥 베이지', detail: '재물운의 토대와 묵직한 현실 감각을 깨움' }
+    ],
+    foods: [
+      '속을 따뜻하게 감싸주는 단호박 잣죽 (위장을 보하고 긴장을 푸는 힐링식)',
+      '구수한 청국장찌개와 찰현미밥 (소화력을 돕고 중심 코어를 든든하게)',
+      '달콤한 군고구마 & 따뜻한 둥굴레차 (지친 심신에 부드러운 당분과 온기 보충)',
+      '뿌리채소 마와 표고버섯 영양 솥밥 (대지의 든든한 흙 기운을 온전히 섭취)',
+      '부드러운 감자 양송이 스프 & 통밀 토스트 (과민해진 신경을 부드럽게 위로)'
+    ],
+    teas: [
+      '구수한 지리산 둥굴레 & 작두콩차',
+      '속을 달래주는 따뜻한 옥수수 수염차',
+      '부드럽고 소화에 좋은 보리 현미차'
+    ],
+    activities: [
+      '바닥에 발바닥을 완전히 밀착하고 중심 호흡 10회 하기',
+      '지갑 속 영수증을 비우고 가방 속 소지품 단정하게 정돈하기',
+      '책상 주변의 불필요한 물건을 치워 여백 만들기',
+      '과거의 후회나 미래 걱정 내려놓고 지금 이 순간의 감각에 머물기'
+    ]
+  },
+  금: {
+    titles: [
+      '백금청정(白金淸淨) 정화 보약 처방',
+      '금수쌍청(金水雙淸) 지혜 보약 처방',
+      '토생금(土生金) 결단 보약 처방',
+      '강금숙살(剛金肅殺) 단정 보약 처방'
+    ],
+    colors: [
+      { name: '스노우 화이트 & 실버', detail: '순수하고 명확한 판단력과 결단력을 북돋는 컬러' },
+      { name: '샴페인 골드 & 펄 그레이', detail: '고급스러운 품격과 사회적 신뢰를 이끄는 톤' },
+      { name: '시크한 차콜 & 플래티넘', detail: '잡념을 털어내고 단단한 전문성을 드러내는 매치' },
+      { name: '소프트 라이트 실버 & 아이보리', detail: '맑은 두뇌 회전과 깔끔한 일의 마무리를 지원' }
+    ],
+    foods: [
+      '폐를 맑게 정화하는 도라지 배숙 & 구운 은행 (호흡기 정화 & 목 컨디션 케어)',
+      '단백질 풍부한 두부 버섯 들깨탕 (단단한 체력과 혈관을 맑게 하는 보양식)',
+      '담백한 흰살 생선구이와 시원한 백김치 (머리를 맑게 하고 위장 부담 제로)',
+      '바삭한 호두 멸치볶음 & 맑은 무채국 (뼈와 치아를 튼튼히 하고 결단력 강화)',
+      '따뜻한 생강 편강 & 율무차 (몸 안의 불필요한 노폐물과 습담 배출)'
+    ],
+    teas: [
+      '목을 편안하게 틔워주는 도라지 생강차',
+      '폐를 윤택하게 하는 따뜻한 율무 모과차',
+      '은은하고 맑은 캐모마일 허브티'
+    ],
+    activities: [
+      '책상 위 서류와 파일들을 완벽히 분류하고 휴지통 비우기',
+      '미루어 두었던 숙제나 단답형 연락을 빠르게 종결짓기',
+      '등과 어깨를 곧게 펴고 4-4-8 리듬으로 3분간 폐 활착 호흡하기',
+      '오늘 하루 불필요한 소비나 군더더기 일정 과감히 가지치기'
+    ]
+  },
+  수: {
+    titles: [
+      '현수윤택(玄水潤澤) 총명 보약 처방',
+      '금생수(金生水) 유연 보약 처방',
+      '수화기제(水火旣濟) 평온 보약 처방',
+      '심해유영(深海游泳) 심원 보약 처방'
+    ],
+    colors: [
+      { name: '딥 네이비 & 오션 블루', detail: '깊은 통찰력과 지혜로운 유연함을 북돋는 컬러' },
+      { name: '미드나잇 인디고 & 스카이 블루', detail: '차분한 평정심과 내면의 깊은 휴식을 이끄는 톤' },
+      { name: '제트 블랙 & 펄 블루', detail: '위기를 유연하게 넘기는 지혜와 당당한 권위' },
+      { name: '코발트 블루 & 쿨 그레이', detail: '탁 트인 시야와 직관적인 영감을 깨우는 조합' }
+    ],
+    foods: [
+      '신장을 보하는 진한 흑임자죽 & 검은콩 두유 (신수(腎水)를 채우는 회춘 보약)',
+      '바다의 영양 가득 전복 미역국 (기혈을 순환시키고 전신 이완을 유도)',
+      '신선한 생연어 아보카도 포케 & 구운 김 (두뇌를 맑게 하고 유연한 사고 촉진)',
+      '기력을 채워주는 장어 덮밥 & 생강채 (하체 활력과 근원적 체력 보충)',
+      '따뜻한 보이차 & 다크 카카오 (머릿속 번뇌를 가라앉히는 깊은 명상 푸드)'
+    ],
+    teas: [
+      '신장과 방광을 맑게 하는 검은콩 검은깨차',
+      '몸속 수분을 부드럽게 채워주는 따뜻한 보리차',
+      '숙면과 깊은 휴식을 돕는 라벤더 카모마일 블렌딩'
+    ],
+    activities: [
+      '취침 전 따뜻한 물로 15분간 족욕이나 반신욕 즐기기',
+      '좋아하는 책의 울림 있는 한 문장을 조용히 필사하기',
+      '조용한 음악을 틀고 눈을 감은 채 파도 소리에 귀 기울이기',
+      '감정에 휩쓸리지 않고 물처럼 유연하게 흘려보내는 마음 연습'
+    ]
+  }
+};
+
+// 십신 카테고리별 일일 힐링 리추얼 풀
+const TEN_GOD_RITUALS: Record<string, string[]> = {
+  식상: [
+    '점심 식후 햇살을 받으며 15분 동안 가볍게 산책하고 떠오른 생각을 메모하기',
+    '평소 듣지 않던 새로운 장르의 잔잔한 연주곡 한 곡을 온전히 음미하기',
+    '소중한 사람에게 마음이 담긴 따뜻한 칭찬과 감사 인사 먼저 건네기',
+    '생각만 하던 창의적 아이디어를 종이에 손글씨로 3줄 요약해보기'
+  ],
+  재성: [
+    '오늘 반드시 끝낼 핵심 목표 1가지를 정해 집중 몰입 시간 갖기',
+    '지갑 속 영수증과 가방 안의 불필요한 소지품을 깔끔하게 비우고 정리하기',
+    '나를 진정으로 가치 있게 만드는 지출과 습관을 점검하기',
+    '책상 위 먼지를 닦아내고 공간의 여백을 확보해 맑은 재물운 들이기'
+  ],
+  관성: [
+    '허리와 어깨를 곧게 펴고 4-4-8 리듬의 깊은 복식호흡 3세트 진행하기',
+    '미루어 두었던 중요한 약속이나 회신 메일을 단정하고 신속하게 처리하기',
+    '신발 코를 가지런히 정돈하고 옷깃을 단정히 매만져 외적 기품 세우기',
+    '하루 시작 전 오늘의 우선순위 체크리스트를 3가지로 압축해 점검하기'
+  ],
+  인성: [
+    '좋아하는 책의 마음을 울리는 문장 하나를 필사 노트에 차분히 적어보기',
+    '취침 30분 전 스마트폰을 내려놓고 따뜻한 족욕이나 차 한 잔 즐기기',
+    '나에게 긍정적인 가르침을 주는 멘토나 존경하는 인물의 통찰 되새기기',
+    '오늘 하루 나를 스쳐간 감사한 순간 3가지를 가슴에 떠올려보기'
+  ],
+  비겁: [
+    '거울 속 내 눈을 바라보며 "나는 내 삶의 당당한 주인이다" 소리 내어 말하기',
+    '가벼운 스트레칭이나 스쿼트 20회로 신체 코어와 하체 활력 깨우기',
+    '타인의 시선보다 내 직관이 가리키는 소신대로 한 걸음 내딛기',
+    '오늘 하루 수고할 나 자신을 위해 정갈하고 영양 가득한 한 끼 대접하기'
+  ]
+};
+
+// 12지신별 행운의 황금 시간대 (길시)
+const LUCKY_HOUR_MAP: Record<string, string> = {
+  子: '저녁 23:00 ~ 01:00 (자시: 고요한 영감과 내면 충전의 시간)',
+  丑: '새벽 01:00 ~ 03:00 (축시: 차분한 성찰과 휴식의 시간)',
+  寅: '새벽 03:00 ~ 05:00 (인시: 새로운 기운이 태동하는 새벽 시간)',
+  卯: '아침 05:00 ~ 07:00 (묘시: 맑은 태양빛과 생기 돋는 아침 시간)',
+  辰: '오전 07:00 ~ 09:00 (진시: 활력 넘치는 하루 계획과 도약의 시간)',
+  巳: '오전 09:00 ~ 11:00 (사시: 판단력과 지적 집중력이 정점에 달하는 시간)',
+  午: '낮 11:00 ~ 13:00 (오시: 따뜻한 에너지와 활발한 교류의 정오 시간)',
+  未: '오후 13:00 ~ 15:00 (미시: 결실과 협력, 편안한 안정을 돕는 시간)',
+  申: '오후 15:00 ~ 17:00 (신시: 창의와 영감, 추진력이 빛나는 시간)',
+  酉: '오후 17:00 ~ 19:00 (유시: 하루 일과의 마무리와 정돈에 길한 시간)',
+  戌: '저녁 19:00 ~ 21:00 (술시: 평온한 성찰과 가족·연인과의 치유 시간)',
+  亥: '밤 21:00 ~ 23:00 (해시: 숙면을 준비하고 심신을 이완하는 시간)'
+};
+
 /**
  * 당일의 천문 일진(日辰)과 내담자의 사주 원국(일간 및 오행)을 비교하여
- * '오늘의 사주 일진 리포트' 및 음성 낭독용 TTS 텍스트를 실시간 계산합니다.
+ * 매일 다르게 처방되는 '오늘의 행운 보약 처방' 및 음성 낭독용 TTS 텍스트를 실시간 계산합니다.
+ * seedOffset 파라미터를 통해 같은 날에도 다른 맞춤 보약 처방(새로고침)을 제공합니다.
  */
-export function generateDailySajuReport(saju: SajuAnalysisResult, targetDate: Date = new Date()): DailySajuReport {
+export function generateDailySajuReport(
+  saju: SajuAnalysisResult,
+  targetDate: Date = new Date(),
+  seedOffset: number = 0
+): DailySajuReport {
   const y = targetDate.getFullYear();
   const m = targetDate.getMonth() + 1;
   const d = targetDate.getDate();
@@ -1006,21 +1240,68 @@ export function generateDailySajuReport(saju: SajuAnalysisResult, targetDate: Da
     harmonySummary = `오늘의 ${todayElGan} 기운은 ${saju.name}님의 본원인 ${saju.dayMaster.symbolName}과 조화롭게 어우러져 편안하고 안정된 리듬을 선사합니다.`;
   }
 
-  const remedy = {
-    luckyColor: saju.elements.lacking.luckyColor,
-    luckyFood: saju.elements.lacking.luckyFood,
-    luckyActivity: saju.elements.lacking.luckyPlace,
-    actionTip: saju.yongsin.actionTip,
+  // ==========================================
+  // 🌿 오늘의 동적 행운 보약 처방 산출 엔진
+  // ==========================================
+  // 날짜(y, m, d), 당일 60갑자 일진 인덱스(di), 사용자 이름, 그리고 새로고침 시드(seedOffset)를 융합한 일일 난수 시드
+  const nameHash = (saju.name || '여행자').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const daySeed = Math.abs((di * 137 + (y * 372 + m * 31 + d) * 19 + nameHash * 7 + seedOffset * 53) % 10000);
+
+  // 오늘의 집중 보약 오행 결정
+  // 1순위: 오늘 하늘 기운이 사주 결핍/용신 기운일 때 즉시 그 기운을 강화
+  // 2순위: 사용자 사주의 결핍(lacking) 오행과 용신(yongsin) 오행을 중심으로, 당일 일진과 조화되는 오행 순환 배분
+  const candidateElements: FiveElement[] = [
+    saju.elements.lacking.element,
+    saju.yongsin.element,
+    todayElGan,
+    todayElZhi
+  ];
+  const targetElement: FiveElement = candidateElements[(daySeed + seedOffset) % candidateElements.length] || saju.elements.lacking.element;
+  const elementDataset = DYNAMIC_REMEDY_DATA[targetElement] || DYNAMIC_REMEDY_DATA.목;
+
+  // 동적 처방 요소 선택 (모듈러 연산으로 매일 달라지고, 새로고침 시 즉시 다음 처방으로 회전)
+  const titleIndex = (daySeed + seedOffset) % elementDataset.titles.length;
+  const colorIndex = (daySeed + seedOffset) % elementDataset.colors.length;
+  const foodIndex = (daySeed + seedOffset * 2) % elementDataset.foods.length;
+  const teaIndex = (daySeed + seedOffset) % elementDataset.teas.length;
+  const selectedColorObj = elementDataset.colors[colorIndex];
+  
+  // 십신 기반 실천 팁 선택
+  const ritualPool = TEN_GOD_RITUALS[tenGodGan.category] || elementDataset.activities;
+  const ritualIndex = (daySeed + seedOffset) % ritualPool.length;
+  const actionTip = ritualPool[ritualIndex];
+
+  // 길한 시간대 (당일 지지 및 육합/삼합 기운 고려)
+  const luckyTime = LUCKY_HOUR_MAP[todayZhi] || '오전 09:00 ~ 11:00 (사시, 생기 돋는 골든아워)';
+
+  // 명리학적 처방 이유 구성
+  const prescriptionTitle = elementDataset.titles[titleIndex];
+  const prescriptionReason = `오늘 당일 일진(${todayGanKr}${todayZhiKr}일)에 흐르는 ${tenGodGan.name}의 기운과 ${saju.name}님의 용신(${saju.yongsin.name}) 에너지를 조화롭게 융합하여 조제된 맞춤 처방입니다. ${targetElement}(${ELEMENT_DETAILS[targetElement].name}) 기운을 보양하여 오늘 하루 최고의 생기와 밸런스를 돕습니다.`;
+
+  const remedy: DailyRemedyInfo = {
+    luckyColor: selectedColorObj.name,
+    luckyColorDetail: selectedColorObj.detail,
+    luckyFood: elementDataset.foods[foodIndex],
+    luckyActivity: elementDataset.activities[foodIndex % elementDataset.activities.length],
+    actionTip,
+    luckyTea: elementDataset.teas[teaIndex],
+    luckyTime,
+    prescriptionTitle,
+    prescriptionReason,
+    elementFocus: targetElement,
+    elementName: ELEMENT_DETAILS[targetElement].name,
   };
 
-  // 음성 리포트 대본 생성 (자연스러운 한국어 구어체)
+  // 음성 리포트 대본 생성 (자연스러운 한국어 구어체로 오늘의 처방전 명시)
   const speechText = [
     `안녕하세요, ${saju.name}님! ${m}월 ${d}일 오늘의 사주 만세력 리포트를 들려드릴게요.`,
     `오늘의 일진은 ${todayGanKr}${todayZhiKr}일, ${todayAnimal}의 날이며 ${todayElGan}의 기운이 흐르는 날입니다.`,
     `${saju.name}님의 타고난 사주 본원은 ${saju.dayMaster.symbolName}인 ${saju.dayMaster.korean}입니다.`,
     `오늘 찾아온 ${tenGodGan.name}의 기운은 ${saju.name}님에게 ${categoryAdvice}`,
     harmonySummary,
-    `오늘 하루 개운을 돕는 추천 행운 컬러는 ${remedy.luckyColor}이며, 추천 음식은 ${remedy.luckyFood}입니다.`,
+    `오늘 하루 ${saju.name}님을 위한 행운 보약 처방은 '${remedy.prescriptionTitle}'입니다.`,
+    `추천 행운 컬러는 ${remedy.luckyColor}이며, 추천 보약 음식은 ${remedy.luckyFood}입니다.`,
+    `또한 맑은 기운을 돕는 ${remedy.luckyTea}를 추천해 드리며, 오늘의 개운 실천 팁은 ${remedy.actionTip}.`,
     `${saju.dayMaster.mindsetAdvice}`,
     `오늘 하루도 ${saju.name}님의 고유한 빛으로 가장 당당하고 행복한 하루를 보내시길 진심으로 축복합니다.`,
   ].filter(Boolean).join(' ');

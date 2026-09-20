@@ -47,13 +47,18 @@ export default function SelectionBridgeToolbar({ currentPath: _currentPath }: Se
 
     let clearTimer: NodeJS.Timeout | null = null;
     const handleDocumentMouseDown = (e: MouseEvent | TouchEvent) => {
+      // 대기 중인 선택이 전혀 없으면 불필요한 DOM 질의 및 타이머 스케줄링 즉시 생략
+      if (typeof sessionStorage === 'undefined' || !sessionStorage.getItem('prism_dragged_selection_context')) {
+        return;
+      }
+
       // 🛡️ 빅뱅 버튼이나 토스 조작 트리거를 클릭/터치할 때는 selection을 지우지 않고 유지!
       const target = e.target as HTMLElement | null;
       if (target?.closest?.('#bigbang-omnibutton, [data-bigbang], [data-no-clear-selection]')) {
         return;
       }
 
-      if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('bigbang_pressing') === 'true') {
+      if (sessionStorage.getItem('bigbang_pressing') === 'true') {
         return;
       }
 

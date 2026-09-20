@@ -57,7 +57,7 @@ export function getLiveSelectedText(): string {
 
 
 /**
- * 선택된 텍스트를 세션 스토리지에 안전하게 저장
+ * 선택된 텍스트를 세션 스토리지에 안전하게 저장 (중복 저장 및 불필요한 이벤트 발행 방지)
  */
 export function savePendingSelection(
   text: string,
@@ -67,8 +67,23 @@ export function savePendingSelection(
 ): void {
   if (!text || text.trim().length < 2) return;
   try {
+    const trimmed = text.trim();
+    const existingRaw = sessionStorage.getItem(SELECTION_STORAGE_KEY);
+    if (existingRaw) {
+      try {
+        const existing = JSON.parse(existingRaw) as DraggedSelectionContext;
+        if (
+          existing.text === trimmed &&
+          existing.target === target &&
+          existing.sourcePath === (sourcePath || (typeof window !== 'undefined' ? window.location.pathname : undefined))
+        ) {
+          return; // 동일한 선택 상태이므로 중복 디스패치 생략
+        }
+      } catch (_) {}
+    }
+
     const payload: DraggedSelectionContext = {
-      text: text.trim(),
+      text: trimmed,
       timestamp: Date.now(),
       sourcePath: sourcePath || (typeof window !== 'undefined' ? window.location.pathname : undefined),
       target,
@@ -122,10 +137,12 @@ export function peekPendingSelection(): DraggedSelectionContext | null {
 }
 
 /**
- * 대기 중인 선택 텍스트를 즉시 삭제하고 토스 모드 취소 이벤트 발행
+ * 대기 중인 선택 텍스트를 즉시 삭제하고 토스 모드 취소 이벤트 발행 (선택 텍스트가 있을 때만 유효하게 발행)
  */
 export function clearPendingSelection(): void {
   try {
+    const existing = sessionStorage.getItem(SELECTION_STORAGE_KEY);
+    if (!existing) return; // 대기 중인 선택이 없을 때는 중복 이벤트/불필요한 리렌더링 방지
     sessionStorage.removeItem(SELECTION_STORAGE_KEY);
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('prism:selection_cleared'));

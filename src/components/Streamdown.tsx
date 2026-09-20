@@ -104,7 +104,17 @@ function replaceEmotionWithEmoji(text: string): string {
   return res;
 }
 
-export function Streamdown({ children = '', typewriterSpeed = 15, fixedChunkSize }: { children?: string, typewriterSpeed?: number, fixedChunkSize?: number }) {
+export function Streamdown({
+  children = '',
+  typewriterSpeed = 15,
+  fixedChunkSize,
+  immediate = false,
+}: {
+  children?: string;
+  typewriterSpeed?: number;
+  fixedChunkSize?: number;
+  immediate?: boolean;
+}) {
   const textContent = useMemo(() => {
     if (children === null || children === undefined) return '';
     let rawText = '';
@@ -122,9 +132,14 @@ export function Streamdown({ children = '', typewriterSpeed = 15, fixedChunkSize
     return replaceEmotionWithEmoji(rawText);
   }, [children]);
 
-  const [displayedText, setDisplayedText] = useState('');
+  const [displayedText, setDisplayedText] = useState(() => (immediate || typewriterSpeed <= 0 ? textContent : ''));
   
   useEffect(() => {
+    if (immediate || typewriterSpeed <= 0) {
+      setDisplayedText(textContent);
+      return;
+    }
+
     // If the new content completely changed and isn't just appending, reset
     if (!textContent.startsWith(displayedText)) {
       setDisplayedText('');
@@ -143,10 +158,12 @@ export function Streamdown({ children = '', typewriterSpeed = 15, fixedChunkSize
 
         if (fixedChunkSize) {
           chunkSize = fixedChunkSize;
+        } else if (distance > 400) {
+          chunkSize = 25;
         } else if (distance > 200) {
-          chunkSize = 6;
+          chunkSize = 10;
         } else if (distance > 100) {
-          chunkSize = 3;
+          chunkSize = 5;
         } else if (distance > 20) {
           chunkSize = 2;
         }
@@ -157,7 +174,7 @@ export function Streamdown({ children = '', typewriterSpeed = 15, fixedChunkSize
       
       return () => clearTimeout(timeout);
     }
-  }, [textContent, displayedText, typewriterSpeed, fixedChunkSize]);
+  }, [textContent, displayedText, typewriterSpeed, fixedChunkSize, immediate]);
 
   // Check if the entire string is valid JSON
   let jsonData = null;

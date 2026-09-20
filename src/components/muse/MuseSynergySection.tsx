@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Sparkles, Palette, Volume2, VolumeX, Check, Copy, RefreshCw, 
-  Award, User, Feather, Lightbulb, Image as ImageIcon, Eye, X, Download, BookOpen 
+  User, Feather, Lightbulb, Image as ImageIcon, Eye, X, Download, BookOpen 
 } from 'lucide-react';
 import { useApp, getPersistentUserProfile } from '@/contexts/AppContext';
 import { invokeLLM } from '@/lib/ai';
@@ -119,28 +119,6 @@ export function MuseSynergySection() {
   const [artworkImageUrl, setArtworkImageUrl] = useState<string>(MASTERS_LIST[0].imageUrl);
   const [isGeneratingArtwork, setIsGeneratingArtwork] = useState<boolean>(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState<boolean>(false);
-  const [savedToast, setSavedToast] = useState<boolean>(false);
-
-  const handleSaveToReBible = () => {
-    try {
-      const savedKey = 'lucy_rebible_inspirations';
-      const existing = JSON.parse(localStorage.getItem(savedKey) || '[]');
-      const newEntry = {
-        id: `rebible_${Date.now()}`,
-        master: selectedMaster.name,
-        piece: selectedMaster.piece,
-        insight: dialogueData.masterpieceInsight,
-        advice: dialogueData.masterDirectAdvice,
-        affirmation: dialogueData.inspirationAffirmation,
-        savedAt: new Date().toISOString(),
-      };
-      localStorage.setItem(savedKey, JSON.stringify([newEntry, ...existing].slice(0, 50)));
-      setSavedToast(true);
-      setTimeout(() => setSavedToast(false), 2500);
-    } catch (e) {
-      console.warn('Failed to save to Re:Bible:', e);
-    }
-  };
 
   const audioCtxRef = useRef<AudioContext | null>(null);
   const oscRef = useRef<OscillatorNode | null>(null);
@@ -455,18 +433,6 @@ export function MuseSynergySection() {
               >
                 {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
                 <span>{copied ? '복사 완료' : '마스터클래스 전체 복사'}</span>
-              </button>
-
-              <button
-                onClick={handleSaveToReBible}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                  savedToast
-                    ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/50'
-                    : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/30'
-                }`}
-              >
-                {savedToast ? <Check size={14} className="text-emerald-400" /> : <Award size={14} className="text-amber-300" />}
-                <span>{savedToast ? '영감의 서 저장 완료!' : 'Re:Bible에 저장'}</span>
               </button>
             </div>
           </div>

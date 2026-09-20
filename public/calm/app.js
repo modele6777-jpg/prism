@@ -7,17 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentWbFilter = 'all';
   let currentWbSearch = '';
 
-  // 1. Service Worker Registration for PWA (캐시 무효화 버전 24.0)
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js?v=24.0')
-        .then(reg => {
-          reg.update();
-          console.log('✅ PWA Service Worker Registered (v24.0):', reg.scope);
-        })
-        .catch(err => console.warn('⚠️ PWA Service Worker Registration Failed:', err));
-    });
-  }
+  // 1. Service Worker is centrally managed by top-level PRISM app (iframe SW registration disabled to prevent Safari PWA WebKit worker deadlocks)
 
   // 2. PWA Install Prompt
   let deferredPrompt = null;
@@ -270,22 +260,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 🌟 Key iframe 내부 텍스트 선택(스크롤)을 상위 PRISM 부모 창으로 전달
+  // 🌟 Key iframe 내부 텍스트 선택(스크롤)을 상위 PRISM 부모 창으로 전달 (중복 및 공백 스팸 방지)
   let iframeSelTimer = null;
+  let lastPostedIframeText = '';
   document.addEventListener('selectionchange', () => {
     if (iframeSelTimer) clearTimeout(iframeSelTimer);
     iframeSelTimer = setTimeout(() => {
       try {
         const sel = window.getSelection();
         const text = sel ? sel.toString().trim() : '';
+        const validText = text && text.length >= 2 ? text : '';
+        if (validText === lastPostedIframeText) return;
+        lastPostedIframeText = validText;
         if (window.parent && window.parent !== window) {
           window.parent.postMessage({
             type: 'PRISM_IFRAME_SELECTION',
-            text: text && text.length >= 2 ? text : '',
+            text: validText,
           }, '*');
         }
       } catch (_) {}
-    }, 120);
+    }, 150);
   });
 
   setTimeout(checkAutoLaunchPractice, 200);

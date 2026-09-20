@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Shield, Sparkles, HeartPulse, Compass, RefreshCw, Volume2, VolumeX, CheckCircle, Copy, Check, Flame, ShieldAlert, Award, Zap, ArrowRight, Sun } from 'lucide-react';
+import { Shield, Sparkles, HeartPulse, Compass, RefreshCw, Volume2, VolumeX, CheckCircle, Copy, Check, Flame, ShieldAlert, Award, Zap, ArrowRight, Sun, Play, Square } from 'lucide-react';
 import { useApp, getPersistentUserProfile } from '@/contexts/AppContext';
 import { invokeLLM } from '@/lib/ai';
 import { recordPrismFeature } from '@/lib/prismOmniSync';
@@ -148,10 +148,37 @@ export function PrologueSynergySection() {
     if (isTTSActive) {
       stopTTS();
     } else {
-      const text = `4단계 감정 CPR 방패 프로토콜입니다. 1단계 감정 인지: ${aegisData.cprStep1Acknowledge}. 2단계 방패 호흡: ${aegisData.cprStep2ShieldBreath}. 3단계 에너지 치환: ${aegisData.cprStep3Transmute}. 4단계 행동 재탄생: ${aegisData.cprStep4RebirthAction}`;
+      if (!isBreathing) {
+        setIsBreathing(true);
+        setBreathPhase('들숨 (Inhale)');
+        setBreathCount(4);
+      }
+      const text = `방패 호흡 가이드입니다. ${aegisData.cprStep2ShieldBreath}. 천천히 4초 동안 숨을 들이쉬고, 4초 동안 머금으며 에너지를 모으고, 8초 동안 길게 내쉬며 마음의 멘탈 방패를 굳건히 세웁니다. 1단계 감정 인지: ${aegisData.cprStep1Acknowledge}. 3단계 에너지 치환: ${aegisData.cprStep3Transmute}. 4단계 행동 재탄생: ${aegisData.cprStep4RebirthAction}.`;
       playTTS(text, 'Kore', false, '치유');
     }
   };
+
+  const handleToggleShieldBreathing = () => {
+    if (isBreathing) {
+      setIsBreathing(false);
+      stopTTS();
+    } else {
+      setIsBreathing(true);
+      setBreathPhase('들숨 (Inhale)');
+      setBreathCount(4);
+      // 호흡 가이드 애니메이션과 음성 낭독을 동시에 동조 실행
+      const text = `방패 호흡 가이드입니다. ${aegisData.cprStep2ShieldBreath}. 천천히 4초 동안 숨을 들이쉬고, 4초 동안 머금으며 에너지를 모으고, 8초 동안 길게 내쉬며 마음의 멘탈 방패를 굳건히 세웁니다. 1단계 감정 인지: ${aegisData.cprStep1Acknowledge}. 3단계 에너지 치환: ${aegisData.cprStep3Transmute}. 4단계 행동 재탄생: ${aegisData.cprStep4RebirthAction}.`;
+      playTTS(text, 'Kore', false, '치유');
+    }
+  };
+
+  // Tab switch cleanup for breathing and TTS
+  useEffect(() => {
+    if (activeTab !== 'cpr_protocol' && isBreathing) {
+      setIsBreathing(false);
+      stopTTS();
+    }
+  }, [activeTab, isBreathing]);
 
   // Breathing Loop Guide
   useEffect(() => {
@@ -481,22 +508,33 @@ export function PrologueSynergySection() {
                 </span>
                 <div className="flex items-center gap-2">
                   <button
+                    type="button"
                     onClick={handleSpeakCPR}
-                    className="text-xs font-bold px-3 py-1 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 transition-all cursor-pointer flex items-center gap-1"
+                    className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-all cursor-pointer flex items-center gap-1.5 ${
+                      isTTSActive
+                        ? 'bg-amber-500/30 text-amber-200 border-amber-500/50 animate-pulse'
+                        : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/30'
+                    }`}
                   >
-                    <Volume2 size={12} />
-                    <span>{isTTSActive ? '음성 중단' : 'CPR 음성 가이드'}</span>
+                    {isTTSActive ? <VolumeX size={12} /> : <Volume2 size={12} />}
+                    <span>{isTTSActive ? '음성 중단' : 'CPR 음성 낭독'}</span>
                   </button>
                   <button
-                    onClick={() => setIsBreathing(!isBreathing)}
-                    className="text-xs font-bold px-3 py-1 rounded-full bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 transition-all cursor-pointer"
+                    type="button"
+                    onClick={handleToggleShieldBreathing}
+                    className={`text-xs font-bold px-3.5 py-1.5 rounded-full border transition-all cursor-pointer flex items-center gap-1.5 ${
+                      isBreathing
+                        ? 'bg-red-500 text-white border-red-400 shadow-md shadow-red-500/40 animate-pulse'
+                        : 'bg-red-500/20 hover:bg-red-500/30 text-red-300 border-red-500/40'
+                    }`}
                   >
-                    {isBreathing ? '호흡 정지' : '호흡 시작하기'}
+                    {isBreathing ? <Square size={11} className="fill-current" /> : <Play size={11} className="fill-current" />}
+                    <span>{isBreathing ? '호흡 정지' : '호흡 & 음성 시작'}</span>
                   </button>
                 </div>
               </div>
 
-              {isBreathing && (
+              {isBreathing ? (
                 <div className="relative w-36 h-36 flex items-center justify-center py-4">
                   <motion.div
                     animate={{
@@ -512,6 +550,10 @@ export function PrologueSynergySection() {
                     <span className="text-2xl font-mono font-bold text-amber-300">{breathCount}s</span>
                   </motion.div>
                 </div>
+              ) : (
+                <p className="text-xs text-white/50 py-2">
+                  ‘호흡 & 음성 시작’을 누르면 4-4-8 방패 호흡 리듬과 음성 가이드가 동시에 진행됩니다.
+                </p>
               )}
             </div>
 

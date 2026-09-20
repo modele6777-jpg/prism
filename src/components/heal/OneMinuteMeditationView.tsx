@@ -199,6 +199,9 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
     setIsRunning(false);
     isRunningRef.current = false;
     meditationSound.stopTone();
+    // 🌟 1분 명상 타이머 종료 시 확언 연속 자동 재생 루프 및 TTS 즉시 자동 종료
+    stopAffirmationLoop();
+    stopTTS();
     if (soundEnabled) {
       meditationSound.playSingingBowlBell();
     }
@@ -216,7 +219,7 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
     );
 
     refreshHistory();
-  }, [soundEnabled, customPrescription, activeTheme, uid, conditionInput, refreshHistory]);
+  }, [soundEnabled, customPrescription, activeTheme, uid, conditionInput, refreshHistory, stopAffirmationLoop]);
 
   useEffect(() => {
     if (isRunning && secondsRemaining > 0) {

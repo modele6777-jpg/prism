@@ -34,12 +34,8 @@ export default function CalmApp() {
       if (e.data.type === "PRISM_IFRAME_SELECTION") {
         if (e.data.text && e.data.text.length >= 2) {
           savePendingSelection(e.data.text, undefined, '/key');
-          window.dispatchEvent(
-            new CustomEvent('prism:selection_saved', { detail: { text: e.data.text, sourcePath: '/key' } })
-          );
         } else {
           clearPendingSelection();
-          window.dispatchEvent(new CustomEvent('prism:selection_cleared'));
         }
         return;
       }

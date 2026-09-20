@@ -95,7 +95,31 @@ export function TrinityDestinyReportView({ onConsult }: TrinityDestinyReportView
   const [questionInput, setQuestionInput] = useState('');
   const [aiAnswers, setAiAnswers] = useState<Array<{ q: string; a: string; time: string }>>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [activeConsultTtsIdx, setActiveConsultTtsIdx] = useState<number | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // 음성 재생 상태가 끝나면 재생 인덱스 초기화
+  useEffect(() => {
+    if (!isTTSActive) {
+      setActiveConsultTtsIdx(null);
+    }
+  }, [isTTSActive]);
+
+  // AI 상담 답변 TTS 토글 핸들러
+  const handleToggleConsultTts = async (idx: number, answerText: string) => {
+    if (activeConsultTtsIdx === idx && isTTSActive) {
+      stopTTS();
+      setActiveConsultTtsIdx(null);
+      return;
+    }
+    stopTTS();
+    setActiveConsultTtsIdx(idx);
+    try {
+      await playTTSInChunks(answerText, 'Kore', 320, '따뜻함');
+    } finally {
+      setActiveConsultTtsIdx((prev) => (prev === idx ? null : prev));
+    }
+  };
 
   // 대화 추가 시 하단 자동 스크롤
   useEffect(() => {
@@ -154,11 +178,23 @@ export function TrinityDestinyReportView({ onConsult }: TrinityDestinyReportView
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // 오늘의 사주 일진 및 운세 리포트 계산
+  // 오늘의 사주 일진 및 운세 리포트 계산 (매일 날짜 및 시드 기반 동적 계산)
+  const [remedySeedOffset, setRemedySeedOffset] = useState<number>(0);
+  const [isRemedyShuffling, setIsRemedyShuffling] = useState<boolean>(false);
+  const [showRemedyDetail, setShowRemedyDetail] = useState<boolean>(false);
+
   const todayReport = useMemo(() => {
     if (!saju) return null;
-    return generateDailySajuReport(saju);
-  }, [saju]);
+    return generateDailySajuReport(saju, new Date(), remedySeedOffset);
+  }, [saju, remedySeedOffset]);
+
+  const handleShuffleRemedy = () => {
+    setIsRemedyShuffling(true);
+    setRemedySeedOffset(prev => prev + 1);
+    setTimeout(() => {
+      setIsRemedyShuffling(false);
+    }, 350);
+  };
 
   // TTS 토글: '오늘의 사주 리포트' 음성 낭독 및 중지
   const handleToggleTTS = async () => {
@@ -168,7 +204,7 @@ export function TrinityDestinyReportView({ onConsult }: TrinityDestinyReportView
     }
     if (!saju) return;
 
-    const report = todayReport || generateDailySajuReport(saju);
+    const report = todayReport || generateDailySajuReport(saju, new Date(), remedySeedOffset);
     if (!report?.speechText) return;
 
     // 자연스럽고 끊김 없는 청크 스트리밍 재생 (음성 클릭 시 즉시 중지 가능)
@@ -568,24 +604,113 @@ ${saju.systemPromptSummary}
                 </p>
               </div>
 
-              {/* 3. 오늘의 3대 개운 팁 */}
-              <div className="p-4 rounded-2xl bg-black/40 border border-white/5 space-y-2">
-                <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1 font-mono">
-                  <span>🌿</span> 오늘의 행운 보약 처방
-                </span>
-                <div className="space-y-1.5 text-xs text-zinc-300">
-                  <div className="flex items-center justify-between">
-                    <span className="text-zinc-400">행운 컬러:</span>
-                    <span className="font-bold text-white px-2 py-0.5 rounded bg-white/10">{todayReport.remedy.luckyColor}</span>
+              {/* 3. 오늘의 행운 보약 처방 (동적 맞춤 처방전) */}
+              <div className="p-4 rounded-2xl bg-black/40 border border-emerald-500/20 space-y-2.5 relative overflow-hidden group">
+                <div className="flex items-center justify-between gap-1">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1 font-mono">
+                      <span>🌿</span> 오늘의 행운 보약 처방
+                    </span>
+                    {todayReport.remedy.prescriptionTitle && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-medium">
+                        {todayReport.remedy.prescriptionTitle.split(' ')[0]}
+                      </span>
+                    )}
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-zinc-400">추천 음식:</span>
-                    <span className="font-bold text-white truncate max-w-[140px]">{todayReport.remedy.luckyFood}</span>
+
+                  {/* 다른 처방 보기 & 상세 해설 토글 */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={handleShuffleRemedy}
+                      title="오늘의 다른 보약 처방 보기"
+                      className="px-2 py-1 rounded-lg bg-white/5 hover:bg-emerald-500/20 text-zinc-400 hover:text-emerald-300 border border-white/5 transition-all text-[10px] flex items-center gap-1 cursor-pointer active:scale-95"
+                    >
+                      <RefreshCw size={11} className={isRemedyShuffling ? "animate-spin text-emerald-400" : ""} />
+                      <span>다른 처방</span>
+                    </button>
+                    <button
+                      onClick={() => setShowRemedyDetail(!showRemedyDetail)}
+                      title="보약 처방 상세 해설"
+                      className={`px-1.5 py-1 rounded-lg border transition-all text-[10px] cursor-pointer ${
+                        showRemedyDetail ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-white/5 text-zinc-400 hover:text-zinc-200 border-white/5'
+                      }`}
+                    >
+                      {showRemedyDetail ? '접기' : '해설'}
+                    </button>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-zinc-400">개운 팁:</span>
-                    <span className="font-bold text-amber-300 truncate max-w-[140px]">{todayReport.remedy.actionTip}</span>
+                </div>
+
+                {/* 핵심 3대 처방 (컬러, 보약 음식, 힐링 리추얼) */}
+                <div className="space-y-2 text-xs text-zinc-300">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-zinc-400 shrink-0">행운 컬러:</span>
+                    <span className="font-bold text-white px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-200 border border-emerald-500/30 text-[11px]">
+                      {todayReport.remedy.luckyColor}
+                    </span>
                   </div>
+
+                  <div className="space-y-0.5">
+                    <div className="flex items-center justify-between text-zinc-400 text-[11px]">
+                      <span>추천 보약 음식:</span>
+                      <span className="text-[10px] text-zinc-500">약선 식단</span>
+                    </div>
+                    <p className="font-medium text-white text-[11px] leading-snug bg-white/[0.03] p-1.5 rounded-lg border border-white/5">
+                      🍲 {todayReport.remedy.luckyFood}
+                    </p>
+                  </div>
+
+                  <div className="space-y-0.5">
+                    <div className="flex items-center justify-between text-zinc-400 text-[11px]">
+                      <span>개운 실천 팁:</span>
+                      <span className="text-[10px] text-amber-400/80 font-mono">RITUAL</span>
+                    </div>
+                    <p className="font-medium text-amber-200 text-[11px] leading-snug bg-amber-500/10 p-1.5 rounded-lg border border-amber-500/20">
+                      ✨ {todayReport.remedy.actionTip}
+                    </p>
+                  </div>
+
+                  {/* 추가 힐링 정보: 추천 차(Tea) & 길한 시간(Golden Hour) */}
+                  <div className="pt-0.5 grid grid-cols-2 gap-1.5 text-[10px]">
+                    <div className="p-1.5 rounded-lg bg-white/[0.02] border border-white/5">
+                      <span className="text-zinc-500 block">🍵 힐링 티</span>
+                      <span className="text-zinc-300 font-medium truncate block" title={todayReport.remedy.luckyTea}>
+                        {todayReport.remedy.luckyTea.split('(')[0]}
+                      </span>
+                    </div>
+                    <div className="p-1.5 rounded-lg bg-white/[0.02] border border-white/5">
+                      <span className="text-zinc-500 block">⏰ 길한 시간</span>
+                      <span className="text-zinc-300 font-medium truncate block" title={todayReport.remedy.luckyTime}>
+                        {todayReport.remedy.luckyTime.split('(')[0]}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 상세 해설 토글 뷰 */}
+                  <AnimatePresence>
+                    {showRemedyDetail && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden pt-1"
+                      >
+                        <div className="p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-[11px] space-y-1.5 text-zinc-300">
+                          <div className="flex items-center gap-1 text-emerald-400 font-bold">
+                            <Sparkles size={12} />
+                            <span>{todayReport.remedy.prescriptionTitle}</span>
+                          </div>
+                          <p className="text-[10px] text-zinc-300 leading-relaxed">
+                            {todayReport.remedy.prescriptionReason}
+                          </p>
+                          {todayReport.remedy.luckyColorDetail && (
+                            <p className="text-[10px] text-emerald-300/80 leading-relaxed border-t border-emerald-500/20 pt-1">
+                              💡 <strong>스타일링 팁:</strong> {todayReport.remedy.luckyColorDetail}
+                            </p>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
             </div>
@@ -1198,8 +1323,32 @@ ${saju.systemPromptSummary}
                   </div>
                   <div className="max-w-[88%] px-4 py-3 rounded-2xl rounded-tl-sm bg-[#24262b] border border-white/10 text-xs sm:text-sm text-zinc-100 leading-relaxed shadow-md">
                     <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-white/5 text-[10px] text-amber-300/80 font-bold">
-                      <span>명리 마스터 루시</span>
-                      <span className="text-zinc-500 font-mono">{item.time}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span>명리 마스터 루시</span>
+                        <span className="text-zinc-500 font-mono">{item.time}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleConsultTts(idx, item.a)}
+                        className={`px-2 py-0.5 rounded-full flex items-center gap-1 text-[10px] font-medium transition-all active:scale-95 cursor-pointer ${
+                          activeConsultTtsIdx === idx && isTTSActive
+                            ? "bg-amber-400/25 text-amber-300 border border-amber-400/50 shadow-sm"
+                            : "bg-white/10 hover:bg-white/20 text-zinc-300 hover:text-white border border-white/10"
+                        }`}
+                        title={activeConsultTtsIdx === idx && isTTSActive ? "낭독 중지" : "답변 음성으로 듣기"}
+                      >
+                        {activeConsultTtsIdx === idx && isTTSActive ? (
+                          <>
+                            <VolumeX size={11} className="text-amber-300 animate-pulse" />
+                            <span>낭독 중지</span>
+                          </>
+                        ) : (
+                          <>
+                            <Volume2 size={11} className="text-amber-400" />
+                            <span>소리로 듣기</span>
+                          </>
+                        )}
+                      </button>
                     </div>
                     <p className="whitespace-pre-line break-words">{item.a}</p>
                   </div>

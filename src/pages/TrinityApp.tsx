@@ -810,30 +810,23 @@ function deduplicateReadingText(text: string): string {
 }
 
 /**
- * 🚫 타로 결과 음성 낭독 및 본문 표시 시 핵심 요약 블록 100% 원천 제거
+ * 🚫 타로 결과 음성 낭독 및 본문 표시 시 후행 요약 블록 깔끔하게 정리
  * - 사용자 요청: "타로 결과 읽어줄때 핵심요약은 읽지마"
- * - [핵심 3줄 요약], ### 핵심 요약 및 관련 불릿 항목을 온전히 제거하여 순수 타로 마스터 본문 리딩만 읽도록 보장
+ * - [핵심 3줄 요약], ### 핵심 요약 블록을 온전히 분리하여 순수 타로 마스터 본문 리딩과 요약을 독립적으로 관리
  */
 export function stripSummaryFromTarotText(text: string): string {
   if (!text) return "";
 
-  // 1. 후행 핵심 요약 섹션(헤딩, 대괄호 태그, 번호 헤딩 및 이후 전체 텍스트) 원천 제거
-  let cleaned = text
-    .replace(
-      /(?:\r?\n|^)\s*(?:#{1,6}\s*)?(?:✨\s*)?(?:\d+\.\s*)?(?:\[\s*)?(?:핵심\s*(?:3줄\s*|세줄\s*)?요약|3줄\s*요약|핵심\s*요약|Quick\s*Summary)(?:\])?\s*[\s\S]*$/i,
-      ""
-    )
-    .trim();
+  // 1. 후행 핵심 요약 섹션(리딩 후반부에 위치할 때만) 안전하게 분리
+  const match = text.match(/(?:\r?\n|^)\s*(?:#{1,6}\s*)?(?:✨\s*)?(?:\d+\.\s*)?(?:\[\s*)?(?:핵심\s*(?:3줄\s*|세줄\s*)?요약|3줄\s*요약|핵심\s*요약|Quick\s*Summary)(?:\])?\s*[\s\S]*$/i);
+  if (match && match.index !== undefined && match.index > text.length * 0.4) {
+    let cleaned = text.slice(0, match.index).trim();
+    // 잔여 불릿 라인도 안전하게 정리
+    cleaned = cleaned.replace(/(?:\r?\n|^)\s*[-*•·]?\s*\[(?:현재\s*에너지|방향과\s*결단|실천\s*처방)\][^\r\n]*/gi, "").trim();
+    return cleaned;
+  }
 
-  // 2. 혹시 본문 중간에 잔여할 수 있는 핵심 요약 불릿 라인도 원천 배제
-  cleaned = cleaned
-    .replace(
-      /(?:\r?\n|^)\s*[-*•·]?\s*\[(?:현재\s*에너지|방향과\s*결단|실천\s*처방)\][^\r\n]*/gi,
-      ""
-    )
-    .trim();
-
-  return cleaned;
+  return text;
 }
 
 function extractConciseSummary(text: string): string[] {
@@ -1726,8 +1719,14 @@ function playDailyCardChimeAsync() {
 
   const displayTarotResult = useMemo(() => {
     if (!tarotResult) return "";
-    return stripSummaryFromTarotText(tarotResult);
-  }, [tarotResult]);
+    // 스트리밍 생성 중에는 중간 잘림 없이 온전하게 실시간 텍스트 표시
+    if (isTarotGenerating) return tarotResult;
+    // 상단 3줄 핵심 요약 카드가 정상 렌더링될 때만 본문에서 후행 요약 블록 분리, 그 외엔 본문 전체 보존
+    if (conciseSummaryBullets && conciseSummaryBullets.length >= 3) {
+      return stripSummaryFromTarotText(tarotResult);
+    }
+    return tarotResult;
+  }, [tarotResult, isTarotGenerating, conciseSummaryBullets]);
 
   // 🔊 타로 결과 음성 낭독 전용 텍스트 (핵심 3줄 요약 완전 배제: 본문 1~5단계 순수 리딩만 낭독)
   const tarotSpeechReadingText = useMemo(() => {
@@ -2519,7 +2518,8 @@ function playDailyCardChimeAsync() {
               { role: "system", content: systemPrompt },
               { role: "user", content: invokeContent as any },
             ],
-            timeoutMs: 40000,
+            timeoutMs: 70000,
+            maxOutputTokens: 8192,
             onChunk: (chunk) => {
               if (
                 chunk.startsWith(finalResponse) ||
@@ -4052,8 +4052,8 @@ function playDailyCardChimeAsync() {
                         className="text-yellow-400 border-yellow-500/20 text-xs py-1 scale-90"
                       />
                     </div>
-                    <div className="p-4 sm:p-5 rounded-2xl bg-white/[0.03] border border-white/10 text-stone-200 text-sm leading-relaxed space-y-3 shadow-inner max-h-64 overflow-y-auto">
-                      <Streamdown>{dailyResult.diagnosis || dailyResult.summary || '오늘의 타로 리딩 결과를 불러오는 중입니다.'}</Streamdown>
+                    <div className="p-4 sm:p-5 rounded-2xl bg-white/[0.03] border border-white/10 text-stone-200 text-sm leading-relaxed space-y-3 shadow-inner max-h-[520px] overflow-y-auto custom-scrollbar">
+                      <Streamdown immediate>{dailyResult.diagnosis || dailyResult.summary || '오늘의 타로 리딩 결과를 불러오는 중입니다.'}</Streamdown>
                     </div>
                   </div>
 

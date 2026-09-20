@@ -142,15 +142,8 @@ export function AuraSynergySection() {
         if (prev <= 1) {
           setIsChamberActive(false);
           setIsChamberCompleted(true);
-          // On completion, speak final declaration if enabled - continues to the very end
-          if (isTtsGuideEnabled && sanctuaryData?.zeroResistanceDeclaration) {
-            playTTS(
-              `60초 방하착 챔버가 온전히 완성되었습니다. 이제 모든 무거운 저항과 집착이 0으로 녹아내렸습니다. ${sanctuaryData.zeroResistanceDeclaration}`,
-              'Kore',
-              false,
-              '평온'
-            );
-          }
+          // 60초 타이머 완료 시 음성 가이드/확언 즉시 자동 종료
+          stopTTS();
           return 0;
         }
         return prev - 1;
@@ -522,12 +515,12 @@ export function AuraSynergySection() {
                 <div className="space-y-1 max-w-md">
                   <span className="text-sm font-bold text-emerald-300 flex items-center justify-center gap-1.5 font-sans">
                     <Sparkles size={15} className="text-emerald-400" />
-                    <span>{isTTSActive ? '60초 챔버 완료 · 최종 해방 선언 낭독 중' : '저항 0% 완전 해방 달성 완료'}</span>
+                    <span>{isTTSActive ? '선언문 낭독 중' : '저항 0% 완전 해방 달성 완료'}</span>
                   </span>
                   <p className="text-xs text-emerald-100/70 leading-relaxed font-sans">
                     {isTTSActive
-                      ? '60초 챔버 타이머가 끝나도 선언문 낭독은 마지막 문장까지 온전히 전해집니다. 깊은 호흡과 함께 평온을 누리세요.'
-                      : '모든 무거운 저항과 긴장이 허공으로 증발했습니다. 가벼워진 영혼으로 온전한 평화를 누리세요.'}
+                      ? '해방 선언문을 낭독 중입니다. 깊은 호흡과 함께 평온을 누리세요.'
+                      : '모든 무거운 저항과 긴장이 허공으로 증발했습니다. 타이머 완료와 함께 확언이 자동 종료되었으니, 가벼워진 영혼으로 온전한 평화를 누리세요.'}
                   </p>
                 </div>
               </div>

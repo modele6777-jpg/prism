@@ -472,7 +472,9 @@
           if (isStaleAssetError(event)) void recoverFromStaleAssets();
         });
         window.addEventListener('error', (event) => {
-          const failedScript = event.target instanceof HTMLScriptElement && event.target.src;
+          const failedScript = event.target instanceof HTMLScriptElement &&
+            event.target.src &&
+            (event.target.src.includes('/assets/') || event.target.src.includes('/src/'));
           if (failedScript || isStaleAssetError(event.error || event.message)) void recoverFromStaleAssets();
         }, true);
       })();

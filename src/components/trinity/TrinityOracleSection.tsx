@@ -64,6 +64,7 @@ export interface HealingResult {
 }
 
 export interface GrowthResult {
+  message?: string;
   macro_focus: string;
   saju_tarot_synergy?: SajuTarotSynergy;
   card_insights?: CardInsight[];
@@ -566,8 +567,11 @@ export function TrinityOracleSection() {
   }
 }`;
 
-        const inquiryPromptAddon = effectiveInquiry ? `\n\n# 질문자의 아픔/고민 주제:\n"${effectiveInquiry}"\n위 고민으로 지치고 상처받은 마음을 깊이 보듬고 치유할 수 있는 따뜻한 힐링 해답과 처방을 중심에 두고 풀이해 주세요.\n` : '';
-        const prompt = `${sajuContextPrompt}${inquiryPromptAddon}\n\n사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 질문자(${recipientName})의 사주 명리학 원국과 뽑힌 3장의 타로 카드 상징을 긴밀하게 '교차 융합'하여, 오직 지친 마음의 치유(Healing)와 회복, 내면아이 안식에 온전히 초점을 맞춘 힐링 리딩을 JSON으로 생성해 줘.\n특히 'message' 필드는 수신자(${recipientName})의 이름을 다정하게 부르며(예: "주형아, 안녕... 네 작은 친구 제제야."), 사용자가 뽑은 3장의 카드 결과(1번 무의식: ${cards[0]?.nameKo}, 2번 현재의 마음: ${cards[1]?.nameKo}, 3번 치유의 씨앗: ${cards[2]?.nameKo})를 각각 빠짐없이 본문에 언급하고 그 상징적 치유 의미를 유기적으로 연결해 줘. 질문자의 사주 본원 기운(${saju?.dayMaster.symbolName})과 용신 기운을 정성껏 어루만지는 600~800자 내외의 눈물겹도록 다정하고 포근한 1:1 치유 편지로 작성해 줘.`;
+        const inquiryPromptAddon = effectiveInquiry
+          ? `\n\n# [최우선 필수 집중 주제] 내담자가 털어놓은 구체적인 아픔과 고민:\n"${effectiveInquiry}"\n★ 절대 지침: 제제의 치유 편지는 오직 위의 구체적인 고민("${effectiveInquiry}")을 중심에 두고 1:1로 작성되어야 합니다. 두루뭉술한 일반론적 위로를 철저히 배제하고, 내담자가 호소한 고민의 상황과 지친 감정을 서두부터 정확하게 짚어내며("네가 고민으로 털어놓은 [${effectiveInquiry}] 이야기를 들었을 때 내 마음도 참 많이 아팠어..."), 사주 본원 기운(${saju?.dayMaster.symbolName})이 왜 이 고민 앞에서 남모르게 큰 짐을 지고 소진되었는지, 그리고 뽑힌 3장의 카드가 이 고민을 어떻게 따뜻하게 안아주고 치유하는지 진솔한 해답과 처방을 작성해 주세요.\n`
+          : `\n\n# 질문자의 마음 상태:\n사주 원국의 일간(${saju?.dayMaster.symbolName})과 오행 불균형(${saju?.elements.dominant.name} 과열, ${saju?.elements.lacking.name} 결핍)으로 인해 홀로 감내하고 있을 무거운 마음의 짐과 번아웃, 관계의 피로를 깊이 알아차리고, 포근하게 안아주는 1:1 치유 편지로 작성해 주세요.\n`;
+
+        const prompt = `${sajuContextPrompt}${inquiryPromptAddon}\n\n사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 질문자(${recipientName})의 사주 명리학 원국과 뽑힌 3장의 타로 카드 상징을 긴밀하게 '교차 융합'하여, 질문자의 고민을 중심에 두고 지친 마음의 치유(Healing)와 회복, 내면아이 안식에 온전히 초점을 맞춘 힐링 리딩을 JSON으로 생성해 줘.\n특히 'message' 필드는 수신자(${recipientName})의 이름을 다정하게 부르며(예: "${recipientName}아, 안녕... 네 작은 친구 제제야."), 질문자가 털어놓은 고민("${effectiveInquiry || '마음의 짐'}")을 편지 서두부터 따뜻하게 호명하며 시작해야 해. 그리고 사용자가 뽑은 3장의 카드 결과(1번 무의식: ${cards[0]?.nameKo}, 2번 현재의 마음: ${cards[1]?.nameKo}, 3번 치유의 씨앗: ${cards[2]?.nameKo})를 각각 빠짐없이 본문에 언급하고 그 상징적 치유 의미를 유기적으로 연결해 줘. 질문자의 사주 본원 기운(${saju?.dayMaster.symbolName})과 용신 기운을 정성껏 어루만지며, 이 고민을 어떻게 보듬고 평온을 되찾을 수 있는지 700~900자 내외의 눈물겹도록 다정하고 포근한 1:1 치유 편지로 작성해 줘.`;
         const res = await invokeLLM({
           messages: [
             { role: 'system', content: systemPrompt },
@@ -588,84 +592,31 @@ export function TrinityOracleSection() {
         setHealingResult(parsed);
       } else {
         // [GROWTH MODE] Extreme Focus on Self-Development, Competence Building, Habit Architecture, and Breakthrough Execution
-        const systemPrompt = `당신은 탁월함을 이끌어내는 초정밀 자기계발 멘토이자 퍼포먼스 라이프 코치 '오라클 루시'입니다.
+        const growthInquiryPromptAddon = effectiveInquiry
+          ? `\n\n# [최우선 필수 집중 과제] 질문자가 직면한 구체적인 성장 고민 및 돌파 과제:\n"${effectiveInquiry}"\n★ 절대 지침: 오라클 루시의 자기계발 서한은 오직 위의 구체적인 성장 고민/과제("${effectiveInquiry}")를 정중앙에 두고 풀이해야 합니다. 일반적인 자기계발 격언을 배제하고, 질문자가 고민하는 현실적 문제점("${effectiveInquiry}")의 원인을 사주 기질(${saju?.dayMaster.symbolName}) 관점에서 날카롭게 진단하고, 3장의 카드를 활용해 즉시 돌파할 수 있는 실행 전략과 행동 지침을 명쾌하게 제시해 주세요.\n`
+          : `\n\n# 질문자의 잠재 역량 돌파 과제:\n질문자의 사주 본원(${saju?.dayMaster.symbolName})이 지닌 본래의 추진력을 가로막는 나태함과 미루기, 목표 실행의 정체를 부수고, 오늘 즉시 행동으로 전환할 수 있는 강력한 자기계발 돌파구를 제시해 주세요.\n`;
+
+        const systemPrompt = `당신은 탁월함을 이끌어내는 초정밀 자기계발 멘토이자 퍼포먼스 라이프 코치 '오라클 루시(Lucy)'입니다.
 
 # 핵심 사명 (Core Self-Development Mission):
-이 리딩의 유일하고 절대적인 목적은 질문자의 【실질적인 자기계발(Self-Development), 역량 레벨업(Competence Upgrade), 목표 달성 전략, 생산적 습관 형성, 미루기와 나태함 돌파, 높은 자기효능감 구축】입니다.
-- 막연하고 감상적인 위로나 모호한 점술적 언어를 철저히 배제합니다.
-- 질문자가 자신의 잠재력을 200% 발휘하여 실력을 키우고, 일상 시스템을 개혁하며, 원하는 성장을 이루어낼 수 있도록 날카롭고 명쾌하며 실질적인 자기계발 인사이트를 제공해야 합니다.
+이 리딩의 유일하고 절대적인 목적은 질문자가 털어놓은 【구체적인 고민의 명쾌한 돌파, 현실적인 자기계발 실행 전략, 역량 레벨업, 나태함과 정체 돌파, 즉각적 행동 솔루션】을 단 하나의 정갈하고 힘 있는 '1:1 자기계발 실행 서한(Letter)'으로 온전히 전달하는 것입니다.
+- 막연한 일반론이나 감상적인 위로, 모호한 점술적 언어를 철저히 배제합니다.
+- 오직 질문자의 구체적인 고민("${effectiveInquiry || '현실적 성장과 실행 과제'}")을 서한의 서두부터 끝까지 정중앙에 두고, 3장의 카드를 활용해 고민을 정밀 타격하여 당장 오늘 실천할 수 있는 명쾌하고 단호한 행동 솔루션을 제시하세요.
 - '화이트홀', '블랙홀', '웜홀', '손끝 물리량', '파동 측정' 등의 인위적/공상과학 용어는 절대 언급하지 마십시오.
 
-# 자기계발 중심 사주(四柱) ✕ 타로(Tarot) 융합 리딩 원칙:
-질문자의 사주 일간 본원 기질(${saju?.dayMaster.symbolName || '본원 기질'})이 지닌 타고난 강점·추진력을 타로 4원소(완드/컵/소드/펜타클) 프레임워크와 결합하여, 실질적인 자기계발 로드맵과 100% 실행 행동 지침으로 도출하세요.
+# 질문자의 고민(Inquiry) 중심 1:1 맞춤 집중 원칙:
+질문자가 호소한 고민("${effectiveInquiry || '실행 지체와 역량 성장'}")은 이번 리딩의 가장 중요한 '핵심 타깃'입니다.
+- 질문자의 사주 본원 기질(${saju?.dayMaster.symbolName || '본원 기질'})과 뽑힌 3장의 타로 카드(1번 마인드셋: ${cards[0]?.nameKo}, 2번 4원소 역량: ${cards[1]?.nameKo}, 3번 1줄 마이크로 실행: ${cards[2]?.nameKo})를 융합하여, 질문자가 털어놓은 고민 상황을 서두부터 직접 언급하고 이를 단숨에 돌파할 수 있는 결정적인 행동 나침반을 제공하세요.
 
-1. saju_tarot_synergy (사주 × 타로 자기계발 융합 매트릭스):
-- day_master_resonance: 질문자의 사주 본원 기질(${saju?.dayMaster.hanja || ''} ${saju?.dayMaster.symbolName || ''})이 가진 잠재 역량을 타로 카드가 어떻게 독보적인 자기계발 경쟁력과 실행 모멘텀으로 점화시키는지 분석 (3~4문장).
-- elemental_balance:
-  * dominant_harmony: 사주 우세 오행의 강력한 에너지를 커리어·학습·전문성 영역에 효과적으로 쏟아붓는 자기계발 레버리지 전략 (2~3문장).
-  * lacking_remedy: 사주 결핍 오행과 용신 에너지를 보완하기 위해 당장 구축해야 할 생산적인 자기관리 시스템 및 습관 루틴 (2~3문장).
-- destiny_flow_synthesis: 2026 병오년의 역동적인 환경 속에서 질문자가 한 단계 도약(Quantum Leap)하고 실력을 입증할 결정적 기회의 타이밍과 성장 전략 (2~3문장).
-- saju_oracle_verdict: 나태함과 망설임을 깨부수고 지금 당장 자신의 한계를 돌파하게 만드는 단 하나의 명쾌한 자기계발 실행 계시 (1~2문장).
-
-2. card_insights (3장의 카드별 자기계발 심층 해설):
-- core_meaning: 이 카드가 지닌 본질적 원형과 자기계발적 상징 (1~2줄).
-- saju_resonance: 질문자의 사주 본원 기질과 결합하여 발휘되는 주도적 역량과 프로페셔널한 자기계발 태도 (2~3문장).
-- personal_interpretation: 오늘 하루 자신의 실력과 역량을 레벨업하기 위해 즉시 취해야 할 구체적인 자기계발 마인드셋 (2~3문장).
-- action_guide: 오늘 바로 실행하여 성장을 체감할 수 있는 1% 자기계발 실천 과제 (1~2문장).
-
-3. macro_focus (거시 마인드셋 종합 브리핑):
-질문자의 사주 기질과 3장의 카드가 가리키는, 타협하지 않는 자기계발 성장 마인드셋과 실천 총평 (2~3문장).
-
-4. dominant_element (지배적 4원소 현실 자기계발 영역):
-- element: Wands(열정·추진력) / Cups(감정 조절·소통 역량) / Swords(명료한 사고·전략·의사결정) / Pentacles(자산 관리·체력·루틴 구축) 중 지배 원소
-- element_ko: 원소 한글명 및 해당 원소의 자기계발 집중 분야
-- theme_brief: 오늘 가장 집중해서 단련해야 할 핵심 자기계발 영역 한 줄 해설
-
-5. micro_mission (즉시 실행 초정밀 마이크로 미션):
-- title: 3번 카드의 상징에 기반하여 5~10분 안에 즉시 완료할 수 있는 초정밀 자기계발 과제 (예: 핵심 서적 5페이지 요약, 미뤄둔 기획안 첫 단락 작성, 업무 생산성 방해 요소 차단 등)
-- action_tip: 망설임 없이 즉각 착수하게 만드는 자기계발 코칭 팁
-
-6. evening_reflection:
-오늘 하루 나의 성장과 실행을 점검하는 날카로운 저녁 자기계발 성찰 질문 1문장.
+# message (루시의 1:1 자기계발 실행 서한):
+- 힐링 모드의 치유 편지와 마찬가지로, 오직 정갈한 '1:1 단일 서한(Letter)' 형식으로 작성됩니다 (700~900자 내외).
+- 질문자(${recipientName} 님)를 정중하게 부르며, 질문자의 고민("${effectiveInquiry || '성장과 실행 과제'}")을 서두에서 날카롭고 깊이 있게 짚어냅니다.
+- 뽑힌 3장의 카드를 본문 속에 자연스럽게 모두 언급하며, 고민을 뚫고 나갈 수 있는 마인드셋 전환과 구체적인 오늘 하루의 행동 지침을 명쾌하게 결론내어 줍니다.
 
 반드시 순수 JSON 형식으로 응답하세요:
 {
-  "saju_tarot_synergy": {
-    "day_master_resonance": "사주 본원 추진력과 타로 카드의 자기계발 실행 모멘텀 분석 (3~4문장)",
-    "elemental_balance": {
-      "dominant_harmony": "사주 우세 오행의 잠재력을 극대화하는 자기계발 레버리지 전략 (2~3문장)",
-      "lacking_remedy": "사주 결핍 오행/용신을 보완하는 생산적인 자기관리 습관 시스템 (2~3문장)"
-    },
-    "destiny_flow_synthesis": "2026 세운 흐름 속 결정적 역량 도약 타이밍 (2~3문장)",
-    "saju_oracle_verdict": "사주와 타로가 내리는 단 하나의 명쾌한 자기계발 실행 계시 (1~2문장)"
-  },
-  "card_insights": [
-    {
-      "card_name": "카드 한글명 (예: 황제)",
-      "position_name": "자기계발 마인드셋",
-      "core_meaning": "이 카드가 지닌 본질적 원형과 자기계발적 중심 철학 (1~2줄)",
-      "saju_resonance": "사주 본원과 결합하여 이끌어내는 주도적 자기계발 태도 (2~3문장)",
-      "personal_interpretation": "오늘 하루 전체를 주도하기 위해 취해야 할 구체적인 자기계발 마인드셋 (2~3문장)",
-      "action_guide": "오늘 즉시 실천할 1% 자기계발 실천 팁 (1~2문장)"
-    },
-    {
-      "card_name": "카드 한글명 (예: 지팡이 3)",
-      "position_name": "4원소 역량 영역",
-      "core_meaning": "이 카드의 슈트와 숫자가 상징하는 본래 의미 (1~2줄)",
-      "saju_resonance": "사주 오행 흐름 속에서 이 카드가 점검하게 하는 자기계발 분야 (2~3문장)",
-      "personal_interpretation": "오늘 내 커리어·학습 현실에서 집중 점검해야 할 구체적 초점 (2~3문장)",
-      "action_guide": "오늘 즉시 실천할 1% 자기계발 실천 팁 (1~2문장)"
-    },
-    {
-      "card_name": "카드 한글명 (예: 칼 에이스)",
-      "position_name": "1줄 마이크로 실행",
-      "core_meaning": "이 카드가 지닌 결단과 돌파의 상징 (1~2줄)",
-      "saju_resonance": "사주 용신 보약 에너지를 자기계발 행동으로 깨우는 트리거 (2~3문장)",
-      "personal_interpretation": "미루기를 걷어내고 즉시 통제권을 잡을 수 있는 행동의 근거 (2~3문장)",
-      "action_guide": "오늘 즉시 실천할 1% 자기계발 실천 팁 (1~2문장)"
-    }
-  ],
-  "macro_focus": "질문자의 사주 기질과 3장의 카드가 가리키는 오늘의 자기계발 마인드셋 종합 브리핑 (2~3문장)",
+  "message": "질문자의 고민을 중심에 두고 사주 본원 기질과 3장의 타로 카드를 결합하여 명쾌한 행동 지침을 제시하는 루시의 1:1 자기계발 실행 편지 (700~900자 내외)",
+  "macro_focus": "질문자의 고민 해결과 성장을 이끌어낼 핵심 마인드셋 브리핑 (2~3문장)",
   "dominant_element": {
     "element": "Wands",
     "element_ko": "완드 (불) - 커리어 & 프로젝트 자기계발 추진력",
@@ -678,8 +629,7 @@ export function TrinityOracleSection() {
   "evening_reflection": "오늘 저녁 나의 성장과 행동을 돌아보는 1줄 자기계발 성찰 질문"
 }`;
 
-        const inquiryPromptAddon = effectiveInquiry ? `\n\n# 질문자의 자기계발 목표 및 극복 과제:\n"${effectiveInquiry}"\n위 과제를 성공적으로 돌파하고 실력과 역량을 한 단계 레벨업할 수 있는 명쾌한 자기계발 전략과 실행 지침을 중심에 두고 풀이해 주세요.\n` : '';
-        const prompt = `${sajuContextPrompt}${inquiryPromptAddon}\n\n사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 질문자의 사주 기질과 타로 3장의 원소적 상징을 융합하여, 오직 실질적인 자기계발(Self-Development), 역량 레벨업, 실행 돌파에 온전히 초점을 맞춘 자기계발 툴킷(saju_tarot_synergy, card_insights, 거시 자기계발 브리핑, 1줄 마이크로 미션)을 JSON으로 도출해 줘.`;
+        const prompt = `${sajuContextPrompt}${growthInquiryPromptAddon}\n\n사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 질문자(${recipientName} 님)의 사주 기질과 타로 3장의 원소적 상징을 융합하여, 질문자의 고민을 직접 돌파하고 실질적인 역량 레벨업을 이뤄낼 수 있도록 온전히 초점을 맞춘 'message' (루시의 1:1 자기계발 실행 편지)와 실행 툴킷을 JSON으로 도출해 줘.\n\n특히 'message' 필드는 질문자(${recipientName} 님)를 정중하게 부르며, 질문자가 겪고 있는 고민("${effectiveInquiry || '실행 지체와 역량 성장'}")의 핵심을 날카롭게 짚고, 뽑힌 3장의 카드(1번 마인드셋: ${cards[0]?.nameKo}, 2번 4원소 역량: ${cards[1]?.nameKo}, 3번 1줄 마이크로 실행: ${cards[2]?.nameKo})를 각각 빠짐없이 본문에 녹여내어, 오늘 당장 실천할 수 있는 명쾌하고 단호한 행동 솔루션을 전하는 700~900자 내외의 강렬한 1:1 자기계발 실행 편지로 작성해 줘.`;
         const res = await invokeLLM({
           messages: [
             { role: 'system', content: systemPrompt },
@@ -720,16 +670,19 @@ export function TrinityOracleSection() {
             personal_interpretation: `${slotPositions[i]}의 자리에서 당신에게 서두르지 말고 자신의 내면아이를 따뜻하게 보듬어주라는 지극한 위로와 안식의 메시지를 건넵니다.`,
             action_guide: `오늘 하루, ${c.keywords[0] || '평온'}의 마음으로 가슴에 손을 얹고 "그동안 참 고생 많았어"라고 다정하게 속삭여보세요.`,
           })),
-          message: `주형아, 안녕... 네 작은 친구 제제야.
-오늘 네가 품고 태어난 [${dayMasterStr}]의 맑고 책임감 있는 기운과, 네 손끝이 가만히 머물러 뽑아낸 3장의 치유 조각 [${cards[0]?.nameKo || '무의식의 카드'}, ${cards[1]?.nameKo || '현재의 카드'}, ${cards[2]?.nameKo || '치유의 카드'}]을 내 가슴에 소중하게 안아보았어.
+          message: `${recipientName}아, 안녕... 네 작은 친구 제제야.
+` + (effectiveInquiry ? `네가 털어놓은 "${effectiveInquiry}" 이야기를 들었을 때 내 마음도 참 많이 아렸어. 누구에게도 쉽게 말하지 못하고 혼자서 얼마나 긴 시간 동안 마음을 졸이며 애태웠을까...
+` : `오늘 하루도 많은 책임감과 세상의 시선 속에서 참 많이 애썼지. 말하지 않아도 네 어깨에 얹혀 있던 무게가 고스란히 전해져 와.
+`) +
+`오늘 네가 품고 태어난 [${dayMasterStr}]의 맑고 성실한 기운과, 네 손끝이 가만히 머물러 뽑아낸 3장의 치유 조각 [${cards[0]?.nameKo || '무의식의 카드'}, ${cards[1]?.nameKo || '현재의 카드'}, ${cards[2]?.nameKo || '치유의 카드'}]을 내 가슴에 소중하게 안아보았어.
 
 첫 번째 카드인 [${cards[0]?.nameKo || '내면의 무의식'}]는 네 마음 깊은 무의식의 방을 가만히 비춰주고 있어. 겉으로는 늘 묵묵히 버텨내며 주변을 배려해왔지만, 실은 그 아래 누구에게도 온전히 털어놓지 못한 채 혼자 삼켜왔던 외로움과 고단함이 잔잔한 파도처럼 차올라 있었잖아. 남들의 기대에 부응하느라 정작 네 안의 작은 아이가 지쳐 웅크리고 있던 소리를 미처 들어주지 못했던 것 같아 가슴이 먹먹했어.
 
-그리고 지금의 마음을 비추는 두 번째 카드 [${cards[1]?.nameKo || '지금의 마음'}]는 오늘 주형이 네가 짊어진 삶의 무게가 결코 가볍지 않았음을 조용히 증명해주고 있어. 네가 가진 ${domElStr}의 성실함과 진심은 참 귀하고 빛나지만, 때로는 그 깊은 진심이 스스로를 다그치는 엄격한 채찍질이 되어버리곤 했지. "내가 더 잘해야 해", "절대 흔들리면 안 돼"라며 스스로를 압박해온 그 모든 순간들이 얼마나 숨 가쁘고 시렸을까.
+그리고 지금의 마음을 비추는 두 번째 카드 [${cards[1]?.nameKo || '지금의 마음'}]는 오늘 ${recipientName} 네가 짊어진 삶의 무게가 결코 가볍지 않았음을 조용히 증명해주고 있어. 네가 가진 ${domElStr}의 성실함과 진심은 참 귀하고 빛나지만, 때로는 그 깊은 진심이 스스로를 다그치는 엄격한 채찍질이 되어버리곤 했지. "내가 더 잘해야 해", "절대 흔들리면 안 돼"라며 스스로를 압박해온 그 모든 순간들이 얼마나 숨 가쁘고 시렸을까.
 
-하지만 세 번째 카드 [${cards[2]?.nameKo || '치유의 씨앗'}]가 네 곁에 찾아온 건 결코 우연이 아니야. 이 카드는 오늘 주형이에게 모든 짐을 잠시 내려놓아도 괜찮다는, 세상에서 가장 포근하고 다정한 회복의 씨앗을 건네고 있어. 네 사주에 꼭 필요한 ${yongsinStr}의 따스한 기운처럼, 지금 이 순간만큼은 어떤 결과도 증명하지 않아도 돼. 너는 이미 그 자체로 충분히 눈부시고 온전한 사람이니까.
+하지만 세 번째 카드 [${cards[2]?.nameKo || '치유의 씨앗'}]가 네 곁에 찾아온 건 결코 우연이 아니야. 이 카드는 오늘 ${recipientName}이에게 모든 짐을 잠시 내려놓아도 괜찮다는, 세상에서 가장 포근하고 다정한 회복의 씨앗을 건네고 있어. 네 사주에 꼭 필요한 ${yongsinStr}의 따스한 기운처럼, 지금 이 순간만큼은 어떤 결과도 증명하지 않아도 돼. 너는 이미 그 자체로 충분히 눈부시고 온전한 사람이니까.
 
-주형아, 오늘 밤만큼은 스스로를 따뜻하게 꼭 안아주며 깊고 편안한 숨을 쉬어봐. 네 곁에는 언제나 아무 조건 없이 너를 지지하고 품어주는 내가 늘 함께 있을게. 사랑해, 그리고 그동안 정말 많이 수고했어.`,
+${recipientName}아, 오늘 밤만큼은 스스로를 따뜻하게 꼭 안아주며 깊고 편안한 숨을 쉬어봐. 네 곁에는 언제나 아무 조건 없이 너를 지지하고 품어주는 내가 늘 함께 있을게. 사랑해, 그리고 그동안 정말 많이 수고했어.`,
           prescribed_art: dynamicPrescribedArt,
           micro_action: '창문을 열고 시원한 공기를 들이마시며 가슴에 손을 얹고 3번 천천히 심호흡하기',
           reward_item: {
@@ -739,6 +692,18 @@ export function TrinityOracleSection() {
         });
       } else {
         setGrowthResult({
+          message: `${recipientName} 님, 안녕하세요. 당신의 숨겨진 잠재력을 일깨우는 멘토 루시입니다.
+
+` + (effectiveInquiry ? `지금 마주하고 계신 "${effectiveInquiry}" 과제로 인해 많은 고민과 망설임이 있으셨으리라 생각합니다. 하지만 사주와 타로의 에너지는 당신이 이미 이 문제를 정면 돌파할 충분한 실력과 에너지를 갖추고 있음을 분명하게 증명하고 있습니다.
+` : `더 높은 곳으로 도약하고자 하는 당신의 열망 속에서, 때로는 막연한 두려움이나 미루기가 발목을 잡았을지도 모릅니다. 하지만 지금은 그 벽을 깨부수고 실행에 나설 완벽한 타이밍입니다.
+`) +
+`당신의 사주 본원인 [${dayMasterStr}] 기운은 본래 흔들리지 않는 중심과 강력한 추진 동력을 품고 있습니다. 여기에 오늘 당신이 뽑으신 3장의 카드 [1번: ${cards[0]?.nameKo}, 2번: ${cards[1]?.nameKo}, 3번: ${cards[2]?.nameKo}]가 현실 실행의 강력한 나침반이 되어주고 있습니다.
+
+첫째, 1번 [${cards[0]?.nameKo}] 카드는 생각의 과잉과 망설임을 끊어내고 자신의 본원 역량을 100% 신뢰하라는 마인드셋을 주문합니다. 고민에 머물러 있는 에너지를 즉시 명확한 실행 계획으로 전환하십시오.
+둘째, 2번 [${cards[1]?.nameKo}] 카드가 안내하는 4원소의 힘을 바탕으로, 오늘 당신의 업무와 일상에서 가장 중요한 1가지 핵심 과제에 집중하십시오. 가지치기를 통해 복잡함을 단순함으로 바꾸는 것이 성장의 열쇠입니다.
+셋째, 3번 [${cards[2]?.nameKo}] 카드는 망설임을 지우고 즉시 착수하는 '1분 마이크로 실행'의 결정적 계기를 마련합니다. 완벽한 준비를 기다리지 마십시오. 지금 당장 착수하는 5분의 작은 몰입이 거대한 성공 모멘텀을 만들어냅니다.
+
+${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분한 지혜와 에너지를 이미 갖추고 있습니다. 지금 바로 그 첫 걸음을 내딛으세요. 언제나 당신의 탁월한 성장을 곁에서 응원하겠습니다.`,
           saju_tarot_synergy: {
             day_master_resonance: `${sajuNameStr}님의 사주 본원 [${dayMasterStr}]의 타고난 결단력과 오늘 타로 [${cards.map(c => c.nameKo).join(' · ')}]의 4원소 현실 역량이 결합하여 지속 가능한 자기계발과 역량 성장의 강력한 모멘텀을 형성합니다.`,
             elemental_balance: {
@@ -814,29 +779,38 @@ export function TrinityOracleSection() {
     }
   };
 
-  // 💌 제제의 사주·타로 융합 다정한 치유 편지 전용 TTS Speech Text
-  const healingLetterSpeechText = useMemo(() => {
-    if (!healingResult?.message) return '';
+  // 💌 사주·타로 융합 편지 전용 TTS Speech Text (힐링: 제제 / 자기계발: 루시)
+  const oracleLetterSpeechText = useMemo(() => {
+    const message = oracleMode === 'healing' ? healingResult?.message : (growthResult?.message || growthResult?.macro_focus);
+    if (!message) return '';
     const recipient = recipientName;
-    const intro = `제제가 ${recipient}에게 보내는 다정한 치유 편지입니다.`;
-    return prepareNaturalSpeechText(`${intro} ${healingResult.message}`);
-  }, [healingResult?.message, saju?.name]);
+    const intro = oracleMode === 'healing'
+      ? `제제가 ${recipient}에게 보내는 다정한 치유 편지입니다.`
+      : `루시가 ${recipient} 님에게 보내는 명쾌한 자기계발 실행 편지입니다.`;
+    return prepareNaturalSpeechText(`${intro} ${message}`);
+  }, [oracleMode, healingResult?.message, growthResult?.message, growthResult?.macro_focus, recipientName]);
 
-  const isHealingLetterTTSActive = useMemo(() => {
-    if (!isTTSActive || !healingLetterSpeechText) return false;
-    const cleanSpeech = prepareNaturalSpeechText(healingLetterSpeechText);
+  const isOracleLetterTTSActive = useMemo(() => {
+    if (!isTTSActive || !oracleLetterSpeechText) return false;
+    const cleanSpeech = prepareNaturalSpeechText(oracleLetterSpeechText);
     return ttsState.activeFullText === cleanSpeech;
-  }, [isTTSActive, healingLetterSpeechText, ttsState.activeFullText]);
+  }, [isTTSActive, oracleLetterSpeechText, ttsState.activeFullText]);
 
-  const handleToggleHealingLetterTTS = async () => {
-    if (isHealingLetterTTSActive) {
+  const handleToggleOracleLetterTTS = async () => {
+    if (isOracleLetterTTSActive) {
       stopTTS();
       return;
     }
-    if (healingLetterSpeechText) {
-      await playTTSInChunks(healingLetterSpeechText, 'Kore', 250, '따뜻함');
+    if (oracleLetterSpeechText) {
+      const tone = oracleMode === 'healing' ? '따뜻함' : '자신감';
+      await playTTSInChunks(oracleLetterSpeechText, 'Kore', 250, tone);
     }
   };
+
+  // Aliases for compatibility
+  const healingLetterSpeechText = oracleLetterSpeechText;
+  const isHealingLetterTTSActive = isOracleLetterTTSActive;
+  const handleToggleHealingLetterTTS = handleToggleOracleLetterTTS;
 
   // 🎴 개별 카드 심층 해설 전용 음성 생성기 및 토글 핸들러
   const [activeCardTTSKey, setActiveCardTTSKey] = useState<string | null>(null);
@@ -1018,48 +992,76 @@ export function TrinityOracleSection() {
     );
   };
 
-  // Render Jeje's Saju-Tarot Fusion Healing Letter
+  // Render Saju-Tarot Fusion Letter (Healing: Jeje / Growth: Lucy)
   const renderFusionLetterSection = (message?: string) => {
     if (!message) return null;
+
+    const isHealing = oracleMode === 'healing';
+    const letterTitle = isHealing
+      ? `제제가 ${recipientName}에게 보내는 다정한 치유 편지`
+      : `루시가 ${recipientName} 님에게 보내는 명쾌한 자기계발 실행 편지`;
+    const letterBadgeLatin = isHealing ? "ZEZÉ'S SACRED LETTER" : "LUCY'S SACRED LETTER";
+    const letterBadgeKo = isHealing ? "사주 ✕ 타로 융합 치유 서한" : "사주 ✕ 타로 융합 실행 서한";
+    const letterSubtitle = isHealing ? '"네 마음에 꼭 맞는 온기를 전할게"' : '"네 안의 잠재력을 깨우는 단단한 나침반이 되어줄게"';
+    const copyHeader = `[${letterTitle}]`;
 
     return (
       <div className="glass p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-amber-950/20 via-zinc-950/90 to-purple-950/30 border border-amber-400/35 shadow-2xl relative overflow-hidden backdrop-blur-xl">
         <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
+        {/* User's Concern Display Pill (if inquiry was specified) */}
+        {inquiryText && (
+          <div className="mb-4 px-4 py-2.5 rounded-2xl bg-black/40 border border-amber-400/25 flex items-center justify-between gap-3 relative z-10">
+            <div className="flex items-center gap-2 text-xs text-zinc-300 min-w-0">
+              <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 text-[10px] font-bold shrink-0">
+                {isHealing ? '치유 고민' : '돌파 과제'}
+              </span>
+              <span className="font-medium text-white truncate">"{inquiryText}"</span>
+            </div>
+            <span className="text-[10px] text-amber-400/80 font-mono shrink-0">
+              {isHealing ? '1:1 맞춤 치유 서한' : '1:1 맞춤 실행 서한'}
+            </span>
+          </div>
+        )}
+
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10 relative z-10">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-500/20 to-purple-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300 shadow-md shrink-0">
-              <Feather size={22} className="text-amber-400" />
+              {isHealing ? (
+                <Feather size={22} className="text-amber-400" />
+              ) : (
+                <Sparkles size={22} className="text-amber-400 animate-pulse" />
+              )}
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-mono text-amber-400 uppercase tracking-widest block">
-                  ZEZÉ'S SACRED LETTER
+                  {letterBadgeLatin}
                 </span>
                 <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-200 border border-amber-400/30">
-                  사주 ✕ 타로 융합 치유 서한
+                  {letterBadgeKo}
                 </span>
               </div>
               <h3 className="text-base sm:text-lg md:text-xl font-bold font-serif text-white mt-0.5">
-                제제가 {recipientName}에게 보내는 다정한 치유 편지
+                {letterTitle}
               </h3>
             </div>
           </div>
 
           <div className="flex items-center gap-2.5 self-end sm:self-center">
-            {/* 🔊 제제의 다정한 치유 편지 TTS 버튼 */}
-            {healingLetterSpeechText && (
+            {/* 🔊 다정한/명쾌한 편지 TTS 버튼 */}
+            {oracleLetterSpeechText && (
               <button
                 type="button"
-                onClick={handleToggleHealingLetterTTS}
+                onClick={handleToggleOracleLetterTTS}
                 className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-95 ${
-                  isHealingLetterTTSActive
+                  isOracleLetterTTSActive
                     ? "bg-rose-500/30 text-rose-200 border border-rose-400/60 ring-2 ring-rose-400/30 animate-pulse"
                     : "bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 border border-amber-400/35 hover:border-amber-400/60"
                 }`}
-                title={isHealingLetterTTSActive ? "치유 편지 낭독 중지" : "제제의 다정한 치유 편지 음성으로 듣기"}
+                title={isOracleLetterTTSActive ? "편지 낭독 중지" : (isHealing ? "제제의 다정한 치유 편지 음성으로 듣기" : "루시의 명쾌한 실행 편지 음성으로 듣기")}
               >
-                {isHealingLetterTTSActive ? (
+                {isOracleLetterTTSActive ? (
                   <>
                     <VolumeX size={14} className="text-rose-300" />
                     <span className="text-[11px]">낭독 중지</span>
@@ -1072,14 +1074,14 @@ export function TrinityOracleSection() {
                 ) : (
                   <>
                     <Volume2 size={14} className="text-amber-400" />
-                    <span className="text-[11px]">치유 편지 듣기</span>
+                    <span className="text-[11px]">{isHealing ? "치유 편지 듣기" : "실행 편지 듣기"}</span>
                   </>
                 )}
               </button>
             )}
 
             <span className="text-xs text-amber-300/80 font-serif italic hidden md:inline-block">
-              "네 마음에 꼭 맞는 온기를 전할게"
+              {letterSubtitle}
             </span>
           </div>
         </div>
@@ -1092,20 +1094,20 @@ export function TrinityOracleSection() {
           {/* 편지 하단 액션 툴바 */}
           <div className="pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2">
-              {healingLetterSpeechText && (
+              {oracleLetterSpeechText && (
                 <button
                   type="button"
-                  onClick={handleToggleHealingLetterTTS}
+                  onClick={handleToggleOracleLetterTTS}
                   className="px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/30 text-amber-200 font-medium flex items-center gap-1.5 transition-all cursor-pointer"
                 >
-                  {isHealingLetterTTSActive ? <VolumeX size={13} className="text-rose-400" /> : <Volume2 size={13} className="text-amber-400" />}
-                  <span>{isHealingLetterTTSActive ? '낭독 중지' : '편지 음성으로 듣기'}</span>
+                  {isOracleLetterTTSActive ? <VolumeX size={13} className="text-rose-400" /> : <Volume2 size={13} className="text-amber-400" />}
+                  <span>{isOracleLetterTTSActive ? '낭독 중지' : '편지 음성으로 듣기'}</span>
                 </button>
               )}
               <button
                 type="button"
                 onClick={() => {
-                  const fullText = `[제제가 ${recipientName}에게 보내는 다정한 치유 편지]\n\n${message}`;
+                  const fullText = `${copyHeader}\n\n${message}`;
                   navigator.clipboard?.writeText(fullText).then(() => {
                     setIsCopied(true);
                     setTimeout(() => setIsCopied(false), 2000);
@@ -1124,6 +1126,7 @@ export function TrinityOracleSection() {
                 setStage('intro');
                 setDrawnCards([]);
                 setHealingResult(null);
+                setGrowthResult(null);
                 stopTTS();
               }}
               className="px-3.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-200 font-bold flex items-center gap-1.5 transition-all cursor-pointer ml-auto"
@@ -1787,6 +1790,34 @@ export function TrinityOracleSection() {
                       ? '카드를 손가락이나 마우스로 굴려 마음이 이끄는 3장을 천천히 선택해 보세요.'
                       : '4원소(불·물·공기·흙)의 현실 실행력을 깨울 3장의 도구를 선택해 주세요.'}
                   </p>
+
+                  {/* Inquiry Display / Quick Edit in Spread Stage */}
+                  <div className="max-w-md mx-auto mt-3">
+                    <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-black/40 border border-amber-400/25 focus-within:border-amber-400/60 transition-all">
+                      <Sparkles size={14} className="text-amber-400 shrink-0" />
+                      <input
+                        type="text"
+                        value={inquiryText}
+                        onChange={(e) => setInquiryText(e.target.value)}
+                        placeholder={
+                          oracleMode === 'healing'
+                            ? "마음속 고민을 입력하면 치유 편지에 깊이 반영됩니다..."
+                            : "돌파하고 싶은 성장 고민을 입력하면 실행 편지에 깊이 반영됩니다..."
+                        }
+                        className="w-full bg-transparent text-xs text-white placeholder-zinc-500 focus:outline-none"
+                      />
+                      {inquiryText && (
+                        <button
+                          type="button"
+                          onClick={() => setInquiryText('')}
+                          className="text-[11px] text-zinc-500 hover:text-zinc-300 shrink-0 cursor-pointer"
+                          title="지우기"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Native TarotSpread Component Integration with Oracle Card Back */}
@@ -1820,7 +1851,9 @@ export function TrinityOracleSection() {
               <div className="px-4 py-3 rounded-2xl bg-gradient-to-r from-purple-900/40 via-indigo-900/30 to-purple-900/40 border border-purple-400/40 flex items-center gap-2.5 backdrop-blur-xl shadow-lg">
                 <Sparkles size={16} className="text-purple-400 shrink-0 animate-pulse" />
                 <div className="flex-1 min-w-0">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-purple-300 block">토스된 의제 신탁</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-purple-300 block">
+                    {oracleMode === 'healing' ? '내담자의 마음 치유 고민' : '내담자의 자기계발 돌파 과제'}
+                  </span>
                   <p className="text-xs sm:text-sm font-semibold text-white truncate">"{inquiryText}"</p>
                 </div>
               </div>
@@ -1854,138 +1887,21 @@ export function TrinityOracleSection() {
                 <div className="w-12 h-12 mx-auto rounded-full border-2 border-amber-400/30 border-t-amber-400 animate-spin" />
                 <p className="text-sm font-serif text-amber-200 animate-pulse">
                   {oracleMode === 'healing'
-                    ? '3장의 마음 조각을 다정하게 엮어 오라클을 조율 중입니다...'
-                    : '4원소 현실 실행 툴킷과 마인드셋 브리핑을 조율 중입니다...'}
+                    ? '3장의 마음 조각을 다정하게 엮어 제제의 치유 편지를 작성 중입니다...'
+                    : '4원소 마인드셋과 질문자의 과제를 융합하여 루시의 실행 편지를 작성 중입니다...'}
                 </p>
               </div>
             ) : oracleMode === 'healing' && healingResult ? (
-              /* [HEALING RESULT VIEW: ONLY ZEZE'S HEALING LETTER] */
+              /* [HEALING RESULT VIEW: ONLY ZEZE'S SACRED HEALING LETTER] */
               <div className="w-full space-y-6">
                 {/* 제제의 사주·타로 융합 치유 서한 (편지만 집중 표시) */}
                 {renderFusionLetterSection(healingResult.message)}
               </div>
             ) : oracleMode === 'growth' && growthResult ? (
-              /* [GROWTH RESULT VIEW] */
-              <div className="space-y-6">
-                {/* 핵심 3줄 요약 & 오라클 TTS */}
-                {renderExecutiveSummaryCard()}
-
-                {/* 3 Cards Deep Insights Reading (내면아이 성찰 메시지 제외, 카드 고유 뜻과 상징만 표기) */}
-                {renderCardInsightsSection(growthResult.card_insights)}
-
-                {/* 2. Prescribed Art -> Toss to Muse Art Sanctuary */}
-                {growthResult.prescribed_art && (
-                  <div
-                    onClick={handleTossToMuse}
-                    className="glass p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-purple-950/40 via-indigo-950/30 to-black/60 border border-purple-400/40 hover:border-purple-400/80 shadow-2xl relative overflow-hidden cursor-pointer group transition-all duration-300"
-                  >
-                    <div className="absolute top-0 right-0 w-56 h-56 bg-purple-500/15 rounded-full blur-3xl pointer-events-none group-hover:bg-purple-500/25 transition-all" />
-
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
-                      <div className="flex items-start sm:items-center gap-3.5">
-                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600/30 to-indigo-600/30 border border-purple-400/50 flex items-center justify-center text-purple-200 group-hover:scale-110 transition-transform shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.3)]">
-                          <Palette size={24} className="text-purple-300 animate-pulse" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[10px] font-mono text-purple-300 uppercase tracking-widest flex items-center gap-1">
-                              <Sparkles size={11} className="text-purple-400" />
-                              PRISM TOSS PIPELINE
-                            </span>
-                            <span className="text-[9px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-200 font-bold border border-purple-400/40 shadow-inner">
-                              뮤즈로 토스(Toss)
-                            </span>
-                          </div>
-                          <h4 className="text-sm sm:text-base font-bold font-serif text-white group-hover:text-purple-200 transition-colors flex items-center gap-1.5">
-                            <span>이 실행 영감을 뮤즈의 예술추천으로 '토스'하기</span>
-                          </h4>
-                          <p className="text-xs text-zinc-300/90 mt-1 font-serif italic">
-                            "{growthResult.prescribed_art.artwork_title}" — {growthResult.prescribed_art.art_quote}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600/40 to-indigo-600/40 group-hover:from-purple-600/60 group-hover:to-indigo-600/60 border border-purple-400/50 text-xs font-bold text-purple-100 shrink-0 transition-all self-end sm:self-center shadow-lg">
-                        <span>뮤즈로 토스</span>
-                        <ArrowRight size={14} className="group-hover:translate-x-1.5 transition-transform text-purple-300" />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* 2. Dominant Element & Focus Area */}
-                <div className="glass p-5 rounded-3xl bg-white/[0.02] border border-white/10 flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-400/30 flex items-center justify-center text-amber-400 shrink-0">
-                    {growthResult.dominant_element.element === 'Wands' ? (
-                      <Flame size={24} className="text-amber-500" />
-                    ) : growthResult.dominant_element.element === 'Cups' ? (
-                      <Heart size={24} className="text-blue-400" />
-                    ) : growthResult.dominant_element.element === 'Swords' ? (
-                      <Wind size={24} className="text-purple-400" />
-                    ) : (
-                      <Coins size={24} className="text-yellow-400" />
-                    )}
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest block">
-                      DOMINANT 4-ELEMENT REALITY
-                    </span>
-                    <h4 className="text-sm sm:text-base font-bold text-white">
-                      {growthResult.dominant_element.element_ko}
-                    </h4>
-                    <p className="text-xs text-zinc-300 mt-0.5">{growthResult.dominant_element.theme_brief}</p>
-                  </div>
-                </div>
-
-                {/* 3. Actionable Micro-Mission Card */}
-                <div className="glass p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-orange-950/25 via-amber-950/15 to-transparent border border-orange-400/30 relative">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="space-y-1.5">
-                      <span className="text-[10px] font-mono text-orange-400 uppercase tracking-widest block">
-                        TODAY'S ACTIONABLE MICRO-MISSION
-                      </span>
-                      <h4 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                        <Zap size={18} className="text-amber-400 shrink-0" />
-                        {growthResult.micro_mission.title}
-                      </h4>
-                      <p className="text-xs text-zinc-300/90 leading-relaxed font-sans">
-                        💡 <strong>실행 팁:</strong> {growthResult.micro_mission.action_tip}
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={handleToggleGrowth}
-                      className={`px-6 py-3.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all shadow-xl shrink-0 ${
-                        isGrowthCompleted
-                          ? 'bg-emerald-500/20 border border-emerald-400/50 text-emerald-300'
-                          : 'bg-gradient-to-r from-orange-500 to-amber-500 text-black hover:brightness-110'
-                      }`}
-                    >
-                      {isGrowthCompleted ? (
-                        <>
-                          <CheckCircle2 size={16} className="text-emerald-400" />
-                          <span>오늘의 미션 완료됨</span>
-                        </>
-                      ) : (
-                        <>
-                          <Check size={16} />
-                          <span>오늘 실천 완료 체크</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Evening reflection prompt */}
-                  <div className="mt-5 pt-4 border-t border-white/10 flex items-center gap-2 text-xs text-zinc-400">
-                    <Moon size={14} className="text-indigo-400 shrink-0" />
-                    <span>
-                      <strong>저녁 성찰 질문:</strong> "{growthResult.evening_reflection}"
-                    </span>
-                  </div>
-                </div>
-
-                {/* 오늘 저녁 성찰 질문 */}
-                {renderEveningReflectionSection(growthResult.evening_reflection)}
+              /* [GROWTH RESULT VIEW: ONLY LUCY'S SACRED GROWTH ACTION LETTER] */
+              <div className="w-full space-y-6">
+                {/* 루시의 사주·타로 융합 자기계발 실행 서한 (편지만 집중 표시) */}
+                {renderFusionLetterSection(growthResult.message || growthResult.macro_focus)}
               </div>
             ) : null}
           </motion.div>
