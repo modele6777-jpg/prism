@@ -16,6 +16,7 @@ import {
   FileText,
   Maximize2,
   Download,
+  Volume2,
 } from "lucide-react";
 import { ImageOutputActions, downloadImage } from "@/components/ImageOutputActions";
 import { auth, db, collection, addDoc, serverTimestamp, query, orderBy, limit, getDocs } from "@/lib/firebase";
@@ -1109,6 +1110,7 @@ export function ArtRecommendationView() {
   const [customConcern, setCustomConcern] = useState<string>("");
   const [savedCustomConcern, setSavedCustomConcern] = useState<string>("");
   const [isSelectingNewTheme, setIsSelectingNewTheme] = useState<boolean>(false);
+  const [isCustomInputOpen, setIsCustomInputOpen] = useState<boolean>(false);
 
   // 🔮 오라클 결과 토스 유입 여부 판별
   const isOracleTossed = Boolean(
@@ -1803,7 +1805,42 @@ export function ArtRecommendationView() {
         <p className="text-[10px] text-white/30 font-mono tracking-wider">
           매일 자정 이후 새로운 명작이 자동으로 큐레이션됩니다 · {getTodayDateKey()}
         </p>
-        
+
+        {/* 🌟 상시 노출: 오늘의 예술 추천 생성 액션 바 (Always Visible Top Generation Controls) */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+          <button
+            type="button"
+            onClick={() => {
+              if (recommendation) {
+                setIsCustomInputOpen((prev) => !prev);
+              } else {
+                void handleRecommendArt({ forceRefresh: true, userConcern: customConcern.trim() });
+              }
+            }}
+            disabled={loading}
+            className="prism-rainbow-btn relative py-3.5 px-8 rounded-2xl text-xs sm:text-sm font-black uppercase tracking-[0.12em] transform active:scale-95 text-white shadow-xl flex items-center justify-center gap-2.5 cursor-pointer min-w-[260px] disabled:opacity-50"
+            title="오늘의 예술 추천 생성"
+          >
+            <Sparkles size={16} className={loading ? "animate-spin" : "text-yellow-300 animate-pulse"} />
+            <span>
+              {recommendation
+                ? (isCustomInputOpen ? "▲ 나의 고민 입력창 접기" : "✍️ 나의 고민으로 맞춤 예술 추천 생성")
+                : "🎨 오늘의 예술 추천 생성하기"}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              void handleRecommendArt({ forceRefresh: true, randomOffset: Date.now() });
+            }}
+            disabled={loading}
+            className="py-3.5 px-5 rounded-2xl border border-blue-400/30 bg-blue-500/10 hover:bg-blue-500/20 text-white text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-2 shadow-sm disabled:opacity-50"
+            title="새로운 명곡·명시·명화로 즉시 재생성"
+          >
+            <RefreshCw size={13} className={loading ? "animate-spin text-blue-400" : "text-blue-400"} />
+            <span>새로운 명작으로 즉시 추천 생성</span>
+          </button>
+        </div>
       </div>
 
       {/* Prism Toss Pipeline Active Banner */}
@@ -1889,12 +1926,24 @@ export function ArtRecommendationView() {
       )}
 
       {/* Pre-Listening Concern & Mood Input Panel */}
-      {!recommendation && !loading && (
+      {(!recommendation || isCustomInputOpen) && !loading && (
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/[0.03] border border-white/10 p-6 sm:p-10 rounded-[32px] space-y-6 shadow-2xl backdrop-blur-xl"
+          className="bg-white/[0.03] border border-white/10 p-6 sm:p-10 rounded-[32px] space-y-6 shadow-2xl backdrop-blur-xl relative"
         >
+          {recommendation && (
+            <div className="flex justify-end -mt-2 sm:-mt-4">
+              <button
+                type="button"
+                onClick={() => setIsCustomInputOpen(false)}
+                className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors border border-white/10"
+              >
+                ✕ 입력창 닫기
+              </button>
+            </div>
+          )}
+
           <div className="text-center space-y-2 max-w-xl mx-auto">
             <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[11px] font-bold text-blue-300 font-mono">
               <Sparkles size={13} className="text-blue-400" />
@@ -2009,6 +2058,48 @@ export function ArtRecommendationView() {
             animate={{ opacity: 1, y: 0 }}
             className="space-y-8"
           >
+            {/* 🌟 최상단 배치: 오늘의 예술 오디오 도슨트 (MUSE AUDIO DOCENT - 오늘의 명곡, 명시, 명화 통합 가이드) */}
+            {recommendation.famousPoem && recommendation.famousSong && (
+              <div className="p-6 md:p-8 rounded-[32px] bg-gradient-to-br from-blue-950/40 via-indigo-950/30 to-zinc-900/90 border border-blue-500/30 shadow-2xl backdrop-blur-xl space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-blue-500/20 text-blue-300">
+                      <Volume2 size={18} />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-blue-300 block font-mono">
+                        MUSE AUDIO DOCENT · 🎧 오디오 도슨트
+                      </span>
+                      <h3 className="text-base sm:text-lg font-bold text-white">
+                        오늘의 명작 종합 음성 도슨트
+                      </h3>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-mono text-blue-300/80 bg-blue-500/10 border border-blue-500/20 px-3 py-1 rounded-full self-start sm:self-auto">
+                    3대 예술(음악·시·미술) 통합 나레이션
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-white/70 font-sans leading-relaxed">
+                  오늘의 명곡, 명시, 명화를 뮤즈가 하나의 감동적인 이야기로 엮어 순서대로 생생하게 음성 안내해 드립니다.
+                </p>
+                <MuseDocentAudio
+                  artwork={{
+                    imageUrl: effectiveImage,
+                    title: recommendation.title,
+                    creator: recommendation.creator,
+                    artworkType: recommendation.artworkType,
+                    era: recommendation.era,
+                    description: recommendation.description,
+                    whyRecommended: recommendation.whyRecommended,
+                    aestheticTone: recommendation.aestheticTone,
+                    quote: recommendation.quote,
+                    famousPoem: recommendation.famousPoem,
+                    famousSong: recommendation.famousSong,
+                  }}
+                />
+              </div>
+            )}
+
             {/* Shared User Concern Banner (오라클 토스 시에는 비노출) */}
             {savedCustomConcern && !isOracleTossed && (
               <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-200 flex items-start gap-2.5 shadow-sm">
@@ -2431,34 +2522,6 @@ export function ArtRecommendationView() {
                 </div>
               </div>
             </div>
-
-            {(nanobananaImage || recommendation.imageUrl) && recommendation.famousPoem && recommendation.famousSong && (
-              <div className="p-6 md:p-8 rounded-[28px] bg-gradient-to-br from-blue-500/[0.05] to-indigo-500/[0.02] border border-blue-500/15 space-y-4">
-                <div className="space-y-1 text-center">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-blue-300">
-                    MUSE AUDIO DOCENT
-                  </span>
-                  <p className="text-sm text-white/80 font-sans">
-                    오늘의 명곡, 명시, 명화를 뮤즈가 하나의 이야기로 엮어 순서대로 음성 안내해 드립니다.
-                  </p>
-                </div>
-                <MuseDocentAudio
-                  artwork={{
-                    imageUrl: effectiveImage,
-                    title: recommendation.title,
-                    creator: recommendation.creator,
-                    artworkType: recommendation.artworkType,
-                    era: recommendation.era,
-                    description: recommendation.description,
-                    whyRecommended: recommendation.whyRecommended,
-                    aestheticTone: recommendation.aestheticTone,
-                    quote: recommendation.quote,
-                    famousPoem: recommendation.famousPoem,
-                    famousSong: recommendation.famousSong,
-                  }}
-                />
-              </div>
-            )}
 
             {/* Micro Challenges / Mindful quests */}
             <div className="p-6 md:p-8 rounded-[28px] bg-white/[0.01] border border-white/5 space-y-6">

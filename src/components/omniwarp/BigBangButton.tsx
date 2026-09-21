@@ -262,6 +262,19 @@ export function BigBangButton() {
   const currentPointerEventRef = useRef<React.PointerEvent | null>(null);
   const hasTriggeredBlackHolePeakRef = useRef<boolean>(false);
   const lastStageRef = useRef<number>(1);
+  const globalPointerMoveRef = useRef<((e: PointerEvent) => void) | null>(null);
+  const globalPointerUpRef = useRef<((e: PointerEvent) => void) | null>(null);
+
+  const cleanupGlobalPointerListeners = useCallback(() => {
+    if (globalPointerMoveRef.current) {
+      window.removeEventListener('pointermove', globalPointerMoveRef.current);
+      globalPointerMoveRef.current = null;
+    }
+    if (globalPointerUpRef.current) {
+      window.removeEventListener('pointerup', globalPointerUpRef.current);
+      globalPointerUpRef.current = null;
+    }
+  }, []);
 
   // Real-time animation loop while pressing (60fps 고성능 최적화: 캐싱 & 스로틀링)
   const updateLoop = useCallback(() => {
@@ -290,12 +303,12 @@ export function BigBangButton() {
     const deltaY = currentPointer ? currentPointer.clientY - start.y : 0;
     const dist = Math.hypot(deltaX, deltaY);
 
-    // 🎯 드래그(dist >= 38) 중일 때:
+    // 🎯 드래그(dist >= 20) 중일 때:
     // 7대 정규 앱 엄격 순환(Non-Repeating App Cycle) 추천 메뉴를 실시간 타깃으로 동기화 (글자 토스 포함)
-    // 사용자가 스크롤 중이거나 가벼운 터치 시 추천 1순위가 미리 노출되지 않도록 보호
     const textToToss = touchStartSelectionRef.current || getActiveSelectionText();
 
-    if (dist >= 38 && !isPageScrolling) {
+    if (dist >= 20) {
+      setIsPageScrolling(false);
       const contextCandidate = peekNextRecommendedMenuByCycle(location, textToToss || undefined);
       const isTextToss = Boolean(textToToss);
       target = {
@@ -412,9 +425,25 @@ export function BigBangButton() {
   const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
 
+    setIsPageScrolling(false);
+    cleanupGlobalPointerListeners();
+
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch (_) {}
+
+    const onGlobalMove = (ev: PointerEvent) => {
+      currentPointerEventRef.current = ev as any;
+    };
+    const onGlobalUp = (ev: PointerEvent) => {
+      cleanupGlobalPointerListeners();
+      handlePointerUp(ev as any);
+    };
+
+    globalPointerMoveRef.current = onGlobalMove;
+    globalPointerUpRef.current = onGlobalUp;
+    window.addEventListener('pointermove', onGlobalMove, { passive: true });
+    window.addEventListener('pointerup', onGlobalUp);
 
     const now = performance.now();
     touchStartRef.current = {
@@ -483,11 +512,14 @@ export function BigBangButton() {
     currentPointerEventRef.current = e;
   };
 
-  const handlePointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
-    if (!isPressing || !touchStartRef.current) return;
+  const handlePointerUp = (e: React.PointerEvent<HTMLButtonElement> | PointerEvent) => {
+    cleanupGlobalPointerListeners();
+    if (!touchStartRef.current) return;
 
     try {
-      e.currentTarget.releasePointerCapture(e.pointerId);
+      if ('currentTarget' in e && (e.currentTarget as any)?.releasePointerCapture) {
+        (e.currentTarget as any).releasePointerCapture((e as any).pointerId);
+      }
     } catch (_) {}
 
     if (rafRef.current) {
@@ -899,6 +931,7 @@ export function BigBangButton() {
   };
 
   const handlePointerCancel = () => {
+    cleanupGlobalPointerListeners();
     if (rafRef.current) {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
@@ -936,6 +969,7 @@ export function BigBangButton() {
       window.removeEventListener('pointercancel', handleGlobalCancel);
       window.removeEventListener('blur', handleGlobalCancel);
       stopBlackHoleContinuousHaptic();
+      cleanupGlobalPointerListeners();
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, []);
@@ -1080,7 +1114,6 @@ export function BigBangButton() {
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
               onPointerCancel={handlePointerCancel}
-              onLostPointerCapture={handlePointerCancel}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               animate={{
@@ -1101,7 +1134,7 @@ export function BigBangButton() {
               transition={{
                 duration: 0.08,
               }}
-              className={`w-[76px] h-[76px] sm:w-[84px] sm:h-[84px] rounded-full flex flex-col items-center justify-center shrink-0 cursor-pointer outline-none relative overflow-hidden transition-all duration-200 border will-change-transform z-30 ${
+              className={`w-[76px] h-[76px] sm:w-[84px] sm:h-[84px] rounded-full flex flex-col items-center justify-center shrink-0 cursor-pointer outline-none relative overflow-hidden transition-all duration-200 border will-change-transform z-30 touch-none select-none ${
                 isPressing && isAborted
                   ? 'opacity-70 border-red-500/70 shadow-[0_0_24px_rgba(239,68,68,0.5)]'
                   : isPressing && activePhase === 'wormhole'
@@ -1115,6 +1148,8 @@ export function BigBangButton() {
                   : 'border-cyan-400/40 hover:border-cyan-300/80 shadow-[0_0_24px_rgba(56,189,248,0.3)]'
               }`}
               style={{
+                touchAction: 'none',
+                userSelect: 'none',
                 background: isPressing && isAborted
                   ? 'radial-gradient(circle at 40% 35%, #1f0b0f 0%, #0d0406 55%, #040102 100%)'
                   : isPressing && activePhase === 'wormhole'

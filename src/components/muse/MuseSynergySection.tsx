@@ -117,7 +117,6 @@ export function MuseSynergySection() {
 
   // Masterpiece artwork image states
   const [artworkImageUrl, setArtworkImageUrl] = useState<string>(MASTERS_LIST[0].imageUrl);
-  const [isGeneratingArtwork, setIsGeneratingArtwork] = useState<boolean>(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState<boolean>(false);
 
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -180,26 +179,6 @@ export function MuseSynergySection() {
   const handleSelectMaster = (master: MasterItem) => {
     setSelectedMaster(master);
     setArtworkImageUrl(master.imageUrl);
-  };
-
-  const handleGenerateAiMasterpiece = (seedOffset = Date.now()) => {
-    setIsGeneratingArtwork(true);
-    const targetPiece = dialogueData.masterpieceName || selectedMaster.piece;
-    const targetMaster = dialogueData.masterName || selectedMaster.name;
-    const targetMedium = dialogueData.masterpieceMedium || selectedMaster.medium;
-    const prompt = `Faithful museum masterpiece reproduction of "${targetPiece}" by ${targetMaster}. ${targetMedium}. Fine art museum oil painting, high resolution, authentic period colors and textures, museum lighting, 8k masterpiece.`;
-    const pollUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=768&seed=${seedOffset}&nologo=true&model=turbo`;
-
-    const testImg = new Image();
-    testImg.onload = () => {
-      setArtworkImageUrl(pollUrl);
-      setIsGeneratingArtwork(false);
-    };
-    testImg.onerror = () => {
-      setArtworkImageUrl(pollUrl);
-      setIsGeneratingArtwork(false);
-    };
-    testImg.src = pollUrl;
   };
 
   const handleStartMasterclass = async () => {
@@ -451,7 +430,7 @@ export function MuseSynergySection() {
                       {dialogueData.masterpieceMedium}
                     </span>
                   </h4>
-                  <p className="text-[11px] text-white/50">{dialogueData.masterName} · 미술관 컬렉션 & AI 정밀 재현 화폭</p>
+                  <p className="text-[11px] text-white/50">{dialogueData.masterName} · 세계 미술관 공식 컬렉션 원작</p>
                 </div>
               </div>
 
@@ -464,16 +443,6 @@ export function MuseSynergySection() {
                 >
                   <Eye size={13} />
                   <span>크게 보기</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleGenerateAiMasterpiece()}
-                  disabled={isGeneratingArtwork}
-                  className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-600/30 to-violet-600/30 hover:from-blue-600/50 hover:to-violet-600/50 border border-blue-400/40 text-blue-200 hover:text-white text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm disabled:opacity-50"
-                  title="해당 작품과 유사하게 AI 이미지 생성/재생성"
-                >
-                  <Sparkles size={13} className={isGeneratingArtwork ? "animate-spin text-yellow-300" : "text-yellow-300"} />
-                  <span>{isGeneratingArtwork ? "AI 작품 화폭 생성 중..." : "AI 작품 유사 생성 / 재생성"}</span>
                 </button>
               </div>
             </div>
@@ -605,17 +574,7 @@ export function MuseSynergySection() {
               {/* Modal Footer */}
               <div className="p-4 px-6 bg-zinc-900/60 border-t border-white/10 flex items-center justify-between text-xs text-white/70">
                 <span>{dialogueData.masterpieceMedium}</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleGenerateAiMasterpiece();
-                  }}
-                  disabled={isGeneratingArtwork}
-                  className="px-3 py-1.5 rounded-xl bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/30 flex items-center gap-1.5 font-bold transition-all disabled:opacity-50"
-                >
-                  <Sparkles size={13} className={isGeneratingArtwork ? "animate-spin" : ""} />
-                  <span>새 AI 화폭으로 재현하기</span>
-                </button>
+                <span className="text-[11px] text-blue-300 font-mono">세계 미술관 공식 컬렉션 원작</span>
               </div>
             </motion.div>
           </div>

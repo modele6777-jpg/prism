@@ -119,7 +119,7 @@ export const RADIAL_WARP_APPS: RadialWarpApp[] = [
 ];
 
 export interface ForceSensorOptions {
-  abortDistanceThreshold?: number; // default 88px (범위 밖으로 벗어날 시 안전 취소)
+  abortDistanceThreshold?: number; // default 220px (원거리 이탈 시 안전 취소)
   innerDeadzone?: number; // default 20px (중앙 제자리 압력 모드)
   buttonRadius?: number; // default 44px (버튼 표면 영역 반경)
   maxDurationMs?: number; // duration to reach 100% force, default 1100ms
@@ -138,7 +138,7 @@ export function calculateWarpMetrics(
   pointerEvent?: PointerEvent | React.PointerEvent,
   options: ForceSensorOptions = {}
 ): WarpForceMetrics {
-  const abortThreshold = options.abortDistanceThreshold ?? 88;
+  const abortThreshold = options.abortDistanceThreshold ?? 220;
   const innerDeadzone = options.innerDeadzone ?? 20;
   const buttonRadius = options.buttonRadius ?? 44;
 
