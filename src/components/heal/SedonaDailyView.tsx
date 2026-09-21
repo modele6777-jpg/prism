@@ -22,7 +22,8 @@ import {
   Info,
   Layers,
   Send,
-  HelpCircle
+  HelpCircle,
+  Brain
 } from 'lucide-react';
 import { auth, db, collection, addDoc, serverTimestamp, query, orderBy, limit, getDocs } from '@/lib/firebase';
 import { TTSButton } from '@/components/TTSButton';
@@ -81,6 +82,14 @@ const PRESET_ISSUES = [
   '완벽해야 한다는 강박과 인정받지 못한 박탈감',
 ];
 
+const THOUGHT_PRESETS = [
+  '내가 부족해서 모든 걸 다 망칠 것 같아...',
+  '그 사람이 어떻게 나한테 그럴 수가 있어?',
+  '왜 항상 나한테만 이런 억울한 일이 생길까?',
+  '아무리 노력해도 앞으로 상황이 나아지지 않을 거야...',
+  '내가 그때 그렇게 바보같이 행동하지 말았어야 했는데...',
+];
+
 export interface ReleaseHistoryEntry {
   id: string;
   targetIssue: string;
@@ -119,6 +128,18 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
   const [selectedZone, setSelectedZone] = useState<SomaticZone>(SOMATIC_ZONES[0]); // Chest default
   const [selectedDesire, setSelectedDesire] = useState<SedonaRootDesire>(SEDONA_ROOT_DESIRES[0]); // Control default
   const [recognizedEgoGain, setRecognizedEgoGain] = useState<boolean>(true);
+
+  // Thought-Stopping Protocol (Step 1)
+  const [thoughtInput, setThoughtInput] = useState<string>('');
+  const [isVaporizing, setIsVaporizing] = useState<boolean>(false);
+  const [vaporizedThought, setVaporizedThought] = useState<string | null>(null);
+  const [isStopFlash, setIsStopFlash] = useState<boolean>(false);
+  const [hasPerformedStop, setHasPerformedStop] = useState<boolean>(false);
+  const [gapTimer, setGapTimer] = useState<number>(5);
+  const [isGapTimerActive, setIsGapTimerActive] = useState<boolean>(false);
+  const [hasCompletedGap, setHasCompletedGap] = useState<boolean>(false);
+  const [activeThoughtTechnique, setActiveThoughtTechnique] = useState<'vaporizer' | 'stop_switch' | 'gap_silence'>('vaporizer');
+  const [showPrescriptionExplanation, setShowPrescriptionExplanation] = useState<boolean>(true);
 
   // Interactive Somatic Surrender Timer
   const [surrenderTimer, setSurrenderTimer] = useState<number>(15);
@@ -209,6 +230,54 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
     };
   }, [isSurrenderActive, surrenderTimer]);
 
+  // Gap Silence Timer Effect (The Gap between thoughts)
+  useEffect(() => {
+    let timer: NodeJS.Timeout | null = null;
+    if (isGapTimerActive && gapTimer > 0) {
+      timer = setInterval(() => {
+        setGapTimer((prev) => {
+          if (prev <= 1) {
+            setIsGapTimerActive(false);
+            setHasCompletedGap(true);
+            playSolfeggioTone(528, 3000);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [isGapTimerActive, gapTimer]);
+
+  const startGapTimer = () => {
+    setGapTimer(5);
+    setIsGapTimerActive(true);
+    setHasCompletedGap(false);
+    playSolfeggioTone(432, 1500);
+  };
+
+  const handleVaporizeThought = () => {
+    if (!thoughtInput.trim()) return;
+    setIsVaporizing(true);
+    playSolfeggioTone(528, 2500);
+    setTimeout(() => {
+      setVaporizedThought(thoughtInput.trim());
+      setThoughtInput('');
+      setIsVaporizing(false);
+    }, 700);
+  };
+
+  const handleTriggerStopFlash = () => {
+    setIsStopFlash(true);
+    setHasPerformedStop(true);
+    playSolfeggioTone(396, 1800);
+    setTimeout(() => {
+      setIsStopFlash(false);
+    }, 800);
+  };
+
   // Start Somatic Hold
   const startSomaticHold = () => {
     setSurrenderTimer(15);
@@ -258,7 +327,7 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
     }, 1400);
   };
 
-  // Generate Final Synthesis Prescription
+  // Generate Final Synthesis Prescription (방하착 마음 회복 소견서)
   const finishReleaseSession = async () => {
     setIsGeneratingResult(true);
     setCurrentStep(4);
@@ -270,20 +339,21 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
     const desireText = selectedDesire.nameKo;
     const reliefScore = Math.max(0, preSuds - postSuds);
 
-    const generatedPrescription = `### ☀️ 데이비드 호킨스 × 세도나 방하착 통합 처방문
+    const generatedPrescription = `### ☀️ 마음 놓아버림(방하착) 통합 치유 소견서
+*(호킨스 감정 항복 기법 × 세도나 마음 릴리즈 융합 리포트)*
 
-**1. 생각의 장작 차단과 신체 항복 (Somatic Surrender)**
-머릿속의 과거 원망과 자책 스토리를 전면 차단하고, ${zoneText}에 고여 있던 **[${emotionText} (의식 레벨 ${levelNum})]**의 에너지 전압을 저항 없이 허용하였습니다. 감정은 압력밥솥의 증기처럼 온전히 대면할 때 스스로 다 타서 증발한다는 호킨스 박사의 항복 원리가 실현되었습니다.
+**1. 머릿속 생각 멈춤 & 신체 감각 허용 (생각 장작 끄기)**
+머리를 복잡하게 채우며 불안과 원망을 키우던 생각 스토리(반추)를 전면 차단하고, ${zoneText}에 고여 있던 **[${emotionText} (의식 레벨 ${levelNum})]**의 신체 감각을 있는 그대로 허용했습니다. 생각의 장작을 끄고 감각 자체를 마주할 때 감정은 스스로 증발한다는 호킨스 박사의 항복 원리가 실현되었습니다.
 
-**2. 에고의 4대 근원 욕구 해체 (Root Desire Deconstruction)**
-이 고통의 뿌리에서 작동하던 **[${desireText}]** 및 "내가 옳아야만 한다"는 에고의 2차 이득을 명료히 자각하고 손바닥을 펴듯 놓아주었습니다.
+**2. 고통의 뿌리, 무의식 집착 내려놓기 (왜 그토록 힘들었을까?)**
+이 고통의 이면에 숨어 작동하던 **[${desireText}]** 및 "내가 옳아야만 한다"는 에고의 2차 이득을 명확히 알아차렸습니다. 손에 쥔 볼펜을 떨어뜨리듯, 집착을 허공으로 가볍게 흘려보냈습니다.
 
-**3. 의식의 도약 (Scale of Consciousness Ascension)**
-- **Before**: ${emotionText} (${levelNum}점) · 고통 전압 SUDS: ${preSuds}/10
-- **After**: 용기(200) 및 수용(350)을 지나 **참나(Self)의 평화(600)**에 안착 · 고통 전압 SUDS: ${postSuds}/10 (${reliefScore > 0 ? `${reliefScore}점 경감` : '평정 도달'})
+**3. 내면의 평온 회복 지수 (스트레스 전압 SUDS의 변화)**
+- **정화 전 (Before)**: ${emotionText} (${levelNum}점) · 스트레스 전압: ${preSuds} / 10
+- **정화 후 (After)**: 생각과 집착을 내려놓고 고요한 평온에 안착 · 스트레스 전압: ${postSuds} / 10 (${reliefScore > 0 ? `${reliefScore}점 경감` : '완전한 평정 도달'})
 
-**4. 오늘의 참나 실천 확언**
-*"감정은 지나가는 날씨일 뿐이며, 나는 그 구름 뒤에서 한 번도 빛을 잃지 않은 영원한 태양이다. 쥐고 있던 손을 펴는 순간, 우주의 무한한 은총과 평화가 내 안에 가득 차오른다."*`;
+**4. 마음이 다시 흔들릴 때 기억할 오늘의 평화 확언**
+*"감정은 지나가는 날씨일 뿐이며, 나는 그 구름 뒤에서 한 번도 빛을 잃지 않은 영원한 푸른 하늘이다. 쥐고 있던 생각을 내려놓는 순간, 내 안의 무한한 은총과 평화가 가득 차오른다."*`;
 
     setPrescription(generatedPrescription);
     setIsGeneratingResult(false);
@@ -346,6 +416,10 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
     setIsReleasedAnimation(false);
     setPreSuds(8);
     setPostSuds(1);
+    setThoughtInput('');
+    setVaporizedThought(null);
+    setHasPerformedStop(false);
+    setHasCompletedGap(false);
   };
 
   const startQuickSos = (issue: string) => {
@@ -409,7 +483,7 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
             }`}
           >
             <Sparkles size={14} />
-            <span>4단계 마스터 릴리즈</span>
+            <span>4단계 마스터 릴리즈 (생각 멈춤 &amp; 방하착)</span>
           </button>
           <button
             type="button"
@@ -491,10 +565,10 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
               <span className="text-white/40 text-xs hidden sm:inline">&bull;</span>
               <span className="text-xs text-white/70 font-semibold">
                 {currentStep === 0 && '1단계: 마음의 타겟팅 & 호킨스 감정 진단'}
-                {currentStep === 1 && '2단계: [호킨스] 생각 끊기 & 신체 소매틱 항복'}
+                {currentStep === 1 && '2단계: [호킨스] 생각 멈춤 훈련 & 신체 소매틱 항복'}
                 {currentStep === 2 && '3단계: [세도나] 4대 근원 욕구 & 2차 이득 해체'}
                 {currentStep === 3 && '4단계: [세도나] 4문답 & 인터랙티브 볼펜 놓기'}
-                {currentStep === 4 && '5단계: 의식 도약 소견서 & 참나 현존'}
+                {currentStep === 4 && '5단계: 마음 놓아버림(방하착) 통합 치유 소견서 & 참나 현존'}
               </span>
             </div>
 
@@ -614,26 +688,230 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
             </motion.div>
           )}
 
-          {/* Step 2: Hawkins Somatic Surrender */}
+          {/* Step 2: Hawkins Somatic Surrender & Thought Stopping */}
           {currentStep === 1 && (
-            <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 text-center">
-              <div className="space-y-2 max-w-xl mx-auto">
+            <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+              {/* Header */}
+              <div className="text-center space-y-2 max-w-xl mx-auto">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px] font-bold">
-                  <span>🛑 생각의 장작을 100% 끄세요</span>
+                  <span>🛑 생각 멈춤 (Thought-Stopping) &amp; 신체 소매틱 항복</span>
                 </div>
                 <h3 className="text-xl sm:text-2xl font-light text-slate-100">
                   머릿속 스토리를 멈추고, <br className="hidden sm:inline" />
                   <span className="text-emerald-300 font-semibold">신체 감각 자체에 완전히 항복하세요</span>
                 </h3>
                 <p className="text-xs text-white/60 leading-relaxed font-sans">
-                  "생각은 감정의 불에 기름을 붓는 에고의 속임수입니다. 생각을 끄고 몸의 뻐근하고 뜨거운 느낌 자체를 100% 허용하면, 압력밥솥의 증기처럼 스스로 증발합니다."
+                  "생각은 감정의 불에 기름을 붓는 에고의 장작입니다. 생각을 끊고 몸의 뻐근하고 뜨거운 느낌 자체를 100% 허용하면, 압력밥솥의 증기처럼 스스로 증발합니다."
                 </p>
               </div>
 
-              {/* Somatic Zone Selection */}
-              <div className="space-y-3 text-left max-w-2xl mx-auto">
-                <span className="text-xs font-bold text-white/80 block">이 감정이 가장 강하게 느껴지는 신체 부위는 어디인가요?</span>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+              {/* SECTION A: Thought-Stopping Protocol (생각 멈춤 실천 도구함) */}
+              <div className="p-5 sm:p-6 rounded-3xl bg-zinc-900/70 border border-emerald-500/30 space-y-5 max-w-2xl mx-auto shadow-xl">
+                <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Brain size={18} className="text-emerald-400" />
+                    <span className="text-xs sm:text-sm font-bold text-white">
+                      1단계: 머릿속 생각의 장작 끄기 (생각 멈춤 훈련)
+                    </span>
+                  </div>
+                  {(vaporizedThought || hasPerformedStop || hasCompletedGap) && (
+                    <span className="text-[11px] font-mono text-emerald-400 font-bold bg-emerald-500/15 px-2.5 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1">
+                      <CheckCircle2 size={12} />
+                      <span>생각 차단 완료</span>
+                    </span>
+                  )}
+                </div>
+
+                {/* 3 Thought-Stopping Technique Tabs */}
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveThoughtTechnique('vaporizer')}
+                    className={`py-2 px-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex flex-col sm:flex-row items-center justify-center gap-1.5 ${
+                      activeThoughtTechnique === 'vaporizer'
+                        ? 'bg-amber-500/20 border border-amber-400/80 text-amber-200 shadow-md'
+                        : 'bg-white/5 text-white/50 hover:text-white border border-white/5'
+                    }`}
+                  >
+                    <span>🔥</span>
+                    <span className="truncate">생각 소멸기</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveThoughtTechnique('stop_switch')}
+                    className={`py-2 px-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex flex-col sm:flex-row items-center justify-center gap-1.5 ${
+                      activeThoughtTechnique === 'stop_switch'
+                        ? 'bg-red-500/20 border border-red-400/80 text-red-200 shadow-md'
+                        : 'bg-white/5 text-white/50 hover:text-white border border-white/5'
+                    }`}
+                  >
+                    <span>🛑</span>
+                    <span className="truncate">생각 컷 (STOP)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveThoughtTechnique('gap_silence')}
+                    className={`py-2 px-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex flex-col sm:flex-row items-center justify-center gap-1.5 ${
+                      activeThoughtTechnique === 'gap_silence'
+                        ? 'bg-indigo-500/20 border border-indigo-400/80 text-indigo-200 shadow-md'
+                        : 'bg-white/5 text-white/50 hover:text-white border border-white/5'
+                    }`}
+                  >
+                    <span>⏳</span>
+                    <span className="truncate">생각 사이의 침묵</span>
+                  </button>
+                </div>
+
+                {/* Technique 1: Vaporizer */}
+                {activeThoughtTechnique === 'vaporizer' && (
+                  <div className="space-y-3">
+                    <p className="text-xs text-white/70">
+                      지금 머릿속을 맴돌며 감정을 부추기는 생각(과거 원망, 미래 불안, 자책)을 적어보세요.
+                    </p>
+
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={thoughtInput}
+                        onChange={(e) => setThoughtInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleVaporizeThought();
+                        }}
+                        placeholder="예: 내가 부족해서 다 망치면 어쩌지..."
+                        className={`w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-white/30 text-xs focus:outline-none focus:border-amber-400 transition-all ${
+                          isVaporizing ? 'opacity-0 scale-95 blur-md transition-all duration-700' : ''
+                        }`}
+                      />
+                    </div>
+
+                    {/* Quick thought chips */}
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {THOUGHT_PRESETS.map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => setThoughtInput(preset)}
+                          className="px-2.5 py-1 rounded-lg bg-white/[0.03] hover:bg-amber-500/10 border border-white/5 hover:border-amber-500/30 text-[10px] text-white/60 hover:text-amber-200 transition-all text-left cursor-pointer truncate max-w-full"
+                        >
+                          {preset}
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleVaporizeThought}
+                      disabled={!thoughtInput.trim() || isVaporizing}
+                      className={`w-full py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                        thoughtInput.trim() && !isVaporizing
+                          ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 shadow-lg shadow-amber-500/20 active:scale-98'
+                          : 'bg-white/5 text-white/30 cursor-not-allowed'
+                      }`}
+                    >
+                      <Flame size={14} className={isVaporizing ? 'animate-bounce' : ''} />
+                      <span>{isVaporizing ? '생각의 장작을 끄는 중...' : '🔥 이 생각의 장작 끄기 & 허공으로 소멸'}</span>
+                    </button>
+
+                    {vaporizedThought && (
+                      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-200/90 leading-relaxed flex items-start gap-2">
+                        <CheckCircle2 size={14} className="text-amber-400 shrink-0 mt-0.5" />
+                        <div>
+                          <strong>"{vaporizedThought}"</strong> 생각이 허공으로 흩어졌습니다.<br />
+                          <span className="text-white/60">생각은 뇌가 만들어낸 일시적 전기 신호일 뿐 당신이 아닙니다.</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Technique 2: STOP Switch */}
+                {activeThoughtTechnique === 'stop_switch' && (
+                  <div className="space-y-4 text-center py-2">
+                    <p className="text-xs text-white/70 max-w-md mx-auto">
+                      생각이 꼬리를 물며 통제되지 않을 때, 뇌의 기본모드신경망(DMN)을 즉시 정지시키는 인지심리학 처방입니다.
+                    </p>
+
+                    <div className="flex flex-col items-center justify-center gap-3">
+                      <button
+                        type="button"
+                        onClick={handleTriggerStopFlash}
+                        className={`w-28 h-28 sm:w-32 sm:h-32 rounded-full border-2 flex flex-col items-center justify-center transition-all cursor-pointer shadow-2xl ${
+                          isStopFlash
+                            ? 'bg-red-600 border-white text-white scale-110 shadow-[0_0_40px_rgba(239,68,68,0.8)] animate-pulse'
+                            : 'bg-red-950/60 hover:bg-red-900/60 border-red-500/40 text-red-300 hover:border-red-400'
+                        }`}
+                      >
+                        <span className="text-2xl font-black tracking-widest font-mono">STOP!</span>
+                        <span className="text-[10px] mt-1 text-white/70">그만! 멈춤</span>
+                      </button>
+
+                      <span className="text-[11px] text-white/50">버튼을 눌러 머릿속 생각 라디오를 [MUTE]로 끄세요</span>
+                    </div>
+
+                    {hasPerformedStop && (
+                      <div className="p-3 rounded-xl bg-red-950/30 border border-red-500/30 text-[11px] text-red-200 leading-relaxed max-w-md mx-auto">
+                        🛑 <strong>생각 차단 선언 완료:</strong> "스토리 분석을 즉각 멈춥니다. 이 생각은 나의 평온을 깰 자격이 없다."
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Technique 3: The Gap */}
+                {activeThoughtTechnique === 'gap_silence' && (
+                  <div className="space-y-4 text-center py-2">
+                    <div className="p-3 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 text-left space-y-1">
+                      <span className="text-xs font-bold text-indigo-300">에크하르트 톨레 &amp; 호킨스의 궁극의 생각 정지 질문:</span>
+                      <p className="text-xs text-white/80 italic font-serif leading-relaxed">
+                        "지금 눈을 감고 기다려보세요: <strong>'나의 다음 생각은 어디서 떠오를까?'</strong>"
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col items-center justify-center">
+                      {isGapTimerActive ? (
+                        <div className="space-y-2">
+                          <div className="w-24 h-24 rounded-full border-2 border-indigo-400 bg-indigo-500/20 flex flex-col items-center justify-center animate-pulse">
+                            <span className="text-3xl font-mono font-bold text-indigo-200">00:0{gapTimer}</span>
+                            <span className="text-[9px] text-indigo-300 tracking-wider uppercase">생각 사이의 침묵</span>
+                          </div>
+                          <p className="text-[11px] text-white/60">다음 생각이 오는지 가만히 지켜보세요...</p>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={startGapTimer}
+                          className="px-5 py-3 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-indigo-500/20 active:scale-98 transition-all cursor-pointer"
+                        >
+                          <Timer size={14} />
+                          <span>{hasCompletedGap ? '생각 사이의 고요 5초 다시 체험' : '5초 생각 정지(Gap) 침묵 체험하기'}</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {hasCompletedGap && !isGapTimerActive && (
+                      <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-[11px] text-indigo-200 leading-relaxed max-w-md mx-auto text-left">
+                        ✨ <strong>고요의 발견:</strong> 다음 생각을 지켜보려 집중하는 순간, 생각은 멈추고 고요한 '빈 공간(Gap)'이 나타납니다. 당신은 생각이 아니라, 그 침묵을 지켜보는 순수한 관찰자(참나)입니다.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* SECTION B: Somatic Surrender (신체 감각 집중 & 항복) */}
+              <div className="space-y-4 max-w-2xl mx-auto">
+                <div className="flex items-center gap-2 text-left">
+                  <Heart size={18} className="text-emerald-400" />
+                  <div>
+                    <span className="text-xs sm:text-sm font-bold text-white block">
+                      2단계: 머리에서 몸으로 주의 이동 &amp; 신체 감각 항복
+                    </span>
+                    <span className="text-[11px] text-white/50">
+                      생각을 끄셨다면, 이제 감정이 머물고 있는 신체 부위에 100% 주의를 기울이세요.
+                    </span>
+                  </div>
+                </div>
+
+                {/* Somatic Zone Selection */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-left">
                   {SOMATIC_ZONES.map((zone) => {
                     const isSelected = selectedZone.id === zone.id;
                     return (
@@ -662,41 +940,50 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
                     );
                   })}
                 </div>
-              </div>
 
-              {/* Somatic Hold Ring / Timer */}
-              <div className="py-6 flex flex-col items-center justify-center">
-                <div className="relative w-44 h-44 sm:w-52 sm:h-52 flex items-center justify-center">
-                  <motion.div
-                    animate={
-                      isSurrenderActive
-                        ? { scale: [1, 1.25, 1], opacity: [0.3, 0.7, 0.3] }
-                        : { scale: 1, opacity: 0.3 }
-                    }
-                    transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                    className="absolute inset-0 rounded-full bg-emerald-500/20 blur-xl"
-                  />
-                  <div className="relative z-10 flex flex-col items-center justify-center text-center p-6 rounded-full border border-emerald-500/40 bg-zinc-950/80 shadow-2xl w-full h-full">
-                    <span className="text-3xl">{selectedZone.emoji}</span>
-                    <span className="text-2xl font-mono font-bold text-emerald-300 mt-2">
-                      00:{String(surrenderTimer).padStart(2, '0')}
-                    </span>
-                    <span className="text-[10px] text-white/50 mt-1 uppercase tracking-wider">
-                      {isSurrenderActive ? '신체 느낌과 동행 중...' : hasCompletedSomaticHold ? '항복 완료!' : '타이머 대기'}
-                    </span>
+                {/* Somatic Hold Ring / Timer */}
+                <div className="py-4 flex flex-col items-center justify-center">
+                  <div className="relative w-44 h-44 sm:w-52 sm:h-52 flex items-center justify-center">
+                    <motion.div
+                      animate={
+                        isSurrenderActive
+                          ? { scale: [1, 1.25, 1], opacity: [0.3, 0.7, 0.3] }
+                          : { scale: 1, opacity: 0.3 }
+                      }
+                      transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                      className="absolute inset-0 rounded-full bg-emerald-500/20 blur-xl"
+                    />
+                    <div className="relative z-10 flex flex-col items-center justify-center text-center p-6 rounded-full border border-emerald-500/40 bg-zinc-950/80 shadow-2xl w-full h-full">
+                      <span className="text-3xl">{selectedZone.emoji}</span>
+                      <span className="text-2xl font-mono font-bold text-emerald-300 mt-2">
+                        00:{String(surrenderTimer).padStart(2, '0')}
+                      </span>
+                      <span className="text-[10px] text-white/50 mt-1 uppercase tracking-wider">
+                        {isSurrenderActive ? '신체 느낌과 동행 중...' : hasCompletedSomaticHold ? '항복 완료!' : '타이머 대기'}
+                      </span>
+                    </div>
                   </div>
-                </div>
 
-                {!isSurrenderActive && (
-                  <button
-                    type="button"
-                    onClick={startSomaticHold}
-                    className="mt-4 px-4 py-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs font-bold hover:bg-emerald-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <RotateCcw size={13} />
-                    <span>신체 항복 15초 다시 집중하기</span>
-                  </button>
-                )}
+                  {/* Real-time thought defense guidance during timer */}
+                  {isSurrenderActive && (
+                    <p className="mt-3 text-xs text-amber-200/90 font-medium animate-pulse text-center max-w-sm">
+                      {surrenderTimer > 10 && `🛑 머릿속 생각('왜?')을 끄고, ${selectedZone.name}의 조임·열감에만 주의를 기울이세요.`}
+                      {surrenderTimer <= 10 && surrenderTimer > 5 && `🌊 생각이 다시 올라오면: '아, 생각일 뿐이야' 하고 목 아래 몸의 감각으로 돌아옵니다.`}
+                      {surrenderTimer <= 5 && `✨ 저항하지 않고 그대로 머물 때, 감정은 압력밥솥의 증기처럼 스스로 증발합니다.`}
+                    </p>
+                  )}
+
+                  {!isSurrenderActive && (
+                    <button
+                      type="button"
+                      onClick={startSomaticHold}
+                      className="mt-4 px-4 py-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs font-bold hover:bg-emerald-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <RotateCcw size={13} />
+                      <span>신체 항복 15초 다시 집중하기</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
               <button
@@ -928,13 +1215,81 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
                 </div>
               </div>
 
+              {/* Clarification Guide Box for Hawkins x Sedona Banghachak Integrated Prescription */}
+              <div className="p-5 sm:p-6 rounded-3xl bg-emerald-950/30 border border-emerald-500/30 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <span className="p-2 rounded-xl bg-emerald-500/20 text-emerald-300">
+                      <HelpCircle size={18} />
+                    </span>
+                    <div>
+                      <h4 className="text-sm sm:text-base font-bold text-emerald-200">
+                        '호킨스 &times; 세도나 방하착 통합 처방문'이란 무엇인가요?
+                      </h4>
+                      <p className="text-[11px] text-white/50">
+                        어려운 용어를 알기 쉽게 풀어드리는 마음 회복 소견서 안내 가이드
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowPrescriptionExplanation((prev) => !prev)}
+                    className="text-xs text-emerald-300/80 hover:text-emerald-200 px-3 py-1 rounded-lg bg-white/5 border border-white/10 transition-all cursor-pointer"
+                  >
+                    {showPrescriptionExplanation ? '접기' : '자세히 보기'}
+                  </button>
+                </div>
+
+                {showPrescriptionExplanation && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-white/80 pt-1">
+                    <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/5 space-y-1.5">
+                      <span className="font-bold text-amber-300 flex items-center gap-1.5">
+                        <Flame size={13} />
+                        <span>1. 방하착(放下着)이란?</span>
+                      </span>
+                      <p className="text-[11px] text-white/60 leading-relaxed font-sans">
+                        放(놓을 방) &middot; 下(아래 하) &middot; 着(둘 착). 마음속에 무겁게 쥐고 있던 생각, 집착, 원망을 <strong>'손바닥 펴듯 허공에 툭 내려놓는다(Letting Go)'</strong>는 선가(禪家)의 지혜입니다.
+                      </p>
+                    </div>
+
+                    <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/5 space-y-1.5">
+                      <span className="font-bold text-indigo-300 flex items-center gap-1.5">
+                        <Compass size={13} />
+                        <span>2. 호킨스 &times; 세도나 기법?</span>
+                      </span>
+                      <p className="text-[11px] text-white/60 leading-relaxed font-sans">
+                        <strong>데이비드 호킨스:</strong> 생각을 끄고 몸에 머무는 감정 에너지를 온전히 느껴 스스로 증발시키는 항복법.<br />
+                        <strong>세도나 메서드:</strong> 고통을 유발하는 4대 결핍 욕망을 직시하고 펜을 떨어뜨리듯 놓아버리는 릴리즈.
+                      </p>
+                    </div>
+
+                    <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/5 space-y-1.5">
+                      <span className="font-bold text-emerald-300 flex items-center gap-1.5">
+                        <Sparkles size={13} />
+                        <span>3. 통합 처방문이란?</span>
+                      </span>
+                      <p className="text-[11px] text-white/60 leading-relaxed font-sans">
+                        생각을 멈추고 욕망을 비워냄으로써, <strong>나의 고통 스트레스 전압이 어떻게 줄어들어 평온(참나)으로 도약했는지</strong>를 알기 쉽게 정리한 <strong>'나만의 맞춤형 마음 회복 소견서'</strong>입니다.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Prescription Markdown Box */}
-              <div className="p-6 rounded-3xl bg-white/[0.02] border border-emerald-500/20 text-white/90 text-sm leading-relaxed space-y-4">
+              <div className="p-6 rounded-3xl bg-white/[0.02] border border-emerald-500/20 text-white/90 text-sm leading-relaxed space-y-4 shadow-xl">
                 <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                  <span className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
-                    <Sparkles size={14} />
-                    <span>호킨스 &times; 세도나 방하착 통합 처방문</span>
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <Sparkles size={16} className="text-emerald-400" />
+                    <div>
+                      <span className="text-xs sm:text-sm font-bold text-emerald-300 block">
+                        〈마음 놓아버림(방하착) 통합 치유 소견서〉
+                      </span>
+                      <span className="text-[10px] text-white/40">
+                        호킨스 감정 항복 기법 &times; 세도나 마음 릴리즈 융합 리포트
+                      </span>
+                    </div>
+                  </div>
                   <TTSButton text={prescription} voice="Kore" className="text-emerald-300 border-emerald-500/30 text-xs px-2.5 py-1" />
                 </div>
                 <Streamdown>{prescription}</Streamdown>

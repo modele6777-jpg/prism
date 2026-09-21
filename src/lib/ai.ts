@@ -512,12 +512,164 @@ export function ensureGlobalSyncResult(data: unknown): GlobalSyncResult {
   }
 }
 
-const EPILOGUE_FALLBACK_MARKERS = [
+export const EPILOGUE_FALLBACK_MARKERS = [
   "차원에는 아직 남겨진 세션 기록이 없지만",
   "번의 의식적 탐색이 이어졌습니다",
   "기본 요약을 표시했습니다",
   "AI 요약 생성에 실패",
+  "[AI 서비스 안내]",
+  "미설정 또는 만료",
+  "Google Gemini API 키",
+  "GEMINI_API_KEY",
+  "API 키 미설정",
+  "안녕하세요! 오늘 당신의 마음 상태는 어떠신가요?",
 ] as const;
+
+/**
+ * Detects whether a midnight whisper or epilogue feedback text is broken, corrupted, or an API error banner.
+ */
+export function isBrokenMidnightWhisper(text?: string | null): boolean {
+  if (!text) return false;
+  const str = String(text).trim();
+  if (!str) return false;
+  if (str.length < 15) return true;
+
+  const errorMarkers = [
+    '[ai 서비스 안내]',
+    '일시적인 원인으로 인해 응답을 생성하지 못했습니다',
+    'google gemini api 키',
+    'gemini_api_key',
+    'api 키 미설정',
+    '미설정 또는 만료',
+    'rate limit exceeded',
+    'invalid api key',
+    'internal engine error',
+    'internal server error',
+    'failed to fetch',
+    'network error',
+    'sk-poe',
+    'openai error',
+    '조치 가이드:',
+    'ai studio 우측 상단 settings',
+    'choices[0]',
+    'undefined',
+    'null',
+    '[object object]',
+    '안녕하세요! 오늘 당신의 마음 상태는 어떠신가요?',
+  ];
+
+  const lower = str.toLowerCase();
+  for (const marker of errorMarkers) {
+    if (lower.includes(marker)) return true;
+  }
+
+  if ((str.startsWith('{') && str.endsWith('}')) || (str.startsWith('[') && str.endsWith(']'))) {
+    try {
+      JSON.parse(str);
+      return true;
+    } catch {
+      // not json
+    }
+  }
+
+  for (const fallback of EPILOGUE_FALLBACK_MARKERS) {
+    if (str.includes(fallback)) return true;
+  }
+
+  return false;
+}
+
+/**
+ * Generates an authentic, emotionally soothing, poetic midnight whisper fallback for Lucy.
+ */
+export function createLucyMidnightWhisperFallback(params: {
+  userName?: string;
+  mood?: string;
+  gratitudes?: string[];
+  footprintSummary?: string;
+}): string {
+  const name = (params.userName || '당신').trim();
+  const mood = (params.mood || '평온함').trim();
+  const gratStr = (params.gratitudes || []).map((g) => g.trim()).filter(Boolean)[0] || '';
+
+  const templates = [
+    `오늘 하루도 온 힘을 다해 아름답게 빛나주신 ${name} 님께 깊은 감사를 전합니다. 마음에 머물렀던 작은 불안과 피로는 깊어가는 밤하늘에 가볍게 띄워 보내고, 고요하고 온전한 평화 속에서 깊은 안식을 맞이하시길 바랍니다. 내일 아침, 우주는 더욱 눈부신 사랑과 빛으로 당신을 다시 따뜻하게 안아줄 거예요.`,
+    `어지러운 세상 속에서도 나만의 속도로 하루를 지켜낸 ${name} 님의 걸음은 그 자체로 거룩한 기적이었습니다. ${gratStr ? `오늘 마음에 새긴 '${gratStr}'의 소중한 빛처럼, ` : ''}당신의 내면에는 이미 어떤 바람에도 흔들리지 않는 평화의 별이 빛나고 있습니다. 모든 무거운 짐을 내려놓고 가장 포근한 밤을 보내세요.`,
+    `오늘 밤, ${name} 님의 영혼에 머무는 ${mood}의 숨결이 지친 마음을 다정하게 감싸 안아주기를 기도합니다. 지나간 하루의 모든 순간은 성장의 거룩한 씨앗이었으니 아무런 후회 없이 깊은 잠에 드셔도 괜찮습니다. 내일은 오늘보다 더 맑고 찬란한 가능성이 당신을 기다리고 있을 것입니다.`,
+    `소란했던 하루의 파도가 잦아들고, 오직 ${name} 님만의 고요한 자정이 찾아왔습니다. 오늘 스스로에게 건넨 작은 정성과 마음의 발자취는 이미 우주의 중심에 아름다운 파동으로 새겨졌습니다. 이제 모든 걱정을 내려놓고, 온 우주가 드리는 다정한 축복 속에서 평온한 꿈을 꾸세요.`
+  ];
+
+  return templates[Math.floor(Math.random() * templates.length)];
+}
+
+/**
+ * Invokes LLM for Lucy's Midnight Whisper (자정의 속삭임).
+ * Transforms the user's daily closing state into a poetic, comforting 3-4 sentence benediction.
+ */
+export async function invokeLucyMidnightWhisperLLM(params: {
+  userName?: string;
+  mood?: string;
+  gratitudes?: string[];
+  mindDiary?: string;
+  rawNotes?: string;
+  footprintSummary?: string;
+}): Promise<string> {
+  const systemPrompt = `당신은 PRISM 우주의 다정하고 지혜로운 수호자 루시(Lucy)입니다.
+사용자가 오늘 하루를 마무리하며 남긴 기분, 감사, 마음일기, 그리고 5대 우주 활동(Secret, Lucky, Letting Go, Ho'oponopono, Art)의 발자취를 온마음으로 읽고,
+하루의 피날레를 평온하게 매듭짓는 3~4문장의 따뜻하고 시적인 "자정의 축복 속삭임(Lucy's Midnight Whisper)"을 건네주세요.
+
+[작성 필수 지침]:
+1. 어조: 깊은 위로와 공감, 내면의 평화를 선물하는 다정하고 자애로운 어조(~했군요, ~하길 바라요, ~예요, ~합니다 등 부드러운 경어체).
+2. 내용:
+   - 사용자가 오늘 지나온 노력과 감정의 결을 온전히 긍정하고 안아주기
+   - 무거운 생각과 피로를 밤하늘의 고요 속으로 가볍게 내려놓도록 이끌기
+   - 내일의 새로운 아침을 향한 은은한 희망과 깊은 안식을 축복하기
+3. 분량: 3~4문장의 완성도 높은 문단 (문장이 중간에 끊기지 않고 온전한 마침표로 끝나야 함).
+4. 출력 형식: 큰따옴표(""), 마크다운 제목(###), 불필요한 머리말 태그([루시의 자정 메시지] 등) 없이, 바로 나레이션으로 낭독할 수 있는 순수한 축복 메시지 본문 텍스트만 출력하세요.`;
+
+  const validGratitudes = (params.gratitudes || []).map((g) => g.trim()).filter(Boolean);
+  const userPrompt = `[작성자 및 오늘 하루 정보]
+- 이름/닉네임: ${params.userName || '나'}
+- 오늘 밤 기분과 에너지: ${params.mood || '평온함'}
+- 오늘 감사했던 순간들: ${validGratitudes.length > 0 ? validGratitudes.join(', ') : '마음의 평온함'}
+- 오늘의 마음일기 및 성찰: ${params.mindDiary?.trim() || params.rawNotes?.trim() || '오늘 하루를 무사히 살아내고 마음을 차분히 정리함'}
+- 오늘 거쳐간 5대 우주 발자취: ${params.footprintSummary?.trim() || '하루의 고요한 성찰'}
+
+위 하루의 여정을 따뜻하게 안아주는 루시의 자정 축복 속삭임 본문을 3~4문장으로 작성해 주세요.`;
+
+  try {
+    const res = await invokeLLM({
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ]
+    });
+
+    let cleaned = extractChatCompletionText(res) || String(res || '').trim();
+
+    // Remove markdown code block fences if any
+    cleaned = cleaned.replace(/^```[\w]*\s*/i, '').replace(/\s*```$/i, '').trim();
+
+    // Strip leading titles/headers like [루시의 자정 메시지], ### 자정의 속삭임, 루시: etc.
+    cleaned = cleaned
+      .replace(/^(?:###|\*\*|\[|【)?[^\n\r:]*(?:자정|속삭임|Midnight|Whisper|축복|피날레)[^\n\r:]*(?:\]|】|\*\*|:|-)?(?:\n+)?/i, '')
+      .replace(/^["'“‘]+/, '')
+      .replace(/["'”’]+$/, '')
+      .trim();
+
+    if (cleaned && cleaned.length >= 25 && !isBrokenMidnightWhisper(cleaned)) {
+      // Ensure sentence properly ends with terminal punctuation
+      if (!/[.!?~다요죠]$/.test(cleaned)) {
+        cleaned += '.';
+      }
+      return cleaned;
+    }
+  } catch (err) {
+    console.warn('[invokeLucyMidnightWhisperLLM] LLM call failed, falling back:', err);
+  }
+
+  return createLucyMidnightWhisperFallback(params);
+}
 /**
  * Real-time Repetition / Degeneration Loop Detector
  * Detects runaway token repetition (e.g. "shame shame shame shame...") strictly at the trailing end of generation.
@@ -569,11 +721,11 @@ export function isFallbackEpilogueSummary(summary: string | undefined | null): b
 
 export async function invokeEpilogueSummaryLLM(messages: Message[]): Promise<string> {
   const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(() => reject(new Error("Epilogue summary request timed out (8s)")), 8000);
+    setTimeout(() => reject(new Error("Epilogue summary request timed out (10s)")), 10000);
   });
 
   const attemptInvoke = async (): Promise<string> => {
-    // 1. First Attempt: Direct Ultra-Fast Gemini Flash Lite with token limit
+    // 1. First Attempt: Direct Ultra-Fast Gemini Flash Lite with generous token limit
     if (genAI) {
       const systemMessage = messages.find(m => m.role === "system");
       let contents = messages.filter(m => m.role !== "system");
@@ -603,7 +755,7 @@ export async function invokeEpilogueSummaryLLM(messages: Message[]): Promise<str
               config: {
                 systemInstruction: systemMessage?.content as string,
                 temperature: 0.7,
-                maxOutputTokens: 250,
+                maxOutputTokens: 1024,
               }
             }),
             directTimeout
@@ -619,7 +771,7 @@ export async function invokeEpilogueSummaryLLM(messages: Message[]): Promise<str
       }
     }
 
-    // 2. Second Attempt: Fast server proxy endpoint with 5s abort
+    // 2. Second Attempt: Fast server proxy endpoint with 6s abort
     try {
       const mapped = withKoreanOnlyOutput(
         messages.map((message) => ({
@@ -634,7 +786,7 @@ export async function invokeEpilogueSummaryLLM(messages: Message[]): Promise<str
       );
       const url = `${getApiBaseUrl()}/api/openai/v1/chat/completions`;
       const controller = new AbortController();
-      const timer = window.setTimeout(() => controller.abort(), 5000);
+      const timer = window.setTimeout(() => controller.abort(), 6000);
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -643,7 +795,7 @@ export async function invokeEpilogueSummaryLLM(messages: Message[]): Promise<str
           messages: mapped,
           stream: false,
           temperature: 0.7,
-          max_tokens: 250,
+          max_tokens: 1024,
         }),
         signal: controller.signal,
       });

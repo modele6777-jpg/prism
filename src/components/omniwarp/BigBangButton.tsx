@@ -73,16 +73,20 @@ export function BigBangButton() {
   const [dragAngleDeg, setDragAngleDeg] = useState(0);
   const [radialSectorIndex, setRadialSectorIndex] = useState<number>(-1);
   const [isPageScrolling, setIsPageScrolling] = useState(false);
+  const lastScrollTimeRef = useRef<number>(0);
+  const maxDragDistanceRef = useRef<number>(0);
+  const touchStartedWhileScrollingRef = useRef<boolean>(false);
 
   // 스크롤 중에는 추천 1순위나 HUD 칩이 미리 노출되지 않도록 감지
   useEffect(() => {
     let scrollTimer: ReturnType<typeof setTimeout> | null = null;
     const handleScroll = () => {
+      lastScrollTimeRef.current = Date.now();
       setIsPageScrolling(true);
       if (scrollTimer) clearTimeout(scrollTimer);
       scrollTimer = setTimeout(() => {
         setIsPageScrolling(false);
-      }, 350);
+      }, 400);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
@@ -425,7 +429,10 @@ export function BigBangButton() {
   const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
 
-    setIsPageScrolling(false);
+    const wasScrolling = (Date.now() - lastScrollTimeRef.current < 650) || isPageScrolling;
+    touchStartedWhileScrollingRef.current = wasScrolling;
+    maxDragDistanceRef.current = 0;
+
     cleanupGlobalPointerListeners();
 
     try {
@@ -434,6 +441,12 @@ export function BigBangButton() {
 
     const onGlobalMove = (ev: PointerEvent) => {
       currentPointerEventRef.current = ev as any;
+      if (touchStartRef.current) {
+        const d = Math.hypot(ev.clientX - touchStartRef.current.x, ev.clientY - touchStartRef.current.y);
+        if (d > maxDragDistanceRef.current) {
+          maxDragDistanceRef.current = d;
+        }
+      }
     };
     const onGlobalUp = (ev: PointerEvent) => {
       cleanupGlobalPointerListeners();

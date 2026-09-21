@@ -19,10 +19,158 @@ interface AegisData {
   powerFrequency: number;
 }
 
+export interface MasterQuote {
+  quote: string;
+  author: string;
+  triggerId?: string;
+}
+
+export const RESILIENCE_MASTER_QUOTES: MasterQuote[] = [
+  // 번아웃 & 극심한 피로
+  {
+    quote: "폭풍우 속에서도 마음의 닻을 내린 자는 침몰하지 않는다. 휴식은 멈춤이 아니라 더 높이 도약하기 위한 침묵의 충전이다.",
+    author: "세네카 (스토아 철학자)",
+    triggerId: "burnout"
+  },
+  {
+    quote: "자연은 서두르지 않지만, 모든 것을 이룬다. 지친 나무가 잎을 떨구듯 당신의 조급함도 지금 내려놓아라.",
+    author: "노자 (도덕경)",
+    triggerId: "burnout"
+  },
+  {
+    quote: "때로는 아무것도 하지 않는 것이 영혼을 치유하는 가장 위대한 예술이다.",
+    author: "장자 (동양 철학자)",
+    triggerId: "burnout"
+  },
+  {
+    quote: "꺼지지 않는 불꽃은 거센 바람 속에서도 자기 안의 기름을 태운다. 지침은 새로운 성장의 전조다.",
+    author: "헤라클레이토스 (자연철학자)",
+    triggerId: "burnout"
+  },
+
+  // 미래 불안 & 압박감
+  {
+    quote: "우리가 두려워해야 할 유일한 것은 두려움 그 자체다. 아직 오지 않은 내일의 짐으로 오늘을 소모하지 마라.",
+    author: "에픽테토스 (스토아 철학자)",
+    triggerId: "anxiety"
+  },
+  {
+    quote: "우리는 실제보다 상상 속에서 더 많은 고통을 겪는다. 파도는 거칠지만 당신의 배는 결코 침몰하지 않는다.",
+    author: "루키우스 세네카 (로마 철학자)",
+    triggerId: "anxiety"
+  },
+  {
+    quote: "어두운 밤하늘일수록 별들은 더욱 찬란히 빛난다. 불안은 당신이 더 높은 곳을 향하고 있다는 증거다.",
+    author: "랄프 왈도 에머슨 (사상가)",
+    triggerId: "anxiety"
+  },
+  {
+    quote: "미래를 예측하는 가장 완벽한 방법은, 지금 이 순간 침착하게 나만의 길을 창조하는 것이다.",
+    author: "피터 드러커 (경영사상가)",
+    triggerId: "anxiety"
+  },
+
+  // 자책 & 무력감
+  {
+    quote: "나를 죽이지 못하는 고통은 나를 더욱 강하게 만들 뿐이다. 부서진 틈 사이로 새로운 빛이 들어온다.",
+    author: "프리드리히 니체 (철학자)",
+    triggerId: "self_doubt"
+  },
+  {
+    quote: "인간에게서 모든 것을 빼앗아 갈 수 있어도, 주어진 상황에서 자신의 태도를 선택할 마지막 자유는 빼앗을 수 없다.",
+    author: "빅터 프랭클 (정신의학자·'죽음의 수용소에서')",
+    triggerId: "self_doubt"
+  },
+  {
+    quote: "다이아몬드는 엄청난 압력과 열기를 견뎌낸 후에야 영원한 광채를 얻는다. 당신의 시련 또한 그러하다.",
+    author: "요한 볼프강 폰 괴테 (대문호)",
+    triggerId: "self_doubt"
+  },
+  {
+    quote: "자기 자신을 용서하는 자만이 세상의 어떤 시련 앞에서도 꺾이지 않는 영혼의 방패를 쥔다.",
+    author: "칼 구스타프 융 (심리학자)",
+    triggerId: "self_doubt"
+  },
+
+  // 타인의 비난 & 관계 상처
+  {
+    quote: "누군가 당신을 비난하더라도 그것은 그의 영혼의 거울일 뿐이다. 고결한 바위는 파도가 부딪혀도 결코 흔들리지 않는다.",
+    author: "마르쿠스 아우렐리우스 (명상록)",
+    triggerId: "criticism"
+  },
+  {
+    quote: "타인의 입에서 나오는 독화살은 내가 그것을 움켜쥐어 가슴에 꽂지 않는 한 아무런 해를 끼칠 수 없다.",
+    author: "에픽테토스 (엥키리디온)",
+    triggerId: "criticism"
+  },
+  {
+    quote: "사자가 짖는 개들의 소리에 발걸음을 멈추는 법은 없다. 당신의 높은 길을 묵묵히 걸어가라.",
+    author: "동양 현인 격언",
+    triggerId: "criticism"
+  },
+  {
+    quote: "세상의 소음에 내면의 나침반을 내맡기지 마라. 진정한 평화는 외부의 인정이 아닌 내면의 침묵에서 온다.",
+    author: "헤르만 헤세 (데미안)",
+    triggerId: "criticism"
+  },
+
+  // 방황 & 방향성 상실
+  {
+    quote: "길을 잃었다는 것은, 곧 새로운 길을 발견하기 직전이라는 뜻이다. 별은 짙은 어둠 속에서만 방향을 가리킨다.",
+    author: "라이너 마리아 릴케 (시인)",
+    triggerId: "indecision"
+  },
+  {
+    quote: "바람이 불지 않을 때 바람개비를 돌리는 유일한 방법은, 내가 직접 앞으로 달려나가는 것이다.",
+    author: "데일 카네기 (인간관계론)",
+    triggerId: "indecision"
+  },
+  {
+    quote: "시작하기 위해 위대해질 필요는 없지만, 위대해지기 위해서는 반드시 지금 한 걸음을 내딛어야 한다.",
+    author: "레프 톨스토이 (대문호)",
+    triggerId: "indecision"
+  },
+  {
+    quote: "어디로 가야 할지 모를 때는, 오직 지금 디딜 수 있는 눈앞의 가장 정직한 한 발짝에 집중하라.",
+    author: "소크라테스 (철학자)",
+    triggerId: "indecision"
+  },
+
+  // 과도한 잡념 & 불면
+  {
+    quote: "진흙탕 물을 맑게 하는 가장 빠른 길은 가만히 놓아두는 것이다. 마음의 소용돌이도 응시할 때 고요해진다.",
+    author: "노자 (도덕경)",
+    triggerId: "overthinking"
+  },
+  {
+    quote: "생각은 구름과 같아서 머물지 않고 지나간다. 당신은 구름이 아니라, 그 모든 것을 품는 광활한 푸른 하늘이다.",
+    author: "틱낫한 (선사·평화운동가)",
+    triggerId: "overthinking"
+  },
+  {
+    quote: "지나간 과거는 이미 존재하지 않고, 오지 않은 미래는 아직 실체가 없다. 지금 숨 쉬는 이 찰나만이 당신의 우주다.",
+    author: "달라이 라마",
+    triggerId: "overthinking"
+  },
+  {
+    quote: "모든 번뇌의 뿌리는 실재하지 않는 것을 붙잡으려는 집착이다. 손을 펼칠 때 비로소 온 우주를 쥘 수 있다.",
+    author: "법정 스님 (무소유)",
+    triggerId: "overthinking"
+  }
+];
+
+export function getRandomQuoteForTrigger(triggerId?: string, excludeQuote?: string): MasterQuote {
+  let matched = RESILIENCE_MASTER_QUOTES.filter(q => !triggerId || q.triggerId === triggerId);
+  if (matched.length === 0) matched = RESILIENCE_MASTER_QUOTES;
+  const filtered = matched.filter(q => q.quote !== excludeQuote);
+  const pool = filtered.length > 0 ? filtered : matched;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 const FALLBACK_AEGIS: AegisData = {
   title: "불멸의 멘탈 방패 (Resilience Aegis)",
-  stoicQuote: "당신을 괴롭히는 것은 외부의 사건이 아니라, 그것에 대해 스스로 내리는 판단이다.",
-  quoteAuthor: "마르쿠스 아우렐리우스 (황제·스토아 철학자)",
+  stoicQuote: "폭풍우 속에서도 마음의 닻을 내린 자는 침몰하지 않는다. 휴식은 멈춤이 아니라 더 높이 도약하기 위한 침묵의 충전이다.",
+  quoteAuthor: "세네카 (스토아 철학자)",
   resilienceShieldDeclaration: "나는 외부의 혼란에 휘둘리지 않고, 내면의 고요한 성채를 굳건히 지킨다. 어떤 비바람도 나의 본질을 꺾을 수 없다.",
   cprStep1Acknowledge: "현재 일어난 감정의 동요를 부정하지 않고 있는 그대로 인정합니다.",
   cprStep2ShieldBreath: "가슴 한가운데 멘탈 방패를 상상하며 4초 들이쉬고, 4초 멈추고, 8초 동안 내쉽니다.",
@@ -52,7 +200,14 @@ export function PrologueSynergySection() {
   const [customWorry, setCustomWorry] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [hasSynthesized, setHasSynthesized] = useState<boolean>(false);
-  const [aegisData, setAegisData] = useState<AegisData>(FALLBACK_AEGIS);
+  const [aegisData, setAegisData] = useState<AegisData>(() => {
+    const q = getRandomQuoteForTrigger(EMOTIONAL_TRIGGERS[0].id);
+    return {
+      ...FALLBACK_AEGIS,
+      stoicQuote: q.quote,
+      quoteAuthor: q.author
+    };
+  });
   const [activeTab, setActiveTab] = useState<'creed' | 'cpr_protocol' | 'armor_core'>('creed');
   const [copied, setCopied] = useState<boolean>(false);
   const [isBreathing, setIsBreathing] = useState<boolean>(false);
@@ -65,7 +220,7 @@ export function PrologueSynergySection() {
 
   const isTTSActive = useTTSActive();
 
-  // Load Section 1 cached daily quote if available
+  // Load Section 1 cached daily quote if valid and unique
   useEffect(() => {
     try {
       const cached = localStorage.getItem("trinity_cached_global_data");
@@ -73,7 +228,7 @@ export function PrologueSynergySection() {
         const parsed = JSON.parse(cached);
         const quoteText = parsed?.quote || parsed?.summary;
         const authorText = parsed?.quote_author || parsed?.author;
-        if (quoteText) {
+        if (quoteText && !quoteText.includes("당신을 괴롭히는 것은 외부의 사건")) {
           setAegisData(prev => ({
             ...prev,
             stoicQuote: quoteText,
@@ -144,22 +299,8 @@ export function PrologueSynergySection() {
     }
   };
 
-  const handleSpeakCPR = () => {
-    if (isTTSActive) {
-      stopTTS();
-    } else {
-      if (!isBreathing) {
-        setIsBreathing(true);
-        setBreathPhase('들숨 (Inhale)');
-        setBreathCount(4);
-      }
-      const text = `방패 호흡 가이드입니다. ${aegisData.cprStep2ShieldBreath}. 천천히 4초 동안 숨을 들이쉬고, 4초 동안 머금으며 에너지를 모으고, 8초 동안 길게 내쉬며 마음의 멘탈 방패를 굳건히 세웁니다. 1단계 감정 인지: ${aegisData.cprStep1Acknowledge}. 3단계 에너지 치환: ${aegisData.cprStep3Transmute}. 4단계 행동 재탄생: ${aegisData.cprStep4RebirthAction}.`;
-      playTTS(text, 'Kore', false, '치유');
-    }
-  };
-
   const handleToggleShieldBreathing = () => {
-    if (isBreathing) {
+    if (isBreathing || isTTSActive) {
       setIsBreathing(false);
       stopTTS();
     } else {
@@ -170,6 +311,27 @@ export function PrologueSynergySection() {
       const text = `방패 호흡 가이드입니다. ${aegisData.cprStep2ShieldBreath}. 천천히 4초 동안 숨을 들이쉬고, 4초 동안 머금으며 에너지를 모으고, 8초 동안 길게 내쉬며 마음의 멘탈 방패를 굳건히 세웁니다. 1단계 감정 인지: ${aegisData.cprStep1Acknowledge}. 3단계 에너지 치환: ${aegisData.cprStep3Transmute}. 4단계 행동 재탄생: ${aegisData.cprStep4RebirthAction}.`;
       playTTS(text, 'Kore', false, '치유');
     }
+  };
+
+  const handleSelectTrigger = (triggerId: string) => {
+    setSelectedTrigger(triggerId);
+    if (!hasSynthesized) {
+      const q = getRandomQuoteForTrigger(triggerId, aegisData.stoicQuote);
+      setAegisData(prev => ({
+        ...prev,
+        stoicQuote: q.quote,
+        quoteAuthor: q.author
+      }));
+    }
+  };
+
+  const handleShuffleQuote = () => {
+    const q = getRandomQuoteForTrigger(selectedTrigger, aegisData.stoicQuote);
+    setAegisData(prev => ({
+      ...prev,
+      stoicQuote: q.quote,
+      quoteAuthor: q.author
+    }));
   };
 
   // Tab switch cleanup for breathing and TTS
@@ -220,8 +382,8 @@ export function PrologueSynergySection() {
 아래 JSON 스키마로만 정확하게 응답하세요:
 {
   "title": "방패의 고유 칭호 (예: 흔들림 없는 다이아몬드 성채의 방패)",
-  "stoicQuote": "이 위기에 직관적으로 답하는 역사적 거장/철학자의 명언 1문장",
-  "quoteAuthor": "명언의 인물 및 배경",
+  "stoicQuote": "이 위기에 직관적으로 답하는 역사적 거장/철학자(니체, 세네카, 에픽테토스, 장자, 빅터 프랭클, 칼 융, 릴케, 쇼펜하우어, 괴테, 노자, 헤세 등)의 깊이 있는 명언 1문장 (주의: 흔해빠진 '당신을 괴롭히는 것은 외부의 사건이 아니라' 같은 문구는 절대 쓰지 말고 새롭고 강렬한 명언을 발굴할 것)",
+  "quoteAuthor": "명언의 인물 및 배경/출처",
   "resilienceShieldDeclaration": "1인칭 현재형의 단단하고 웅장한 멘탈 방패 부활 선언문 (2~3문장)",
   "cprStep1Acknowledge": "1단계: 현재 감정을 정면으로 마주하는 인정 확언",
   "cprStep2ShieldBreath": "2단계: 가슴의 에너지를 모으는 멘탈 방패 호흡법",
@@ -237,9 +399,12 @@ export function PrologueSynergySection() {
 
     const safetyTimeout = new Promise<AegisData>((resolve) => {
       setTimeout(() => {
+        const fallbackQuote = getRandomQuoteForTrigger(selectedTrigger, aegisData.stoicQuote);
         resolve({
           ...FALLBACK_AEGIS,
           title: `〈${triggerLabel} 극복〉 불멸의 멘탈 방패`,
+          stoicQuote: fallbackQuote.quote,
+          quoteAuthor: fallbackQuote.author,
           resilienceShieldDeclaration: `나는 지금 겪고 있는 '${triggerLabel}'의 파도 속에서도 내면의 고요한 성채를 단단히 수호한다. 나의 영혼은 어떤 혼란보다 위대하다.`
         });
       }, 6500);
@@ -256,9 +421,15 @@ export function PrologueSynergySection() {
         });
         const parsed = typeof raw === 'string' ? JSON.parse(raw.replace(/```json\n?|\n?```/g, '').trim()) : raw;
         if (parsed && (parsed.resilienceShieldDeclaration || parsed.title)) {
+          const freshQuote = (!parsed.stoicQuote || parsed.stoicQuote.includes("당신을 괴롭히는 것은 외부의 사건"))
+            ? getRandomQuoteForTrigger(selectedTrigger, aegisData.stoicQuote)
+            : { quote: parsed.stoicQuote, author: parsed.quoteAuthor || '스토아 철학자' };
+
           return {
             ...FALLBACK_AEGIS,
             ...parsed,
+            stoicQuote: freshQuote.quote,
+            quoteAuthor: freshQuote.author,
             dailyMentalArmorPoints: Array.isArray(parsed.dailyMentalArmorPoints) && parsed.dailyMentalArmorPoints.length > 0
               ? parsed.dailyMentalArmorPoints
               : FALLBACK_AEGIS.dailyMentalArmorPoints,
@@ -353,7 +524,7 @@ export function PrologueSynergySection() {
               <button
                 key={trigger.id}
                 type="button"
-                onClick={() => setSelectedTrigger(trigger.id)}
+                onClick={() => handleSelectTrigger(trigger.id)}
                 className={`p-3.5 rounded-2xl border text-left flex items-center gap-2.5 transition-all cursor-pointer ${
                   isSelected
                     ? 'bg-red-500/25 border-red-400/80 text-white shadow-[0_0_20px_rgba(239,68,68,0.3)] scale-[1.02]'
@@ -469,10 +640,22 @@ export function PrologueSynergySection() {
         {activeTab === 'creed' && (
           <div className="space-y-6 animate-in fade-in duration-300">
             {/* Philosophical Quote Card */}
-            <div className="p-5 sm:p-6 rounded-3xl bg-red-950/20 border border-red-500/20 relative overflow-hidden">
-              <span className="text-[10px] font-mono text-red-300/60 uppercase tracking-widest block mb-2 font-bold">
-                우주 명언 (Cosmic Insight)
-              </span>
+            <div className="p-5 sm:p-6 rounded-3xl bg-red-950/20 border border-red-500/20 relative overflow-hidden group">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-mono text-red-300/70 uppercase tracking-widest font-bold flex items-center gap-1.5">
+                  <Sparkles size={12} className="text-amber-400" />
+                  <span>우주 명언 (Cosmic Insight)</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={handleShuffleQuote}
+                  className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-amber-300/80 hover:text-amber-200 border border-white/10 text-[11px] font-medium flex items-center gap-1.5 transition-all cursor-pointer"
+                  title="다른 명언으로 변경"
+                >
+                  <RefreshCw size={11} className="hover:rotate-180 transition-transform duration-500" />
+                  <span>다른 명언 보기</span>
+                </button>
+              </div>
               <p className="text-base sm:text-lg font-serif italic text-amber-100/90 leading-relaxed">
                 "{aegisData.stoicQuote}"
               </p>
@@ -506,32 +689,27 @@ export function PrologueSynergySection() {
                   <HeartPulse size={14} className="text-red-400" />
                   <span>방패 호흡 가이드 (Shield Rhythm)</span>
                 </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleSpeakCPR}
-                    className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-all cursor-pointer flex items-center gap-1.5 ${
-                      isTTSActive
-                        ? 'bg-amber-500/30 text-amber-200 border-amber-500/50 animate-pulse'
-                        : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/30'
-                    }`}
-                  >
-                    {isTTSActive ? <VolumeX size={12} /> : <Volume2 size={12} />}
-                    <span>{isTTSActive ? '음성 중단' : 'CPR 음성 낭독'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleToggleShieldBreathing}
-                    className={`text-xs font-bold px-3.5 py-1.5 rounded-full border transition-all cursor-pointer flex items-center gap-1.5 ${
-                      isBreathing
-                        ? 'bg-red-500 text-white border-red-400 shadow-md shadow-red-500/40 animate-pulse'
-                        : 'bg-red-500/20 hover:bg-red-500/30 text-red-300 border-red-500/40'
-                    }`}
-                  >
-                    {isBreathing ? <Square size={11} className="fill-current" /> : <Play size={11} className="fill-current" />}
-                    <span>{isBreathing ? '호흡 정지' : '호흡 & 음성 시작'}</span>
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={handleToggleShieldBreathing}
+                  className={`text-xs font-bold px-4 py-2 rounded-full border transition-all cursor-pointer flex items-center gap-2 shadow-md ${
+                    isBreathing || isTTSActive
+                      ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white border-red-400 shadow-red-500/40 animate-pulse'
+                      : 'bg-red-500/20 hover:bg-red-500/30 text-red-200 border-red-500/40 hover:border-red-400'
+                  }`}
+                >
+                  {isBreathing || isTTSActive ? (
+                    <>
+                      <Square size={12} className="fill-current text-white" />
+                      <span>호흡 & 음성 안내 멈추기</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play size={12} className="fill-current text-red-300" />
+                      <span>방패 호흡 & CPR 음성 시작</span>
+                    </>
+                  )}
+                </button>
               </div>
 
               {isBreathing ? (
@@ -552,7 +730,7 @@ export function PrologueSynergySection() {
                 </div>
               ) : (
                 <p className="text-xs text-white/50 py-2">
-                  ‘호흡 & 음성 시작’을 누르면 4-4-8 방패 호흡 리듬과 음성 가이드가 동시에 진행됩니다.
+                  ‘방패 호흡 & CPR 음성 시작’을 누르면 4-4-8 방패 호흡 리듬과 음성 가이드가 동시에 진행됩니다.
                 </p>
               )}
             </div>

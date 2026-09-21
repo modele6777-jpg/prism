@@ -142,8 +142,7 @@ export function AuraSynergySection() {
         if (prev <= 1) {
           setIsChamberActive(false);
           setIsChamberCompleted(true);
-          // 60초 타이머 완료 시 음성 가이드/확언 즉시 자동 종료
-          stopTTS();
+          // 🌟 60초 타이머가 완료되어도 현재 재생 중이던 음성 낭독이 중간에 끊기지 않고 끝까지 부드럽게 재생되도록 stopTTS()를 호출하지 않음
           return 0;
         }
         return prev - 1;

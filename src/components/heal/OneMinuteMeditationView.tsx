@@ -134,7 +134,7 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
   const affirmationLoopSessionIdRef = useRef<number>(0);
   const affirmationLoopTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const stopAffirmationLoop = useCallback(() => {
+  const stopAffirmationLoop = useCallback((immediateStop = true) => {
     affirmationLoopSessionIdRef.current += 1;
     isAffirmationLoopActiveRef.current = false;
     setIsAffirmationLooping(false);
@@ -142,11 +142,13 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
       clearTimeout(affirmationLoopTimeoutRef.current);
       affirmationLoopTimeoutRef.current = null;
     }
-    stopTTS();
+    if (immediateStop) {
+      stopTTS();
+    }
   }, []);
 
   const startAffirmationLoop = useCallback(async (affirmation: string) => {
-    stopAffirmationLoop();
+    stopAffirmationLoop(true);
     const sessionId = ++affirmationLoopSessionIdRef.current;
     isAffirmationLoopActiveRef.current = true;
     setIsAffirmationLooping(true);
@@ -187,7 +189,7 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
   const handleToggleContinuousAffirmation = () => {
     const text = customPrescription?.completionAffirmation || activeTheme.affirmation;
     if (isAffirmationLooping) {
-      stopAffirmationLoop();
+      stopAffirmationLoop(true);
     } else {
       if (text) {
         void startAffirmationLoop(text);
@@ -199,9 +201,8 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
     setIsRunning(false);
     isRunningRef.current = false;
     meditationSound.stopTone();
-    // 🌟 1분 명상 타이머 종료 시 확언 연속 자동 재생 루프 및 TTS 즉시 자동 종료
-    stopAffirmationLoop();
-    stopTTS();
+    // 🌟 1분 명상 타이머가 완료되어도 현재 재생 중인 확언 음성이 중간에 뚝 잘리지 않고 끝까지 부드럽게 완독되도록 보장 (반복 루프만 중단하고 진행 중인 음성은 유지)
+    stopAffirmationLoop(false);
     if (soundEnabled) {
       meditationSound.playSingingBowlBell();
     }

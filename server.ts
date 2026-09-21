@@ -1478,6 +1478,11 @@ ${content}
         });
       }
 
+      // Midnight Whisper / Epilogue blessing fallback
+      if (wholeStr.includes("자정") || wholeStr.includes("midnight") || wholeStr.includes("whisper") || wholeStr.includes("속삭임") || wholeStr.includes("축복 성찰")) {
+        return "오늘 하루도 온 힘을 다해 아름답게 빛나주신 당신께 깊은 감사를 전합니다. 마음에 머물렀던 피로와 작은 불안은 깊어가는 밤하늘의 고요 속으로 가볍게 내려놓고, 평온한 안식 속에서 편안한 잠을 청해 보세요. 내일은 더욱 따뜻하고 찬란한 우주의 축복이 당신을 기다릴 것입니다.";
+      }
+
       // Conversational chat fallback
       const personaReplies: Record<string, string> = {
         lucy: "안녕하세요! 오늘 당신의 마음 상태는 어떠신가요? 작은 생각이나 감정도 편안하게 들려주세요. 온 마음으로 귀 기울이고 있습니다.",

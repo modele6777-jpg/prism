@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { getTodayDateKey } from '@/lib/dailyCache';
-import { invokeEpilogueSummaryLLM, invokeMindDiaryLLM } from '@/lib/ai';
+import { invokeEpilogueSummaryLLM, invokeMindDiaryLLM, invokeLucyMidnightWhisperLLM, createLucyMidnightWhisperFallback, isBrokenMidnightWhisper } from '@/lib/ai';
 import { TTSButton } from '@/components/TTSButton';
 
 export interface EpilogueDiaryEntry {
@@ -172,9 +172,10 @@ export function EpilogueDiaryView() {
   const [isEditingDiary, setIsEditingDiary] = useState(false);
   const [isGeneratingDiary, setIsGeneratingDiary] = useState(false);
 
-  const [aiFeedback, setAiFeedback] = useState<string>(() =>
-    existingTodayEntry?.aiFeedback || cachedTodayDraft?.aiFeedback || ''
-  );
+  const [aiFeedback, setAiFeedback] = useState<string>(() => {
+    const raw = existingTodayEntry?.aiFeedback || cachedTodayDraft?.aiFeedback || '';
+    return isBrokenMidnightWhisper(raw) ? '' : raw;
+  });
 
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -267,7 +268,10 @@ export function EpilogueDiaryView() {
         setMindDiary((prev) => (prev.trim() ? prev : (existingTodayEntry.mindDiary || existingTodayEntry.reflection || '')));
       }
       if (existingTodayEntry.aiFeedback) {
-        setAiFeedback((prev) => (prev.trim() ? prev : existingTodayEntry.aiFeedback || ''));
+        const raw = existingTodayEntry.aiFeedback;
+        if (!isBrokenMidnightWhisper(raw)) {
+          setAiFeedback((prev) => (prev.trim() ? prev : raw));
+        }
       }
 
       // If user has not actively edited yet, align the baseline saved signature with the resolved entry
@@ -562,30 +566,41 @@ export function EpilogueDiaryView() {
         .map((f) => `[${f.name}]: ${f.summary}`)
         .join(', ');
 
-      const systemPrompt = `당신은 PRISM 우주의 지혜롭고 다정한 수호자 루시(Lucy)입니다.
-사용자가 오늘 하루를 마무리하며 작성한 소울 마음일기와 5대 우주 활동(Secret, Lucky, Letting Go, Ho'oponopono, Art)을 보고, 
-따뜻하고 시적이며 깊은 위로와 평화가 담긴 3~4문장의 "자정의 축복 성찰 메시지(Midnight Whisper)"를 건네주세요.
-오늘 하루를 온전히 안아주고, 내일을 향한 편안한 안식을 축복해 주세요.`;
+      const userName = sharedState?.userProfile?.basic?.nickname || sharedState?.userProfile?.basic?.name || '나';
 
-      const userContent = `[사용자 오늘의 다이어리]
-- 오늘의 기분/에너지: ${activeMoodObj.emoji} ${activeMoodObj.label}
-- 감사한 일들: ${validGratitudes.length > 0 ? validGratitudes.join(' / ') : '마음의 평온함'}
-- 오늘의 마음일기: ${mindDiary || rawNotes || '오늘 하루를 무사히 살아내고 마음을 정리함'}
-- 오늘 거쳐간 5대 우주 발자취: ${footprintSummary || '하루의 고요한 성찰'}`;
-
-      const res = await invokeEpilogueSummaryLLM([
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userContent },
-      ]);
+      const whisper = await invokeLucyMidnightWhisperLLM({
+        userName,
+        mood: `${activeMoodObj.emoji} ${activeMoodObj.label}`,
+        gratitudes: validGratitudes,
+        mindDiary: mindDiary.trim() || undefined,
+        rawNotes: rawNotes.trim() || undefined,
+        footprintSummary: footprintSummary || undefined,
+      });
 
       hasUserEditedRef.current = true;
-      if (res && res.trim()) {
-        setAiFeedback(res.trim());
+      if (whisper && !isBrokenMidnightWhisper(whisper)) {
+        setAiFeedback(whisper);
       } else {
-        setAiFeedback('오늘 하루도 온 힘을 다해 빛나주신 당신께 깊은 감사를 전합니다. 모든 무거운 짐을 밤하늘에 가볍게 내려놓고, 깊고 고요한 평화 속에서 안식하시길 바랍니다. 내일은 더욱 온전한 빛으로 당신을 맞이할 것입니다.');
+        const fallback = createLucyMidnightWhisperFallback({
+          userName,
+          mood: activeMoodObj.label,
+          gratitudes: validGratitudes,
+          footprintSummary: footprintSummary || undefined,
+        });
+        setAiFeedback(fallback);
       }
-    } catch {
-      setAiFeedback('오늘 하루 수고 많으셨습니다. 당신이 걸어온 모든 순간이 아름다운 배움이었음을 기억하세요. 평온한 밤 보내시길 기도합니다.');
+    } catch (err) {
+      console.error('[handleRequestAiReflection] Error:', err);
+      const activeMoodObj = MOOD_OPTIONS.find((m) => m.label === selectedMood) || MOOD_OPTIONS[0];
+      const validGratitudes = gratitudes.map((g) => g.trim()).filter(Boolean);
+      const userName = sharedState?.userProfile?.basic?.nickname || sharedState?.userProfile?.basic?.name || '나';
+      const fallback = createLucyMidnightWhisperFallback({
+        userName,
+        mood: activeMoodObj.label,
+        gratitudes: validGratitudes,
+      });
+      hasUserEditedRef.current = true;
+      setAiFeedback(fallback);
     } finally {
       setIsAiLoading(false);
     }
@@ -1075,6 +1090,11 @@ export function EpilogueDiaryView() {
                   <RefreshCw size={12} className="animate-spin text-purple-300" />
                   <span>축복 메시지 수신 중...</span>
                 </>
+              ) : aiFeedback ? (
+                <>
+                  <RefreshCw size={12} />
+                  <span>자정 축복 다시 받기</span>
+                </>
               ) : (
                 <>
                   <Sparkles size={12} />
@@ -1084,18 +1104,31 @@ export function EpilogueDiaryView() {
             </button>
           </div>
 
-          {aiFeedback ? (
+          {aiFeedback && !isBrokenMidnightWhisper(aiFeedback) ? (
             <motion.div
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="p-4 sm:p-5 rounded-2xl bg-purple-500/10 border border-purple-500/25 text-purple-100/90 text-xs sm:text-sm leading-relaxed font-sans relative shadow-inner space-y-2"
+              className="p-4 sm:p-5 rounded-2xl bg-purple-950/40 border border-purple-500/30 text-purple-100/90 text-xs sm:text-sm leading-relaxed font-sans relative shadow-inner space-y-3 backdrop-blur-md"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between border-b border-purple-500/20 pb-2.5">
                 <div className="flex items-center gap-2 text-purple-300 font-bold text-xs">
-                  <Moon size={14} />
-                  <span>루시의 자정 메시지</span>
+                  <Moon size={15} className="text-purple-400 animate-pulse" />
+                  <span>루시의 자정 메시지 (Midnight Whisper)</span>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(aiFeedback);
+                      setCopiedKey('whisper');
+                      setTimeout(() => setCopiedKey(null), 2000);
+                    }}
+                    className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-purple-300 text-[10px] transition-colors cursor-pointer"
+                    title="축복 메시지 복사"
+                  >
+                    {copiedKey === 'whisper' ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
+                    <span>{copiedKey === 'whisper' ? '복사됨' : '복사'}</span>
+                  </button>
                   <TTSButton
                     text={aiFeedback}
                     voice="Kore"
@@ -1103,7 +1136,20 @@ export function EpilogueDiaryView() {
                   />
                 </div>
               </div>
-              <p className="whitespace-pre-line break-keep">{aiFeedback}</p>
+              <p className="whitespace-pre-line break-keep font-serif text-[13px] sm:text-[14px] leading-relaxed text-purple-100/95 tracking-wide pl-1">
+                {aiFeedback}
+              </p>
+              <div className="flex items-center justify-between pt-2 border-t border-purple-500/15 text-[11px] text-purple-300/70 font-sans">
+                <span>🌙 오늘 하루의 고요한 쉼을 위한 루시의 자정 축복</span>
+                <button
+                  type="button"
+                  onClick={handleRequestAiReflection}
+                  disabled={isAiLoading}
+                  className="hover:text-purple-200 underline underline-offset-2 transition-colors cursor-pointer"
+                >
+                  새로운 속삭임 생성
+                </button>
+              </div>
             </motion.div>
           ) : (
             <div className="p-4 rounded-2xl bg-white/[0.02] border border-dashed border-white/10 text-center text-xs text-white/40 font-sans">
@@ -1258,7 +1304,7 @@ export function EpilogueDiaryView() {
                         )}
 
                         {/* AI Feedback */}
-                        {entry.aiFeedback && (
+                        {entry.aiFeedback && !isBrokenMidnightWhisper(entry.aiFeedback) && (
                           <div className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/20 space-y-1 text-purple-100/90 leading-relaxed">
                             <div className="flex items-center justify-between">
                               <span className="text-[10px] font-bold text-purple-300 uppercase tracking-widest font-mono flex items-center gap-1">
