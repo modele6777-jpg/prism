@@ -3695,6 +3695,56 @@ button, a, input, textarea, select {
   gap: 4px;
 }
 
+.stage-item-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.btn-stage-voice-play {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 20px;
+  padding: 3px 9px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-body);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-stage-voice-play:hover {
+  background: #fff;
+  border-color: var(--copper-primary);
+  color: var(--copper-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(186, 118, 59, 0.18);
+}
+
+.btn-stage-voice-play.playing {
+  background: #ba763b;
+  color: #fff;
+  border-color: #ba763b;
+  box-shadow: 0 0 12px rgba(186, 118, 59, 0.4);
+  animation: stagePulse 1.6s infinite alternate ease-in-out;
+}
+
+@keyframes stagePulse {
+  0% { box-shadow: 0 0 4px rgba(186, 118, 59, 0.3); }
+  100% { box-shadow: 0 0 14px rgba(186, 118, 59, 0.6); }
+}
+
+.teaching-stage-item.stage-active-playing {
+  border-color: var(--copper-primary) !important;
+  box-shadow: 0 8px 24px rgba(186, 118, 59, 0.18) !important;
+  transform: translateY(-3px) scale(1.01);
+}
+
 .stage-item-badge {
   font-size: 0.82rem;
   font-weight: 800;
@@ -4089,6 +4139,82 @@ button, a, input, textarea, select {
 
 .t-med-clock-box {
   margin: 16px 0;
+}
+
+/* Meditation Ritual Progress Bar & Auto-Advance Badge */
+.t-med-progress-wrap {
+  max-width: 520px;
+  margin: 12px auto 16px auto;
+  padding: 0 10px;
+}
+
+.t-med-progress-track {
+  width: 100%;
+  height: 7px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.t-med-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #ba763b, #f7d6a7, #ba763b);
+  background-size: 200% 100%;
+  border-radius: 10px;
+  transition: width 0.25s linear;
+  box-shadow: 0 0 10px rgba(247, 214, 167, 0.5);
+  animation: shimmerProgress 3s infinite linear;
+}
+
+@keyframes shimmerProgress {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+.t-med-progress-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 0.74rem;
+  color: #c9b9ad;
+}
+
+.t-med-time-val {
+  font-family: 'Cinzel', monospace;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: #f7d6a7;
+}
+
+.t-med-auto-advance-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(186, 118, 59, 0.18);
+  border: 1px solid rgba(186, 118, 59, 0.35);
+  color: #ffdda6;
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  transition: all 0.3s ease;
+}
+
+.t-med-auto-advance-badge.transitioning {
+  background: rgba(58, 104, 75, 0.4);
+  border-color: #3a684b;
+  color: #a7f3d0;
+  animation: pulseBadge 0.8s infinite alternate;
+}
+
+@keyframes pulseBadge {
+  0% { transform: scale(0.98); opacity: 0.85; }
+  100% { transform: scale(1.02); opacity: 1; }
 }
 
 .t-med-clock-num {

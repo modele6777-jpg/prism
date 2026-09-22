@@ -1900,9 +1900,251 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnMeditateTeaching = document.getElementById('btn-meditate-teaching');
   const btnAskTeaching = document.getElementById('btn-ask-teaching');
 
+  // 오라클 3단계 개별 및 연속 TTS 음성 가이드 DOM
+  const btnPlayAllTeaching = document.getElementById('btn-play-all-teaching');
+  const allTeachingIcon = document.getElementById('all-teaching-icon');
+  const allTeachingText = document.getElementById('all-teaching-text');
+  const stageVoiceButtons = [
+    document.getElementById('btn-stage-voice-1'),
+    document.getElementById('btn-stage-voice-2'),
+    document.getElementById('btn-stage-voice-3'),
+  ];
+  const stageCards = [
+    document.getElementById('stage-card-1'),
+    document.getElementById('stage-card-2'),
+    document.getElementById('stage-card-3'),
+  ];
+
+  let activeOracleAudio = null;
+  let activeOracleUtterance = null;
+  let activeOracleStage = null;
+  let isPlayingAllTeaching = false;
+
+  function formatTime(seconds) {
+    if (isNaN(seconds) || seconds < 0) return '00:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  }
+
+  function resetOracleStageButtons() {
+    stageVoiceButtons.forEach((btn, idx) => {
+      if (!btn) return;
+      btn.classList.remove('playing');
+      const icon = btn.querySelector('.stage-voice-icon');
+      const text = btn.querySelector('.stage-voice-text');
+      if (icon) icon.textContent = '🔊';
+      if (text) text.textContent = `${idx + 1}단계 음성`;
+    });
+    stageCards.forEach(card => {
+      if (card) card.classList.remove('stage-active-playing');
+    });
+    if (btnPlayAllTeaching) {
+      btnPlayAllTeaching.classList.remove('playing');
+      if (allTeachingIcon) allTeachingIcon.textContent = '🔊';
+      if (allTeachingText) allTeachingText.textContent = '3단계 연속 듣기';
+    }
+  }
+
+  function stopOracleTeachingAudio() {
+    if (activeOracleAudio) {
+      try {
+        activeOracleAudio.pause();
+        activeOracleAudio.currentTime = 0;
+      } catch (e) {}
+      activeOracleAudio = null;
+    }
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch (e) {}
+    }
+    activeOracleUtterance = null;
+    activeOracleStage = null;
+    isPlayingAllTeaching = false;
+    resetOracleStageButtons();
+    restoreSoundscapeVolume();
+  }
+
+  function getTeachingScriptForStage(stageNum) {
+    if (!currentTeaching) return '';
+    if (stageNum === 1) {
+      const inst = currentTeaching.grounding?.instruction || '';
+      const prac = currentTeaching.grounding?.practice || '';
+      return `1단계 신체 접지 가이드입니다. ${inst} ${prac}`;
+    }
+    if (stageNum === 2) {
+      const inst = currentTeaching.healing?.instruction || '';
+      const prac = currentTeaching.healing?.practice || '';
+      return `2단계 기적수업 용서 가이드입니다. ${inst} ${prac}`;
+    }
+    if (stageNum === 3) {
+      const decl = currentTeaching.liberation?.declaration || '';
+      return `3단계 본래의 온전함 선언입니다. ${decl} 당신은 이미 완전하고 안전합니다.`;
+    }
+    return '';
+  }
+
+  function playOracleTeachingStage(stageNum, onEndedCallback) {
+    const script = getTeachingScriptForStage(stageNum);
+    if (!script) return;
+
+    // 만약 이미 재생 중인 단계와 동일하면 중단
+    if (activeOracleStage === stageNum && !isPlayingAllTeaching) {
+      stopOracleTeachingAudio();
+      return;
+    }
+
+    stopOracleTeachingAudio();
+    activeOracleStage = stageNum;
+    duckSoundscapeVolume(0.12);
+
+    // UI 활성화
+    const btn = stageVoiceButtons[stageNum - 1];
+    const card = stageCards[stageNum - 1];
+    if (btn) {
+      btn.classList.add('playing');
+      const icon = btn.querySelector('.stage-voice-icon');
+      const text = btn.querySelector('.stage-voice-text');
+      if (icon) icon.textContent = '⏹️';
+      if (text) text.textContent = '음성 중단';
+    }
+    if (card) {
+      card.classList.add('stage-active-playing');
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    const finishPlayback = () => {
+      activeOracleAudio = null;
+      activeOracleUtterance = null;
+      activeOracleStage = null;
+      resetOracleStageButtons();
+      restoreSoundscapeVolume();
+      if (typeof onEndedCallback === 'function') {
+        onEndedCallback();
+      }
+    };
+
+    const playWithBrowserSpeech = (text) => {
+      if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+        finishPlayback();
+        return;
+      }
+      try {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'ko-KR';
+        utterance.rate = 0.90;
+        utterance.pitch = 1.0;
+
+        const voices = window.speechSynthesis.getVoices();
+        const koVoice = voices.find(v => v.lang && (v.lang.startsWith('ko') || v.lang.includes('KR')));
+        if (koVoice) utterance.voice = koVoice;
+
+        activeOracleUtterance = utterance;
+        utterance.onend = finishPlayback;
+        utterance.onerror = finishPlayback;
+        window.speechSynthesis.speak(utterance);
+      } catch (e) {
+        finishPlayback();
+      }
+    };
+
+    // 1. 서버 고품질 음성 API 요청
+    fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: script, voice: ttsVoice })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.audio) {
+          const audio = new Audio(data.audio);
+          activeOracleAudio = audio;
+          audio.onended = finishPlayback;
+          audio.onerror = () => playWithBrowserSpeech(script);
+          const p = audio.play();
+          if (p !== undefined) {
+            p.catch(() => playWithBrowserSpeech(script));
+          }
+        } else {
+          playWithBrowserSpeech(script);
+        }
+      })
+      .catch(() => {
+        playWithBrowserSpeech(script);
+      });
+  }
+
+  function playAllOracleTeachingSequential() {
+    if (isPlayingAllTeaching) {
+      stopOracleTeachingAudio();
+      return;
+    }
+
+    stopOracleTeachingAudio();
+    stopRitual();
+    isPlayingAllTeaching = true;
+
+    if (btnPlayAllTeaching) {
+      btnPlayAllTeaching.classList.add('playing');
+      if (allTeachingIcon) allTeachingIcon.textContent = '⏹️';
+      if (allTeachingText) allTeachingText.textContent = '연속 듣기 중단';
+    }
+
+    if (window.soundscapeEngine && typeof window.soundscapeEngine.playChime === 'function') {
+      window.soundscapeEngine.playChime();
+    }
+
+    const playNext = (stage) => {
+      if (!isPlayingAllTeaching || stage > 3) {
+        isPlayingAllTeaching = false;
+        resetOracleStageButtons();
+        return;
+      }
+      playOracleTeachingStage(stage, () => {
+        if (!isPlayingAllTeaching) return;
+        if (stage < 3) {
+          if (window.soundscapeEngine && typeof window.soundscapeEngine.playChime === 'function') {
+            window.soundscapeEngine.playChime();
+          }
+          setTimeout(() => {
+            if (isPlayingAllTeaching) playNext(stage + 1);
+          }, 1000);
+        } else {
+          isPlayingAllTeaching = false;
+          resetOracleStageButtons();
+        }
+      });
+    };
+
+    setTimeout(() => {
+      playNext(1);
+    }, 400);
+  }
+
+  // 3단계 카드 개별 음성 버튼 클릭 이벤트 연결
+  stageVoiceButtons.forEach((btn, idx) => {
+    if (btn) {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        stopRitual();
+        playOracleTeachingStage(idx + 1);
+      });
+    }
+  });
+
+  // 3단계 전체 연속 듣기 버튼
+  if (btnPlayAllTeaching) {
+    btnPlayAllTeaching.addEventListener('click', () => {
+      playAllOracleTeachingSequential();
+    });
+  }
+
   function renderTeaching(teaching) {
     if (!teaching) return;
     currentTeaching = teaching;
+    stopOracleTeachingAudio();
 
     if (oracleIcon) oracleIcon.textContent = teaching.icon || '✨';
     if (oracleTheme) oracleTheme.textContent = teaching.theme || '내면의 쉼표';
@@ -1960,6 +2202,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 가르침 카드 하단 3분 체화 명상 리추얼 이동 버튼
   if (btnMeditateTeaching) {
     btnMeditateTeaching.addEventListener('click', () => {
+      stopOracleTeachingAudio();
       const box = document.getElementById('teaching-meditation-box');
       if (box) {
         box.scrollIntoView({ behavior: 'smooth' });
@@ -1981,6 +2224,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const tDot2 = document.getElementById('t-dot-2');
   const tDot3 = document.getElementById('t-dot-3');
 
+  // 명상 진행률 프로그레스 바 DOM
+  const tMedProgressWrap = document.getElementById('t-med-progress-wrap');
+  const tMedProgressBar = document.getElementById('t-med-progress-bar');
+  const tMedTimeCurrent = document.getElementById('t-med-time-current');
+  const tMedTimeTotal = document.getElementById('t-med-time-total');
+  const tMedAutoBadge = document.getElementById('t-med-auto-badge');
+
   // TTS 컨트롤 및 상태 DOM
   const btnRitualVoiceToggle = document.getElementById('btn-ritual-voice-toggle');
   const voiceToggleIcon = document.getElementById('voice-toggle-icon');
@@ -1992,6 +2242,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 3분 체화 명상 리추얼 및 실시간 음성 TTS 가이드 엔진
   let ritualTimer = null;
+  let autoAdvanceTimer = null;
+  let browserTtsInterval = null;
   let ritualStage = 1;
   let ritualSecondsLeft = 60;
   let ttsEnabled = true;
@@ -2027,6 +2279,22 @@ document.addEventListener('DOMContentLoaded', () => {
     done: "3분 내면의 쉼표 명상 리추얼이 모두 완료되었습니다. 내면의 깊은 평온을 가슴에 품고, 편안한 호흡과 함께 천천히 눈을 떠보세요."
   };
 
+  function getActiveRitualScript(stageKey) {
+    if (stageKey === 'done') return RITUAL_TTS_SCRIPTS.done;
+    if (currentTeaching) {
+      if (stageKey === 1 && currentTeaching.grounding) {
+        return `1단계, 신체 접지입니다. ${currentTeaching.grounding.instruction} ${currentTeaching.grounding.practice} 천천히 코로 깊게 들이마시고, 입으로 부드럽게 모든 긴장을 흘려보냅니다.`;
+      }
+      if (stageKey === 2 && currentTeaching.healing) {
+        return `2단계, 기적수업 용서입니다. ${currentTeaching.healing.instruction} ${currentTeaching.healing.practice} 떠오르는 불안한 감정을 억누르지 않고, 구름을 보듯 관찰하며 용서하세요.`;
+      }
+      if (stageKey === 3 && currentTeaching.liberation) {
+        return `3단계, 본래의 온전함 선언입니다. ${currentTeaching.liberation.declaration} 당신은 지금 이대로 완전하고 안전합니다.`;
+      }
+    }
+    return RITUAL_TTS_SCRIPTS[stageKey] || '';
+  }
+
   // 사운드스케이프 배경음 볼륨 덕킹 (음성 재생 시 배경음 부드럽게 낮춤)
   function duckSoundscapeVolume(targetVol = 0.15) {
     if (window.soundscapeEngine && window.soundscapeEngine.masterGain && window.soundscapeEngine.ctx) {
@@ -2057,9 +2325,9 @@ document.addEventListener('DOMContentLoaded', () => {
       tMedVoiceStatus.classList.add('loading');
       if (voiceStatusText) voiceStatusText.textContent = customText || '⏳ 음성 안내 불러오는 중...';
     } else if (state === 'completed') {
-      if (voiceStatusText) voiceStatusText.textContent = customText || '✅ 음성 안내 완료 (깊은 호흡을 이어가세요)';
+      if (voiceStatusText) voiceStatusText.textContent = customText || '✅ 음성 안내 완료 (다음 단계로 자동 전환)';
     } else if (state === 'disabled') {
-      if (voiceStatusText) voiceStatusText.textContent = '🔇 음성 안내 꺼짐 (타이머 진행 중)';
+      if (voiceStatusText) voiceStatusText.textContent = '🔇 음성 안내 꺼짐 (타이머 자동 진행 중)';
     } else {
       if (voiceStatusText) voiceStatusText.textContent = customText || '🎙️ Dr. Z 음성 안내 준비 완료';
     }
@@ -2067,6 +2335,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 재생 중인 TTS 중지
   function stopActiveTts() {
+    if (autoAdvanceTimer) {
+      clearTimeout(autoAdvanceTimer);
+      autoAdvanceTimer = null;
+    }
+    if (browserTtsInterval) {
+      clearInterval(browserTtsInterval);
+      browserTtsInterval = null;
+    }
     if (activeTtsAudio) {
       try {
         activeTtsAudio.pause();
@@ -2084,11 +2360,54 @@ document.addEventListener('DOMContentLoaded', () => {
     restoreSoundscapeVolume();
   }
 
+  // 진행률 갱신 헬퍼
+  function updateMeditationProgress(currentSec, totalSec) {
+    if (tMedProgressBar) {
+      const pct = totalSec > 0 ? Math.min(100, (currentSec / totalSec) * 100) : 0;
+      tMedProgressBar.style.width = `${pct.toFixed(1)}%`;
+    }
+    if (tMedTimeCurrent) tMedTimeCurrent.textContent = formatTime(currentSec);
+    if (tMedTimeTotal) tMedTimeTotal.textContent = formatTime(totalSec);
+    if (tMedSec) {
+      const remaining = Math.max(0, Math.ceil(totalSec - currentSec));
+      tMedSec.textContent = remaining;
+    }
+  }
+
+  // 음성 재생 완료 후 자동 다음 단계 전환 트리거
+  function triggerAutoAdvanceOnPlaybackEnd(stageKey) {
+    if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
+    if (tMedProgressBar) tMedProgressBar.style.width = '100%';
+    if (tMedAutoBadge) {
+      tMedAutoBadge.classList.add('transitioning');
+    }
+
+    if (stageKey === 'done') {
+      setVoiceIndicatorStatus('completed', '🕊️ 모든 명상 리추얼 완주');
+      if (tMedAutoBadge) tMedAutoBadge.textContent = '✨ 내면의 깊은 평온이 자리잡았습니다';
+      return;
+    }
+
+    const nextStageNum = Number(stageKey) + 1;
+    if (nextStageNum <= 3) {
+      if (tMedAutoBadge) tMedAutoBadge.textContent = `✨ ${stageKey}단계 완료 ➔ ${nextStageNum}단계로 자동 전환 중...`;
+      setVoiceIndicatorStatus('completed', `✨ ${stageKey}단계 음성 완료 (다음 단계로 전환합니다)`);
+    } else {
+      if (tMedAutoBadge) tMedAutoBadge.textContent = '✨ 3단계 완료 ➔ 축복 완료 단계로 자동 전환 중...';
+      setVoiceIndicatorStatus('completed', '✨ 3단계 음성 완료 (리추얼 완주 축복)');
+    }
+
+    autoAdvanceTimer = setTimeout(() => {
+      advanceRitualStage();
+    }, 1400);
+  }
+
   // 브라우저 Web Speech API 로컬 발화 (오프라인 / fallback)
-  function playBrowserTts(text) {
+  function playBrowserTts(text, stageKey) {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-      setVoiceIndicatorStatus('completed', '💡 브라우저 음성 미지원 환경');
+      setVoiceIndicatorStatus('completed', '💡 브라우저 음성 미지원 환경 (타이머로 자동 전환)');
       restoreSoundscapeVolume();
+      triggerAutoAdvanceOnPlaybackEnd(stageKey);
       return;
     }
 
@@ -2096,7 +2415,7 @@ document.addEventListener('DOMContentLoaded', () => {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'ko-KR';
-      utterance.rate = 0.90; // 명상에 최적화된 편안하고 느린 템포
+      utterance.rate = 0.90; // 명상 특화 템포
       utterance.pitch = 1.0;
 
       const voices = window.speechSynthesis.getVoices();
@@ -2104,78 +2423,132 @@ document.addEventListener('DOMContentLoaded', () => {
       if (koVoice) utterance.voice = koVoice;
 
       activeUtterance = utterance;
-      setVoiceIndicatorStatus('speaking', '🎙️ 브라우저 로컬 음성 안내 중...');
+      setVoiceIndicatorStatus('speaking', '🎙️ 브라우저 음성 가이드 진행 중...');
+
+      // 음성 길이 추정하여 프로그레스 바 연동
+      const estimatedSec = Math.max(16, Math.round(text.length * 0.28));
+      let elapsedSec = 0;
+      updateMeditationProgress(0, estimatedSec);
+
+      if (browserTtsInterval) clearInterval(browserTtsInterval);
+      browserTtsInterval = setInterval(() => {
+        elapsedSec += 0.25;
+        if (elapsedSec < estimatedSec) {
+          updateMeditationProgress(elapsedSec, estimatedSec);
+        }
+      }, 250);
 
       utterance.onend = () => {
+        if (browserTtsInterval) clearInterval(browserTtsInterval);
         activeUtterance = null;
-        setVoiceIndicatorStatus('completed');
+        updateMeditationProgress(estimatedSec, estimatedSec);
         restoreSoundscapeVolume();
+        triggerAutoAdvanceOnPlaybackEnd(stageKey);
       };
+
       utterance.onerror = () => {
+        if (browserTtsInterval) clearInterval(browserTtsInterval);
         activeUtterance = null;
-        setVoiceIndicatorStatus('idle');
         restoreSoundscapeVolume();
+        triggerAutoAdvanceOnPlaybackEnd(stageKey);
       };
 
       window.speechSynthesis.speak(utterance);
     } catch (err) {
       console.warn('Browser TTS 오류:', err);
-      setVoiceIndicatorStatus('idle');
+      if (browserTtsInterval) clearInterval(browserTtsInterval);
       restoreSoundscapeVolume();
+      triggerAutoAdvanceOnPlaybackEnd(stageKey);
     }
   }
 
-  // Audio URL(Base64 WAV) 재생
-  function playAudioUrl(audioUrl, fallbackScript) {
+  // Audio URL(Base64 WAV/MP3) 재생 및 실시간 진행률 연동
+  function playAudioUrl(audioUrl, fallbackScript, stageKey) {
     try {
       const audio = new Audio(audioUrl);
       activeTtsAudio = audio;
       setVoiceIndicatorStatus('speaking');
 
+      // 로드 완료 시 전체 재생 시간 반영
+      audio.onloadedmetadata = () => {
+        const total = audio.duration || 30;
+        updateMeditationProgress(0, total);
+      };
+
+      // 오디오 실시간 재생 진행률 리스너 (진행률 바 및 잔여 초 동기화)
+      audio.ontimeupdate = () => {
+        const current = audio.currentTime || 0;
+        const total = audio.duration || 1;
+        updateMeditationProgress(current, total);
+      };
+
+      // 음성 재생이 끝나면 자동으로 다음 단계 넘김 트리거
       audio.onended = () => {
         activeTtsAudio = null;
-        setVoiceIndicatorStatus('completed');
+        const total = audio.duration || 1;
+        updateMeditationProgress(total, total);
         restoreSoundscapeVolume();
+        triggerAutoAdvanceOnPlaybackEnd(stageKey);
       };
 
       audio.onerror = () => {
         activeTtsAudio = null;
-        playBrowserTts(fallbackScript);
+        playBrowserTts(fallbackScript, stageKey);
       };
 
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         playPromise.catch(e => {
           console.warn('Audio 자동 재생 차단 또는 오류:', e);
-          playBrowserTts(fallbackScript);
+          playBrowserTts(fallbackScript, stageKey);
         });
       }
     } catch (e) {
-      playBrowserTts(fallbackScript);
+      playBrowserTts(fallbackScript, stageKey);
     }
   }
 
   // 단계별 TTS 실행 함수
   function speakRitualScript(stageKey) {
+    stopActiveTts();
+
+    if (tMedProgressBar) tMedProgressBar.style.width = '0%';
+    if (tMedAutoBadge) {
+      tMedAutoBadge.classList.remove('transitioning');
+      tMedAutoBadge.textContent = '⚡ 음성 진행률에 맞춰 다음 단계 자동 전환';
+    }
+
     if (!ttsEnabled) {
       setVoiceIndicatorStatus('disabled');
+      // 음성이 꺼진 경우 기본 45초 타이머로 자동 진행
+      let timerSec = 45;
+      updateMeditationProgress(0, timerSec);
+      if (ritualTimer) clearInterval(ritualTimer);
+      ritualTimer = setInterval(() => {
+        timerSec--;
+        updateMeditationProgress(45 - timerSec, 45);
+        if (timerSec <= 0) {
+          clearInterval(ritualTimer);
+          ritualTimer = null;
+          advanceRitualStage();
+        }
+      }, 1000);
       return;
     }
 
-    const script = RITUAL_TTS_SCRIPTS[stageKey];
+    const script = getActiveRitualScript(stageKey);
     if (!script) return;
 
-    stopActiveTts();
     duckSoundscapeVolume(0.15);
 
     if (ttsVoice === 'browser') {
-      playBrowserTts(script);
+      playBrowserTts(script, stageKey);
       return;
     }
 
     const cacheKey = `${ttsVoice}:${script}`;
     if (clientTtsCache.has(cacheKey)) {
-      playAudioUrl(clientTtsCache.get(cacheKey), script);
+      playAudioUrl(clientTtsCache.get(cacheKey), script, stageKey);
       return;
     }
 
@@ -2190,15 +2563,14 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(data => {
         if (data.audio) {
           clientTtsCache.set(cacheKey, data.audio);
-          playAudioUrl(data.audio, script);
+          playAudioUrl(data.audio, script, stageKey);
         } else {
-          // Gemini TTS 오류 또는 fallback 플래그 수신 시 브라우저 TTS 실행
-          playBrowserTts(script);
+          playBrowserTts(script, stageKey);
         }
       })
       .catch(err => {
         console.warn('TTS API 호출 실패, 브라우저 음성으로 대체:', err);
-        playBrowserTts(script);
+        playBrowserTts(script, stageKey);
       });
   }
 
@@ -2206,7 +2578,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function preloadRitualTts() {
     if (!ttsEnabled || ttsVoice === 'browser') return;
     [1, 2, 3, 'done'].forEach(key => {
-      const script = RITUAL_TTS_SCRIPTS[key];
+      const script = getActiveRitualScript(key);
       const cacheKey = `${ttsVoice}:${script}`;
       if (!clientTtsCache.has(cacheKey)) {
         fetch('/api/tts', {
@@ -2227,9 +2599,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const info = RITUAL_STAGE_INFO[ritualStage];
     if (!info) return;
 
-    if (tMedSec) tMedSec.textContent = ritualSecondsLeft;
     if (tMedStageName) tMedStageName.textContent = info.name;
-    if (tMedGuide) tMedGuide.textContent = info.guide;
+    if (tMedGuide) {
+      if (currentTeaching) {
+        if (ritualStage === 1 && currentTeaching.grounding) {
+          tMedGuide.textContent = `${currentTeaching.grounding.instruction} (${currentTeaching.grounding.practice})`;
+        } else if (ritualStage === 2 && currentTeaching.healing) {
+          tMedGuide.textContent = `${currentTeaching.healing.instruction} (${currentTeaching.healing.practice})`;
+        } else if (ritualStage === 3 && currentTeaching.liberation) {
+          tMedGuide.textContent = currentTeaching.liberation.declaration;
+        } else {
+          tMedGuide.textContent = info.guide;
+        }
+      } else {
+        tMedGuide.textContent = info.guide;
+      }
+    }
 
     [tDot1, tDot2, tDot3].forEach((dot, idx) => {
       if (!dot) return;
@@ -2246,6 +2631,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function startRitual() {
+    stopOracleTeachingAudio();
     if (ritualTimer) clearInterval(ritualTimer);
     stopActiveTts();
 
@@ -2257,33 +2643,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateRitualUI();
 
-    // 시작 싱잉볼 차임벨 타종 후 TTS 음성 안내 발화
+    // 시작 싱잉볼 차임벨 타종 후 음성 시작
     if (window.soundscapeEngine && typeof window.soundscapeEngine.playChime === 'function') {
       window.soundscapeEngine.playChime();
     }
 
-    // TTS 음성 안내 시작 (차임 소리와 겹치지 않게 700ms 후 부드럽게 시작)
     setTimeout(() => {
       speakRitualScript(1);
-    }, 700);
+    }, 600);
 
-    // 다음 단계 음성 사전 로딩
     preloadRitualTts();
-
-    ritualTimer = setInterval(() => {
-      ritualSecondsLeft--;
-      if (ritualSecondsLeft <= 0) {
-        advanceRitualStage();
-      } else {
-        if (tMedSec) tMedSec.textContent = ritualSecondsLeft;
-      }
-    }, 1000);
   }
 
   function advanceRitualStage() {
+    if (autoAdvanceTimer) {
+      clearTimeout(autoAdvanceTimer);
+      autoAdvanceTimer = null;
+    }
+    stopActiveTts();
+
     if (ritualStage < 3) {
       ritualStage++;
-      ritualSecondsLeft = 60;
       updateRitualUI();
 
       if (window.soundscapeEngine && typeof window.soundscapeEngine.playChime === 'function') {
@@ -2294,7 +2674,7 @@ document.addEventListener('DOMContentLoaded', () => {
         speakRitualScript(ritualStage);
       }, 700);
     } else {
-      // 명상 리추얼 완료
+      // 명상 리추얼 3단계 모두 완료
       if (ritualTimer) {
         clearInterval(ritualTimer);
         ritualTimer = null;
@@ -2305,9 +2685,17 @@ document.addEventListener('DOMContentLoaded', () => {
       if (tMedGuide) {
         tMedGuide.innerHTML = "✨ <strong>3분 내면의 쉼표 명상 리추얼이 완료되었습니다.</strong><br>내면의 훼손되지 않는 평온을 품고 오늘 하루를 편안하게 살아가세요.";
       }
-      if (tMedStageName) tMedStageName.textContent = "명상 리추얼 완료";
+      if (tMedStageName) tMedStageName.textContent = "명상 리추얼 완주";
       if (tMedSec) tMedSec.textContent = "완료";
+      if (tDot1) tDot1.classList.add('completed');
+      if (tDot2) tDot2.classList.add('completed');
       if (tDot3) tDot3.classList.add('completed');
+
+      if (tMedProgressBar) tMedProgressBar.style.width = '100%';
+      if (tMedAutoBadge) {
+        tMedAutoBadge.classList.add('transitioning');
+        tMedAutoBadge.textContent = '🕊️ 평온의 리추얼이 가슴속에 닻을 내렸습니다';
+      }
 
       setTimeout(() => {
         speakRitualScript('done');
@@ -2316,6 +2704,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function stopRitual() {
+    if (autoAdvanceTimer) {
+      clearTimeout(autoAdvanceTimer);
+      autoAdvanceTimer = null;
+    }
     if (ritualTimer) {
       clearInterval(ritualTimer);
       ritualTimer = null;
@@ -2330,6 +2722,11 @@ document.addEventListener('DOMContentLoaded', () => {
     [tDot1, tDot2, tDot3].forEach(dot => {
       if (dot) dot.classList.remove('active', 'completed');
     });
+    if (tMedProgressBar) tMedProgressBar.style.width = '0%';
+    if (tMedAutoBadge) {
+      tMedAutoBadge.classList.remove('transitioning');
+      tMedAutoBadge.textContent = '⚡ 음성 진행률에 맞춰 다음 단계 자동 전환';
+    }
   }
 
   // TTS 토글 버튼 핸들러
@@ -2341,8 +2738,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (voiceToggleIcon) voiceToggleIcon.textContent = '🔊';
         if (voiceToggleText) voiceToggleText.textContent = '음성 안내 ON';
         setVoiceIndicatorStatus('idle', '🎙️ 음성 안내 켜짐');
-        // 현재 리추얼 진행 중이면 현재 단계 음성 재생
-        if (ritualTimer && !tMedPlayer.classList.contains('hidden')) {
+        if (!tMedPlayer.classList.contains('hidden')) {
           speakRitualScript(ritualStage);
         }
       } else {
@@ -2351,6 +2747,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (voiceToggleText) voiceToggleText.textContent = '음성 안내 OFF';
         stopActiveTts();
         setVoiceIndicatorStatus('disabled');
+        // 음성 끈 상태에서도 45초 타이머로 자동 전환
+        speakRitualScript(ritualStage);
       }
     });
   }
@@ -2359,7 +2757,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (ritualVoiceSelect) {
     ritualVoiceSelect.addEventListener('change', (e) => {
       ttsVoice = e.target.value;
-      if (ttsEnabled && ritualTimer && !tMedPlayer.classList.contains('hidden')) {
+      if (ttsEnabled && !tMedPlayer.classList.contains('hidden')) {
         speakRitualScript(ritualStage);
       }
     });

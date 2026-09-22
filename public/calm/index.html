@@ -335,6 +335,10 @@
               <span id="oracle-theme">파도와 바다</span>
             </div>
             <div class="oracle-top-actions">
+              <button id="btn-play-all-teaching" class="btn-sage" title="3단계 가르침 전체 음성으로 연속 듣기">
+                <span id="all-teaching-icon">🔊</span>
+                <span id="all-teaching-text">3단계 연속 듣기</span>
+              </button>
               <button id="btn-draw-teaching" class="btn-copper" title="다른 3단계 가르침 받기">
                 <span>🎲 오늘의 가르침 새로 받기</span>
               </button>
@@ -347,9 +351,15 @@
           <!-- 3단계 가르침 그리드 -->
           <div class="teaching-stages-grid">
             <!-- 1단계 -->
-            <div class="teaching-stage-item stage-grounding">
+            <div class="teaching-stage-item stage-grounding" id="stage-card-1">
               <div class="stage-item-header">
-                <span class="stage-item-badge">🌿 1. 신체 접지 (Somatic)</span>
+                <div class="stage-item-header-top">
+                  <span class="stage-item-badge">🌿 1. 신체 접지 (Somatic)</span>
+                  <button type="button" class="btn-stage-voice-play" data-stage="1" id="btn-stage-voice-1" title="1단계 가이드 음성 듣기">
+                    <span class="stage-voice-icon">🔊</span>
+                    <span class="stage-voice-text">음성 가이드</span>
+                  </button>
+                </div>
                 <span class="stage-item-keyword">몸의 긴장 이완 & 호흡 닻 내리기</span>
               </div>
               <p class="stage-item-desc" id="oracle-grounding-inst">턱과 어깨의 힘을 툭 빼고, 아랫배가 부풀어 올랐다 가라앉는 숨의 파도에 의식의 닻을 내리세요.</p>
@@ -360,9 +370,15 @@
             </div>
 
             <!-- 2단계 -->
-            <div class="teaching-stage-item stage-healing">
+            <div class="teaching-stage-item stage-healing" id="stage-card-2">
               <div class="stage-item-header">
-                <span class="stage-item-badge">💧 2. 기적수업 용서 (ACIM & ACT)</span>
+                <div class="stage-item-header-top">
+                  <span class="stage-item-badge">💧 2. 기적수업 용서 (ACIM & ACT)</span>
+                  <button type="button" class="btn-stage-voice-play" data-stage="2" id="btn-stage-voice-2" title="2단계 가이드 음성 듣기">
+                    <span class="stage-voice-icon">🔊</span>
+                    <span class="stage-voice-text">음성 가이드</span>
+                  </button>
+                </div>
                 <span class="stage-item-keyword">두려운 해석 거두기 & 관찰자 분리</span>
               </div>
               <p class="stage-item-desc" id="oracle-healing-inst">감정을 억누르거나 상황을 탓하려던 마음속의 투쟁을 조용히 손에서 내려놓으세요.</p>
@@ -373,9 +389,15 @@
             </div>
 
             <!-- 3단계 -->
-            <div class="teaching-stage-item stage-liberation">
+            <div class="teaching-stage-item stage-liberation" id="stage-card-3">
               <div class="stage-item-header">
-                <span class="stage-item-badge">✨ 3. 본래의 온전함 (Liberation)</span>
+                <div class="stage-item-header-top">
+                  <span class="stage-item-badge">✨ 3. 본래의 온전함 (Liberation)</span>
+                  <button type="button" class="btn-stage-voice-play" data-stage="3" id="btn-stage-voice-3" title="3단계 가이드 음성 듣기">
+                    <span class="stage-voice-icon">🔊</span>
+                    <span class="stage-voice-text">음성 가이드</span>
+                  </button>
+                </div>
                 <span class="stage-item-keyword">조건 없는 영원한 평화 선언</span>
               </div>
               <div class="stage-item-declaration-box">
@@ -489,8 +511,20 @@
             </div>
 
             <div class="t-med-clock-box">
-              <div class="t-med-clock-num" id="t-med-sec">60</div>
+              <div class="t-med-clock-num" id="t-med-sec">--</div>
               <div class="t-med-clock-label" id="t-med-stage-name">1단계: 신체 접지 안내</div>
+            </div>
+
+            <!-- 재생 진행률 프로그레스 바 & 자동 넘김 인디케이터 -->
+            <div class="t-med-progress-wrap" id="t-med-progress-wrap">
+              <div class="t-med-progress-track">
+                <div class="t-med-progress-bar" id="t-med-progress-bar" style="width: 0%;"></div>
+              </div>
+              <div class="t-med-progress-meta">
+                <span id="t-med-time-current" class="t-med-time-val">00:00</span>
+                <span class="t-med-auto-advance-badge" id="t-med-auto-badge">⚡ 음성 진행률에 맞춰 다음 단계 자동 전환</span>
+                <span id="t-med-time-total" class="t-med-time-val">00:00</span>
+              </div>
             </div>
 
             <!-- 실시간 TTS 음성 상태 인디케이터 바 -->
