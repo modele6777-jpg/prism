@@ -117,6 +117,9 @@ export function WishingWellModal({ isOpen = true, onClose, isModal = true }: Wis
       const result = await castWishIntoWell(uid, effectiveWish, selectedCategory);
       setLatestResult(result);
       setWishesHistory((prev) => deduplicateWishes([result, ...prev]));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('prism:wish_cast', { detail: { wish: result } }));
+      }
     } catch (err: any) {
       console.error('[WishingWellModal] Error casting wish:', err);
       setErrorMsg(err?.message || '우물과 교감하는 중 오류가 발생했습니다.');

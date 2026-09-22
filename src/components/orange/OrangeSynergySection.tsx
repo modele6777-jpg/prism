@@ -1,11 +1,38 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, Zap, Radio, CheckCircle, Copy, Check, Volume2, VolumeX, ArrowRight, Compass, RefreshCw, Send, Shield, Award, Layers } from 'lucide-react';
+import {
+  Sparkles,
+  Zap,
+  Radio,
+  CheckCircle,
+  Copy,
+  Check,
+  Volume2,
+  VolumeX,
+  ArrowRight,
+  Compass,
+  RefreshCw,
+  Layers,
+  History,
+  Coins,
+  ChevronDown,
+  ChevronUp,
+  Flame,
+  Heart
+} from 'lucide-react';
 import { useApp, getPersistentUserProfile } from '@/contexts/AppContext';
 import { invokeLLM } from '@/lib/ai';
 import { recordPrismFeature } from '@/lib/prismOmniSync';
-import { getLocalWishes } from '@/lib/wishingWell';
+import {
+  getLocalWishes,
+  loadWishesHistory,
+  deduplicateWishes,
+  WishEntry,
+  WISH_CATEGORIES
+} from '@/lib/wishingWell';
+import { auth } from '@/lib/firebase';
 import { playTTS, stopTTS, useTTSActive } from '@/utils/tts';
+import { getDynamicVibrationalAffirmation } from '@/lib/vibrationalAffirmations';
 
 interface QuantumCatalystData {
   title: string;
@@ -50,32 +77,87 @@ const MANIFESTATION_CATEGORIES = [
   { id: 'freedom', label: '공간/시간 완전한 자유', icon: '🕊️', defaultWish: '언제 어디서든 원하는 일을 하며 사는 라이프스타일' },
 ];
 
+function formatWishDate(dateVal: any): string {
+  if (!dateVal) return '최근';
+  try {
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return '최근';
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    if (diffMins < 1) return '방금 전';
+    if (diffMins < 60) return `${diffMins}분 전`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours}시간 전`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays}일 전`;
+    return `${d.getMonth() + 1}월 ${d.getDate()}일`;
+  } catch {
+    return '최근';
+  }
+}
+
 export function OrangeSynergySection() {
   const { updateSharedState } = useApp();
   const userProfile = getPersistentUserProfile();
   const [selectedCategory, setSelectedCategory] = useState<string>(MANIFESTATION_CATEGORIES[0].id);
   const [targetWish, setTargetWish] = useState<string>(MANIFESTATION_CATEGORIES[0].defaultWish);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [catalystData, setCatalystData] = useState<QuantumCatalystData>(FALLBACK_CATALYST);
+  const [catalystData, setCatalystData] = useState<QuantumCatalystData>(() => {
+    const { affirmation } = getDynamicVibrationalAffirmation(MANIFESTATION_CATEGORIES[0].id, MANIFESTATION_CATEGORIES[0].defaultWish, 528, 0);
+    return {
+      ...FALLBACK_CATALYST,
+      vibrationalAnchorAffirmation: affirmation
+    };
+  });
   const [isSynthesized, setIsSynthesized] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
+  const [copiedAffirmation, setCopiedAffirmation] = useState<boolean>(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState<boolean>(false);
   const [dialValue, setDialValue] = useState<number>(528);
   const [recentWishingWellWish, setRecentWishingWellWish] = useState<string | null>(null);
+  const [wishesHistory, setWishesHistory] = useState<WishEntry[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState<boolean>(true);
+  const [isHistoryExpanded, setIsHistoryExpanded] = useState<boolean>(false);
+  const [affirmationCycleIndex, setAffirmationCycleIndex] = useState<number>(0);
+  const [isAffirmationSpeaking, setIsAffirmationSpeaking] = useState<boolean>(false);
   const isTTSActive = useTTSActive();
 
   const audioCtxRef = useRef<AudioContext | null>(null);
   const oscRef = useRef<OscillatorNode | null>(null);
 
-  // Load latest wish from Wishing Well (Section 2) if present
-  useEffect(() => {
+  // Load wishing well history (both local and cloud)
+  const fetchWishesHistory = useCallback(async () => {
+    setLoadingHistory(true);
     try {
-      const wishes = getLocalWishes(userProfile?.basic?.nickname || 'default');
-      if (wishes && wishes.length > 0) {
-        setRecentWishingWellWish(wishes[wishes.length - 1].wish);
+      const uid = auth.currentUser?.uid || 'guest';
+      const remoteList = await loadWishesHistory(uid);
+      const guestList = getLocalWishes('guest');
+      const nickList = userProfile?.basic?.nickname ? getLocalWishes(userProfile.basic.nickname) : [];
+      const userList = uid !== 'guest' ? getLocalWishes(uid) : [];
+      const merged = deduplicateWishes([...remoteList, ...userList, ...guestList, ...nickList]);
+      setWishesHistory(merged);
+      if (merged.length > 0) {
+        setRecentWishingWellWish(merged[0].wish);
       }
-    } catch (_) {}
-  }, []);
+    } catch (e) {
+      console.warn('[OrangeSynergySection] Error loading wishes history:', e);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, [userProfile?.basic?.nickname]);
+
+  useEffect(() => {
+    fetchWishesHistory();
+
+    const handleWishCast = () => {
+      fetchWishesHistory();
+    };
+    window.addEventListener('prism:wish_cast', handleWishCast);
+    return () => {
+      window.removeEventListener('prism:wish_cast', handleWishCast);
+    };
+  }, [fetchWishesHistory]);
 
   const toggle528Hz = () => {
     if (isAudioPlaying) {
@@ -126,14 +208,85 @@ export function OrangeSynergySection() {
     if (isTTSActive) {
       stopTTS();
     } else {
-      const speech = `양자 현실화 오감 스크립트입니다. ${catalystData.sensoryScript} 진동 고정 확언입니다. ${catalystData.vibrationalAnchorAffirmation}`;
+      const speech = `양자 현실화 오감 스크립트입니다. ${catalystData.sensoryScript} 주파수 고정 진동 확언입니다. ${catalystData.vibrationalAnchorAffirmation}`;
       playTTS(speech, 'Kore', false, '확신');
     }
+  };
+
+  const handleSpeakAffirmation = () => {
+    if (isTTSActive || isAffirmationSpeaking) {
+      stopTTS();
+      setIsAffirmationSpeaking(false);
+    } else {
+      setIsAffirmationSpeaking(true);
+      playTTS(catalystData.vibrationalAnchorAffirmation, 'Kore', false, '확신');
+      setTimeout(() => setIsAffirmationSpeaking(false), 8000);
+    }
+  };
+
+  const handleCopyAffirmation = () => {
+    navigator.clipboard.writeText(catalystData.vibrationalAnchorAffirmation);
+    setCopiedAffirmation(true);
+    setTimeout(() => setCopiedAffirmation(false), 2000);
+  };
+
+  // 🎲 Shuffle / Cycle through high-vibration affirmations
+  const cycleNextAffirmation = (delta: number = 1) => {
+    const nextIdx = affirmationCycleIndex + delta;
+    setAffirmationCycleIndex(nextIdx);
+    const { affirmation } = getDynamicVibrationalAffirmation(selectedCategory, targetWish, dialValue, nextIdx);
+    setCatalystData(prev => ({
+      ...prev,
+      vibrationalAnchorAffirmation: affirmation
+    }));
   };
 
   const handleCategorySelect = (cat: typeof MANIFESTATION_CATEGORIES[0]) => {
     setSelectedCategory(cat.id);
     setTargetWish(cat.defaultWish);
+    const nextIdx = affirmationCycleIndex + 1;
+    setAffirmationCycleIndex(nextIdx);
+    const { affirmation } = getDynamicVibrationalAffirmation(cat.id, cat.defaultWish, dialValue, nextIdx);
+    setCatalystData(prev => ({
+      ...prev,
+      vibrationalAnchorAffirmation: affirmation
+    }));
+  };
+
+  const handleDialChange = (freq: number) => {
+    setDialValue(freq);
+    const nextIdx = affirmationCycleIndex + 1;
+    setAffirmationCycleIndex(nextIdx);
+    const { affirmation } = getDynamicVibrationalAffirmation(selectedCategory, targetWish, freq, nextIdx);
+    setCatalystData(prev => ({
+      ...prev,
+      manifestationFrequency: freq,
+      vibrationalAnchorAffirmation: affirmation
+    }));
+  };
+
+  const handleSelectWishFromHistory = (entry: WishEntry) => {
+    setTargetWish(entry.wish);
+    // Find matching category if any
+    const cat = MANIFESTATION_CATEGORIES.find(c => 
+      c.id === entry.category ||
+      (entry.category === 'inner_peace' && c.id === 'health') ||
+      (entry.category === 'self_love' && c.id === 'love') ||
+      (entry.category === 'courage' && c.id === 'career') ||
+      (entry.category === 'dream' && c.id === 'creative') ||
+      (entry.category === 'relationship' && c.id === 'love')
+    );
+    const catId = cat ? cat.id : selectedCategory;
+    if (cat) {
+      setSelectedCategory(cat.id);
+    }
+    const nextIdx = affirmationCycleIndex + 1;
+    setAffirmationCycleIndex(nextIdx);
+    const { affirmation } = getDynamicVibrationalAffirmation(catId, entry.wish, dialValue, nextIdx);
+    setCatalystData(prev => ({
+      ...prev,
+      vibrationalAnchorAffirmation: affirmation
+    }));
   };
 
   const handleAccelerateManifestation = async () => {
@@ -151,7 +304,7 @@ export function OrangeSynergySection() {
 
 반드시 아래 JSON 스키마로만 엄격하게 응답하세요:
 {
-  "title": "양자 현실화 고유 명칭 (예: 528Hz 황금 풍요 양자 도약 가속기)",
+  "title": "양자 현실화 고유 명칭 (예: ${dialValue}Hz 황금 풍요 양자 도약 가속기)",
   "manifestationFrequency": ${dialValue},
   "fusionMatrix": {
     "secretElement": "시크릿 바이블의 끌어당김 및 주파수 일치 원리가 이 소원에 작동하는 방식 (1~2문장)",
@@ -164,17 +317,26 @@ export function OrangeSynergySection() {
     "24시간 내 즉시 실행할 양자 도약 실천 2 (마인드셋/환경 전환)",
     "24시간 내 즉시 실행할 양자 도약 실천 3 (취침 전 감사 시각화)"
   ],
-  "vibrationalAnchorAffirmation": "우주와 나의 주파수를 일치시키는 강력한 1문장 확언",
+  "vibrationalAnchorAffirmation": "상투적이거나 중복된 뻔한 문장을 절대 금지하고, 사용자의 구체적 소원('${targetWish}')과 ${dialValue}Hz 주파수를 온몸에 각인시키는 전율 돋는 독창적인 1인칭 현재형 고진동 확언 (1문장, 40~80자 내외)",
   "secretBibleFormula": "시크릿 바이블 3단계 맞춤 가이드라인 (Ask - Believe - Receive)",
   "timelineWindow": "가속화 타임라인 주기 (예: 72시간 양자 중첩 포털 활성화)"
 }`;
+
+    const fallbackAffirmation = getDynamicVibrationalAffirmation(
+      selectedCategory,
+      targetWish,
+      dialValue,
+      affirmationCycleIndex + 1
+    ).affirmation;
 
     const safetyTimeout = new Promise<QuantumCatalystData>((resolve) => {
       setTimeout(() => {
         resolve({
           ...FALLBACK_CATALYST,
-          title: `〈${categoryName}〉 양자 현실화 가속기`,
-          sensoryScript: `나는 이미 '${targetWish}'을(를) 완벽하게 손에 쥐고 풍요를 누리고 있다. 온 우주의 에너지가 나의 확신에 공명하며 물질세계로 현실화된다.`
+          title: `〈${categoryName}〉 ${dialValue}Hz 양자 현실화 가속기`,
+          manifestationFrequency: dialValue,
+          sensoryScript: `나는 이미 '${targetWish}'을(를) 완벽하게 손에 쥐고 풍요를 누리고 있다. ${dialValue}Hz 기적의 파동이 나의 확신에 공명하며 물질세계로 즉각 현실화된다. 온몸의 세포마다 벅찬 감사의 눈물이 샘솟는다.`,
+          vibrationalAnchorAffirmation: fallbackAffirmation
         });
       }, 6500);
     });
@@ -190,6 +352,9 @@ export function OrangeSynergySection() {
         });
         const parsed = typeof raw === 'string' ? JSON.parse(raw.replace(/```json\n?|\n?```/g, '').trim()) : raw;
         if (parsed && parsed.sensoryScript) {
+          if (!parsed.vibrationalAnchorAffirmation || parsed.vibrationalAnchorAffirmation.length < 10) {
+            parsed.vibrationalAnchorAffirmation = fallbackAffirmation;
+          }
           return parsed;
         }
       } catch (e) {
@@ -237,7 +402,7 @@ export function OrangeSynergySection() {
                 <Sparkles size={12} className="text-yellow-400 animate-pulse" />
                 SECRET ✕ WELL FUSION
               </span>
-              <span className="text-[10px] text-white/40 font-mono">528Hz MIRACLE TONE</span>
+              <span className="text-[10px] text-white/40 font-mono">{dialValue}Hz MIRACLE TONE</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3">
               <Zap className="text-orange-400 drop-shadow-[0_0_12px_rgba(249,115,22,0.8)]" size={28} />
@@ -257,7 +422,7 @@ export function OrangeSynergySection() {
             }`}
           >
             {isAudioPlaying ? <Volume2 size={16} /> : <VolumeX size={16} />}
-            <span>{isAudioPlaying ? '528Hz 기적 주파수 재생 중' : '528Hz 주파수 켜기'}</span>
+            <span>{isAudioPlaying ? `${dialValue}Hz 주파수 재생 중` : `${dialValue}Hz 주파수 켜기`}</span>
           </button>
         </div>
       </div>
@@ -305,27 +470,132 @@ export function OrangeSynergySection() {
             </div>
           </div>
 
-          {/* Right Menu Status: Wishing Well */}
-          <div className="p-4 rounded-2xl bg-black/30 border border-amber-400/20 space-y-2.5">
+          {/* Right Menu Status: Wishing Well (소원의 우물 과거 투사 기록 리스트) */}
+          <div className="p-4 rounded-2xl bg-black/30 border border-amber-400/25 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1.5">
-                <Compass size={13} className="text-amber-400" />
-                우측 메뉴 : 소원의 우물 동전 투사
-              </span>
-              <span className="text-[10px] text-amber-400 font-mono">양자장 각인</span>
+              <div className="flex items-center gap-1.5">
+                <Compass size={14} className="text-amber-400" />
+                <span className="text-[11px] font-bold text-amber-300">
+                  우측 메뉴 : 소원의 우물 동전 투사
+                </span>
+                <span className="text-[9px] text-amber-300 font-mono font-bold bg-amber-500/15 border border-amber-400/25 px-1.5 py-0.5 rounded-full">
+                  과거 투사 {wishesHistory.length}건
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => fetchWishesHistory()}
+                  title="기록 새로고침"
+                  className="p-1 rounded-lg text-white/40 hover:text-amber-300 hover:bg-white/5 transition-all cursor-pointer"
+                >
+                  <RefreshCw size={11} className={loadingHistory ? 'animate-spin text-amber-400' : ''} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      window.dispatchEvent(new CustomEvent('prism-tab-change', { detail: { tab: 'wishingWell' } }));
+                    }
+                  }}
+                  className="text-[10px] text-amber-300/80 hover:text-amber-200 flex items-center gap-0.5 transition-all cursor-pointer"
+                >
+                  <span>우물 가기</span>
+                  <ArrowRight size={10} />
+                </button>
+              </div>
             </div>
-            <div className="text-xs text-white/80 font-sans">
-              {recentWishingWellWish ? (
-                <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-1">
-                  <div className="text-[10px] text-amber-300 font-bold">최근 투사된 우물 소원:</div>
-                  <div className="text-xs text-white line-clamp-1 font-medium">"{recentWishingWellWish}"</div>
+
+            {/* Past Wish Records Display */}
+            {loadingHistory ? (
+              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 text-center text-[11px] text-white/40 flex items-center justify-center gap-2">
+                <RefreshCw size={12} className="animate-spin text-amber-400" />
+                <span>과거 투사된 동전의 소원을 불러오는 중...</span>
+              </div>
+            ) : wishesHistory.length > 0 ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-[10px] text-amber-200/60 font-mono">
+                  <span>과거 투사 기록 (클릭 시 아래 목표로 자동 입력):</span>
+                  {wishesHistory.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}
+                      className="text-amber-300 hover:text-amber-200 flex items-center gap-0.5 underline cursor-pointer"
+                    >
+                      <span>{isHistoryExpanded ? '접기 (최근 2개)' : `더보기 (총 ${wishesHistory.length}개)`}</span>
+                      {isHistoryExpanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                    </button>
+                  )}
                 </div>
-              ) : (
-                <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/5 text-[11px] text-white/50">
-                  우물에 소원을 던져 양자 도약 속도를 배가하세요.
+
+                <div className={`space-y-1.5 overflow-y-auto pr-1 ${isHistoryExpanded ? 'max-h-56' : 'max-h-36'}`}>
+                  {(isHistoryExpanded ? wishesHistory : wishesHistory.slice(0, 2)).map((item, idx) => {
+                    const isSelected = targetWish === item.wish;
+                    const catMeta = WISH_CATEGORIES.find(c => c.id === item.category);
+
+                    return (
+                      <div
+                        key={item.id || idx}
+                        onClick={() => handleSelectWishFromHistory(item)}
+                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer group ${
+                          isSelected
+                            ? 'bg-amber-500/20 border-amber-400/80 shadow-[0_0_12px_rgba(245,158,11,0.2)]'
+                            : 'bg-white/[0.03] hover:bg-amber-500/10 border-white/10 hover:border-amber-400/30'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-1 mb-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[9px] font-bold text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-400/20">
+                              {catMeta?.emoji || '🪙'} {item.categoryLabel || catMeta?.label || '소원'}
+                            </span>
+                            {item.crystalKeyword && (
+                              <span className="text-[9px] text-yellow-200/80 font-mono bg-yellow-500/10 px-1 rounded border border-yellow-500/20">
+                                ✨ {item.crystalKeyword}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[9px] text-white/40 font-mono shrink-0">
+                            {formatWishDate(item.createdAt)}
+                          </span>
+                        </div>
+
+                        <p className="text-xs font-semibold text-white/90 group-hover:text-amber-100 transition-colors line-clamp-2">
+                          "{item.wish}"
+                        </p>
+
+                        <div className="mt-1 flex items-center justify-between text-[9px]">
+                          <span className="text-amber-400/70 group-hover:text-amber-300 font-mono flex items-center gap-1">
+                            <Sparkles size={9} />
+                            {isSelected ? '현재 가속 목표 선택됨' : '목표로 불러오기'}
+                          </span>
+                          {isSelected && (
+                            <span className="text-emerald-400 font-bold flex items-center gap-0.5">
+                              <CheckCircle size={10} /> 활성
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 text-center space-y-2">
+                <p className="text-[11px] text-white/50">아직 우물에 투사된 동전 소원이 없습니다.</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      window.dispatchEvent(new CustomEvent('prism-tab-change', { detail: { tab: 'wishingWell' } }));
+                    }
+                  }}
+                  className="px-3 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-[10px] font-bold transition-all cursor-pointer inline-flex items-center gap-1"
+                >
+                  <Sparkles size={11} className="text-amber-400" />
+                  <span>소원의 우물에서 동전 던지기</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -370,18 +640,26 @@ export function OrangeSynergySection() {
           <textarea
             rows={3}
             value={targetWish}
-            onChange={(e) => setTargetWish(e.target.value)}
+            onChange={(e) => {
+              setTargetWish(e.target.value);
+              const { affirmation } = getDynamicVibrationalAffirmation(selectedCategory, e.target.value, dialValue, affirmationCycleIndex);
+              setCatalystData(prev => ({ ...prev, vibrationalAnchorAffirmation: affirmation }));
+            }}
             placeholder="예: 2026년 가을까지 온전한 경제적 자유를 이루고 사랑하는 사람들과 함께 세계를 여행한다..."
             className="w-full p-4 rounded-2xl bg-black/40 border border-white/10 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-orange-400/60 leading-relaxed resize-none font-sans"
           />
           {recentWishingWellWish && (
             <button
               type="button"
-              onClick={() => setTargetWish(recentWishingWellWish)}
+              onClick={() => {
+                setTargetWish(recentWishingWellWish);
+                const { affirmation } = getDynamicVibrationalAffirmation(selectedCategory, recentWishingWellWish, dialValue, affirmationCycleIndex);
+                setCatalystData(prev => ({ ...prev, vibrationalAnchorAffirmation: affirmation }));
+              }}
               className="text-[11px] text-orange-300 hover:text-orange-200 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 px-3 py-1.5 rounded-full flex items-center gap-1.5 transition-all cursor-pointer mt-2"
             >
               <Sparkles size={12} className="text-orange-400 animate-pulse" />
-              <span>소원의 우물에서 올린 최근 소원 불러오기: "{recentWishingWellWish.slice(0, 30)}{recentWishingWellWish.length > 30 ? '...' : ''}"</span>
+              <span>소원의 우물 최근 소원 불러오기: "{recentWishingWellWish.slice(0, 30)}{recentWishingWellWish.length > 30 ? '...' : ''}"</span>
             </button>
           )}
         </div>
@@ -393,13 +671,13 @@ export function OrangeSynergySection() {
               <Zap size={14} className="text-yellow-400" />
               양자 진동수 조율: <strong className="text-orange-400 font-mono">{dialValue}Hz</strong>
             </span>
-            <p className="text-[10px] text-white/40">528Hz는 DNA 복구와 기적을 부르는 솔페지오 주파수입니다.</p>
+            <p className="text-[10px] text-white/40">솔페지오 주파수에 맞춰 의식과 세포의 진동을 정렬합니다.</p>
           </div>
           <div className="flex gap-2">
             {[432, 528, 639, 741, 852].map((freq) => (
               <button
                 key={freq}
-                onClick={() => setDialValue(freq)}
+                onClick={() => handleDialChange(freq)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer ${
                   dialValue === freq
                     ? 'bg-orange-500 text-white shadow-md'
@@ -410,6 +688,57 @@ export function OrangeSynergySection() {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Dynamic Vibrational Anchor Affirmation Interactive Preview Card */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-orange-950/40 via-amber-950/30 to-yellow-950/30 border border-orange-500/30 space-y-2.5 shadow-inner">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-orange-300 font-mono font-bold uppercase tracking-wider flex items-center gap-1.5">
+                <Zap size={13} className="text-yellow-400" />
+                VIBRATIONAL ANCHOR AFFIRMATION (주파수 고정 진동 확언)
+              </span>
+              <span className="text-[9px] px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 font-mono border border-orange-400/30">
+                {dialValue}Hz 동조
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => cycleNextAffirmation(1)}
+                title="매번 다른 새로운 고진동 확언으로 교체"
+                className="px-2.5 py-1 rounded-lg bg-orange-500/20 hover:bg-orange-500/30 text-orange-200 border border-orange-500/30 text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer hover:scale-105 active:scale-95"
+              >
+                <RefreshCw size={11} className="text-orange-300" />
+                <span>확언 셔플</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleSpeakAffirmation}
+                title="확언 음성 낭독"
+                className={`p-1.5 rounded-lg border text-xs transition-all cursor-pointer ${
+                  isAffirmationSpeaking
+                    ? 'bg-amber-500 text-white border-amber-400 animate-pulse'
+                    : 'bg-white/5 hover:bg-white/10 text-white/70 border-white/10'
+                }`}
+              >
+                {isAffirmationSpeaking ? <VolumeX size={12} /> : <Volume2 size={12} />}
+              </button>
+              <button
+                type="button"
+                onClick={handleCopyAffirmation}
+                title="확언 문장 복사"
+                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 border border-white/10 text-xs transition-all cursor-pointer"
+              >
+                {copiedAffirmation ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+              </button>
+            </div>
+          </div>
+
+          <p className="text-xs sm:text-sm font-bold text-amber-100 leading-relaxed tracking-tight break-keep">
+            "{catalystData.vibrationalAnchorAffirmation}"
+          </p>
         </div>
 
         <button
@@ -527,17 +856,52 @@ export function OrangeSynergySection() {
           </div>
 
           {/* Affirmation & Formula Banner */}
-          <div className="p-5 rounded-2xl bg-orange-950/30 border border-orange-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <span className="text-[10px] text-orange-300/70 font-mono font-bold uppercase">
-                VIBRATIONAL ANCHOR AFFIRMATION
-              </span>
-              <p className="text-xs sm:text-sm font-bold text-amber-200">
+          <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-orange-950/50 via-amber-950/40 to-yellow-950/30 border border-orange-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
+            <div className="space-y-2 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] text-orange-300 font-mono font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <Zap size={12} className="text-yellow-400" />
+                  VIBRATIONAL ANCHOR AFFIRMATION (주파수 고정 진동 확언)
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 font-mono border border-orange-400/30">
+                  {catalystData.manifestationFrequency}Hz 동조
+                </span>
+              </div>
+              <p className="text-sm sm:text-base font-bold text-amber-200 leading-relaxed break-keep">
                 "{catalystData.vibrationalAnchorAffirmation}"
               </p>
             </div>
-            <div className="text-[10px] text-white/40 font-mono shrink-0">
-              {catalystData.timelineWindow}
+
+            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+              <button
+                type="button"
+                onClick={() => cycleNextAffirmation(1)}
+                title="다른 고진동 확언으로 교체 (셔플)"
+                className="px-3 py-2 rounded-xl bg-orange-500/20 hover:bg-orange-500/30 text-orange-200 border border-orange-500/30 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+              >
+                <RefreshCw size={13} className="text-orange-300" />
+                <span>확언 셔플</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleSpeakAffirmation}
+                title="확언 음성 낭독"
+                className={`p-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                  isAffirmationSpeaking
+                    ? 'bg-amber-500 text-white border-amber-400 animate-pulse'
+                    : 'bg-white/5 hover:bg-white/10 text-white/80 border-white/10'
+                }`}
+              >
+                {isAffirmationSpeaking ? <VolumeX size={14} /> : <Volume2 size={14} />}
+              </button>
+              <button
+                type="button"
+                onClick={handleCopyAffirmation}
+                title="확언 문장 복사"
+                className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/80 border border-white/10 text-xs font-bold transition-all cursor-pointer"
+              >
+                {copiedAffirmation ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+              </button>
             </div>
           </div>
         </motion.div>
