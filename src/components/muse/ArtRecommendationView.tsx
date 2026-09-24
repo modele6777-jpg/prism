@@ -2064,16 +2064,24 @@ export function ArtRecommendationView() {
           </motion.div>
         )}
 
-        {/* Art Result Panel */}
+        {/* Art Result Panel with Smooth Fade-in & Card Zoom/Scale-up Animations */}
         {!loading && recommendation && (
           <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
+            key={recommendation ? `${recommendation.title}_${recommendation.creator}_${recommendation.era || ''}` : 'art-panel'}
+            initial={{ opacity: 0, scale: 0.94, y: 24 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: -20 }}
+            transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
             className="space-y-8"
           >
             {/* 🌟 최상단 배치: 오늘의 예술 오디오 도슨트 (MUSE AUDIO DOCENT - 오늘의 명곡, 명시, 명화 통합 가이드) */}
             {recommendation.famousPoem && recommendation.famousSong && (
-              <div className="p-6 md:p-8 rounded-[32px] bg-gradient-to-br from-blue-950/40 via-indigo-950/30 to-zinc-900/90 border border-blue-500/30 shadow-2xl backdrop-blur-xl space-y-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
+                className="p-6 md:p-8 rounded-[32px] bg-gradient-to-br from-blue-950/40 via-indigo-950/30 to-zinc-900/90 border border-blue-500/30 shadow-2xl backdrop-blur-xl space-y-4"
+              >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-3">
                   <div className="flex items-center gap-2.5">
                     <div className="p-2 rounded-xl bg-blue-500/20 text-blue-300">
@@ -2110,23 +2118,33 @@ export function ArtRecommendationView() {
                     famousSong: recommendation.famousSong,
                   }}
                 />
-              </div>
+              </motion.div>
             )}
 
             {/* Shared User Concern Banner (오라클 토스 시에는 비노출) */}
             {savedCustomConcern && !isOracleTossed && (
-              <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-200 flex items-start gap-2.5 shadow-sm">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96, y: 12 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ duration: 0.55, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+                className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-200 flex items-start gap-2.5 shadow-sm"
+              >
                 <span className="text-base">🕊️</span>
                 <div className="space-y-0.5">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-blue-300 font-mono">나누어 주신 오늘의 마음 & 고민</span>
                   <p className="font-medium text-white/90">"{savedCustomConcern}"</p>
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {/* 1. 오늘의 명곡 (Masterpiece Song) */}
             {recommendation.famousSong && (
-              <div className="p-6 md:p-8 rounded-[32px] bg-gradient-to-br from-rose-950/30 via-zinc-900 to-black border border-rose-500/20 space-y-5 shadow-2xl backdrop-blur-xl">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.93, y: 24 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ duration: 0.75, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+                className="p-6 md:p-8 rounded-[32px] bg-gradient-to-br from-rose-950/30 via-zinc-900 to-black border border-rose-500/20 space-y-5 shadow-2xl backdrop-blur-xl"
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="p-2 rounded-xl bg-rose-500/20 text-rose-300">
@@ -2172,13 +2190,18 @@ export function ArtRecommendationView() {
                     {recommendation.famousSong.artist ? ` · ${recommendation.famousSong.artist}` : ""}
                   </p>
                 </div>
-              </div>
+              </motion.div>
             )}
 
             
 {/* 2. 오늘의 명시 (Masterpiece Poem) */}
             {recommendation.famousPoem && (
-              <div className="p-6 md:p-8 rounded-[32px] bg-gradient-to-br from-emerald-950/30 via-zinc-900 to-black border border-emerald-500/20 space-y-5 shadow-2xl backdrop-blur-xl">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.93, y: 24 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ duration: 0.75, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                className="p-6 md:p-8 rounded-[32px] bg-gradient-to-br from-emerald-950/30 via-zinc-900 to-black border border-emerald-500/20 space-y-5 shadow-2xl backdrop-blur-xl"
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-300">
@@ -2276,7 +2299,7 @@ export function ArtRecommendationView() {
                     </button>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {/* Poem change notification toast */}
@@ -2297,8 +2320,13 @@ export function ArtRecommendationView() {
             )}
 
             
-{/* 3. 오늘의 명화 (Masterpiece Painting) */}
-            <div className="relative p-6 md:p-10 rounded-[32px] bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/10 shadow-3xl overflow-hidden backdrop-blur-2xl">
+{/* 3. 오늘의 명화 (Masterpiece Painting) - 페이드인 및 카드 확대 애니메이션 */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 30 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="relative p-6 md:p-10 rounded-[32px] bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/10 shadow-3xl overflow-hidden backdrop-blur-2xl transition-all duration-500 hover:border-blue-400/30"
+            >
               {/* Abs Glow */}
               <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 blur-[130px] rounded-full pointer-events-none -mr-40 -mt-40 z-0" />
 
@@ -2334,8 +2362,13 @@ export function ArtRecommendationView() {
                   </p>
                 </div>
 
-                {/* NanoBanana Masterpiece Image Canvas */}
-                <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-black/40 aspect-[4/3] w-full max-w-lg mx-auto flex flex-col items-center justify-center group shadow-2xl">
+                {/* NanoBanana Masterpiece Image Canvas - 부드러운 페이드인 및 카드 확대 애니메이션 */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.88 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.85, delay: 0.28, ease: [0.16, 1, 0.3, 1] }}
+                  className="relative rounded-2xl overflow-hidden border border-white/10 bg-black/40 aspect-[4/3] w-full max-w-lg mx-auto flex flex-col items-center justify-center group shadow-2xl transition-all duration-700 hover:scale-[1.02] hover:border-blue-400/40 hover:shadow-[0_0_35px_rgba(59,130,246,0.25)]"
+                >
                   {loadingImage && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white/50 text-xs p-6 text-center bg-black/60 z-10 transition-all">
                       <div className="relative w-10 h-10">
@@ -2376,7 +2409,9 @@ export function ArtRecommendationView() {
                           }
                         }}
                         onClick={() => setIsArtImageOpen(true)}
-                        className="w-full h-full object-cover cursor-zoom-in transition-all duration-700 hover:scale-105 opacity-100 scale-100" 
+                        className={`w-full h-full object-cover cursor-zoom-in transition-all duration-1000 ease-out hover:scale-105 ${
+                          loadingImage ? "opacity-0 scale-95 blur-sm" : "opacity-100 scale-100 blur-0"
+                        }`} 
                       />
                       {getArtworkImageBadgeLabel(artworkImageSource) ? (
                         <div className="absolute bottom-3 right-3 px-3 py-1.5 bg-black/85 backdrop-blur-md rounded-xl border border-yellow-400/30 flex items-center gap-2 shadow-lg z-20 pointer-events-none">
@@ -2401,7 +2436,7 @@ export function ArtRecommendationView() {
                       </span>
                     </div>
                   )}
-                </div>
+                </motion.div>
 
                 {effectiveImage && !loadingImage && (
                   <p className="text-[10px] text-amber-200/80 text-center leading-relaxed px-2 -mt-2">
@@ -2534,10 +2569,15 @@ export function ArtRecommendationView() {
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* Micro Challenges / Mindful quests */}
-            <div className="p-6 md:p-8 rounded-[28px] bg-white/[0.01] border border-white/5 space-y-6">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              className="p-6 md:p-8 rounded-[28px] bg-white/[0.01] border border-white/5 space-y-6"
+            >
               <div className="space-y-1">
                 <h3 className="text-sm font-black uppercase tracking-widest text-[#a5b4fc]/90 flex items-center gap-2">
                   <CheckCircle2 size={15} className="text-[#a5b4fc]" />
@@ -2581,10 +2621,15 @@ export function ArtRecommendationView() {
                   );
                 })}
               </div>
-            </div>
+            </motion.div>
 
             {/* 🌟 루시와 1:1 심층 상담 (Deep Insight) Banner */}
-            <div className="p-6 md:p-8 rounded-[28px] bg-gradient-to-r from-blue-500/15 via-indigo-500/10 to-purple-950/20 border border-blue-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              className="p-6 md:p-8 rounded-[28px] bg-gradient-to-r from-blue-500/15 via-indigo-500/10 to-purple-950/20 border border-blue-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl"
+            >
               <div className="space-y-1 text-left">
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-lg bg-blue-400/20 border border-blue-400/30 flex items-center justify-center text-blue-300 shadow-[0_0_8px_rgba(59,130,246,0.3)]">
@@ -2608,10 +2653,15 @@ export function ArtRecommendationView() {
                 <Sparkles size={13} />
                 <span>루시와 심층 상담하기</span>
               </button>
-            </div>
+            </motion.div>
 
             {/* Unlimited Re-generation Action Button */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-6 text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-6 text-center"
+            >
               <button
                 type="button"
                 onClick={() => {
@@ -2638,7 +2688,7 @@ export function ArtRecommendationView() {
                 <RefreshCw size={14} className="text-blue-400" />
                 <span>✍️ 다른 고민 직접 적고 맞춤 추천받기</span>
               </button>
-            </div>
+            </motion.div>
             <p className="text-[10px] text-white/40 font-mono text-center">
               언제든지 새로운 고민이나 감정 상태에 맞춰 새로운 명곡·명시·명화를 무제한 추천받을 수 있습니다.
             </p>
