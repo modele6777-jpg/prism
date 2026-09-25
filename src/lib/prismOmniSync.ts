@@ -2,6 +2,7 @@ import { type SharedState } from './sharedState';
 import { auth, db, doc, setDoc, serverTimestamp } from './firebase';
 import { calculateDetailedSaju } from './sajuAnalysis';
 import { cleanFirestoreData } from './sharedStateSync';
+import { getPairedVaultId, pushToPairedVault } from './serverSyncClient';
 
 export interface PrismFeatureEntry {
   id: string;
@@ -204,32 +205,40 @@ export function recordDailyOracleResult(params: DailyOracleSummary): void {
       window.dispatchEvent(new CustomEvent('prism:daily_oracle_updated', { detail: summaryPayload }));
     } catch (_) {}
 
-    // 5. Sync to Firestore in real-time for instant cross-device synchronization (PC <-> Mobile)
-    const activeUid = auth?.currentUser?.uid || (typeof window !== 'undefined' ? localStorage.getItem('prism_auth_uid') : null);
-    if (activeUid) {
-      const ref = doc(db, 'sharedState', activeUid);
+    // 5. Sync to Firestore & Paired Vault in real-time for instant cross-device synchronization (PC <-> Mobile)
+    const activeUid = auth?.currentUser?.uid || (typeof window !== 'undefined' ? (localStorage.getItem('prism_auth_uid') || sessionStorage.getItem('prism_auth_uid')) : null);
+    
+    // Collect all today's oracles to ensure full state preservation
+    const allToday = collectAllTodayOracles(todayKey);
+    allToday[params.app] = summaryPayload;
 
-      // Collect all today's oracles to ensure full state preservation
-      const allToday = collectAllTodayOracles(todayKey);
-      allToday[params.app] = summaryPayload;
-
-      // Pass proper nested objects so Firestore deep-merges todayOracles and latestDailyOracles cleanly
-      const cleanPayload = cleanFirestoreData({
-        todayOracles: {
-          [todayKey]: {
-            ...allToday,
-            [params.app]: summaryPayload,
-          },
-        },
-        latestDailyOracles: {
+    const oraclePayload: Partial<SharedState> = {
+      todayOracles: {
+        [todayKey]: {
+          ...allToday,
           [params.app]: summaryPayload,
         },
-        lastDailyOracleSync: Date.now(),
+      },
+      latestDailyOracles: {
+        [params.app]: summaryPayload,
+      },
+      lastDailyOracleSync: Date.now(),
+      clientUpdatedAt: Date.now(),
+    };
+
+    if (activeUid && activeUid !== 'developer-bypass-uid') {
+      const ref = doc(db, 'sharedState', activeUid);
+      const cleanPayload = cleanFirestoreData({
+        ...oraclePayload,
         updatedAt: serverTimestamp(),
       });
       setDoc(ref, cleanPayload, { merge: true }).catch((err) => {
         console.warn('[recordDailyOracleResult] Firestore background sync notice (cached locally):', err?.message || err);
       });
+    }
+
+    if (getPairedVaultId()) {
+      void pushToPairedVault(oraclePayload as SharedState).catch(() => {});
     }
   } catch (err) {
     console.warn('[recordDailyOracleResult] Failed to record daily oracle summary:', err);
@@ -305,17 +314,23 @@ export function recordPrismFeature(params: {
       window.dispatchEvent(new CustomEvent('prism:feature_updated', { detail: entry }));
     } catch (_) {}
 
-    // 4. Sync feature history to Firestore in real-time
-    const activeUid = auth?.currentUser?.uid || (typeof window !== 'undefined' ? localStorage.getItem('prism_auth_uid') : null);
-    if (activeUid) {
+    // 4. Sync feature history to Firestore & Paired Vault in real-time
+    const activeUid = auth?.currentUser?.uid || (typeof window !== 'undefined' ? (localStorage.getItem('prism_auth_uid') || sessionStorage.getItem('prism_auth_uid')) : null);
+    const cleanHistory = cleanFirestoreData(history);
+    
+    if (activeUid && activeUid !== 'developer-bypass-uid') {
       const ref = doc(db, 'sharedState', activeUid);
-      const cleanHistory = cleanFirestoreData(history);
       setDoc(ref, {
         featureHistory: cleanHistory,
+        clientUpdatedAt: Date.now(),
         updatedAt: serverTimestamp(),
       }, { merge: true }).catch((err) => {
         console.warn('[recordPrismFeature] Firestore background sync notice (cached locally):', err?.message || err);
       });
+    }
+
+    if (getPairedVaultId()) {
+      void pushToPairedVault({ featureHistory: cleanHistory, clientUpdatedAt: Date.now() } as SharedState).catch(() => {});
     }
   } catch (err) {
     console.warn('[recordPrismFeature] Failed to record feature result:', err);

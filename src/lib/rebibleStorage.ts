@@ -9,6 +9,7 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import { safeLocalStorage } from '../utils/safeStorage';
+import { getPairedVaultId, pushToPairedVault } from './serverSyncClient';
 import { ReBibleVerse, ReBibleStats, REBIBLE_CANONICAL_BOOKS, CanonicalReBibleBook } from '../types/rebible';
 
 const LOCAL_STORAGE_KEY = 'prism_rebible_verses_v2';
@@ -325,7 +326,7 @@ export async function clearAllReBibleVerses(): Promise<ReBibleVerse[]> {
     console.warn('LocalStorage clear error:', e);
   }
 
-  const activeUid = auth.currentUser?.uid || (typeof window !== 'undefined' ? localStorage.getItem('prism_auth_uid') : null);
+  const activeUid = auth.currentUser?.uid || (typeof window !== 'undefined' ? (localStorage.getItem('prism_auth_uid') || sessionStorage.getItem('prism_auth_uid')) : null);
   if (activeUid) {
     try {
       const versesCol = collection(db, 'rebible_verses', activeUid, 'verses');
@@ -401,6 +402,9 @@ export function saveLocalVerses(verses: ReBibleVerse[]): void {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('rebible-verses-updated', { detail: cleaned }));
     }
+    if (getPairedVaultId()) {
+      void pushToPairedVault({ rebibleVerses: cleaned, clientUpdatedAt: Date.now() } as any).catch(() => {});
+    }
   } catch (e) {
     console.error('Failed to save local Re:Bible verses:', e);
   }
@@ -411,7 +415,7 @@ export async function saveVerseToFirestore(verse: ReBibleVerse): Promise<void> {
   if (PURGED_REBIBLE_DATES.includes(vDate) || (verse.recordedAt && PURGED_REBIBLE_DATES.some((d) => verse.recordedAt.includes(d))) || (verse.id && PURGED_REBIBLE_DATES.some((d) => verse.id.includes(d)))) {
     return;
   }
-  const activeUid = auth.currentUser?.uid || (typeof window !== 'undefined' ? localStorage.getItem('prism_auth_uid') : null);
+  const activeUid = auth.currentUser?.uid || (typeof window !== 'undefined' ? (localStorage.getItem('prism_auth_uid') || sessionStorage.getItem('prism_auth_uid')) : null);
   if (!activeUid) return;
   try {
     const verseRef = doc(db, 'rebible_verses', activeUid, 'verses', verse.id);
@@ -432,7 +436,7 @@ export async function deleteVerseFromFirestore(verseOrId: ReBibleVerse | string)
 
   markVerseKeyAsDeleted(verseId, dateKey, bookTitle);
 
-  const activeUid = auth.currentUser?.uid || (typeof window !== 'undefined' ? localStorage.getItem('prism_auth_uid') : null);
+  const activeUid = auth.currentUser?.uid || (typeof window !== 'undefined' ? (localStorage.getItem('prism_auth_uid') || sessionStorage.getItem('prism_auth_uid')) : null);
   if (!activeUid) return;
   try {
     const verseRef = doc(db, 'rebible_verses', activeUid, 'verses', verseId);

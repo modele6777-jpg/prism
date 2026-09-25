@@ -730,36 +730,34 @@ export function DailySecret() {
       if (Object.keys(freshPractice).length > 0) {
         setPractice((prev) => ({ ...freshPractice, ...prev }));
       }
+      const freshGratitude = loadGratitudeChecked();
+      setGratitudeChecked((prev) => [
+        Boolean(prev[0] || freshGratitude[0]),
+        Boolean(prev[1] || freshGratitude[1]),
+        Boolean(prev[2] || freshGratitude[2]),
+      ]);
+      const freshExtra = loadExtraGratitude();
+      if (freshExtra.length > 0) {
+        setExtraGratitude((prev) => Array.from(new Set([...prev, ...freshExtra])));
+      }
+      const freshScript = loadScript();
+      if (freshScript) {
+        setScript((prev) => (prev ? prev : freshScript));
+      }
     };
     window.addEventListener('prism:feature_updated', handleSyncEvent);
     window.addEventListener('prism:daily_oracle_updated', handleSyncEvent);
+    window.addEventListener('prism:orange_secret_updated', handleSyncEvent);
+    window.addEventListener('prism:full_state_synced', handleSyncEvent);
+    window.addEventListener('storage', handleSyncEvent);
     return () => {
       window.removeEventListener('prism:feature_updated', handleSyncEvent);
       window.removeEventListener('prism:daily_oracle_updated', handleSyncEvent);
+      window.removeEventListener('prism:orange_secret_updated', handleSyncEvent);
+      window.removeEventListener('prism:full_state_synced', handleSyncEvent);
+      window.removeEventListener('storage', handleSyncEvent);
     };
   }, []);
-
-  useEffect(() => {
-    if (wish) {
-      localStorage.setItem(dayStorageKey('wish'), wish);
-    }
-  }, [wish]);
-
-  useEffect(() => {
-    localStorage.setItem(dayStorageKey('practice'), JSON.stringify(practice));
-  }, [practice]);
-
-  useEffect(() => {
-    localStorage.setItem(dayStorageKey('gratitude_checked'), JSON.stringify(gratitudeChecked));
-  }, [gratitudeChecked]);
-
-  useEffect(() => {
-    localStorage.setItem(dayStorageKey('gratitude_extra'), JSON.stringify(extraGratitude));
-  }, [extraGratitude]);
-
-  useEffect(() => {
-    localStorage.setItem(dayStorageKey('script'), script);
-  }, [script]);
 
   const syncDailyProgress = useCallback((
     newPractice: Record<PracticeId, boolean>,
@@ -785,12 +783,47 @@ export function DailySecret() {
             gratitudeChecked: newGratitudeChecked,
             extraGratitude: newExtraGratitude,
             script: newScript,
+            updatedAt: Date.now(),
           },
         },
         lastOrangeDailySync: Date.now(),
       }, 'ORANGE');
     } catch {}
   }, [sharedState, data, updateSharedState]);
+
+  useEffect(() => {
+    if (wish) {
+      localStorage.setItem(dayStorageKey('wish'), wish);
+    }
+  }, [wish]);
+
+  useEffect(() => {
+    localStorage.setItem(dayStorageKey('practice'), JSON.stringify(practice));
+  }, [practice]);
+
+  useEffect(() => {
+    localStorage.setItem(dayStorageKey('gratitude_checked'), JSON.stringify(gratitudeChecked));
+  }, [gratitudeChecked]);
+
+  useEffect(() => {
+    localStorage.setItem(dayStorageKey('gratitude_extra'), JSON.stringify(extraGratitude));
+  }, [extraGratitude]);
+
+  useEffect(() => {
+    localStorage.setItem(dayStorageKey('script'), script);
+  }, [script]);
+
+  // Debounced cloud synchronization when progress is modified
+  const syncTimeoutRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+    syncTimeoutRef.current = window.setTimeout(() => {
+      syncDailyProgress(practice, gratitudeChecked, extraGratitude, script);
+    }, 700);
+    return () => {
+      if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+    };
+  }, [practice, gratitudeChecked, extraGratitude, script, syncDailyProgress]);
 
   const practiceCount = useMemo(
     () => PRACTICE_ITEMS.filter((item) => practice[item.id]).length,

@@ -1446,6 +1446,7 @@ async function invokeLLMStreamInner(params: {
       const reader = response.body?.getReader();
       const decoder = new TextDecoder("utf-8");
       let buffer = "";
+      let receivedDoneSignal = false;
 
       if (reader) {
         let lastActivity = Date.now();
@@ -1475,9 +1476,9 @@ async function invokeLLMStreamInner(params: {
                 ),
               ]);
             } catch (chunkTimeoutErr) {
-              console.warn("[invokeLLMStream] Chunk read timeout occurred, concluding stream cleanly.");
+              console.warn("[invokeLLMStream] Chunk read timed out; retrying instead of accepting partial text.");
               try { await reader.cancel(); } catch (_) {}
-              break;
+              throw chunkTimeoutErr;
             }
 
             const { done, value } = readResult;
@@ -1497,6 +1498,7 @@ async function invokeLLMStreamInner(params: {
                 const dataStr = trimmed.slice(6).trim();
                 if (dataStr === "[DONE]") {
                   isDone = true;
+                  receivedDoneSignal = true;
                   try {
                     await reader.cancel();
                   } catch (_) {}
@@ -1553,10 +1555,13 @@ async function invokeLLMStreamInner(params: {
         }
       }
 
-      if (fullContent && fullContent.trim().length > 0) {
+      if (fullContent && fullContent.trim().length > 0 && receivedDoneSignal) {
         const finalCleaned = checkRepetitionLoop(fullContent).cleaned || "마음속에 무거운 감정이 밀려왔나 봐. 천천히 숨을 고르고, 편안하게 이야기해 줘.";
         params.onFinish?.(finalCleaned);
         return finalCleaned;
+      }
+      if (fullContent.trim()) {
+        throw new Error("Streaming response ended before the completion signal");
       }
     } catch (e: any) {
       console.warn(`[invokeLLMStream] Streaming model ${modelName} failed:`, e?.message || e);

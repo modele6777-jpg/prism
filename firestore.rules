@@ -59,7 +59,17 @@ service cloud.firestore {
       allow read, write: if isOwner(userId);
     }
 
-    // 4. Community Shared Achievement Cards
+    // 3c. Trinity Daily Lucky (quests, reports, boosts)
+    match /trinity_daily_lucky/{userId}/days/{dayId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // 4. Cross-Device Paired Real-Time Vaults (PIN / Device Pair Sync)
+    match /pairedVaults/{vaultId} {
+      allow read, write: if true;
+    }
+
+    // 4b. Community Shared Achievement Cards
     match /epilogue_community/{postId} {
       allow read: if true;
       allow create: if isSignedIn();

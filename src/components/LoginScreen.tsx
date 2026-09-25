@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Sparkles, Triangle } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 export function LoginScreen() {
-  const { signInWithGoogle, signInAsDeveloper, importDevicePairingCode } = useApp();
+  const { signInWithGoogle, signInAsDeveloper, signInAsPairedSession, importDevicePairingCode } = useApp();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPairingInput, setShowPairingInput] = useState(false);
@@ -21,9 +21,9 @@ export function LoginScreen() {
     try {
       const res = await importDevicePairingCode(pairingCode.trim());
       if (res.success) {
-        setPairingStatus('🎉 연동 성공! 데이터를 적용하여 시작합니다...');
+        setPairingStatus('🎉 연동 성공! 실시간 데이터 연결을 활성화합니다...');
         setTimeout(() => {
-          signInAsDeveloper();
+          signInAsPairedSession();
         }, 800);
       } else {
         setError(res.message || '유효하지 않거나 만료된 연동 코드입니다.');

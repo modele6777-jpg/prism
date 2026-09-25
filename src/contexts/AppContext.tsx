@@ -5,7 +5,7 @@ import { mergeUserProfiles, type SharedState, type UserProfile } from '../lib/sh
 import { loadProfileFromAllVaults, saveProfileToAllVaults } from '../lib/profileVault';
 import { syncPrismAcrossDevices, type PrismSyncResult } from '../lib/prismSync';
 import { unpackAndHydrateLocalStorage, cleanFirestoreData, mergeSharedState, getSharedStateSignature } from '../lib/sharedStateSync';
-import { pushToServerVault, pullFromServerVault, generatePairingCode, importWithPairingCode, pushToPairedVault, pullFromPairedVault, getPairedVaultId } from '../lib/serverSyncClient';
+import { pushToServerVault, pullFromServerVault, generatePairingCode, importWithPairingCode, pushToPairedVault, pullFromPairedVault, getPairedVaultId, setPairedVaultId, subscribeToPairedVault } from '../lib/serverSyncClient';
 import { safeLocalStorage, safeSessionStorage } from '../utils/safeStorage';
 import { invokeLLMStream, PERSONAS, type Message, getCrossAppRecentDialogueContext } from '../lib/ai';
 import { buildPrismOmniscientContext } from '../lib/prismOmniSync';
@@ -63,6 +63,7 @@ interface AppContextValue {
   unlock: (code: string) => boolean;
   signInWithGoogle: () => Promise<void>;
   signInAsDeveloper: () => void;
+  signInAsPairedSession: (vaultId?: string) => void;
   logout: () => Promise<void>;
   sharedState: SharedState | null;
   updateSharedState: (updates: Partial<SharedState>, sourceApp: string) => Promise<void>;
@@ -476,22 +477,59 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    const handleVisibilityChange = () => {
+    const handleSyncOnWakeup = async () => {
+      handleSyncFromStorage();
+
       if (document.visibilityState === 'visible') {
-        handleSyncFromStorage();
+        const uid = firebaseUser?.uid;
+        if (uid && safeLocalStorage.getItem('developer_bypass') !== 'true') {
+          try {
+            const snap = await getDoc(doc(db, 'sharedState', uid));
+            if (snap.exists()) {
+              const remote = snap.data() as SharedState;
+              const localCached = loadFromLocal(uid);
+              const currentSig = getSharedStateSignature(localCached);
+              const remoteSig = getSharedStateSignature(remote);
+              if (currentSig !== remoteSig) {
+                const merged = mergeSharedState(localCached || {}, remote);
+                setSharedState(merged);
+                saveToLocal(uid, merged);
+                unpackAndHydrateLocalStorage(uid, merged, true);
+              }
+            }
+          } catch (_) {}
+        }
+        const vaultId = getPairedVaultId();
+        if (vaultId) {
+          try {
+            const paired = await pullFromPairedVault();
+            if (paired) {
+              const localCached = firebaseUser ? loadFromLocal(firebaseUser.uid) : loadGuestState();
+              const currentSig = getSharedStateSignature(localCached);
+              const pairedSig = getSharedStateSignature(paired);
+              if (currentSig !== pairedSig) {
+                const merged = mergeSharedState(localCached || {}, paired);
+                setSharedState(merged);
+                if (firebaseUser?.uid) saveToLocal(firebaseUser.uid, merged);
+                else saveGuestState(merged);
+                unpackAndHydrateLocalStorage(firebaseUser?.uid, merged, true);
+              }
+            }
+          } catch (_) {}
+        }
       }
     };
 
     window.addEventListener('storage', handleSyncFromStorage);
-    window.addEventListener('focus', handleSyncFromStorage as any);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleSyncOnWakeup);
+    document.addEventListener('visibilitychange', handleSyncOnWakeup);
 
     return () => {
       window.removeEventListener('storage', handleSyncFromStorage);
-      window.removeEventListener('focus', handleSyncFromStorage as any);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleSyncOnWakeup);
+      document.removeEventListener('visibilitychange', handleSyncOnWakeup);
     };
-  }, []);
+  }, [firebaseUser]);
 
   // Real-time Chat Threads Listener across devices (PC <-> Mobile)
   useEffect(() => {
@@ -695,10 +733,39 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           console.warn('[Auth] Initial cloud sync on login notice:', syncErr);
         }
       } else {
-        if (safeLocalStorage.getItem('developer_bypass') !== 'true') {
+        const pairedVaultId = getPairedVaultId();
+        if (pairedVaultId && safeLocalStorage.getItem('developer_bypass') !== 'true') {
+          // Auto restore paired device session
+          const pairedUser = {
+            uid: pairedVaultId,
+            email: null,
+            displayName: '연동 기기',
+            photoURL: null,
+            emailVerified: true,
+            isAnonymous: true,
+            metadata: {},
+            providerData: [],
+            refreshToken: '',
+            tenantId: null,
+            delete: async () => {},
+            getIdToken: async () => 'paired-token',
+            getIdTokenResult: async () => ({} as any),
+            reload: async () => {},
+            toJSON: () => ({}),
+            providerId: 'paired.prism',
+            phoneNumber: null,
+          } as any;
+          setFirebaseUser(pairedUser);
+          unlockMemoryFlag = true;
+          setIsUnlocked(true);
+          writeDailyUnlock();
+          safeLocalStorage.setItem(AUTH_UID_SESSION_KEY, pairedVaultId);
+          safeSessionStorage.setItem(AUTH_UID_SESSION_KEY, pairedVaultId);
+        } else if (safeLocalStorage.getItem('developer_bypass') !== 'true') {
           setFirebaseUser(null);
           try {
             safeSessionStorage.removeItem(AUTH_UID_SESSION_KEY);
+            safeLocalStorage.removeItem(AUTH_UID_SESSION_KEY);
           } catch {
             // ignore
           }
@@ -772,7 +839,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
 
         // Unpack all today's oracle summaries, feature activity history, and sub-app libraries to local storage
-        unpackAndHydrateLocalStorage(firebaseUser.uid, mergedData);
+        unpackAndHydrateLocalStorage(firebaseUser.uid, mergedData, true);
         window.dispatchEvent(new CustomEvent('prism:profile_updated', { detail: mergedData.userProfile }));
         window.dispatchEvent(new CustomEvent('prism:feature_updated', { detail: mergedData }));
         if (mergedData.todayOracles) {
@@ -797,6 +864,46 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
     return unsub;
   }, [firebaseUser]);
+
+  // Real-time Paired Vault Listener across devices (PC <-> Mobile via PIN/Pairing)
+  useEffect(() => {
+    const pairedVaultId = getPairedVaultId();
+    if (!pairedVaultId) return;
+
+    const unsub = subscribeToPairedVault((incomingState) => {
+      if (!incomingState) return;
+      const currentSig = getSharedStateSignature(sharedStateRef.current);
+      const incomingSig = getSharedStateSignature(incomingState);
+      if (currentSig && incomingSig && currentSig === incomingSig) return;
+
+      const localCached = firebaseUser ? loadFromLocal(firebaseUser.uid) : loadGuestState();
+      const persistentProfile = getPersistentUserProfile();
+      const mergedProfile = mergeUserProfiles(
+        mergeUserProfiles(persistentProfile, localCached?.userProfile),
+        incomingState?.userProfile
+      );
+      const mergedData: SharedState = mergeSharedState(
+        localCached || {},
+        incomingState
+      );
+      if (mergedProfile && Object.keys(mergedProfile).length > 0) {
+        mergedData.userProfile = mergedProfile;
+      }
+      setSharedState(mergedData);
+      if (firebaseUser?.uid) {
+        saveToLocal(firebaseUser.uid, mergedData);
+      } else {
+        saveGuestState(mergedData);
+      }
+      if (mergedProfile && Object.keys(mergedProfile).length > 0) {
+        setPersistentUserProfile(mergedProfile);
+        saveProfileToAllVaults(mergedProfile);
+      }
+      unpackAndHydrateLocalStorage(firebaseUser?.uid, mergedData, true);
+    });
+
+    return unsub;
+  }, [firebaseUser?.uid]);
 
   const unlock = useCallback((code: string): boolean => {
     if (code === '1202') {
@@ -859,11 +966,55 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     writeDailyUnlock();
   }, []);
 
+  const signInAsPairedSession = useCallback((vaultId?: string) => {
+    safeLocalStorage.removeItem('developer_bypass');
+    const targetVaultId = vaultId || getPairedVaultId() || `pin_sync_${Date.now()}`;
+    setPairedVaultId(targetVaultId);
+    const pairedUser = {
+      uid: targetVaultId,
+      email: null,
+      displayName: '연동 기기',
+      photoURL: null,
+      emailVerified: true,
+      isAnonymous: true,
+      metadata: {},
+      providerData: [],
+      refreshToken: '',
+      tenantId: null,
+      delete: async () => {},
+      getIdToken: async () => 'paired-token',
+      getIdTokenResult: async () => ({} as any),
+      reload: async () => {},
+      toJSON: () => ({}),
+      providerId: 'paired.prism',
+      phoneNumber: null,
+    } as any;
+    setFirebaseUser(pairedUser);
+    unlockMemoryFlag = true;
+    setIsUnlocked(true);
+    writeDailyUnlock();
+    safeLocalStorage.setItem(AUTH_UID_SESSION_KEY, targetVaultId);
+    safeSessionStorage.setItem(AUTH_UID_SESSION_KEY, targetVaultId);
+
+    void pullFromPairedVault().then((vaultState) => {
+      if (vaultState) {
+        setSharedState((prev) => {
+          const merged = mergeSharedState(prev || {}, vaultState);
+          saveToLocal(targetVaultId, merged);
+          unpackAndHydrateLocalStorage(targetVaultId, merged);
+          return merged;
+        });
+      }
+    });
+  }, []);
+
   const handleLogout = useCallback(async () => {
     safeLocalStorage.removeItem('developer_bypass');
+    setPairedVaultId('');
     unlockMemoryFlag = false;
     try {
       safeSessionStorage.removeItem(AUTH_UID_SESSION_KEY);
+      safeLocalStorage.removeItem(AUTH_UID_SESSION_KEY);
     } catch {
       // ignore
     }
@@ -1577,7 +1728,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   return (
     <AppContext.Provider value={{
       firebaseUser, isAuthReady, isUnlocked, unlock,
-      signInWithGoogle: handleSignIn, signInAsDeveloper, logout: handleLogout,
+      signInWithGoogle: handleSignIn, signInAsDeveloper, signInAsPairedSession, logout: handleLogout,
       sharedState, updateSharedState, syncPrismDevices, isSyncing,
       isChatOpen, setIsChatOpen,
       activePersona, setActivePersona,

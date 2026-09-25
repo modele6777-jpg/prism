@@ -377,6 +377,28 @@ export default function BluebirdApp() {
     }
   }, [sharedState?.hoponoponoDaily, todayKey, uid]);
 
+  // Real-time intra-window & cross-device sync event listener
+  useEffect(() => {
+    const handleHopoSync = () => {
+      const today = todayKey;
+      const cloudHoponopono = sharedState?.hoponoponoDaily?.[today];
+      if (cloudHoponopono?.result) {
+        setCleansingResult(cloudHoponopono.result);
+        if (cloudHoponopono.image) setCleansingImage(cloudHoponopono.image);
+        if (cloudHoponopono.tool) setCleansingToolResult(cloudHoponopono.tool);
+        if (cloudHoponopono.subject) setCleansingSubject(cloudHoponopono.subject);
+        if (cloudHoponopono.toolId) setSelectedHoponoponoToolId(cloudHoponopono.toolId);
+        setIsHoponoponoComplete(true);
+      }
+    };
+    window.addEventListener('prism:hoponopono_updated', handleHopoSync);
+    window.addEventListener('prism:full_state_synced', handleHopoSync);
+    return () => {
+      window.removeEventListener('prism:hoponopono_updated', handleHopoSync);
+      window.removeEventListener('prism:full_state_synced', handleHopoSync);
+    };
+  }, [sharedState?.hoponoponoDaily, todayKey]);
+
   // Ensure cleansingToolResult is always available if cleansingResult exists
   useEffect(() => {
     if (cleansingResult && !cleansingToolResult) {

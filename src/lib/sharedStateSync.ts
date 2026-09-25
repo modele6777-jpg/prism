@@ -416,20 +416,63 @@ export function collectAllLocalActivities(uid?: string | null): Partial<SharedSt
  * Calculates a concise signature representing the significant content of a SharedState.
  * Used for dirty-checking to bypass expensive re-hydration, re-persisting, and redundant renders.
  */
+/**
+ * Calculates a comprehensive signature representing the significant content and timestamps of a SharedState.
+ * Used for dirty-checking while guaranteeing that no in-app activity (quests, oracles, secrets, chat, etc.) is ignored.
+ */
 export function getSharedStateSignature(s: SharedState | null | undefined): string {
   if (!s) return 'null';
   const prof = s.userProfile?.basic;
   const psych = s.userProfile?.psych;
+  const fate = s.userProfile?.fate;
   const profStr = prof
-    ? `${prof.nickname || ''}_${prof.birthdate || ''}_${prof.birthtime || ''}_${prof.gender || ''}_${prof.lunarSolar || ''}_${psych?.mbti || ''}`
+    ? `${prof.name || ''}_${prof.nickname || ''}_${prof.birthdate || ''}_${prof.birthtime || ''}_${prof.gender || ''}_${prof.lunarSolar || ''}_${psych?.mbti || ''}_${fate?.lifeGoal || ''}_${fate?.currentWorry || ''}`
     : '';
-  const oracleKeys = s.todayOracles ? Object.keys(s.todayOracles).sort().join(',') : '';
-  const secretKeys = s.dailySecrets ? Object.keys(s.dailySecrets).sort().join(',') : '';
-  const artKeys = s.dailyArts ? Object.keys(s.dailyArts).sort().join(',') : '';
-  const luckyKeys = s.trinityDailyLucky ? Object.keys(s.trinityDailyLucky).sort().join(',') : '';
-  const hopoKeys = s.hoponoponoDaily ? Object.keys(s.hoponoponoDaily).sort().join(',') : '';
+
+  const todayKey = getTodayDateKey();
+  const todayOracle = s.todayOracles?.[todayKey];
+  let todayOracleSummary = '';
+  if (todayOracle && typeof todayOracle === 'object') {
+    todayOracleSummary = Object.entries(todayOracle)
+      .map(([app, o]: [string, any]) => `${app}:${o?.cardName || ''}:${o?.diagnosis?.slice(0, 15) || ''}:${o?.timestamp || 0}`)
+      .join(';');
+  }
+
+  const todaySecret = s.dailySecrets?.[todayKey];
+  const secretSummary = todaySecret
+    ? `${todaySecret.appliedWish || ''}_${todaySecret.script?.slice(0, 20) || ''}_${Object.keys(todaySecret.gratitudeChecked || {}).length}_${Object.keys(todaySecret.practice || {}).length}_${todaySecret.updatedAt || 0}`
+    : '';
+
+  const todayLucky = s.trinityDailyLucky?.[todayKey];
+  const luckySummary = todayLucky
+    ? `${todayLucky.luckyData?.dailyCard?.name || ''}_${Object.keys(todayLucky.completedQuests || {}).length}_${todayLucky.isBoosted}_${todayLucky.timestamp || 0}`
+    : '';
+
+  const todayHopo = s.hoponoponoDaily?.[todayKey];
+  const hopoSummary = todayHopo
+    ? `${todayHopo.toolId || ''}_${todayHopo.subject || ''}_${todayHopo.timestamp || 0}`
+    : '';
+
+  const todayArt = s.dailyArts?.[todayKey];
+  const artSummary = todayArt
+    ? `${todayArt.recommendation?.title || todayArt.title || ''}_${Object.keys(todayArt.completedChallenges || {}).length}_${todayArt.timestamp || 0}`
+    : '';
+
+  const latestChatMsg = Array.isArray(s.chatHistory) && s.chatHistory.length > 0 ? s.chatHistory[s.chatHistory.length - 1] : null;
+  const chatSummary = latestChatMsg ? `${s.chatHistory?.length}_${latestChatMsg.id || ''}_${latestChatMsg.timestamp || 0}` : '0';
+
+  const newestVerse = Array.isArray(s.rebibleVerses) && s.rebibleVerses.length > 0 ? s.rebibleVerses[0] : null;
+  const rebibleSummary = newestVerse ? `${s.rebibleVerses?.length}_${newestVerse.id}_${newestVerse.updatedAt || newestVerse.recordedAt || ''}` : '0';
+
+  const newestFeat = Array.isArray(s.featureHistory) && s.featureHistory.length > 0 ? s.featureHistory[0] : null;
+  const featSummary = newestFeat ? `${s.featureHistory?.length}_${newestFeat.id}_${newestFeat.timestamp || 0}` : '0';
+
+  const clientTs = s.clientUpdatedAt || 0;
+  const serverTs = (s.updatedAt as any)?.toMillis?.() || s.updatedAt || 0;
+
   const hLen = `${s.featureHistory?.length || 0}_${s.orangeHistory?.length || 0}_${s.museHistory?.length || 0}_${s.bluebirdHistory?.length || 0}_${s.favoriteInsightIds?.length || 0}_${s.rebibleVerses?.length || 0}_${(s as any).epilogueHistory?.length || 0}`;
-  return `${s.unifiedAppVersion || ''}|${profStr}|${s.themeColor || ''}|${s.currentVibe || ''}|${oracleKeys}|${secretKeys}|${artKeys}|${luckyKeys}|${hopoKeys}|${hLen}`;
+
+  return `${clientTs}_${serverTs}|${profStr}|${s.themeColor || ''}|${s.currentVibe || ''}|${todayOracleSummary}|${secretSummary}|${luckySummary}|${hopoSummary}|${artSummary}|${chatSummary}|${rebibleSummary}|${featSummary}|${hLen}`;
 }
 
 let lastHydratedSignature = '';
@@ -437,11 +480,11 @@ let lastHydratedSignature = '';
 /**
  * Unpacks and restores merged cloud data into the current device's local storage and dispatches UI events.
  */
-export function unpackAndHydrateLocalStorage(uid: string | null | undefined, state: SharedState): void {
+export function unpackAndHydrateLocalStorage(uid: string | null | undefined, state: SharedState, force = false): void {
   if (typeof window === 'undefined' || !state) return;
 
   const currentSignature = `${uid || 'guest'}::${getSharedStateSignature(state)}`;
-  if (lastHydratedSignature && lastHydratedSignature === currentSignature) {
+  if (!force && lastHydratedSignature && lastHydratedSignature === currentSignature) {
     return;
   }
   lastHydratedSignature = currentSignature;
@@ -791,6 +834,12 @@ export function unpackAndHydrateLocalStorage(uid: string | null | undefined, sta
     window.dispatchEvent(new CustomEvent('prism:daily_oracle_updated', { detail: state.todayOracles }));
     window.dispatchEvent(new CustomEvent('prism:feature_updated', { detail: state }));
     window.dispatchEvent(new CustomEvent('prism:profile_updated', { detail: state.userProfile }));
+    window.dispatchEvent(new CustomEvent('prism:orange_secret_updated', { detail: state.dailySecrets }));
+    window.dispatchEvent(new CustomEvent('prism:hoponopono_updated', { detail: state.hoponoponoDaily }));
+    window.dispatchEvent(new CustomEvent('prism:daily_art_updated', { detail: state.dailyArts }));
+    window.dispatchEvent(new CustomEvent('prism:trinity_lucky_updated', { detail: state.trinityDailyLucky }));
+    window.dispatchEvent(new CustomEvent('trinity:daily_lucky_synced', { detail: state.trinityDailyLucky }));
+    window.dispatchEvent(new CustomEvent('prism:full_state_synced', { detail: state }));
   } catch (_) {}
 }
 
