@@ -4,7 +4,7 @@ import { Leaf, Timer, Sparkles, Wind, Volume2, VolumeX, Check, Copy, RefreshCw, 
 import { useApp, getPersistentUserProfile } from '@/contexts/AppContext';
 import { invokeLLM } from '@/lib/ai';
 import { recordPrismFeature } from '@/lib/prismOmniSync';
-import { playTTS, stopTTS, useTTSActive } from '@/utils/tts';
+import { playTTS, stopTTS, prefetchTTS, useTTSActive } from '@/utils/tts';
 
 interface SanctuaryData {
   title: string;
@@ -20,10 +20,10 @@ const FALLBACK_SANCTUARY: SanctuaryData = {
   tensionArea: "가슴 답답함 & 어깨 긴장",
   sedonaInquiryAnswer: "지금 쥐고 있는 통제의 욕구와 불안을 가슴 밖으로 완전히 열어놓습니다. 손을 펴듯 마음에 쥔 힘을 내려놓습니다.",
   sixtySecondSanctuaryProtocol: [
-    "00~15초: 숨을 깊게 들이쉬며 긴장된 몸 부위를 따뜻한 시선으로 자각합니다.",
-    "15~35초: '이 느낌을 환영하고 기꺼이 머물게 할 수 있는가?' 속으로 묻고 허용합니다.",
-    "35~50초: '이 감정을 놓아줄 수 있는가? 놓아줄 것인가? 언제? 지금!' 호흡과 함께 날려보냅니다.",
-    "50~60초: 텅 빈 공간에 채워지는 순수한 평온과 고요함을 누립니다."
+    "00~15초: 숨을 천천히 들이쉬며 굳어있던 몸을 편안하게 바라봅니다.",
+    "15~35초: 지금 이 느낌이 잠시 머물러도 온전히 괜찮다고 인정합니다.",
+    "35~50초: 호흡을 길게 내쉬며 쥐고 있던 힘을 가볍게 흘려보냅니다.",
+    "50~60초: 비워진 가슴 안에서 순수한 고요와 자유를 온전히 누립니다."
   ],
   zeroResistanceDeclaration: "나는 모든 저항과 집착을 허공 속으로 가볍게 흘려보내고, 본래의 완전한 자유와 평온으로 돌아옵니다.",
   pureLightState: "저항 0% · 순수 현존 (Zero-Resistance Pure Presence)"
@@ -57,6 +57,7 @@ export function AuraSynergySection() {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const oscRef = useRef<OscillatorNode | null>(null);
   const lastSpokenPhaseRef = useRef<number | null>(null);
+  const chamberSessionIdRef = useRef<string | null>(null);
 
   const toggleTone = () => {
     if (isAudioPlaying) {
@@ -105,14 +106,14 @@ export function AuraSynergySection() {
 
   // Helper to extract clean voice prompt from protocol item
   const getCleanPhaseSpeech = (text: string, phaseIndex: number): string => {
-    const raw = text.replace(/^\d+~\d+초\s*:\s*/, '').trim();
-    const phaseTitles = [
-      '1단계, 자각 단계입니다. ',
-      '2단계, 허용과 환영 단계입니다. ',
-      '3단계, 놓아줌과 흘려보내기 단계입니다. ',
-      '4단계, 순수 현존 정착 단계입니다. '
+    const raw = text.replace(/^\d+~\d+초\s*:\s*/, '').replace(/['"“”‘’]/g, '').trim();
+    const phasePrefixes = [
+      '1단계, 자각입니다. ',
+      '2단계, 허용입니다. ',
+      '3단계, 놓아줌입니다. ',
+      '4단계, 평온입니다. '
     ];
-    return (phaseTitles[phaseIndex] || '') + raw;
+    return (phasePrefixes[phaseIndex] || '') + raw;
   };
 
   // Compute current protocol phase from remaining seconds
@@ -162,7 +163,10 @@ export function AuraSynergySection() {
       const protocolText = sanctuaryData.sixtySecondSanctuaryProtocol[currentPhase];
       if (protocolText) {
         const speechText = getCleanPhaseSpeech(protocolText, currentPhase);
-        playTTS(speechText, 'Kore', false, '치유');
+        if (!chamberSessionIdRef.current) {
+          chamberSessionIdRef.current = `sanctuary_${Date.now()}`;
+        }
+        playTTS(speechText, 'Kore', false, '치유', chamberSessionIdRef.current, true);
       }
     }
   }, [chamberTimer, isChamberActive, isTtsGuideEnabled, sanctuaryData]);
@@ -173,17 +177,29 @@ export function AuraSynergySection() {
       setIsChamberCompleted(false);
       setChamberTimer(60);
       lastSpokenPhaseRef.current = null;
+      chamberSessionIdRef.current = null;
       stopTTS();
     } else {
       setIsChamberCompleted(false);
       setChamberTimer(60);
       setIsChamberActive(true);
       lastSpokenPhaseRef.current = null;
-      // Immediately start 1st phase speech
+      const sessId = `sanctuary_${Date.now()}`;
+      chamberSessionIdRef.current = sessId;
+
+      // Pre-warm / prefetch all 4 phase scripts immediately to avoid audio delay
+      if (sanctuaryData?.sixtySecondSanctuaryProtocol) {
+        sanctuaryData.sixtySecondSanctuaryProtocol.forEach((proto, idx) => {
+          const speech = getCleanPhaseSpeech(proto, idx);
+          prefetchTTS(speech, 'Kore', '치유').catch(() => {});
+        });
+      }
+
+      // Immediately start 1st phase speech with sequence session ID
       if (isTtsGuideEnabled && sanctuaryData?.sixtySecondSanctuaryProtocol?.[0]) {
         lastSpokenPhaseRef.current = 0;
         const firstSpeech = getCleanPhaseSpeech(sanctuaryData.sixtySecondSanctuaryProtocol[0], 0);
-        playTTS(firstSpeech, 'Kore', false, '치유');
+        playTTS(firstSpeech, 'Kore', false, '치유', sessId, true);
       }
     }
   };
@@ -200,7 +216,7 @@ export function AuraSynergySection() {
     const tensionLabel = item ? item.label : '긴장';
     const combined = customDetail.trim() ? `${tensionLabel} (${customDetail.trim()})` : tensionLabel;
 
-    const systemPrompt = "당신은 오라(AURA)의 완전 해방 방하착 챔버 마스터입니다. 좌측 메뉴 [Letting Go Method]의 세도나 메서드 흘려보내기 5문답과 우측 메뉴 [1-MIN]의 60초 마이크로 집중 명상 동조를 완벽히 융합하여 '완전 해방 방하착 챔버' 가이드를 설계하세요.";
+    const systemPrompt = "당신은 오라(AURA)의 완전 해방 방하착 챔버 마스터입니다. 좌측 메뉴 [Letting Go Method]의 세도나 메서드 흘려보내기 5문답과 우측 메뉴 [1-MIN]의 60초 마이크로 집중 명상 동조를 완벽히 융합하여 '완전 해방 방하착 챔버' 가이드를 설계하세요. [필수 낭독 규칙]: 60초 단계별 프로토콜(sixtySecondSanctuaryProtocol)의 4개 안내문은 타이머 경과에 따라 음성 낭독이 중간에 끊기지 않도록, 각 단계별로 공백 포함 25~35자 내외(낭독 3~4초 분량)의 다정하고 간결한 호흡 안내문으로 작성해야 합니다.";
     const userPrompt = `[양쪽 메뉴 융합: LETTING GO 방하착 ✕ 1-MIN 마이크로 호흡]
 [집착/긴장 상태]: "${combined}"
 [사용자 닉네임]: "${userProfile?.basic?.nickname || '치유자'}"
@@ -211,10 +227,10 @@ export function AuraSynergySection() {
   "tensionArea": "${tensionLabel}",
   "sedonaInquiryAnswer": "세도나 5문답을 바탕으로 쥐고 있던 집착을 놓아주는 해방적 깨달음 문장",
   "sixtySecondSanctuaryProtocol": [
-    "00~15초: 자각 단계 가이드",
-    "15~35초: 허용 및 환영 단계 가이드",
-    "35~50초: 흘려보내기(놓아줌) 단계 가이드",
-    "50~60초: 순수 현존 상태 정착 가이드"
+    "00~15초: 자각 단계 (공백 포함 25~35자 내외, 낭독 4초 이내 간결한 호흡 안내)",
+    "15~35초: 허용 단계 (공백 포함 25~35자 내외, 낭독 4초 이내 간결한 허용 안내)",
+    "35~50초: 놓아줌 단계 (공백 포함 25~35자 내외, 낭독 4초 이내 간결한 흘려보내기 안내)",
+    "50~60초: 순수 현존 (공백 포함 25~35자 내외, 낭독 4초 이내 평온 정착 안내)"
   ],
   "zeroResistanceDeclaration": "저항 0%로 회귀하는 1인칭 완전 해방 선언문",
   "pureLightState": "순수 해방 상태 명칭 (예: 저항 0% · 절대 평온)"
@@ -432,7 +448,12 @@ export function AuraSynergySection() {
               <div className="flex items-center gap-2">
                 {/* TTS Guide Toggle */}
                 <button
-                  onClick={() => setIsTtsGuideEnabled(!isTtsGuideEnabled)}
+                  onClick={() => {
+                    if (isTtsGuideEnabled) {
+                      stopTTS();
+                    }
+                    setIsTtsGuideEnabled(!isTtsGuideEnabled);
+                  }}
                   className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-all cursor-pointer flex items-center gap-1.5 ${
                     isTtsGuideEnabled
                       ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40 shadow-[0_0_10px_rgba(16,185,129,0.2)]'

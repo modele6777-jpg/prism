@@ -27,6 +27,12 @@ if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
   };
 }
 
+// Global reference set to protect against Chromium/WebKit SpeechSynthesisUtterance garbage collection cutoff bug
+const activeUtterances = new Set<SpeechSynthesisUtterance>();
+if (typeof window !== 'undefined') {
+  (window as any).__prismActiveUtterances = activeUtterances;
+}
+
 export function playNativeBrowserSpeech(
   cleanText: string,
   wait: boolean = false,
@@ -45,6 +51,7 @@ export function playNativeBrowserSpeech(
 
   const isKorean = /[가-힣]/.test(cleanText);
   const utterance = new SpeechSynthesisUtterance(cleanText);
+  activeUtterances.add(utterance);
   utterance.lang = isKorean ? 'ko-KR' : 'en-US';
   utterance.rate = 1.0;
   utterance.pitch = 1.0;
@@ -124,12 +131,19 @@ export function playNativeBrowserSpeech(
   // Chrome/iOS keepalive timer
   let keepAliveInterval: any = null;
   const startKeepAlive = () => {
+    let elapsed = 0;
     keepAliveInterval = setInterval(() => {
-      if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) {
-        window.speechSynthesis.pause();
-        window.speechSynthesis.resume();
+      elapsed += 5000;
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        if (window.speechSynthesis.paused) {
+          window.speechSynthesis.resume();
+        } else if (elapsed >= 10000 && window.speechSynthesis.speaking) {
+          // Chrome 15s pause bug workaround: only cycle pause/resume after prolonged speaking
+          window.speechSynthesis.pause();
+          window.speechSynthesis.resume();
+        }
       }
-    }, 8000);
+    }, 5000);
   };
   const clearKeepAlive = () => {
     if (keepAliveInterval) {
@@ -143,6 +157,7 @@ export function playNativeBrowserSpeech(
     const finish = () => {
       if (isSettled) return;
       isSettled = true;
+      activeUtterances.delete(utterance);
       clearKeepAlive();
       if (sessionToVerify && ttsState.activeSessionId === sessionToVerify && !isSequenceChunk) {
         stopTTS();
@@ -295,6 +310,7 @@ export const resumeTTS = (): void => {
 
 export const stopTTS = () => {
   isPlayingSequence = false;
+  activeUtterances.clear();
   updateTTSState({ isSpeaking: false, isLoading: false, activeText: null, activeFullText: null, activeSessionId: null });
   stopTTSPlayback();
   clearTTSSession();
