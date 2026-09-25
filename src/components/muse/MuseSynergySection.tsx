@@ -1,14 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Sparkles, Palette, Volume2, VolumeX, Check, Copy, RefreshCw, 
-  User, Feather, Lightbulb, Image as ImageIcon, Eye, X, Download, BookOpen 
+  User, Feather, Lightbulb, Image as ImageIcon, Eye, X, Download, BookOpen,
+  Maximize2
 } from 'lucide-react';
 import { useApp, getPersistentUserProfile } from '@/contexts/AppContext';
 import { invokeLLM } from '@/lib/ai';
 import { recordPrismFeature } from '@/lib/prismOmniSync';
 import { playTTS, stopTTS, useTTSActive } from '@/utils/tts';
-import { getSafeArtworkUrl } from '@/utils/artworkImage';
+import { getSafeArtworkUrl, buildPollinationsArtUrl } from '@/utils/artworkImage';
+import { ImageOutputActions, downloadImage } from '@/components/ImageOutputActions';
 
 interface MasterpieceDialogueData {
   title: string;
@@ -41,7 +43,7 @@ const MASTERS_LIST: MasterItem[] = [
     piece: '별이 빛나는 밤 (The Starry Night)', 
     medium: '유화 (Oil on Canvas)', 
     icon: '🎨',
-    imageUrl: getSafeArtworkUrl('https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/1280px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg')
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/1280px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg'
   },
   { 
     id: 'davinci', 
@@ -50,7 +52,7 @@ const MASTERS_LIST: MasterItem[] = [
     piece: '모나리자 (Mona Lisa)', 
     medium: '유화 및 르네상스 걸작', 
     icon: '📐',
-    imageUrl: getSafeArtworkUrl('https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/1200px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg')
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/1200px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg'
   },
   { 
     id: 'monet', 
@@ -59,7 +61,7 @@ const MASTERS_LIST: MasterItem[] = [
     piece: '수련 (Water Lilies)', 
     medium: '인상주의 회화', 
     icon: '🪷',
-    imageUrl: getSafeArtworkUrl('https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Claude_Monet_-_Water_Lilies_-_Google_Art_Project.jpg/1280px-Claude_Monet_-_Water_Lilies_-_Google_Art_Project.jpg')
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Claude_Monet_-_Water_Lilies_-_Google_Art_Project.jpg/1280px-Claude_Monet_-_Water_Lilies_-_Google_Art_Project.jpg'
   },
   { 
     id: 'debussy', 
@@ -68,7 +70,7 @@ const MASTERS_LIST: MasterItem[] = [
     piece: '달빛 (Clair de Lune)', 
     medium: '인상주의 피아노 독주곡 & 야상곡', 
     icon: '🎹',
-    imageUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1200&auto=format&fit=crop'
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Henri_Le_Sidaner_-_Clair_de_lune.jpg/1280px-Henri_Le_Sidaner_-_Clair_de_lune.jpg'
   },
   { 
     id: 'hesse', 
@@ -77,7 +79,7 @@ const MASTERS_LIST: MasterItem[] = [
     piece: '데미안 & 싯다르타 (Demian & Siddhartha)', 
     medium: '철학 소설 & 영적 탐색의 여정', 
     icon: '📖',
-    imageUrl: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?q=80&w=1200&auto=format&fit=crop'
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Hermann_Hesse_1927.jpg/800px-Hermann_Hesse_1927.jpg'
   },
   { 
     id: 'bach', 
@@ -86,7 +88,7 @@ const MASTERS_LIST: MasterItem[] = [
     piece: '골드베르크 변주곡 (Goldberg Variations)', 
     medium: '대위법 건반 협주곡 & 신성한 하모니', 
     icon: '🎼',
-    imageUrl: 'https://images.unsplash.com/photo-1507838153414-b4b713384a76?q=80&w=1200&auto=format&fit=crop'
+    imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Johann_Sebastian_Bach.jpg/800px-Johann_Sebastian_Bach.jpg'
   },
 ];
 
@@ -115,9 +117,75 @@ export function MuseSynergySection() {
   const [isAudioPlaying, setIsAudioPlaying] = useState<boolean>(false);
   const isTTSActive = useTTSActive();
 
-  // Masterpiece artwork image states
-  const [artworkImageUrl, setArtworkImageUrl] = useState<string>(MASTERS_LIST[0].imageUrl);
-  const [isImageModalOpen, setIsImageModalOpen] = useState<boolean>(false);
+  // Masterpiece artwork image states (오늘의 명화와 동일한 캔버스 및 다중 폴백 구조)
+  const [imageFallbackIndex, setImageFallbackIndex] = useState<number>(0);
+  const [loadingArtwork, setLoadingArtwork] = useState<boolean>(true);
+  const [artworkLoadError, setArtworkLoadError] = useState<boolean>(false);
+  const [isArtImageOpen, setIsArtImageOpen] = useState<boolean>(false);
+  const [customArtworkUrl, setCustomArtworkUrl] = useState<string>('');
+  const [isAiGenerated, setIsAiGenerated] = useState<boolean>(false);
+
+  // 거장 또는 대화 내용이 바뀔 때 이미지 로딩 및 폴백 상태 초기화
+  useEffect(() => {
+    setImageFallbackIndex(0);
+    setArtworkLoadError(false);
+    setLoadingArtwork(true);
+  }, [selectedMaster.id, dialogueData.masterpieceName, customArtworkUrl]);
+
+  // 오늘의 명화와 동일한 원작 프록시 + 다중 폴백 체인
+  const fallbackUrls = useMemo(() => {
+    const list: string[] = [];
+
+    // 1. 사용자가 AI 재생성을 요청한 경우 커스텀 AI 명화 URL 최우선
+    if (customArtworkUrl) {
+      list.push(customArtworkUrl);
+    }
+
+    // 2. 선택된 거장의 공식 컬렉션/원작 이미지 (프록시 및 원본)
+    if (selectedMaster.imageUrl) {
+      list.push(getSafeArtworkUrl(selectedMaster.imageUrl));
+      list.push(encodeURI(selectedMaster.imageUrl));
+    }
+
+    // 3. 작품명과 거장 이름에 기반한 고화질 미학 AI 재현 URL
+    const faithfulUrl = buildPollinationsArtUrl(
+      {
+        title: dialogueData.masterpieceName,
+        creator: dialogueData.masterName,
+        artworkType: dialogueData.masterpieceMedium || '명화 회화',
+        era: selectedMaster.title || '고전 명작',
+        description: dialogueData.masterpieceInsight || 'Masterpiece artwork',
+        aestheticTone: dialogueData.colorPalette?.join(', ') || 'classical museum fine art',
+      },
+      1024,
+      768
+    );
+    list.push(faithfulUrl);
+
+    // 4. 고호환성 초간단 명화 프롬프트
+    const simplePrompt = encodeURIComponent(
+      `Masterpiece museum fine art oil painting of "${dialogueData.masterpieceName}" by ${dialogueData.masterName}, museum photograph, ultra detailed canvas`
+    );
+    list.push(`https://image.pollinations.ai/prompt/${simplePrompt}?width=1024&height=768&nologo=true&seed=42`);
+
+    return [...new Set(list.filter(Boolean))];
+  }, [customArtworkUrl, selectedMaster, dialogueData]);
+
+  const effectiveArtworkImage = fallbackUrls[imageFallbackIndex] || fallbackUrls[0] || '';
+  const artworkFilename = `masterpiece-${dialogueData.masterpieceName}-${dialogueData.masterName}`;
+
+  const handleRegenerateArtwork = () => {
+    setLoadingArtwork(true);
+    setArtworkLoadError(false);
+    setImageFallbackIndex(0);
+    const seed = Math.floor(Math.random() * 900000) + 100000;
+    const prompt = encodeURIComponent(
+      `Faithful fine art oil painting reproduction of "${dialogueData.masterpieceName}" by ${dialogueData.masterName}, ${dialogueData.masterpieceMedium}, rich brushwork, museum gallery lighting, ultra high resolution masterpiece`
+    );
+    const newUrl = `https://image.pollinations.ai/prompt/${prompt}?width=1024&height=768&nologo=true&seed=${seed}&model=turbo`;
+    setCustomArtworkUrl(newUrl);
+    setIsAiGenerated(true);
+  };
 
   const audioCtxRef = useRef<AudioContext | null>(null);
   const oscRef = useRef<OscillatorNode | null>(null);
@@ -178,7 +246,11 @@ export function MuseSynergySection() {
 
   const handleSelectMaster = (master: MasterItem) => {
     setSelectedMaster(master);
-    setArtworkImageUrl(master.imageUrl);
+    setCustomArtworkUrl('');
+    setIsAiGenerated(false);
+    setImageFallbackIndex(0);
+    setArtworkLoadError(false);
+    setLoadingArtwork(true);
   };
 
   const handleStartMasterclass = async () => {
@@ -244,7 +316,11 @@ export function MuseSynergySection() {
     try {
       const result = await Promise.race([runAI(), safetyTimeout]);
       setDialogueData(result);
-      setArtworkImageUrl(selectedMaster.imageUrl);
+      setCustomArtworkUrl('');
+      setIsAiGenerated(false);
+      setImageFallbackIndex(0);
+      setArtworkLoadError(false);
+      setLoadingArtwork(true);
       setIsSynthesized(true);
       recordPrismFeature({
         app: 'muse',
@@ -416,58 +492,171 @@ export function MuseSynergySection() {
             </div>
           </div>
 
-          {/* Masterpiece Showcase: Actual Artwork Image + AI Reproduction */}
-          <div className="relative rounded-3xl overflow-hidden border border-blue-500/30 bg-black/60 shadow-2xl space-y-4 p-5 sm:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-white/10">
+          {/* Masterpiece Showcase: Actual Artwork Image + AI Reproduction (오늘의 명화와 동일한 캔버스 미학 연출) */}
+          <div className="relative rounded-[32px] p-6 sm:p-8 bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-blue-500/30 shadow-2xl backdrop-blur-2xl space-y-6">
+            {/* Meta details */}
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-4">
               <div className="flex items-center gap-2.5">
-                <span className="p-2 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30">
-                  <ImageIcon size={18} />
+                <span className="px-3.5 py-1.5 rounded-xl bg-blue-500/15 border border-blue-400/30 text-[11px] font-black uppercase tracking-widest text-blue-300 flex items-center gap-1.5 shadow-sm">
+                  <Palette size={13} />
+                  🎨 거장의 명작 · MASTERPIECE ARTWORK
                 </span>
-                <div>
-                  <h4 className="text-sm font-bold text-white tracking-tight flex items-center gap-2">
-                    <span>{dialogueData.masterpieceName}</span>
-                    <span className="text-[10px] font-normal text-blue-300 font-mono px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20">
-                      {dialogueData.masterpieceMedium}
-                    </span>
-                  </h4>
-                  <p className="text-[11px] text-white/50">{dialogueData.masterName} · 세계 미술관 공식 컬렉션 원작</p>
+                <span className="px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/5 text-[10px] font-medium tracking-wide text-white/50">
+                  {dialogueData.masterpieceMedium}
+                </span>
+              </div>
+              <div className="text-[10px] font-mono tracking-widest text-[#a5b4fc]/80 bg-[#a5b4fc]/5 border border-[#a5b4fc]/10 px-3 py-1.5 rounded-xl">
+                ENERGY FREQUENCY: 639Hz Sync
+              </div>
+            </div>
+
+            {/* Title & Creator */}
+            <div className="space-y-1.5 text-center sm:text-left">
+              <h4 className="text-xl sm:text-3xl font-extrabold text-white leading-tight tracking-tight">
+                {dialogueData.masterpieceName}
+              </h4>
+              <p className="text-xs sm:text-sm text-blue-400 font-bold flex items-center justify-center sm:justify-start gap-1.5">
+                <Feather size={14} />
+                {dialogueData.masterName} · {dialogueData.masterTitle}
+              </p>
+            </div>
+
+            {/* Masterpiece Image Canvas (부드러운 페이드인 및 카드 확대 애니메이션) */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6 }}
+              className="relative rounded-2xl overflow-hidden border border-white/10 bg-black/50 aspect-[4/3] w-full max-w-lg mx-auto flex flex-col items-center justify-center group shadow-2xl transition-all duration-700 hover:scale-[1.02] hover:border-blue-400/40 hover:shadow-[0_0_35px_rgba(59,130,246,0.25)]"
+            >
+              {loadingArtwork && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white/50 text-xs p-6 text-center bg-black/60 z-10 transition-all">
+                  <div className="relative w-10 h-10">
+                    <div className="w-10 h-10 rounded-full border-2 border-dashed border-yellow-500/40 animate-spin absolute inset-0" />
+                    <div className="w-10 h-10 rounded-full border-2 border-t-yellow-400 border-r-transparent animate-spin relative" />
+                  </div>
+                  <span className="font-mono tracking-widest uppercase animate-pulse text-[10px] text-yellow-300 font-black">
+                    [ 🏛️ 거장의 원작 갤러리 불러오는 중... ]
+                  </span>
                 </div>
-              </div>
+              )}
 
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsImageModalOpen(true)}
-                  className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-white/80 hover:text-white text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer"
-                  title="작품 크게 보기"
-                >
-                  <Eye size={13} />
-                  <span>크게 보기</span>
-                </button>
-              </div>
-            </div>
+              {effectiveArtworkImage && !artworkLoadError ? (
+                <>
+                  <ImageOutputActions
+                    src={effectiveArtworkImage}
+                    alt={`${dialogueData.masterpieceName} — ${dialogueData.masterName}`}
+                    filename={artworkFilename}
+                    isOpen={isArtImageOpen}
+                    onOpenChange={setIsArtImageOpen}
+                  />
+                  <img
+                    key={effectiveArtworkImage}
+                    src={effectiveArtworkImage}
+                    alt={`${dialogueData.masterpieceName} — ${dialogueData.masterName}`}
+                    referrerPolicy="no-referrer"
+                    onLoad={() => {
+                      setLoadingArtwork(false);
+                      setArtworkLoadError(false);
+                    }}
+                    onError={() => {
+                      if (imageFallbackIndex + 1 < fallbackUrls.length) {
+                        setImageFallbackIndex((prev) => prev + 1);
+                      } else {
+                        setLoadingArtwork(false);
+                        setArtworkLoadError(true);
+                      }
+                    }}
+                    onClick={() => setIsArtImageOpen(true)}
+                    className={`w-full h-full object-cover cursor-zoom-in transition-all duration-700 ease-out hover:scale-105 ${
+                      loadingArtwork ? 'opacity-0 scale-95 blur-sm' : 'opacity-100 scale-100 blur-0'
+                    }`}
+                  />
+                  <div className="absolute bottom-3 right-3 px-3 py-1.5 bg-black/85 backdrop-blur-md rounded-xl border border-yellow-400/30 flex items-center gap-2 shadow-lg z-20 pointer-events-none">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-yellow-400"></span>
+                    </span>
+                    <span className="text-[9px] font-black tracking-widest text-yellow-300 uppercase font-mono">
+                      {isAiGenerated ? '✨ AI 명화 재현' : '🏛️ 거장 원작 갤러리'}
+                    </span>
+                  </div>
+                </>
+              ) : artworkLoadError ? (
+                /* Elegant Masterpiece Museum Canvas Plaque Fallback */
+                <div className="relative w-full h-full p-6 flex flex-col items-center justify-center text-center bg-gradient-to-br from-amber-950/40 via-zinc-900 to-indigo-950/40 border border-amber-400/20">
+                  <div className="w-14 h-14 rounded-full bg-amber-400/10 border border-amber-400/30 flex items-center justify-center mb-3 text-amber-300 shadow-[0_0_20px_rgba(251,191,36,0.2)]">
+                    <Palette size={26} />
+                  </div>
+                  <span className="text-[10px] font-mono tracking-widest uppercase text-amber-400/80 font-bold mb-1">
+                    🏛️ MUSEUM MASTERPIECE ARCHIVE
+                  </span>
+                  <h4 className="text-lg md:text-xl font-serif font-extrabold text-white mb-1 px-4 leading-tight">
+                    {dialogueData.masterpieceName}
+                  </h4>
+                  <p className="text-xs text-amber-200/70 font-medium mb-4">
+                    {dialogueData.masterName} · {dialogueData.masterpieceMedium}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImageFallbackIndex(0);
+                        setArtworkLoadError(false);
+                        setLoadingArtwork(true);
+                      }}
+                      className="px-3.5 py-1.5 rounded-full bg-amber-400/20 hover:bg-amber-400/30 border border-amber-400/40 text-amber-200 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all shadow-md"
+                    >
+                      <RefreshCw size={12} className={loadingArtwork ? 'animate-spin' : ''} />
+                      원작 이미지 다시 불러오기
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRegenerateArtwork}
+                      className="px-3.5 py-1.5 rounded-full bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-400/40 text-indigo-200 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all shadow-md"
+                    >
+                      <Sparkles size={12} />
+                      AI 명화 재현
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </motion.div>
 
-            {/* Artwork Frame */}
-            <div className="relative group overflow-hidden rounded-2xl border border-white/10 bg-zinc-950 aspect-[16/10] sm:aspect-[16/9] flex items-center justify-center">
-              <img
-                src={artworkImageUrl}
-                alt={dialogueData.masterpieceName}
-                className="w-full h-full object-cover object-center group-hover:scale-[1.02] transition-transform duration-700"
-                onError={(e) => {
-                  const fallbackPrompt = encodeURIComponent(`Masterpiece artwork ${dialogueData.masterpieceName} by ${dialogueData.masterName}, fine art oil painting, museum photograph`);
-                  e.currentTarget.src = `https://image.pollinations.ai/prompt/${fallbackPrompt}?width=1024&height=768&nologo=true&model=turbo`;
-                }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/30 pointer-events-none" />
-              <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between text-[11px] text-white/90 pointer-events-none">
-                <span className="font-serif italic drop-shadow-md">
-                  "{dialogueData.masterpieceName}" — {dialogueData.masterName}
-                </span>
-                <span className="px-2.5 py-0.5 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-[10px] font-mono text-blue-300">
-                  Masterpiece Gallery
-                </span>
-              </div>
-            </div>
+            {/* Action Bar & Buttons */}
+            {effectiveArtworkImage && !loadingArtwork && (
+              <>
+                <p className="text-[10px] text-white/40 text-center -mt-2">
+                  그림을 탭하거나 버튼으로 크게 보기 · 다운로드 · AI 재생성
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-2 -mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsArtImageOpen(true)}
+                    className="px-3.5 py-1.5 rounded-full bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/25 text-blue-200 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-sm"
+                  >
+                    <Maximize2 size={13} />
+                    크게 보기
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void downloadImage(effectiveArtworkImage, artworkFilename)}
+                    className="px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/15 text-white/80 hover:text-white text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-sm"
+                  >
+                    <Download size={13} />
+                    다운로드
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRegenerateArtwork}
+                    disabled={loadingArtwork}
+                    className="px-3.5 py-1.5 rounded-full bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/25 text-indigo-200 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer transition-all hover:scale-105 active:scale-95 disabled:opacity-50 shadow-sm"
+                  >
+                    <Sparkles size={13} className={loadingArtwork ? 'animate-spin' : ''} />
+                    작품 AI 이미지 재생성
+                  </button>
+                </div>
+              </>
+            )}
 
             {/* Masterpiece Insight Box */}
             <div className="p-5 rounded-2xl bg-blue-950/30 border border-blue-500/25 space-y-1.5">
@@ -524,62 +713,6 @@ export function MuseSynergySection() {
           </div>
         </motion.div>
       )}
-
-      {/* Artwork Image Lightbox Modal */}
-      <AnimatePresence>
-        {isImageModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/90 backdrop-blur-xl">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="relative max-w-4xl w-full max-h-[90vh] flex flex-col bg-zinc-950 border border-white/15 rounded-3xl overflow-hidden shadow-2xl"
-            >
-              {/* Modal Header */}
-              <div className="flex items-center justify-between p-4 px-6 border-b border-white/10">
-                <div>
-                  <h4 className="text-sm font-bold text-white">{dialogueData.masterpieceName}</h4>
-                  <p className="text-xs text-white/50">{dialogueData.masterName}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <a
-                    href={artworkImageUrl}
-                    download={`${dialogueData.masterpieceName}.jpg`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/80 hover:text-white transition-colors"
-                    title="이미지 다운로드 / 새 창 열기"
-                  >
-                    <Download size={16} />
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => setIsImageModalOpen(false)}
-                    className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/80 hover:text-white transition-colors"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Modal Image */}
-              <div className="p-4 sm:p-6 flex-1 flex items-center justify-center overflow-auto">
-                <img
-                  src={artworkImageUrl}
-                  alt={dialogueData.masterpieceName}
-                  className="max-h-[65vh] w-auto max-w-full object-contain rounded-xl border border-white/10 shadow-2xl"
-                />
-              </div>
-
-              {/* Modal Footer */}
-              <div className="p-4 px-6 bg-zinc-900/60 border-t border-white/10 flex items-center justify-between text-xs text-white/70">
-                <span>{dialogueData.masterpieceMedium}</span>
-                <span className="text-[11px] text-blue-300 font-mono">세계 미술관 공식 컬렉션 원작</span>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
