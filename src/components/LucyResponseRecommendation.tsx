@@ -468,11 +468,11 @@ export function LucyResponseRecommendation({
           {/* A. Key 추천 기법 (40가지 실천 연습실) */}
           <div
             onClick={() => handleLeapToFeature(recommendedFeature)}
-            className="flex-1 flex items-center gap-2.5 p-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-cyan-400/25 hover:border-cyan-400/60 transition-all cursor-pointer group active:scale-[0.99] min-w-0"
+            className="flex-1 flex items-center gap-2.5 p-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-cyan-400/25 hover:border-cyan-400/60 transition-all duration-200 hover:scale-[1.015] cursor-pointer group active:scale-[0.99] min-w-0"
             title={`${recommendedFeature.featureTitle} (클릭 시 Key 연습실로 바로 이동)`}
           >
             <div
-              className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 border font-serif font-black text-base text-white shadow-sm"
+              className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 border font-serif font-black text-base text-white shadow-sm transition-transform duration-200 group-hover:scale-105"
               style={{
                 background: 'radial-gradient(circle at 35% 30%, rgba(255,255,255,0.25) 0%, rgba(20,20,35,0.95) 80%)',
                 borderColor: recommendedFeature.color,
@@ -497,7 +497,7 @@ export function LucyResponseRecommendation({
             <button
               type="button"
               disabled={isLeaping}
-              className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-black shrink-0 flex items-center gap-1 shadow-sm transition-all group-hover:brightness-110 cursor-pointer"
+              className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-black shrink-0 flex items-center gap-1 shadow-sm transition-all duration-200 group-hover:scale-105 group-hover:brightness-110 cursor-pointer"
               style={{
                 background: `linear-gradient(135deg, ${recommendedFeature.color}, #f59e0b)`,
               }}

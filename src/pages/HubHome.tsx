@@ -20,6 +20,7 @@ import { type UniverseInsightItem } from '@/data/universeInsights';
 import { useBinauralBeat } from '@/hooks/useBinauralBeat';
 import { LucKeyLogoText } from '@/components/LucKeyLogoText';
 import { GoalProgressRingDashboard } from '@/components/goals/GoalProgressRingDashboard';
+import { TodayLucyPersonaCard } from '@/components/TodayLucyPersonaCard';
 
 const APPS = [
   {
@@ -597,6 +598,13 @@ export default function HubHome() {
             </AnimatePresence>
 
             <div className="relative z-10 w-full px-3 sm:px-5 prism-xs-pad pt-home md:pt-home-md flex-1 flex flex-col max-w-5xl mx-auto">
+
+              {/* 오늘의 루시 페르소나 메시지 (Today's Lucy Persona Message) */}
+              <TodayLucyPersonaCard
+                saju={saju}
+                biometrics={{ fatigue, stress, focus, sleep }}
+                globalInsight={globalData?.summary}
+              />
 
               {/* Global Insights Section (Universe Insight Diversified) */}
               <motion.div

@@ -832,12 +832,71 @@ button, a, input, textarea, select {
   font-weight: 600;
   border: none;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease, box-shadow 0.25s ease;
+  will-change: transform;
 }
 
 .btn-copper:hover {
   background: var(--copper-hover);
-  box-shadow: 0 4px 12px rgba(162, 89, 59, 0.25);
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 6px 16px rgba(162, 89, 59, 0.32);
+}
+
+.btn-copper:active {
+  transform: translateY(0) scale(0.985);
+  box-shadow: 0 2px 6px rgba(162, 89, 59, 0.2);
+}
+
+/* 🎯 지금 바로 실천하기 Special Animated Button */
+#btn-sync-practice {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, var(--copper-primary) 0%, #b8623d 100%);
+  color: #ffffff;
+  padding: 11px 22px;
+  border-radius: var(--radius-md);
+  font-size: 0.92rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(162, 89, 59, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.28s ease, background 0.2s ease, filter 0.2s ease;
+  will-change: transform;
+  overflow: hidden;
+}
+
+#btn-sync-practice:hover {
+  transform: translateY(-2.5px) scale(1.045);
+  background: linear-gradient(135deg, var(--copper-hover) 0%, #c46d47 100%);
+  box-shadow: 0 10px 24px rgba(162, 89, 59, 0.42), 0 3px 8px rgba(162, 89, 59, 0.25);
+  filter: brightness(1.06);
+}
+
+#btn-sync-practice:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 2px 8px rgba(162, 89, 59, 0.3);
+  transition-duration: 0.1s;
+}
+
+/* Shimmer pulse highlight on '🎯 지금 바로 실천하기' button */
+#btn-sync-practice::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+  transform: skewX(-20deg);
+  transition: none;
+}
+
+#btn-sync-practice:hover::after {
+  left: 140%;
+  transition: left 0.65s ease-in-out;
 }
 
 .btn-sage {
@@ -849,11 +908,18 @@ button, a, input, textarea, select {
   font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease, box-shadow 0.25s ease;
+  will-change: transform;
 }
 
 .btn-sage:hover {
   background: #e2ede5;
+  transform: translateY(-2px) scale(1.025);
+  box-shadow: 0 4px 12px rgba(74, 107, 87, 0.18);
+}
+
+.btn-sage:active {
+  transform: translateY(0) scale(0.985);
 }
 
 /* Page Sync Quick Drawer */
@@ -869,6 +935,15 @@ button, a, input, textarea, select {
   align-items: center;
   gap: 20px;
   animation: fadeIn 0.3s ease;
+  transition: transform 0.28s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.28s ease, border-color 0.25s ease;
+  will-change: transform;
+}
+
+.sync-drawer-card:hover {
+  transform: translateY(-3px) scale(1.012);
+  box-shadow: 0 10px 24px -4px rgba(44, 40, 37, 0.1), 0 4px 10px rgba(162, 89, 59, 0.08);
+  border-color: rgba(162, 89, 59, 0.3);
+  border-left-color: var(--copper-primary);
 }
 
 .sync-drawer-info {
@@ -1313,13 +1388,20 @@ button, a, input, textarea, select {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  transition: all 0.25s ease;
+  transition: transform 0.28s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.28s cubic-bezier(0.25, 0.8, 0.25, 1), border-color 0.25s ease;
+  will-change: transform;
+  position: relative;
 }
 
 .studio-ex-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-float);
-  border-color: rgba(162, 89, 59, 0.35);
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 16px 32px -4px rgba(44, 40, 37, 0.12), 0 6px 16px rgba(162, 89, 59, 0.14);
+  border-color: rgba(162, 89, 59, 0.45);
+}
+
+.studio-ex-card:active {
+  transform: translateY(-2px) scale(1.005);
+  transition-duration: 0.1s;
 }
 
 .ex-card-top-line {
@@ -1348,6 +1430,11 @@ button, a, input, textarea, select {
   font-size: 1.15rem;
   font-weight: 800;
   color: var(--text-title);
+  transition: color 0.2s ease;
+}
+
+.studio-ex-card:hover .ex-card-title {
+  color: #1a1614;
 }
 
 .ex-card-subtitle {
@@ -1378,15 +1465,23 @@ button, a, input, textarea, select {
   font-weight: 700;
   border: none;
   cursor: pointer;
-  transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s ease, background 0.2s ease;
+  will-change: transform;
 }
 
 .btn-card-launch:hover {
   background: var(--copper-hover);
+  transform: translateY(-1.5px) scale(1.025);
+  box-shadow: 0 4px 12px rgba(162, 89, 59, 0.3);
+}
+
+.btn-card-launch:active {
+  transform: translateY(0) scale(0.98);
+  transition-duration: 0.1s;
 }
 
 .btn-card-chat {
@@ -1398,11 +1493,20 @@ button, a, input, textarea, select {
   font-size: 0.86rem;
   font-weight: 600;
   cursor: pointer;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  will-change: transform;
 }
 
 .btn-card-chat:hover {
   background: #ffffff;
   color: var(--copper-primary);
+  border-color: rgba(162, 89, 59, 0.35);
+  transform: translateY(-1.5px) scale(1.02);
+}
+
+.btn-card-chat:active {
+  transform: translateY(0) scale(0.98);
+  transition-duration: 0.1s;
 }
 
 /* 3. Breathing Interactive Tab */
