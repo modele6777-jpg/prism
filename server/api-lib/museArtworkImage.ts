@@ -308,8 +308,9 @@ export function buildArtworkDisplayUrl(url: string, source: ArtworkImageSource):
 }
 
 async function validateImageUrl(url: string): Promise<boolean> {
-  const targetUrl = normalizeWikimediaUrl(url);
+  const targetUrl = normalizeWikimediaUrl(encodeURI(url));
   const isWikimedia = targetUrl.includes("wikimedia.org") || targetUrl.includes("wikipedia.org");
+  const isDailyArt = targetUrl.includes("dailyartmagazine.com");
   const userAgent = isWikimedia ? WIKIMEDIA_USER_AGENT : BROWSER_USER_AGENT;
   try {
     let response = await fetch(targetUrl, {
@@ -317,19 +318,26 @@ async function validateImageUrl(url: string): Promise<boolean> {
       headers: {
         "User-Agent": userAgent,
         "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+        ...(isDailyArt ? { "Referer": "https://www.dailyartmagazine.com/" } : isWikimedia ? { "Referer": "https://commons.wikimedia.org/" } : {}),
       },
       signal: AbortSignal.timeout(6000),
     });
 
-    if (!response.ok) {
+    if (!response.ok && response.status !== 429) {
       response = await fetch(targetUrl, {
         method: "GET",
         headers: {
           "User-Agent": userAgent,
           "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+          ...(isDailyArt ? { "Referer": "https://www.dailyartmagazine.com/" } : isWikimedia ? { "Referer": "https://commons.wikimedia.org/" } : {}),
         },
         signal: AbortSignal.timeout(8000),
       });
+    }
+
+    if (response.status === 429) {
+      // Wikimedia/DailyArt rate limited HEAD/GET: URL exists and is valid
+      return true;
     }
 
     if (!response.ok) return false;
@@ -797,11 +805,11 @@ interface CachedImage {
   timestamp: number;
 }
 const imageMemoryCache = new Map<string, CachedImage>();
-const MAX_IMAGE_CACHE_ITEMS = 80;
+const MAX_IMAGE_CACHE_ITEMS = 300;
 const IMAGE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 export async function proxyArtworkImage(rawUrl: string, res: Response): Promise<void> {
-  let url = normalizeWikimediaUrl(rawUrl);
+  let url = normalizeWikimediaUrl(encodeURI(rawUrl));
 
   const cached = imageMemoryCache.get(url);
   if (cached && Date.now() - cached.timestamp < IMAGE_CACHE_TTL_MS) {
@@ -813,11 +821,12 @@ export async function proxyArtworkImage(rawUrl: string, res: Response): Promise<
 
   const tryFetch = async (targetUrl: string) => {
     const isWikimedia = targetUrl.includes("wikimedia.org") || targetUrl.includes("wikipedia.org");
+    const isDailyArt = targetUrl.includes("dailyartmagazine.com");
     return await fetch(targetUrl, {
       headers: {
         "User-Agent": isWikimedia ? WIKIMEDIA_USER_AGENT : BROWSER_USER_AGENT,
         "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
-        ...(isWikimedia ? {} : { "Referer": "https://commons.wikimedia.org/" }),
+        ...(isDailyArt ? { "Referer": "https://www.dailyartmagazine.com/" } : isWikimedia ? { "Referer": "https://commons.wikimedia.org/" } : {}),
       },
       signal: AbortSignal.timeout(12000),
     });
@@ -839,12 +848,26 @@ export async function proxyArtworkImage(rawUrl: string, res: Response): Promise<
       }
     }
 
+    // If still not ok and it's Wikimedia, try Wikimedia Commons Special:FilePath resolver
+    if (!upstream.ok && (url.includes("wikimedia.org") || url.includes("wikipedia.org"))) {
+      const rawFile = url.split("/").pop() || "";
+      const cleanFile = decodeURIComponent(rawFile.replace(/^\d+px-/, ""));
+      if (cleanFile) {
+        const specialUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(cleanFile)}?width=1024`;
+        const specialUpstream = await tryFetch(specialUrl);
+        if (specialUpstream.ok) {
+          upstream = specialUpstream;
+          url = specialUrl;
+        }
+      }
+    }
+
     if (!upstream.ok) {
       const filename = decodeURIComponent(url.split("/").pop() || "masterpiece")
         .replace(/[_-]/g, " ")
         .replace(/\.[a-z0-9]+$/i, "");
       const fallbackPrompt = encodeURIComponent(`Masterpiece fine art painting, museum exhibition quality: ${filename}`);
-      res.redirect(302, `https://image.pollinations.ai/prompt/${fallbackPrompt}?width=1024&height=768&nologo=true`);
+      res.redirect(302, `https://image.pollinations.ai/prompt/${fallbackPrompt}?width=1024&height=768&nologo=true&model=turbo`);
       return;
     }
 
@@ -868,6 +891,6 @@ export async function proxyArtworkImage(rawUrl: string, res: Response): Promise<
       .replace(/[_-]/g, " ")
       .replace(/\.[a-z0-9]+$/i, "");
     const fallbackPrompt = encodeURIComponent(`Masterpiece fine art painting, museum exhibition quality: ${filename}`);
-    res.redirect(302, `https://image.pollinations.ai/prompt/${fallbackPrompt}?width=1024&height=768&nologo=true`);
+    res.redirect(302, `https://image.pollinations.ai/prompt/${fallbackPrompt}?width=1024&height=768&nologo=true&model=turbo`);
   }
 }

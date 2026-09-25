@@ -133,7 +133,7 @@ export const MUSE_ART_CATALOG: VerifiedArtEntry[] = [
     id: "rosa_bonheur_horse_fair",
     moods: ["passion", "resurrection"],
     dailyArtUrl: "https://www.dailyartmagazine.com/painting-of-the-week-the-horse-fair-by-rosa-bonheur/",
-    imageUrl: "https://www.dailyartmagazine.com/wp-content/uploads/2022/08/Rosa_Bonheur_The_Horse_Fair_1852–55-768x364.jpeg",
+    imageUrl: "https://www.dailyartmagazine.com/wp-content/uploads/2022/08/Rosa_Bonheur_The_Horse_Fair_1852%E2%80%9355-768x364.jpeg",
     title: "말 시장 (The Horse Fair, 1852–1855)",
     titleOriginal: "The Horse Fair",
     creator: "로자 보뉴르 (Rosa Bonheur, 프랑스)",

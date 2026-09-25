@@ -58,11 +58,10 @@ export function getSafeArtworkUrl(url?: string | null): string {
   if (!url) return "";
   const trimmed = url.trim();
   if (!trimmed || trimmed === "null" || trimmed === "undefined") return "";
-  if (trimmed.startsWith("/api/muse/artwork-image/proxy")) return trimmed;
-  if (trimmed.includes("wikimedia.org") || trimmed.includes("wikipedia.org")) {
-    return `/api/muse/artwork-image/proxy?url=${encodeURIComponent(trimmed)}`;
-  }
-  return trimmed;
+  if (trimmed.startsWith("/") || trimmed.startsWith("data:") || trimmed.startsWith("blob:")) return trimmed;
+  if (trimmed.includes("image.pollinations.ai")) return trimmed;
+  // Proxy external museum / CDN archives (DailyArt, Wikimedia, Met, ArtIC) to bypass anti-hotlinking and CORS blocks
+  return `/api/muse/artwork-image/proxy?url=${encodeURIComponent(trimmed)}`;
 }
 
 export function buildPollinationsArtUrl(

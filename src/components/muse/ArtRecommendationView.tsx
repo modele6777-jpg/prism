@@ -23,7 +23,7 @@ import { auth, db, collection, addDoc, serverTimestamp, query, orderBy, limit, g
 import { getTodayDateKey, getDateSeed, isSameDayString, pickDailySeededItem } from "@/lib/dailyCache";
 import { MuseDocentAudio } from "@/components/muse/MuseDocentAudio";
 import { TTSButton } from "@/components/TTSButton";
-import { buildPoemGoogleArtsAndCultureSearchUrl, buildArtworkGoogleArtsAndCultureSearchUrl, buildPoemFullTextSearchQuery, buildPoemGoogleAiSearchUrl } from "@/utils/artSearchQuery";
+import { buildPoemGoogleArtsAndCultureSearchUrl, buildArtworkGoogleArtsAndCultureSearchUrl, buildPoemFullTextSearchQuery, buildPoemGoogleAiSearchUrl, extractOriginalLanguage } from "@/utils/artSearchQuery";
 import { lookupCatalogDailyArtUrl, resolveArtworkDailyArtUrl, MUSE_ART_CATALOG } from "@/lib/museDailyArt";
 import { MuseSongYouTubePlayer } from "@/components/muse/MuseSongYouTubePlayer";
 import { recordPrismFeature } from "@/lib/prismOmniSync";
@@ -1150,16 +1150,23 @@ export function ArtRecommendationView() {
     return true;
   }, []);
 
-  const imageRetryCountRef = useRef(0);
+  const [imageFallbackIndex, setImageFallbackIndex] = useState(0);
+  const [imageLoadError, setImageLoadError] = useState(false);
 
-  // Safety timer to prevent infinite image loading state
+  // Safety timer to prevent infinite image loading state (15s for high-res / AI generation)
   useEffect(() => {
     if (!loadingImage) return;
     const timer = setTimeout(() => {
       setLoadingImage(false);
-    }, 5000);
+    }, 15000);
     return () => clearTimeout(timer);
   }, [loadingImage]);
+
+  // Reset fallback index when recommendation changes
+  useEffect(() => {
+    setImageFallbackIndex(0);
+    setImageLoadError(false);
+  }, [recommendation?.catalogId, recommendation?.title]);
 
   const generateNanobananaImage = useCallback(async (
     art: ArtRecommendation,
@@ -1734,18 +1741,37 @@ export function ArtRecommendationView() {
     [recommendation?.title],
   );
 
-  const effectiveImage = useMemo(() => {
-    let rawUrl: string | null = null;
+  const fallbackUrls = useMemo(() => {
+    if (!recommendation) return [];
+    const list: string[] = [];
+
+    // 1. Saved/resolved nanobananaImage (if valid)
     if (nanobananaImage && nanobananaImage !== "null" && nanobananaImage !== "undefined") {
-      rawUrl = nanobananaImage;
-    } else if (recommendation?.imageUrl) {
-      rawUrl = recommendation.imageUrl;
-    } else if (recommendation) {
-      return buildPollinationsArtUrl(recommendation);
+      list.push(getSafeArtworkUrl(nanobananaImage));
     }
-    if (!rawUrl) return null;
-    return getSafeArtworkUrl(rawUrl);
+
+    // 2. Proxied catalog image
+    if (recommendation.imageUrl) {
+      list.push(getSafeArtworkUrl(recommendation.imageUrl));
+      // 3. Direct catalog image (unproxied fallback in case proxy times out)
+      list.push(encodeURI(recommendation.imageUrl));
+    }
+
+    // 4. Pollinations turbo with rich faithful prompt
+    list.push(buildPollinationsArtUrl(recommendation, 1024, 768));
+
+    // 5. Pollinations simple high-compatibility fallback
+    const title = recommendation.titleOriginal || extractOriginalLanguage(recommendation.title) || recommendation.title;
+    const creator = recommendation.creatorOriginal || extractOriginalLanguage(recommendation.creator) || recommendation.creator;
+    const simplePrompt = encodeURIComponent(`Masterpiece fine art oil painting of "${title}" by ${creator}, museum exhibition quality, highly detailed canvas`);
+    list.push(`https://image.pollinations.ai/prompt/${simplePrompt}?width=1024&height=768&nologo=true&seed=42`);
+
+    return [...new Set(list.filter(Boolean))];
   }, [nanobananaImage, recommendation]);
+
+  const effectiveImage = useMemo(() => {
+    return fallbackUrls[imageFallbackIndex] || fallbackUrls[0] || "";
+  }, [fallbackUrls, imageFallbackIndex]);
 
   // Ensure image generation starts immediately whenever recommendation is ready
   useEffect(() => {
@@ -2308,7 +2334,7 @@ export function ArtRecommendationView() {
                       </span>
                     </div>
                   )}
-                  {effectiveImage ? (
+                  {effectiveImage && !imageLoadError ? (
                     <>
                       <ImageOutputActions
                         src={effectiveImage}
@@ -2318,26 +2344,24 @@ export function ArtRecommendationView() {
                         onOpenChange={setIsArtImageOpen}
                       />
                       <img 
+                        key={effectiveImage}
                         src={effectiveImage} 
                         alt={`${recommendation.title} — ${recommendation.creator}`}
                         referrerPolicy="no-referrer"
-                        onLoad={() => setLoadingImage(false)}
-                        onError={(e) => {
+                        onLoad={() => {
                           setLoadingImage(false);
-                          if (recommendation) {
-                            const fallbackUrl = buildPollinationsArtUrl(recommendation);
-                            e.currentTarget.src = fallbackUrl;
-                            if (imageRetryCountRef.current === 0) {
-                              imageRetryCountRef.current += 1;
-                              setNanobananaImage(fallbackUrl);
-                              setArtworkImageSource("pollinations");
-                              localStorage.setItem(ART_CACHE_KEYS.image, fallbackUrl);
-                              localStorage.setItem(ART_CACHE_KEYS.imageSource, "pollinations");
-                            }
+                          setImageLoadError(false);
+                        }}
+                        onError={() => {
+                          if (imageFallbackIndex + 1 < fallbackUrls.length) {
+                            setImageFallbackIndex((prev) => prev + 1);
+                          } else {
+                            setLoadingImage(false);
+                            setImageLoadError(true);
                           }
                         }}
                         onClick={() => setIsArtImageOpen(true)}
-                        className={`w-full h-full object-cover cursor-zoom-in transition-all duration-1000 ease-out hover:scale-105 ${
+                        className={`w-full h-full object-cover cursor-zoom-in transition-all duration-700 ease-out hover:scale-105 ${
                           loadingImage ? "opacity-0 scale-95 blur-sm" : "opacity-100 scale-100 blur-0"
                         }`} 
                       />
@@ -2353,6 +2377,50 @@ export function ArtRecommendationView() {
                         </div>
                       ) : null}
                     </>
+                  ) : imageLoadError ? (
+                    /* Elegant Masterpiece Museum Canvas Plaque Fallback */
+                    <div className="relative w-full h-full p-6 flex flex-col items-center justify-center text-center bg-gradient-to-br from-amber-950/40 via-zinc-900 to-indigo-950/40 border border-amber-400/20">
+                      <div className="w-14 h-14 rounded-full bg-amber-400/10 border border-amber-400/30 flex items-center justify-center mb-3 text-amber-300 shadow-[0_0_20px_rgba(251,191,36,0.2)]">
+                        <Palette size={26} />
+                      </div>
+                      <span className="text-[10px] font-mono tracking-widest uppercase text-amber-400/80 font-bold mb-1">
+                        🏛️ MUSEUM MASTERPIECE ARCHIVE
+                      </span>
+                      <h4 className="text-lg md:text-xl font-serif font-extrabold text-white mb-1 px-4 leading-tight">
+                        {recommendation.title}
+                      </h4>
+                      <p className="text-xs text-amber-200/70 font-medium mb-4">
+                        {recommendation.creator} · {recommendation.era}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setImageFallbackIndex(0);
+                            setImageLoadError(false);
+                            setLoadingImage(true);
+                          }}
+                          className="px-3.5 py-1.5 rounded-full bg-amber-400/20 hover:bg-amber-400/30 border border-amber-400/40 text-amber-200 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all shadow-md"
+                        >
+                          <RefreshCw size={12} className={loadingImage ? "animate-spin" : ""} />
+                          원작 이미지 다시 불러오기
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (recommendation) {
+                              setImageLoadError(false);
+                              setImageFallbackIndex(0);
+                              void generateNanobananaImage(recommendation, { forcePollinations: true });
+                            }
+                          }}
+                          className="px-3.5 py-1.5 rounded-full bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-400/40 text-indigo-200 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all shadow-md"
+                        >
+                          <Sparkles size={12} />
+                          AI 명화 재현
+                        </button>
+                      </div>
+                    </div>
                   ) : (
                     <div className="flex flex-col items-center gap-3 text-white/50 text-xs p-6 text-center animate-pulse">
                       <div className="relative w-10 h-10">
@@ -2400,6 +2468,8 @@ export function ArtRecommendationView() {
                         type="button"
                         onClick={() => {
                           if (recommendation) {
+                            setImageFallbackIndex(0);
+                            setImageLoadError(false);
                             void generateNanobananaImage(recommendation, { forcePollinations: true });
                           }
                         }}
