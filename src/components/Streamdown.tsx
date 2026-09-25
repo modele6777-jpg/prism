@@ -140,9 +140,22 @@ export function Streamdown({
       return;
     }
 
-    // If the new content completely changed and isn't just appending, reset
+    // If textContent matches displayedText, nothing to do
+    if (textContent === displayedText) return;
+
+    // If the new content completely changed and doesn't start with displayedText:
     if (!textContent.startsWith(displayedText)) {
-      setDisplayedText('');
+      // Find common prefix length to avoid completely clearing text on minor streaming adjustments
+      let commonLen = 0;
+      const maxCheck = Math.min(displayedText.length, textContent.length);
+      while (commonLen < maxCheck && displayedText[commonLen] === textContent[commonLen]) {
+        commonLen++;
+      }
+      if (commonLen > 10 && commonLen >= displayedText.length - 30) {
+        setDisplayedText(textContent.slice(0, commonLen));
+      } else {
+        setDisplayedText('');
+      }
       return;
     }
 
@@ -158,14 +171,16 @@ export function Streamdown({
 
         if (fixedChunkSize) {
           chunkSize = fixedChunkSize;
-        } else if (distance > 400) {
+        } else if (distance > 500) {
+          chunkSize = 40;
+        } else if (distance > 300) {
           chunkSize = 25;
-        } else if (distance > 200) {
-          chunkSize = 10;
-        } else if (distance > 100) {
-          chunkSize = 5;
+        } else if (distance > 150) {
+          chunkSize = 12;
+        } else if (distance > 60) {
+          chunkSize = 6;
         } else if (distance > 20) {
-          chunkSize = 2;
+          chunkSize = 3;
         }
 
         const charsToAdd = remainder.slice(0, chunkSize);

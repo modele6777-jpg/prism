@@ -978,3 +978,36 @@ _"카드는 정해진 운명을 가두는 틀이 아니라, 당신 안의 빛을
 - [실천 처방] 타인의 시선이나 후회를 내려놓고, 가슴속 생각을 메모나 대화 등 오늘 즉시 실천으로 옮겨보세요.`;
 }
 
+/**
+ * 타로 결과가 중간에 끊기거나 미완성으로 남지 않도록 완결성을 보장하는 함수
+ */
+export function ensureCompleteTarotReading(
+  text: string,
+  concern: string,
+  cards?: any[],
+): string {
+  if (!text || isTarotStreamFailure(text) || text.trim().length < 80) {
+    return buildLocalTarotReading(concern, cards || []);
+  }
+
+  // 리딩 후반부(5단계 축복 및 핵심 3줄 요약)가 누락되어 끊긴 경우 보완
+  const hasStep5OrSummary =
+    text.includes("5.") ||
+    text.includes("5단계") ||
+    text.includes("영혼의 한마디") ||
+    text.includes("축복") ||
+    text.includes("핵심 3줄 요약") ||
+    text.includes("3줄 요약");
+
+  if (!hasStep5OrSummary && Array.isArray(cards) && cards.length > 0) {
+    const localFull = buildLocalTarotReading(concern, cards);
+    const step4Match = localFull.match(/### 🌿 4\.[\s\S]*/);
+    if (step4Match) {
+      return text.trim() + "\n\n" + step4Match[0];
+    }
+  }
+
+  return text;
+}
+
+

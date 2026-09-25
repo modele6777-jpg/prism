@@ -212,6 +212,7 @@ import {
   buildTarotSpreadPromptAddon,
   buildTarotContextPromptAddon,
   isTarotStreamFailure,
+  ensureCompleteTarotReading,
   POPULAR_TAROT_SPREAD_PRESETS,
   type TarotSpreadRecommendation,
   type TarotConcernAnalysis,
@@ -817,9 +818,9 @@ function deduplicateReadingText(text: string): string {
 export function stripSummaryFromTarotText(text: string): string {
   if (!text) return "";
 
-  // 1. 후행 핵심 요약 섹션(리딩 후반부에 위치할 때만) 안전하게 분리
-  const match = text.match(/(?:\r?\n|^)\s*(?:#{1,6}\s*)?(?:✨\s*)?(?:\d+\.\s*)?(?:\[\s*)?(?:핵심\s*(?:3줄\s*|세줄\s*)?요약|3줄\s*요약|핵심\s*요약|Quick\s*Summary)(?:\])?\s*[\s\S]*$/i);
-  if (match && match.index !== undefined && match.index > text.length * 0.4) {
+  // 1. 후행 핵심 요약 섹션(리딩 후반부 70% 이후에 위치할 때만) 안전하게 분리
+  const match = text.match(/(?:\r?\n|^)\s*(?:#{1,6}\s*)?(?:✨\s*)?(?:\d+\.\s*)?(?:\[\s*)?(?:핵심\s*(?:3줄\s*|세줄\s*)?요약|3줄\s*요약|Quick\s*Summary)(?:\])?\s*[\s\S]*$/i);
+  if (match && match.index !== undefined && match.index > text.length * 0.7) {
     let cleaned = text.slice(0, match.index).trim();
     // 잔여 불릿 라인도 안전하게 정리
     cleaned = cleaned.replace(/(?:\r?\n|^)\s*[-*•·]?\s*\[(?:현재\s*에너지|방향과\s*결단|실천\s*처방)\][^\r\n]*/gi, "").trim();
@@ -1718,15 +1719,9 @@ function playDailyCardChimeAsync() {
   }, [tarotResult]);
 
   const displayTarotResult = useMemo(() => {
-    if (!tarotResult) return "";
-    // 스트리밍 생성 중에는 중간 잘림 없이 온전하게 실시간 텍스트 표시
-    if (isTarotGenerating) return tarotResult;
-    // 상단 3줄 핵심 요약 카드가 정상 렌더링될 때만 본문에서 후행 요약 블록 분리, 그 외엔 본문 전체 보존
-    if (conciseSummaryBullets && conciseSummaryBullets.length >= 3) {
-      return stripSummaryFromTarotText(tarotResult);
-    }
-    return tarotResult;
-  }, [tarotResult, isTarotGenerating, conciseSummaryBullets]);
+    // 타로 결과가 끝까지 잘림 없이 온전히 렌더링되도록 전체 결과 본문 보존
+    return tarotResult || "";
+  }, [tarotResult]);
 
   // 🔊 타로 결과 음성 낭독 전용 텍스트 (핵심 3줄 요약 완전 배제: 본문 1~5단계 순수 리딩만 낭독)
   const tarotSpeechReadingText = useMemo(() => {
@@ -2035,8 +2030,27 @@ function playDailyCardChimeAsync() {
       return true;
     }
 
+    // 🛡️ Comprehensive Daily Tarot Restoration Guard:
+    // If today is locked or a card was previously picked, never leave the user with an empty/loading state!
+    const limitKey = `limit_daily_trinity_${uid}_${today}`;
+    const guestLimitKey = `limit_daily_trinity_guest_${today}`;
+    if (localStorage.getItem(limitKey) || localStorage.getItem(guestLimitKey) || isTrinityDailyLockedToday() || dailyDrawnCard) {
+      const card = dailyDrawnCard || pickDailySeededItem(TRINITY_CARDS, "trinity_oracle");
+      const synthesized = {
+        ...buildLocalTrinityDailyOracle(card, "oracle"),
+        drawnCard: card,
+        dateKey: today,
+      };
+      applyDailyResultState(synthesized);
+      try {
+        localStorage.setItem(getTrinityDailyResultKey(uid), JSON.stringify(synthesized));
+        localStorage.setItem(getTrinityDailyResultKey("guest"), JSON.stringify(synthesized));
+      } catch (_) {}
+      return true;
+    }
+
     return false;
-  }, [firebaseUser?.uid, sharedState?.todayOracles, sharedState?.latestDailyOracles, trinityOracleHistory, applyDailyResultState]);
+  }, [firebaseUser?.uid, sharedState?.todayOracles, sharedState?.latestDailyOracles, trinityOracleHistory, applyDailyResultState, dailyDrawnCard, isTrinityDailyLockedToday]);
 
   // Listen for real-time daily oracle updates across devices
   useEffect(() => {
@@ -2508,44 +2522,91 @@ function playDailyCardChimeAsync() {
 [핵심 3줄 요약]
 - [현재 에너지] (내담자의 현재 내면 상황과 카드가 비추는 기운 핵심 1문장)
 - [방향과 결단] (마스터의 결정적 판정 및 운의 흐름 핵심 1문장)
-- [실천 처방] (오늘 당장 실행할 수 있는 구체적인 행동 조언 핵심 1문장)${binaryChoicePromptAddon}${spreadPromptAddon}${contextPromptAddon}`;
+- [실천 처방] (오늘 당장 실행할 수 있는 구체적인 행동 조언 핵심 1문장)
+
+[⚠️ 필수 완결성 원칙 — 리딩 끝까지 완전 작성]
+- 중간에 서술을 멈추거나 생략하지 마십시오.
+- 1단계부터 5단계 축복의 한마디 및 [핵심 3줄 요약]의 마지막 줄까지 한 문장도 끊김 없이 끝까지 완결된 형태로 작성하여 주십시오.${binaryChoicePromptAddon}${spreadPromptAddon}${contextPromptAddon}`;
         }
 
         let finalResponse = "";
+        const isOneCardDaily = concernAnalysis.spread.cardCount === 1 || isDailyTarotConcern(tarotConcern);
+        const maxOutputTokens = isOneCardDaily ? 2500 : 4096;
+        const streamTimeoutMs = isOneCardDaily ? 22000 : 30000;
+
         try {
-          await invokeLLMStream({
-            messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: invokeContent as any },
-            ],
-            timeoutMs: 70000,
-            maxOutputTokens: 8192,
-            onChunk: (chunk) => {
-              if (
-                chunk.startsWith(finalResponse) ||
-                (finalResponse.length > 30 && chunk.length > finalResponse.length && chunk.includes(finalResponse.slice(0, 30)))
-              ) {
-                // Fallback emitted entire text; replace instead of duplicating
-                finalResponse = chunk;
-              } else if (finalResponse.endsWith(chunk)) {
-                // Already included, ignore duplicate chunk
-              } else {
-                finalResponse += chunk;
-              }
-              setTarotResult(deduplicateReadingText(finalResponse));
-            },
-          });
+          let hasReceivedAnyChunk = false;
+          const streamAbortController = new AbortController();
+          const firstChunkWatchdog = setTimeout(() => {
+            if (!hasReceivedAnyChunk && !finalResponse) {
+              console.warn("[Tarot] First chunk watchdog triggered (12s), aborting stream for instant graceful fallback.");
+              try { streamAbortController.abort(); } catch (_) {}
+            }
+          }, 12000);
+
+          try {
+            await invokeLLMStream({
+              messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: invokeContent as any },
+              ],
+              timeoutMs: streamTimeoutMs,
+              maxOutputTokens,
+              signal: streamAbortController.signal,
+              onChunk: (chunk) => {
+                hasReceivedAnyChunk = true;
+                if (
+                  chunk.startsWith(finalResponse) ||
+                  (finalResponse.length > 30 && chunk.length > finalResponse.length && chunk.includes(finalResponse.slice(0, 30)))
+                ) {
+                  finalResponse = chunk;
+                } else if (chunk.length > 20 && finalResponse.endsWith(chunk)) {
+                  // Already included
+                } else {
+                  finalResponse += chunk;
+                }
+                setTarotResult(finalResponse);
+              },
+            });
+          } finally {
+            clearTimeout(firstChunkWatchdog);
+          }
         } catch (streamErr) {
-          console.warn("[Tarot] Stream failed, using local reading fallback:", streamErr);
+          console.warn("[Tarot] Stream failed or timed out, using local reading fallback:", streamErr);
         }
 
-        if (isTarotStreamFailure(finalResponse)) {
-          finalResponse = buildLocalTarotReading(
-            tarotConcern,
-            selectedCards,
-          );
-          finalResponse = deduplicateReadingText(finalResponse);
-          setTarotResult(finalResponse);
+        finalResponse = ensureCompleteTarotReading(
+          finalResponse,
+          tarotConcern,
+          selectedCards,
+        );
+        finalResponse = deduplicateReadingText(finalResponse);
+        setTarotResult(finalResponse);
+
+        // Synchronize dailyResult so Today's Tarot modal and tabs are 100% in sync
+        if (isDailyTarotConcern(tarotConcern) && selectedCards?.[0]) {
+          const card = selectedCards[0];
+          const today = getTodayDateKey();
+          const uid = firebaseUser?.uid || "guest";
+          const quickSummary = extractConciseSummary(finalResponse).join(' ') || `${card.nameKo} 카드가 전하는 오늘의 영험한 비전입니다.`;
+          const updatedDaily = {
+            drawnCard: card,
+            diagnosis: finalResponse,
+            summary: quickSummary,
+            remedy: `오늘 하루, [${card.nameKo}] 카드의 조화로운 에너지를 마음에 품기`,
+            dateKey: today,
+            symbol: card.keywords?.[0] || '빛',
+            frequency: '528Hz',
+            spiritualEnergy: `[${card.nameKo}] 카드가 오늘 하루 당신에게 든든한 안정감과 명료함을 선사합니다.`,
+            blessingMessage: `오늘 하루 당신의 모든 발걸음 위에 [${card.nameKo}] 카드의 밝은 행운이 함께하길 축복합니다.`,
+          };
+          setDailyResult((prev: any) => ({ ...prev, ...updatedDaily }));
+          try {
+            localStorage.setItem(getTrinityDailyResultKey(uid), JSON.stringify(updatedDaily));
+            localStorage.setItem(getTrinityDailyResultKey("guest"), JSON.stringify(updatedDaily));
+            localStorage.setItem(`trinity_daily_result_${uid}_${today}`, JSON.stringify(updatedDaily));
+            localStorage.setItem(`trinity_daily_result_guest_${today}`, JSON.stringify(updatedDaily));
+          } catch (_) {}
         }
 
         if (finalResponse.trim()) {
@@ -3340,8 +3401,10 @@ function playDailyCardChimeAsync() {
                                           className="animate-spin text-yellow-500/50"
                                           size={28}
                                         />
-                                        <p className="font-sans text-xs tracking-widest uppercase animate-pulse">
-                                          우주의 메시지 해독 중...
+                                        <p className="font-sans text-xs tracking-widest uppercase animate-pulse text-center max-w-xs">
+                                          {isDailyTarotConcern(tarotConcern)
+                                            ? "오늘의 타로 카드의 파동을 읽어 비전을 조율하고 있습니다..."
+                                            : "우주의 메시지 해독 중..."}
                                         </p>
                                       </div>
                                     ) : (
@@ -3397,7 +3460,7 @@ function playDailyCardChimeAsync() {
                                             </div>
                                           )}
 
-                                          <Streamdown>{displayTarotResult || tarotResult || ""}</Streamdown>
+                                          <Streamdown immediate={!isTarotGenerating}>{displayTarotResult || tarotResult || ""}</Streamdown>
                                         {isTarotGenerating && (
                                           <p className="text-[10px] text-yellow-400/60 uppercase tracking-widest animate-pulse text-center">
                                             리딩 수신 중...
@@ -4047,13 +4110,24 @@ function playDailyCardChimeAsync() {
                         <Sparkles size={13} /> 오늘의 심층 비전 해독
                       </span>
                       <TTSButton
-                        text={dailyResult.diagnosis || dailyResult.summary || ''}
+                        text={
+                          dailyResult.diagnosis || 
+                          dailyResult.summary || 
+                          dailyResult.prescription ||
+                          (dailyResult.drawnCard ? buildLocalTrinityDailyOracle(dailyResult.drawnCard, "oracle").diagnosis : '')
+                        }
                         voice="Kore"
                         className="text-yellow-400 border-yellow-500/20 text-xs py-1 scale-90"
                       />
                     </div>
                     <div className="p-4 sm:p-5 rounded-2xl bg-white/[0.03] border border-white/10 text-stone-200 text-sm leading-relaxed space-y-3 shadow-inner max-h-[520px] overflow-y-auto custom-scrollbar">
-                      <Streamdown immediate>{dailyResult.diagnosis || dailyResult.summary || '오늘의 타로 리딩 결과를 불러오는 중입니다.'}</Streamdown>
+                      <Streamdown immediate>{
+                        dailyResult.diagnosis || 
+                        dailyResult.summary || 
+                        dailyResult.prescription ||
+                        dailyResult.reading ||
+                        (dailyResult.drawnCard ? buildLocalTrinityDailyOracle(dailyResult.drawnCard, "oracle").diagnosis : '오늘의 타로 카드를 확인하고 있습니다.')
+                      }</Streamdown>
                     </div>
                   </div>
 
