@@ -32,6 +32,7 @@ import {
   SPECIAL_FEATURE_CHROME_HIDDEN_CLASS,
   useSpecialFeatureChromeHidden,
 } from '@/components/SpecialFeaturePanel';
+import { DailyElementTrendDashboard } from '@/components/DailyElementTrendDashboard';
 import { calcSaju } from '@/lib/trinity/utils';
 import { calculateDetailedSaju } from '@/lib/sajuAnalysis';
 import {
@@ -766,64 +767,34 @@ function DailyOracleSection({
               {/* 2. Saju Harmony Analysis & Waldorf Radar Pentagon System Column */}
               <div className="lg:col-span-8 space-y-6">
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Alchemical Saju Hap/Chung Report */}
-                  <div className="p-6 rounded-[32px] bg-zinc-950/60 border border-emerald-500/20 backdrop-blur-md flex flex-col justify-between min-h-[300px]">
-                    <div className="space-y-4">
-                      <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-[0.3em] font-mono block">
-                        3단계 : 시공간의 결합 및 합·충 분석
-                      </span>
-                      <h4 className="text-xl font-bold text-white tracking-tight leading-snug">
-                        사주(四柱) 생기 공명도 판정
-                      </h4>
-                      <div className="text-sm font-sans text-emerald-100/80 leading-relaxed whitespace-pre-line py-2 border-t border-white/5 mt-2">
-                        {calculatedFateData.resonanceText}
-                      </div>
-                    </div>
-                    
-                    <div className="text-[10px] text-white/30 font-mono tracking-widest flex flex-col gap-0.5 border-t border-white/5 pt-3">
-                      <span>• MAIN BRANCH: {selectedTimeSpaceCard.branch}(지지)</span>
-                      <span>• SAJU SYMMETRY: {sajuFullText ? sajuFullText.split('\n')[0] : '미지 좌표계'}</span>
-                      <span>• RESONANCE: {calculatedFateData.isHap ? '합(合) 보너스 판정' : calculatedFateData.isChung ? '충(沖) 정화 정밀 판정' : '본질적 상생 공명'}</span>
+                {/* Alchemical Saju Hap/Chung Report */}
+                <div className="p-6 rounded-[32px] bg-zinc-950/60 border border-emerald-500/20 backdrop-blur-md flex flex-col justify-between">
+                  <div className="space-y-4">
+                    <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-[0.3em] font-mono block">
+                      3단계 : 시공간의 결합 및 합·충 분석
+                    </span>
+                    <h4 className="text-xl font-bold text-white tracking-tight leading-snug">
+                      사주(四柱) 생기 공명도 판정
+                    </h4>
+                    <div className="text-sm font-sans text-emerald-100/80 leading-relaxed whitespace-pre-line py-2 border-t border-white/5 mt-2">
+                      {calculatedFateData.resonanceText}
                     </div>
                   </div>
-
-                  {/* Five-element pentagon graph widget */}
-                  <div className="p-6 rounded-[32px] bg-zinc-950/60 border border-emerald-500/20 backdrop-blur-md flex flex-col justify-between min-h-[300px]">
-                    <div className="space-y-2">
-                      <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-[0.3em] font-mono block">
-                        오늘의 오행 밸런스 맵 (O-Haeng Graph)
-                      </span>
-                      <h4 className="text-base font-bold text-white tracking-tight">
-                        사주 오각형 웰니스 매트릭스
-                      </h4>
-                    </div>
-
-                    {/* Responsive Pentagon chart using recharts */}
-                    <div className="w-full h-44 flex items-center justify-center overflow-visible">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
-                          <PolarGrid stroke="rgba(16, 185, 129, 0.1)" />
-                          <PolarAngleAxis 
-                            dataKey="subject" 
-                            tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 10, fontWeight: 'bold', fontFamily: 'sans-serif' }} 
-                          />
-                          <Radar 
-                            name="Element Stats" 
-                            dataKey="value" 
-                            stroke="rgba(16, 185, 129, 0.8)" 
-                            fill="rgba(16, 185, 129, 0.25)" 
-                            fillOpacity={0.6} 
-                          />
-                        </RadarChart>
-                      </ResponsiveContainer>
-                    </div>
-
-                    <div className="text-[9px] text-emerald-400/50 text-center font-mono font-bold leading-normal tracking-wider break-all mt-1">
-                      木: {calculatedFateData.elements.목}% | 火: {calculatedFateData.elements.화}% | 土: {calculatedFateData.elements.토}% | 金: {calculatedFateData.elements.금}% | 水: {calculatedFateData.elements.수}%
-                    </div>
+                  
+                  <div className="text-[10px] text-white/30 font-mono tracking-widest flex flex-col gap-0.5 border-t border-white/5 pt-3">
+                    <span>• MAIN BRANCH: {selectedTimeSpaceCard.branch}(지지)</span>
+                    <span>• SAJU SYMMETRY: {sajuFullText ? sajuFullText.split('\n')[0] : '미지 좌표계'}</span>
+                    <span>• RESONANCE: {calculatedFateData.isHap ? '합(合) 보너스 판정' : calculatedFateData.isChung ? '충(沖) 정화 정밀 판정' : '본질적 상생 공명'}</span>
                   </div>
                 </div>
+
+                {/* 🌟 Daily Oracle 오행별 에너지 변화 추이 꺾은선 그래프 대시보드 */}
+                <DailyElementTrendDashboard
+                  currentElements={calculatedFateData.elements}
+                  userProfile={sharedState?.userProfile}
+                  cardName={selectedTimeSpaceCard.title}
+                  theme="emerald"
+                />
 
                 {/* 4. Prominent Daily Quest Box */}
                 <div className="p-6 rounded-[32px] bg-gradient-to-tr from-amber-500/10 via-zinc-950 to-amber-500/5 border border-amber-500/30 shadow-[0_0_20px_rgba(245,158,11,0.06)] space-y-4">
