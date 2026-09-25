@@ -194,7 +194,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // 초기 18페이지 싱크 실행
   syncPage(18);
 
-  // 5-1. 외부(루시 채팅 등)에서 특정 실천 연습 즉시 실행 요청 처리
+  let hasAutoLaunchedPractice = false;
+  function autoLaunchRandomPrescription() {
+    if (hasAutoLaunchedPractice) return;
+    hasAutoLaunchedPractice = true;
+    if (typeof window.launchRandomPractice === 'function') {
+      window.launchRandomPractice();
+    }
+  }
+
+  // 5-1. 외부(루시 채팅 등)에서 특정 실천 연습 즉시 실행 요청 처리 및 Key 진입 시 자동 랜덤 실천 처방 실행
   function checkAutoLaunchPractice() {
     try {
       const urlParams = new URLSearchParams(window.location.search);
@@ -207,12 +216,28 @@ document.addEventListener('DOMContentLoaded', () => {
             window.startPractice(exIdx);
           }, 350);
         }
+        return;
+      }
+
+      // Key 진입 시 자동으로 오늘의 랜덤 실천 처방 모달 띄우기
+      const noAuto = urlParams.get('no_auto');
+      if (!noAuto) {
+        setTimeout(() => {
+          autoLaunchRandomPrescription();
+        }, 500);
       }
     } catch (_) {}
   }
 
   window.addEventListener('message', (e) => {
     if (!e.data) return;
+    if (e.data.type === 'AUTO_RANDOM_PRESCRIPTION') {
+      setTimeout(() => {
+        autoLaunchRandomPrescription();
+      }, 150);
+      return;
+    }
+
     if (e.data.type === 'START_PRACTICE') {
       const exIdx = parseInt(e.data.exerciseIdx, 10);
       if (exIdx && typeof window.startPractice === 'function') {
@@ -1208,7 +1233,78 @@ document.addEventListener('DOMContentLoaded', () => {
     // 통계 계산
     const totalEntries = records.length;
     const uniqueIndices = new Set(records.filter(r => r.exerciseIdx && !String(r.title).includes('처방전')).map(r => r.exerciseIdx));
-    const completionRate = Math.round((uniqueIndices.size / 40) * 100);
+    const completedCount = uniqueIndices.size;
+    const completionRate = Math.min(100, Math.round((completedCount / 40) * 100));
+
+    // 챕터별 완주 개수 계산
+    const exercisesMap = {};
+    if (window.PRACTICE_EXERCISES && window.PRACTICE_EXERCISES.length > 0) {
+      window.PRACTICE_EXERCISES.forEach(ex => {
+        exercisesMap[ex.globalIndex] = parseInt(ex.chapter, 10) || 1;
+      });
+    }
+
+    let ch1Count = 0;
+    let ch2Count = 0;
+    let ch3Count = 0;
+    uniqueIndices.forEach(idx => {
+      const ch = exercisesMap[idx];
+      if (ch === 1) ch1Count++;
+      else if (ch === 2) ch2Count++;
+      else if (ch === 3) ch3Count++;
+    });
+
+    // 동그란 원형 프로그레스 차트 갱신
+    const circleRing = document.getElementById('wb-circular-ring');
+    const circlePercent = document.getElementById('wb-circle-rate-percent');
+    const circleCount = document.getElementById('wb-circle-rate-count');
+    const circleHeading = document.getElementById('wb-circle-main-heading');
+    const circleStatus = document.getElementById('wb-circle-status-badge');
+    const elCircleCh1 = document.getElementById('wb-circle-ch1');
+    const elCircleCh2 = document.getElementById('wb-circle-ch2');
+    const elCircleCh3 = document.getElementById('wb-circle-ch3');
+
+    if (circleRing) {
+      const circumference = 351.86;
+      const offset = circumference - (completionRate / 100) * circumference;
+      circleRing.style.strokeDashoffset = offset.toFixed(2);
+    }
+    if (circlePercent) circlePercent.textContent = `${completionRate}%`;
+    if (circleCount) circleCount.textContent = `${completedCount} / 40개`;
+    if (circleHeading) {
+      circleHeading.textContent = `40가지 연습 중 ${completedCount}개 완주 (${completionRate}%)`;
+    }
+    if (circleStatus) {
+      if (completedCount === 0) {
+        circleStatus.textContent = '첫 걸음을 시작해보세요 🌱';
+        circleStatus.style.background = '#fef3e2';
+        circleStatus.style.color = '#b87333';
+      } else if (completionRate < 25) {
+        circleStatus.textContent = '치유의 첫 여정을 걷는 중 🌿';
+        circleStatus.style.background = '#eef6ee';
+        circleStatus.style.color = '#2e7d32';
+      } else if (completionRate < 50) {
+        circleStatus.textContent = '불안의 파도를 유연하게 타는 중 🌊';
+        circleStatus.style.background = '#e3f2fd';
+        circleStatus.style.color = '#1565c0';
+      } else if (completionRate < 75) {
+        circleStatus.textContent = '심리적 유연성이 깊어졌습니다 🌟';
+        circleStatus.style.background = '#f3e5f5';
+        circleStatus.style.color = '#7b1fa2';
+      } else if (completionRate < 100) {
+        circleStatus.textContent = '완주가 눈앞에 다가왔습니다! ✨';
+        circleStatus.style.background = '#fff8e1';
+        circleStatus.style.color = '#f57f17';
+      } else {
+        circleStatus.textContent = '🏆 40가지 연습 마스터 완주 달성!';
+        circleStatus.style.background = 'linear-gradient(135deg, #ffd700, #ffb300)';
+        circleStatus.style.color = '#000000';
+      }
+    }
+
+    if (elCircleCh1) elCircleCh1.textContent = `${ch1Count} / 12개 (${Math.round((ch1Count / 12) * 100)}%)`;
+    if (elCircleCh2) elCircleCh2.textContent = `${ch2Count} / 10개 (${Math.round((ch2Count / 10) * 100)}%)`;
+    if (elCircleCh3) elCircleCh3.textContent = `${ch3Count} / 18개 (${Math.round((ch3Count / 18) * 100)}%)`;
 
     // 필터별 개수 카운팅
     const cntAll = totalEntries;

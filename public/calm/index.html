@@ -224,6 +224,68 @@
           </div>
         </div>
 
+        <!-- 1-2. 40가지 연습 완주율 동그란 프로그레스 차트 카드 -->
+        <div class="wb-circular-hero-card">
+          <div class="wb-circular-chart-container">
+            <svg class="wb-circular-svg" viewBox="0 0 140 140" width="140" height="140">
+              <defs>
+                <linearGradient id="wbCircularGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="var(--copper-primary, #a2593b)" />
+                  <stop offset="50%" stop-color="#c5865b" />
+                  <stop offset="100%" stop-color="var(--gold-accent, #c98a58)" />
+                </linearGradient>
+              </defs>
+              <!-- Background Ring -->
+              <circle
+                class="wb-circular-bg-ring"
+                cx="70"
+                cy="70"
+                r="56"
+              />
+              <!-- Animated Fill Ring -->
+              <circle
+                id="wb-circular-ring"
+                class="wb-circular-fill-ring"
+                cx="70"
+                cy="70"
+                r="56"
+                stroke-dasharray="351.86"
+                stroke-dashoffset="351.86"
+              />
+            </svg>
+            <div class="wb-circular-center-content">
+              <span id="wb-circle-rate-percent" class="wb-circle-percent">0%</span>
+              <span id="wb-circle-rate-count" class="wb-circle-fraction">0 / 40개</span>
+            </div>
+          </div>
+
+          <div class="wb-circular-hero-info">
+            <div class="wb-circular-badge-row">
+              <span class="wb-circle-tag">🎯 40가지 치유 실천 완주율</span>
+              <span id="wb-circle-status-badge" class="wb-circle-status">첫 걸음을 시작해보세요 🌱</span>
+            </div>
+            <h3 id="wb-circle-main-heading" class="wb-circle-heading">40가지 연습 중 0개 완주</h3>
+            <p class="wb-circle-description">
+              《FIND YOUR 왜 나는 불안할까》 1장(머릿속 혼돈), 2장(신체 감각), 3장(불편한 감정)의 40가지 심리 연습을 실천할 때마다 동그란 원형 차트가 실시간으로 채워집니다.
+            </p>
+
+            <div class="wb-circular-chapters-row">
+              <div class="wb-circle-chapter-badge">
+                <span class="wb-ch-name">1장 머릿속 혼돈</span>
+                <span class="wb-ch-val" id="wb-circle-ch1">0 / 12개</span>
+              </div>
+              <div class="wb-circle-chapter-badge">
+                <span class="wb-ch-name">2장 신체 감각</span>
+                <span class="wb-ch-val" id="wb-circle-ch2">0 / 10개</span>
+              </div>
+              <div class="wb-circle-chapter-badge">
+                <span class="wb-ch-name">3장 불편한 감정</span>
+                <span class="wb-ch-val" id="wb-circle-ch3">0 / 18개</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 2. 체계적 분석 및 통계 대시보드 그리드 -->
         <div class="workbook-stats-grid">
           <div class="wb-stat-card">
@@ -757,9 +819,9 @@
   </div>
 
   <!-- Scripts -->
-  <script src="./practice-data.js?v=32.0"></script>
-  <script src="./teachings-data.js?v=32.0"></script>
-  <script src="./audio-synth.js?v=32.0"></script>
-  <script src="./app.js?v=32.0"></script>
+  <script src="./practice-data.js?v=33.0"></script>
+  <script src="./teachings-data.js?v=33.0"></script>
+  <script src="./audio-synth.js?v=33.0"></script>
+  <script src="./app.js?v=33.0"></script>
 </body>
 </html>

@@ -2009,6 +2009,189 @@ button, a, input, textarea, select {
   flex-shrink: 0;
 }
 
+/* 1-2. 40가지 연습 완주율 동그란 프로그레스 차트 카드 */
+.wb-circular-hero-card {
+  background: linear-gradient(135deg, #ffffff 0%, #faf6f0 55%, #f6eee3 100%);
+  border: 1px solid rgba(162, 89, 59, 0.22);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+  box-shadow: 0 4px 18px rgba(162, 89, 59, 0.06);
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.wb-circular-hero-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(to bottom, var(--copper-primary), var(--gold-accent));
+}
+
+.wb-circular-hero-card:hover {
+  box-shadow: 0 8px 26px rgba(162, 89, 59, 0.12);
+  border-color: rgba(162, 89, 59, 0.38);
+  transform: translateY(-1px);
+}
+
+.wb-circular-chart-container {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wb-circular-svg {
+  transform: rotate(-90deg);
+  width: 140px;
+  height: 140px;
+}
+
+.wb-circular-bg-ring {
+  fill: none;
+  stroke: rgba(162, 89, 59, 0.12);
+  stroke-width: 10;
+}
+
+.wb-circular-fill-ring {
+  fill: none;
+  stroke: url(#wbCircularGrad);
+  stroke-width: 10;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s cubic-bezier(0.34, 1.3, 0.64, 1);
+  filter: drop-shadow(0 2px 5px rgba(162, 89, 59, 0.25));
+}
+
+.wb-circular-center-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.wb-circle-percent {
+  font-family: 'Cinzel', 'Pretendard', sans-serif;
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: var(--copper-primary);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.wb-circle-fraction {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-top: 5px;
+  letter-spacing: 0.02em;
+}
+
+.wb-circular-hero-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.wb-circular-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.wb-circle-tag {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: var(--copper-primary);
+  background: var(--copper-light);
+  padding: 3px 10px;
+  border-radius: 9999px;
+  letter-spacing: 0.02em;
+  border: 1px solid rgba(162, 89, 59, 0.2);
+}
+
+.wb-circle-status {
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  transition: all 0.3s ease;
+  background: #fef3e2;
+  color: #b87333;
+}
+
+.wb-circle-heading {
+  font-family: 'Nanum Myeongjo', serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--text-title);
+  margin: 0 0 6px;
+  letter-spacing: -0.01em;
+}
+
+.wb-circle-description {
+  font-size: 0.86rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin: 0 0 14px;
+}
+
+.wb-circular-chapters-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.wb-circle-chapter-badge {
+  background: #ffffff;
+  border: 1px solid rgba(162, 89, 59, 0.18);
+  padding: 6px 12px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.76rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+}
+
+.wb-ch-name {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.wb-ch-val {
+  font-family: 'Cinzel', 'Pretendard', sans-serif;
+  color: var(--text-title);
+  font-weight: 800;
+}
+
+@media (max-width: 640px) {
+  .wb-circular-hero-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px 16px;
+    gap: 18px;
+  }
+  .wb-circular-badge-row {
+    justify-content: center;
+  }
+  .wb-circular-chapters-row {
+    justify-content: center;
+  }
+}
+
 /* 2. Stats Dashboard Grid */
 .workbook-stats-grid {
   display: grid;

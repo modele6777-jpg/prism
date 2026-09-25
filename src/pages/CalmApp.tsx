@@ -112,12 +112,20 @@ export default function CalmApp() {
             return () => clearTimeout(timer);
           }
         }
+
+        // Key 진입 시 자동으로 오늘의 랜덤 실천 처방 모달 띄우기
+        if (!tossedText && !exParam) {
+          const timer = setTimeout(() => {
+            iframeRef.current?.contentWindow?.postMessage({ type: 'AUTO_RANDOM_PRESCRIPTION' }, '*');
+          }, 450);
+          return () => clearTimeout(timer);
+        }
       } catch (_) {}
     }
   }, [iframeLoaded]);
 
   const searchParams = typeof window !== 'undefined' ? window.location.search : '';
-  const iframeSrc = `/calm/index.html${searchParams ? searchParams + '&v=32.0' : '?v=32.0'}`;
+  const iframeSrc = `/calm/index.html${searchParams ? searchParams + '&v=33.0' : '?v=33.0'}`;
 
   return (
     <div className="fixed inset-0 w-full h-[100dvh] bg-[#fcf9f5] z-40 overflow-hidden flex flex-col">
