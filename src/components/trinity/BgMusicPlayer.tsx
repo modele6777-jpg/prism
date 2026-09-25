@@ -252,7 +252,7 @@ export function BgMusicPlayer() {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isPanelActive, setIsPanelActive] = useState(() => !!(window as any).__lucy_active_panel);
 
-  // Position & Edge Docking State
+  // Position & Edge Docking State (Default: Edge Mode always on)
   const [bgmPos, setBgmPos] = useState<{ y: number; dockSide: "right" | "left"; isDocked: boolean }>(() => {
     try {
       const saved = localStorage.getItem("prism_bgm_dock_pos_v2");
@@ -262,20 +262,32 @@ export function BgMusicPlayer() {
           return {
             y: Math.max(10, Math.min(window.innerHeight - 80, parsed.y)),
             dockSide: parsed.dockSide,
-            isDocked: Boolean(parsed.isDocked),
+            isDocked: true, // Always start in Edge Mode
           };
         }
       }
     } catch {}
-    return { y: 16, dockSide: "right", isDocked: false };
+    return { y: 120, dockSide: "right", isDocked: true }; // Always default to Edge Mode
   });
 
   const bgmPosRef = useRef(bgmPos);
   bgmPosRef.current = bgmPos;
 
-  // Dragging state
+  // Dragging state (X and Y coordinates for 4-way dragging: 상하좌우)
   const [isDragging, setIsDragging] = useState(false);
-  const dragStartRef = useRef<{ startX: number; startY: number; initialY: number; hasMoved: boolean } | null>(null);
+  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
+  const dragPosRef = useRef<{ x: number; y: number } | null>(null);
+  dragPosRef.current = dragPos;
+
+  const dragStartRef = useRef<{
+    startX: number;
+    startY: number;
+    initialX: number;
+    initialY: number;
+    hasMoved: boolean;
+  } | null>(null);
+
+  const playerContainerRef = useRef<HTMLDivElement | null>(null);
 
   const saveBgmPos = useCallback((newPos: { y: number; dockSide: "right" | "left"; isDocked: boolean }) => {
     setBgmPos(newPos);
@@ -284,13 +296,51 @@ export function BgMusicPlayer() {
     } catch {}
   }, []);
 
+  const handleCollapse = useCallback((e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setShowPlaylist(false);
+    setShowVolumeSlider(false);
+    setIsCollapsed(true);
+    saveBgmPos({
+      ...bgmPosRef.current,
+      isDocked: true,
+    });
+  }, [saveBgmPos]);
+
+  const handleExpandPlayer = useCallback((e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setIsCollapsed(false);
+    setShowPlaylist(false);
+    setShowVolumeSlider(false);
+    saveBgmPos({
+      ...bgmPosRef.current,
+      isDocked: false,
+    });
+  }, [saveBgmPos]);
+
+  const toggleDock = useCallback((e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (bgmPosRef.current.isDocked) {
+      handleExpandPlayer(e);
+    } else {
+      handleCollapse(e);
+    }
+  }, [handleExpandPlayer, handleCollapse]);
+
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     // Only left click / touch starts dragging
     if (e.button !== 0 && e.pointerType === "mouse") return;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const rect = playerContainerRef.current?.getBoundingClientRect();
+    const initialX = rect ? rect.left : (bgmPosRef.current.dockSide === "right" ? window.innerWidth - 120 : 0);
+    const initialY = rect ? rect.top : bgmPosRef.current.y;
+
     dragStartRef.current = {
-      startX: e.clientX,
-      startY: e.clientY,
-      initialY: bgmPosRef.current.y,
+      startX,
+      startY,
+      initialX,
+      initialY,
       hasMoved: false,
     };
 
@@ -303,13 +353,19 @@ export function BgMusicPlayer() {
         setIsDragging(true);
       }
       if (dragStartRef.current.hasMoved) {
-        const clampedY = Math.max(10, Math.min(window.innerHeight - 70, dragStartRef.current.initialY + dy));
-        const side: "left" | "right" = moveEvent.clientX < window.innerWidth / 2 ? "left" : "right";
-        setBgmPos((prev) => ({
-          ...prev,
-          y: clampedY,
-          dockSide: side,
-        }));
+        const width = playerContainerRef.current?.offsetWidth || 110;
+        const height = playerContainerRef.current?.offsetHeight || 44;
+        const minX = 0;
+        const maxX = Math.max(0, window.innerWidth - width);
+        const minY = 10;
+        const maxY = Math.max(10, window.innerHeight - height - 10);
+
+        const newX = Math.max(minX, Math.min(maxX, dragStartRef.current.initialX + dx));
+        const newY = Math.max(minY, Math.min(maxY, dragStartRef.current.initialY + dy));
+
+        const nextPos = { x: newX, y: newY };
+        setDragPos(nextPos);
+        dragPosRef.current = nextPos;
       }
     };
 
@@ -319,31 +375,27 @@ export function BgMusicPlayer() {
       window.removeEventListener("pointercancel", handlePointerUp);
 
       if (dragStartRef.current) {
-        if (dragStartRef.current.hasMoved) {
-          const endX = upEvent.clientX;
-          const endY = dragStartRef.current.initialY + (upEvent.clientY - dragStartRef.current.startY);
-          const clampedY = Math.max(10, Math.min(window.innerHeight - 70, endY));
-          const side: "left" | "right" = endX < window.innerWidth / 2 ? "left" : "right";
-
-          // 화면 가장자리(좌우 75px 이내 또는 화면 폭의 18% 이내)로 드래그하면 바로 엣지에 도킹!
-          const edgeThreshold = Math.min(75, window.innerWidth * 0.18);
-          const shouldDock = endX < edgeThreshold || endX > (window.innerWidth - edgeThreshold);
+        if (dragStartRef.current.hasMoved && dragPosRef.current) {
+          const finalX = dragPosRef.current.x;
+          const finalY = dragPosRef.current.y;
+          const side: "left" | "right" = (finalX + 45) < window.innerWidth / 2 ? "left" : "right";
+          const clampedY = Math.max(10, Math.min(window.innerHeight - 70, finalY));
 
           saveBgmPos({
             y: clampedY,
             dockSide: side,
-            isDocked: shouldDock,
+            isDocked: true, // Always dock to edge mode on release
           });
 
-          // 도킹 시 자동으로 접어두어 가장자리에서 미니 LP 탭만 우아하게 노출
-          if (shouldDock) {
-            setIsCollapsed(true);
-          }
-
-          // brief timeout to prevent triggering click on children
-          setTimeout(() => setIsDragging(false), 50);
+          setTimeout(() => {
+            setIsDragging(false);
+            setDragPos(null);
+            dragPosRef.current = null;
+          }, 60);
         } else {
           setIsDragging(false);
+          setDragPos(null);
+          dragPosRef.current = null;
         }
         dragStartRef.current = null;
       }
@@ -352,14 +404,6 @@ export function BgMusicPlayer() {
     window.addEventListener("pointermove", handlePointerMove, { passive: true });
     window.addEventListener("pointerup", handlePointerUp, { passive: true });
     window.addEventListener("pointercancel", handlePointerUp, { passive: true });
-  }, [saveBgmPos]);
-
-  const toggleDock = useCallback((e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    saveBgmPos({
-      ...bgmPosRef.current,
-      isDocked: !bgmPosRef.current.isDocked,
-    });
   }, [saveBgmPos]);
 
   useEffect(() => {
@@ -506,19 +550,7 @@ export function BgMusicPlayer() {
     });
   };
 
-  const handleCollapse = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    setShowPlaylist(false);
-    setShowVolumeSlider(false);
-    setIsCollapsed(true);
-  };
-
-  const handleExpandPlayer = (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    setIsCollapsed(false);
-    setShowPlaylist(false);
-    setShowVolumeSlider(false);
-  };
+  // handleCollapse and handleExpandPlayer are defined above with saveBgmPos
 
   const handleToggleRepeat = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -3261,19 +3293,15 @@ export function BgMusicPlayer() {
     };
   }, []);
 
-  // --- CLICK OUTSIDE TO COLLAPSE PLAYER & VOLUME SLIDER ---
-  const playerContainerRef = useRef<HTMLDivElement | null>(null);
-
+  // --- CLICK OUTSIDE TO COLLAPSE EXPANDED PLAYER & VOLUME SLIDER ---
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
       const targetNode = e.target as Node;
       if (volumeRef.current && !volumeRef.current.contains(targetNode)) {
         setShowVolumeSlider(false);
       }
-      if (!isCollapsed && playerContainerRef.current && !playerContainerRef.current.contains(targetNode)) {
-        setIsCollapsed(true);
-        setShowPlaylist(false);
-        setShowVolumeSlider(false);
+      if (!bgmPos.isDocked && playerContainerRef.current && !playerContainerRef.current.contains(targetNode)) {
+        handleCollapse();
       }
     };
     document.addEventListener("mousedown", handleOutsideClick);
@@ -3282,7 +3310,7 @@ export function BgMusicPlayer() {
       document.removeEventListener("mousedown", handleOutsideClick);
       document.removeEventListener("touchstart", handleOutsideClick);
     };
-  }, [isCollapsed]);
+  }, [bgmPos.isDocked, handleCollapse]);
 
   // --- AUTOPLAY UNLOCKER ---
   useEffect(() => {
@@ -3406,19 +3434,30 @@ export function BgMusicPlayer() {
   const handleAudioPlaying = () => setIsBuffering(false);
 
   // --- RENDER COMPONENT ---
-  const isRightDock = bgmPos.dockSide === "right";
+  const isRightDock = dragPos
+    ? (dragPos.x + 50 >= window.innerWidth / 2)
+    : bgmPos.dockSide === "right";
 
   return (
     <div
       ref={playerContainerRef}
-      className={`fixed z-[300] font-sans select-none transition-all duration-300 ${
-        isPanelActive ? "opacity-0 pointer-events-none scale-75" : "opacity-100"
-      }`}
-      style={{
-        top: `${bgmPos.y}px`,
-        right: isRightDock ? (bgmPos.isDocked ? "-42px" : "12px") : undefined,
-        left: !isRightDock ? (bgmPos.isDocked ? "-42px" : "12px") : undefined,
-      }}
+      className={`fixed z-[300] font-sans select-none ${
+        isDragging ? "transition-none cursor-grabbing" : "transition-all duration-300"
+      } ${isPanelActive ? "opacity-0 pointer-events-none scale-75" : "opacity-100"}`}
+      style={
+        dragPos
+          ? {
+              top: `${dragPos.y}px`,
+              left: `${dragPos.x}px`,
+              right: "auto",
+              bottom: "auto",
+            }
+          : {
+              top: `${bgmPos.y}px`,
+              right: isRightDock ? (bgmPos.isDocked ? "0px" : "12px") : undefined,
+              left: !isRightDock ? (bgmPos.isDocked ? "0px" : "12px") : undefined,
+            }
+      }
     >
       {/* Invisible HTML5 Audio Node for Legacy MP3s */}
       <audio
@@ -3431,87 +3470,117 @@ export function BgMusicPlayer() {
         preload={shouldPreloadBgmAudio() ? "auto" : "none"}
       />
 
-      {/* When Edge-Docked: Show minimalist unobtrusive peeking tab */}
+      {/* When Edge-Docked: Show minimalist unobtrusive peeking tab with 4-way drag, LP play toggle, and arrow expand */}
       {bgmPos.isDocked ? (
         <div
           onPointerDown={handlePointerDown}
-          onClick={() => toggleDock()}
-          className={`flex items-center gap-1.5 py-1.5 px-2.5 rounded-full cursor-pointer touch-none bg-black/80 hover:bg-black/95 backdrop-blur-2xl border border-amber-400/40 shadow-[0_4px_25px_rgba(251,191,36,0.35)] transition-transform hover:scale-105 active:scale-95 group ${
-            isRightDock ? "pr-4" : "pl-4"
+          onClick={(e) => {
+            if (!isDragging) {
+              handleExpandPlayer(e);
+            }
+          }}
+          className={`flex items-center gap-1.5 py-1.5 px-2 cursor-pointer touch-none bg-black/85 hover:bg-black/95 backdrop-blur-2xl border border-amber-400/40 shadow-[0_4px_25px_rgba(251,191,36,0.35)] transition-all group ${
+            isRightDock
+              ? "rounded-l-full rounded-r-none border-r-0 pl-2 pr-2.5 shadow-[-4px_4px_25px_rgba(251,191,36,0.35)]"
+              : "rounded-r-full rounded-l-none border-l-0 pr-2 pl-2.5 shadow-[4px_4px_25px_rgba(251,191,36,0.35)]"
           }`}
-          title="엣지에서 배경음 플레이어 꺼내기 (클릭 또는 화면 안쪽으로 드래그)"
+          title="엣지 배경음: LP판 클릭시 바로 재생/멈춤, 화살표 클릭시 플레이어 펼치기, 드래그하여 상하좌우 이동"
         >
-          {isRightDock && <ChevronLeft size={13} className="text-amber-300 animate-pulse shrink-0" />}
-          <div className="relative flex items-center justify-center">
+          {isRightDock && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleExpandPlayer(e);
+              }}
+              className="p-1 rounded-full text-amber-300 hover:text-white hover:bg-white/15 active:scale-90 transition-all shrink-0 cursor-pointer"
+              title="배경음 플레이어 펼치기"
+              aria-label="배경음 플레이어 펼치기"
+            >
+              <ChevronLeft size={16} className="animate-pulse" />
+            </button>
+          )}
+
+          {!isRightDock && (
+            <div
+              className="flex items-center gap-1 text-[10px] font-bold text-amber-200/90 tracking-tight shrink-0 select-none pl-0.5"
+              title="상하좌우 드래그하여 이동"
+            >
+              <GripVertical size={12} className="text-white/30 group-hover:text-white/60" />
+              <span className="hidden sm:inline-block">{isPlaying ? "재생 중" : "BGM"}</span>
+            </div>
+          )}
+
+          {/* LP Disc button: Directly toggles playback */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handlePlayToggle(e);
+            }}
+            className={`relative rounded-full flex items-center justify-center shrink-0 transition-all hover:scale-110 active:scale-95 cursor-pointer ${
+              isPlaying
+                ? "shadow-[0_0_14px_rgba(251,191,36,0.7)] ring-2 ring-amber-400"
+                : "opacity-80 hover:opacity-100 ring-1 ring-white/30"
+            }`}
+            title={isPlaying ? "배경음 일시정지 (LP판 클릭)" : "배경음 재생 (LP판 클릭)"}
+            aria-label={isPlaying ? "배경음 일시정지" : "배경음 재생"}
+          >
             <LPRecordDisc isPlaying={isPlaying} isBuffering={isBuffering} size="sm" />
-          </div>
-          <span className="text-[10px] font-bold text-amber-200/90 tracking-tight hidden sm:inline-block">
-            {isPlaying ? "재생 중" : "BGM"}
-          </span>
-          {!isRightDock && <ChevronRight size={13} className="text-amber-300 animate-pulse shrink-0" />}
+          </button>
+
+          {isRightDock && (
+            <div
+              className="flex items-center gap-1 text-[10px] font-bold text-amber-200/90 tracking-tight shrink-0 select-none pr-0.5"
+              title="상하좌우 드래그하여 이동"
+            >
+              <span className="hidden sm:inline-block">{isPlaying ? "재생 중" : "BGM"}</span>
+              <GripVertical size={12} className="text-white/30 group-hover:text-white/60" />
+            </div>
+          )}
+
+          {!isRightDock && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleExpandPlayer(e);
+              }}
+              className="p-1 rounded-full text-amber-300 hover:text-white hover:bg-white/15 active:scale-90 transition-all shrink-0 cursor-pointer"
+              title="배경음 플레이어 펼치기"
+              aria-label="배경음 플레이어 펼치기"
+            >
+              <ChevronRight size={16} className="animate-pulse" />
+            </button>
+          )}
         </div>
-      ) : isCollapsed ? (
-        /* Floating collapsed bar with Drag Grip & Dock Toggle */
+      ) : (
+        /* Full Expanded Player */
         <div
-          className="flex items-center gap-1 rounded-full glass border border-white/20 shadow-2xl p-1 bg-black/60 backdrop-blur-xl transition-shadow hover:shadow-[0_8px_30px_rgba(0,0,0,0.5)] group/collapsed"
+          className={`flex items-center gap-1.5 sm:gap-2 p-1 pl-2 pr-1 rounded-full glass border border-white/20 shadow-2xl hover:border-white/30 transition-all duration-300 relative max-w-[calc(100vw-24px)] md:max-w-md bg-black/80 backdrop-blur-xl ${
+            isRightDock ? "origin-right" : "origin-left"
+          }`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Drag Handle */}
           <div
             onPointerDown={handlePointerDown}
-            className="cursor-grab active:cursor-grabbing p-1.5 text-white/30 hover:text-white/80 rounded-full transition-colors shrink-0 touch-none"
-            title="드래그하여 위치 이동 또는 화면 끝으로 끌어 엣지에 가리기"
+            className="cursor-grab active:cursor-grabbing p-1 text-white/30 hover:text-white/80 rounded-full transition-colors shrink-0 touch-none"
+            title="상하좌우 드래그하여 위치 이동"
           >
             <GripVertical size={13} />
           </div>
 
+          {/* Collapse button, pointing toward docking edge */}
           <button
             type="button"
-            onClick={handleExpandPlayer}
-            className="w-7 h-10 rounded-full flex items-center justify-center shrink-0 text-white/45 hover:text-white hover:bg-white/10 active:scale-95 transition-colors"
-            title="플레이어 펼치기"
-            aria-label="플레이어 펼치기"
+            onClick={handleCollapse}
+            className="p-1.5 rounded-full text-white/40 hover:text-white hover:bg-white/10 active:scale-90 transition-all shrink-0 cursor-pointer"
+            title="엣지모드로 접기"
+            aria-label="음악 플레이어 엣지모드로 접기"
           >
-            <ChevronLeft className="w-4 h-4 shrink-0" strokeWidth={2} />
+            {isRightDock ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
           </button>
-          <button
-            type="button"
-            onClick={handlePlayToggle}
-            className={`relative rounded-full flex items-center justify-center shrink-0 transition-all active:scale-95 group ${
-              isPlaying
-                ? "shadow-[0_0_16px_rgba(254,202,87,0.45)] ring-2 ring-amber-400/50"
-                : "opacity-75 hover:opacity-100 ring-1 ring-white/20"
-            }`}
-            title={isPlaying ? "배경음 일시정지 (LP판 회전 중)" : "배경음 재생 (LP판 멈춤)"}
-            aria-label={isPlaying ? "배경음 일시정지" : "배경음 재생"}
-          >
-            <LPRecordDisc isPlaying={isPlaying} isBuffering={isBuffering} size="lg" />
-          </button>
-        </div>
-      ) : (
-      <div
-        className="flex items-center gap-1.5 sm:gap-2 p-1 pl-2 pr-1 rounded-full glass border border-white/20 shadow-2xl hover:border-white/30 transition-all duration-300 relative max-w-[calc(100vw-4rem)] md:max-w-md bg-black/70 backdrop-blur-xl origin-right"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Drag Handle */}
-        <div
-          onPointerDown={handlePointerDown}
-          className="cursor-grab active:cursor-grabbing p-1 text-white/30 hover:text-white/80 rounded-full transition-colors shrink-0 touch-none"
-          title="길게 누르거나 드래그하여 위치 이동"
-        >
-          <GripVertical size={13} />
-        </div>
-
-        {/* Collapse button, pointing right to collapse back into mini bar */}
-        <button
-          type="button"
-          onClick={handleCollapse}
-          className="p-1.5 rounded-full text-white/40 hover:text-white hover:bg-white/10 active:scale-90 transition-all shrink-0"
-          title="플레이어 접기"
-          aria-label="음악 플레이어 접기"
-        >
-          <ChevronRight size={12} />
-        </button>
 
         {/* Clickable Select dropdown track info panel */}
         <div 
