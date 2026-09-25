@@ -22,12 +22,10 @@ import {
   Info,
   Layers,
   Send,
-  HelpCircle,
   Brain
 } from 'lucide-react';
 import { auth, db, collection, addDoc, serverTimestamp, query, orderBy, limit, getDocs } from '@/lib/firebase';
 import { TTSButton } from '@/components/TTSButton';
-import { Streamdown } from '@/components/Streamdown';
 import { useApp } from '@/contexts/AppContext';
 import { sendLettingGoSessionToLucy } from '@/lib/oracleDeepInsight';
 import {
@@ -139,7 +137,6 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
   const [isGapTimerActive, setIsGapTimerActive] = useState<boolean>(false);
   const [hasCompletedGap, setHasCompletedGap] = useState<boolean>(false);
   const [activeThoughtTechnique, setActiveThoughtTechnique] = useState<'vaporizer' | 'stop_switch' | 'gap_silence'>('vaporizer');
-  const [showPrescriptionExplanation, setShowPrescriptionExplanation] = useState<boolean>(true);
 
   // Interactive Somatic Surrender Timer
   const [surrenderTimer, setSurrenderTimer] = useState<number>(15);
@@ -339,23 +336,9 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
     const desireText = selectedDesire.nameKo;
     const reliefScore = Math.max(0, preSuds - postSuds);
 
-    const generatedPrescription = `### ☀️ 마음 놓아버림(방하착) 통합 치유 소견서
-*(호킨스 감정 항복 기법 × 세도나 마음 릴리즈 융합 리포트)*
+    const summaryNote = `[방하착 완료] ${issueText} (${emotionText} · Lv.${levelNum}) — ${desireText} 및 무의식 집착을 가볍게 흘려보냄 (고통 전압: ${preSuds} → ${postSuds})`;
 
-**1. 머릿속 생각 멈춤 & 신체 감각 허용 (생각 장작 끄기)**
-머리를 복잡하게 채우며 불안과 원망을 키우던 생각 스토리(반추)를 전면 차단하고, ${zoneText}에 고여 있던 **[${emotionText} (의식 레벨 ${levelNum})]**의 신체 감각을 있는 그대로 허용했습니다. 생각의 장작을 끄고 감각 자체를 마주할 때 감정은 스스로 증발한다는 호킨스 박사의 항복 원리가 실현되었습니다.
-
-**2. 고통의 뿌리, 무의식 집착 내려놓기 (왜 그토록 힘들었을까?)**
-이 고통의 이면에 숨어 작동하던 **[${desireText}]** 및 "내가 옳아야만 한다"는 에고의 2차 이득을 명확히 알아차렸습니다. 손에 쥔 볼펜을 떨어뜨리듯, 집착을 허공으로 가볍게 흘려보냈습니다.
-
-**3. 내면의 평온 회복 지수 (스트레스 전압 SUDS의 변화)**
-- **정화 전 (Before)**: ${emotionText} (${levelNum}점) · 스트레스 전압: ${preSuds} / 10
-- **정화 후 (After)**: 생각과 집착을 내려놓고 고요한 평온에 안착 · 스트레스 전압: ${postSuds} / 10 (${reliefScore > 0 ? `${reliefScore}점 경감` : '완전한 평정 도달'})
-
-**4. 마음이 다시 흔들릴 때 기억할 오늘의 평화 확언**
-*"감정은 지나가는 날씨일 뿐이며, 나는 그 구름 뒤에서 한 번도 빛을 잃지 않은 영원한 푸른 하늘이다. 쥐고 있던 생각을 내려놓는 순간, 내 안의 무한한 은총과 평화가 가득 차오른다."*`;
-
-    setPrescription(generatedPrescription);
+    setPrescription(summaryNote);
     setIsGeneratingResult(false);
 
     // Save to history
@@ -370,7 +353,7 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
       postSuds,
       date: todayKey,
       timestamp: Date.now(),
-      prescription: generatedPrescription,
+      prescription: summaryNote,
     };
 
     const updated = [newEntry, ...historyList.filter((h) => h.id !== newEntry.id)].slice(0, 30);
@@ -382,7 +365,7 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
       addDoc(collection(db, 'heal_history', firebaseUser.uid, 'entries'), {
         type: 'letting_go_master',
         title: `방하착 마스터 릴리즈: ${issueText}`,
-        content: generatedPrescription,
+        content: summaryNote,
         createdAt: serverTimestamp(),
         metadata: {
           targetIssue: issueText,
@@ -568,7 +551,7 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
                 {currentStep === 1 && '2단계: [호킨스] 생각 멈춤 훈련 & 신체 소매틱 항복'}
                 {currentStep === 2 && '3단계: [세도나] 4대 근원 욕구 & 2차 이득 해체'}
                 {currentStep === 3 && '4단계: [세도나] 4문답 & 인터랙티브 볼펜 놓기'}
-                {currentStep === 4 && '5단계: 마음 놓아버림(방하착) 통합 치유 소견서 & 참나 현존'}
+                {currentStep === 4 && '5단계: 방하착 완료 & 참나 현존'}
               </span>
             </div>
 
@@ -1215,84 +1198,21 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
                 </div>
               </div>
 
-              {/* Clarification Guide Box for Hawkins x Sedona Banghachak Integrated Prescription */}
-              <div className="p-5 sm:p-6 rounded-3xl bg-emerald-950/30 border border-emerald-500/30 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <span className="p-2 rounded-xl bg-emerald-500/20 text-emerald-300">
-                      <HelpCircle size={18} />
-                    </span>
-                    <div>
-                      <h4 className="text-sm sm:text-base font-bold text-emerald-200">
-                        '호킨스 &times; 세도나 방하착 통합 처방문'이란 무엇인가요?
-                      </h4>
-                      <p className="text-[11px] text-white/50">
-                        어려운 용어를 알기 쉽게 풀어드리는 마음 회복 소견서 안내 가이드
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowPrescriptionExplanation((prev) => !prev)}
-                    className="text-xs text-emerald-300/80 hover:text-emerald-200 px-3 py-1 rounded-lg bg-white/5 border border-white/10 transition-all cursor-pointer"
-                  >
-                    {showPrescriptionExplanation ? '접기' : '자세히 보기'}
-                  </button>
+              {/* Peace & Liberation Affirmation Card */}
+              <div className="p-6 rounded-3xl bg-gradient-to-br from-emerald-950/40 via-zinc-900 to-teal-950/30 border border-emerald-500/30 text-center space-y-3 shadow-xl">
+                <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                  <span className="text-[10px] font-mono tracking-widest uppercase text-emerald-400 font-bold">
+                    PEACE &amp; LIBERATION AFFIRMATION
+                  </span>
+                  <TTSButton
+                    text="감정은 지나가는 날씨일 뿐이며, 나는 그 구름 뒤에서 한 번도 빛을 잃지 않은 영원한 푸른 하늘입니다. 쥐고 있던 생각을 내려놓는 순간, 내 안의 무한한 평화와 자유가 가득 차오릅니다."
+                    voice="Kore"
+                    className="text-emerald-300 border-emerald-500/30 text-xs px-2.5 py-1"
+                  />
                 </div>
-
-                {showPrescriptionExplanation && (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-white/80 pt-1">
-                    <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/5 space-y-1.5">
-                      <span className="font-bold text-amber-300 flex items-center gap-1.5">
-                        <Flame size={13} />
-                        <span>1. 방하착(放下着)이란?</span>
-                      </span>
-                      <p className="text-[11px] text-white/60 leading-relaxed font-sans">
-                        放(놓을 방) &middot; 下(아래 하) &middot; 着(둘 착). 마음속에 무겁게 쥐고 있던 생각, 집착, 원망을 <strong>'손바닥 펴듯 허공에 툭 내려놓는다(Letting Go)'</strong>는 선가(禪家)의 지혜입니다.
-                      </p>
-                    </div>
-
-                    <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/5 space-y-1.5">
-                      <span className="font-bold text-indigo-300 flex items-center gap-1.5">
-                        <Compass size={13} />
-                        <span>2. 호킨스 &times; 세도나 기법?</span>
-                      </span>
-                      <p className="text-[11px] text-white/60 leading-relaxed font-sans">
-                        <strong>데이비드 호킨스:</strong> 생각을 끄고 몸에 머무는 감정 에너지를 온전히 느껴 스스로 증발시키는 항복법.<br />
-                        <strong>세도나 메서드:</strong> 고통을 유발하는 4대 결핍 욕망을 직시하고 펜을 떨어뜨리듯 놓아버리는 릴리즈.
-                      </p>
-                    </div>
-
-                    <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/5 space-y-1.5">
-                      <span className="font-bold text-emerald-300 flex items-center gap-1.5">
-                        <Sparkles size={13} />
-                        <span>3. 통합 처방문이란?</span>
-                      </span>
-                      <p className="text-[11px] text-white/60 leading-relaxed font-sans">
-                        생각을 멈추고 욕망을 비워냄으로써, <strong>나의 고통 스트레스 전압이 어떻게 줄어들어 평온(참나)으로 도약했는지</strong>를 알기 쉽게 정리한 <strong>'나만의 맞춤형 마음 회복 소견서'</strong>입니다.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Prescription Markdown Box */}
-              <div className="p-6 rounded-3xl bg-white/[0.02] border border-emerald-500/20 text-white/90 text-sm leading-relaxed space-y-4 shadow-xl">
-                <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                  <div className="flex items-center gap-2">
-                    <Sparkles size={16} className="text-emerald-400" />
-                    <div>
-                      <span className="text-xs sm:text-sm font-bold text-emerald-300 block">
-                        〈마음 놓아버림(방하착) 통합 치유 소견서〉
-                      </span>
-                      <span className="text-[10px] text-white/40">
-                        호킨스 감정 항복 기법 &times; 세도나 마음 릴리즈 융합 리포트
-                      </span>
-                    </div>
-                  </div>
-                  <TTSButton text={prescription} voice="Kore" className="text-emerald-300 border-emerald-500/30 text-xs px-2.5 py-1" />
-                </div>
-                <Streamdown>{prescription}</Streamdown>
+                <p className="text-sm sm:text-base text-white/90 font-serif leading-relaxed italic max-w-xl mx-auto pt-1">
+                  "감정은 지나가는 날씨일 뿐이며, 나는 그 구름 뒤에서 한 번도 빛을 잃지 않은 영원한 푸른 하늘입니다. 쥐고 있던 생각을 내려놓는 순간, 내 안의 무한한 평화와 자유가 가득 차오릅니다."
+                </p>
               </div>
 
               {/* Lucy 1:1 Deep Insight Integration Banner */}
