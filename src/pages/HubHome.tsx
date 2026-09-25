@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useLocation } from 'wouter';
-import { Sparkles, Music, TreeDeciduous, Bird, Activity, Zap, Moon, Sun, ChevronDown, ChevronUp, Brain, ChevronRight, Play, Pause, Hexagon, Triangle, X, Compass, HeartPulse, Shield } from 'lucide-react';
+import { Sparkles, Music, TreeDeciduous, Bird, Activity, Zap, Moon, Sun, ChevronDown, ChevronUp, Brain, ChevronRight, Play, Pause, Hexagon, Triangle, X, Compass, HeartPulse, Shield, ListTodo } from 'lucide-react';
 import { PrologueECPRView } from '@/components/prologue/PrologueECPRView';
-import { PrologueSynergySection } from '@/components/prologue/PrologueSynergySection';
+import { PrologueTodoSection } from '@/components/prologue/PrologueTodoSection';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { TTSButton } from '@/components/TTSButton';
 import { useApp, getPersistentUserProfile } from '@/contexts/AppContext';
@@ -19,6 +19,7 @@ import { UniverseInsightCard } from '@/components/UniverseInsightCard';
 import { type UniverseInsightItem } from '@/data/universeInsights';
 import { useBinauralBeat } from '@/hooks/useBinauralBeat';
 import { LucKeyLogoText } from '@/components/LucKeyLogoText';
+import { GoalProgressRingDashboard } from '@/components/goals/GoalProgressRingDashboard';
 
 const APPS = [
   {
@@ -185,17 +186,22 @@ export default function HubHome() {
   const { firebaseUser, sharedState, logout, updateSharedState, setIsChatOpen, isChatOpen, openLucyChat, sendUnifiedMessage } = useApp();
   const [showProfileModal, setShowProfileModal] = useState(false);
 
-  const [activeSection, setActiveSection] = useState<'universe' | 'ecpr' | 'synergy'>(() => {
+  const [activeSection, setActiveSection] = useState<'universe' | 'ecpr' | 'todo'>(() => {
     if (typeof window !== 'undefined' && window.location.pathname.startsWith('/ecpr')) return 'ecpr';
-    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/synergy')) return 'synergy';
+    if (typeof window !== 'undefined' && (
+      window.location.pathname.startsWith('/todo') || 
+      window.location.pathname.startsWith('/mission') || 
+      window.location.pathname.startsWith('/synergy') || 
+      window.location.pathname.startsWith('/aegis')
+    )) return 'todo';
     return 'universe';
   });
 
   useEffect(() => {
     if (location === '/ecpr') {
       setActiveSection('ecpr');
-    } else if (location === '/synergy' || location === '/aegis') {
-      setActiveSection('synergy');
+    } else if (location === '/todo' || location === '/mission' || location === '/synergy' || location === '/aegis') {
+      setActiveSection('todo');
     } else if (location === '/' || location === '/universe') {
       setActiveSection('universe');
     }
@@ -465,12 +471,12 @@ export default function HubHome() {
       </div>
 
 
-      {/* Navigation Subnav Menu (Universe, Synergy & eCPR Sections) */}
+      {/* Navigation Subnav Menu (Universe, eCPR & ToDo Sections) */}
       <nav className="prism-xs-subnav fixed top-safe-nav md:top-safe-nav-md left-1/2 -translate-x-1/2 z-[100] flex items-center gap-1 p-1 rounded-3xl bg-white/5 backdrop-blur-2xl border border-white/10 shadow-2xl max-w-[95vw] overflow-x-auto no-scrollbar md:max-w-fit md:overflow-visible transition-all duration-300">
         {[
           { id: 'universe', icon: Compass, label: 'Universe' },
           { id: 'ecpr', icon: HeartPulse, label: 'eCPR' },
-          { id: 'synergy', icon: Shield, label: 'AEGIS' },
+          { id: 'todo', icon: ListTodo, label: 'ToDo' },
         ].map((item) => {
           const isActive = activeSection === item.id;
           const Icon = item.icon;
@@ -479,11 +485,11 @@ export default function HubHome() {
               key={item.id}
               type="button"
               onClick={() => {
-                setActiveSection(item.id as 'universe' | 'ecpr' | 'synergy');
+                setActiveSection(item.id as 'universe' | 'ecpr' | 'todo');
                 if (item.id === 'ecpr') {
                   navigate('/ecpr');
-                } else if (item.id === 'synergy') {
-                  navigate('/synergy');
+                } else if (item.id === 'todo') {
+                  navigate('/todo');
                 } else {
                   navigate('/');
                 }
@@ -492,13 +498,13 @@ export default function HubHome() {
                 isActive
                   ? item.id === 'ecpr'
                     ? 'bg-gradient-to-r from-red-500/40 via-rose-500/30 to-amber-500/40 text-white border border-red-400/50 shadow-[0_0_15px_rgba(239,68,68,0.3)] scale-[1.02]'
-                    : item.id === 'synergy'
-                    ? 'bg-gradient-to-r from-red-600/50 via-amber-600/40 to-rose-600/50 text-white border border-red-400/60 shadow-[0_0_20px_rgba(239,68,68,0.4)] scale-[1.02]'
+                    : item.id === 'todo'
+                    ? 'bg-gradient-to-r from-indigo-600/50 via-purple-600/40 to-amber-600/50 text-white border border-indigo-400/60 shadow-[0_0_20px_rgba(99,102,241,0.4)] scale-[1.02]'
                     : 'bg-gradient-to-r from-red-500/40 via-orange-500/30 to-amber-500/40 text-white border border-red-400/50 shadow-[0_0_15px_rgba(239,68,68,0.3)] scale-[1.02]'
                   : 'text-white/40 hover:text-white/80 hover:bg-white/5 border border-transparent'
               }`}
             >
-              <Icon size={14} className={isActive ? (item.id === 'ecpr' ? 'text-red-300 animate-pulse' : item.id === 'synergy' ? 'text-amber-400 animate-pulse' : 'text-amber-300 animate-pulse') : 'text-white/40'} />
+              <Icon size={14} className={isActive ? (item.id === 'ecpr' ? 'text-red-300 animate-pulse' : item.id === 'todo' ? 'text-indigo-300 animate-pulse' : 'text-amber-300 animate-pulse') : 'text-white/40'} />
               <span>{item.label}</span>
             </button>
           );
@@ -510,10 +516,10 @@ export default function HubHome() {
 
         {activeSection === 'ecpr' ? (
           <PrologueECPRView />
-        ) : activeSection === 'synergy' ? (
+        ) : activeSection === 'todo' ? (
           <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 pt-home md:pt-home-md">
             <ErrorBoundary>
-              <PrologueSynergySection />
+              <PrologueTodoSection />
             </ErrorBoundary>
           </div>
         ) : (
@@ -610,6 +616,15 @@ export default function HubHome() {
                 />
               </motion.div>
               
+              {/* User-Defined Goals Progress Ring Dashboard */}
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05 }}
+              >
+                <GoalProgressRingDashboard />
+              </motion.div>
+
               {/* 에너지 패턴 추천앱 복구 구성 */}
               <motion.div
                 initial={{ opacity: 0, y: 15 }}

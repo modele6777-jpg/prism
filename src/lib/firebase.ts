@@ -25,6 +25,7 @@ import {
   limit as firestoreLimit,
   getDocs as firestoreGetDocs,
   updateDoc as firestoreUpdateDoc,
+  increment as firestoreIncrement,
   getDocFromServer as firestoreGetDocFromServer,
   setLogLevel as firestoreSetLogLevel,
 } from 'firebase/firestore';
@@ -100,6 +101,7 @@ export const where = firestoreWhere;
 export const serverTimestamp = firestoreServerTimestamp;
 export const Timestamp = firestoreTimestamp;
 export const limit = firestoreLimit;
+export const increment = firestoreIncrement;
 export const getDocFromServer = firestoreGetDocFromServer;
 
 export async function getDoc(docRef: any): Promise<any> {

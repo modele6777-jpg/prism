@@ -60,9 +60,35 @@
         "energyFlow": { "type": "array" },
         "emotions": { "type": "array" }
       }
+    },
+    "EpilogueCommunityPost": {
+      "title": "Epilogue Community Post",
+      "description": "Shared achievement statistics card and reflection to community",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userPhotoURL": { "type": "string" },
+        "dateKey": { "type": "string" },
+        "streakDays": { "type": "number" },
+        "totalDiaries": { "type": "number" },
+        "totalGratitudes": { "type": "number" },
+        "topMood": { "type": "string" },
+        "topMoodEmoji": { "type": "string" },
+        "soulEvolutionLevel": { "type": "string" },
+        "mindDiarySnippet": { "type": "string" },
+        "imageData": { "type": "string" },
+        "cheersCount": { "type": "number" },
+        "sharedAt": { "type": "string" }
+      },
+      "required": ["userId", "dateKey", "sharedAt"]
     }
   },
   "firestore": {
+    "/epilogue_community/{postId}": {
+      "schema": "EpilogueCommunityPost",
+      "description": "Shared Epilogue achievement statistics and cards in community"
+    },
     "/sharedState/{userId}": {
       "schema": "SharedState",
       "description": "User's global state and profile"

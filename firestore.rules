@@ -59,7 +59,15 @@ service cloud.firestore {
       allow read, write: if isOwner(userId);
     }
 
-    // 4. Legacy Prescriptions
+    // 4. Community Shared Achievement Cards
+    match /epilogue_community/{postId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn() && request.auth.uid == resource.data.userId;
+    }
+
+    // 5. Legacy Prescriptions
     match /prescriptions/{prescriptionId} {
       allow read: if isSignedIn();
       allow write: if false; 

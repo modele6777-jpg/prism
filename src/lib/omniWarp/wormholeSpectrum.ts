@@ -48,6 +48,8 @@ export const DISALLOWED_WARP_PATHS = new Set([
   '/',
   '/universe',
   '/ecpr',
+  '/todo',
+  '/mission',
   '/synergy',
   '/aegis',
   '/orb',

@@ -17,12 +17,15 @@ import {
   Palette,
   Shield,
   Play,
-  Square
+  Square,
+  Share2
 } from 'lucide-react';
 import { useApp, getPersistentUserProfile } from '@/contexts/AppContext';
 import { invokeLLM } from '@/lib/ai';
 import { recordPrismFeature } from '@/lib/prismOmniSync';
 import { playTTS, stopTTS, useTTSActive } from '@/utils/tts';
+import { EpilogueAchievementShareModal } from './EpilogueAchievementShareModal';
+import { calculateEpilogueAchievementStats } from '@/types/epilogueAchievement';
 
 interface CosmicFocusOption {
   id: string;
@@ -113,7 +116,7 @@ const FALLBACK_CHRONICLE: ChronicleStampData = {
 };
 
 export function EpilogueSynergySection() {
-  const { updateSharedState } = useApp();
+  const { sharedState, updateSharedState } = useApp();
   const userProfile = getPersistentUserProfile();
   const [selectedFocus, setSelectedFocus] = useState<string>(COSMIC_FOCUS_OPTIONS[0].id);
   const [customInsight, setCustomInsight] = useState<string>('');
@@ -124,6 +127,23 @@ export function EpilogueSynergySection() {
   const [copied, setCopied] = useState<boolean>(false);
   const [savedToast, setSavedToast] = useState<boolean>(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState<boolean>(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
+
+  const achievementStats = React.useMemo(() => {
+    let entries: any[] = [];
+    try {
+      const raw = localStorage.getItem('epilogue_diary_history');
+      if (raw) entries = JSON.parse(raw);
+    } catch {}
+    if ((!entries || entries.length === 0) && Array.isArray(sharedState?.epilogueHistory)) {
+      entries = sharedState.epilogueHistory;
+    }
+    return calculateEpilogueAchievementStats(
+      entries,
+      userProfile?.basic?.nickname || userProfile?.basic?.name || '빛나는 여행자',
+      chronicleData.soulEvolutionLevel
+    );
+  }, [sharedState?.epilogueHistory, userProfile, chronicleData.soulEvolutionLevel]);
 
   const isTTSActive = useTTSActive();
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -502,6 +522,15 @@ export function EpilogueSynergySection() {
                 {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
                 <span>{copied ? '복사 완료' : '전체 복사'}</span>
               </button>
+
+              <button
+                onClick={() => setIsShareModalOpen(true)}
+                className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-95 border border-purple-400/40"
+                title="성취 통계 데이터 이미지 렌더링 및 커뮤니티 공유"
+              >
+                <Share2 size={14} className="text-amber-300" />
+                <span>성취 카드 공유하기</span>
+              </button>
             </div>
           </div>
 
@@ -551,6 +580,13 @@ export function EpilogueSynergySection() {
           </div>
         </motion.div>
       )}
+
+      {/* 🌟 Achievement Share Modal */}
+      <EpilogueAchievementShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        stats={achievementStats}
+      />
     </div>
   );
 }

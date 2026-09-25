@@ -23,12 +23,17 @@ import {
   PenLine,
   Copy,
   Volume2,
-  Wand2
+  Wand2,
+  Share2,
+  Flame,
+  Award
 } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { getTodayDateKey } from '@/lib/dailyCache';
 import { invokeEpilogueSummaryLLM, invokeMindDiaryLLM, invokeLucyMidnightWhisperLLM, createLucyMidnightWhisperFallback, isBrokenMidnightWhisper } from '@/lib/ai';
 import { TTSButton } from '@/components/TTSButton';
+import { EpilogueAchievementShareModal } from './EpilogueAchievementShareModal';
+import { calculateEpilogueAchievementStats } from '@/types/epilogueAchievement';
 
 export interface EpilogueDiaryEntry {
   id: string;
@@ -147,6 +152,16 @@ export function EpilogueDiaryView() {
   const existingTodayEntry = useMemo(
     () => entries.find((e) => e.dateKey === todayKey),
     [entries, todayKey]
+  );
+
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const achievementStats = useMemo(
+    () =>
+      calculateEpilogueAchievementStats(
+        entries,
+        sharedState?.userProfile?.basic?.nickname || sharedState?.userProfile?.basic?.name || '빛나는 여행자'
+      ),
+    [entries, sharedState?.userProfile]
   );
 
   const cachedTodayDraft = useMemo(() => {
@@ -769,7 +784,50 @@ export function EpilogueDiaryView() {
               )}
               <span>{savedSuccess ? '기록 저장됨' : '다이어리 저장'}</span>
             </button>
+            <button
+              type="button"
+              onClick={() => setIsShareModalOpen(true)}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs font-bold font-sans transition-all cursor-pointer shadow-lg shadow-purple-500/20 active:scale-95 bg-white/10 hover:bg-white/20 text-white border border-purple-400/40 backdrop-blur-md"
+              title="에필로그 성취 통계 데이터 이미지 렌더링 및 커뮤니티 공유"
+            >
+              <Share2 size={15} className="text-amber-300" />
+              <span>공유하기</span>
+            </button>
           </div>
+        </div>
+
+        {/* 🌟 Achievement Statistics Quick Bar */}
+        <div className="pt-2 border-t border-white/10 relative z-10 flex flex-wrap items-center justify-between gap-2 bg-white/[0.02] p-3 rounded-2xl border border-white/5">
+          <div className="flex flex-wrap items-center gap-3 text-xs">
+            <span className="flex items-center gap-1 text-amber-300 font-bold font-mono">
+              <Flame size={14} className="text-amber-400" />
+              {achievementStats.streakDays}일 연속 성찰
+            </span>
+            <span className="text-white/20">|</span>
+            <span className="flex items-center gap-1 text-purple-200 font-mono">
+              <BookOpen size={13} className="text-purple-400" />
+              누적 다이어리 {achievementStats.totalDiaries}편
+            </span>
+            <span className="text-white/20">|</span>
+            <span className="flex items-center gap-1 text-pink-300 font-mono">
+              <Heart size={13} className="text-pink-400" />
+              감사 {achievementStats.totalGratitudes}가지
+            </span>
+            <span className="text-white/20 hidden sm:inline">|</span>
+            <span className="hidden sm:flex items-center gap-1 text-white/70 font-mono">
+              <span>{achievementStats.topMoodEmoji}</span>
+              <span>{achievementStats.topMood}</span>
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsShareModalOpen(true)}
+            className="px-3 py-1 rounded-xl text-[11px] font-bold text-amber-300 bg-amber-400/10 hover:bg-amber-400/20 border border-amber-400/30 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+          >
+            <Sparkles size={12} className="text-amber-400" />
+            <span>성취 카드 이미지 생성 &amp; 커뮤니티 공유</span>
+          </button>
         </div>
 
         {/* 5 Universe Footprints Micro Cards */}
@@ -1340,6 +1398,13 @@ export function EpilogueDiaryView() {
           </div>
         )}
       </div>
+
+      {/* 🌟 Achievement Share Modal */}
+      <EpilogueAchievementShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        stats={achievementStats}
+      />
     </div>
   );
 }

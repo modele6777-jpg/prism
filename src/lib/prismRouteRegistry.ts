@@ -31,7 +31,7 @@ export const INITIAL_PRISM_ROUTES: PrismRouteDefinition[] = [
     name: '프롤로그 허브',
     subName: '프리즘 우주의 중심',
     path: '/',
-    aliases: ['/universe', '/ecpr', '/synergy', '/aegis'],
+    aliases: ['/universe', '/ecpr', '/todo', '/mission', '/synergy', '/aegis'],
     icon: '🌌',
     runeSymbol: 'ᚠ',
     runeName: 'Fehu',
