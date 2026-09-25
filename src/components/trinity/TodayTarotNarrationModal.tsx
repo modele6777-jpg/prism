@@ -13,11 +13,8 @@ import {
   ChevronRight,
   Copy,
   Check,
-  FileText,
-  Headphones,
 } from 'lucide-react';
 import { Streamdown } from '@/components/Streamdown';
-import { TTSButton } from '@/components/TTSButton';
 import { playTTSInChunks, stopTTS, useTTSActive, useTTSState } from '@/utils/tts';
 import {
   buildTarotNarrationContent,
@@ -37,11 +34,9 @@ export function TodayTarotNarrationModal({
   isOpen,
   onClose,
   dailyResult,
-  initialMode = 'narration',
   onConsultLucy,
   onGoToTarotWheel,
 }: TodayTarotNarrationModalProps) {
-  const [viewMode, setViewMode] = useState<'narration' | 'text'>(initialMode);
   const [selectedVoice, setSelectedVoice] = useState<'Lucy' | 'Kore'>('Lucy');
   const [activeChapterIndex, setActiveChapterIndex] = useState<number | null>(null);
   const [isCopied, setIsCopied] = useState(false);
@@ -52,13 +47,6 @@ export function TodayTarotNarrationModal({
   const narrationData = useMemo(() => {
     return buildTarotNarrationContent(dailyResult);
   }, [dailyResult]);
-
-  // Synchronize initial mode when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      setViewMode(initialMode);
-    }
-  }, [isOpen, initialMode]);
 
   // Clean up TTS audio on close
   const handleClose = useCallback(() => {
@@ -75,9 +63,10 @@ export function TodayTarotNarrationModal({
     }
     if (!ttsState.activeFullText) return;
 
-    const matchedIdx = narrationData.chapters.findIndex((ch) =>
-      ch.speechText === ttsState.activeFullText ||
-      ttsState.activeFullText?.includes(ch.speechText.slice(0, 30))
+    const matchedIdx = narrationData.chapters.findIndex(
+      (ch) =>
+        ch.speechText === ttsState.activeFullText ||
+        ttsState.activeFullText?.includes(ch.speechText.slice(0, 30))
     );
     if (matchedIdx !== -1) {
       setActiveChapterIndex(matchedIdx);
@@ -116,8 +105,18 @@ export function TodayTarotNarrationModal({
 
   const handleCopyText = useCallback(() => {
     if (!narrationData.fullSpeech) return;
-    const textToCopy = `[오늘의 타로 리딩 낭독문]\n` +
-      narrationData.chapters.map((c) => `■ ${c.title}\n${c.displayText}`).join('\n\n');
+    const cardInfo = narrationData.card
+      ? `[오늘의 타로] ${narrationData.card.nameKo} (${narrationData.card.reversed ? '역방향' : '정방향'})\n\n`
+      : '';
+    const textToCopy =
+      `✨ [오늘의 타로 리딩 결과]\n` +
+      cardInfo +
+      `■ 마스터 심층 비전 진단\n${narrationData.rawDiagnosis}\n\n` +
+      (narrationData.rawRemedy ? `■ 오늘의 개운 실천 처방\n${narrationData.rawRemedy}\n\n` : '') +
+      (narrationData.rawBlessing
+        ? `■ 행운의 파동과 축복\n주파수: ${narrationData.frequency} · 행운수: ${narrationData.luckyNumber} · 행운색: ${narrationData.luckyColor}\n"${narrationData.rawBlessing}"\n`
+        : '') +
+      `- PRISM TRINITY ORACLE`;
     navigator.clipboard.writeText(textToCopy).catch(() => {});
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
@@ -144,8 +143,7 @@ export function TodayTarotNarrationModal({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.2 }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto"
+        className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md"
         onClick={handleClose}
       >
         <motion.div
@@ -176,45 +174,15 @@ export function TodayTarotNarrationModal({
             <X size={18} />
           </button>
 
-          {/* Header Title & View Mode Switcher */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-3 pr-8">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.25em] text-yellow-400 font-mono">
-                <Sparkles size={13} className="text-yellow-400 animate-pulse" />
-                <span>오늘의 타로 오라클 (Today&apos;s Tarot Oracle)</span>
-              </div>
-              <h2 className="text-lg sm:text-xl font-display font-bold text-white tracking-tight flex items-center gap-2">
-                <span>{viewMode === 'narration' ? '🎧 오늘의 타로 낭독 버전' : '📑 오늘의 타로 심층 리딩'}</span>
-              </h2>
+          {/* Header Title */}
+          <div className="flex flex-col justify-start gap-1 border-b border-white/10 pb-3 pr-8">
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.25em] text-yellow-400 font-mono">
+              <Sparkles size={13} className="text-yellow-400 animate-pulse" />
+              <span>오늘의 타로 오라클 (Today&apos;s Tarot Oracle)</span>
             </div>
-
-            {/* View Mode Toggle */}
-            <div className="flex items-center gap-1 p-1 bg-white/5 border border-white/10 rounded-2xl shrink-0 self-start sm:self-center">
-              <button
-                type="button"
-                onClick={() => setViewMode('narration')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  viewMode === 'narration'
-                    ? 'bg-gradient-to-r from-yellow-500 to-amber-500 text-black shadow-md'
-                    : 'text-white/60 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <Headphones size={13} />
-                <span>낭독 버전</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('text')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  viewMode === 'text'
-                    ? 'bg-gradient-to-r from-yellow-500 to-amber-500 text-black shadow-md'
-                    : 'text-white/60 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <FileText size={13} />
-                <span>텍스트 리딩</span>
-              </button>
-            </div>
+            <h2 className="text-lg sm:text-xl font-display font-bold text-white tracking-tight flex items-center gap-2">
+              <span>오늘의 타로 결과 & 음성 낭독</span>
+            </h2>
           </div>
 
           {/* Card Showcase Banner or Empty State */}
@@ -245,260 +213,307 @@ export function TodayTarotNarrationModal({
             </div>
           ) : (
             <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-yellow-500/15 via-amber-500/10 to-purple-950/20 border border-yellow-500/30 shadow-md">
-                <div className="w-16 h-24 sm:w-20 sm:h-32 rounded-xl overflow-hidden border border-yellow-400/40 bg-zinc-900 shadow-lg shrink-0 relative group">
-                  {card.imageUrl ? (
-                    <img
-                      src={card.imageUrl}
-                      alt={`${card.nameKo} 타로 카드`}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-zinc-800 text-yellow-400 font-bold text-xs">
-                      {card.nameKo.slice(0, 2)}
-                    </div>
-                  )}
-                  {card.reversed && (
-                    <div className="absolute inset-x-0 bottom-0 bg-red-950/80 text-[9px] text-red-200 text-center font-bold py-0.5 border-t border-red-500/30">
-                      역방향
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-1.5 text-center sm:text-left flex-1 min-w-0">
-                  <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-yellow-400/80 font-bold">
-                      COSMIC ANCHOR
-                    </span>
-                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-yellow-400/20 text-yellow-200 border border-yellow-400/30 font-semibold">
-                      {card.reversed ? '역방향 (Reversed)' : '정방향 (Upright)'}
-                    </span>
+              <div className="w-16 h-24 sm:w-20 sm:h-32 rounded-xl overflow-hidden border border-yellow-400/40 bg-zinc-900 shadow-lg shrink-0 relative group">
+                {card.imageUrl ? (
+                  <img
+                    src={card.imageUrl}
+                    alt={`${card.nameKo} 타로 카드`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-zinc-800 text-yellow-400 font-bold text-xs">
+                    {card.nameKo.slice(0, 2)}
                   </div>
-                  <h3 className="text-lg sm:text-xl font-bold text-white tracking-wide">
-                    {card.nameKo} <span className="text-xs text-white/50 font-mono font-normal">({card.name})</span>
-                  </h3>
-                  {card.keywords?.length > 0 && (
-                    <div className="flex items-center justify-center sm:justify-start gap-1.5 flex-wrap pt-1">
-                      {card.keywords.slice(0, 4).map((kw: string) => (
-                        <span
-                          key={kw}
-                          className="text-[9px] px-2 py-0.5 rounded-full bg-white/10 text-yellow-300/90 border border-white/10"
-                        >
-                          {kw}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-          )}
-
-          {/* VIEW MODE: NARRATION VERSION */}
-          {viewMode === 'narration' && (
-            <div className="space-y-4">
-              {/* Narration Player Control Bar */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-white/[0.04] border border-yellow-500/30 shadow-inner space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    {/* Big Master Play Button */}
-                    <button
-                      type="button"
-                      onClick={handlePlayFullNarration}
-                      className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all cursor-pointer shadow-lg active:scale-95 ${
-                        isTTSActive
-                          ? 'bg-amber-400 text-black border border-amber-300 animate-pulse'
-                          : 'bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black'
-                      }`}
-                    >
-                      {isTTSActive ? <VolumeX size={15} /> : <Play size={15} className="fill-current" />}
-                      <span>{isTTSActive ? '낭독 중지' : '전체 낭독 재생'}</span>
-                    </button>
-
-                    {/* Replay Button */}
-                    <button
-                      type="button"
-                      onClick={handlePlayFullNarration}
-                      className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition-all cursor-pointer"
-                      title="처음부터 다시 듣기"
-                    >
-                      <RotateCcw size={14} />
-                    </button>
-
-                    {/* Animated Equalizer Wavebars */}
-                    {isTTSActive && (
-                      <div className="flex items-end gap-1 h-5 px-2">
-                        <span className="w-1 bg-yellow-400 rounded-full animate-bounce [animation-delay:0ms] h-4" />
-                        <span className="w-1 bg-yellow-400 rounded-full animate-bounce [animation-delay:150ms] h-5" />
-                        <span className="w-1 bg-yellow-400 rounded-full animate-bounce [animation-delay:300ms] h-3" />
-                        <span className="w-1 bg-yellow-400 rounded-full animate-bounce [animation-delay:450ms] h-5" />
-                        <span className="w-1 bg-yellow-400 rounded-full animate-bounce [animation-delay:200ms] h-2" />
-                      </div>
-                    )}
+                )}
+                {card.reversed && (
+                  <div className="absolute inset-x-0 bottom-0 bg-red-950/80 text-[9px] text-red-200 text-center font-bold py-0.5 border-t border-red-500/30">
+                    역방향
                   </div>
-
-                  {/* Voice Selector & Copy */}
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1 p-1 bg-black/40 border border-white/10 rounded-xl text-[11px]">
-                      <span className="text-white/40 pl-1.5 font-mono text-[10px]">목소리:</span>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedVoice('Lucy')}
-                        className={`px-2 py-0.5 rounded-lg font-bold transition-all cursor-pointer ${
-                          selectedVoice === 'Lucy'
-                            ? 'bg-yellow-400/25 text-yellow-300 border border-yellow-400/40'
-                            : 'text-white/60 hover:text-white'
-                        }`}
-                      >
-                        루시
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedVoice('Kore')}
-                        className={`px-2 py-0.5 rounded-lg font-bold transition-all cursor-pointer ${
-                          selectedVoice === 'Kore'
-                            ? 'bg-yellow-400/25 text-yellow-300 border border-yellow-400/40'
-                            : 'text-white/60 hover:text-white'
-                        }`}
-                      >
-                        Kore
-                      </button>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={handleCopyText}
-                      className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition-all cursor-pointer"
-                      title="낭독 텍스트 전체 복사"
-                    >
-                      {isCopied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-[11px] text-white/50 pt-1 font-mono">
-                  <span>총 4개 단락 낭독 구성</span>
-                  <span>{activeChapterIndex !== null ? `현재: Chapter ${activeChapterIndex + 1} 낭독 중` : '단락별 개별 청취 가능'}</span>
-                </div>
+                )}
               </div>
 
-              {/* 4 Structured Narration Chapter Cards */}
-              <div className="space-y-3">
-                {narrationData.chapters.map((chapter, idx) => {
-                  const isActive = activeChapterIndex === idx;
-                  const Icon =
-                    chapter.iconType === 'sparkles'
-                      ? Sparkles
-                      : chapter.iconType === 'eye'
-                      ? Eye
-                      : chapter.iconType === 'compass'
-                      ? Compass
-                      : Sun;
-
-                  return (
-                    <div
-                      key={chapter.id}
-                      className={`p-4 rounded-2xl border transition-all duration-200 text-left ${
-                        isActive
-                          ? 'bg-gradient-to-r from-yellow-500/20 via-amber-500/10 to-transparent border-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.25)]'
-                          : 'bg-white/[0.02] border-white/10 hover:border-white/20'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                              isActive ? 'bg-yellow-400 text-black' : 'bg-white/10 text-yellow-400'
-                            }`}
-                          >
-                            <Icon size={14} />
-                          </div>
-                          <div>
-                            <span className="text-[10px] font-mono uppercase tracking-wider text-yellow-400/80 block">
-                              {chapter.badge}
-                            </span>
-                            <h4 className="text-sm font-bold text-white">{chapter.title}</h4>
-                          </div>
-                        </div>
-
-                        {/* Individual Chapter Listen Button */}
-                        <button
-                          type="button"
-                          onClick={() => handlePlayChapter(chapter, idx)}
-                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                            isActive
-                              ? 'bg-yellow-400 text-black shadow-sm animate-pulse'
-                              : 'bg-white/10 hover:bg-white/20 text-white/90 border border-white/15'
-                          }`}
-                        >
-                          {isActive ? <VolumeX size={11} /> : <Volume2 size={11} />}
-                          <span>{isActive ? '중지' : '이 단락 듣기'}</span>
-                        </button>
-                      </div>
-
-                      <div className="text-xs text-stone-200 leading-relaxed font-sans whitespace-pre-line pl-9">
-                        {chapter.displayText}
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="space-y-1.5 text-center sm:text-left flex-1 min-w-0">
+                <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-yellow-400/80 font-bold">
+                    COSMIC ANCHOR
+                  </span>
+                  <span className="text-[9px] px-2 py-0.5 rounded-full bg-yellow-400/20 text-yellow-200 border border-yellow-400/30 font-semibold">
+                    {card.reversed ? '역방향 (Reversed)' : '정방향 (Upright)'}
+                  </span>
+                </div>
+                <h3 className="text-lg sm:text-xl font-bold text-white tracking-wide">
+                  {card.nameKo} <span className="text-xs text-white/50 font-mono font-normal">({card.name})</span>
+                </h3>
+                {card.keywords?.length > 0 && (
+                  <div className="flex items-center justify-center sm:justify-start gap-1.5 flex-wrap pt-1">
+                    {card.keywords.slice(0, 4).map((kw: string) => (
+                      <span
+                        key={kw}
+                        className="text-[9px] px-2 py-0.5 rounded-full bg-white/10 text-yellow-300/90 border border-white/10"
+                      >
+                        {kw}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {/* VIEW MODE: FULL TEXT READING */}
-          {viewMode === 'text' && (
-            <div className="space-y-3 text-left">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-bold text-yellow-400 uppercase tracking-wider flex items-center gap-1.5 font-mono">
-                  <Sparkles size={13} /> 오늘의 심층 비전 원문
-                </span>
-                <div className="flex items-center gap-2">
+          {/* Integrated Narration Controller (기본 텍스트에 통합된 낭독 바) */}
+          {card && (
+            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-yellow-500/10 via-amber-500/5 to-purple-950/20 border border-yellow-500/30 shadow-inner space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  {/* Master Play Button */}
                   <button
                     type="button"
-                    onClick={() => setViewMode('narration')}
-                    className="text-[11px] text-yellow-300 font-bold px-2.5 py-1 rounded-xl bg-yellow-500/15 border border-yellow-500/30 hover:bg-yellow-500/25 flex items-center gap-1 transition-all cursor-pointer"
+                    onClick={handlePlayFullNarration}
+                    className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all cursor-pointer shadow-lg active:scale-95 ${
+                      isTTSActive
+                        ? 'bg-amber-400 text-black border border-amber-300 animate-pulse'
+                        : 'bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black'
+                    }`}
                   >
-                    <Headphones size={12} />
-                    <span>낭독 버전으로 전환</span>
+                    {isTTSActive ? <VolumeX size={15} /> : <Play size={15} className="fill-current" />}
+                    <span>{isTTSActive ? '낭독 중지' : '전체 낭독 듣기'}</span>
                   </button>
-                  <TTSButton
-                    text={narrationData.fullSpeech}
-                    voice={selectedVoice}
-                    className="text-yellow-400 border-yellow-500/20 text-xs py-1 scale-90"
-                  />
+
+                  {/* Replay Button */}
+                  <button
+                    type="button"
+                    onClick={handlePlayFullNarration}
+                    className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition-all cursor-pointer"
+                    title="처음부터 다시 듣기"
+                  >
+                    <RotateCcw size={14} />
+                  </button>
+
+                  {/* Animated Equalizer Wavebars */}
+                  {isTTSActive && (
+                    <div className="flex items-end gap-1 h-5 px-2">
+                      <span className="w-1 bg-yellow-400 rounded-full animate-bounce [animation-delay:0ms] h-4" />
+                      <span className="w-1 bg-yellow-400 rounded-full animate-bounce [animation-delay:150ms] h-5" />
+                      <span className="w-1 bg-yellow-400 rounded-full animate-bounce [animation-delay:300ms] h-3" />
+                      <span className="w-1 bg-yellow-400 rounded-full animate-bounce [animation-delay:450ms] h-5" />
+                      <span className="w-1 bg-yellow-400 rounded-full animate-bounce [animation-delay:200ms] h-2" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Voice Selector & Copy Button */}
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 p-1 bg-black/40 border border-white/10 rounded-xl text-[11px]">
+                    <span className="text-white/40 pl-1.5 font-mono text-[10px]">목소리:</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedVoice('Lucy')}
+                      className={`px-2 py-0.5 rounded-lg font-bold transition-all cursor-pointer ${
+                        selectedVoice === 'Lucy'
+                          ? 'bg-yellow-400/25 text-yellow-300 border border-yellow-400/40'
+                          : 'text-white/60 hover:text-white'
+                      }`}
+                    >
+                      루시
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedVoice('Kore')}
+                      className={`px-2 py-0.5 rounded-lg font-bold transition-all cursor-pointer ${
+                        selectedVoice === 'Kore'
+                          ? 'bg-yellow-400/25 text-yellow-300 border border-yellow-400/40'
+                          : 'text-white/60 hover:text-white'
+                      }`}
+                    >
+                      Kore
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleCopyText}
+                    className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition-all cursor-pointer"
+                    title="타로 결과 및 낭독 텍스트 전체 복사"
+                  >
+                    {isCopied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                  </button>
                 </div>
               </div>
 
-              <div className="p-4 sm:p-5 rounded-2xl bg-white/[0.03] border border-white/10 text-stone-200 text-sm leading-relaxed space-y-3 shadow-inner max-h-[460px] overflow-y-auto custom-scrollbar">
-                <Streamdown immediate>{narrationData.rawDiagnosis}</Streamdown>
+              <div className="flex items-center justify-between text-[11px] text-white/50 pt-1 font-mono">
+                <span>텍스트 리딩 원문 & 실시간 음성 동조</span>
+                <span>
+                  {activeChapterIndex !== null
+                    ? `현재: ${narrationData.chapters[activeChapterIndex]?.title || '낭독 중'}`
+                    : '단락별 개별 청취 가능'}
+                </span>
+              </div>
+            </div>
+          )}
 
-                {narrationData.rawRemedy && (
-                  <div className="mt-4 pt-4 border-t border-white/10 space-y-1">
-                    <span className="text-xs font-bold text-yellow-400 flex items-center gap-1">
-                      <Compass size={13} /> 오늘의 개운 실천 처방
-                    </span>
-                    <p className="text-xs text-white/80 font-sans leading-relaxed">
-                      {narrationData.rawRemedy}
-                    </p>
+          {/* Core Text Body with Integrated Audio Narration (기본 텍스트에 낭독 기능 탑재) */}
+          {card && (
+            <div className="space-y-4 text-left">
+              {/* Section 1: 오늘의 심층 비전 진단 */}
+              <div
+                className={`p-5 rounded-2xl border transition-all duration-300 relative ${
+                  activeChapterIndex === 1
+                    ? 'bg-gradient-to-r from-yellow-500/15 via-amber-500/10 to-transparent border-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.25)]'
+                    : 'bg-white/[0.03] border-white/10'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                        activeChapterIndex === 1 ? 'bg-yellow-400 text-black' : 'bg-white/10 text-yellow-400'
+                      }`}
+                    >
+                      <Eye size={14} />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-yellow-400/80 block font-bold">
+                        COSMIC INSIGHT
+                      </span>
+                      <h4 className="text-sm font-bold text-white">마스터 심층 비전 진단</h4>
+                    </div>
                   </div>
-                )}
 
-                {narrationData.rawBlessing && (
-                  <div className="mt-3 pt-3 border-t border-white/10 space-y-1">
-                    <span className="text-xs font-bold text-amber-300 flex items-center gap-1">
-                      <Sun size={13} /> 행운과 축복
-                    </span>
-                    <p className="text-xs text-white/70 font-sans leading-relaxed">
-                      • 주파수: {narrationData.frequency} · 행운수: {narrationData.luckyNumber} · 행운색: {narrationData.luckyColor}
-                    </p>
-                    <p className="text-xs text-stone-300 font-sans italic">
+                  {/* Section TTS Play Button */}
+                  {narrationData.chapters[1] && (
+                    <button
+                      type="button"
+                      onClick={() => handlePlayChapter(narrationData.chapters[1], 1)}
+                      className={`px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                        activeChapterIndex === 1
+                          ? 'bg-yellow-400 text-black shadow-sm animate-pulse'
+                          : 'bg-white/10 hover:bg-white/20 text-white/90 border border-white/15'
+                      }`}
+                    >
+                      {activeChapterIndex === 1 ? <VolumeX size={11} /> : <Volume2 size={11} />}
+                      <span>{activeChapterIndex === 1 ? '낭독 중지' : '이 단락 듣기'}</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="text-sm text-stone-200 leading-relaxed font-sans pl-1">
+                  <Streamdown immediate>{narrationData.rawDiagnosis}</Streamdown>
+                </div>
+              </div>
+
+              {/* Section 2: 오늘의 개운 실천 처방 */}
+              {narrationData.rawRemedy && (
+                <div
+                  className={`p-5 rounded-2xl border transition-all duration-300 relative ${
+                    activeChapterIndex === 2
+                      ? 'bg-gradient-to-r from-yellow-500/15 via-amber-500/10 to-transparent border-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.25)]'
+                      : 'bg-white/[0.03] border-white/10'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                          activeChapterIndex === 2 ? 'bg-yellow-400 text-black' : 'bg-white/10 text-amber-400'
+                        }`}
+                      >
+                        <Compass size={14} />
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-amber-400/80 block font-bold">
+                          ACTION REMEDY
+                        </span>
+                        <h4 className="text-sm font-bold text-white">오늘의 개운 실천 처방</h4>
+                      </div>
+                    </div>
+
+                    {/* Section TTS Play Button */}
+                    {narrationData.chapters[2] && (
+                      <button
+                        type="button"
+                        onClick={() => handlePlayChapter(narrationData.chapters[2], 2)}
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                          activeChapterIndex === 2
+                            ? 'bg-yellow-400 text-black shadow-sm animate-pulse'
+                            : 'bg-white/10 hover:bg-white/20 text-white/90 border border-white/15'
+                        }`}
+                      >
+                        {activeChapterIndex === 2 ? <VolumeX size={11} /> : <Volume2 size={11} />}
+                        <span>{activeChapterIndex === 2 ? '낭독 중지' : '이 단락 듣기'}</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="text-sm text-stone-200 leading-relaxed font-sans whitespace-pre-line pl-1">
+                    {narrationData.rawRemedy}
+                  </div>
+                </div>
+              )}
+
+              {/* Section 3: 행운의 파동과 축복 */}
+              {narrationData.rawBlessing && (
+                <div
+                  className={`p-5 rounded-2xl border transition-all duration-300 relative ${
+                    activeChapterIndex === 3
+                      ? 'bg-gradient-to-r from-yellow-500/15 via-amber-500/10 to-transparent border-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.25)]'
+                      : 'bg-white/[0.03] border-white/10'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                          activeChapterIndex === 3 ? 'bg-yellow-400 text-black' : 'bg-white/10 text-amber-300'
+                        }`}
+                      >
+                        <Sun size={14} />
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-amber-300/80 block font-bold">
+                          COSMIC BLESSING
+                        </span>
+                        <h4 className="text-sm font-bold text-white">행운의 파동과 축복</h4>
+                      </div>
+                    </div>
+
+                    {/* Section TTS Play Button */}
+                    {narrationData.chapters[3] && (
+                      <button
+                        type="button"
+                        onClick={() => handlePlayChapter(narrationData.chapters[3], 3)}
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                          activeChapterIndex === 3
+                            ? 'bg-yellow-400 text-black shadow-sm animate-pulse'
+                            : 'bg-white/10 hover:bg-white/20 text-white/90 border border-white/15'
+                        }`}
+                      >
+                        {activeChapterIndex === 3 ? <VolumeX size={11} /> : <Volume2 size={11} />}
+                        <span>{activeChapterIndex === 3 ? '낭독 중지' : '이 단락 듣기'}</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="space-y-2.5 pl-1">
+                    <div className="flex items-center gap-2 text-xs font-mono text-yellow-300/90 flex-wrap">
+                      <span className="px-2 py-0.5 rounded-md bg-yellow-400/10 border border-yellow-400/20">
+                        주파수: {narrationData.frequency}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md bg-yellow-400/10 border border-yellow-400/20">
+                        행운수: {narrationData.luckyNumber}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md bg-yellow-400/10 border border-yellow-400/20">
+                        행운색: {narrationData.luckyColor}
+                      </span>
+                    </div>
+                    <p className="text-xs text-stone-300 font-sans italic leading-relaxed">
                       &quot;{narrationData.rawBlessing}&quot;
                     </p>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           )}
 

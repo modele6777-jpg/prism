@@ -1157,7 +1157,6 @@ export default function TrinityApp() {
   const [isMeasuringInsight, setIsMeasuringInsight] = useState(false);
   const [isDailyOracleLoading, setIsDailyOracleLoading] = useState(false);
   const [showDailyModal, setShowDailyModal] = useState(false);
-  const [dailyModalMode, setDailyModalMode] = useState<'narration' | 'text'>('narration');
   const [limitModalInfo, setLimitModalInfo] = useState<{ open: boolean; type: 'daily' | 'soul'; dapp: string } | null>(null);
   const [dailyResult, setDailyResult] = useState<any>(() => getInitialTrinityDailyResult());
   const dailyResultRef = useRef<any>(dailyResult);
@@ -2074,7 +2073,6 @@ function playDailyCardChimeAsync() {
     if (openAudio) {
       sessionStorage.removeItem('prism_open_daily_audio');
       restoreTodayDailyResult();
-      setDailyModalMode('narration');
       setShowDailyModal(true);
     }
   }, [restoreTodayDailyResult]);
@@ -3115,25 +3113,13 @@ function playDailyCardChimeAsync() {
                                     type="button"
                                     onClick={() => {
                                       restoreTodayDailyResult();
-                                      setDailyModalMode('narration');
                                       setShowDailyModal(true);
                                     }}
-                                    className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-yellow-500/25 to-amber-500/20 hover:from-yellow-500/35 hover:to-amber-500/30 border border-yellow-400/40 text-[10px] text-yellow-200 font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
-                                    title="오늘의 타로 결과를 낭독 버전으로 듣기"
+                                    className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-yellow-500/25 to-amber-500/20 hover:from-yellow-500/35 hover:to-amber-500/30 border border-yellow-400/40 text-[11px] text-yellow-200 font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
+                                    title="오늘의 타로 결과 및 음성 낭독 보기"
                                   >
-                                    <Headphones size={12} className="text-yellow-400" />
-                                    <span>낭독 버전</span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      restoreTodayDailyResult();
-                                      setDailyModalMode('text');
-                                      setShowDailyModal(true);
-                                    }}
-                                    className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/15 border border-yellow-500/20 text-[10px] text-yellow-300 font-bold transition-all hover:border-yellow-400/40 active:scale-95 cursor-pointer"
-                                  >
-                                    결과 보기
+                                    <Sparkles size={12} className="text-yellow-400" />
+                                    <span>오늘의 타로 결과 보기</span>
                                   </button>
                                 </div>
                               </div>
@@ -3317,26 +3303,13 @@ function playDailyCardChimeAsync() {
                                     type="button"
                                     onClick={() => {
                                       restoreTodayDailyResult();
-                                      setDailyModalMode('narration');
                                       setShowDailyModal(true);
                                     }}
-                                    className="flex-1 py-3.5 px-4 rounded-2xl bg-gradient-to-r from-yellow-500 via-amber-500 to-yellow-600 hover:from-yellow-400 hover:to-amber-400 text-black font-extrabold tracking-wider flex items-center justify-center gap-2 transition-all shadow-[0_0_25px_rgba(234,179,8,0.4)] cursor-pointer text-xs"
-                                    title="오늘의 타로 결과를 낭독 버전으로 듣기"
+                                    className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-yellow-500 via-amber-500 to-yellow-600 hover:from-yellow-400 hover:to-amber-400 text-black font-extrabold tracking-wider flex items-center justify-center gap-2 transition-all shadow-[0_0_25px_rgba(234,179,8,0.4)] cursor-pointer text-xs"
+                                    title="오늘의 타로 결과 및 음성 낭독 보기"
                                   >
-                                    <Headphones size={17} />
-                                    <span>오늘의 타로 낭독 버전으로 다시 보기</span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      restoreTodayDailyResult();
-                                      setDailyModalMode('text');
-                                      setShowDailyModal(true);
-                                    }}
-                                    className="sm:w-auto py-3.5 px-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-yellow-500/25 text-yellow-300 font-bold tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer text-xs"
-                                  >
-                                    <FileText size={15} />
-                                    <span>결과 원문 보기</span>
+                                    <Sparkles size={16} />
+                                    <span>오늘의 타로 결과 보기 (음성 낭독 지원)</span>
                                   </button>
                                 </div>
                               ) : (
@@ -4081,12 +4054,11 @@ function playDailyCardChimeAsync() {
         message={notice.message}
       />
 
-      {/* Today's Ruling Card / Daily Result Modal (오디오 낭독 버전 & 텍스트 리딩 듀얼 모드) */}
+      {/* Today's Ruling Card / Daily Result Modal (통합 텍스트 리딩 & 실시간 음성 낭독) */}
       <TodayTarotNarrationModal
         isOpen={showDailyModal}
         onClose={() => setShowDailyModal(false)}
         dailyResult={dailyResult}
-        initialMode={dailyModalMode}
         onConsultLucy={(context) => {
           openLucyChat('trinity');
           void handleSend(

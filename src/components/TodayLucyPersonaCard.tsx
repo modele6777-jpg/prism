@@ -260,10 +260,10 @@ export function TodayLucyPersonaCard({
               type="button"
               onClick={() => setIsTarotNarrationOpen(true)}
               className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-bold text-xs flex items-center justify-center gap-1.5 shadow-[0_0_12px_rgba(234,179,8,0.3)] transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer shrink-0 font-sans"
-              title="오늘의 타로 결과를 낭독 버전으로 듣기"
+              title="오늘의 타로 결과 및 음성 낭독 보기"
             >
-              <Headphones size={13} />
-              <span>오늘의 타로 낭독버전으로 다시 보기</span>
+              <Sparkles size={13} />
+              <span>오늘의 타로 결과 보기</span>
             </button>
           </div>
         )}
@@ -287,16 +287,15 @@ export function TodayLucyPersonaCard({
         </div>
       </div>
 
-      {/* 🔮 오늘의 타로 낭독 버전 전용 모달 */}
+      {/* 🔮 오늘의 타로 통합 결과 & 음성 낭독 모달 */}
       <TodayTarotNarrationModal
         isOpen={isTarotNarrationOpen}
         onClose={() => setIsTarotNarrationOpen(false)}
         dailyResult={todayTarotResult}
-        initialMode="narration"
         onConsultLucy={(cardContext) => {
           setIsTarotNarrationOpen(false);
           openLucyChat('lucy', {
-            draftPrompt: `루시야, 방금 뽑은 오늘의 타로 카드 결과를 낭독 버전으로 들었어!\n\n${cardContext}\n\n이 카드의 메시지와 실천 방향에 대해 더 깊은 통찰을 나눠줘.`,
+            draftPrompt: `루시야, 방금 뽑은 오늘의 타로 카드 결과를 확인했어!\n\n${cardContext}\n\n이 카드의 메시지와 실천 방향에 대해 더 깊은 통찰을 나눠줘.`,
           });
         }}
       />
