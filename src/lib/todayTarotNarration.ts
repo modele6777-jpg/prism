@@ -1,9 +1,10 @@
 import { getTodayDateKey } from '@/lib/dailyCache';
 import { getTarotCardImageUrl, type TarotCard } from '@/data/tarotData';
 import { prepareNaturalSpeechText } from '@/utils/speechText';
+import { extractConciseSummary, stripSummaryFromTarotText } from '@/lib/tarotSummaryUtils';
 
 export interface TarotNarrationChapter {
-  id: 'card_anchor' | 'master_diagnosis' | 'action_remedy' | 'blessing_frequency';
+  id: 'card_anchor' | 'summary' | 'master_diagnosis' | 'action_remedy' | 'blessing_frequency';
   title: string;
   badge: string;
   iconType: 'sparkles' | 'eye' | 'compass' | 'sun';
@@ -25,6 +26,9 @@ export interface TarotNarrationData {
   chapters: TarotNarrationChapter[];
   fullSpeech: string;
   rawDiagnosis: string;
+  cleanDiagnosis: string;
+  conciseSummaryBullets: string[];
+  summarySpeechText: string;
   rawRemedy: string;
   rawBlessing: string;
   frequency: string;
@@ -35,17 +39,8 @@ export interface TarotNarrationData {
 /**
  * 🚫 타로 텍스트에서 불필요한 후행 요약 블록을 말끔하게 정돈
  */
-function cleanDiagnosisText(raw: string): string {
-  if (!raw) return '';
-  let text = String(raw).trim();
-  // Strip trailing 3-line summary blocks if present
-  const summaryMatch = text.match(/(?:\r?\n|^)\s*(?:#{1,6}\s*)?(?:✨\s*)?(?:\d+\.\s*)?(?:\[\s*)?(?:핵심\s*(?:3줄\s*|세줄\s*)?요약|3줄\s*요약|Quick\s*Summary)(?:\])?\s*[\s\S]*$/i);
-  if (summaryMatch && summaryMatch.index !== undefined) {
-    text = text.slice(0, summaryMatch.index).trim();
-  }
-  // Strip trailing bullets with tags
-  text = text.replace(/(?:\r?\n|^)\s*[-*•·]?\s*\[(?:현재\s*에너지|방향과\s*결단|실천\s*처방)\][^\r\n]*/gi, "").trim();
-  return text;
+export function cleanDiagnosisText(raw: string): string {
+  return stripSummaryFromTarotText(raw);
 }
 
 /**
@@ -88,6 +83,9 @@ export function buildTarotNarrationContent(dailyResult: any): TarotNarrationData
       chapters: [],
       fullSpeech: '',
       rawDiagnosis: '',
+      cleanDiagnosis: '',
+      conciseSummaryBullets: [],
+      summarySpeechText: '',
       rawRemedy: '',
       rawBlessing: '',
       frequency: '528Hz',
@@ -107,12 +105,21 @@ export function buildTarotNarrationContent(dailyResult: any): TarotNarrationData
     : ['변화', '직관', '도약', '조율'];
   const imageUrl = getTarotCardImageUrl(drawnCard);
 
-  const rawDiag = cleanDiagnosisText(
+  const fullSourceText = String(
     dailyResult.diagnosis ||
     dailyResult.summary ||
     dailyResult.prescription ||
     dailyResult.reading ||
     '오늘 하루는 내면의 직관과 차분한 호흡에 집중할 때 가장 맑고 조화로운 길이 열립니다.'
+  ).trim();
+
+  const conciseSummaryBullets = extractConciseSummary(fullSourceText);
+  const cleanDiag = cleanDiagnosisText(fullSourceText);
+
+  const summarySpeechText = prepareNaturalSpeechText(
+    conciseSummaryBullets.length > 0
+      ? conciseSummaryBullets.map((b) => b.replace(/^\[[^\]]+\]\s*/, '')).join('. ')
+      : `${nameKo} 카드가 오늘 하루 당신에게 전하는 명쾌한 방향과 실천 처방입니다.`
   );
 
   const rawRemedy = String(
@@ -136,17 +143,13 @@ export function buildTarotNarrationContent(dailyResult: any): TarotNarrationData
   const ch1Display = `✨ 오늘의 지배 카드: [${nameKo}${nameEn ? ` (${nameEn})` : ''}] · ${orientationStr}\n` +
     `카드의 핵심 에너지 키워드는 ${keywords.join(', ')}입니다. 오늘 하루 내면의 나침반을 이 카드의 상징에 조율하세요.`;
 
-  // Chapter 2: 마스터 심층 비전 해독
-  const ch2Speech = prepareNaturalSpeechText(
-    `오늘의 심층 비전 해독입니다. ${rawDiag}`
-  );
-  const ch2Display = rawDiag;
+  // Chapter 2: 핵심 3줄 요약
+  const chSummarySpeech = summarySpeechText;
+  const chSummaryDisplay = conciseSummaryBullets.join('\n');
 
-  // Chapter 3: 오늘의 개운 실천 처방
-  const ch3Speech = prepareNaturalSpeechText(
-    `오늘 당신을 위한 개운 실천 처방입니다. ${rawRemedy}`
-  );
-  const ch3Display = rawRemedy;
+  // Chapter 3: 마스터 심층 비전 해독 (5단계 마크다운 전체)
+  const ch3Speech = prepareNaturalSpeechText(cleanDiag);
+  const ch3Display = cleanDiag;
 
   // Chapter 4: 행운의 주파수와 축복 확언
   const ch4Speech = prepareNaturalSpeechText(
@@ -163,26 +166,30 @@ export function buildTarotNarrationContent(dailyResult: any): TarotNarrationData
       speechText: ch1Speech,
       displayText: ch1Display,
     },
+    ...(conciseSummaryBullets.length > 0
+      ? [
+          {
+            id: 'summary' as const,
+            title: '핵심 3줄 요약',
+            badge: 'Quick Summary · 핵심 요약',
+            iconType: 'sparkles' as const,
+            speechText: chSummarySpeech,
+            displayText: chSummaryDisplay,
+          },
+        ]
+      : []),
     {
       id: 'master_diagnosis',
-      title: '마스터 심층 비전 해독',
-      badge: 'Chapter 2 · 비전 진단',
+      title: '마스터 심층 비전 리딩',
+      badge: 'Chapter 2 · 심층 리딩',
       iconType: 'eye',
-      speechText: ch2Speech,
-      displayText: ch2Display,
-    },
-    {
-      id: 'action_remedy',
-      title: '오늘의 개운 실천 처방',
-      badge: 'Chapter 3 · 행동 가이드',
-      iconType: 'compass',
       speechText: ch3Speech,
       displayText: ch3Display,
     },
     {
       id: 'blessing_frequency',
       title: '행운의 주파수와 축복 확언',
-      badge: 'Chapter 4 · 에너지 축복',
+      badge: 'Chapter 3 · 에너지 축복',
       iconType: 'sun',
       speechText: ch4Speech,
       displayText: ch4Display,
@@ -190,7 +197,9 @@ export function buildTarotNarrationContent(dailyResult: any): TarotNarrationData
   ];
 
   // Full unified narration flow
-  const fullSpeech = chapters.map((c) => c.speechText).join(' ');
+  const fullSpeech = prepareNaturalSpeechText(
+    `${ch1Speech} ${chSummarySpeech ? `핵심 요약입니다. ${chSummarySpeech}. ` : ''}전체 심층 리딩입니다. ${ch3Speech} ${ch4Speech}`
+  );
 
   return {
     hasResult: true,
@@ -207,7 +216,10 @@ export function buildTarotNarrationContent(dailyResult: any): TarotNarrationData
       : null,
     chapters,
     fullSpeech,
-    rawDiagnosis: rawDiag,
+    rawDiagnosis: fullSourceText,
+    cleanDiagnosis: cleanDiag,
+    conciseSummaryBullets,
+    summarySpeechText,
     rawRemedy,
     rawBlessing,
     frequency,

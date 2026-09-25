@@ -156,15 +156,27 @@ function buildLocalTrinityDailyOracle(card: any, mode: string = "oracle") {
   const isReversed = !!card?.reversed;
   const orientation = isReversed ? "역방향 (Reversed)" : "정방향 (Upright)";
 
-  const diagnosis = `### 🌟 오늘 하루의 기운: [${cardName}${cardEn ? ` (${cardEn})` : ''}] (${orientation})
-오늘 하루는 **${keywords}**의 에너지가 중심 흐름을 이끕니다. 서두르지 말고 자신의 페이스를 편안하게 유지하세요.
+  const diagnosis = `### 🕯️ 1. 카드가 비추는 당신의 마음과 현재 에너지
+오늘 하루는 **${keywords}**의 에너지가 중심 흐름을 이끕니다. 서두르지 말고 자신의 페이스를 편안하게 유지하며 내면의 직관에 귀를 기울이세요.
 
-### 💡 오늘 챙길 포인트
-- **오늘의 조언**: 오늘 해야 할 작은 일부터 차분히 매듭지으며 나아가세요.
-- **주의할 점**: 사소한 일이나 타인의 말에 감정을 소모하지 마세요.
+### 🎴 2. 펼쳐진 카드들이 들려주는 이야기
+오늘 모습을 드러낸 카드는 **[${cardName}${cardEn ? ` (${cardEn})` : ''}] (${orientation})**입니다. ${cardType}의 깊은 통찰이 당신의 일상과 선택의 갈림길을 온화하게 비추고 있습니다.
 
-### 🍀 오늘의 초간단 개운 행동
-물 한 잔을 마시며 깊은 심호흡 3번으로 머릿속을 맑게 비워보세요.`;
+### 🔮 3. 트리니티 마스터의 직관적 결단 & 방향성
+**[${isReversed ? '신중한 내실 다지기 & 점검 필요' : '자신감 있는 실행 & 적극적인 전진'}]**
+${isReversed ? '지금은 서두르기보다 주변 상황을 면밀히 살피고 내면의 안정을 우선하는 것이 현명한 선택입니다.' : '망설이지 말고 마음속에 품어온 긍정적인 계획을 향해 당당히 한 걸음 내딛으십시오.'}
+
+### 🌿 4. 운의 흐름을 바꿀 마스터의 실천 처방 (개운 가이드)
+- **오늘의 핵심 실천**: 물 한 잔을 마시며 깊은 심호흡 3번으로 머릿속을 맑게 비우고 마음의 중심 잡기
+- **주의할 점**: 사소한 일이나 타인의 말에 감정을 소모하지 않기
+
+### ✨ 5. 당신의 길을 축복하는 영혼의 한마디
+> _"나는 오늘 [${cardName}] 카드의 조화로운 에너지를 마음에 품고, 나에게 주어지는 모든 순간을 감사와 확신으로 맞이합니다."_
+
+[핵심 3줄 요약]
+- [현재 에너지] ${cardName} 카드의 ${orientation} 파동이 중심을 이루는 하루입니다.
+- [방향과 결단] ${isReversed ? '신중하게 내실을 다지며 흐름을 조율하세요.' : '내면의 직관을 믿고 적극적으로 나아가세요.'}
+- [실천 처방] 맑은 물 한 잔과 함께 깊은 심호흡으로 마음의 평온 지키기`;
 
   return {
     diagnosis,
@@ -2021,6 +2033,9 @@ function playDailyCardChimeAsync() {
     if (localStorage.getItem(limitKey) || localStorage.getItem(guestLimitKey)) {
       return true;
     }
+    if (dailyResult?.drawnCard && (dailyResult?.dateKey === today || !dailyResult?.dateKey)) {
+      return true;
+    }
     if (sharedState?.todayOracles?.[today]?.trinity) {
       return true;
     }
@@ -2376,8 +2391,14 @@ function playDailyCardChimeAsync() {
           setShowDailyModal(true);
         }
         try {
+          const uid = firebaseUser?.uid || "guest";
+          const today = getTodayDateKey();
+          localStorage.setItem(`limit_daily_trinity_${uid}_${today}`, "true");
+          localStorage.setItem(`limit_daily_trinity_guest_${today}`, "true");
           localStorage.setItem(getTrinityDailyResultKey("guest"), JSON.stringify(resultWithCard));
-          localStorage.setItem(`trinity_daily_result_guest_${getTodayDateKey()}`, JSON.stringify(resultWithCard));
+          localStorage.setItem(getTrinityDailyResultKey(uid), JSON.stringify(resultWithCard));
+          localStorage.setItem(`trinity_daily_result_guest_${today}`, JSON.stringify(resultWithCard));
+          localStorage.setItem(`trinity_daily_result_${uid}_${today}`, JSON.stringify(resultWithCard));
         } catch (_) {}
 
         recordDailyOracleResult({
@@ -2459,14 +2480,18 @@ function playDailyCardChimeAsync() {
 
       // 🌟 Check if this is the 1-card Daily Oracle flow from Tarot special feature
       if (isDailyTarotConcern(tarotConcern)) {
-        if (isTrinityDailyLockedToday()) {
+        if (isTrinityDailyLockedToday() || dailyResult?.drawnCard) {
           restoreTodayDailyResult();
+          const targetCard = dailyResult?.drawnCard || dailyDrawnCard;
+          if (targetCard) {
+            setDrawnCards([targetCard]);
+            setTarotResult(dailyResult?.diagnosis || dailyResult?.summary || "");
+          }
           setNotice({
             open: true,
             title: "오늘의 타로 1일 1회 완료",
             message: "오늘의 타로는 하루 1회만 가능합니다. 오늘 이미 뽑으신 결과를 복원해 드립니다.",
           });
-          setShowDailyModal(true);
           return;
         }
         if (!selectedCards || selectedCards.length === 0) {
@@ -3187,7 +3212,15 @@ function playDailyCardChimeAsync() {
                                     type="button"
                                     onClick={() => {
                                       restoreTodayDailyResult();
-                                      setShowDailyModal(true);
+                                      const targetCard = dailyResult?.drawnCard || dailyDrawnCard;
+                                      if (targetCard) {
+                                        setTarotConcern("오늘의 타로");
+                                        setDrawnCards([targetCard]);
+                                        setTarotResult(dailyResult?.diagnosis || dailyResult?.summary || "");
+                                        setHideTarotPopup(false);
+                                      } else {
+                                        setShowDailyModal(true);
+                                      }
                                     }}
                                     className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-yellow-500/25 to-amber-500/20 hover:from-yellow-500/35 hover:to-amber-500/30 border border-yellow-400/40 text-[11px] text-yellow-200 font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
                                     title="오늘의 타로 결과 및 음성 낭독 보기"
@@ -3377,7 +3410,15 @@ function playDailyCardChimeAsync() {
                                     type="button"
                                     onClick={() => {
                                       restoreTodayDailyResult();
-                                      setShowDailyModal(true);
+                                      const targetCard = dailyResult?.drawnCard || dailyDrawnCard;
+                                      if (targetCard) {
+                                        setTarotConcern("오늘의 타로");
+                                        setDrawnCards([targetCard]);
+                                        setTarotResult(dailyResult?.diagnosis || dailyResult?.summary || "");
+                                        setHideTarotPopup(false);
+                                      } else {
+                                        setShowDailyModal(true);
+                                      }
                                     }}
                                     className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-yellow-500 via-amber-500 to-yellow-600 hover:from-yellow-400 hover:to-amber-400 text-black font-extrabold tracking-wider flex items-center justify-center gap-2 transition-all shadow-[0_0_25px_rgba(234,179,8,0.4)] cursor-pointer text-xs"
                                     title="오늘의 타로 결과 및 음성 낭독 보기"
@@ -3606,6 +3647,7 @@ function playDailyCardChimeAsync() {
 
                                   <button
                                     type="button"
+                                    disabled={!tarotResult || isTarotGenerating || (!drawnCards || drawnCards.length === 0)}
                                     onClick={() => {
                                       const dailyCard = dailyResult?.drawnCard || null;
                                       const cardSummary = drawnCards
@@ -3620,7 +3662,7 @@ function playDailyCardChimeAsync() {
                                         },
                                       );
                                     }}
-                                    className="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-black font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(234,179,8,0.4)] active:scale-95 cursor-pointer shrink-0"
+                                    className="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-black font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(234,179,8,0.4)] active:scale-95 cursor-pointer shrink-0 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none"
                                   >
                                     <Sparkles size={14} />
                                     <span>루시와 심층 상담하기</span>
@@ -4146,9 +4188,15 @@ function playDailyCardChimeAsync() {
         onGoToTarotWheel={() => {
           setShowDailyModal(false);
           setActiveMode('tarot');
-          setTarotConcern('오늘의 타로');
-          setStage('landing');
-          setTarotVirtualMode(true);
+          if (isTrinityDailyLockedToday() || dailyResult?.drawnCard) {
+            setTarotConcern('');
+            setStage('landing');
+            setTarotVirtualMode(false);
+          } else {
+            setTarotConcern('오늘의 타로');
+            setStage('landing');
+            setTarotVirtualMode(true);
+          }
         }}
       />
 

@@ -38,7 +38,7 @@ export function TodayTarotNarrationModal({
   onGoToTarotWheel,
 }: TodayTarotNarrationModalProps) {
   const [selectedVoice, setSelectedVoice] = useState<'Lucy' | 'Kore'>('Lucy');
-  const [activeChapterIndex, setActiveChapterIndex] = useState<number | null>(null);
+  const [activeSpeechType, setActiveSpeechType] = useState<'full' | 'summary' | null>(null);
   const [isCopied, setIsCopied] = useState(false);
 
   const isTTSActive = useTTSActive();
@@ -51,68 +51,58 @@ export function TodayTarotNarrationModal({
   // Clean up TTS audio on close
   const handleClose = useCallback(() => {
     stopTTS();
-    setActiveChapterIndex(null);
+    setActiveSpeechType(null);
     onClose();
   }, [onClose]);
 
-  // Sync active chapter highlighting with current ttsState
+  // Sync TTS active state
   useEffect(() => {
     if (!isTTSActive) {
-      setActiveChapterIndex(null);
-      return;
+      setActiveSpeechType(null);
     }
-    if (!ttsState.activeFullText) return;
+  }, [isTTSActive]);
 
-    const matchedIdx = narrationData.chapters.findIndex(
-      (ch) =>
-        ch.speechText === ttsState.activeFullText ||
-        ttsState.activeFullText?.includes(ch.speechText.slice(0, 30))
-    );
-    if (matchedIdx !== -1) {
-      setActiveChapterIndex(matchedIdx);
-    }
-  }, [isTTSActive, ttsState.activeFullText, narrationData.chapters]);
-
-  // Full Narration Playback (Sequential chunks)
+  // Full Narration Playback
   const handlePlayFullNarration = useCallback(async () => {
-    if (isTTSActive) {
+    if (isTTSActive && activeSpeechType === 'full') {
       stopTTS();
-      setActiveChapterIndex(null);
+      setActiveSpeechType(null);
       return;
     }
     if (!narrationData.fullSpeech) return;
 
-    setActiveChapterIndex(0);
+    setActiveSpeechType('full');
     const voiceName = selectedVoice === 'Lucy' ? 'Lucy' : 'Kore';
     await playTTSInChunks(narrationData.fullSpeech, voiceName, 320, '신비');
-  }, [isTTSActive, narrationData.fullSpeech, selectedVoice]);
+  }, [isTTSActive, activeSpeechType, narrationData.fullSpeech, selectedVoice]);
 
-  // Play a specific single chapter
-  const handlePlayChapter = useCallback(
-    async (chapter: TarotNarrationChapter, index: number) => {
-      if (isTTSActive && activeChapterIndex === index) {
-        stopTTS();
-        setActiveChapterIndex(null);
-        return;
-      }
+  // Summary TTS Playback
+  const handlePlaySummary = useCallback(async () => {
+    if (isTTSActive && activeSpeechType === 'summary') {
       stopTTS();
-      setActiveChapterIndex(index);
-      const voiceName = selectedVoice === 'Lucy' ? 'Lucy' : 'Kore';
-      await playTTSInChunks(chapter.speechText, voiceName, 260, '신비');
-    },
-    [isTTSActive, activeChapterIndex, selectedVoice],
-  );
+      setActiveSpeechType(null);
+      return;
+    }
+    if (!narrationData.summarySpeechText) return;
+
+    setActiveSpeechType('summary');
+    const voiceName = selectedVoice === 'Lucy' ? 'Lucy' : 'Kore';
+    await playTTSInChunks(narrationData.summarySpeechText, voiceName, 220, '신비');
+  }, [isTTSActive, activeSpeechType, narrationData.summarySpeechText, selectedVoice]);
 
   const handleCopyText = useCallback(() => {
-    if (!narrationData.fullSpeech) return;
+    if (!narrationData.cleanDiagnosis && !narrationData.rawDiagnosis) return;
     const cardInfo = narrationData.card
       ? `[오늘의 타로] ${narrationData.card.nameKo} (${narrationData.card.reversed ? '역방향' : '정방향'})\n\n`
+      : '';
+    const summaryText = narrationData.conciseSummaryBullets.length > 0
+      ? `[핵심 3줄 요약]\n${narrationData.conciseSummaryBullets.join('\n')}\n\n`
       : '';
     const textToCopy =
       `✨ [오늘의 타로 리딩 결과]\n` +
       cardInfo +
-      `■ 마스터 심층 비전 진단\n${narrationData.rawDiagnosis}\n\n` +
-      (narrationData.rawRemedy ? `■ 오늘의 개운 실천 처방\n${narrationData.rawRemedy}\n\n` : '') +
+      summaryText +
+      `■ 마스터 심층 비전 리딩\n${narrationData.cleanDiagnosis || narrationData.rawDiagnosis}\n\n` +
       (narrationData.rawBlessing
         ? `■ 행운의 파동과 축복\n주파수: ${narrationData.frequency} · 행운수: ${narrationData.luckyNumber} · 행운색: ${narrationData.luckyColor}\n"${narrationData.rawBlessing}"\n`
         : '') +
@@ -123,12 +113,12 @@ export function TodayTarotNarrationModal({
   }, [narrationData]);
 
   const handleConsult = useCallback(() => {
-    if (!onConsultLucy) return;
-    const cardName = narrationData.card?.nameKo || '오늘의 타로';
-    const orientation = narrationData.card?.reversed ? '역방향' : '정방향';
-    const diag = narrationData.rawDiagnosis || '';
-    const remedy = narrationData.rawRemedy || '';
-    const context = `[🔮 오늘의 타로 데일리 연계]\n- 뽑은 카드: ${cardName} (${orientation})\n- 마스터 비전 진단: ${diag.slice(0, 600)}\n- 개운 처방: ${remedy}`;
+    if (!onConsultLucy || !narrationData.card) return;
+    const cardName = narrationData.card.nameKo || '오늘의 타로';
+    const orientation = narrationData.card.reversed ? '역방향' : '정방향';
+    const diag = narrationData.cleanDiagnosis || narrationData.rawDiagnosis || '';
+    const summary = narrationData.conciseSummaryBullets.join(' ') || '';
+    const context = `[🔮 오늘의 타로 데일리 연계]\n- 뽑은 카드: ${cardName} (${orientation})\n${summary ? `- 핵심 요약: ${summary}\n` : ''}- 마스터 비전 리딩:\n${diag.slice(0, 600)}`;
     handleClose();
     onConsultLucy(context);
   }, [onConsultLucy, narrationData, handleClose]);
@@ -136,6 +126,8 @@ export function TodayTarotNarrationModal({
   if (!isOpen) return null;
 
   const card = narrationData.card;
+  const isFullPlaying = isTTSActive && activeSpeechType === 'full';
+  const isSummaryPlaying = isTTSActive && activeSpeechType === 'summary';
 
   return (
     <AnimatePresence>
@@ -181,7 +173,7 @@ export function TodayTarotNarrationModal({
               <span>오늘의 타로 오라클 (Today&apos;s Tarot Oracle)</span>
             </div>
             <h2 className="text-lg sm:text-xl font-display font-bold text-white tracking-tight flex items-center gap-2">
-              <span>오늘의 타로 결과 & 음성 낭독</span>
+              <span>오늘의 타로 리딩 & 음성 낭독</span>
             </h2>
           </div>
 
@@ -207,7 +199,7 @@ export function TodayTarotNarrationModal({
                   className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-bold text-xs flex items-center justify-center gap-2 mx-auto shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer"
                 >
                   <Sparkles size={14} />
-                  <span>오늘의 타로 보기 (1장 뽑기)</span>
+                  <span>오늘의 타로 1장 뽑기 (DRAW 1 CARD)</span>
                 </button>
               )}
             </div>
@@ -263,9 +255,9 @@ export function TodayTarotNarrationModal({
             </div>
           )}
 
-          {/* Integrated Narration Controller (기본 텍스트에 통합된 낭독 바) */}
+          {/* Integrated Narration Controller (상단 오디오 제어 바) */}
           {card && (
-            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-yellow-500/10 via-amber-500/5 to-purple-950/20 border border-yellow-500/30 shadow-inner space-y-3">
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-yellow-500/10 via-amber-500/5 to-purple-950/20 border border-yellow-500/30 shadow-inner space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   {/* Master Play Button */}
@@ -273,13 +265,13 @@ export function TodayTarotNarrationModal({
                     type="button"
                     onClick={handlePlayFullNarration}
                     className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all cursor-pointer shadow-lg active:scale-95 ${
-                      isTTSActive
+                      isFullPlaying
                         ? 'bg-amber-400 text-black border border-amber-300 animate-pulse'
                         : 'bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black'
                     }`}
                   >
-                    {isTTSActive ? <VolumeX size={15} /> : <Play size={15} className="fill-current" />}
-                    <span>{isTTSActive ? '낭독 중지' : '전체 낭독 듣기'}</span>
+                    {isFullPlaying ? <VolumeX size={15} /> : <Play size={15} className="fill-current" />}
+                    <span>{isFullPlaying ? '낭독 중지' : '전체 낭독 듣기'}</span>
                   </button>
 
                   {/* Replay Button */}
@@ -336,222 +328,173 @@ export function TodayTarotNarrationModal({
                     type="button"
                     onClick={handleCopyText}
                     className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition-all cursor-pointer"
-                    title="타로 결과 및 낭독 텍스트 전체 복사"
+                    title="타로 결과 전체 복사"
                   >
                     {isCopied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
                   </button>
                 </div>
               </div>
-
-              <div className="flex items-center justify-between text-[11px] text-white/50 pt-1 font-mono">
-                <span>텍스트 리딩 원문 & 실시간 음성 동조</span>
-                <span>
-                  {activeChapterIndex !== null
-                    ? `현재: ${narrationData.chapters[activeChapterIndex]?.title || '낭독 중'}`
-                    : '단락별 개별 청취 가능'}
-                </span>
-              </div>
             </div>
           )}
 
-          {/* Core Text Body with Integrated Audio Narration (기본 텍스트에 낭독 기능 탑재) */}
+          {/* 🌟 Other Tarot Reading Identical Result Container (Trinity's Insight) */}
           {card && (
-            <div className="space-y-4 text-left">
-              {/* Section 1: 오늘의 심층 비전 진단 */}
-              <div
-                className={`p-5 rounded-2xl border transition-all duration-300 relative ${
-                  activeChapterIndex === 1
-                    ? 'bg-gradient-to-r from-yellow-500/15 via-amber-500/10 to-transparent border-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.25)]'
-                    : 'bg-white/[0.03] border-white/10'
-                }`}
-              >
-                <div className="flex items-center justify-between gap-2 mb-3">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                        activeChapterIndex === 1 ? 'bg-yellow-400 text-black' : 'bg-white/10 text-yellow-400'
-                      }`}
-                    >
-                      <Eye size={14} />
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-yellow-400/80 block font-bold">
-                        COSMIC INSIGHT
-                      </span>
-                      <h4 className="text-sm font-bold text-white">마스터 심층 비전 진단</h4>
-                    </div>
-                  </div>
+            <div className="glass p-5 rounded-2xl border border-yellow-500/30 shadow-2xl flex flex-col relative overflow-hidden text-left space-y-4">
+              <div className="absolute top-0 right-0 w-48 h-48 bg-yellow-500/5 blur-[60px] pointer-events-none rounded-full" />
+              
+              {/* Trinity's Insight Header */}
+              <div className="flex justify-between items-center mb-1 shrink-0 relative z-10 w-full font-sans border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2 text-yellow-400">
+                  <Sparkles size={16} />
+                  <h4 className="text-xs font-bold tracking-widest uppercase">
+                    Trinity&apos;s Insight
+                  </h4>
+                </div>
+                <button
+                  type="button"
+                  onClick={handlePlayFullNarration}
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                    isFullPlaying
+                      ? 'bg-yellow-500/25 text-yellow-300 border border-yellow-400/40 animate-pulse'
+                      : 'bg-white/10 hover:bg-white/20 text-white/90 border border-white/15'
+                  }`}
+                  title={isFullPlaying ? '낭독 중지하기' : '전체 리딩 음성으로 듣기'}
+                >
+                  {isFullPlaying ? <VolumeX size={12} /> : <Volume2 size={12} />}
+                  <span>{isFullPlaying ? '중지' : '전체 낭독'}</span>
+                </button>
+              </div>
 
-                  {/* Section TTS Play Button */}
-                  {narrationData.chapters[1] && (
+              {/* ✨ 핵심 3줄 요약 카드 (Quick Summary) — 다른 타로 리딩과 100% 동일 */}
+              {narrationData.conciseSummaryBullets.length > 0 && (
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-yellow-500/15 via-amber-500/10 to-transparent border border-yellow-500/35 shadow-inner">
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-1.5 text-yellow-300 font-bold text-xs">
+                      <Sparkles size={13} className="text-yellow-400 animate-pulse" />
+                      <span>✨ 핵심 3줄 요약 (Quick Summary)</span>
+                    </div>
                     <button
                       type="button"
-                      onClick={() => handlePlayChapter(narrationData.chapters[1], 1)}
-                      className={`px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                        activeChapterIndex === 1
-                          ? 'bg-yellow-400 text-black shadow-sm animate-pulse'
+                      onClick={handlePlaySummary}
+                      className={`px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                        isSummaryPlaying
+                          ? 'bg-yellow-400/25 text-yellow-300 border border-yellow-400/40 animate-pulse'
                           : 'bg-white/10 hover:bg-white/20 text-white/90 border border-white/15'
                       }`}
+                      title="핵심 3줄 요약 음성 낭독"
                     >
-                      {activeChapterIndex === 1 ? <VolumeX size={11} /> : <Volume2 size={11} />}
-                      <span>{activeChapterIndex === 1 ? '낭독 중지' : '이 단락 듣기'}</span>
+                      {isSummaryPlaying ? <VolumeX size={11} /> : <Volume2 size={11} />}
+                      <span>{isSummaryPlaying ? '중지' : '요약 듣기'}</span>
                     </button>
-                  )}
+                  </div>
+                  <ul className="space-y-2 text-xs text-white/90 leading-relaxed font-sans">
+                    {narrationData.conciseSummaryBullets.map((bullet, bIdx) => {
+                      const match = bullet.match(/^\[([^\]]+)\]\s*(.*)$/);
+                      const tag = match ? match[1] : null;
+                      const content = match ? match[2] : bullet;
+                      return (
+                        <li key={bIdx} className="flex items-start gap-2">
+                          <span className="text-yellow-400 font-bold shrink-0 mt-0.5">•</span>
+                          <div className="leading-snug">
+                            {tag && (
+                              <span className="inline-block px-1.5 py-0.5 mr-1.5 rounded text-[10px] font-bold bg-yellow-400/20 text-yellow-300 border border-yellow-400/30">
+                                {tag}
+                              </span>
+                            )}
+                            <span>{content}</span>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 </div>
+              )}
 
-                <div className="text-sm text-stone-200 leading-relaxed font-sans pl-1">
-                  <Streamdown immediate>{narrationData.rawDiagnosis}</Streamdown>
-                </div>
+              {/* Full Markdown 5-Step Reading Body */}
+              <div
+                className="text-white/85 text-sm leading-relaxed relative z-10 w-full font-sans"
+                style={{ wordBreak: 'keep-all' }}
+              >
+                <Streamdown immediate>{narrationData.cleanDiagnosis || narrationData.rawDiagnosis}</Streamdown>
               </div>
 
-              {/* Section 2: 오늘의 개운 실천 처방 */}
-              {narrationData.rawRemedy && (
-                <div
-                  className={`p-5 rounded-2xl border transition-all duration-300 relative ${
-                    activeChapterIndex === 2
-                      ? 'bg-gradient-to-r from-yellow-500/15 via-amber-500/10 to-transparent border-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.25)]'
-                      : 'bg-white/[0.03] border-white/10'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                          activeChapterIndex === 2 ? 'bg-yellow-400 text-black' : 'bg-white/10 text-amber-400'
-                        }`}
-                      >
-                        <Compass size={14} />
-                      </div>
-                      <div>
-                        <span className="text-[10px] font-mono uppercase tracking-wider text-amber-400/80 block font-bold">
-                          ACTION REMEDY
-                        </span>
-                        <h4 className="text-sm font-bold text-white">오늘의 개운 실천 처방</h4>
-                      </div>
-                    </div>
-
-                    {/* Section TTS Play Button */}
-                    {narrationData.chapters[2] && (
-                      <button
-                        type="button"
-                        onClick={() => handlePlayChapter(narrationData.chapters[2], 2)}
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                          activeChapterIndex === 2
-                            ? 'bg-yellow-400 text-black shadow-sm animate-pulse'
-                            : 'bg-white/10 hover:bg-white/20 text-white/90 border border-white/15'
-                        }`}
-                      >
-                        {activeChapterIndex === 2 ? <VolumeX size={11} /> : <Volume2 size={11} />}
-                        <span>{activeChapterIndex === 2 ? '낭독 중지' : '이 단락 듣기'}</span>
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="text-sm text-stone-200 leading-relaxed font-sans whitespace-pre-line pl-1">
-                    {narrationData.rawRemedy}
-                  </div>
+              {/* Planetary / Frequency Harmony Section */}
+              <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10 space-y-2 mt-2">
+                <div className="flex items-center gap-2 text-xs font-mono text-yellow-300/90 flex-wrap">
+                  <span className="px-2 py-0.5 rounded-md bg-yellow-400/10 border border-yellow-400/20">
+                    주파수: {narrationData.frequency}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md bg-yellow-400/10 border border-yellow-400/20">
+                    행운수: {narrationData.luckyNumber}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md bg-yellow-400/10 border border-yellow-400/20">
+                    행운색: {narrationData.luckyColor}
+                  </span>
                 </div>
-              )}
-
-              {/* Section 3: 행운의 파동과 축복 */}
-              {narrationData.rawBlessing && (
-                <div
-                  className={`p-5 rounded-2xl border transition-all duration-300 relative ${
-                    activeChapterIndex === 3
-                      ? 'bg-gradient-to-r from-yellow-500/15 via-amber-500/10 to-transparent border-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.25)]'
-                      : 'bg-white/[0.03] border-white/10'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                          activeChapterIndex === 3 ? 'bg-yellow-400 text-black' : 'bg-white/10 text-amber-300'
-                        }`}
-                      >
-                        <Sun size={14} />
-                      </div>
-                      <div>
-                        <span className="text-[10px] font-mono uppercase tracking-wider text-amber-300/80 block font-bold">
-                          COSMIC BLESSING
-                        </span>
-                        <h4 className="text-sm font-bold text-white">행운의 파동과 축복</h4>
-                      </div>
-                    </div>
-
-                    {/* Section TTS Play Button */}
-                    {narrationData.chapters[3] && (
-                      <button
-                        type="button"
-                        onClick={() => handlePlayChapter(narrationData.chapters[3], 3)}
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                          activeChapterIndex === 3
-                            ? 'bg-yellow-400 text-black shadow-sm animate-pulse'
-                            : 'bg-white/10 hover:bg-white/20 text-white/90 border border-white/15'
-                        }`}
-                      >
-                        {activeChapterIndex === 3 ? <VolumeX size={11} /> : <Volume2 size={11} />}
-                        <span>{activeChapterIndex === 3 ? '낭독 중지' : '이 단락 듣기'}</span>
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="space-y-2.5 pl-1">
-                    <div className="flex items-center gap-2 text-xs font-mono text-yellow-300/90 flex-wrap">
-                      <span className="px-2 py-0.5 rounded-md bg-yellow-400/10 border border-yellow-400/20">
-                        주파수: {narrationData.frequency}
-                      </span>
-                      <span className="px-2 py-0.5 rounded-md bg-yellow-400/10 border border-yellow-400/20">
-                        행운수: {narrationData.luckyNumber}
-                      </span>
-                      <span className="px-2 py-0.5 rounded-md bg-yellow-400/10 border border-yellow-400/20">
-                        행운색: {narrationData.luckyColor}
-                      </span>
-                    </div>
-                    <p className="text-xs text-stone-300 font-sans italic leading-relaxed">
-                      &quot;{narrationData.rawBlessing}&quot;
-                    </p>
-                  </div>
-                </div>
-              )}
+                {narrationData.rawBlessing && (
+                  <p className="text-xs text-stone-300 font-sans italic leading-relaxed">
+                    &quot;{narrationData.rawBlessing}&quot;
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
-          {/* Action Footer Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-end gap-2.5 pt-2 border-t border-white/10">
-            {onGoToTarotWheel && (
-              <button
-                type="button"
-                onClick={() => {
-                  handleClose();
-                  onGoToTarotWheel();
-                }}
-                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-yellow-500/15 hover:bg-yellow-500/25 text-yellow-300 hover:text-yellow-200 border border-yellow-400/30 font-bold text-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-              >
-                <Sparkles size={14} />
-                <span>새로운 타로 뽑기</span>
-              </button>
+          {/* Action Footer Buttons — 새로운 타로 뽑기 방지 및 1일 1회 완료 보호 */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 pt-2 border-t border-white/10">
+            {/* Left: 1-per-day status or other tarot inquiry */}
+            {card ? (
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="px-3.5 py-2 rounded-xl bg-yellow-500/10 border border-yellow-500/25 text-yellow-300/90 text-xs font-medium flex items-center justify-center gap-1.5 shadow-sm">
+                  <Sparkles size={13} className="text-yellow-400" />
+                  <span>오늘의 타로 1일 1회 완료 (내일 00시 리셋)</span>
+                </div>
+                {onGoToTarotWheel && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleClose();
+                      onGoToTarotWheel();
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/80 hover:text-white border border-white/10 text-xs font-medium transition-all cursor-pointer"
+                    title="다른 고민으로 타로 상담실 이동"
+                  >
+                    <span>다른 고민 질문하기</span>
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div />
             )}
 
-            {onConsultLucy && (
+            {/* Right: Consult Lucy & Close */}
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+              {onConsultLucy && (
+                <button
+                  type="button"
+                  disabled={!card}
+                  onClick={card ? handleConsult : undefined}
+                  className={`w-full sm:w-auto px-4 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all ${
+                    card
+                      ? "bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black shadow-[0_0_15px_rgba(250,204,21,0.3)] active:scale-95 cursor-pointer"
+                      : "bg-zinc-800/80 text-zinc-500 border border-zinc-700/50 cursor-not-allowed opacity-50 shadow-none pointer-events-none"
+                  }`}
+                  title={card ? "루시와 1:1 심층 상담하기" : "오늘의 타로를 먼저 뽑아야 심층 리딩 상담이 가능합니다"}
+                >
+                  <Sparkles size={13} className={card ? "text-black" : "text-zinc-500"} />
+                  <span>{card ? "루시와 심층 상담하기" : "심층 리딩 상담 (카드 뽑기 필요)"}</span>
+                  <ChevronRight size={13} className={card ? "opacity-70" : "opacity-30"} />
+                </button>
+              )}
+
               <button
                 type="button"
-                onClick={handleConsult}
-                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(250,204,21,0.3)] active:scale-95 cursor-pointer"
+                onClick={handleClose}
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white/80 hover:text-white text-xs font-bold transition-all cursor-pointer"
               >
-                <Sparkles size={13} />
-                <span>루시와 심층 상담하기</span>
-                <ChevronRight size={13} />
+                닫기
               </button>
-            )}
-
-            <button
-              type="button"
-              onClick={handleClose}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white/80 hover:text-white text-xs font-bold transition-all cursor-pointer"
-            >
-              닫기
-            </button>
+            </div>
           </div>
         </motion.div>
       </motion.div>
