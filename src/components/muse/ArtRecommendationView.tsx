@@ -36,8 +36,7 @@ import {
 import { useApp } from "@/contexts/AppContext";
 import { sendArtRecommendationToLucy } from "@/lib/oracleDeepInsight";
 import { getPendingPrismToss, clearPrismToss, type PrismTossPayload } from "@/lib/prismToss";
-import { KoreanPoemLibraryModal } from "@/components/muse/KoreanPoemLibraryModal";
-import { KOREAN_FAMOUS_POEMS, type KoreanPoemItem } from "@/lib/koreanFamousPoems";
+import { KOREAN_FAMOUS_POEMS } from "@/lib/koreanFamousPoems";
 
 interface FamousPoem {
   title: string;
@@ -1124,39 +1123,7 @@ export function ArtRecommendationView() {
   
   const [copiedQuote, setCopiedQuote] = useState(false);
   const [geminiCopied, setGeminiCopied] = useState(false);
-  const [isPoemLibraryOpen, setIsPoemLibraryOpen] = useState(false);
-  const [poemToastMessage, setPoemToastMessage] = useState<string | null>(null);
   const hydrateStartedRef = useRef(false);
-
-  const handleSelectKoreanPoem = useCallback((poem: KoreanPoemItem) => {
-    setRecommendation((prev) => {
-      if (!prev) return null;
-      const updated: ArtRecommendation = {
-        ...prev,
-        famousPoem: {
-          title: poem.title,
-          titleOriginal: poem.titleOriginal || poem.title,
-          poet: poem.poet,
-          poetOriginal: poem.poetOriginal || poem.poet,
-          excerpt: poem.excerpt,
-          whyRecommended: poem.whyRecommended,
-          siyoilUrl: poem.siyoilUrl,
-          poemSourceName: poem.poemSourceName,
-        },
-      };
-      try {
-        localStorage.setItem(ART_CACHE_KEYS.recommendation, JSON.stringify(updated));
-      } catch (err) {
-        console.warn("Failed to persist updated poem to cache:", err);
-      }
-      return updated;
-    });
-
-    setPoemToastMessage(`《${poem.title}》(${poem.poet})으로 변경되었습니다.`);
-    setTimeout(() => {
-      setPoemToastMessage(null);
-    }, 4000);
-  }, []);
 
 
 
@@ -2217,15 +2184,6 @@ export function ArtRecommendationView() {
                       voice="Kore"
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/35 text-emerald-200 text-[11px] font-bold active:scale-95 transition-all shadow-sm cursor-pointer"
                     />
-                    <button
-                      type="button"
-                      onClick={() => setIsPoemLibraryOpen(true)}
-                      title="한국 명시 70선 서재 열기"
-                      className="inline-flex items-center gap-1.5 text-[11px] font-bold text-black bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-300 hover:to-teal-300 px-3 py-1.5 rounded-xl transition-all shadow-md shadow-emerald-500/20 active:scale-95 cursor-pointer"
-                    >
-                      <BookOpen size={13} />
-                      <span>한국 명시 서재 (70선)</span>
-                    </button>
                   </div>
                 </div>
 
@@ -2284,34 +2242,9 @@ export function ArtRecommendationView() {
                       Google Arts & Culture 검색
                       <ChevronRight size={12} />
                     </a>
-                    <button
-                      type="button"
-                      onClick={() => setIsPoemLibraryOpen(true)}
-                      className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-emerald-300 hover:text-white transition-colors cursor-pointer"
-                    >
-                      <BookOpen size={12} />
-                      명시 70선 서재
-                    </button>
                   </div>
                 </div>
               </motion.div>
-            )}
-
-            {/* Poem change notification toast */}
-            {poemToastMessage && (
-              <div className="p-3.5 rounded-2xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-200 text-xs font-medium flex items-center justify-between shadow-xl backdrop-blur-md">
-                <div className="flex items-center gap-2">
-                  <Sparkles size={15} className="text-emerald-400 flex-shrink-0" />
-                  <span>오늘의 명시: {poemToastMessage}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setPoemToastMessage(null)}
-                  className="text-emerald-400/70 hover:text-emerald-200 text-xs font-bold ml-3"
-                >
-                  닫기
-                </button>
-              </div>
             )}
 
             
@@ -2679,12 +2612,6 @@ export function ArtRecommendationView() {
         )}
       </AnimatePresence>
 
-      <KoreanPoemLibraryModal
-        isOpen={isPoemLibraryOpen}
-        onClose={() => setIsPoemLibraryOpen(false)}
-        currentPoemTitle={recommendation?.famousPoem?.title}
-        onSelectPoem={handleSelectKoreanPoem}
-      />
     </div>
   );
 }

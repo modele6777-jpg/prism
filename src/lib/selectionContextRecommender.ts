@@ -195,9 +195,9 @@ export const PRISM_ALL_APP_DESTINATIONS: PrismMenuDestination[] = [
   // 10. 마음 치유 명시 처방
   {
     id: 'muse_poem',
-    name: '뮤즈 명시 서재',
+    name: '뮤즈 명시 처방',
     subName: '영혼을 적시는 한 줄의 시',
-    path: '/muse?tab=poem',
+    path: '/muse?tab=artRecommendation',
     basePath: '/muse',
     emoji: '📜',
     badge: '명시 처방',
