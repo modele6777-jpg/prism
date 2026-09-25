@@ -40,9 +40,11 @@ function cleanDiagnosisText(raw: string): string {
   let text = String(raw).trim();
   // Strip trailing 3-line summary blocks if present
   const summaryMatch = text.match(/(?:\r?\n|^)\s*(?:#{1,6}\s*)?(?:✨\s*)?(?:\d+\.\s*)?(?:\[\s*)?(?:핵심\s*(?:3줄\s*|세줄\s*)?요약|3줄\s*요약|Quick\s*Summary)(?:\])?\s*[\s\S]*$/i);
-  if (summaryMatch && summaryMatch.index !== undefined && summaryMatch.index > text.length * 0.6) {
+  if (summaryMatch && summaryMatch.index !== undefined) {
     text = text.slice(0, summaryMatch.index).trim();
   }
+  // Strip trailing bullets with tags
+  text = text.replace(/(?:\r?\n|^)\s*[-*•·]?\s*\[(?:현재\s*에너지|방향과\s*결단|실천\s*처방)\][^\r\n]*/gi, "").trim();
   return text;
 }
 

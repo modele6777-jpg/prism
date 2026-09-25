@@ -541,31 +541,48 @@ export function buildSpecificTarotDailyOracle(card: TarotCard, mode: string = "o
   const isReversed = !!card.reversed;
   const orientation = isReversed ? "역방향 (Reversed)" : "정방향 (Upright)";
   const keywords = (card.keywords || []).join(", ");
-  const cardTypeStr = card.type === "major"
-    ? "메이저 아르카나 (Major Arcana)"
-    : card.type
-      ? `${String(card.type).toUpperCase()} 수트 (Minor Arcana)`
-      : "타로 아르카나";
-
   const details = TAROT_DETAILS[card.id] || getSuitDetails(card);
   const luckyAction = getTarotLuckyAction(card, isReversed);
 
   const cardMeaning = isReversed ? details.reversedCore : details.uprightCore;
-  const diagnosis = `### 🌟 오늘 하루의 기운: [${cardName}${cardEn ? ` (${cardEn})` : ''}] (${orientation})
-${cardMeaning} 오늘 하루는 **${keywords}**의 흐름이 중심에 있습니다.
+  const shadowWarn = isReversed
+    ? `${details.shadowWarning} 지금은 억지로 결과를 서두르기보다 마음의 중심을 단단히 잡고 내실을 다져야 할 때입니다.`
+    : `${details.shadowWarning} 자만하거나 사소한 방심으로 흐름을 깨뜨리지 않도록 유의하세요.`;
 
-### 💡 오늘 챙길 포인트
-- **오늘의 조언**: ${details.actionGuidance}
-- **주의할 점**: ${details.shadowWarning}
+  const workGuidance = isReversed
+    ? `무리한 확장이나 새로운 시작보다는, 기존에 진행하던 일들의 결함이나 미비점을 차분히 보완하고 점검하는 데 집중하세요.`
+    : `아이디어에 머물지 말고 자신감 있게 결단을 내리고 행동으로 옮기세요. 적극적인 소통과 실행이 기대 이상의 결과로 이어집니다.`;
 
-### 🍀 오늘의 초간단 개운 행동
-${luckyAction}`;
+  const relationGuidance = isReversed
+    ? `상대방의 사소한 말 한마디에 민감하게 반응하기보다, 한 템포 쉬어가는 여유를 가지세요. 내면의 평온이 대인관계의 마찰을 사전에 예방합니다.`
+    : `밝고 진솔한 태도로 주변 사람들에게 온기를 건네보세요. 긍정적인 감정 교류가 당신의 운을 더욱 크고 환하게 열어줍니다.`;
+
+  const diagnosis = `### 💌 오라클 마스터가 전하는 오늘의 타로 편지: [${cardName}${cardEn ? ` (${cardEn})` : ''}] (${orientation})
+친애하는 질문자님께,
+오늘 당신의 발걸음 앞에 **[${cardName}]** 카드가 그 신비로운 모습을 드러냈습니다. 이 카드는 4대 원소 중 **${details.element}**의 파동을 품고 있으며, **"${details.archetype}"**의 영적 원형을 상징합니다.
+오늘 하루 당신의 영혼과 일상에는 **${keywords}**의 흐름이 깊숙이 침투해 있으며, 우주는 당신에게 지금 서 있는 자리에서 자신의 감각을 믿고 나아가라는 다정한 신호를 보내고 있습니다.
+
+### 🔮 1. 카드가 비추는 오늘의 심층 기운과 무의식 흐름
+${cardMeaning}
+현재 당신의 무의식 속에서는 ${isReversed ? '잠시 숨을 고르며 내면의 저항을 정돈하고 새로운 방향을 모색하는 정화의 에너지' : '오랜 시간 준비해 온 에너지가 밖으로 뻗어나가 결실을 맺고자 하는 역동적인 생명력'}이 꿈틀거리고 있습니다. 외부의 소음이나 타인의 기대에 휘둘리지 않고 당신의 내면 나침반을 신뢰할 때, 오늘 하루의 흐름은 가장 이상적인 조화를 이루게 될 것입니다.
+
+### 🌿 2. 오늘의 현실 영역별 구체적 실천 지침
+- **일과 학업/활동**: ${workGuidance}
+- **대인관계 & 소통**: ${relationGuidance}
+- **마인드셋 & 주의할 점**: ${shadowWarn}
+
+### 🍀 3. 운을 극대화하는 오늘의 개운 리추얼 (Action & Ritual)
+- **개운 행동**: ${luckyAction}
+- **추천 사운드 & 주파수**: **${details.frequency}**의 공명 주파수를 의식하며, 가슴 한가운데 손을 얹고 깊은 복식호흡 3회를 진행해 보세요.
+
+### ✨ 4. 당신의 하루를 감싸는 마스터의 축복 확언
+> _"나는 오늘 [${cardName}] 카드가 전하는 ${details.symbolWord}의 지혜를 온전히 수용하며, 나에게 주어지는 모든 순간을 감사와 확신으로 맞이합니다."_`;
 
   return {
     diagnosis,
     luckyNumber: details.luckyNum,
     luckyColor: details.luckyColor,
-    remedy: `오늘의 개운 실천: ${luckyAction}`,
+    remedy: `오늘의 개운 실천: ${luckyAction}. [${cardName}] 카드의 조화로운 기운을 마음에 품고 차분하게 나아가기`,
     symbol: details.symbolWord,
     frequency: details.frequency,
     spiritualEnergy: `[${cardName}] 카드가 오늘 당신의 마음에 든든한 중심과 긍정 기운을 불어넣습니다.`,

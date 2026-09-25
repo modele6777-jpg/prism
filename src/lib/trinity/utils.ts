@@ -990,20 +990,27 @@ export function ensureCompleteTarotReading(
     return buildLocalTarotReading(concern, cards || []);
   }
 
-  // 리딩 후반부(5단계 축복 및 핵심 3줄 요약)가 누락되어 끊긴 경우 보완
-  const hasStep5OrSummary =
+  // 리딩 후반부(5단계 축복)가 누락되어 끊긴 경우만 필요한 부분 보완
+  const hasStep5 =
     text.includes("5.") ||
     text.includes("5단계") ||
     text.includes("영혼의 한마디") ||
-    text.includes("축복") ||
-    text.includes("핵심 3줄 요약") ||
-    text.includes("3줄 요약");
+    text.includes("축복");
 
-  if (!hasStep5OrSummary && Array.isArray(cards) && cards.length > 0) {
+  if (!hasStep5 && Array.isArray(cards) && cards.length > 0) {
     const localFull = buildLocalTarotReading(concern, cards);
-    const step4Match = localFull.match(/### 🌿 4\.[\s\S]*/);
-    if (step4Match) {
-      return text.trim() + "\n\n" + step4Match[0];
+    const hasStep4 = text.includes("4.") || text.includes("4단계") || text.includes("실천 처방");
+    if (hasStep4) {
+      // 4단계가 이미 있으므로 5단계 축복만 보완하여 중복 방지
+      const step5Match = localFull.match(/### ✨ 5\.[\s\S]*/);
+      if (step5Match) {
+        return text.trim() + "\n\n" + step5Match[0];
+      }
+    } else {
+      const step4Match = localFull.match(/### 🌿 4\.[\s\S]*/);
+      if (step4Match) {
+        return text.trim() + "\n\n" + step4Match[0];
+      }
     }
   }
 

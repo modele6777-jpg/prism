@@ -791,6 +791,34 @@ function getInitialTrinityDailyResult(uid?: string) {
 
 function deduplicateReadingText(text: string): string {
   if (!text) return text;
+
+  // 1. Check if the entire reading or substantial block is duplicated (e.g. section 1 header repeated)
+  const section1Matches = [...text.matchAll(/###\s*🕯️?\s*1\.\s*카드가\s*비추는/g)];
+  if (section1Matches.length > 1) {
+    const secondIndex = section1Matches[1].index;
+    if (secondIndex && secondIndex > 100) {
+      const firstPart = text.slice(0, secondIndex).trim();
+      const secondPart = text.slice(secondIndex).trim();
+      if (secondPart.length >= firstPart.length && (secondPart.includes('5.') || secondPart.includes('축복'))) {
+        text = secondPart;
+      } else {
+        text = firstPart;
+      }
+    }
+  }
+
+  // 2. Check if text is an exact or near duplicate repetition of two halves (A + A)
+  const trimmedText = text.trim();
+  const halfLen = Math.floor(trimmedText.length / 2);
+  if (halfLen > 150) {
+    const firstHalf = trimmedText.slice(0, halfLen).trim();
+    const secondHalf = trimmedText.slice(halfLen).trim();
+    if (firstHalf === secondHalf || secondHalf.startsWith(firstHalf.slice(0, 100))) {
+      text = firstHalf;
+    }
+  }
+
+  // 3. Line-by-line consecutive deduplication
   const lines = text.split('\n');
   const result: string[] = [];
   let lastNonEmpty = '';
@@ -814,45 +842,28 @@ function deduplicateReadingText(text: string): string {
 
 /**
  * 🚫 타로 결과 음성 낭독 및 본문 표시 시 후행 요약 블록 깔끔하게 정리
- * - 사용자 요청: "타로 결과 읽어줄때 핵심요약은 읽지마"
- * - [핵심 3줄 요약], ### 핵심 요약 블록을 온전히 분리하여 순수 타로 마스터 본문 리딩과 요약을 독립적으로 관리
+ * - 사용자 요청: "핵심 3줄요약이 하단에 한번더 나오는데 삭제해줘"
+ * - 상단에 독립된 핵심 3줄 요약 카드가 이미 렌더링되므로, 하단 본문 마크다운 끝의 중복 요약 블록을 온전히 분리
  */
 export function stripSummaryFromTarotText(text: string): string {
   if (!text) return "";
 
-  // 1. 후행 핵심 요약 섹션(리딩 후반부 70% 이후에 위치할 때만) 안전하게 분리
+  // 1. 후행 핵심 요약 섹션(위치 불문 후반부 요약 블록 전체) 안전하게 분리
   const match = text.match(/(?:\r?\n|^)\s*(?:#{1,6}\s*)?(?:✨\s*)?(?:\d+\.\s*)?(?:\[\s*)?(?:핵심\s*(?:3줄\s*|세줄\s*)?요약|3줄\s*요약|Quick\s*Summary)(?:\])?\s*[\s\S]*$/i);
-  if (match && match.index !== undefined && match.index > text.length * 0.7) {
+  if (match && match.index !== undefined) {
     let cleaned = text.slice(0, match.index).trim();
     // 잔여 불릿 라인도 안전하게 정리
     cleaned = cleaned.replace(/(?:\r?\n|^)\s*[-*•·]?\s*\[(?:현재\s*에너지|방향과\s*결단|실천\s*처방)\][^\r\n]*/gi, "").trim();
     return cleaned;
   }
 
-  return text;
+  // 2. 말머리 없이 끝부분에 불릿 형태로만 남은 경우도 정리
+  let cleaned = text.replace(/(?:\r?\n|^)\s*[-*•·]?\s*\[(?:현재\s*에너지|방향과\s*결단|실천\s*처방)\][^\r\n]*/gi, "").trim();
+  return cleaned;
 }
 
 function extractConciseSummary(text: string): string[] {
   if (!text || text.trim().length < 80) return [];
-
-  // Priority 1: Explicit [핵심 3줄 요약] block
-  const summaryBlockMatch = text.match(/(?:\[핵심\s*3줄\s*요약\]|###\s*.*핵심\s*3줄\s*요약|###\s*.*핵심\s*요약|\[핵심\s*요약\])([\s\S]*?)(?:$|###)/i);
-  if (summaryBlockMatch) {
-    const rawLines = summaryBlockMatch[1]
-      .split('\n')
-      .map((l) => l.replace(/^[-*•·\d.]+\s*/, '').trim())
-      .filter((l) => l.length > 5 && !l.startsWith('http'));
-
-    if (rawLines.length >= 3) {
-      const defaultLabels = ['현재 에너지', '방향과 결단', '실천 처방'];
-      return rawLines.slice(0, 3).map((line, idx) => {
-        const cleaned = line.replace(/^\[[^\]]+\]\s*/, '').trim();
-        const existingTagMatch = line.match(/^\[([^\]]+)\]/);
-        const tag = existingTagMatch ? existingTagMatch[1] : defaultLabels[idx];
-        return `[${tag}] ${cleaned}`;
-      });
-    }
-  }
 
   const cleanSentence = (s: string) => {
     return s
@@ -863,16 +874,69 @@ function extractConciseSummary(text: string): string[] {
       .trim();
   };
 
+  // 인사말, 호칭, 상담실 메타 서두 제거 헬퍼
+  const stripGreetingFromText = (s: string): string => {
+    let str = s.trim();
+    str = str.replace(/^(?:(?:친애하는\s*)?(?:질문자|내담자)님[,\s~!]*)?(?:(?:어서\s*오세요|안녕하세요|반갑습니다|안녕하십니까)[,\s~!]*)+/i, '');
+    str = str.replace(/^(?:(?:어서\s*오세요|안녕하세요|반갑습니다|안녕하십니까)[,\s~!]*)?(?:(?:친애하는\s*)?(?:질문자|내담자)님[,\s~!]*)*/i, '');
+    str = str.replace(/^(?:카드를\s*(?:가만히|조용히|한\s*장씩)?\s*마주하니|촛불을\s*켜고|타로\s*상담실에\s*오신\s*것을\s*환영합니다)[,\s~!.]*/i, '');
+    str = str.replace(/^(?:다음은|오늘의|타로\s*리딩의)?\s*(?:핵심\s*3줄\s*요약|3줄\s*요약|핵심\s*요약)(?:입니다|을\s*전해드립니다|:|\.)\s*/i, '');
+    return str.trim();
+  };
+
   const isGreetingOrMeta = (s: string) => {
+    const trimmed = s.trim();
+    if (!trimmed || trimmed.length < 6) return true;
     return (
-      /^(어서\s*오세요|안녕하세요|반갑습니다|카드를\s*(가만히|조용히)?\s*마주하니|질문자|내담자|적용\s*배열법|펼쳐진\s*카드|내담자\s*고민|상담\s*개요)/.test(
-        s
-      ) ||
-      s.includes('촛불') ||
-      s.includes('대화형 어조') ||
-      s.includes('카드를 한 장씩')
+      /(?:어서\s*오세요|안녕하세요|반갑습니다|안녕하십니까|환영합니다)/.test(trimmed) ||
+      /(?:카드를\s*(?:가만히|조용히|한\s*장씩)?\s*마주하니|촛불|대화형\s*어조|적용\s*배열법|펼쳐진\s*카드|상담\s*개요|내담자\s*고민|상담실)/.test(trimmed) ||
+      /^(?:다음은|오늘의|타로\s*리딩의)?\s*(?:핵심\s*3줄\s*요약|3줄\s*요약|핵심\s*요약)/.test(trimmed)
     );
   };
+
+  // Priority 1: Explicit [핵심 3줄 요약] block
+  const summaryBlockMatch = text.match(/(?:\[핵심\s*3줄\s*요약\]|###\s*.*핵심\s*3줄\s*요약|###\s*.*핵심\s*요약|\[핵심\s*요약\])([\s\S]*?)(?:$|###)/i);
+  if (summaryBlockMatch) {
+    const rawLines = summaryBlockMatch[1]
+      .split('\n')
+      .map((l) => cleanSentence(l))
+      .filter((l) => l.length > 5 && !l.startsWith('http') && !isGreetingOrMeta(l));
+
+    let p1Current = '';
+    let p1Decision = '';
+    let p1Action = '';
+
+    for (const line of rawLines) {
+      const cleaned = stripGreetingFromText(line.replace(/^\[[^\]]+\]\s*/, ''));
+      if (!cleaned || isGreetingOrMeta(cleaned)) continue;
+
+      if (/\[(?:현재\s*에너지|현재|에너지|상황\s*진단)\]/i.test(line) || (!p1Current && /현재|에너지|상황|마음/i.test(line))) {
+        if (!p1Current) { p1Current = cleaned; continue; }
+      }
+      if (/\[(?:방향과\s*결단|결단\s*및\s*방향|방향성|결단|선택)\]/i.test(line) || (!p1Decision && /방향|결단|판정|선택|YES|NO/i.test(line))) {
+        if (!p1Decision) { p1Decision = cleaned; continue; }
+      }
+      if (/\[(?:실천\s*처방|개운\s*처방|행동\s*처방|실천|처방)\]/i.test(line) || (!p1Action && /실천|처방|조언|행동|오늘/i.test(line))) {
+        if (!p1Action) { p1Action = cleaned; continue; }
+      }
+    }
+
+    const remaining = rawLines
+      .map(stripGreetingFromText)
+      .filter((l) => l.length >= 10 && !isGreetingOrMeta(l) && l !== p1Current && l !== p1Decision && l !== p1Action);
+
+    if (!p1Current && remaining.length > 0) p1Current = remaining.shift() || '';
+    if (!p1Decision && remaining.length > 0) p1Decision = remaining.shift() || '';
+    if (!p1Action && remaining.length > 0) p1Action = remaining.shift() || '';
+
+    if (p1Current && (p1Decision || p1Action)) {
+      const res: string[] = [];
+      res.push(`[현재 에너지] ${p1Current}`);
+      if (p1Decision) res.push(`[방향과 결단] ${p1Decision}`);
+      if (p1Action) res.push(`[실천 처방] ${p1Action}`);
+      return res;
+    }
+  }
 
   // Priority 2: Structured section parsing (1. 현재 에너지 / 3. 결단 및 방향성 / 4. 실천 처방)
   const sections = text.split(/(?=^###\s+)/m);
@@ -895,6 +959,7 @@ function extractConciseSummary(text: string): string[] {
       const sentences = body
         .split(/(?:[\n\r]+|(?<=[.!?])\s+)/)
         .map(cleanSentence)
+        .map(stripGreetingFromText)
         .filter((s) => s.length >= 15 && !isGreetingOrMeta(s));
 
       const scored = sentences.find((s) =>
@@ -915,6 +980,7 @@ function extractConciseSummary(text: string): string[] {
       const rawLines = body
         .split(/(?:[\n\r]+|(?<=[.!?])\s+)/)
         .map(cleanSentence)
+        .map(stripGreetingFromText)
         .filter((s) => s.length >= 6 && !isGreetingOrMeta(s));
 
       const verdictLine = rawLines.find((s) =>
@@ -952,6 +1018,7 @@ function extractConciseSummary(text: string): string[] {
         .split(/(?:[\n\r]+|(?<=[.!?])\s+)/)
         .map(cleanSentence)
         .map((s) => s.replace(/^[가-힣\s]{2,10}:\s*/, '')) // Strip label prefix like "마음의 정돈: "
+        .map(stripGreetingFromText)
         .filter((s) => s.length >= 15 && !isGreetingOrMeta(s));
 
       const actionable = rawLines.filter((s) =>
@@ -972,6 +1039,7 @@ function extractConciseSummary(text: string): string[] {
   const allSentences = cleanFull
     .split(/(?:[\n\r]+|(?<=[.!?])\s+)/)
     .map(cleanSentence)
+    .map(stripGreetingFromText)
     .filter((s) => s.length >= 15 && !isGreetingOrMeta(s));
 
   if (!currentInsight) {
@@ -1008,17 +1076,19 @@ function extractConciseSummary(text: string): string[] {
   }
 
   const formatItem = (tag: string, str: string) => {
-    let cleaned = str
-      .replace(/^\[[^\]]+\]\s*(:|-|—)?\s*/, '')
-      .replace(/^[-*•·\d.]+\s*/, '')
-      .trim();
+    let cleaned = stripGreetingFromText(
+      str
+        .replace(/^\[[^\]]+\]\s*(:|-|—)?\s*/, '')
+        .replace(/^[-*•·\d.]+\s*/, '')
+        .trim()
+    );
 
     const existingTagMatch = str.match(/^\[([^\]]+)\]/);
     if (
       existingTagMatch &&
       ['현재 에너지', '방향과 결단', '실천 처방'].includes(existingTagMatch[1])
     ) {
-      cleaned = str.replace(/^\[[^\]]+\]\s*/, '').trim();
+      cleaned = stripGreetingFromText(str.replace(/^\[[^\]]+\]\s*/, '').trim());
     }
 
     if (cleaned.length > 160) {
@@ -1721,8 +1791,9 @@ function playDailyCardChimeAsync() {
   }, [tarotResult]);
 
   const displayTarotResult = useMemo(() => {
-    // 타로 결과가 끝까지 잘림 없이 온전히 렌더링되도록 전체 결과 본문 보존
-    return tarotResult || "";
+    // 타로 결과 상단에 별도의 핵심 3줄 요약 카드가 렌더링되므로, 하단 본문에서는 중복된 후행 요약 블록을 깔끔히 제거
+    if (!tarotResult) return "";
+    return stripSummaryFromTarotText(tarotResult);
   }, [tarotResult]);
 
   // 🔊 타로 결과 음성 낭독 전용 텍스트 (핵심 3줄 요약 완전 배제: 본문 1~5단계 순수 리딩만 낭독)
@@ -2576,6 +2647,9 @@ function playDailyCardChimeAsync() {
                   finalResponse = chunk;
                 } else if (chunk.length > 20 && finalResponse.endsWith(chunk)) {
                   // Already included
+                } else if (chunk.length > 80 && chunk.includes("### 🕯️ 1.") && finalResponse.includes("### 🕯️ 1.")) {
+                  // Non-stream or restart fallback emitted full reading text; avoid duplication!
+                  finalResponse = chunk;
                 } else {
                   finalResponse += chunk;
                 }
