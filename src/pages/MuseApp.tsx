@@ -3073,7 +3073,7 @@ ${concernContext ? `사용자가 들려준 현재 고민과 상황에 100% 공�
                 key="artRecommendation"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="flex-1 flex flex-col items-center justify-center pt-8 pb-24 w-full max-w-3xl mx-auto"
+                className="w-full max-w-3xl mx-auto flex-1 flex flex-col justify-start pt-2 sm:pt-4 pb-20 md:pb-24"
               >
                 <ArtRecommendationView />
               </motion.div>

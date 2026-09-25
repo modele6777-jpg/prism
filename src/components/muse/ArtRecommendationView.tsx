@@ -1801,14 +1801,14 @@ export function ArtRecommendationView() {
 
         {/* 🌟 추천 결과가 있을 때만 상단 액션 바 노출 (결과가 없을 때는 아래 입력창 단일 버튼 사용) */}
         {recommendation && !isCustomInputOpen && (
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 w-full max-w-md mx-auto">
             <button
               type="button"
               onClick={() => {
                 void handleRecommendArt({ forceRefresh: true, randomOffset: Date.now(), userConcern: customConcern.trim() });
               }}
               disabled={loading}
-              className="prism-rainbow-btn relative py-3.5 px-8 rounded-2xl text-xs sm:text-sm font-black uppercase tracking-[0.12em] transform active:scale-95 text-white shadow-xl flex items-center justify-center gap-2.5 cursor-pointer min-w-[280px] disabled:opacity-50"
+              className="prism-rainbow-btn relative w-full sm:w-auto py-3.5 px-6 sm:px-8 rounded-2xl text-xs sm:text-sm font-black uppercase tracking-[0.12em] transform active:scale-95 text-white shadow-xl flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50"
               title="오늘의 예술 추천 새로 생성하기"
             >
               <Sparkles size={16} className={loading ? "animate-spin" : "text-yellow-300 animate-pulse"} />
@@ -1823,7 +1823,7 @@ export function ArtRecommendationView() {
               type="button"
               onClick={() => setIsCustomInputOpen(true)}
               disabled={loading}
-              className="py-3.5 px-5 rounded-2xl border border-blue-400/30 bg-blue-500/10 hover:bg-blue-500/20 text-white text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-2 shadow-sm"
+              className="w-full sm:w-auto py-3.5 px-5 rounded-2xl border border-blue-400/30 bg-blue-500/10 hover:bg-blue-500/20 text-white text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2 shadow-sm"
               title="나의 고민 및 현재 상황 맞춤 설정"
             >
               <span>✍️ 나의 고민 맞춤 추천 설정</span>
@@ -2003,20 +2003,20 @@ export function ArtRecommendationView() {
           </div>
 
           {/* Action Trigger Button */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 w-full max-w-md mx-auto">
             <button
               onClick={() => void handleRecommendArt({ forceRefresh: true, userConcern: customConcern.trim() })}
               disabled={loading}
-              className="prism-rainbow-btn relative py-4 px-10 rounded-2xl text-xs md:text-sm font-black uppercase tracking-[0.15em] transform active:scale-95 text-white shadow-2xl flex items-center justify-center gap-3 disabled:opacity-50 cursor-pointer min-w-[280px]"
+              className="prism-rainbow-btn relative w-full sm:w-auto py-4 px-8 sm:px-10 rounded-2xl text-xs md:text-sm font-black uppercase tracking-[0.15em] transform active:scale-95 text-white shadow-2xl flex items-center justify-center gap-3 disabled:opacity-50 cursor-pointer"
             >
               <Sparkles size={16} className={loading ? "animate-spin" : "animate-pulse"} />
-              <span>{customConcern.trim() ? "🎨 나의 고민에 맞춤 예술 추천받기" : "🎨 오늘의 맞춤 예술 추천받기"}</span>
+              <span>{customConcern.trim() ? "🎨 나의 고민 맞춤 예술 추천 생성하기" : "🎨 오늘의 맞춤 예술 추천 생성하기"}</span>
             </button>
             {isArtCacheFresh() && !recommendation && (
               <button
                 type="button"
                 onClick={() => restoreDailyArtFromCache()}
-                className="py-3.5 px-6 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-2"
+                className="w-full sm:w-auto py-3.5 px-6 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2"
               >
                 <Palette size={14} className="text-blue-400" />
                 <span>오늘 저장된 추천 결과 보기</span>
@@ -2442,7 +2442,7 @@ export function ArtRecommendationView() {
                   </p>
                 )}
 
-                {effectiveImage && !loadingImage && (
+                {effectiveImage && (
                   <>
                     <p className="text-[10px] text-white/40 text-center -mt-4">
                       그림을 탭하거나 버튼으로 크게 보기 · 다운로드 · AI 재생성
@@ -2476,8 +2476,8 @@ export function ArtRecommendationView() {
                         disabled={loadingImage}
                         className="px-3 py-1.5 rounded-full bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/25 text-indigo-200 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                       >
-                        <Sparkles size={12} className={loadingImage ? "animate-spin" : ""} />
-                        작품 AI 이미지 재생성
+                        <Sparkles size={12} className={loadingImage ? "animate-spin text-yellow-300" : ""} />
+                        {loadingImage ? "이미지 생성 중..." : "작품 AI 이미지 재생성"}
                       </button>
                     </div>
                   </>
@@ -2658,8 +2658,24 @@ export function ArtRecommendationView() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              className="flex items-center justify-center pt-6 text-center"
+              className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-6 text-center w-full max-w-md mx-auto"
             >
+              <button
+                type="button"
+                onClick={() => {
+                  void handleRecommendArt({ forceRefresh: true, randomOffset: Date.now(), userConcern: customConcern.trim() });
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                disabled={loading}
+                className="prism-rainbow-btn w-full sm:w-auto py-3.5 px-6 sm:px-8 rounded-2xl text-xs sm:text-sm font-black uppercase tracking-wider text-white flex items-center justify-center gap-2.5 shadow-xl active:scale-95 cursor-pointer disabled:opacity-50"
+              >
+                <Sparkles size={15} className={loading ? "animate-spin" : "text-yellow-300 animate-pulse"} />
+                <span>
+                  {loading
+                    ? "🎨 예술 추천 생성 중..."
+                    : "🎨 오늘의 예술 추천 새로 생성하기"}
+                </span>
+              </button>
               <button
                 type="button"
                 onClick={() => {
@@ -2669,7 +2685,7 @@ export function ArtRecommendationView() {
                   setIsCustomInputOpen(true);
                   window.scrollTo({ top: 120, behavior: 'smooth' });
                 }}
-                className="px-6 py-3.5 rounded-2xl border border-blue-400/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-200 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer active:scale-95 shadow-lg shadow-blue-950/20"
+                className="w-full sm:w-auto px-5 sm:px-6 py-3.5 rounded-2xl border border-blue-400/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-200 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 shadow-lg shadow-blue-950/20"
               >
                 <RefreshCw size={14} className="text-blue-400" />
                 <span>✍️ 다른 고민 직접 적고 맞춤 추천받기</span>
@@ -2681,6 +2697,29 @@ export function ArtRecommendationView() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* 🚀 플로팅 액션 버튼: 스크롤을 내려도 모바일/데스크톱 화면 하단에 '오늘의 예술 추천 새로 생성' 상시 표출 */}
+      {recommendation && !loading && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          className="fixed bottom-[calc(var(--sab,0px)+5.25rem)] md:bottom-8 right-3 sm:right-6 md:right-8 z-40 pointer-events-auto"
+        >
+          <button
+            type="button"
+            onClick={() => {
+              void handleRecommendArt({ forceRefresh: true, randomOffset: Date.now(), userConcern: customConcern.trim() });
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="prism-rainbow-btn py-2.5 sm:py-3 px-3.5 sm:px-5 rounded-full text-xs font-black uppercase tracking-wider text-white shadow-2xl flex items-center gap-2 border border-white/20 hover:scale-105 active:scale-95 transition-all cursor-pointer backdrop-blur-md"
+            title="오늘의 예술 추천 새로 생성하기"
+          >
+            <Sparkles size={14} className="text-yellow-300 animate-pulse" />
+            <span className="hidden sm:inline">🎨 오늘의 예술 추천 새로 생성</span>
+            <span className="sm:hidden">🎨 추천 새로 생성</span>
+          </button>
+        </motion.div>
+      )}
 
     </div>
   );
