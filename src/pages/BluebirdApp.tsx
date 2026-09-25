@@ -4,7 +4,7 @@ import {
   ArrowLeft, Sparkles, Send, Volume2, VolumeX, Star, Moon, Sun,
   RefreshCw, ChevronDown, Zap, Eye, MessageCircle, ImageIcon,
   BarChart2, Copy, Check, X, Shuffle, History, LayoutGrid,
-  Brain, Users, ChevronLeft, ChevronRight, Activity, Music, TreeDeciduous, Bird, Home, Settings, ShieldCheck, Database, Stars as LucideStars, User, Layout, Library, Wind, Heart, Feather, Layers, BookOpen, Smile, Radio, Lock, Compass, Trash2, Mail, Flame, Award, Trophy
+  Brain, Users, ChevronLeft, ChevronRight, Activity, Music, TreeDeciduous, Bird, Home, Settings, ShieldCheck, Database, Stars as LucideStars, User, Layout, Library, Wind, Heart, Feather, Layers, BookOpen, Smile, Radio, Lock, Compass, Trash2, Mail, Award, Trophy
 } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { useApp, getPersistentUserProfile, setPersistentUserProfile } from '@/contexts/AppContext';
@@ -31,17 +31,6 @@ import { recordPrismFeature, recordDailyOracleResult } from '@/lib/prismOmniSync
 import { HoponoponoBible } from '@/components/bluebird/HoponoponoBible';
 import { SecretMessage } from '@/components/bluebird/SecretMessage';
 import { BluebirdSynergySection } from '@/components/bluebird/BluebirdSynergySection';
-import { BluebirdStreakCounter } from '@/components/bluebird/BluebirdStreakCounter';
-import { BluebirdDailyMissionSection } from '@/components/bluebird/BluebirdDailyMissionSection';
-import {
-  loadBluebirdStreak,
-  saveBluebirdStreak,
-  loadTodayBluebirdMissions,
-  saveTodayBluebirdMissions,
-  completeDailyMissionsForToday,
-  type BluebirdStreakData,
-  type BluebirdDailyMissionItem,
-} from '@/lib/bluebirdStreak';
 import { HoponoponoToolPicker, HoponoponoToolResultCard } from '@/components/bluebird/HoponoponoToolGenerator';
 import {
   generateHoponoponoTool,
@@ -259,12 +248,12 @@ export default function BluebirdApp() {
     return () => window.removeEventListener("resize", checkIsMobile);
   }, []);
 
-  const [activeMode, setActiveMode] = useState<'simple' | 'daily' | 'mission' | 'secret' | 'soul' | 'bible' | 'history' | 'secretMessage' | 'synergy'>(() => {
+  const [activeMode, setActiveMode] = useState<'simple' | 'daily' | 'secret' | 'soul' | 'bible' | 'history' | 'secretMessage' | 'synergy'>(() => {
     if (typeof window !== 'undefined') {
       const urlTab = new URLSearchParams(window.location.search).get('tab');
       const sessionTab = sessionStorage.getItem('prism_target_tab');
       const tab = urlTab || sessionTab;
-      if (tab === 'daily' || tab === 'mission' || tab === 'synergy' || tab === 'secretMessage') {
+      if (tab === 'daily' || tab === 'synergy' || tab === 'secretMessage') {
         sessionStorage.removeItem('prism_target_tab');
         return tab as any;
       }
@@ -600,141 +589,6 @@ export default function BluebirdApp() {
     };
   }, []);
 
-  // 🕊️ 40-Day Healing Journey & Daily Mission Streak System
-  const [streakData, setStreakData] = useState<BluebirdStreakData>(() => loadBluebirdStreak(uid));
-  const [bluebirdMissions, setBluebirdMissions] = useState<BluebirdDailyMissionItem[]>(() =>
-    loadTodayBluebirdMissions(todayKey, uid)
-  );
-
-  // Sync streak & missions on user or date change
-  useEffect(() => {
-    setStreakData(loadBluebirdStreak(uid));
-    setBluebirdMissions(loadTodayBluebirdMissions(todayKey, uid));
-  }, [uid, todayKey]);
-
-  // Auto-detect mission completion from actions in the app
-  useEffect(() => {
-    let changed = false;
-    const totalChants = sorryCount + forgiveCount + thankCount + loveCount;
-
-    setBluebirdMissions(prevMissions => {
-      const next = prevMissions.map(m => {
-        // Auto-detect 1: 4 chants completed
-        if (m.autoDetectType === 'chant' && !m.completed && totalChants >= 4) {
-          changed = true;
-          return { ...m, completed: true };
-        }
-        // Auto-detect 2: Ho'oponopono cleansing completed
-        if (m.autoDetectType === 'cleanse' && !m.completed && isHoponoponoComplete) {
-          changed = true;
-          return { ...m, completed: true };
-        }
-        // Auto-detect 3: Binaural beat playing
-        if (m.autoDetectType === 'binaural' && !m.completed && isBinauralPlaying) {
-          changed = true;
-          return { ...m, completed: true };
-        }
-        return m;
-      });
-
-      if (changed) {
-        saveTodayBluebirdMissions(todayKey, next, uid);
-        const allDone = next.length > 0 && next.every(item => item.completed);
-        if (allDone && streakData.lastCompletedDate !== todayKey) {
-          const res = completeDailyMissionsForToday(streakData, todayKey, uid);
-          setStreakData(res.updatedStreak);
-        }
-      }
-      return changed ? next : prevMissions;
-    });
-  }, [sorryCount, forgiveCount, thankCount, loveCount, isHoponoponoComplete, isBinauralPlaying, todayKey, uid, streakData]);
-
-  // Toggle mission completion
-  const handleToggleMission = useCallback((missionId: string) => {
-    setBluebirdMissions(prev => {
-      let toggledToCompleted = false;
-      let missionPoints = 20;
-      let missionTitle = '';
-
-      const updated = prev.map(m => {
-        if (m.id === missionId) {
-          toggledToCompleted = !m.completed;
-          missionPoints = m.points || 20;
-          missionTitle = m.title;
-          return { ...m, completed: !m.completed };
-        }
-        return m;
-      });
-
-      saveTodayBluebirdMissions(todayKey, updated, uid);
-
-      if (toggledToCompleted) {
-        if (sharedState && typeof (sharedState as any).addPoints === 'function') {
-          (sharedState as any).addPoints(missionPoints);
-        }
-
-        const fUser = auth.currentUser;
-        if (fUser && localStorage.getItem('developer_bypass') !== 'true') {
-          void addDoc(collection(db, 'bluebird_history', fUser.uid, 'entries'), {
-            type: 'mission_completed',
-            title: `40일 치유 미션 완료: ${missionTitle}`,
-            content: `획득 정류 포인트: +${missionPoints} FPS`,
-            createdAt: serverTimestamp(),
-          }).catch(err => console.warn("Failed saving mission to firestore:", err));
-        }
-      }
-
-      // Check if all missions now completed
-      const allDone = updated.length > 0 && updated.every(m => m.completed);
-      if (allDone && streakData.lastCompletedDate !== todayKey) {
-        const result = completeDailyMissionsForToday(streakData, todayKey, uid);
-        setStreakData(result.updatedStreak);
-
-        if (result.is40DayCompleted) {
-          setNotice({
-            open: true,
-            title: "🎉 40일 치유 여정 완주 성취!",
-            message: `축하합니다! 40일간의 잠재의식 치유 여정을 완벽히 완주하셨습니다. 영혼의 온전한 자유와 평화가 당신과 영원히 함께합니다. (+${result.reachedMilestone?.rewardPoints || 500} FPS 성취 보상 지급)`,
-          });
-        } else if (result.reachedMilestone) {
-          setNotice({
-            open: true,
-            title: `🌟 마일스톤 달성: ${result.reachedMilestone.title} (${result.reachedMilestone.badgeEmoji})`,
-            message: `40일 여정의 ${result.reachedMilestone.day}일차 마일스톤에 도달했습니다! ${result.reachedMilestone.description} (+${result.reachedMilestone.rewardPoints} FPS)`,
-          });
-        }
-      }
-
-      return updated;
-    });
-  }, [todayKey, uid, streakData, sharedState]);
-
-  // Complete all missions at once
-  const handleCompleteAllMissions = useCallback(() => {
-    setBluebirdMissions(prev => {
-      const allCompleted = prev.map(m => ({ ...m, completed: true }));
-      saveTodayBluebirdMissions(todayKey, allCompleted, uid);
-
-      const uncompletedCount = prev.filter(m => !m.completed).length;
-      const pointsToAdd = uncompletedCount * 20;
-
-      if (pointsToAdd > 0 && sharedState && typeof (sharedState as any).addPoints === 'function') {
-        (sharedState as any).addPoints(pointsToAdd);
-      }
-
-      const result = completeDailyMissionsForToday(streakData, todayKey, uid);
-      setStreakData(result.updatedStreak);
-
-      setNotice({
-        open: true,
-        title: `🔥 ${result.updatedStreak.currentStreak}일 연속 치유 스트릭 달성!`,
-        message: `오늘의 40일 여정 데일리 미션을 올클리어하셨습니다. (누적 ${result.updatedStreak.totalCompletedDays}일 실천 · Day ${result.updatedStreak.journeyDay}/40)`,
-      });
-
-      return allCompleted;
-    });
-  }, [todayKey, uid, streakData, sharedState]);
-
   const incrementChant = (type: 'sorry' | 'forgive' | 'thank' | 'love') => {
     let textToSpeak = '';
     if (type === 'sorry') {
@@ -990,19 +844,6 @@ export default function BluebirdApp() {
             </div>
           )}
         </div>
-
-        {/* 40-Day Healing Journey Streak Counter Banner */}
-        <BluebirdStreakCounter
-          streakData={streakData}
-          completedTodayCount={bluebirdMissions.filter(m => m.completed).length}
-          totalTodayCount={bluebirdMissions.length}
-          isTodayAllCompleted={bluebirdMissions.length > 0 && bluebirdMissions.every(m => m.completed)}
-          onOpenMissionSection={() => {
-            setActiveMode('mission');
-            resetAppScroll();
-          }}
-          variant="banner"
-        />
 
         {/* 1. Four Sacred Phrases Chanting Dashboard */}
         <div className="space-y-4">
@@ -2714,7 +2555,6 @@ export default function BluebirdApp() {
       <nav className={`prism-xs-subnav fixed top-safe-nav md:top-safe-nav-md left-1/2 -translate-x-1/2 z-[100] flex items-center gap-1 p-1 rounded-3xl bg-white/5 backdrop-blur-2xl border border-white/10 shadow-2xl max-w-[95vw] overflow-x-auto no-scrollbar md:max-w-fit md:overflow-visible transition-all duration-300 ${isSpecialFeatureChromeHidden ? SPECIAL_FEATURE_CHROME_HIDDEN_CLASS : 'opacity-100'}`}>
           {[
             { id: 'daily', icon: Layout, label: "Ho'oponopono" },
-            { id: 'mission', icon: Flame, label: '40D MISSION' },
             { id: 'secretMessage', icon: Mail, label: 'LETTER' },
             { id: 'synergy', icon: Sparkles, label: 'TRANSMUTATION' }
           ].map(item => {
@@ -2750,23 +2590,6 @@ export default function BluebirdApp() {
              {activeMode === 'daily' ? (
                <motion.div key="daily-top" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 pb-8 sm:pb-12">
                  {renderDailyOracle()}
-               </motion.div>
-             ) : null}
-             {activeMode === 'mission' ? (
-               <motion.div key="mission-top" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 pb-8 sm:pb-12">
-                 <BluebirdDailyMissionSection
-                   streakData={streakData}
-                   missions={bluebirdMissions}
-                   onToggleMission={handleToggleMission}
-                   onCompleteAllMissions={handleCompleteAllMissions}
-                   onNavigateToCleanse={() => {
-                     setActiveMode('daily');
-                     resetAppScroll();
-                   }}
-                   onIncrementChant={() => incrementChant('love')}
-                   onToggleBinaural={() => toggleBinaural('bluebird')}
-                   isBinauralPlaying={isBinauralPlaying}
-                 />
                </motion.div>
              ) : null}
              {activeMode === 'secretMessage' ? (
