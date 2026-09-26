@@ -415,3 +415,76 @@ export function extractOracleConciseSummary(params: OracleConciseSummaryParams):
   }
 }
 
+/**
+ * 한글 음절의 종성(받침) 유무 확인
+ */
+export function hasKoreanJongseong(word: string): boolean {
+  if (!word) return false;
+  const lastChar = word.trim().slice(-1);
+  const code = lastChar.charCodeAt(0);
+  if (code < 0xac00 || code > 0xd7a3) return false;
+  return (code - 0xac00) % 28 !== 0;
+}
+
+/**
+ * 한국어 성명에서 성(姓)을 제외하고 다정한 이름(Given Name)만 추출
+ * 예: "박주형" -> "주형", "남궁선우" -> "선우", "김철" -> "철", "주형" -> "주형", "여행자" -> "여행자"
+ */
+export function extractGivenName(fullName: string): string {
+  if (!fullName) return '';
+  const trimmed = fullName.trim();
+  if (trimmed.length <= 1 || trimmed === '여행자') return trimmed;
+
+  // 공백으로 성과 이름이 구분된 경우 (예: "박 주형" -> "주형")
+  if (trimmed.includes(' ')) {
+    const parts = trimmed.split(/\s+/);
+    return parts[parts.length - 1];
+  }
+
+  // 한글 2글자 복합성 (남궁, 황보, 제갈, 사공, 선우, 서문, 독고, 동방 등)
+  const compoundSurnames = ['남궁', '황보', '제갈', '사공', '선우', '서문', '독고', '동방'];
+  for (const compound of compoundSurnames) {
+    if (trimmed.startsWith(compound) && trimmed.length > 2) {
+      return trimmed.slice(2);
+    }
+  }
+
+  // 한글 3글자 성명 (가장 일반적인 경우: 성 1자 + 이름 2자, 예: 박주형 -> 주형)
+  if (trimmed.length === 3 && /^[가-힣]{3}$/.test(trimmed)) {
+    return trimmed.slice(1);
+  }
+
+  // 한글 4글자 성명 (외자 성 + 이름 3자, 예: 김하늘별 -> 하늘별)
+  if (trimmed.length === 4 && /^[가-힣]{4}$/.test(trimmed)) {
+    return trimmed.slice(1);
+  }
+
+  // 한글 2글자 성명 (단성 + 외자 이름, 예: 김철 -> 철, 이진 -> 진)
+  if (trimmed.length === 2 && /^[가-힣]{2}$/.test(trimmed)) {
+    const commonSurnames = /^[김이박최정강조윤장임한오서신권황안송류홍전고문손양배백허유남심노하곽성차주우구라민진지엄채원천방공현함변염여추도소석선설마길연위표명기반왕금옥육인맹제모탁국어은편]/;
+    if (commonSurnames.test(trimmed)) {
+      return trimmed.slice(1);
+    }
+  }
+
+  return trimmed;
+}
+
+/**
+ * 이름 뒤에 다정한 호격 조사(아/야) 붙이기
+ * 예: "주형" -> "주형아", "민수" -> "민수야", "철" -> "철아"
+ */
+export function formatKoreanVocative(name: string): string {
+  if (!name) return '';
+  return hasKoreanJongseong(name) ? `${name}아` : `${name}야`;
+}
+
+/**
+ * 이름 뒤에 다정한 대상 조사(이에게/에게) 붙이기
+ * 예: "주형" -> "주형이에게", "민수" -> "민수에게"
+ */
+export function formatKoreanToTarget(name: string): string {
+  if (!name) return '';
+  return hasKoreanJongseong(name) ? `${name}이에게` : `${name}에게`;
+}
+

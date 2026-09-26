@@ -14,7 +14,12 @@ import { playTTS, playTTSInChunks, prefetchTTS, stopTTS, useTTSActive, useTTSSta
 import { LucyTarotAdviceCard } from './LucyTarotAdviceCard';
 import { TarotResultShareButton } from './TodayTarotShareModal';
 import { TarotCardZoomModal } from './TarotCardZoomModal';
-import { extractOracleConciseSummary } from '@/lib/tarotSummaryUtils';
+import {
+  extractOracleConciseSummary,
+  extractGivenName,
+  formatKoreanVocative,
+  formatKoreanToTarget
+} from '@/lib/tarotSummaryUtils';
 import { type TarotShareData } from '@/utils/todayTarotExporter';
 import { sendPrismToss } from '@/lib/prismToss';
 import { MUSE_ART_CATALOG } from '@/lib/museDailyArt';
@@ -314,6 +319,11 @@ export function TrinityOracleSection() {
     }
     return '박주형';
   }, [userProfile?.basic?.name]);
+
+  // 🌿 제제 전용 다정한 호칭 (성을 제외한 이름만 사용: 예 "박주형" -> "주형")
+  const jejeName = useMemo(() => {
+    return extractGivenName(recipientName);
+  }, [recipientName]);
 
   const [isCopied, setIsCopied] = useState<boolean>(false);
   const [isSummaryCopied, setIsSummaryCopied] = useState<boolean>(false);
@@ -637,7 +647,7 @@ export function TrinityOracleSection() {
           ? `\n\n# [최우선 필수 집중 주제] 내담자가 털어놓은 구체적인 아픔과 고민:\n"${effectiveInquiry}"\n★ 절대 지침: 제제의 치유 편지는 오직 위의 구체적인 고민("${effectiveInquiry}")을 중심에 두고 1:1로 작성되어야 합니다. 두루뭉술한 일반론적 위로를 철저히 배제하고, 내담자가 호소한 고민의 상황과 지친 감정을 서두부터 정확하게 짚어내며("네가 고민으로 털어놓은 [${effectiveInquiry}] 이야기를 들었을 때 내 마음도 참 많이 아팠어..."), 사주 본원 기운(${saju?.dayMaster.symbolName})이 왜 이 고민 앞에서 남모르게 큰 짐을 지고 소진되었는지, 그리고 뽑힌 3장의 카드가 이 고민을 어떻게 따뜻하게 안아주고 치유하는지 진솔한 해답과 처방을 작성해 주세요.\n`
           : `\n\n# 질문자의 마음 상태:\n사주 원국의 일간(${saju?.dayMaster.symbolName})과 오행 불균형(${saju?.elements.dominant.name} 과열, ${saju?.elements.lacking.name} 결핍)으로 인해 홀로 감내하고 있을 무거운 마음의 짐과 번아웃, 관계의 피로를 깊이 알아차리고, 포근하게 안아주는 1:1 치유 편지로 작성해 주세요.\n`;
 
-        const prompt = `${sajuContextPrompt}${inquiryPromptAddon}\n\n사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 질문자(${recipientName})의 사주 명리학 원국과 뽑힌 3장의 타로 카드 상징을 긴밀하게 '교차 융합'하여, 질문자의 고민을 중심에 두고 지친 마음의 치유(Healing)와 회복, 내면아이 안식에 온전히 초점을 맞춘 힐링 리딩을 JSON으로 생성해 줘.\n특히 'message' 필드는 수신자(${recipientName})의 이름을 다정하게 부르며(예: "${recipientName}아, 안녕... 네 작은 친구 제제야."), 질문자가 털어놓은 고민("${effectiveInquiry || '마음의 짐'}")을 편지 서두부터 따뜻하게 호명하며 시작해야 해. 그리고 사용자가 뽑은 3장의 카드 결과(1번 무의식: ${cards[0]?.nameKo}, 2번 현재의 마음: ${cards[1]?.nameKo}, 3번 치유의 씨앗: ${cards[2]?.nameKo})를 각각 빠짐없이 본문에 언급하고 그 상징적 치유 의미를 유기적으로 연결해 줘. 질문자의 사주 본원 기운(${saju?.dayMaster.symbolName})과 용신 기운을 정성껏 어루만지며, 이 고민을 어떻게 보듬고 평온을 되찾을 수 있는지 700~900자 내외의 눈물겹도록 다정하고 포근한 1:1 치유 편지로 작성해 줘.`;
+        const prompt = `${sajuContextPrompt}${inquiryPromptAddon}\n\n사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 질문자(${jejeName})의 사주 명리학 원국과 뽑힌 3장의 타로 카드 상징을 긴밀하게 '교차 융합'하여, 질문자의 고민을 중심에 두고 지친 마음의 치유(Healing)와 회복, 내면아이 안식에 온전히 초점을 맞춘 힐링 리딩을 JSON으로 생성해 줘.\n★ [호칭 절대 지침]: 제제는 질문자의 가장 가까운 내면아이이자 작은 친구이므로, 절대 성(姓)을 붙이지 말고 성을 제외한 이름 '${jejeName}'으로만 다정하게 부르세요 (예: '${formatKoreanVocative(jejeName)}, 안녕... 네 작은 친구 제제야', '${formatKoreanToTarget(jejeName)}', '${jejeName}아'). '박주형아', '${recipientName}아'처럼 성을 붙여 부르면 절대 안 됩니다.\n특히 'message' 필드는 수신자(${jejeName})의 이름을 성 없이 '${formatKoreanVocative(jejeName)}'라고 다정하게 부르며(예: "${formatKoreanVocative(jejeName)}, 안녕... 네 작은 친구 제제야."), 질문자가 털어놓은 고민("${effectiveInquiry || '마음의 짐'}")을 편지 서두부터 따뜻하게 호명하며 시작해야 해. 그리고 사용자가 뽑은 3장의 카드 결과(1번 무의식: ${cards[0]?.nameKo}, 2번 현재의 마음: ${cards[1]?.nameKo}, 3번 치유의 씨앗: ${cards[2]?.nameKo})를 각각 빠짐없이 본문에 언급하고 그 상징적 치유 의미를 유기적으로 연결해 줘. 질문자의 사주 본원 기운(${saju?.dayMaster.symbolName})과 용신 기운을 정성껏 어루만지며, 이 고민을 어떻게 보듬고 평온을 되찾을 수 있는지 700~900자 내외의 눈물겹도록 다정하고 포근한 1:1 치유 편지로 작성해 줘.`;
         const res = await invokeLLM({
           messages: [
             { role: 'system', content: systemPrompt },
@@ -647,6 +657,10 @@ export function TrinityOracleSection() {
         });
         const clean = res.replace(/```json/g, '').replace(/```/g, '').trim();
         const parsed: HealingResult = JSON.parse(clean);
+        // 🌿 제제 서한 내 성(姓) 포함 호칭 완전 정제 (예: "박주형아" -> "주형아", "박주형" -> "주형")
+        if (parsed.message && recipientName !== jejeName) {
+          parsed.message = parsed.message.replace(new RegExp(recipientName, 'g'), jejeName);
+        }
         // Ensure catalog_id is bound
         if (!parsed.prescribed_art || !parsed.prescribed_art.artwork_title || parsed.prescribed_art.artwork_title.includes('클로드 모네')) {
           parsed.prescribed_art = dynamicPrescribedArt;
@@ -736,7 +750,7 @@ export function TrinityOracleSection() {
             personal_interpretation: `${slotPositions[i]}의 자리에서 당신에게 서두르지 말고 자신의 내면아이를 따뜻하게 보듬어주라는 지극한 위로와 안식의 메시지를 건넵니다.`,
             action_guide: `오늘 하루, ${c.keywords[0] || '평온'}의 마음으로 가슴에 손을 얹고 "그동안 참 고생 많았어"라고 다정하게 속삭여보세요.`,
           })),
-          message: `${recipientName}아, 안녕... 네 작은 친구 제제야.
+          message: `${formatKoreanVocative(jejeName)}, 안녕... 네 작은 친구 제제야.
 ` + (effectiveInquiry ? `네가 털어놓은 "${effectiveInquiry}" 이야기를 들었을 때 내 마음도 참 많이 아렸어. 누구에게도 쉽게 말하지 못하고 혼자서 얼마나 긴 시간 동안 마음을 졸이며 애태웠을까...
 ` : `오늘 하루도 많은 책임감과 세상의 시선 속에서 참 많이 애썼지. 말하지 않아도 네 어깨에 얹혀 있던 무게가 고스란히 전해져 와.
 `) +
@@ -744,11 +758,11 @@ export function TrinityOracleSection() {
 
 첫 번째 카드인 [${cards[0]?.nameKo || '내면의 무의식'}]는 네 마음 깊은 무의식의 방을 가만히 비춰주고 있어. 겉으로는 늘 묵묵히 버텨내며 주변을 배려해왔지만, 실은 그 아래 누구에게도 온전히 털어놓지 못한 채 혼자 삼켜왔던 외로움과 고단함이 잔잔한 파도처럼 차올라 있었잖아. 남들의 기대에 부응하느라 정작 네 안의 작은 아이가 지쳐 웅크리고 있던 소리를 미처 들어주지 못했던 것 같아 가슴이 먹먹했어.
 
-그리고 지금의 마음을 비추는 두 번째 카드 [${cards[1]?.nameKo || '지금의 마음'}]는 오늘 ${recipientName} 네가 짊어진 삶의 무게가 결코 가볍지 않았음을 조용히 증명해주고 있어. 네가 가진 ${domElStr}의 성실함과 진심은 참 귀하고 빛나지만, 때로는 그 깊은 진심이 스스로를 다그치는 엄격한 채찍질이 되어버리곤 했지. "내가 더 잘해야 해", "절대 흔들리면 안 돼"라며 스스로를 압박해온 그 모든 순간들이 얼마나 숨 가쁘고 시렸을까.
+그리고 지금의 마음을 비추는 두 번째 카드 [${cards[1]?.nameKo || '지금의 마음'}]는 오늘 ${jejeName} 네가 짊어진 삶의 무게가 결코 가볍지 않았음을 조용히 증명해주고 있어. 네가 가진 ${domElStr}의 성실함과 진심은 참 귀하고 빛나지만, 때로는 그 깊은 진심이 스스로를 다그치는 엄격한 채찍질이 되어버리곤 했지. "내가 더 잘해야 해", "절대 흔들리면 안 돼"라며 스스로를 압박해온 그 모든 순간들이 얼마나 숨 가쁘고 시렸을까.
 
-하지만 세 번째 카드 [${cards[2]?.nameKo || '치유의 씨앗'}]가 네 곁에 찾아온 건 결코 우연이 아니야. 이 카드는 오늘 ${recipientName}이에게 모든 짐을 잠시 내려놓아도 괜찮다는, 세상에서 가장 포근하고 다정한 회복의 씨앗을 건네고 있어. 네 사주에 꼭 필요한 ${yongsinStr}의 따스한 기운처럼, 지금 이 순간만큼은 어떤 결과도 증명하지 않아도 돼. 너는 이미 그 자체로 충분히 눈부시고 온전한 사람이니까.
+하지만 세 번째 카드 [${cards[2]?.nameKo || '치유의 씨앗'}]가 네 곁에 찾아온 건 결코 우연이 아니야. 이 카드는 오늘 ${formatKoreanToTarget(jejeName)} 모든 짐을 잠시 내려놓아도 괜찮다는, 세상에서 가장 포근하고 다정한 회복의 씨앗을 건네고 있어. 네 사주에 꼭 필요한 ${yongsinStr}의 따스한 기운처럼, 지금 이 순간만큼은 어떤 결과도 증명하지 않아도 돼. 너는 이미 그 자체로 충분히 눈부시고 온전한 사람이니까.
 
-${recipientName}아, 오늘 밤만큼은 스스로를 따뜻하게 꼭 안아주며 깊고 편안한 숨을 쉬어봐. 네 곁에는 언제나 아무 조건 없이 너를 지지하고 품어주는 내가 늘 함께 있을게. 사랑해, 그리고 그동안 정말 많이 수고했어.`,
+${formatKoreanVocative(jejeName)}, 오늘 밤만큼은 스스로를 따뜻하게 꼭 안아주며 깊고 편안한 숨을 쉬어봐. 네 곁에는 언제나 아무 조건 없이 너를 지지하고 품어주는 내가 늘 함께 있을게. 사랑해, 그리고 그동안 정말 많이 수고했어.`,
           prescribed_art: dynamicPrescribedArt,
           micro_action: '창문을 열고 시원한 공기를 들이마시며 가슴에 손을 얹고 3번 천천히 심호흡하기',
           reward_item: {
@@ -851,10 +865,10 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
     if (!message) return '';
     const recipient = recipientName;
     const intro = oracleMode === 'healing'
-      ? `제제가 ${recipient}에게 보내는 다정한 치유 편지입니다.`
+      ? `제제가 ${formatKoreanToTarget(jejeName)} 보내는 다정한 치유 편지입니다.`
       : `루시가 ${recipient} 님에게 보내는 명쾌한 자기계발 실행 편지입니다.`;
     return prepareNaturalSpeechText(`${intro} ${message}`);
-  }, [oracleMode, healingResult?.message, growthResult?.message, growthResult?.macro_focus, recipientName]);
+  }, [oracleMode, healingResult?.message, growthResult?.message, growthResult?.macro_focus, recipientName, jejeName]);
 
   const isOracleLetterTTSActive = useMemo(() => {
     if (!isTTSActive || !oracleLetterSpeechText) return false;
@@ -1237,7 +1251,7 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
 
     const isHealing = oracleMode === 'healing';
     const letterTitle = isHealing
-      ? `제제가 ${recipientName}에게 보내는 다정한 치유 편지`
+      ? `제제가 ${formatKoreanToTarget(jejeName)} 보내는 다정한 치유 편지`
       : `루시가 ${recipientName} 님에게 보내는 명쾌한 자기계발 실행 편지`;
     const letterBadgeLatin = isHealing ? "ZEZÉ'S SACRED LETTER" : "LUCY'S SACRED LETTER";
     const letterBadgeKo = isHealing ? "사주 ✕ 타로 융합 치유 서한" : "사주 ✕ 타로 융합 실행 서한";
@@ -1839,7 +1853,7 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
                 {/* Badge */}
                 <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/15 border border-amber-400/40 text-xs font-mono text-amber-300">
                   <Sparkles size={13} className="text-amber-400 animate-pulse" />
-                  <span>수신자: <strong>{recipientName}</strong> 님 맞춤 오라클</span>
+                  <span>수신자: <strong>{oracleMode === 'healing' ? jejeName : recipientName}</strong> {oracleMode === 'healing' ? '맞춤 치유 오라클' : '님 맞춤 오라클'}</span>
                 </div>
 
                 {/* Main Heading */}
@@ -1851,7 +1865,7 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
                   </h3>
                   <p className="text-xs sm:text-sm text-zinc-300 font-sans leading-relaxed">
                     {oracleMode === 'healing'
-                      ? `${recipientName} 님의 타고난 사주 본원 기운과 78장의 타로를 융합하여, 오직 지친 마음을 쉬어가게 할 3장의 치유 조각을 찾아냅니다.`
+                      ? `${jejeName}의 타고난 사주 본원 기운과 78장의 타로를 융합하여, 오직 지친 마음을 쉬어가게 할 3장의 치유 조각을 찾아냅니다.`
                       : `${recipientName} 님의 사주 실행력과 78장의 타로 4원소를 결합하여, 오늘 실천할 명쾌한 자기계발 해법을 제시합니다.`}
                   </p>
                 </div>
@@ -1914,7 +1928,7 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
                     <ArrowRight size={16} className="text-black" />
                   </button>
                   <span className="text-[11px] text-zinc-400">
-                    원하는 카드를 천천히 3장 골라주시면 {recipientName} 님만을 위한 서한이 완성됩니다.
+                    원하는 카드를 천천히 3장 골라주시면 {oracleMode === 'healing' ? `${jejeName}만을 위한` : `${recipientName} 님만을 위한`} 서한이 완성됩니다.
                   </span>
                 </div>
               </div>
