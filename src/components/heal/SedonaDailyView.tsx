@@ -22,7 +22,9 @@ import {
   Info,
   Layers,
   Send,
-  Brain
+  Brain,
+  Play,
+  Pause
 } from 'lucide-react';
 import { auth, db, collection, addDoc, serverTimestamp, query, orderBy, limit, getDocs } from '@/lib/firebase';
 import { TTSButton } from '@/components/TTSButton';
@@ -282,6 +284,16 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
     setHasCompletedSomaticHold(false);
     playSolfeggioTone(432, 2500);
   };
+
+  // Stop Somatic Hold
+  const stopSomaticHold = () => {
+    setIsSurrenderActive(false);
+  };
+
+  // Ensure somatic hold never autoplays on step transitions
+  useEffect(() => {
+    setIsSurrenderActive(false);
+  }, [currentStep]);
 
   // Grip Hold Handling (Press & hold to let go)
   const handleGripMouseDown = () => {
@@ -661,7 +673,6 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
                 type="button"
                 onClick={() => {
                   setCurrentStep(1);
-                  startSomaticHold();
                 }}
                 className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold text-sm tracking-wider flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/20 active:scale-98 transition-all cursor-pointer"
               >
@@ -903,10 +914,10 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
                         type="button"
                         onClick={() => {
                           setSelectedZone(zone);
-                          setSurrenderTimer(15);
-                          setIsSurrenderActive(true);
-                          setHasCompletedSomaticHold(false);
-                          playSolfeggioTone(432, 2500);
+                          if (isSurrenderActive) {
+                            setIsSurrenderActive(false);
+                            setSurrenderTimer(15);
+                          }
                         }}
                         className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
                           isSelected
@@ -949,21 +960,40 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
 
                   {/* Real-time thought defense guidance during timer */}
                   {isSurrenderActive && (
-                    <p className="mt-3 text-xs text-amber-200/90 font-medium animate-pulse text-center max-w-sm">
-                      {surrenderTimer > 10 && `🛑 머릿속 생각('왜?')을 끄고, ${selectedZone.name}의 조임·열감에만 주의를 기울이세요.`}
-                      {surrenderTimer <= 10 && surrenderTimer > 5 && `🌊 생각이 다시 올라오면: '아, 생각일 뿐이야' 하고 목 아래 몸의 감각으로 돌아옵니다.`}
-                      {surrenderTimer <= 5 && `✨ 저항하지 않고 그대로 머물 때, 감정은 압력밥솥의 증기처럼 스스로 증발합니다.`}
-                    </p>
+                    <>
+                      <p className="mt-3 text-xs text-amber-200/90 font-medium animate-pulse text-center max-w-sm">
+                        {surrenderTimer > 10 && `🛑 머릿속 생각('왜?')을 끄고, ${selectedZone.name}의 조임·열감에만 주의를 기울이세요.`}
+                        {surrenderTimer <= 10 && surrenderTimer > 5 && `🌊 생각이 다시 올라오면: '아, 생각일 뿐이야' 하고 목 아래 몸의 감각으로 돌아옵니다.`}
+                        {surrenderTimer <= 5 && `✨ 저항하지 않고 그대로 머물 때, 감정은 압력밥솥의 증기처럼 스스로 증발합니다.`}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={stopSomaticHold}
+                        className="mt-3 px-4 py-2 rounded-full border border-amber-500/40 bg-amber-500/10 text-amber-300 text-xs font-bold hover:bg-amber-500/20 transition-all flex items-center gap-1.5 cursor-pointer shadow-lg active:scale-95"
+                      >
+                        <Pause size={13} className="fill-amber-300" />
+                        <span>신체 집중 잠시 멈춤</span>
+                      </button>
+                    </>
                   )}
 
                   {!isSurrenderActive && (
                     <button
                       type="button"
                       onClick={startSomaticHold}
-                      className="mt-4 px-4 py-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs font-bold hover:bg-emerald-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                      className="mt-4 px-5 py-2.5 rounded-full border border-emerald-500/40 bg-emerald-500/20 text-emerald-300 text-xs font-bold hover:bg-emerald-500/30 transition-all flex items-center gap-2 cursor-pointer shadow-lg active:scale-95"
                     >
-                      <RotateCcw size={13} />
-                      <span>신체 항복 15초 다시 집중하기</span>
+                      {hasCompletedSomaticHold ? (
+                        <>
+                          <RotateCcw size={14} />
+                          <span>{selectedZone.name}에 신체 항복 15초 다시 집중하기</span>
+                        </>
+                      ) : (
+                        <>
+                          <Play size={14} className="fill-emerald-300" />
+                          <span>{selectedZone.name}에 신체 감각 항복 15초 집중 시작</span>
+                        </>
+                      )}
                     </button>
                   )}
                 </div>
