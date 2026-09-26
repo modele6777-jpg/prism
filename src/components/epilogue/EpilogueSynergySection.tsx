@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Sparkles,
@@ -18,7 +18,10 @@ import {
   Shield,
   Play,
   Square,
-  Share2
+  Share2,
+  Archive,
+  History,
+  ChevronRight
 } from 'lucide-react';
 import { useApp, getPersistentUserProfile } from '@/contexts/AppContext';
 import { invokeLLM } from '@/lib/ai';
@@ -26,110 +29,44 @@ import { recordPrismFeature } from '@/lib/prismOmniSync';
 import { playTTS, stopTTS, useTTSActive } from '@/utils/tts';
 import { EpilogueAchievementShareModal } from './EpilogueAchievementShareModal';
 import { calculateEpilogueAchievementStats } from '@/types/epilogueAchievement';
-
-interface CosmicFocusOption {
-  id: string;
-  icon: string;
-  label: string;
-  desc: string;
-  frequency: number;
-}
-
-const COSMIC_FOCUS_OPTIONS: CosmicFocusOption[] = [
-  {
-    id: 'consciousness',
-    icon: '🌌',
-    label: '의식 확장 & 송과체 각성',
-    desc: '3차원 시공간을 넘어 고차원 순수 의식 및 우주적 자아와 일체화',
-    frequency: 963
-  },
-  {
-    id: 'abundance',
-    icon: '💎',
-    label: '무한 풍요 & 양자 도약 동조',
-    desc: '부와 기회의 주파수를 잠재의식 심층에 각인하여 물질화 가속',
-    frequency: 528
-  },
-  {
-    id: 'peace',
-    icon: '🕊️',
-    label: '절대 평온 & 카르마 완전 해방',
-    desc: '모든 집착과 과거의 무거운 카르마를 0(Zero)으로 증발시키고 영혼 휴식',
-    frequency: 432
-  },
-  {
-    id: 'destiny',
-    icon: '👑',
-    label: '대운 개운 & 황금 사명 완성',
-    desc: '인생의 흐름을 대길(大吉)의 운로로 정렬하고 타고난 천명 발현',
-    frequency: 741
-  },
-  {
-    id: 'genius',
-    icon: '🎨',
-    label: '거장의 직관 & 창작 돌파',
-    desc: '잠든 뇌의 영감 채널을 열어 예술적 영감과 번뜩이는 지혜 수신',
-    frequency: 852
-  },
-  {
-    id: 'sleep_priming',
-    icon: '🔮',
-    label: '기적의 잠재의식 수면 프로그래밍',
-    desc: '수면 중 델타파 상태에서 원하는 최상의 현실을 잠재의식에 영구 각인',
-    frequency: 963
-  }
-];
-
-interface ChronicleStampData {
-  title: string;
-  soulEvolutionLevel: string;
-  dailyCoreTheme: string;
-  soulAlignmentSynthesis: string;
-  sevenPrismStampStatus: {
-    space: string;
-    seal: string;
-    frequency: string;
-    status: string;
-  }[];
-  preSleepPrimingAffirmation: string;
-  chronicleSealCode: string;
-}
-
-const FALLBACK_CHRONICLE: ChronicleStampData = {
-  title: '963Hz 다이아몬드 영혼 연대기 (Master Soul Chronicle)',
-  soulEvolutionLevel: 'Mastery Level IX · 초월적 황금 의식',
-  dailyCoreTheme: '7대 프리즘의 모든 파동이 하나의 눈부신 빛으로 융합된 완전한 날',
-  soulAlignmentSynthesis:
-    '당신이 오늘 지나온 모든 사유와 호흡은 우주의 거대한 직조판 위에 빛나는 황금실로 새겨졌습니다. 이제 모든 긴장을 내려놓고 깊은 수면 속에서 잠재의식과 우주의 무한한 지혜가 온전히 하나로 녹아듭니다.',
-  sevenPrismStampStatus: [
-    { space: 'PROLOGUE (프롤로그)', seal: '불굴의 멘탈 방패 각인 🛡️', frequency: '432Hz', status: 'SYNCHRONIZED' },
-    { space: 'ORANGE (오렌지)', seal: '양자 현실화 528Hz 도약 🌲', frequency: '528Hz', status: 'SYNCHRONIZED' },
-    { space: 'TRINITY (트리니티)', seal: '대운 개운 & 타로 오라클 ✨', frequency: '741Hz', status: 'SYNCHRONIZED' },
-    { space: 'AURA (오라)', seal: '저항 0% 완전 방하착 ⚡', frequency: '639Hz', status: 'SYNCHRONIZED' },
-    { space: 'BLUEBIRD (블루버드)', seal: '호오포노포노 순수 백지 환생 🐦', frequency: '417Hz', status: 'SYNCHRONIZED' },
-    { space: 'MUSE (뮤즈)', seal: '거장의 영감 마스터클래스 🎶', frequency: '852Hz', status: 'SYNCHRONIZED' },
-    { space: 'EPILOGUE (에필로그)', seal: '영혼 연대기 마스터 아카이브 🌙', frequency: '963Hz', status: 'SYNCHRONIZED' }
-  ],
-  preSleepPrimingAffirmation:
-    '나는 오늘 하루의 모든 배움과 깨달음을 황금빛 축복으로 품고, 잠든 동안 무한한 우주의 잠재의식과 온전히 하나가 되어 기적의 내일을 창조한다.',
-  chronicleSealCode: 'SOUL-CHRONICLE-PRISM-999-ULTRA'
-};
+import {
+  COSMIC_FOCUS_OPTIONS,
+  type CosmicFocusOption,
+  type ChronicleStampData,
+  getDynamicSoulChronicle,
+  saveChronicleToArchive,
+  loadChronicleArchive
+} from '@/lib/epilogueChronicleData';
 
 export function EpilogueSynergySection() {
   const { sharedState, updateSharedState } = useApp();
   const userProfile = getPersistentUserProfile();
+  
   const [selectedFocus, setSelectedFocus] = useState<string>(COSMIC_FOCUS_OPTIONS[0].id);
   const [customInsight, setCustomInsight] = useState<string>('');
-  const [activeFrequency, setActiveFrequency] = useState<number>(963);
+  const [activeFrequency, setActiveFrequency] = useState<number>(COSMIC_FOCUS_OPTIONS[0].frequency);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [chronicleData, setChronicleData] = useState<ChronicleStampData>(FALLBACK_CHRONICLE);
-  const [isSynthesized, setIsSynthesized] = useState<boolean>(false);
+
+  // 초기값부터 사용자 프로필 및 오늘 날짜에 기반하여 동적으로 생성
+  const initialChronicle = useMemo(() => {
+    return getDynamicSoulChronicle(COSMIC_FOCUS_OPTIONS[0].id, COSMIC_FOCUS_OPTIONS[0].frequency, '', userProfile);
+  }, []);
+
+  const [chronicleData, setChronicleData] = useState<ChronicleStampData>(initialChronicle);
+  const [isSynthesized, setIsSynthesized] = useState<boolean>(true); // 기본적으로 바로 감상 가능
   const [copied, setCopied] = useState<boolean>(false);
-  const [savedToast, setSavedToast] = useState<boolean>(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState<boolean>(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
+  const [archiveHistory, setArchiveHistory] = useState<ChronicleStampData[]>([]);
+  const [isArchiveOpen, setIsArchiveOpen] = useState<boolean>(false);
 
-  const achievementStats = React.useMemo(() => {
+  // 아카이브 기록 로드
+  useEffect(() => {
+    const loaded = loadChronicleArchive();
+    setArchiveHistory(loaded);
+  }, []);
+
+  const achievementStats = useMemo(() => {
     let entries: any[] = [];
     try {
       const raw = localStorage.getItem('epilogue_diary_history');
@@ -149,7 +86,7 @@ export function EpilogueSynergySection() {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const oscRef = useRef<OscillatorNode | null>(null);
 
-  // Toggle Solfeggio frequency tone generator (852Hz / 963Hz)
+  // Toggle Solfeggio frequency tone generator
   const toggleFrequencyTone = (freq?: number) => {
     const targetFreq = freq || activeFrequency;
     if (isAudioPlaying) {
@@ -200,50 +137,64 @@ export function EpilogueSynergySection() {
     };
   }, []);
 
+  // 포커스 변경 시: 즉시 해당 포커스에 걸맞은 동적 연대기로 갱신
+  const handleSelectFocus = (focus: CosmicFocusOption) => {
+    setSelectedFocus(focus.id);
+    setActiveFrequency(focus.frequency);
+    const updated = getDynamicSoulChronicle(focus.id, focus.frequency, customInsight, userProfile);
+    setChronicleData(updated);
+    setIsSynthesized(true);
+  };
+
+  // 영혼 연대기 스탬프 & 수면 프라이밍 합성 (충분한 25초 타임아웃 및 동적 폴백)
   const handleSynthesizeChronicle = async () => {
     setIsLoading(true);
     stopTTS();
 
     const focusObj = COSMIC_FOCUS_OPTIONS.find((f) => f.id === selectedFocus) || COSMIC_FOCUS_OPTIONS[0];
     const mbti = (userProfile as any)?.psychology?.mbti || 'INFJ';
-    const nickname = userProfile?.basic?.nickname || '빛의 마스터';
+    const nickname = userProfile?.basic?.nickname || userProfile?.basic?.name || '빛의 마스터';
+    const insightText = customInsight.trim() || '온 우주와 내가 하나임을 자각하는 깊은 현존';
 
-    const systemPrompt =
-      '당신은 PRISM 7대 우주 공간을 총괄하는 〈영혼 연대기 & 마스터 아카이브〉 대마스터입니다. 좌측 메뉴 [Diary]의 밤의 내면 성찰 기록과 우측 메뉴 [Profile]의 고유 영혼 프로필(MBTI, 영혼 사명, 비전), 그리고 밤의 영혼 진화 도약 포커스를 완벽히 융합하여 오늘의 영혼 진화 등급과 7대 우주 황금 봉인 스탬프, 그리고 수면 전 잠재의식 프라이밍 선언문을 발행하세요.';
+    const systemPrompt = `당신은 PRISM 7대 우주 공간을 총괄하는 〈영혼 연대기 & 마스터 아카이브〉 대마스터입니다.
+[Diary]의 밤의 내면 성찰 기록과 [Profile]의 고유 영혼 프로필(MBTI: ${mbti}, 닉네임: ${nickname}), 그리고 선택된 밤의 영혼 진화 도약 포커스("${focusObj.label}")를 완벽히 융합하여,
+오늘의 고유한 영혼 진화 등급과 7대 우주 황금 봉인 스탬프, 그리고 수면 전 잠재의식 프라이밍 선언문을 발행하세요.
+
+[필수 대원칙]
+1. 정형화되거나 매일 똑같은 템플릿 문구를 절대 출력하지 마세요.
+2. 사용자가 남긴 깨달음("${insightText}")과 닉네임, 선택된 솔페지오 주파수(${activeFrequency}Hz)를 깊이 반영하여, 가슴 벅차오르는 거룩하고 시적인 문장으로 작성하세요.
+3. 반드시 유효한 JSON 형식으로만 응답하세요.`;
 
     const userPrompt = `[양쪽 메뉴 융합: DIARY 성찰 일기 ✕ PROFILE 영혼 프로필]
 [선택된 밤의 영혼 도약 포커스]: ${focusObj.label} (${focusObj.desc})
-[오늘 영혼의 깨달음/메아리]: "${customInsight.trim() || '온 우주와 내가 하나임을 자각하는 깊은 현존'}"
+[오늘 영혼의 깨달음/메아리]: "${insightText}"
 [조율 솔페지오 주파수]: ${activeFrequency}Hz
 [사용자 프로필]: 닉네임(${nickname}), 성향/MBTI(${mbti})
 
 반드시 아래 JSON 스키마로만 엄격하게 응답하세요:
 {
-  "title": "영혼 연대기 고유 칭호 (예: ${activeFrequency}Hz 다이아몬드 영혼 연대기 마스터 아카이브)",
-  "soulEvolutionLevel": "오늘의 영혼 진화 등급 (예: Mastery Level IX · 초월적 황금 의식)",
+  "title": "영혼 연대기 고유 칭호 (예: ${activeFrequency}Hz 〈${nickname}의 ${focusObj.label}〉 마스터 아카이브)",
+  "soulEvolutionLevel": "오늘의 영혼 진화 등급 (예: Mastery Level XII · 다이아몬드 통합 의식)",
   "dailyCoreTheme": "오늘 하루를 관통하는 핵심 영혼 테마 1문장",
   "soulAlignmentSynthesis": "선택된 영혼 포커스와 개인의 영혼 사명이 어떻게 융합되어 진화했는지를 통찰하는 거룩하고 품격 있는 해설 (3~4문장)",
   "sevenPrismStampStatus": [
-    { "space": "PROLOGUE", "seal": "불굴의 멘탈 방패 각인 🛡️", "frequency": "432Hz", "status": "SYNCHRONIZED" },
-    { "space": "ORANGE", "seal": "양자 현실화 528Hz 도약 🌲", "frequency": "528Hz", "status": "SYNCHRONIZED" },
-    { "space": "TRINITY", "seal": "대운 개운 & 타로 오라클 ✨", "frequency": "741Hz", "status": "SYNCHRONIZED" },
-    { "space": "AURA", "seal": "저항 0% 완전 방하착 ⚡", "frequency": "639Hz", "status": "SYNCHRONIZED" },
-    { "space": "BLUEBIRD", "seal": "호오포노포노 백지 환생 🐦", "frequency": "417Hz", "status": "SYNCHRONIZED" },
-    { "space": "MUSE", "seal": "거장의 영감 마스터클래스 🎶", "frequency": "852Hz", "status": "SYNCHRONIZED" },
-    { "space": "EPILOGUE", "seal": "영혼 연대기 마스터 아카이브 🌙", "frequency": "963Hz", "status": "SYNCHRONIZED" }
+    { "space": "PROLOGUE (프롤로그)", "seal": "불굴의 멘탈 방패 각인 🛡️", "frequency": "432Hz", "status": "SYNCHRONIZED" },
+    { "space": "ORANGE (오렌지)", "seal": "양자 현실화 528Hz 도약 🌲", "frequency": "528Hz", "status": "SYNCHRONIZED" },
+    { "space": "TRINITY (트리니티)", "seal": "대운 개운 & 타로 오라클 ✨", "frequency": "741Hz", "status": "SYNCHRONIZED" },
+    { "space": "AURA (오라)", "seal": "저항 0% 완전 방하착 ⚡", "frequency": "639Hz", "status": "SYNCHRONIZED" },
+    { "space": "BLUEBIRD (블루버드)", "seal": "호오포노포노 백지 환생 🐦", "frequency": "417Hz", "status": "SYNCHRONIZED" },
+    { "space": "MUSE (뮤즈)", "seal": "거장의 영감 마스터클래스 🎶", "frequency": "852Hz", "status": "SYNCHRONIZED" },
+    { "space": "EPILOGUE (에필로그)", "seal": "영혼 연대기 마스터 아카이브 🌙", "frequency": "${activeFrequency}Hz", "status": "SYNCHRONIZED" }
   ],
   "preSleepPrimingAffirmation": "취침 전 잠재의식을 우주와 동조시키는 수면 전 영혼 프라이밍 확언 1~2문장",
   "chronicleSealCode": "SOUL-CHRONICLE-PRISM-999-GOLD"
 }`;
 
+    // 25초 안전 타임아웃
     const safetyTimeout = new Promise<ChronicleStampData>((resolve) => {
       setTimeout(() => {
-        resolve({
-          ...FALLBACK_CHRONICLE,
-          title: `〈${nickname}의 ${focusObj.label}〉 영혼 연대기 마스터 아카이브`,
-          soulAlignmentSynthesis: `오늘 선택하신 [${focusObj.label}]의 거룩한 의도는 당신의 잠재의식 깊은 곳에 찬란한 씨앗으로 심어졌습니다. 수면의 고요 속에서 우주의 무한한 지혜가 당신을 최상의 축복으로 인도합니다.`
-        });
-      }, 6500);
+        resolve(getDynamicSoulChronicle(selectedFocus, activeFrequency, insightText, userProfile));
+      }, 25000);
     });
 
     const runAI = async (): Promise<ChronicleStampData> => {
@@ -256,28 +207,43 @@ export function EpilogueSynergySection() {
           responseFormat: { type: 'json_object' }
         });
         const parsed = typeof raw === 'string' ? JSON.parse(raw.replace(/```json\n?|\n?```/g, '').trim()) : raw;
-        if (parsed && parsed.soulAlignmentSynthesis) {
-          return parsed;
+        if (parsed && parsed.soulAlignmentSynthesis && parsed.dailyCoreTheme) {
+          return {
+            ...parsed,
+            id: `chronicle_${Date.now()}`,
+            timestamp: Date.now(),
+            dateKey: new Date().toISOString().slice(0, 10),
+          };
         }
       } catch (e) {
-        console.warn('[EpilogueSynergy] invokeLLM error:', e);
+        console.warn('[EpilogueSynergy] invokeLLM error, using dynamic fallback:', e);
       }
-      throw new Error('Need fallback');
+      return getDynamicSoulChronicle(selectedFocus, activeFrequency, insightText, userProfile);
     };
 
     try {
       const result = await Promise.race([runAI(), safetyTimeout]);
       setChronicleData(result);
       setIsSynthesized(true);
+
+      // 아카이브에 영구 저장 및 갱신
+      const updatedArchive = saveChronicleToArchive(result);
+      setArchiveHistory(updatedArchive);
+
       recordPrismFeature({
         app: 'epilogue',
         featureName: 'Soul Chronicle Master Synergy',
         summary: result.title,
         details: { focus: focusObj.label, title: result.title }
       });
-      updateSharedState({}, 'EPILOGUE');
+      updateSharedState({
+        epilogueHistory: [result, ...(sharedState?.epilogueHistory || [])].slice(0, 30)
+      }, 'EPILOGUE');
     } catch (e) {
       console.warn('Epilogue fallback error:', e);
+      const fallback = getDynamicSoulChronicle(selectedFocus, activeFrequency, insightText, userProfile);
+      setChronicleData(fallback);
+      setIsSynthesized(true);
     } finally {
       setIsLoading(false);
     }
@@ -287,13 +253,13 @@ export function EpilogueSynergySection() {
     if (isTTSActive) {
       stopTTS();
     } else {
-      const speech = `오늘의 영혼 연대기 선언. ${chronicleData.soulAlignmentSynthesis} 수면 전 프라이밍 확언입니다. ${chronicleData.preSleepPrimingAffirmation}`;
-      playTTS(speech, 'Kore', false, '신비');
+      const speech = `오늘의 영혼 연대기 선언입니다. 오늘의 핵심 테마: ${chronicleData.dailyCoreTheme}. 영혼 정렬 통찰: ${chronicleData.soulAlignmentSynthesis}. 수면 전 잠재의식 프라이밍 확언입니다. ${chronicleData.preSleepPrimingAffirmation}`;
+      playTTS(speech, 'Kore', false, '명상');
     }
   };
 
   const handleCopy = () => {
-    const text = `🌙 [${chronicleData.title}]\n👑 등급: ${chronicleData.soulEvolutionLevel}\n\n✨ 오늘의 영혼 테마: ${chronicleData.dailyCoreTheme}\n\n🌌 영혼 정렬 합성 계시:\n"${chronicleData.soulAlignmentSynthesis}"\n\n🛡️ 7대 프리즘 우주 각인:\n${chronicleData.sevenPrismStampStatus.map((s) => `• [${s.space}] ${s.seal} (${s.frequency})`).join('\n')}\n\n💤 취침 전 잠재의식 프라이밍 확언:\n"${chronicleData.preSleepPrimingAffirmation}"\n\n- PRISM EPILOGUE Soul Chronicle Master Archive`;
+    const text = `🌙 [${chronicleData.title}]\n\n✨ 등급: ${chronicleData.soulEvolutionLevel}\n\n🌟 오늘 영혼의 핵심 테마:\n"${chronicleData.dailyCoreTheme}"\n\n🕊️ 영혼 정렬 통찰:\n"${chronicleData.soulAlignmentSynthesis}"\n\n🔮 수면 전 잠재의식 프라이밍 확언:\n"${chronicleData.preSleepPrimingAffirmation}"\n\n봉인 코드: ${chronicleData.chronicleSealCode}\n- PRISM Soul Chronicle & Master Archive`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
@@ -320,14 +286,14 @@ export function EpilogueSynergySection() {
               <span>영혼 연대기 &amp; 마스터 아카이브</span>
             </h2>
             <p className="text-xs sm:text-sm text-purple-100/70 max-w-xl leading-relaxed">
-              <strong>Diary(밤의 성찰 일기)</strong>와 <strong>Profile(영혼 프로필 &amp; 사명)</strong>의 양쪽 메뉴를 융합하여, 오늘의 영혼 진화 등급과 7대 우주 황금 봉인 스탬프, 잠재의식 프라이밍을 완성하는 마스터 아카이브입니다.
+              <strong>Diary(밤의 성찰 일기)</strong>와 <strong>Profile(영혼 프로필 &amp; 사명)</strong>을 융합하여, 매일매일 새로운 영혼 진화 등급과 7대 우주 황금 봉인 스탬프, 잠재의식 프라이밍을 완성하는 마스터 아카이브입니다.
             </p>
           </div>
 
           {/* Solfeggio Tone & Frequency Controls */}
           <div className="flex items-center gap-2 self-start md:self-auto">
             <div className="flex rounded-xl bg-black/40 border border-white/10 p-1">
-              {[852, 963].map((f) => (
+              {[432, 528, 639, 741, 852, 963].map((f) => (
                 <button
                   key={f}
                   onClick={() => {
@@ -336,13 +302,13 @@ export function EpilogueSynergySection() {
                       toggleFrequencyTone(f);
                     }
                   }}
-                  className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer ${
+                  className={`px-2 py-1 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer ${
                     activeFrequency === f
                       ? 'bg-purple-500 text-white shadow-[0_0_10px_rgba(168,85,247,0.5)]'
                       : 'text-white/50 hover:text-white'
                   }`}
                 >
-                  {f}Hz
+                  {f}
                 </button>
               ))}
             </div>
@@ -405,22 +371,19 @@ export function EpilogueSynergySection() {
         <div className="flex items-center justify-between">
           <label className="text-xs font-bold text-purple-300 flex items-center gap-2 font-mono uppercase tracking-wider">
             <Moon size={16} className="text-purple-400" />
-            <span>2. 오늘 밤 영혼 진화 &amp; 잠재의식 도약 테마 선택</span>
+            <span>2. 오늘 밤 영혼 진화 &amp; 잠재의식 도약 테마 선택 (8대 영혼 포커스)</span>
           </label>
           <span className="text-[10px] text-white/40 font-sans">고차원 정렬</span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {COSMIC_FOCUS_OPTIONS.map((focus) => {
             const isSelected = selectedFocus === focus.id;
             return (
               <button
                 key={focus.id}
                 type="button"
-                onClick={() => {
-                  setSelectedFocus(focus.id);
-                  setActiveFrequency(focus.frequency);
-                }}
+                onClick={() => handleSelectFocus(focus)}
                 className={`p-4 rounded-2xl text-left border transition-all cursor-pointer flex flex-col justify-between space-y-2 relative overflow-hidden ${
                   isSelected
                     ? 'bg-purple-500/20 border-purple-400/80 shadow-[0_0_20px_rgba(168,85,247,0.3)]'
@@ -438,7 +401,7 @@ export function EpilogueSynergySection() {
                 </div>
                 <p className="text-[11px] text-white/50 leading-relaxed font-sans">{focus.desc}</p>
                 <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[9px] font-mono text-purple-300">
-                  <span>추천 주파수</span>
+                  <span>동조 주파수</span>
                   <span>{focus.frequency}Hz</span>
                 </div>
               </button>
@@ -449,7 +412,7 @@ export function EpilogueSynergySection() {
         {/* Custom Insight Input (Optional) */}
         <div className="space-y-2">
           <label className="text-[11px] font-bold text-white/60 flex items-center justify-between font-sans">
-            <span>오늘 영혼에 남은 가장 거룩한 깨달음 또는 우주의 메아리 (선택 입력)</span>
+            <span>오늘 영혼에 남은 가장 거룩한 깨달음 또는 우주의 메아리 (선택):</span>
             <span className="text-[10px] text-white/30">직접 입력 가능</span>
           </label>
           <input
@@ -494,7 +457,7 @@ export function EpilogueSynergySection() {
                 <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-purple-400">
                   SOUL CHRONICLE GOLDEN STAMP
                 </span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20 font-mono">
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20 font-mono font-bold">
                   {chronicleData.soulEvolutionLevel}
                 </span>
               </div>
@@ -578,6 +541,46 @@ export function EpilogueSynergySection() {
               "{chronicleData.preSleepPrimingAffirmation}"
             </p>
           </div>
+
+          {/* 📚 마스터 아카이브 영혼 연대기 서고 (Master Archive Vault) */}
+          {archiveHistory.length > 1 && (
+            <div className="pt-4 border-t border-white/10 space-y-3">
+              <button
+                type="button"
+                onClick={() => setIsArchiveOpen(!isArchiveOpen)}
+                className="w-full flex items-center justify-between text-xs font-bold text-purple-300 hover:text-white transition-colors cursor-pointer py-2"
+              >
+                <span className="flex items-center gap-2">
+                  <Archive size={14} className="text-purple-400" />
+                  <span>누적 마스터 아카이브 기록 서고 ({archiveHistory.length}개 보관 중)</span>
+                </span>
+                <span className="text-[10px] text-white/50">{isArchiveOpen ? '접기' : '펼쳐보기'}</span>
+              </button>
+
+              {isArchiveOpen && (
+                <div className="space-y-2.5 max-h-60 overflow-y-auto no-scrollbar pr-1">
+                  {archiveHistory.map((item, idx) => (
+                    <div
+                      key={item.id || idx}
+                      onClick={() => setChronicleData(item)}
+                      className="p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-purple-400/40 transition-all cursor-pointer flex items-center justify-between gap-3 text-xs"
+                    >
+                      <div className="space-y-0.5 truncate">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9px] font-mono text-purple-400">{item.dateKey}</span>
+                          <span className="text-[10px] font-bold text-white truncate">{item.title}</span>
+                        </div>
+                        <p className="text-[10px] text-white/50 truncate font-sans">
+                          {item.soulEvolutionLevel} · {item.dailyCoreTheme}
+                        </p>
+                      </div>
+                      <ChevronRight size={14} className="text-white/30 shrink-0" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </motion.div>
       )}
 

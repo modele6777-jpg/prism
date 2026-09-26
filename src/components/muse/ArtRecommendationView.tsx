@@ -942,10 +942,10 @@ function isAiRecreatedArtworkSource(source: ArtworkImageSource | null): boolean 
 
 function getArtworkImageBadgeLabel(source: ArtworkImageSource | null): string | null {
   if (!source) return null;
-  if (source === "dailyart") return "🏛️ DailyArt 원작";
-  if (source === "google") return "🏛️ 고화질 원작";
-  if (source === "wikimedia" || source === "wikipedia" || source === "artic" || source === "met") return "🏛️ 미술관 원작 소장본";
-  return "✨ AI 미학 재현본";
+  if (source === "dailyart") return "🏛️ DailyArt 공식 원작";
+  if (source === "google") return "🏛️ 고화질 공식 원작";
+  if (source === "wikimedia" || source === "wikipedia" || source === "artic" || source === "met") return "🏛️ 미술관 공식 원작 소장본";
+  return "✨ AI 미학 재현본 (원작 저작권 대체)";
 }
 
 const ART_CACHE_KEYS = {
@@ -1745,22 +1745,21 @@ export function ArtRecommendationView() {
     if (!recommendation) return [];
     const list: string[] = [];
 
-    // 1. Saved/resolved nanobananaImage (if valid)
+    // 1. [★ 최우선 대원칙] 미술관 공식 소장본 원작 스캔 (프록시 + 원본 직링)
+    if (recommendation.imageUrl) {
+      list.push(getSafeArtworkUrl(recommendation.imageUrl));
+      list.push(encodeURI(recommendation.imageUrl));
+    }
+
+    // 2. Saved/resolved nanobananaImage (if valid and not duplicate)
     if (nanobananaImage && nanobananaImage !== "null" && nanobananaImage !== "undefined") {
       list.push(getSafeArtworkUrl(nanobananaImage));
     }
 
-    // 2. Proxied catalog image
-    if (recommendation.imageUrl) {
-      list.push(getSafeArtworkUrl(recommendation.imageUrl));
-      // 3. Direct catalog image (unproxied fallback in case proxy times out)
-      list.push(encodeURI(recommendation.imageUrl));
-    }
-
-    // 4. Pollinations turbo with rich faithful prompt
+    // 3. 고화질 미학 AI 재현 (원작 로드 실패 / 저작권 보호 등으로 로드 불가 시에만 폴백)
     list.push(buildPollinationsArtUrl(recommendation, 1024, 768));
 
-    // 5. Pollinations simple high-compatibility fallback
+    // 4. Pollinations simple high-compatibility fallback
     const title = recommendation.titleOriginal || extractOriginalLanguage(recommendation.title) || recommendation.title;
     const creator = recommendation.creatorOriginal || extractOriginalLanguage(recommendation.creator) || recommendation.creator;
     const simplePrompt = encodeURIComponent(`Masterpiece fine art oil painting of "${title}" by ${creator}, museum exhibition quality, highly detailed canvas`);
@@ -2436,9 +2435,9 @@ export function ArtRecommendationView() {
 
                 {effectiveImage && !loadingImage && (
                   <p className="text-[10px] text-amber-200/80 text-center leading-relaxed px-2 -mt-2">
-                    {isAiRecreatedArtworkSource(artworkImageSource)
-                      ? "✨ 고전 명화의 구성과 화풍을 정밀 분석하여 재현한 고화질 미학 버전입니다."
-                      : "🏛️ 시카고 미술관 / 메트로폴리탄 / 위키미디어 / DailyArt 공식 소장 원작 스캔본입니다."}
+                    {isAiRecreatedArtworkSource(artworkImageSource) || imageFallbackIndex >= 2
+                      ? "✨ 원작의 저작권 보호 또는 소장처 정책으로 인해 원작의 구성과 색채를 정밀 분석하여 재현한 고화질 미학 버전입니다."
+                      : "🏛️ 시카고 미술관 / 메트로폴리탄 / 위키미디어 / DailyArt 공식 소장 원작 스캔본입니다. (저작권 등으로 로드 불가 시 AI 재현본으로 자동 전환됩니다.)"}
                   </p>
                 )}
 
