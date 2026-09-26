@@ -131,7 +131,9 @@ export function TodayTarotShareModal({ isOpen, onClose, data }: TodayTarotShareM
 
   if (!isOpen) return null;
 
-  const cardName = data.card?.nameKo || '운명의 카드';
+  const cards = (data.cards && data.cards.length > 0) ? data.cards : (data.card ? [data.card] : []);
+  const cardNames = cards.map((c) => c.nameKo).join(', ') || '타로 카드';
+  const displayTitle = data.title || (cards.length > 1 ? '타로 마스터 비전' : '오늘의 데일리 타로');
   const hasNativeShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
   return (
@@ -174,10 +176,10 @@ export function TodayTarotShareModal({ isOpen, onClose, data }: TodayTarotShareM
               <span>TAROT RESULT SHARE</span>
             </div>
             <h2 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
-              <span>오늘의 타로 결과 공유 & 소장</span>
+              <span>{displayTitle} 결과 공유 & 소장</span>
             </h2>
             <p className="text-xs text-white/60 font-sans">
-              오늘의 카드 <strong>[{cardName}]</strong> 결과를 텍스트로 복사하거나 고화질 카드로 저장하세요.
+              선택된 카드 <strong>[{cardNames}]</strong> 결과를 텍스트로 복사하거나 고화질 카드로 저장하세요.
             </p>
           </div>
 
@@ -358,3 +360,7 @@ export function TodayTarotShareButton({
     </>
   );
 }
+
+export { TodayTarotShareModal as TarotResultShareModal };
+export { TodayTarotShareButton as TarotResultShareButton };
+

@@ -12,7 +12,9 @@ import {
   Heart,
   Compass,
 } from 'lucide-react';
-import { TarotCard } from '@/data/tarotData';
+import { TarotCard, getTarotCardImageUrl } from '@/data/tarotData';
+import { TarotResultShareButton } from './TodayTarotShareModal';
+import { type TarotShareData } from '@/utils/todayTarotExporter';
 import { useApp } from '@/contexts/AppContext';
 import {
   LucyTarotAdvice,
@@ -143,6 +145,36 @@ export function LucyTarotAdviceCard({
     ? '루시의 그로스 실행 코칭'
     : '루시의 특별 맞춤 조언';
 
+  const shareData: TarotShareData = useMemo(() => {
+    const cardItems = cards && cards.length > 0 ? cards.map((c, i) => ({
+      id: c.id,
+      nameKo: c.nameKo || c.name || '타로 카드',
+      name: c.name || '',
+      reversed: !!c.reversed,
+      keywords: c.keywords,
+      imageUrl: c.imageUrl || (typeof getTarotCardImageUrl === 'function' ? getTarotCardImageUrl(c) : undefined),
+      slotName: c.slotName || (cards.length > 1 ? `#${i + 1} 카드` : undefined),
+    })) : [];
+
+    const defaultTitle = mode === 'daily'
+      ? '오늘의 데일리 타로'
+      : mode === 'oracle'
+      ? (oracleMode === 'healing' ? '제제의 치유 오라클' : '루시의 성장 오라클')
+      : '78장 타로 마스터 비전';
+
+    return {
+      title: defaultTitle,
+      concern: tarotConcern,
+      cards: cardItems,
+      card: cardItems[0] || null,
+      dateStr: new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }),
+      diagnosis: readingText,
+      adviceHeadline: advice.headline,
+      adviceText: advice.advice,
+      frequency: saju?.yongsin?.name ? `${saju.yongsin.name} 용신 조화` : undefined,
+    };
+  }, [cards, mode, oracleMode, tarotConcern, readingText, advice.headline, advice.advice, saju]);
+
   return (
     <div
       className={`rounded-2xl bg-gradient-to-br from-yellow-500/15 via-amber-500/10 to-purple-950/25 border border-yellow-500/35 p-4 sm:p-5 shadow-xl relative overflow-hidden text-left backdrop-blur-md ${className}`}
@@ -170,7 +202,7 @@ export function LucyTarotAdviceCard({
           </div>
         </div>
 
-        {/* Action Toolbar: TTS + Copy */}
+        {/* Action Toolbar: TTS + Share + Copy */}
         <div className="flex items-center gap-2">
           {/* TTS Audio Button */}
           <button
@@ -200,6 +232,13 @@ export function LucyTarotAdviceCard({
               </>
             )}
           </button>
+
+          {/* Share Button (Image Save & Text Copy) */}
+          <TarotResultShareButton
+            data={shareData}
+            variant="compact"
+            label="결과 공유"
+          />
 
           {/* Copy Button */}
           <button

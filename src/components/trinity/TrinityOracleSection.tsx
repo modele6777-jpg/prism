@@ -12,6 +12,8 @@ import { TarotSpread, SelectedTarotCardEntry } from './TarotSpread';
 import { invokeLLM } from '@/lib/ai';
 import { playTTS, playTTSInChunks, prefetchTTS, stopTTS, useTTSActive, useTTSState, prepareNaturalSpeechText } from '@/utils/tts';
 import { LucyTarotAdviceCard } from './LucyTarotAdviceCard';
+import { TarotResultShareButton } from './TodayTarotShareModal';
+import { type TarotShareData } from '@/utils/todayTarotExporter';
 import { sendPrismToss } from '@/lib/prismToss';
 import { MUSE_ART_CATALOG } from '@/lib/museDailyArt';
 import { useApp, getPersistentUserProfile, setPersistentUserProfile } from '@/contexts/AppContext';
@@ -365,6 +367,33 @@ export function TrinityOracleSection() {
     }
     return ['자기계발 마인드셋', '4원소 역량 영역', '1줄 마이크로 실행'];
   }, [oracleMode]);
+
+  // 🔮 78장 오라클 결과 공유 & 이미지 카드 익스포트 데이터
+  const oracleShareData: TarotShareData = useMemo(() => {
+    const activeResult = oracleMode === 'healing' ? healingResult : growthResult;
+    const letterMsg = oracleMode === 'healing'
+      ? healingResult?.message
+      : (growthResult?.message || growthResult?.macro_focus);
+
+    return {
+      title: oracleMode === 'healing' ? '제제의 다정한 치유 오라클' : '루시의 4원소 마인드셋 오라클',
+      concern: inquiryText || (oracleMode === 'healing' ? '내면아이 마음 치유' : '현실 성장과 돌파'),
+      spreadName: oracleMode === 'healing' ? '내면아이 쉼 스프레드 (3장)' : '4원소 마인드셋 스프레드 (3장)',
+      cards: drawnCards.map((c, i) => ({
+        id: c.id,
+        nameKo: c.nameKo,
+        name: c.name,
+        reversed: !!c.reversed,
+        keywords: c.keywords,
+        imageUrl: getTarotCardImageUrl(c),
+        slotName: slotPositions[i],
+      })),
+      dateStr: new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }),
+      diagnosis: letterMsg,
+      adviceHeadline: activeResult?.card_insights?.[2]?.personal_interpretation?.slice(0, 80) || undefined,
+      frequency: saju?.yongsin?.name ? `사주 용신: ${saju.yongsin.name}` : undefined,
+    };
+  }, [oracleMode, healingResult, growthResult, inquiryText, drawnCards, slotPositions, saju]);
 
   // Handle mode switch with persistent saving
   const handleModeSwitch = (mode: 'healing' | 'growth') => {
@@ -1079,6 +1108,11 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
               </button>
             )}
 
+            <TarotResultShareButton
+              data={oracleShareData}
+              variant="compact"
+              label="결과 공유"
+            />
             <span className="text-xs text-amber-300/80 font-serif italic hidden md:inline-block">
               {letterSubtitle}
             </span>
@@ -1117,6 +1151,11 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
                 {isCopied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
                 <span>{isCopied ? '편지 복사 완료!' : '편지 복사'}</span>
               </button>
+              <TarotResultShareButton
+                data={oracleShareData}
+                variant="compact"
+                label="결과 공유 / 소장"
+              />
             </div>
 
             <button
@@ -1859,25 +1898,34 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
             )}
 
             {/* 3 Drawn Cards Mini Banner */}
-            <div className="glass p-4 sm:p-5 rounded-3xl bg-white/[0.03] border border-amber-400/25 flex flex-wrap items-center justify-around gap-3 backdrop-blur-xl">
-              {drawnCards.map((card, idx) => (
-                <div key={card.id} className="flex items-center gap-3">
-                  <div className="w-12 h-18 sm:w-14 sm:h-20 rounded-lg overflow-hidden border border-amber-400/40 shadow-md relative shrink-0">
-                    <img
-                      src={getTarotCardImageUrl(card)}
-                      alt={card.nameKo}
-                      className="w-full h-full object-cover"
-                    />
+            <div className="glass p-4 sm:p-5 rounded-3xl bg-white/[0.03] border border-amber-400/25 flex flex-col md:flex-row items-center justify-between gap-4 backdrop-blur-xl">
+              <div className="flex flex-wrap items-center justify-around gap-3 flex-1 w-full">
+                {drawnCards.map((card, idx) => (
+                  <div key={card.id} className="flex items-center gap-3">
+                    <div className="w-12 h-18 sm:w-14 sm:h-20 rounded-lg overflow-hidden border border-amber-400/40 shadow-md relative shrink-0">
+                      <img
+                        src={getTarotCardImageUrl(card)}
+                        alt={card.nameKo}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-mono text-amber-400/80 block uppercase tracking-wider">
+                        {slotPositions[idx]}
+                      </span>
+                      <h4 className="text-sm sm:text-base font-bold text-white font-serif">{card.nameKo}</h4>
+                      <span className="text-[11px] text-zinc-400">{card.keywords.slice(0, 2).join(' · ')}</span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-[10px] font-mono text-amber-400/80 block uppercase tracking-wider">
-                      {slotPositions[idx]}
-                    </span>
-                    <h4 className="text-sm sm:text-base font-bold text-white font-serif">{card.nameKo}</h4>
-                    <span className="text-[11px] text-zinc-400">{card.keywords.slice(0, 2).join(' · ')}</span>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
+              <div className="flex items-center justify-center w-full md:w-auto pt-2 md:pt-0 shrink-0">
+                <TarotResultShareButton
+                  data={oracleShareData}
+                  variant="primary"
+                  label="결과 카드 소장 & 공유"
+                />
+              </div>
             </div>
 
             {/* Loading Indicator */}

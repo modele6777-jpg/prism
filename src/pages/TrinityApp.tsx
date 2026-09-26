@@ -3255,6 +3255,20 @@ function playDailyCardChimeAsync() {
                                       {tarotResult && !isTarotGenerating && (
                                         <TodayTarotShareButton
                                           data={{
+                                            title: isDailyTarotConcern(tarotConcern) ? '오늘의 데일리 타로' : (tarotSpreadRecommendation?.name || '78장 타로 마스터 비전'),
+                                            concern: tarotConcern,
+                                            spreadName: tarotSpreadRecommendation?.name,
+                                            cards: drawnCards && drawnCards.length > 0
+                                              ? drawnCards.map((c, i) => ({
+                                                  id: c.id,
+                                                  nameKo: c.nameKo,
+                                                  name: c.name,
+                                                  reversed: !!c.reversed,
+                                                  keywords: c.keywords,
+                                                  imageUrl: getTarotCardImageUrl(c),
+                                                  slotName: tarotSpreadRecommendation?.positions?.[i] || `#${i + 1} 카드`,
+                                                }))
+                                              : undefined,
                                             card: drawnCards?.[0] || (dailyResult?.drawnCard ?? (dailyDrawnCard ?? null)),
                                             dateStr: new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }),
                                             conciseSummaryBullets: conciseSummaryBullets,
@@ -3410,6 +3424,20 @@ function playDailyCardChimeAsync() {
                                   )}
                                   <TodayTarotShareButton
                                     data={{
+                                      title: isDailyTarotConcern(tarotConcern) ? '오늘의 데일리 타로' : (tarotSpreadRecommendation?.name || '78장 타로 마스터 비전'),
+                                      concern: tarotConcern,
+                                      spreadName: tarotSpreadRecommendation?.name,
+                                      cards: drawnCards && drawnCards.length > 0
+                                        ? drawnCards.map((c, i) => ({
+                                            id: c.id,
+                                            nameKo: c.nameKo,
+                                            name: c.name,
+                                            reversed: !!c.reversed,
+                                            keywords: c.keywords,
+                                            imageUrl: getTarotCardImageUrl(c),
+                                            slotName: tarotSpreadRecommendation?.positions?.[i] || `#${i + 1} 카드`,
+                                          }))
+                                        : undefined,
                                       card: drawnCards?.[0] || (dailyResult?.drawnCard ?? (dailyDrawnCard ?? null)),
                                       dateStr: new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }),
                                       conciseSummaryBullets: conciseSummaryBullets,
