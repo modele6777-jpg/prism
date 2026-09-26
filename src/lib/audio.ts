@@ -52,10 +52,48 @@ export function getSharedAudioContext(): AudioContext {
 /** BgMusicPlayer master gain multiplier (user slider × this value). */
 export const AMBIENT_MASTER_GAIN_SCALE = 1.6;
 
-/** HTML5 audio element gain when routed through Web Audio (2× previous loudness). */
-export const BGM_HTML_GAIN_SCALE = 2.0;
+/** HTML5 audio element gain when routed through Web Audio (calibrated & normalized to match procedural ambient loudness). */
+export const BGM_HTML_GAIN_SCALE = 0.40;
 
 const AMBIENT_BUS_IDLE_GAIN = 1.0;
+
+let ambientNormalizerCompressor: DynamicsCompressorNode | null = null;
+let ambientNormalizerMakeup: GainNode | null = null;
+let ambientNormalizerLimiter: DynamicsCompressorNode | null = null;
+
+function ensureAmbientChain(ctx: AudioContext) {
+  ensureMasterChain(ctx);
+  if (ambientBusInput && ambientBusInput.context === ctx) return;
+
+  ambientBusInput = ctx.createGain();
+  ambientBusInput.gain.setValueAtTime(AMBIENT_BUS_IDLE_GAIN, ctx.currentTime);
+
+  // Stage 1: Transparent Dynamic Range Leveler / RMS Compressor (EBU R128 ambient leveling)
+  ambientNormalizerCompressor = ctx.createDynamicsCompressor();
+  ambientNormalizerCompressor.threshold.setValueAtTime(-22, ctx.currentTime);
+  ambientNormalizerCompressor.knee.setValueAtTime(14, ctx.currentTime);
+  ambientNormalizerCompressor.ratio.setValueAtTime(3.5, ctx.currentTime);
+  ambientNormalizerCompressor.attack.setValueAtTime(0.012, ctx.currentTime);
+  ambientNormalizerCompressor.release.setValueAtTime(0.25, ctx.currentTime);
+
+  // Stage 2: Transparent Makeup Gain
+  ambientNormalizerMakeup = ctx.createGain();
+  ambientNormalizerMakeup.gain.setValueAtTime(1.18, ctx.currentTime);
+
+  // Stage 3: Peak Safety Limiter (transparent ceiling preventing audio clipping / sudden bursts)
+  ambientNormalizerLimiter = ctx.createDynamicsCompressor();
+  ambientNormalizerLimiter.threshold.setValueAtTime(-4, ctx.currentTime);
+  ambientNormalizerLimiter.knee.setValueAtTime(4, ctx.currentTime);
+  ambientNormalizerLimiter.ratio.setValueAtTime(12, ctx.currentTime);
+  ambientNormalizerLimiter.attack.setValueAtTime(0.003, ctx.currentTime);
+  ambientNormalizerLimiter.release.setValueAtTime(0.08, ctx.currentTime);
+
+  // Routing: ambientBusInput -> RMS Compressor -> Makeup Gain -> Limiter -> masterBusInput
+  ambientBusInput.connect(ambientNormalizerCompressor);
+  ambientNormalizerCompressor.connect(ambientNormalizerMakeup);
+  ambientNormalizerMakeup.connect(ambientNormalizerLimiter);
+  ambientNormalizerLimiter.connect(masterBusInput!);
+}
 
 export function getMasterAudioBus(): GainNode {
   const ctx = getSharedAudioContext();
@@ -65,16 +103,8 @@ export function getMasterAudioBus(): GainNode {
 
 export function getAmbientAudioBus(): GainNode {
   const ctx = getSharedAudioContext();
-  ensureMasterChain(ctx);
-  if (!ambientBusInput || ambientBusInput.context !== ctx) {
-    ambientBusInput = ctx.createGain();
-    ambientBusInput.gain.setValueAtTime(
-      AMBIENT_BUS_IDLE_GAIN,
-      ctx.currentTime,
-    );
-    ambientBusInput.connect(masterBusInput!);
-  }
-  return ambientBusInput;
+  ensureAmbientChain(ctx);
+  return ambientBusInput!;
 }
 
 let isAmbientDucked = false;

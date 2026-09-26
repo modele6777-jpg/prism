@@ -77,8 +77,53 @@ export const FLOW_AUDIO_TRACKS: BgmTrack[] = [
   { name: "27. 따뜻한 밤의 허밍 (Warm Nocturne Humming)", url: "flow-lofi-humming", artist: "LucKey Flow Suite", category: "Lofi" },
   { name: "28. 기억의 서재 (Library of Ancient Souls)", url: "flow-lofi-library", artist: "LucKey Flow Suite", category: "Lofi" },
   { name: "29. 유성우 떨어지는 호수 (Meteor Shower Lake Reflection)", url: "flow-lofi-meteor", artist: "LucKey Flow Suite", category: "Lofi" },
-  { name: "30. 영원한 안식의 요람 (Eternal Serenity Lullaby)", url: "flow-lofi-eternity", artist: "LucKey Flow Suite", category: "Lofi" },
 ];
+
+/**
+ * Per-track loudness calibration offsets to achieve consistent perceptual volume across all tracks.
+ * Multi-oscillator dense choir/pad tracks are smoothly attenuated, and sparse solo-drone tracks are boosted.
+ */
+export const TRACK_NORMALIZATION_GAINS: Record<string, number> = {
+  // Multi-voice choir / dense pad tracks (attenuated to match target level)
+  "flow-tarot-archangel": 0.72,   // 8-oscillator dense angelic choir
+  "flow-tarot-sanctuary": 0.78,   // 4-voice sustained chord with delay
+  "flow-cosmic-andromeda": 0.82,  // 4-frequency astral sweep
+  "flow-lofi-candle": 0.82,       // 4-note tape lofi pad
+  "flow-zen-softrain": 0.85,      // Brown noise rain + chord
+  "flow-zen-ocean": 0.85,         // Brown noise ocean + whale glide
+  "flow-zen-bamboo": 0.88,        // Brown noise wind + chimes
+
+  // Single-voice / sparse tracks (boosted to prevent sounding quiet)
+  "flow-tarot-celtic-cross": 1.30, // 1 note melody every 5.5s
+  "flow-tarot-major-arcana": 1.25, // Single triangle mystic drone
+  "flow-cosmic-void": 1.30,        // Deep space sparse sub drone
+  "flow-zen-temple-drops": 1.40,   // Discrete temple water droplets
+  "flow-lofi-meteor": 1.25,        // High-frequency lake shimmer
+  "flow-lofi-eternity": 1.20,      // Slow cradle lullaby
+
+  // Naturally balanced reference tracks
+  "flow-tarot-wheel528": 1.0,
+  "flow-tarot-priestess": 1.0,
+  "flow-heal-432hz": 0.95,
+  "flow-heal-528hz": 1.0,
+  "flow-heal-639hz": 1.05,
+  "flow-heal-741hz": 1.05,
+  "flow-heal-852hz": 1.0,
+  "flow-heal-963hz": 1.05,
+  "flow-cosmic-eclipse": 1.0,
+  "flow-cosmic-zodiac": 1.0,
+  "flow-cosmic-pleiades": 1.05,
+  "flow-cosmic-supernova": 0.95,
+  "flow-zen-morning-dew": 1.05,
+  "flow-zen-snow-bowls": 0.95,
+  "flow-lofi-milkyway": 1.0,
+  "flow-lofi-humming": 0.95,
+  "flow-lofi-library": 1.10,
+};
+
+export function getTrackNormalizationGain(trackUrl: string): number {
+  return TRACK_NORMALIZATION_GAINS[trackUrl] ?? 1.0;
+}
 
 export const FLOW_TRACK_GENERATORS: Record<string, TrackPlayFn> = {
   // 1. 운명의 수레바퀴 528Hz

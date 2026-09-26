@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Play, Pause, Disc, SkipForward, Volume2, VolumeX, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Music, Headphones, Shuffle, Repeat, Repeat1, RefreshCw, Trash2, EyeOff, RotateCcw, GripVertical } from "lucide-react";
+import { Play, Pause, Disc, SkipForward, Volume2, VolumeX, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Music, Headphones, Shuffle, Repeat, Repeat1, RefreshCw, Trash2, EyeOff, RotateCcw, GripVertical, Sparkles } from "lucide-react";
 import {
   getSharedAudioContext,
   getAmbientAudioBus,
@@ -30,7 +30,7 @@ import {
   type PersistedBgmTrack,
 } from "@/lib/dailyBgm";
 
-import { FLOW_AUDIO_TRACKS, FLOW_TRACK_GENERATORS } from "@/lib/proceduralBgmSuite";
+import { FLOW_AUDIO_TRACKS, FLOW_TRACK_GENERATORS, getTrackNormalizationGain } from "@/lib/proceduralBgmSuite";
 
 type BgmTrack = {
   name: string;
@@ -394,6 +394,7 @@ export function BgMusicPlayer() {
   const loadedUrlRef = useRef<string>("");
   const isPlayInitiatedRef = useRef<string>("");
   const masterGainRef = useRef<GainNode | null>(null);
+  const currentTrackNormGainRef = useRef<number>(1.0);
   const htmlGainRef = useRef<GainNode | null>(null);
   const htmlSourceConnectedRef = useRef(false);
   const activeNodesRef = useRef<any[]>([]);
@@ -581,8 +582,13 @@ export function BgMusicPlayer() {
       try {
         const ctx = getSharedAudioContext();
         masterGainRef.current.gain.cancelScheduledValues(ctx.currentTime);
-        masterGainRef.current.gain.setValueAtTime(0, ctx.currentTime);
-        masterGainRef.current.disconnect();
+        masterGainRef.current.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.05);
+        const oldMasterGain = masterGainRef.current;
+        window.setTimeout(() => {
+          try {
+            oldMasterGain.disconnect();
+          } catch (_) {}
+        }, 60);
       } catch (_) {}
       masterGainRef.current = null;
     }
@@ -668,8 +674,12 @@ export function BgMusicPlayer() {
       softLimiter.connect(ambientBus);
       activeNodesRef.current.push(softLimiter);
 
+      const normGain = getTrackNormalizationGain(type);
+      currentTrackNormGainRef.current = normGain;
+
       const targetVol = isMuted ? 0 : volume;
-      masterGain.gain.setValueAtTime(targetVol * AMBIENT_MASTER_GAIN_SCALE, ctx.currentTime);
+      const targetGain = targetVol * AMBIENT_MASTER_GAIN_SCALE * normGain;
+      masterGain.gain.setValueAtTime(targetGain, ctx.currentTime);
 
       // --- ADVANCED AUDIO ROUTING UTILITIES ---
 
@@ -755,16 +765,22 @@ export function BgMusicPlayer() {
   };
 
   const setHtmlBgmGain = (targetVol: number) => {
+    const ctx = getSharedAudioContext();
+    const now = ctx.currentTime;
+    const normalizedGain = targetVol * BGM_HTML_GAIN_SCALE;
+
     if (htmlGainRef.current) {
-      htmlGainRef.current.gain.setValueAtTime(
-        targetVol * BGM_HTML_GAIN_SCALE,
-        getSharedAudioContext().currentTime,
-      );
+      try {
+        htmlGainRef.current.gain.cancelScheduledValues(now);
+        htmlGainRef.current.gain.setTargetAtTime(normalizedGain, now, 0.05);
+      } catch {
+        htmlGainRef.current.gain.setValueAtTime(normalizedGain, now);
+      }
       if (audioRef.current) audioRef.current.volume = 1;
       return;
     }
     if (audioRef.current) {
-      audioRef.current.volume = Math.min(1, targetVol * BGM_HTML_GAIN_SCALE);
+      audioRef.current.volume = Math.max(0, Math.min(1, normalizedGain));
     }
   };
 
@@ -776,7 +792,7 @@ export function BgMusicPlayer() {
       const ctx = getSharedAudioContext();
       const source = ctx.createMediaElementSource(audio);
       const gain = ctx.createGain();
-      gain.connect(getMasterAudioBus());
+      gain.connect(getAmbientAudioBus());
       source.connect(gain);
       htmlGainRef.current = gain;
       htmlSourceConnectedRef.current = true;
@@ -1262,7 +1278,15 @@ export function BgMusicPlayer() {
       const targetVol = next ? 0 : volume;
       setHtmlBgmGain(targetVol);
       if (masterGainRef.current) {
-        masterGainRef.current.gain.setValueAtTime(targetVol * AMBIENT_MASTER_GAIN_SCALE, getSharedAudioContext().currentTime);
+        const ctx = getSharedAudioContext();
+        const now = ctx.currentTime;
+        const targetGain = targetVol * AMBIENT_MASTER_GAIN_SCALE * currentTrackNormGainRef.current;
+        try {
+          masterGainRef.current.gain.cancelScheduledValues(now);
+          masterGainRef.current.gain.setTargetAtTime(targetGain, now, 0.05);
+        } catch {
+          masterGainRef.current.gain.setValueAtTime(targetGain, now);
+        }
       }
       return next;
     });
@@ -1526,7 +1550,15 @@ export function BgMusicPlayer() {
     const targetVol = isMuted ? 0 : volume;
     setHtmlBgmGain(targetVol);
     if (masterGainRef.current) {
-      masterGainRef.current.gain.setValueAtTime(targetVol * AMBIENT_MASTER_GAIN_SCALE, getSharedAudioContext().currentTime);
+      const ctx = getSharedAudioContext();
+      const now = ctx.currentTime;
+      const targetGain = targetVol * AMBIENT_MASTER_GAIN_SCALE * currentTrackNormGainRef.current;
+      try {
+        masterGainRef.current.gain.cancelScheduledValues(now);
+        masterGainRef.current.gain.setTargetAtTime(targetGain, now, 0.05);
+      } catch {
+        masterGainRef.current.gain.setValueAtTime(targetGain, now);
+      }
     }
   }, [volume, isMuted]);
 
@@ -1874,6 +1906,13 @@ export function BgMusicPlayer() {
                 className="w-1.5 h-16 accent-white bg-white/10 rounded-lg cursor-pointer vertical-range-slider"
                 style={{ WebkitAppearance: "slider-vertical" } as any}
               />
+              <div 
+                className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500/10 border border-amber-400/20 text-[7px] text-amber-300 font-mono whitespace-nowrap mt-0.5"
+                title="자동 음량 평준화 (Loudness Normalization) 활성화됨"
+              >
+                <Sparkles size={7} className="text-amber-400 shrink-0" />
+                <span>평준화 ON</span>
+              </div>
             </div>
           </div>
         </div>
