@@ -93,6 +93,7 @@ import { useBinauralBeat } from "@/hooks/useBinauralBeat";
 import { TarotSpread } from "@/components/trinity/TarotSpread";
 import { TarotSpreadSelectionModal } from "@/components/trinity/TarotSpreadSelectionModal";
 import { TodayTarotNarrationModal } from "@/components/trinity/TodayTarotNarrationModal";
+import { LucyTarotAdviceCard } from "@/components/trinity/LucyTarotAdviceCard";
 import { TarotCard, TAROT_DECK, getTarotCardImageUrl } from "@/data/tarotData";
 import { shuffleCardDeck } from "@/lib/cardShuffle";
 import { playTTS, playTTSInChunks, playConversation, stopTTS, useTTSActive, useTTSState, prefetchTTS, prepareNaturalSpeechText } from "@/utils/tts";
@@ -3340,6 +3341,20 @@ function playDailyCardChimeAsync() {
                                           )}
 
                                           <Streamdown immediate={!isTarotGenerating}>{displayTarotResult || tarotResult || ""}</Streamdown>
+
+                                          {/* 🌟 그에 맞는 루시의 조언 (TTS 가능) */}
+                                          {tarotResult && !isTarotGenerating && (
+                                            <div className="pt-2">
+                                              <LucyTarotAdviceCard
+                                                cards={drawnCards || (dailyResult?.drawnCard ? [dailyResult.drawnCard] : (dailyDrawnCard ? [dailyDrawnCard] : null))}
+                                                tarotConcern={tarotConcern}
+                                                readingText={displayTarotResult || tarotResult || ""}
+                                                mode={isDailyTarotConcern(tarotConcern) ? 'daily' : 'standard'}
+                                                saju={calculateDetailedSaju(sharedState?.userProfile || getPersistentUserProfile())}
+                                                className="mt-3"
+                                              />
+                                            </div>
+                                          )}
                                         {isTarotGenerating && (
                                           <p className="text-[10px] text-yellow-400/60 uppercase tracking-widest animate-pulse text-center">
                                             리딩 수신 중...

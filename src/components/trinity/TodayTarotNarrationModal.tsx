@@ -20,6 +20,7 @@ import {
   buildTarotNarrationContent,
   type TarotNarrationChapter,
 } from '@/lib/todayTarotNarration';
+import { LucyTarotAdviceCard } from './LucyTarotAdviceCard';
 
 export interface TodayTarotNarrationModalProps {
   isOpen: boolean;
@@ -437,6 +438,16 @@ export function TodayTarotNarrationModal({
                   </p>
                 )}
               </div>
+
+              {/* 🌟 그에 맞는 루시의 특별 조언 (TTS 가능) */}
+              <LucyTarotAdviceCard
+                cards={card ? [card] : null}
+                tarotConcern="오늘의 타로"
+                readingText={narrationData.cleanDiagnosis || narrationData.rawDiagnosis}
+                mode="daily"
+                className="mt-3"
+                onConsultLucy={handleConsult}
+              />
             </div>
           )}
 

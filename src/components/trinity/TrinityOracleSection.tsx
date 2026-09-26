@@ -11,6 +11,7 @@ import { TAROT_DECK, TarotCard, getTarotCardImageUrl } from '@/data/tarotData';
 import { TarotSpread, SelectedTarotCardEntry } from './TarotSpread';
 import { invokeLLM } from '@/lib/ai';
 import { playTTS, playTTSInChunks, prefetchTTS, stopTTS, useTTSActive, useTTSState, prepareNaturalSpeechText } from '@/utils/tts';
+import { LucyTarotAdviceCard } from './LucyTarotAdviceCard';
 import { sendPrismToss } from '@/lib/prismToss';
 import { MUSE_ART_CATALOG } from '@/lib/museDailyArt';
 import { useApp, getPersistentUserProfile, setPersistentUserProfile } from '@/contexts/AppContext';
@@ -1896,12 +1897,32 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
               <div className="w-full space-y-6">
                 {/* 제제의 사주·타로 융합 치유 서한 (편지만 집중 표시) */}
                 {renderFusionLetterSection(healingResult.message)}
+                {/* 🌟 오라클 타로 맨 하단 루시의 맞춤 치유 조언 (TTS 가능) */}
+                <LucyTarotAdviceCard
+                  cards={drawnCards}
+                  tarotConcern={inquiryText || '제제의 치유 오라클'}
+                  readingText={healingResult.message}
+                  mode="oracle"
+                  oracleMode="healing"
+                  saju={saju}
+                  className="mt-4"
+                />
               </div>
             ) : oracleMode === 'growth' && growthResult ? (
               /* [GROWTH RESULT VIEW: ONLY LUCY'S SACRED GROWTH ACTION LETTER] */
               <div className="w-full space-y-6">
                 {/* 루시의 사주·타로 융합 자기계발 실행 서한 (편지만 집중 표시) */}
                 {renderFusionLetterSection(growthResult.message || growthResult.macro_focus)}
+                {/* 🌟 오라클 타로 맨 하단 루시의 맞춤 성장 조언 (TTS 가능) */}
+                <LucyTarotAdviceCard
+                  cards={drawnCards}
+                  tarotConcern={inquiryText || '루시의 성장 오라클'}
+                  readingText={growthResult.message || growthResult.macro_focus}
+                  mode="oracle"
+                  oracleMode="growth"
+                  saju={saju}
+                  className="mt-4"
+                />
               </div>
             ) : null}
           </motion.div>

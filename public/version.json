@@ -1,15 +1,14 @@
 {
   "name": "luckey",
-  "version": "1.4.74",
-  "summary": "Firestore onSnapshot 실시간 리스너 고도화를 통한 PC 입력 내용 모바일 실시간 즉각 반영",
-  "builtAt": "2026-09-26T02:35:00.000Z",
+  "version": "1.4.75",
+  "summary": "오라클 타로 포함 모든 타로 결과 맨 하단에 그에 맞는 루시의 맞춤 특별 조언(TTS 음성 낭독 지원) 기능 추가",
+  "builtAt": "2026-09-26T02:46:00.000Z",
   "items": [
-    "PC에서 입력한 프로필(이름, 생년월일, 관심사, 고민 등) 및 전역 상태가 모바일 화면에 즉시 실시간 반영되도록 onSnapshot 리스너 체계 고도화",
-    "AppContext 내 sharedState 및 userProfiles 컬렉션 대상 다중 onSnapshot 리스너 구축 및 incoming 우선(preferIncoming=true) 스마트 병합 적용",
-    "모바일 캐시 또는 구 버전 데이터가 최신 원격 입력값을 덮어쓰거나 무시하던 병합 우선순위 및 타임스탬프 스큐 버그 원천 해결",
-    "기기간 페어링(PIN 연동) 상태에서도 activePairedVaultId 동적 감지를 통해 실시간 리스너가 즉시 구독되도록 반응성 보강",
-    "ProfileModal 및 ProfilePage에서 prism:profile_updated 및 prism:realtime_sync 커스텀 이벤트 수신 시 event.detail 페이로드를 즉각 양방향 바인딩 반영",
-    "채팅 스레드(chatThreads) 및 데일리 오라클 실시간 동기화 리스너의 기기간 즉시 전파 지원"
+    "78장 타로 리딩, 오늘의 타로 1장 뽑기, 오늘의 타로 낭독 모달, 오라클 타로(힐링·성장 모드) 등 모든 타로 결과 최하단에 '루시의 맞춤 특별 조언(LucyTarotAdviceCard)' 전면 탑재",
+    "뽑힌 타로 카드(메이저·마이너 4원소·정/역방향)와 질문 고민의 파동을 실시간 분석하여 루시의 다정하고 명쾌한 1:1 맞춤 헤드라인, 조언 본문, 1분 실천 팁, 에너지 키워드 생성",
+    "루시 음성 TTS 재생 및 정지, 오디오 이퀄라이저 애니메이션 웨이브바 지원으로 귀로 듣는 영혼의 조언 경험 제공",
+    "오라클 타로 힐링 모드(온기와 회복) 및 성장 모드(돌파와 실행)의 목적에 특화된 차별화된 맞춤 조언 및 실천 가이드 매핑",
+    "조언 텍스트 1클릭 복사 기능 및 해당 조언을 바탕으로 루시와 즉시 1:1 심층 상담을 이어갈 수 있는 심층 대화 연계 CTA 버튼 지원"
   ],
   "author": "Antigravity AI Agent",
   "buildEnvironment": "cloud-run"
