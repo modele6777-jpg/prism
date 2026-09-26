@@ -252,6 +252,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   sharedStateRef.current = sharedState;
   const [isSyncing, setIsSyncing] = useState(false);
   const isSyncInProgressRef = useRef(false);
+  const [activePairedVaultId, setActivePairedVaultId] = useState<string | null>(() => getPairedVaultId());
+
+  useEffect(() => {
+    const handleVaultChange = (e: any) => {
+      const vid = (e as CustomEvent)?.detail || getPairedVaultId();
+      setActivePairedVaultId(vid || null);
+    };
+    window.addEventListener('prism:paired_vault_changed', handleVaultChange);
+    return () => window.removeEventListener('prism:paired_vault_changed', handleVaultChange);
+  }, []);
   const openLucyChat = useCallback((
     persona?: PersonaType | 'epilogue' | string,
     options?: { autoSendPrompt?: string; draftPrompt?: string; mode?: string }
@@ -401,7 +411,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // Helper to push chat history to Firestore in real-time for multi-device sync with debounce
   const pushChatThreadsTimerRef = useRef<NodeJS.Timeout | null>(null);
   const pushChatThreadsToFirestore = useCallback((messagesToPush: UnifiedMessage[] | Record<PersonaType, UnifiedMessage[]>) => {
-    const currentUid = auth.currentUser?.uid || firebaseUser?.uid;
+    const currentUid = auth.currentUser?.uid || firebaseUser?.uid || activePairedVaultId || getPairedVaultId();
     if (!currentUid) return;
 
     if (pushChatThreadsTimerRef.current) {
@@ -424,7 +434,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         console.warn('[ChatThreads] Failed to push to Firestore:', e);
       }
     }, 600);
-  }, [firebaseUser?.uid]);
+  }, [firebaseUser?.uid, activePairedVaultId]);
 
   // Persist unified messages whenever they change locally & broadcast to other tabs/PWA windows & sync to Firestore
   useEffect(() => {
@@ -533,9 +543,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // Real-time Chat Threads Listener across devices (PC <-> Mobile)
   useEffect(() => {
-    if (!firebaseUser?.uid) return;
+    const effectiveChatId = firebaseUser?.uid || activePairedVaultId || getPairedVaultId();
+    if (!effectiveChatId) return;
 
-    const chatDocRef = doc(db, 'chatThreads', firebaseUser.uid);
+    const chatDocRef = doc(db, 'chatThreads', effectiveChatId);
     const unsub = onSnapshot(chatDocRef, (snap) => {
       // Skip local write echoes to avoid re-entrant update cycles
       if (snap.metadata.hasPendingWrites) {
@@ -590,7 +601,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
 
     return unsub;
-  }, [firebaseUser?.uid]);
+  }, [firebaseUser?.uid, activePairedVaultId]);
 
   useEffect(() => {
     if (!firebaseUser) {
@@ -822,11 +833,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const persistentProfile = getPersistentUserProfile();
         const mergedProfile = mergeUserProfiles(
           mergeUserProfiles(persistentProfile, localCached?.userProfile),
-          remoteData?.userProfile
+          remoteData?.userProfile,
+          true
         );
         const mergedData: SharedState = mergeSharedState(
           localCached || {},
-          remoteData
+          remoteData,
+          0,
+          Date.now()
         );
         if (mergedProfile && Object.keys(mergedProfile).length > 0) {
           mergedData.userProfile = mergedProfile;
@@ -842,6 +856,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         unpackAndHydrateLocalStorage(firebaseUser.uid, mergedData, true);
         window.dispatchEvent(new CustomEvent('prism:profile_updated', { detail: mergedData.userProfile }));
         window.dispatchEvent(new CustomEvent('prism:feature_updated', { detail: mergedData }));
+        window.dispatchEvent(new CustomEvent('prism:realtime_sync', { detail: mergedData }));
         if (mergedData.todayOracles) {
           window.dispatchEvent(new CustomEvent('prism:daily_oracle_updated', { detail: mergedData.todayOracles }));
         }
@@ -849,7 +864,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         // Document does not exist on Firestore yet: initialize Firestore with persistent profile safely!
         const persistentProfile = getPersistentUserProfile();
         const localCached = loadFromLocal(firebaseUser.uid) ?? loadGuestState();
-        const mergedProfile = mergeUserProfiles(persistentProfile, localCached?.userProfile);
+        const mergedProfile = mergeUserProfiles(persistentProfile, localCached?.userProfile, true);
         if (mergedProfile && Object.keys(mergedProfile).length > 0) {
           const initDoc: SharedState = {
             ...(localCached || {}),
@@ -862,12 +877,46 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }, (err) => {
       console.warn('[SharedState] Firestore read failed, using local cache:', (err as any).code || err.message);
     });
-    return unsub;
+
+    // Direct real-time listener on userProfiles collection for instant profile sync
+    const profileRef = doc(db, 'userProfiles', firebaseUser.uid);
+    const unsubProfile = onSnapshot(profileRef, (snap) => {
+      if (snap.metadata.hasPendingWrites) return;
+      if (snap.exists()) {
+        const remoteProfile = snap.data() as UserProfile;
+        if (!remoteProfile || Object.keys(remoteProfile).length === 0) return;
+        const persistentProfile = getPersistentUserProfile();
+        const mergedProfile = mergeUserProfiles(persistentProfile, remoteProfile, true);
+        if (mergedProfile && Object.keys(mergedProfile).length > 0) {
+          setPersistentUserProfile(mergedProfile);
+          saveProfileToAllVaults(mergedProfile);
+          setSharedState((prev) => {
+            if (!prev) return prev;
+            const updated = {
+              ...prev,
+              userProfile: mergedProfile,
+              profileUpdatedAt: Date.now(),
+            };
+            saveToLocal(firebaseUser.uid, updated);
+            return updated;
+          });
+          window.dispatchEvent(new CustomEvent('prism:profile_updated', { detail: mergedProfile }));
+          window.dispatchEvent(new CustomEvent('prism:realtime_sync', { detail: { userProfile: mergedProfile } }));
+        }
+      }
+    }, (err) => {
+      console.warn('[UserProfiles] Realtime listener notice:', (err as any).code || err.message);
+    });
+
+    return () => {
+      unsub();
+      unsubProfile();
+    };
   }, [firebaseUser]);
 
   // Real-time Paired Vault Listener across devices (PC <-> Mobile via PIN/Pairing)
   useEffect(() => {
-    const pairedVaultId = getPairedVaultId();
+    const pairedVaultId = activePairedVaultId || getPairedVaultId();
     if (!pairedVaultId) return;
 
     const unsub = subscribeToPairedVault((incomingState) => {
@@ -880,11 +929,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const persistentProfile = getPersistentUserProfile();
       const mergedProfile = mergeUserProfiles(
         mergeUserProfiles(persistentProfile, localCached?.userProfile),
-        incomingState?.userProfile
+        incomingState?.userProfile,
+        true
       );
       const mergedData: SharedState = mergeSharedState(
         localCached || {},
-        incomingState
+        incomingState,
+        0,
+        Date.now()
       );
       if (mergedProfile && Object.keys(mergedProfile).length > 0) {
         mergedData.userProfile = mergedProfile;
@@ -900,10 +952,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         saveProfileToAllVaults(mergedProfile);
       }
       unpackAndHydrateLocalStorage(firebaseUser?.uid, mergedData, true);
+      window.dispatchEvent(new CustomEvent('prism:profile_updated', { detail: mergedData.userProfile }));
+      window.dispatchEvent(new CustomEvent('prism:feature_updated', { detail: mergedData }));
+      window.dispatchEvent(new CustomEvent('prism:realtime_sync', { detail: mergedData }));
+      if (mergedData.todayOracles) {
+        window.dispatchEvent(new CustomEvent('prism:daily_oracle_updated', { detail: mergedData.todayOracles }));
+      }
     });
 
     return unsub;
-  }, [firebaseUser?.uid]);
+  }, [firebaseUser?.uid, activePairedVaultId]);
 
   const unlock = useCallback((code: string): boolean => {
     if (code === '1202') {
@@ -1042,7 +1100,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         prev?.userProfile
       );
       const updatedProfile = updates.userProfile 
-        ? mergeUserProfiles(existingProfile, updates.userProfile)
+        ? mergeUserProfiles(existingProfile, updates.userProfile, true)
         : existingProfile;
 
       finalMerged = mergeSharedState(

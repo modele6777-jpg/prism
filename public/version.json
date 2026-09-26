@@ -1,14 +1,15 @@
 {
   "name": "luckey",
-  "version": "1.4.73",
-  "summary": "오늘의 타로 리딩 5단계 완결성 보장(끝부분 잘림 방지) 및 핵심 3줄 요약 카드 3개 라인 완전 노출 보정",
-  "builtAt": "2026-09-26T02:20:00.000Z",
+  "version": "1.4.74",
+  "summary": "Firestore onSnapshot 실시간 리스너 고도화를 통한 PC 입력 내용 모바일 실시간 즉각 반영",
+  "builtAt": "2026-09-26T02:35:00.000Z",
   "items": [
-    "오늘의 타로 핵심 3줄 요약 카드(Quick Summary)에서 2줄만 표시되던 문제 해결: [현재 에너지], [방향과 결단], [실천 처방] 3개 라인을 100% 완전하게 추출 및 채움 보장",
-    "리딩 본문 마크다운 하단의 핵심 요약 분리 함수(stripSummaryFromTarotText)가 본문 중간 문구를 오인하여 4·5단계를 조기 절단하던 버그 수정 (5단계 축복 이후 후반부에서만 안전 분리)",
-    "오늘의 타로 데일리 전용 API(/api/ai/daily-tarot) 클라이언트 요청 타임아웃을 12초에서 35초로 연장하고 maxOutputTokens(8192)을 명시하여 중간 중단 방지",
-    "스트리밍 및 저장된 타로 결과의 4·5단계 미완성 여부를 엄밀 검증하여 자동 완결 복원하는 ensureCompleteTarotReading 엔진 강화",
-    "오늘의 타로 음성 낭독 모달(TodayTarotNarrationModal) 및 트리니티 본문 뷰 전반에서 5단계 전체 마크다운과 3줄 요약 카드가 누락 없이 온전하게 출력되도록 통합"
+    "PC에서 입력한 프로필(이름, 생년월일, 관심사, 고민 등) 및 전역 상태가 모바일 화면에 즉시 실시간 반영되도록 onSnapshot 리스너 체계 고도화",
+    "AppContext 내 sharedState 및 userProfiles 컬렉션 대상 다중 onSnapshot 리스너 구축 및 incoming 우선(preferIncoming=true) 스마트 병합 적용",
+    "모바일 캐시 또는 구 버전 데이터가 최신 원격 입력값을 덮어쓰거나 무시하던 병합 우선순위 및 타임스탬프 스큐 버그 원천 해결",
+    "기기간 페어링(PIN 연동) 상태에서도 activePairedVaultId 동적 감지를 통해 실시간 리스너가 즉시 구독되도록 반응성 보강",
+    "ProfileModal 및 ProfilePage에서 prism:profile_updated 및 prism:realtime_sync 커스텀 이벤트 수신 시 event.detail 페이로드를 즉각 양방향 바인딩 반영",
+    "채팅 스레드(chatThreads) 및 데일리 오라클 실시간 동기화 리스너의 기기간 즉시 전파 지원"
   ],
   "author": "Antigravity AI Agent",
   "buildEnvironment": "cloud-run"

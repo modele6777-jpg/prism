@@ -141,8 +141,9 @@ export default function ProfilePage() {
 
   // Firebase 및 클라우드 동기화 이벤트 수신
   useEffect(() => {
-    const handleProfileUpdate = () => {
-      const profile = sharedState?.userProfile || loadProfileFromAllVaults() || getPersistentUserProfile();
+    const handleProfileUpdate = (e?: any) => {
+      const detailProfile = (e as CustomEvent)?.detail?.userProfile || (e as CustomEvent)?.detail;
+      const profile = detailProfile || sharedState?.userProfile || loadProfileFromAllVaults() || getPersistentUserProfile();
       if (!profile) return;
       if (profile.basic) setBasic(b => ({ ...b, ...profile.basic }));
       if (profile.fate) setFate(f => ({ ...f, ...profile.fate }));
@@ -154,9 +155,11 @@ export default function ProfilePage() {
     handleProfileUpdate();
     window.addEventListener('prism:profile_updated', handleProfileUpdate);
     window.addEventListener('prism:feature_updated', handleProfileUpdate);
+    window.addEventListener('prism:realtime_sync', handleProfileUpdate);
     return () => {
       window.removeEventListener('prism:profile_updated', handleProfileUpdate);
       window.removeEventListener('prism:feature_updated', handleProfileUpdate);
+      window.removeEventListener('prism:realtime_sync', handleProfileUpdate);
     };
   }, [sharedState?.userProfile]);
 

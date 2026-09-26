@@ -1,5 +1,18 @@
 [
   {
+    "version": "1.4.74",
+    "summary": "Firestore onSnapshot 실시간 리스너 고도화를 통한 PC 입력 내용 모바일 실시간 즉각 반영",
+    "builtAt": "2026-09-26T02:35:00.000Z",
+    "items": [
+      "PC에서 입력한 프로필(이름, 생년월일, 관심사, 고민 등) 및 전역 상태가 모바일 화면에 즉시 실시간 반영되도록 onSnapshot 리스너 체계 고도화",
+      "AppContext 내 sharedState 및 userProfiles 컬렉션 대상 다중 onSnapshot 리스너 구축 및 incoming 우선(preferIncoming=true) 스마트 병합 적용",
+      "모바일 캐시 또는 구 버전 데이터가 최신 원격 입력값을 덮어쓰거나 무시하던 병합 우선순위 및 타임스탬프 스큐 버그 원천 해결",
+      "기기간 페어링(PIN 연동) 상태에서도 activePairedVaultId 동적 감지를 통해 실시간 리스너가 즉시 구독되도록 반응성 보강",
+      "ProfileModal 및 ProfilePage에서 prism:profile_updated 및 prism:realtime_sync 커스텀 이벤트 수신 시 event.detail 페이로드를 즉각 양방향 바인딩 반영",
+      "채팅 스레드(chatThreads) 및 데일리 오라클 실시간 동기화 리스너의 기기간 즉시 전파 지원"
+    ]
+  },
+  {
     "version": "1.4.73",
     "summary": "오늘의 타로 리딩 5단계 완결성 보장(끝부분 잘림 방지) 및 핵심 3줄 요약 카드 3개 라인 완전 노출 보정",
     "builtAt": "2026-09-26T02:20:00.000Z",

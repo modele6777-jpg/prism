@@ -18,6 +18,9 @@ export function setPairedVaultId(vaultId: string | null): void {
     } else {
       localStorage.removeItem(PAIRED_VAULT_KEY);
     }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('prism:paired_vault_changed', { detail: vaultId?.trim() || null }));
+    }
   } catch {
     // ignore
   }
@@ -122,15 +125,22 @@ export function subscribeToPairedVault(onUpdate: (state: SharedState) => void): 
 
   // 1. Real-time Firestore onSnapshot Listener
   let unsubFirestore: (() => void) | null = null;
+  let lastDataSnapshotHash = '';
   try {
     const docRef = doc(db, 'pairedVaults', vaultId);
     unsubFirestore = onSnapshot(docRef, (snap) => {
       if (isDestroyed || !snap.exists()) return;
       if (snap.metadata.hasPendingWrites) return;
       const data = snap.data() as SharedState;
-      const ts = (data.updatedAt as any)?.toMillis?.() || data.clientUpdatedAt || 0;
-      if (ts && ts <= lastReceivedTs) return;
-      lastReceivedTs = ts || Date.now();
+      const snapHash = JSON.stringify({
+        prof: data.userProfile,
+        vibe: data.currentVibe,
+        oracles: data.todayOracles,
+        feats: (data.featureHistory || []).slice(0, 5),
+        clientTs: data.clientUpdatedAt,
+      });
+      if (snapHash === lastDataSnapshotHash) return;
+      lastDataSnapshotHash = snapHash;
       onUpdate(data);
     }, (err) => {
       console.warn('[PairedVault] onSnapshot notice (falling back to continuous sync):', err?.message || err);

@@ -233,7 +233,7 @@ export function getDailyElementTrend(
       let foundInOtherStorage = false;
       if (typeof window !== 'undefined') {
         try {
-          const auraFate = localStorage.getItem(`aura_daily_fate_${userProfile?.uid || 'guest'}_${dateKey}`);
+          const auraFate = localStorage.getItem(`aura_daily_fate_${(userProfile as any)?.uid || 'guest'}_${dateKey}`);
           if (auraFate) {
             const parsed = JSON.parse(auraFate);
             if (parsed.elements) {

@@ -80,10 +80,10 @@ function isProfilePlaceholder(val: any): boolean {
   return false;
 }
 
-function mergeSectionSafely<T extends any>(baseSection?: T, incomingSection?: T): T {
+function mergeSectionSafely<T extends any>(baseSection?: T, incomingSection?: T, preferIncoming = false): T {
   const b = baseSection || {} as any;
   const i = incomingSection || {} as any;
-  const res: any = { ...b, ...i };
+  const res: any = preferIncoming ? { ...b, ...i } : { ...i, ...b };
   const allKeys = new Set([...Object.keys(b), ...Object.keys(i)]);
 
   for (const k of allKeys) {
@@ -97,7 +97,7 @@ function mergeSectionSafely<T extends any>(baseSection?: T, incomingSection?: T)
       continue;
     }
     if (!bEmpty && iEmpty) {
-      res[k] = bVal;
+      res[k] = preferIncoming ? iVal : bVal;
       continue;
     }
     if (bEmpty && !iEmpty) {
@@ -106,6 +106,10 @@ function mergeSectionSafely<T extends any>(baseSection?: T, incomingSection?: T)
     }
 
     if (Array.isArray(bVal) || Array.isArray(iVal)) {
+      if (preferIncoming && Array.isArray(iVal) && iVal.length > 0) {
+        res[k] = iVal;
+        continue;
+      }
       const bArr = Array.isArray(bVal) ? bVal : [];
       const iArr = Array.isArray(iVal) ? iVal : [];
       res[k] = Array.from(new Set([...bArr, ...iArr]));
@@ -117,31 +121,33 @@ function mergeSectionSafely<T extends any>(baseSection?: T, incomingSection?: T)
       const iStr = iVal.trim();
       if (bStr === iStr) {
         res[k] = bStr;
+      } else if (preferIncoming) {
+        res[k] = iStr;
       } else {
         res[k] = iStr.length >= bStr.length ? iStr : bStr;
       }
       continue;
     }
 
-    res[k] = iVal !== undefined ? iVal : bVal;
+    res[k] = preferIncoming ? (iVal !== undefined ? iVal : bVal) : (iVal !== undefined ? iVal : bVal);
   }
   return res as T;
 }
 
-export function mergeUserProfiles(base?: UserProfile, incoming?: UserProfile): UserProfile {
+export function mergeUserProfiles(base?: UserProfile, incoming?: UserProfile, preferIncoming = false): UserProfile {
   if (!base && !incoming) return {};
   if (!base) return incoming || {};
   if (!incoming) return base || {};
 
   return {
-    ...base,
-    ...incoming,
-    basic: mergeSectionSafely(base.basic, incoming.basic),
-    fate: mergeSectionSafely(base.fate, incoming.fate),
-    music: mergeSectionSafely(base.music, incoming.music),
-    psych: mergeSectionSafely(base.psych, incoming.psych),
-    art: mergeSectionSafely(base.art, incoming.art),
-    completedAt: incoming.completedAt || base.completedAt || Date.now(),
+    ...(preferIncoming ? base : incoming),
+    ...(preferIncoming ? incoming : base),
+    basic: mergeSectionSafely(base.basic, incoming.basic, preferIncoming),
+    fate: mergeSectionSafely(base.fate, incoming.fate, preferIncoming),
+    music: mergeSectionSafely(base.music, incoming.music, preferIncoming),
+    psych: mergeSectionSafely(base.psych, incoming.psych, preferIncoming),
+    art: mergeSectionSafely(base.art, incoming.art, preferIncoming),
+    completedAt: (preferIncoming ? incoming.completedAt : base.completedAt) || incoming.completedAt || base.completedAt || Date.now(),
   };
 }
 
