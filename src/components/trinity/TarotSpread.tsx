@@ -274,6 +274,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
   const [isMobile, setIsMobile] = useState(false);
   const [zoomedCard, setZoomedCard] = useState<{ card: TarotCard; slotName?: string } | null>(null);
 
+  const rootRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const wheelLayerRef = useRef<HTMLDivElement>(null);
   
@@ -397,6 +398,84 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
       applyRotation(rotationRef.current);
     }
   }, [wheelReady, applyRotation]);
+
+  // Complete Viewport & Background Scroll Locking during card picking
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const savedScrollY = window.scrollY;
+    const origBodyOverflow = document.body.style.overflow;
+    const origBodyTouchAction = document.body.style.touchAction;
+    const origBodyOverscroll = document.body.style.overscrollBehavior;
+    const origHtmlOverflow = document.documentElement.style.overflow;
+    const origHtmlOverscroll = document.documentElement.style.overscrollBehavior;
+
+    // Hard lock scrolling on both body and html elements
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
+    document.body.style.overscrollBehavior = 'none';
+    document.documentElement.style.overflow = 'hidden';
+    document.documentElement.style.overscrollBehavior = 'none';
+
+    const containerEl = containerRef.current;
+    const rootEl = rootRef.current;
+
+    // Active non-passive wheel listener on wheel stage:
+    // Calling e.preventDefault() here stops the window/page from scrolling while spinning cards
+    const handleNativeWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      stopMomentum();
+      const delta = (e.deltaY || e.deltaX) * 0.05;
+      applyRotation(rotationRef.current + delta);
+      startMomentum(delta * 0.8);
+    };
+
+    // Non-passive touchmove listener to eliminate mobile pull-to-refresh or vertical document drag
+    const handleNativeTouchMove = (e: TouchEvent) => {
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+    };
+
+    // Global boundary trap on root modal to prevent any overscroll from reaching the background window
+    const preventModalOverscroll = (e: Event) => {
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+      e.stopPropagation();
+    };
+
+    if (containerEl) {
+      containerEl.addEventListener('wheel', handleNativeWheel, { passive: false });
+      containerEl.addEventListener('touchmove', handleNativeTouchMove, { passive: false });
+    }
+
+    if (rootEl) {
+      rootEl.addEventListener('wheel', preventModalOverscroll, { passive: false });
+      rootEl.addEventListener('touchmove', preventModalOverscroll, { passive: false });
+    }
+
+    return () => {
+      document.body.style.overflow = origBodyOverflow;
+      document.body.style.touchAction = origBodyTouchAction;
+      document.body.style.overscrollBehavior = origBodyOverscroll;
+      document.documentElement.style.overflow = origHtmlOverflow;
+      document.documentElement.style.overscrollBehavior = origHtmlOverscroll;
+
+      if (containerEl) {
+        containerEl.removeEventListener('wheel', handleNativeWheel);
+        containerEl.removeEventListener('touchmove', handleNativeTouchMove);
+      }
+      if (rootEl) {
+        rootEl.removeEventListener('wheel', preventModalOverscroll);
+        rootEl.removeEventListener('touchmove', preventModalOverscroll);
+      }
+
+      // Restore scroll position cleanly
+      window.scrollTo(0, savedScrollY);
+    };
+  }, [applyRotation, startMomentum, stopMomentum]);
 
   // Fast direct hit-test + O(1) candidate lookup with circular unwrapping
   const findTappedCard = useCallback(
@@ -683,18 +762,13 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
     touchedCardIdRef.current = null;
   };
 
-  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    e.stopPropagation();
-    stopMomentum();
-    const delta = (e.deltaY || e.deltaX) * 0.05;
-    applyRotation(rotationRef.current + delta);
-    startMomentum(delta * 0.8);
-  };
-
   return (
     <div
-      className="fixed inset-0 z-[300] bg-zinc-950 overflow-hidden flex flex-col items-center justify-between font-sans select-none"
+      ref={rootRef}
+      className="fixed inset-0 z-[300] bg-zinc-950 overflow-hidden flex flex-col items-center justify-between font-sans select-none touch-none overscroll-none"
       style={{
+        touchAction: 'none',
+        overscrollBehavior: 'none',
         paddingTop: 'env(safe-area-inset-top, 0px)',
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         paddingLeft: 'env(safe-area-inset-left, 0px)',
@@ -721,14 +795,13 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
       {/* Main Interactive Interactive Stage */}
       <div
         ref={containerRef}
-        className="flex-1 w-full relative flex items-center justify-center overflow-hidden touch-none select-none cursor-grab active:cursor-grabbing"
-        style={{ touchAction: 'none' }}
+        className="flex-1 w-full relative flex items-center justify-center overflow-hidden touch-none select-none cursor-grab active:cursor-grabbing overscroll-none"
+        style={{ touchAction: 'none', overscrollBehavior: 'none' }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
         onPointerLeave={() => setHoveredCardId(null)}
-        onWheel={handleWheel}
       >
         {/* Subtle Vignette & Depth Masking */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_30%,rgba(9,9,11,0.6)_80%)] pointer-events-none z-[15]" />
@@ -933,8 +1006,12 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
 
       {/* Bottom Quick Control Bar */}
       <div
-        className="relative z-[310] flex items-center justify-center gap-2 sm:gap-3 px-4 py-3 bg-zinc-950/80 backdrop-blur-md border-t border-yellow-500/20 w-full"
-        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
+        className="relative z-[310] flex items-center justify-center gap-2 sm:gap-3 px-4 py-3 bg-zinc-950/80 backdrop-blur-md border-t border-yellow-500/20 w-full touch-none select-none overscroll-none"
+        style={{
+          touchAction: 'none',
+          overscrollBehavior: 'none',
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)'
+        }}
       >
         <button
           type="button"
