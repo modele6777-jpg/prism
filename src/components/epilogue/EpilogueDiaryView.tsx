@@ -316,8 +316,8 @@ export function EpilogueDiaryView() {
       title: 'Secret',
       icon: TreeDeciduous,
       color: '#f97316',
-      active: Boolean(orangeData),
-      summary: orangeData?.wishText || orangeData?.affirmation || '데일리 시크릿 여정',
+      active: Boolean(orangeData && (orangeData.affirmation || orangeData.desire || orangeData.appliedWish)),
+      summary: orangeData?.appliedWish ? `소원: "${orangeData.appliedWish}"` : (orangeData?.affirmation || '데일리 시크릿 여정'),
     },
     {
       app: 'trinity',

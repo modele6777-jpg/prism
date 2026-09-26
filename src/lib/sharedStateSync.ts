@@ -371,19 +371,28 @@ export function collectAllLocalActivities(uid?: string | null): Partial<SharedSt
 
     if (rawToday) {
       const parsed = JSON.parse(rawToday);
-      secretData = parsed?.data || (parsed?.affirmation ? parsed : null);
-      rootTs = Number(parsed?.updatedAt || parsed?.timestamp || 0);
+      const candidate = parsed?.data || (parsed?.affirmation ? parsed : null);
+      if (candidate?.affirmation?.trim() || candidate?.desire?.trim()) {
+        secretData = candidate;
+        rootTs = Number(parsed?.updatedAt || parsed?.timestamp || 0);
+      }
     } else if (rawV2) {
       const parsed = JSON.parse(rawV2);
       if (parsed?.date === today) {
-        secretData = parsed?.data || (parsed?.affirmation ? parsed : null);
-        rootTs = Number(parsed?.updatedAt || parsed?.timestamp || 0);
+        const candidate = parsed?.data || (parsed?.affirmation ? parsed : null);
+        if (candidate?.affirmation?.trim() || candidate?.desire?.trim()) {
+          secretData = candidate;
+          rootTs = Number(parsed?.updatedAt || parsed?.timestamp || 0);
+        }
       }
     } else if (rawCache) {
       const parsed = JSON.parse(rawCache);
       if (parsed?.date === today) {
-        secretData = parsed?.data || (parsed?.affirmation ? parsed : null);
-        rootTs = Number(parsed?.updatedAt || parsed?.timestamp || 0);
+        const candidate = parsed?.data || (parsed?.affirmation ? parsed : null);
+        if (candidate?.affirmation?.trim() || candidate?.desire?.trim()) {
+          secretData = candidate;
+          rootTs = Number(parsed?.updatedAt || parsed?.timestamp || 0);
+        }
       }
     }
     if (secretData) {
@@ -592,6 +601,13 @@ export function unpackAndHydrateLocalStorage(uid: string | null | undefined, sta
     Object.entries(state.dailySecrets).forEach(([dateKey, secretData]) => {
       if (secretData) {
         try {
+          const candidate = (secretData as any)?.data || secretData;
+          const hasActualSecret = Boolean(candidate?.affirmation?.trim() || candidate?.desire?.trim());
+          if (!hasActualSecret) {
+            // Never persist empty progress objects as an active secret kit
+            return;
+          }
+
           const secretTs = Number(secretData.updatedAt || secretData.timestamp || 0);
           const currentLocalRaw = safeLocalStorage.getItem(`orange_daily_secret_${dateKey}`);
           let localTs = 0;

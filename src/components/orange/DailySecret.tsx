@@ -29,6 +29,7 @@ const DailySecretSchema = z.object({
   scriptingStarter: z.string().describe('스크립팅 노트: 소원이 완벽히 실현된 현재의 하루를 생생하게 써 내려가는 일기 첫 문장'),
   appliedWish: z.string().optional().describe('이 키트 생성에 적용된 사용자의 소원 원문'),
   updatedAt: z.number().optional().describe('키트 생성 타임스탬프'),
+  isReceived: z.boolean().optional().describe('사용자가 직접 키트 받기를 실행하여 개방되었는지 여부'),
 });
 
 type DailySecretData = z.infer<typeof DailySecretSchema>;
@@ -66,10 +67,17 @@ function ensureFullKit(
   seed: number = 0,
 ): DailySecretData | null {
   if (!raw) return null;
+  // CRITICAL: A secret kit cannot be reconstituted from an empty or progress-only object!
+  const rawAffirmation = typeof raw.affirmation === 'string' ? raw.affirmation.trim() : '';
+  const rawDesire = typeof raw.desire === 'string' ? raw.desire.trim() : '';
+  if (!rawAffirmation && !rawDesire) {
+    return null;
+  }
+
   const effectiveWish = raw.appliedWish || wishStr.trim() || undefined;
   const fallback = generateTailoredSecretFallback(effectiveWish || '', name, seed);
 
-  let affirmation = raw.affirmation?.trim() || fallback.affirmation;
+  let affirmation = rawAffirmation || fallback.affirmation;
   let reflection = raw.reflection?.trim() || fallback.reflection;
   let action = raw.action?.trim() || fallback.action;
 
@@ -153,37 +161,60 @@ function ensureFullKit(
     scriptingStarter,
     appliedWish: effectiveWish,
     updatedAt: (raw as any)?.updatedAt || Date.now(),
+    isReceived: (raw as any)?.isReceived ?? true,
   };
 }
 
 function loadCachedSecret(wishStr: string = '', name: string = '여행자'): DailySecretData | null {
   try {
+    const isReceivedFlag = localStorage.getItem(dayStorageKey('secret_received')) === 'true' ||
+      safeLocalStorage.getItem(dayStorageKey('secret_received')) === 'true';
+
+    const validateAndReconstruct = (dataCandidate: any, dateCandidate?: string, updatedAt?: number): DailySecretData | null => {
+      if (!dataCandidate || typeof dataCandidate !== 'object') return null;
+      if (dateCandidate && dateCandidate !== todayKey()) return null;
+      const aff = typeof dataCandidate.affirmation === 'string' ? dataCandidate.affirmation.trim() : '';
+      const des = typeof dataCandidate.desire === 'string' ? dataCandidate.desire.trim() : '';
+      if (!aff && !des) return null;
+
+      // Must be received by explicit user action or verified received flag
+      const isExplicitlyReceived = isReceivedFlag || Boolean(dataCandidate.isReceived) || Boolean(dataCandidate.appliedWish);
+      if (!isExplicitlyReceived) {
+        return null;
+      }
+
+      return ensureFullKit({ ...dataCandidate, updatedAt: updatedAt || dataCandidate.updatedAt }, wishStr, name);
+    };
+
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      const parsed = JSON.parse(raw) as { date: string; data: Partial<DailySecretData>; updatedAt?: number };
-      if (parsed.date === todayKey() && parsed.data) {
-        return ensureFullKit({ ...parsed.data, updatedAt: parsed.updatedAt || (parsed.data as any)?.updatedAt }, wishStr, name);
-      } else if (parsed.date && parsed.date !== todayKey()) {
+      const parsed = JSON.parse(raw);
+      if (parsed.date && parsed.date !== todayKey()) {
         try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+      } else {
+        const validated = validateAndReconstruct(parsed.data || parsed, parsed.date, parsed.updatedAt);
+        if (validated) return validated;
       }
     }
+
     const todayDirect = localStorage.getItem(`orange_daily_secret_${todayKey()}`);
     if (todayDirect) {
-      const parsed = JSON.parse(todayDirect) as { date?: string; data?: Partial<DailySecretData>; updatedAt?: number } | Partial<DailySecretData>;
-      const innerData = (parsed as any)?.data || parsed;
-      if (innerData && (innerData.affirmation || innerData.desire)) {
-        return ensureFullKit({ ...innerData, updatedAt: (parsed as any)?.updatedAt || (innerData as any)?.updatedAt }, wishStr, name);
-      }
+      const parsed = JSON.parse(todayDirect);
+      const validated = validateAndReconstruct(parsed?.data || parsed, parsed?.date || todayKey(), parsed?.updatedAt);
+      if (validated) return validated;
     }
+
     const cacheDirect = localStorage.getItem('orange_daily_secret_cache');
     if (cacheDirect) {
-      const parsed = JSON.parse(cacheDirect) as { date?: string; data?: Partial<DailySecretData>; updatedAt?: number };
-      if (parsed?.date === todayKey() && parsed?.data) {
-        return ensureFullKit({ ...parsed.data, updatedAt: parsed.updatedAt || (parsed.data as any)?.updatedAt }, wishStr, name);
-      } else if (parsed?.date && parsed?.date !== todayKey()) {
+      const parsed = JSON.parse(cacheDirect);
+      if (parsed?.date && parsed.date !== todayKey()) {
         try { localStorage.removeItem('orange_daily_secret_cache'); } catch (_) {}
+      } else {
+        const validated = validateAndReconstruct(parsed?.data || parsed, parsed?.date, parsed?.updatedAt);
+        if (validated) return validated;
       }
     }
+
     for (const key of LEGACY_KEYS) {
       const legacy = localStorage.getItem(key);
       if (!legacy) continue;
@@ -192,10 +223,12 @@ function loadCachedSecret(wishStr: string = '', name: string = '여행자'): Dai
         try { localStorage.removeItem(key); } catch (_) {}
         continue;
       }
-      if (parsed.data.affirmation && parsed.data.reflection && parsed.data.action) {
-        return ensureFullKit(parsed.data, wishStr, name);
+      if (parsed.data && parsed.data.affirmation && parsed.data.reflection && parsed.data.action) {
+        const validated = validateAndReconstruct(parsed.data, parsed.date);
+        if (validated) return validated;
       }
     }
+
     return null;
   } catch {
     return null;
@@ -558,6 +591,8 @@ export function DailySecret() {
     setData(null);
     const today = todayKey();
     try {
+      localStorage.removeItem(dayStorageKey('secret_received'));
+      safeLocalStorage.removeItem(dayStorageKey('secret_received'));
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem('orange_daily_secret_cache');
       localStorage.removeItem(`orange_daily_secret_${today}`);
@@ -618,6 +653,8 @@ export function DailySecret() {
         setExtraGratitude([]);
         setScript('');
         try {
+          localStorage.removeItem(dayStorageKey('secret_received'));
+          safeLocalStorage.removeItem(dayStorageKey('secret_received'));
           // Clear today's cached secret kit and cache
           localStorage.removeItem(STORAGE_KEY);
           localStorage.removeItem('orange_daily_secret_cache');
@@ -657,10 +694,25 @@ export function DailySecret() {
         return;
       }
 
+      const actualSecretData = (cloudSecret as any)?.data || cloudSecret;
+      const hasActualSecret = Boolean(
+        actualSecretData?.affirmation?.trim() || actualSecretData?.desire?.trim()
+      );
+      const isReceived = Boolean(
+        actualSecretData?.isReceived ||
+        actualSecretData?.appliedWish ||
+        localStorage.getItem(dayStorageKey('secret_received')) === 'true'
+      );
+      if (!hasActualSecret || !isReceived) {
+        return;
+      }
+
       const name = sharedState?.userProfile?.basic?.nickname || sharedState?.userProfile?.basic?.name || '여행자';
-      const full = ensureFullKit(cloudSecret as Partial<DailySecretData>, wish, name);
+      const full = ensureFullKit(actualSecretData as Partial<DailySecretData>, wish, name);
       if (full) {
         setData(full);
+        localStorage.setItem(dayStorageKey('secret_received'), 'true');
+        safeLocalStorage.setItem(dayStorageKey('secret_received'), 'true');
       }
       if (cloudSecret.appliedWish) {
         setWish(cloudSecret.appliedWish);
@@ -765,6 +817,8 @@ export function DailySecret() {
     newExtraGratitude: string[],
     newScript: string,
   ) => {
+    // If the user has NOT received today's secret yet, DO NOT push a dummy dailySecret to cloud
+    if (!data) return;
     const today = todayKey();
     try {
       localStorage.setItem(dayStorageKey('practice'), JSON.stringify(newPractice));
@@ -816,6 +870,7 @@ export function DailySecret() {
   // Debounced cloud synchronization when progress is modified
   const syncTimeoutRef = useRef<number | null>(null);
   useEffect(() => {
+    if (!data) return; // Do not auto-sync progress before a secret is actually received
     if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
     syncTimeoutRef.current = window.setTimeout(() => {
       syncDailyProgress(practice, gratitudeChecked, extraGratitude, script);
@@ -823,7 +878,7 @@ export function DailySecret() {
     return () => {
       if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
     };
-  }, [practice, gratitudeChecked, extraGratitude, script, syncDailyProgress]);
+  }, [data, practice, gratitudeChecked, extraGratitude, script, syncDailyProgress]);
 
   const practiceCount = useMemo(
     () => PRACTICE_ITEMS.filter((item) => practice[item.id]).length,
@@ -865,7 +920,11 @@ export function DailySecret() {
       ...instantKit,
       appliedWish: hasWish ? effectiveWish : undefined,
       updatedAt: now,
+      isReceived: true,
     };
+
+    localStorage.setItem(dayStorageKey('secret_received'), 'true');
+    safeLocalStorage.setItem(dayStorageKey('secret_received'), 'true');
 
     // 🚀 지체 없이 화면 즉각 개방 (한 번 터치로 즉각 열림 보장)
     setData(initialData);
@@ -888,7 +947,7 @@ export function DailySecret() {
       setWishApplied(false);
     }
 
-    const secretPayload = JSON.stringify({ date: todayKey(), data: initialData, updatedAt: now });
+    const secretPayload = JSON.stringify({ date: todayKey(), data: initialData, updatedAt: now, isReceived: true });
     localStorage.setItem(STORAGE_KEY, secretPayload);
     localStorage.setItem(`orange_daily_secret_${todayKey()}`, secretPayload);
     localStorage.setItem('orange_daily_secret_cache', secretPayload);
