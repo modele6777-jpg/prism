@@ -21,7 +21,7 @@ const DailySecretSchema = z.object({
   reflection: z.string().describe('Believe · 믿음으로 새기기: 마음속 의심과 조급함을 지우고 소원이 이미 영적 차원에 존재함을 확신하게 돕는 깊이 있는 통찰 사색 2~3문장 (절대 affirmation과 같은 문장을 반복하지 말고 완전히 다른 사색적인 문장으로 작성)'),
   action: z.string().describe('Receive · 오늘의 작은 실천: 소원이 이미 이루어진 사람처럼 오늘 당장 실천할 수 있는 구체적인 일상/신체적 행동 1문장 (예: "오늘 하루 가벼운 발걸음으로 산책하며 주변에 미소 짓기" 등 구체적 미션. 절대 affirmation이나 reflection 문장을 복사하지 마세요)'),
   desire: z.string().describe('Ask · 오늘의 소원 선언: 사용자의 소원을 바탕으로 우주에 명확하고 간결하게 요청하는 선언문 1문장'),
-  visualizationGuide: z.string().describe('68초 오감 시각화: 사용자의 소원이 생생히 실현된 장면을 오감(시각, 청각, 촉각, 벅찬 감정)으로 느끼는 시각화 가이드 3~4문장'),
+  visualizationGuide: z.string().describe('68초 시각화 스튜디오 가이드: 음성 낭독(TTS) 시 실제로 약 1분(60초 전후) 동안 깊은 몰입이 유지되도록 작성된 상세한 4단계 오감 명상 가이드(약 350~450자 분량: 1. 호흡 이완 유도 -> 2. 소원 성취의 생생한 시각/청각/촉각 정경 묘사 -> 3. 가슴 벅찬 안도감과 환희의 감정 절정 -> 4. 심장 중심 주파수 각인)'),
   gratitudeSeeds: z.array(z.string()).describe('감사 자석: 소원 성취 주파수를 높이고 풍요를 여는 서로 다른 구체적 감사 3가지'),
   feelingAnchor: z.string().describe('Feel · 이미 받은 느낌: 소원이 이미 이루어졌을 때 느껴지는 벅찬 기쁨과 안도감을 생생히 환기하는 감정 한 줄'),
   mirrorPhrase: z.string().describe('거울 확언: 거울 속 나를 보며 소원 성취의 확신과 자존감을 채우는 거울 확언 1문장'),
@@ -110,7 +110,7 @@ function ensureFullKit(
   }
 
   let visualizationGuide = raw.visualizationGuide?.trim() || fallback.visualizationGuide;
-  if (!visualizationGuide || visualizationGuide.includes('고요한 파동') || visualizationGuide.includes('심신을 정렬') || visualizationGuide === affirmation || visualizationGuide.length < 20 || !/[가-힣]/.test(visualizationGuide)) {
+  if (!visualizationGuide || visualizationGuide.includes('고요한 파동') || visualizationGuide.includes('심신을 정렬') || visualizationGuide === affirmation || visualizationGuide.length < 180 || !/[가-힣]/.test(visualizationGuide)) {
     visualizationGuide = fallback.visualizationGuide;
   }
 
@@ -391,6 +391,9 @@ function VisualizationTimer({ guide, onComplete }: { guide: string; onComplete?:
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <span className="text-[10px] text-amber-300/70 font-sans hidden sm:inline">
+            약 1분 오감 몰입 낭독
+          </span>
           <span className="text-[11px] font-mono font-bold text-amber-300/90 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/25">
             {running || done ? `${secondsLeft}초` : '68초'}
           </span>
@@ -1012,7 +1015,7 @@ export function DailySecret() {
         '4. reflection: 의심과 조급함을 내려놓고 우주의 순리를 신뢰하도록 이끄는 깊은 철학적 사색 글 2~3문장입니다. (절대 affirmation과 같은 문장을 반복하지 마십시오).',
         '5. action: 소원을 이미 이룬 사람의 당당함으로 오늘 즉시 행할 수 있는 구체적인 일상 미션 1문장입니다.',
         '6. desire: 우주에 올리는 맑고 순수한 청원 1문장입니다.',
-        '7. visualizationGuide: 소원이 성취된 구체적인 순간(표정, 숨결, 주변의 반응, 소리, 공기의 온기)을 오감으로 그리는 생생한 3~4문장의 시각화 가이드입니다.',
+        '7. visualizationGuide: [중요: 68초 시각화 스튜디오용 1분 분량 명상 가이드] 음성 낭독(TTS) 시 실제로 약 1분(60초 전후) 동안 차분하고 깊은 몰입이 유지되도록, 한국어 공백 포함 약 350~450자 분량의 풍부하고 단계적인 오감 정경으로 작성하십시오. (호흡 이완 유도 -> 소원이 이루어진 구체적 순간의 시각/청각/촉각/온기 묘사 -> 안도감과 환희의 감정 절정 -> 심장 중심 주파수 각인 마무리).',
         '8. feelingAnchor: 성취의 순간 가슴 깊이 차오르는 전율과 안도감을 압축한 독창적인 1줄 감정 앵커입니다.',
         '9. mirrorPhrase: 거울 속 자신과 눈을 맞추며 가슴을 울리는 진실된 선언 1문장입니다.',
         '10. eveningPrompt: 하루를 평온히 닫고 우주의 은혜에 몸을 맡기는 저녁 감사 1문장입니다.',
@@ -1032,7 +1035,7 @@ export function DailySecret() {
       ].filter(Boolean).join('\n');
 
       const userPrompt = hasWish
-        ? `[${name}님의 핵심 고민 / 소원: "${effectiveWish}"]\n[무작위 시드: ${Date.now()}-${activeSeed}]\n\n위 고민/소원의 본질을 깊이 꿰뚫어보고, 기존의 뻔한 템플릿 문장을 완전히 탈피하여 ${name}님만을 위한 가슴 벅찬 독창적 맞춤 시크릿 키트를 작성해 주세요.\n특히 68초 시각화(visualizationGuide)와 확언(affirmation)은 "${effectiveWish}" 소망이 실현된 바로 그 순간의 감각과 전율이 생생하게 살아 숨 쉬어야 합니다.`
+        ? `[${name}님의 핵심 고민 / 소원: "${effectiveWish}"]\n[무작위 시드: ${Date.now()}-${activeSeed}]\n\n위 고민/소원의 본질을 깊이 꿰뚫어보고, 기존의 뻔한 템플릿 문장을 완전히 탈피하여 ${name}님만을 위한 가슴 벅찬 독창적 맞춤 시크릿 키트를 작성해 주세요.\n특히 68초 시각화(visualizationGuide)는 타이머 동안 실제로 약 1분간 음성 낭독되므로 공백 포함 350~450자 분량으로 호흡 유도부터 소원 성취의 오감 정경과 벅찬 감정의 전율을 단계별로 매우 생생하고 상세하게 묘사해 주시고, 확언(affirmation) 역시 "${effectiveWish}" 소망이 실현된 바로 그 순간의 감각과 전율이 생생하게 살아 숨 쉬어야 합니다.`
         : `[오늘의 영적 테마: ${todayTheme}]\n[무작위 시드: ${Date.now()}-${activeSeed}]\n${name}님을 위한 오늘만의 독창적이고 가슴 벅찬 시크릿 키트를 주세요. 이전에 자주 나온 진부하거나 똑같은 문구를 완전히 피하고, 마음속 고민을 녹이고 풍요와 평온을 여는 품격 있는 새로운 맞춤 확언과 도구들을 작성해 주세요.`;
 
       setIsAiEnhancing(true);
