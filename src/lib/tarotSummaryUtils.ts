@@ -268,3 +268,150 @@ export function extractConciseSummary(text: string, cardContext?: any): string[]
     formatSummaryLine('실천 처방', fallbackAction),
   ];
 }
+
+export interface OracleConciseSummaryParams {
+  message?: string;
+  oracleMode: 'healing' | 'growth';
+  cards?: any[];
+  saju?: any;
+  microAction?: any;
+  macroFocus?: string;
+  microMission?: any;
+}
+
+/**
+ * 🔮 78장 오라클 전용 핵심 3줄 요약 추출기 (치유 모드 vs 성장 모드 맞춤 태그)
+ * Healing Mode: [마음 진단] · [치유의 빛] · [안식 처방]
+ * Growth Mode:  [현실 진단] · [전략 방향] · [즉각 실행]
+ */
+export function extractOracleConciseSummary(params: OracleConciseSummaryParams): string[] {
+  const { message = '', oracleMode, cards = [], microAction, macroFocus, microMission } = params;
+  const isHealing = oracleMode === 'healing';
+
+  const clean = (s: string) => {
+    return s
+      .replace(/[\*\_]/g, '')
+      .replace(/^\[[^\]]+\]\s*/, '')
+      .replace(/^[-*•·\d.]+\s*/, '')
+      .trim();
+  };
+
+  const fmt = (tag: string, content: string) => {
+    let t = clean(content);
+    t = t.replace(/^(?:친애하는|안녕하세요|반갑습니다|안녕|어서\s*오세요)[^,.]*[,.]\s*/i, '');
+    if (t.length > 130) {
+      const idx = t.lastIndexOf('.', 125);
+      if (idx > 50) t = t.slice(0, idx + 1);
+      else t = t.slice(0, 125) + '...';
+    }
+    if (!/[.!?]$/.test(t)) t += '.';
+    return `[${tag}] ${t}`;
+  };
+
+  const paragraphs = message
+    .split(/\n\n+/)
+    .map((p) => p.trim())
+    .filter((p) => p.length > 15 && !p.startsWith('http'));
+
+  if (isHealing) {
+    // 1. [마음 진단]
+    let diag = '';
+    if (paragraphs.length > 0) {
+      const p1 = paragraphs[0];
+      const sentences = p1.split(/(?<=[.!?])\s+/).filter((s) => s.length >= 8);
+      diag = clean(sentences.find((s) => /마음|고민|상처|피로|짐|홀로|지친|불안/.test(s)) || sentences[0] || p1);
+    }
+    if (!diag && cards[0]) {
+      diag = `${cards[0].nameKo} 카드가 비추듯, 홀로 마음의 짐을 감내하며 지쳐있던 내면의 피로를 먼저 알아차려 주세요.`;
+    } else if (!diag) {
+      diag = '스스로를 채근하던 무거운 짐을 내려놓고, 지친 마음의 상태를 있는 그대로 가만히 인정해 줍니다.';
+    }
+
+    // 2. [치유의 빛]
+    let light = '';
+    if (paragraphs.length > 1) {
+      const p2 = paragraphs[1];
+      const sentences = p2.split(/(?<=[.!?])\s+/).filter((s) => s.length >= 8);
+      light = clean(sentences.find((s) => /온기|치유|빛|안아|포근|자비|평온|선물|사랑/.test(s)) || sentences[0] || p2);
+    }
+    if (!light && cards[1]) {
+      light = `${cards[1].nameKo} 카드의 부드러운 온기가 상처받은 감정을 따스하게 감싸며 온전한 회복을 돕습니다.`;
+    } else if (!light) {
+      light = '당신은 이미 존재 자체로 충분히 아름답고 온전하며, 깊은 평온의 숨을 누릴 자격이 있습니다.';
+    }
+
+    // 3. [안식 처방]
+    let action = '';
+    if (typeof microAction === 'string' && microAction.trim().length > 5) {
+      action = microAction.trim();
+    } else if (microAction?.description) {
+      action = `${microAction.name ? `${microAction.name}: ` : ''}${microAction.description}`;
+    } else if (paragraphs.length > 2) {
+      const pLast = paragraphs[paragraphs.length - 1];
+      const sentences = pLast.split(/(?<=[.!?])\s+/).filter((s) => s.length >= 8);
+      action = clean(sentences.find((s) => /쉬|호흡|선물|내려놓|차|물|따뜻/.test(s)) || sentences[0] || pLast);
+    }
+    if (!action && cards[2]) {
+      action = `${cards[2].nameKo} 카드가 주는 치유의 씨앗처럼, 따뜻한 차 한 잔과 깊은 호흡으로 1분간 온전히 쉬어가기.`;
+    } else if (!action) {
+      action = '따뜻한 차 한 잔과 편안한 호흡으로 오늘 나 자신에게 다정한 안식을 선물하기.';
+    }
+
+    return [
+      fmt('마음 진단', diag),
+      fmt('치유의 빛', light),
+      fmt('안식 처방', action),
+    ];
+  } else {
+    // Growth Mode
+    // 1. [현실 진단]
+    let diag = '';
+    if (paragraphs.length > 0) {
+      const p1 = paragraphs[0];
+      const sentences = p1.split(/(?<=[.!?])\s+/).filter((s) => s.length >= 8);
+      diag = clean(sentences.find((s) => /돌파|과제|정체|미루|나태|원인|마인드|현실|고민/.test(s)) || sentences[0] || p1);
+    }
+    if (!diag && cards[0]) {
+      diag = `${cards[0].nameKo} 카드가 짚어내듯, 막연한 고민과 미루기를 멈추고 실행을 가로막던 마인드셋을 전환할 때입니다.`;
+    } else if (!diag) {
+      diag = '막연한 불안과 미루기를 멈추고, 지금 직면한 성장의 본질적 과제를 정면으로 마주하세요.';
+    }
+
+    // 2. [전략 방향]
+    let strategy = '';
+    if (macroFocus && macroFocus.trim().length > 5) {
+      strategy = macroFocus.trim();
+    } else if (paragraphs.length > 1) {
+      const p2 = paragraphs[1];
+      const sentences = p2.split(/(?<=[.!?])\s+/).filter((s) => s.length >= 8);
+      strategy = clean(sentences.find((s) => /역량|원소|방향|전략|성장|추진|목표|원칙/.test(s)) || sentences[0] || p2);
+    }
+    if (!strategy && cards[1]) {
+      strategy = `${cards[1].nameKo} 카드의 4원소 역량을 목표에 정렬하여 현실적인 실행 로드맵을 확립하세요.`;
+    } else if (!strategy) {
+      strategy = '우선순위를 단 하나로 압축하고 분산된 에너지를 명확한 실행 나침반에 집중하세요.';
+    }
+
+    // 3. [즉각 실행]
+    let mission = '';
+    if (microMission?.title) {
+      mission = `${microMission.title}${microMission.action_tip ? ` — ${microMission.action_tip}` : ''}`;
+    } else if (paragraphs.length > 2) {
+      const pLast = paragraphs[paragraphs.length - 1];
+      const sentences = pLast.split(/(?<=[.!?])\s+/).filter((s) => s.length >= 8);
+      mission = clean(sentences.find((s) => /오늘|즉시|실행|행동|과제|5분|10분|완수/.test(s)) || sentences[0] || pLast);
+    }
+    if (!mission && cards[2]) {
+      mission = `${cards[2].nameKo} 카드의 추진력을 담아, 오늘 10분 안에 끝낼 수 있는 가장 작은 행동을 지금 완수하기.`;
+    } else if (!mission) {
+      mission = '오늘 10분 안에 완수할 수 있는 가장 구체적인 첫 번째 행동을 망설임 없이 즉각 실행하기.';
+    }
+
+    return [
+      fmt('현실 진단', diag),
+      fmt('전략 방향', strategy),
+      fmt('즉각 실행', mission),
+    ];
+  }
+}
+

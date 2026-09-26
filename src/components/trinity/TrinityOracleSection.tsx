@@ -14,6 +14,7 @@ import { playTTS, playTTSInChunks, prefetchTTS, stopTTS, useTTSActive, useTTSSta
 import { LucyTarotAdviceCard } from './LucyTarotAdviceCard';
 import { TarotResultShareButton } from './TodayTarotShareModal';
 import { TarotCardZoomModal } from './TarotCardZoomModal';
+import { extractOracleConciseSummary } from '@/lib/tarotSummaryUtils';
 import { type TarotShareData } from '@/utils/todayTarotExporter';
 import { sendPrismToss } from '@/lib/prismToss';
 import { MUSE_ART_CATALOG } from '@/lib/museDailyArt';
@@ -52,6 +53,7 @@ export interface SajuTarotSynergy {
 
 export interface HealingResult {
   message: string;
+  concise_summary?: string[];
   saju_tarot_synergy?: SajuTarotSynergy;
   card_insights?: CardInsight[];
   prescribed_art: {
@@ -70,6 +72,7 @@ export interface HealingResult {
 export interface GrowthResult {
   message?: string;
   macro_focus: string;
+  concise_summary?: string[];
   saju_tarot_synergy?: SajuTarotSynergy;
   card_insights?: CardInsight[];
   dominant_element: {
@@ -313,6 +316,7 @@ export function TrinityOracleSection() {
   }, [userProfile?.basic?.name]);
 
   const [isCopied, setIsCopied] = useState<boolean>(false);
+  const [isSummaryCopied, setIsSummaryCopied] = useState<boolean>(false);
 
   // 2. Card Draw Stage State ('intro' | 'spread' | 'result')
   const [stage, setStage] = useState<'intro' | 'spread' | 'result'>('intro');
@@ -371,6 +375,36 @@ export function TrinityOracleSection() {
     return ['자기계발 마인드셋', '4원소 역량 영역', '1줄 마이크로 실행'];
   }, [oracleMode]);
 
+  // 🌟 오라클 핵심 3줄 요약 추출 (치유 모드 vs 성장 모드 맞춤)
+  const oracleSummaryBullets = useMemo(() => {
+    if (oracleMode === 'healing') {
+      if (!healingResult) return [];
+      if (healingResult.concise_summary && healingResult.concise_summary.length === 3) {
+        return healingResult.concise_summary;
+      }
+      return extractOracleConciseSummary({
+        message: healingResult.message,
+        oracleMode: 'healing',
+        cards: drawnCards,
+        saju,
+        microAction: healingResult.micro_action || healingResult.reward_item,
+      });
+    } else {
+      if (!growthResult) return [];
+      if (growthResult.concise_summary && growthResult.concise_summary.length === 3) {
+        return growthResult.concise_summary;
+      }
+      return extractOracleConciseSummary({
+        message: growthResult.message || growthResult.macro_focus,
+        oracleMode: 'growth',
+        cards: drawnCards,
+        saju,
+        macroFocus: growthResult.macro_focus,
+        microMission: growthResult.micro_mission,
+      });
+    }
+  }, [oracleMode, healingResult, growthResult, drawnCards, saju]);
+
   // 🔮 78장 오라클 결과 공유 & 이미지 카드 익스포트 데이터
   const oracleShareData: TarotShareData = useMemo(() => {
     const activeResult = oracleMode === 'healing' ? healingResult : growthResult;
@@ -393,10 +427,11 @@ export function TrinityOracleSection() {
       })),
       dateStr: new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }),
       diagnosis: letterMsg,
+      conciseSummaryBullets: oracleSummaryBullets.length > 0 ? oracleSummaryBullets : undefined,
       adviceHeadline: activeResult?.card_insights?.[2]?.personal_interpretation?.slice(0, 80) || undefined,
       frequency: saju?.yongsin?.name ? `사주 용신: ${saju.yongsin.name}` : undefined,
     };
-  }, [oracleMode, healingResult, growthResult, inquiryText, drawnCards, slotPositions, saju]);
+  }, [oracleMode, healingResult, growthResult, inquiryText, drawnCards, slotPositions, saju, oracleSummaryBullets]);
 
   // Handle mode switch with persistent saving
   const handleModeSwitch = (mode: 'healing' | 'growth') => {
@@ -843,6 +878,35 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
   const isHealingLetterTTSActive = isOracleLetterTTSActive;
   const handleToggleHealingLetterTTS = handleToggleOracleLetterTTS;
 
+  // 🎙️ 오라클 핵심 3줄 요약 TTS 음성 텍스트 및 토글 핸들러
+  const oracleSummarySpeechText = useMemo(() => {
+    if (!oracleSummaryBullets || oracleSummaryBullets.length === 0) return '';
+    const intro = oracleMode === 'healing'
+      ? `제제의 치유 오라클 핵심 3줄 요약입니다.`
+      : `루시의 성장 오라클 핵심 3줄 요약입니다.`;
+    const lines = oracleSummaryBullets.map((b) => {
+      return b.replace(/^\[([^\]]+)\]\s*/, '$1. ');
+    }).join(' ');
+    return prepareNaturalSpeechText(`${intro} ${lines}`);
+  }, [oracleMode, oracleSummaryBullets]);
+
+  const isOracleSummaryTTSActive = useMemo(() => {
+    if (!isTTSActive || !oracleSummarySpeechText) return false;
+    const cleanSpeech = prepareNaturalSpeechText(oracleSummarySpeechText);
+    return ttsState.activeFullText === cleanSpeech;
+  }, [isTTSActive, oracleSummarySpeechText, ttsState.activeFullText]);
+
+  const handleToggleOracleSummaryTTS = async () => {
+    if (isOracleSummaryTTSActive) {
+      stopTTS();
+      return;
+    }
+    if (oracleSummarySpeechText) {
+      const tone = oracleMode === 'healing' ? '따뜻함' : '자신감';
+      await playTTSInChunks(oracleSummarySpeechText, 'Kore', 250, tone);
+    }
+  };
+
   // 🎴 개별 카드 심층 해설 전용 음성 생성기 및 토글 핸들러
   const [activeCardTTSKey, setActiveCardTTSKey] = useState<string | null>(null);
 
@@ -1023,6 +1087,150 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
     );
   };
 
+  // 🌟 78장 오라클 핵심 3줄 요약 전용 카드 렌더러
+  const renderOracleSummaryCard = () => {
+    if (!oracleSummaryBullets || oracleSummaryBullets.length === 0) return null;
+    const isHealing = oracleMode === 'healing';
+
+    return (
+      <div className={`p-4 sm:p-5 rounded-3xl border shadow-xl relative overflow-hidden backdrop-blur-xl transition-all ${
+        isHealing
+          ? 'bg-gradient-to-br from-rose-950/25 via-zinc-950/90 to-amber-950/25 border-rose-400/35 shadow-rose-950/20'
+          : 'bg-gradient-to-br from-cyan-950/25 via-zinc-950/90 to-amber-950/25 border-amber-400/35 shadow-amber-950/20'
+      }`}>
+        <div className={`absolute top-0 right-0 w-48 h-48 rounded-full blur-3xl pointer-events-none ${
+          isHealing ? 'bg-rose-500/10' : 'bg-cyan-500/10'
+        }`} />
+
+        {/* Card Header */}
+        <div className="flex items-center justify-between gap-3 pb-3 border-b border-white/10 relative z-10">
+          <div className="flex items-center gap-2.5">
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border ${
+              isHealing
+                ? 'bg-rose-500/20 border-rose-400/40 text-rose-300'
+                : 'bg-amber-500/20 border-amber-400/40 text-amber-300'
+            }`}>
+              {isHealing ? <Heart size={16} className="text-rose-300" /> : <Zap size={16} className="text-amber-300" />}
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className={`text-[10px] font-mono uppercase tracking-widest ${
+                  isHealing ? 'text-rose-400/90' : 'text-amber-400/90'
+                }`}>
+                  {isHealing ? 'HEALING SUMMARY' : 'GROWTH ACTION SUMMARY'}
+                </span>
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${
+                  isHealing
+                    ? 'bg-rose-500/20 text-rose-200 border-rose-400/30'
+                    : 'bg-amber-500/20 text-amber-200 border-amber-400/30'
+                }`}>
+                  {isHealing ? '제제의 치유 요약' : '루시의 실행 요약'}
+                </span>
+              </div>
+              <h4 className="text-sm sm:text-base font-bold font-serif text-white">
+                {isHealing ? '🌿 마음 치유 핵심 3줄 요약' : '⚡ 자기계발 돌파 핵심 3줄 요약'}
+              </h4>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* 요약 TTS 버튼 */}
+            {oracleSummarySpeechText && (
+              <button
+                type="button"
+                onClick={handleToggleOracleSummaryTTS}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95 ${
+                  isOracleSummaryTTSActive
+                    ? 'bg-rose-500/30 text-rose-200 border border-rose-400/60 ring-2 ring-rose-400/30 animate-pulse'
+                    : isHealing
+                      ? 'bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 border border-rose-400/35 hover:border-rose-400/60'
+                      : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 border border-amber-400/35 hover:border-amber-400/60'
+                }`}
+                title={isOracleSummaryTTSActive ? '요약 낭독 중지' : '핵심 3줄 요약 음성으로 듣기'}
+              >
+                {isOracleSummaryTTSActive ? (
+                  <>
+                    <VolumeX size={13} className="text-rose-300" />
+                    <span className="text-[11px]">중지</span>
+                    <span className="flex gap-0.5 ml-0.5">
+                      <span className="w-1 h-2 bg-rose-300 rounded-full animate-bounce" />
+                      <span className="w-1 h-3 bg-rose-200 rounded-full animate-bounce [animation-delay:0.15s]" />
+                      <span className="w-1 h-2 bg-rose-400 rounded-full animate-bounce [animation-delay:0.3s]" />
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Volume2 size={13} className={isHealing ? 'text-rose-300' : 'text-amber-300'} />
+                    <span className="text-[11px]">요약 듣기</span>
+                  </>
+                )}
+              </button>
+            )}
+
+            {/* 3줄 요약 복사 버튼 */}
+            <button
+              type="button"
+              onClick={() => {
+                const header = isHealing ? '【제제의 치유 오라클 핵심 3줄 요약】' : '【루시의 성장 오라클 핵심 3줄 요약】';
+                const copyText = `${header}\n${oracleSummaryBullets.join('\n')}`;
+                navigator.clipboard?.writeText(copyText).then(() => {
+                  setIsSummaryCopied(true);
+                  setTimeout(() => setIsSummaryCopied(false), 2000);
+                }).catch(() => {});
+              }}
+              className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 hover:text-white text-xs flex items-center gap-1 transition-all cursor-pointer"
+              title="핵심 3줄 요약 클립보드 복사"
+            >
+              {isSummaryCopied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+              <span className="hidden sm:inline text-[11px]">{isSummaryCopied ? '복사됨' : '요약 복사'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 3-Bullet Points */}
+        <div className="mt-3.5 space-y-2.5 relative z-10 font-sans">
+          {oracleSummaryBullets.map((bullet, idx) => {
+            const match = bullet.match(/^\[([^\]]+)\]\s*(.*)$/);
+            const tag = match ? match[1] : null;
+            const content = match ? match[2] : bullet;
+
+            // Mode-specific tag badge styling
+            let badgeClass = 'bg-amber-400/20 text-amber-200 border-amber-400/30';
+            if (tag === '마음 진단') badgeClass = 'bg-rose-500/20 text-rose-300 border-rose-400/35';
+            else if (tag === '치유의 빛') badgeClass = 'bg-amber-400/20 text-amber-200 border-amber-400/35';
+            else if (tag === '안식 처방') badgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-400/35';
+            else if (tag === '현실 진단') badgeClass = 'bg-orange-500/20 text-orange-300 border-orange-400/35';
+            else if (tag === '전략 방향') badgeClass = 'bg-cyan-500/20 text-cyan-300 border-cyan-400/35';
+            else if (tag === '즉각 실행') badgeClass = 'bg-yellow-400/20 text-yellow-200 border-yellow-400/35';
+
+            return (
+              <div
+                key={idx}
+                className="flex items-start gap-2.5 p-2.5 sm:p-3 rounded-2xl bg-black/40 border border-white/5 hover:border-white/10 transition-colors"
+              >
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold font-mono shrink-0 mt-0.5 border ${
+                  isHealing
+                    ? 'bg-rose-500/15 text-rose-300 border-rose-400/30'
+                    : 'bg-amber-500/15 text-amber-300 border-amber-400/30'
+                }`}>
+                  {idx + 1}
+                </span>
+                <div className="flex-1 min-w-0 text-xs sm:text-sm text-zinc-100 leading-relaxed">
+                  {tag && (
+                    <span className={`inline-block px-2 py-0.5 mr-2 rounded-md text-[11px] font-bold border ${badgeClass} shrink-0 align-middle`}>
+                      {tag}
+                    </span>
+                  )}
+                  <span className="align-middle font-normal">{content}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   // Render Saju-Tarot Fusion Letter (Healing: Jeje / Growth: Lucy)
   const renderFusionLetterSection = (message?: string) => {
     if (!message) return null;
@@ -1143,7 +1351,10 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
               <button
                 type="button"
                 onClick={() => {
-                  const fullText = `${copyHeader}\n\n${message}`;
+                  const summaryBlock = oracleSummaryBullets && oracleSummaryBullets.length > 0
+                    ? `\n\n【핵심 3줄 요약】\n${oracleSummaryBullets.join('\n')}`
+                    : '';
+                  const fullText = `${copyHeader}${summaryBlock}\n\n${message}`;
                   navigator.clipboard?.writeText(fullText).then(() => {
                     setIsCopied(true);
                     setTimeout(() => setIsCopied(false), 2000);
@@ -1958,6 +2169,8 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
             ) : oracleMode === 'healing' && healingResult ? (
               /* [HEALING RESULT VIEW: ONLY ZEZE'S SACRED HEALING LETTER] */
               <div className="w-full space-y-6">
+                {/* 🌟 78장 오라클 핵심 3줄 요약 카드 */}
+                {renderOracleSummaryCard()}
                 {/* 제제의 사주·타로 융합 치유 서한 (편지만 집중 표시) */}
                 {renderFusionLetterSection(healingResult.message)}
                 {/* 🌟 오라클 타로 맨 하단 루시의 맞춤 치유 조언 (TTS 가능) */}
@@ -1974,6 +2187,8 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
             ) : oracleMode === 'growth' && growthResult ? (
               /* [GROWTH RESULT VIEW: ONLY LUCY'S SACRED GROWTH ACTION LETTER] */
               <div className="w-full space-y-6">
+                {/* 🌟 78장 오라클 핵심 3줄 요약 카드 */}
+                {renderOracleSummaryCard()}
                 {/* 루시의 사주·타로 융합 자기계발 실행 서한 (편지만 집중 표시) */}
                 {renderFusionLetterSection(growthResult.message || growthResult.macro_focus)}
                 {/* 🌟 오라클 타로 맨 하단 루시의 맞춤 성장 조언 (TTS 가능) */}
