@@ -16,22 +16,21 @@ interface DailyOracleResult {
 /**
  * 타로 카드별 세부 해설 데이터베이스
  */
-const TAROT_DETAILS: Record<
-  string,
-  {
-    element: string;
-    archetype: string;
-    uprightCore: string;
-    reversedCore: string;
-    shadowWarning: string;
-    actionGuidance: string;
-    luckyColor: string;
-    luckyNum: string;
-    symbolWord: string;
-    frequency: string;
-    playlist: string;
-  }
-> = {
+export interface TarotDetailEntry {
+  element: string;
+  archetype: string;
+  uprightCore: string;
+  reversedCore: string;
+  shadowWarning: string;
+  actionGuidance: string;
+  luckyColor: string;
+  luckyNum: string;
+  symbolWord: string;
+  frequency: string;
+  playlist: string;
+}
+
+export const TAROT_DETAILS: Record<string, TarotDetailEntry> = {
   // Major Arcana
   major_0: {
     element: "공기 (Air)",
@@ -324,10 +323,10 @@ const TAROT_DETAILS: Record<
 /**
  * 수트(마이너 아르카나) 기본 템플릿
  */
-function getSuitDetails(card: TarotCard) {
-  const isRev = !!card.reversed;
-  const name = card.nameKo;
-  const kws = card.keywords.join(", ");
+export function getSuitDetails(card: any): TarotDetailEntry {
+  const isRev = !!card?.reversed;
+  const name = card?.nameKo || card?.name || "운명의 카드";
+  const kws = Array.isArray(card?.keywords) ? card.keywords.join(", ") : "직관과 통찰";
 
   if (card.type === "wands") {
     return {
@@ -403,6 +402,29 @@ function getSuitDetails(card: TarotCard) {
     frequency: "528Hz",
     playlist: "528Hz Solfeggio Resonance",
   };
+}
+
+/**
+ * 타로 카드의 상징, 원형, 정방향/역방향 본질 의미 추출 헬퍼
+ */
+export function getTarotCardDetails(card: any): TarotDetailEntry {
+  if (!card) {
+    return {
+      element: "에테르 (Ether)",
+      archetype: "운명의 인도자",
+      uprightCore: "균형과 내면의 통찰",
+      reversedCore: "내면의 성찰과 호흡 조율",
+      shadowWarning: "마음의 중심을 굳건히 지키세요.",
+      actionGuidance: "직관에 귀를 기울이세요.",
+      luckyColor: "황금빛 골드",
+      luckyNum: "7",
+      symbolWord: "우주의 조화",
+      frequency: "528Hz",
+      playlist: "528Hz Solfeggio Resonance",
+    };
+  }
+  const id = card.id || "";
+  return TAROT_DETAILS[id] || getSuitDetails(card);
 }
 
 /**
@@ -561,8 +583,10 @@ export function buildSpecificTarotDailyOracle(card: TarotCard, mode: string = "o
 ${cardMeaning}
 오늘 하루 당신의 영혼과 일상에는 **${keywords}**의 흐름이 깊숙이 침투해 있으며, 내면의 무의식 속에서는 ${isReversed ? '잠시 숨을 고르며 내면의 저항을 정돈하고 새로운 방향을 모색하는 정화의 에너지' : '오랜 시간 준비해 온 에너지가 밖으로 뻗어나가 결실을 맺고자 하는 역동적인 생명력'}이 꿈틀거리고 있습니다. 외부의 소음이나 타인의 기대에 휘둘리지 않고 당신의 내면 나침반을 신뢰할 때, 오늘 하루의 흐름은 가장 이상적인 조화를 이루게 될 것입니다.
 
-### 🎴 2. 펼쳐진 카드들이 들려주는 이야기
-오늘 당신의 손끝에서 모습을 드러낸 카드는 **[${cardName}${cardEn ? ` (${cardEn})` : ''}] (${orientation})**입니다. 이 카드는 4대 원소 중 **${details.element}**의 파동을 품고 있으며, **"${details.archetype}"**의 영적 원형을 상징합니다.
+### 🎴 2. 펼쳐진 카드들이 들려주는 이야기 (카드 상징과 본래 뜻 해독)
+오늘 당신의 손끝에서 모습을 드러낸 카드는 **[${cardName}${cardEn ? ` (${cardEn})` : ''}] (${orientation})**입니다.
+- **카드의 영적 원형과 도상 상징**: 이 카드는 4대 원소 중 **${details.element}**의 파동을 품고 있으며, **"${details.archetype}"**의 영적 원형과 **[${details.symbolWord}]**의 신성한 도상 상징을 담고 있습니다.
+- **카드가 품은 본래의 뜻**: ${isReversed ? `역방향으로 발현되어 **${details.reversedCore}**을(를) 나타냅니다. 에너지가 잠시 내면으로 향해 숨을 고르고, 내실을 다지며 재정비해야 할 운명적 신호입니다.` : `정방향으로 발현되어 **${details.uprightCore}**을(를) 선명하게 나타냅니다. 외부를 향한 생명력과 진취적인 창조의 흐름이 활짝 열려 있음을 가리킵니다.`}
 - **일과 활동**: ${workGuidance}
 - **대인관계 & 소통**: ${relationGuidance}
 - **주의할 점**: ${shadowWarn}

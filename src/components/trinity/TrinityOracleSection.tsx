@@ -21,6 +21,7 @@ import {
   formatKoreanToTarget
 } from '@/lib/tarotSummaryUtils';
 import { type TarotShareData } from '@/utils/todayTarotExporter';
+import { getTarotCardDetails } from '@/lib/dailyTarotOracle';
 import { sendPrismToss } from '@/lib/prismToss';
 import { MUSE_ART_CATALOG } from '@/lib/museDailyArt';
 import { useApp, getPersistentUserProfile, setPersistentUserProfile } from '@/contexts/AppContext';
@@ -536,7 +537,13 @@ export function TrinityOracleSection() {
     stopTTS();
 
     const cardDescriptions = cards
-      .map((c, i) => `${i + 1}번 슬롯 [${slotPositions[i]}]: ${c.nameKo} (${c.name}) - 유형: ${c.type}, 핵심 키워드: [${c.keywords.join(', ')}]`)
+      .map((c, i) => {
+        const d = getTarotCardDetails(c);
+        const detailStr = d
+          ? ` | 도상 상징: [${d.symbolWord}], 영적 원형: [${d.archetype}], 본래 뜻: [${d.uprightCore}]`
+          : '';
+        return `${i + 1}번 슬롯 [${slotPositions[i]}]: ${c.nameKo} (${c.name}) - 유형: ${c.type}, 핵심 키워드: [${c.keywords.join(', ')}]${detailStr}`;
+      })
       .join('\n');
 
     // Dynamically determine candidate masterpiece matching these specific 3 cards from MUSE_ART_CATALOG
@@ -568,6 +575,11 @@ export function TrinityOracleSection() {
 이 리딩의 유일하고 절대적인 목적은 질문자의 【마음 치유(Healing), 번아웃 완화, 감정적 응어리 해소, 온전한 정서적 안식과 자기 자비(Self-Compassion)】입니다.
 - 성과, 경쟁, 목표 달성, 채찍질, 섣부른 조언을 철저히 배제합니다.
 - 질문자가 겪어온 남모를 피로, 자책감, 불안, 외로움, 관계의 상처를 깊이 알아차려 주고, "그동안 정말 많이 애썼어", "지금 이대로도 너는 충분히 온전해", "잠시 모든 짐을 내려놓고 쉬어가도 괜찮아"라는 깊은 안도감과 무조건적인 온기를 선물해야 합니다.
+
+# [★ 최우선 필수 원칙: 3장 카드의 본래 상징과 뜻 중심 심층 치유]
+- 카드의 이름을 단순히 언급하는 데 그치는 피상적 위로를 엄격히 금지합니다.
+- 뽑힌 3장의 카드(1번 무의식: ${cards[0]?.nameKo}, 2번 현재의 마음: ${cards[1]?.nameKo}, 3번 치유의 씨앗: ${cards[2]?.nameKo})가 품은 정통 타로의 도상학적 상징(그림 속 인물, 도구, 배경, 색채, 4대 원소)과 고유한 본래 뜻을 치유 리딩의 가장 중요한 중심 기둥으로 삼으세요.
+- 특히 2. card_insights(3장의 카드별 심층 치유 해설)와 3. message(제제의 치유 편지)에서 각 카드의 상징과 뜻을 깊이 있게 해석하며, 왜 이 카드가 지금 내담자의 아픈 마음에 가장 절실한 치유의 열쇠가 되는지 카드의 의미를 중심으로 따뜻하게 풀어내야 합니다.
 
 # Tone & Voice:
 - 조심스럽고 다정하며, 시적이고 따뜻한 반말(해체)을 사용합니다. ("~했어?", "~해볼까?", "~해도 괜찮아", "~일지도 몰라", "~가만히 안아줄게")
@@ -647,7 +659,7 @@ export function TrinityOracleSection() {
           ? `\n\n# [최우선 필수 집중 주제] 내담자가 털어놓은 구체적인 아픔과 고민:\n"${effectiveInquiry}"\n★ 절대 지침: 제제의 치유 편지는 오직 위의 구체적인 고민("${effectiveInquiry}")을 중심에 두고 1:1로 작성되어야 합니다. 두루뭉술한 일반론적 위로를 철저히 배제하고, 내담자가 호소한 고민의 상황과 지친 감정을 서두부터 정확하게 짚어내며("네가 고민으로 털어놓은 [${effectiveInquiry}] 이야기를 들었을 때 내 마음도 참 많이 아팠어..."), 사주 본원 기운(${saju?.dayMaster.symbolName})이 왜 이 고민 앞에서 남모르게 큰 짐을 지고 소진되었는지, 그리고 뽑힌 3장의 카드가 이 고민을 어떻게 따뜻하게 안아주고 치유하는지 진솔한 해답과 처방을 작성해 주세요.\n`
           : `\n\n# 질문자의 마음 상태:\n사주 원국의 일간(${saju?.dayMaster.symbolName})과 오행 불균형(${saju?.elements.dominant.name} 과열, ${saju?.elements.lacking.name} 결핍)으로 인해 홀로 감내하고 있을 무거운 마음의 짐과 번아웃, 관계의 피로를 깊이 알아차리고, 포근하게 안아주는 1:1 치유 편지로 작성해 주세요.\n`;
 
-        const prompt = `${sajuContextPrompt}${inquiryPromptAddon}\n\n사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 질문자(${jejeName})의 사주 명리학 원국과 뽑힌 3장의 타로 카드 상징을 긴밀하게 '교차 융합'하여, 질문자의 고민을 중심에 두고 지친 마음의 치유(Healing)와 회복, 내면아이 안식에 온전히 초점을 맞춘 힐링 리딩을 JSON으로 생성해 줘.\n★ [호칭 절대 지침]: 제제는 질문자의 가장 가까운 내면아이이자 작은 친구이므로, 절대 성(姓)을 붙이지 말고 성을 제외한 이름 '${jejeName}'으로만 다정하게 부르세요 (예: '${formatKoreanVocative(jejeName)}, 안녕... 네 작은 친구 제제야', '${formatKoreanToTarget(jejeName)}', '${jejeName}아'). '박주형아', '${recipientName}아'처럼 성을 붙여 부르면 절대 안 됩니다.\n특히 'message' 필드는 수신자(${jejeName})의 이름을 성 없이 '${formatKoreanVocative(jejeName)}'라고 다정하게 부르며(예: "${formatKoreanVocative(jejeName)}, 안녕... 네 작은 친구 제제야."), 질문자가 털어놓은 고민("${effectiveInquiry || '마음의 짐'}")을 편지 서두부터 따뜻하게 호명하며 시작해야 해. 그리고 사용자가 뽑은 3장의 카드 결과(1번 무의식: ${cards[0]?.nameKo}, 2번 현재의 마음: ${cards[1]?.nameKo}, 3번 치유의 씨앗: ${cards[2]?.nameKo})를 각각 빠짐없이 본문에 언급하고 그 상징적 치유 의미를 유기적으로 연결해 줘. 질문자의 사주 본원 기운(${saju?.dayMaster.symbolName})과 용신 기운을 정성껏 어루만지며, 이 고민을 어떻게 보듬고 평온을 되찾을 수 있는지 700~900자 내외의 눈물겹도록 다정하고 포근한 1:1 치유 편지로 작성해 줘.`;
+        const prompt = `${sajuContextPrompt}${inquiryPromptAddon}\n\n사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 질문자(${jejeName})의 사주 명리학 원국과 뽑힌 3장의 타로 카드가 지닌 본질적 상징과 뜻을 긴밀하게 '교차 융합'하여, 질문자의 고민을 중심에 두고 지친 마음의 치유(Healing)와 회복, 내면아이 안식에 온전히 초점을 맞춘 힐링 리딩을 JSON으로 생성해 줘.\n★ [호칭 절대 지침]: 제제는 질문자의 가장 가까운 내면아이이자 작은 친구이므로, 절대 성(姓)을 붙이지 말고 성을 제외한 이름 '${jejeName}'으로만 다정하게 부르세요 (예: '${formatKoreanVocative(jejeName)}, 안녕... 네 작은 친구 제제야', '${formatKoreanToTarget(jejeName)}', '${jejeName}아'). '박주형아', '${recipientName}아'처럼 성을 붙여 부르면 절대 안 됩니다.\n특히 'message' 필드는 수신자(${jejeName})의 이름을 성 없이 '${formatKoreanVocative(jejeName)}'라고 다정하게 부르며(예: "${formatKoreanVocative(jejeName)}, 안녕... 네 작은 친구 제제야."), 질문자가 털어놓은 고민("${effectiveInquiry || '마음의 짐'}")을 편지 서두부터 따뜻하게 호명하며 시작해야 해. 그리고 사용자가 뽑은 3장의 카드 결과(1번 무의식: ${cards[0]?.nameKo}, 2번 현재의 마음: ${cards[1]?.nameKo}, 3번 치유의 씨앗: ${cards[2]?.nameKo})의 고유한 도상 상징과 본래 뜻을 각각 빠짐없이 본문에 깊이 있게 풀이하고 그 상징적 치유 의미를 유기적으로 연결해 줘. 질문자의 사주 본원 기운(${saju?.dayMaster.symbolName})과 용신 기운을 정성껏 어루만지며, 이 고민을 어떻게 보듬고 평온을 되찾을 수 있는지 700~900자 내외의 눈물겹도록 다정하고 포근한 1:1 치유 편지로 작성해 줘.`;
         const res = await invokeLLM({
           messages: [
             { role: 'system', content: systemPrompt },
@@ -684,6 +696,10 @@ export function TrinityOracleSection() {
 - 오직 질문자의 구체적인 고민("${effectiveInquiry || '현실적 성장과 실행 과제'}")을 서한의 서두부터 끝까지 정중앙에 두고, 3장의 카드를 활용해 고민을 정밀 타격하여 당장 오늘 실천할 수 있는 명쾌하고 단호한 행동 솔루션을 제시하세요.
 - '화이트홀', '블랙홀', '웜홀', '손끝 물리량', '파동 측정' 등의 인위적/공상과학 용어는 절대 언급하지 마십시오.
 
+# [★ 최우선 필수 원칙: 3장 카드의 본래 상징과 뜻 중심 역량 분석]
+- 카드의 이름만 나열하거나 일반적인 자기계발 명언으로 때우는 것을 절대 금지합니다.
+- 뽑힌 3장의 카드(1번 마인드셋: ${cards[0]?.nameKo}, 2번 4원소 역량: ${cards[1]?.nameKo}, 3번 1줄 마이크로 실행: ${cards[2]?.nameKo})가 품은 정통 타로 도상과 고유한 본래 뜻을 명확히 해독하여, 왜 이 카드의 상징과 의미가 질문자의 성장 정체를 뚫어낼 결정적 열쇠가 되는지 카드의 깊은 뜻을 중심으로 설파하세요.
+
 # 질문자의 고민(Inquiry) 중심 1:1 맞춤 집중 원칙:
 질문자가 호소한 고민("${effectiveInquiry || '실행 지체와 역량 성장'}")은 이번 리딩의 가장 중요한 '핵심 타깃'입니다.
 - 질문자의 사주 본원 기질(${saju?.dayMaster.symbolName || '본원 기질'})과 뽑힌 3장의 타로 카드(1번 마인드셋: ${cards[0]?.nameKo}, 2번 4원소 역량: ${cards[1]?.nameKo}, 3번 1줄 마이크로 실행: ${cards[2]?.nameKo})를 융합하여, 질문자가 털어놓은 고민 상황을 서두부터 직접 언급하고 이를 단숨에 돌파할 수 있는 결정적인 행동 나침반을 제공하세요.
@@ -709,7 +725,7 @@ export function TrinityOracleSection() {
   "evening_reflection": "오늘 저녁 나의 성장과 행동을 돌아보는 1줄 자기계발 성찰 질문"
 }`;
 
-        const prompt = `${sajuContextPrompt}${growthInquiryPromptAddon}\n\n사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 질문자(${recipientName} 님)의 사주 기질과 타로 3장의 원소적 상징을 융합하여, 질문자의 고민을 직접 돌파하고 실질적인 역량 레벨업을 이뤄낼 수 있도록 온전히 초점을 맞춘 'message' (루시의 1:1 자기계발 실행 편지)와 실행 툴킷을 JSON으로 도출해 줘.\n\n특히 'message' 필드는 질문자(${recipientName} 님)를 정중하게 부르며, 질문자가 겪고 있는 고민("${effectiveInquiry || '실행 지체와 역량 성장'}")의 핵심을 날카롭게 짚고, 뽑힌 3장의 카드(1번 마인드셋: ${cards[0]?.nameKo}, 2번 4원소 역량: ${cards[1]?.nameKo}, 3번 1줄 마이크로 실행: ${cards[2]?.nameKo})를 각각 빠짐없이 본문에 녹여내어, 단순 요약 없이 오늘 당장 실천할 수 있는 명쾌하고 단호한 행동 솔루션을 전하는 800~1200자 내외의 구체적인 1:1 자기계발 실행 편지로 작성해 줘.`;
+        const prompt = `${sajuContextPrompt}${growthInquiryPromptAddon}\n\n사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 질문자(${recipientName} 님)의 사주 기질과 타로 3장의 원소적 상징 및 본래 뜻을 융합하여, 질문자의 고민을 직접 돌파하고 실질적인 역량 레벨업을 이뤄낼 수 있도록 온전히 초점을 맞춘 'message' (루시의 1:1 자기계발 실행 편지)와 실행 툴킷을 JSON으로 도출해 줘.\n\n특히 'message' 필드는 질문자(${recipientName} 님)를 정중하게 부르며, 질문자가 겪고 있는 고민("${effectiveInquiry || '실행 지체와 역량 성장'}")의 핵심을 날카롭게 짚고, 뽑힌 3장의 카드(1번 마인드셋: ${cards[0]?.nameKo}, 2번 4원소 역량: ${cards[1]?.nameKo}, 3번 1줄 마이크로 실행: ${cards[2]?.nameKo})의 도상 상징과 본래 뜻을 각각 빠짐없이 본문에 깊이 있게 해독하여, 카드의 뜻을 바탕으로 오늘 당장 실천할 수 있는 명쾌하고 단호한 행동 솔루션을 전하는 800~1200자 내외의 구체적인 1:1 자기계발 실행 편지로 작성해 줘.`;
         const res = await invokeLLM({
           messages: [
             { role: 'system', content: systemPrompt },

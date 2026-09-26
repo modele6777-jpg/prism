@@ -1,6 +1,7 @@
 import { TarotCard } from '@/data/tarotData';
 import { invokeLLMStructured } from '@/lib/ai';
 import { z } from 'zod';
+import { getTarotCardDetails } from '@/lib/dailyTarotOracle';
 
 export interface LucyTarotAdvice {
   headline: string;
@@ -59,14 +60,17 @@ export function buildDeterministicLucyAdvice(params: LucyTarotAdviceParams): Luc
     : null;
   const isReversed = !!primaryCard?.reversed;
   const cardName = primaryCard?.nameKo || primaryCard?.name || '운명의 인도자';
+  const details = primaryCard ? getTarotCardDetails(primaryCard) : null;
+  const cardMeaning = details ? (isReversed ? details.reversedCore : details.uprightCore) : '';
+  const cardSymbol = details?.symbolWord || '';
 
   // 1. Oracle Tarot Mode
   if (params.mode === 'oracle') {
     if (params.oracleMode === 'healing') {
       const headline = isReversed
-        ? `${nick}야, 조급해하지 말고 네 속도로 쉬어가도 돼`
-        : `${nick}야, 네 마음이 전하는 치유의 신호를 믿어봐`;
-      const advice = `지금 펼쳐진 [${cardName}]의 파동은 지친 네 마음에 깊은 온기가 필요하다고 말하고 있어. 남들의 속도나 기대에 맞추려 애쓰지 마. 잠시 모든 짐을 내려놓고 가만히 숨을 고르는 것만으로도 충분히 아름답고 온전해.`;
+        ? `${nick}야, [${cardName}]의 뜻처럼 조급해 말고 쉬어가도 돼`
+        : `${nick}야, [${cardName}] 카드가 전하는 치유의 뜻을 믿어봐`;
+      const advice = `지금 펼쳐진 [${cardName}] 카드는 ${cardSymbol ? `[${cardSymbol}]의 도상과 함께 ` : ''}“${cardMeaning || '지친 마음에 깊은 온기가 필요함'}”을 말해주고 있어. 남들의 속도나 기대에 맞추려 애쓰지 마. 잠시 모든 짐을 내려놓고 가만히 숨을 고르는 것만으로도 충분히 아름답고 온전해.`;
       const actionTip = `따뜻한 차 한 잔을 천천히 마시며 어깨에 들어간 긴장을 부드럽게 풀어줘.`;
       return {
         headline,
@@ -78,9 +82,9 @@ export function buildDeterministicLucyAdvice(params: LucyTarotAdviceParams): Luc
     } else {
       // Growth Mode
       const headline = isReversed
-        ? `${nick}야, 겉도는 생각 대신 내실을 먼저 단단히 다져봐`
-        : `${nick}야, 망설이지 말고 네 직관이 가리키는 곳으로 나아가`;
-      const advice = `오늘 모습을 드러낸 [${cardName}]의 기운은 네 안의 잠재력이 꽃피울 준비를 마쳤음을 보여줘. 두려움에 머뭇거리기보다, 오늘 네 손으로 이룰 수 있는 작은 성공 하나에 온 힘을 집중해 봐. 넌 이미 해낼 힘이 있어.`;
+        ? `${nick}야, [${cardName}]의 교훈처럼 내실을 먼저 단단히 다져봐`
+        : `${nick}야, [${cardName}]의 뜻처럼 네 직관이 가리키는 곳으로 나아가`;
+      const advice = `오늘 모습을 드러낸 [${cardName}] 카드는 ${cardSymbol ? `[${cardSymbol}]의 상징처럼 ` : ''}“${cardMeaning || '네 안의 잠재력이 꽃피울 준비를 마쳤음'}”을 선명하게 비춰주고 있어. 두려움에 머뭇거리기보다, 오늘 네 손으로 이룰 수 있는 작은 성공 하나에 온 힘을 집중해 봐. 넌 이미 해낼 힘이 있어.`;
       const actionTip = `오늘 할 일 중 가장 중요한 1가지를 정하고 망설임 없이 15분간 몰입해 보기.`;
       return {
         headline,
@@ -203,7 +207,14 @@ export async function getEnhancedLucyTarotAdvice(
     setTimeout(async () => {
       try {
         const cardsSummary = (params.cards || [])
-          .map((c) => `${c.nameKo} (${c.reversed ? '역방향' : '정방향'}${c.keywords ? ` - ${c.keywords.slice(0, 3).join(', ')}` : ''})`)
+          .map((c) => {
+            const d = getTarotCardDetails(c);
+            const orient = c.reversed ? '역방향' : '정방향';
+            const detailStr = d
+              ? ` (원형: ${d.archetype}, 상징: ${d.symbolWord}, 본래 뜻: ${c.reversed ? d.reversedCore : d.uprightCore})`
+              : '';
+            return `${c.nameKo} (${orient}${c.keywords ? ` - ${c.keywords.slice(0, 3).join(', ')}` : ''})${detailStr}`;
+          })
           .join(', ');
 
         const systemPrompt = `당신은 PRISM의 모든 차원을 인도하는 따뜻하고 통찰력 넘치는 AI 마스터 가이드 '루시(Lucy)'입니다.
@@ -211,8 +222,8 @@ export async function getEnhancedLucyTarotAdvice(
 
 [필수 원칙]:
 1. [루시 페르소나 어조]: 질문자(${params.nickname || '여행자'})에게 반말(~해봐, ~야, ~할 거야, ~을 잊지 마)로 100% 다정하고 명쾌하게 이야기하세요.
-2. [직관적 연계]: 질문자가 뽑은 카드([${cardsSummary || '타로 카드'}])의 영적 에너지와 질문 고민("${params.tarotConcern || '오늘의 운세'}")을 절묘하게 엮으세요.
-3. [간결성]: 길게 늘어놓지 말고 headline(15자 내외), advice(2~3문장), actionTip(1문장 실천), keyword(#키워드 2개)로 산뜻하게 정돈하세요.`;
+2. [★ 카드 상징과 본래 뜻 중심 리딩]: 질문자가 뽑은 카드([${cardsSummary || '타로 카드'}])의 고유한 도상 상징과 본질적인 의미(정/역방향의 깊은 뜻)를 조언의 가장 중요한 근거로 삼아, 카드의 본래 뜻을 중심으로 질문 고민("${params.tarotConcern || '오늘의 운세'}")을 명쾌하게 풀어내세요.
+3. [간결성]: 길게 늘어놓지 말고 headline(15자 내외 - 카드의 뜻 반영), advice(2~3문장 - 카드의 상징과 본래 의미를 자연스럽게 담을 것), actionTip(1문장 실천), keyword(#키워드 2개)로 산뜻하게 정돈하세요.`;
 
         const userMsg = `질문자: ${params.nickname || '여행자'}
 고민/질문: "${params.tarotConcern || '오늘의 타로 운세'}"

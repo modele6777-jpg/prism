@@ -6,6 +6,7 @@
 import { calculateDetailedSaju } from '@/lib/sajuAnalysis';
 import type { UserProfile } from '@/lib/sharedState';
 import { extractConciseSummary } from '@/lib/tarotSummaryUtils';
+import { getTarotCardDetails } from '@/lib/dailyTarotOracle';
 
 // ✨ Constants
 export const HS = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
@@ -753,12 +754,15 @@ export function buildTarotContextPromptAddon(opts: {
       .map((card, i) => {
         const label = card.nameKo || card.name || `카드 ${i + 1}`;
         const orient = card.reversed ? '역방향' : '정방향';
-        const kw = card.keywords?.length ? card.keywords.join(', ') : '';
-        return `· ${label} (${orient})${kw ? ` — 키워드: ${kw}` : ''}`;
+        const d = getTarotCardDetails(card);
+        const detailStr = d
+          ? ` — 원형: ${d.archetype} | 상징: ${d.symbolWord} | 본래 뜻: ${card.reversed ? d.reversedCore : d.uprightCore}`
+          : (card.keywords?.length ? ` — 키워드: ${card.keywords.join(', ')}` : '');
+        return `· ${label} (${orient})${detailStr}`;
       })
       .join('\n');
     blocks.push(
-      `[카드 키워드·방향 참고]\n${lines}\n역방향 카드는 키워드의 지연·내면·그림자 의미로 해석하십시오.`,
+      `[★ 뽑힌 카드의 고유한 상징과 본래 뜻 해독 가이드]\n${lines}\n- [필수 규칙]: 각 카드가 지닌 정통 도상(인물, 손에 쥔 도구, 배경 색채, 원소)과 고유한 본래 뜻을 리딩의 확고한 뼈대로 삼으십시오. 역방향 카드는 에너지가 내면으로 향하거나 성찰·재정비가 필요한 카드의 고유한 그림자 의미로 깊이 있게 해석하십시오.`,
     );
   }
   if (!blocks.length) return '';
@@ -799,9 +803,12 @@ export function buildTarotSpreadPromptAddon(
     ? cards
         .map(
           (card, i) => {
-            const orient = card.reversed ? ' [역방향]' : '';
-            const kw = card.keywords?.length ? ` (${card.keywords.slice(0, 3).join(', ')})` : '';
-            return `· ${spread.positions[i] || `${i + 1}번`}: **${card.nameKo || card.name || `카드 ${i + 1}`}**${orient}${kw}`;
+            const orient = card.reversed ? ' [역방향]' : ' [정방향]';
+            const d = getTarotCardDetails(card);
+            const detailStr = d
+              ? ` (상징: ${d.symbolWord}, 본래 뜻: ${card.reversed ? d.reversedCore : d.uprightCore})`
+              : (card.keywords?.length ? ` (${card.keywords.slice(0, 3).join(', ')})` : '');
+            return `· ${spread.positions[i] || `${i + 1}번`}: **${card.nameKo || card.name || `카드 ${i + 1}`}**${orient}${detailStr}`;
           },
         )
         .join('\n')
@@ -831,9 +838,10 @@ export function buildTarotSpreadPromptAddon(
 ${cardLines}
 
 [마스터 리딩 필수 규칙]
-1. 각 카드는 해당 위치의 의미(${spread.positions.join(' → ')})에 맞추어, 실제 타로 상담실에서 1:1로 카드를 짚어가며 들려주듯 생생한 대화체로 풀이하십시오.
-2. 딱딱한 나열식이 아니라, 카드들의 상징과 위치가 서로 말을 건네며 엮이는 하나의 생생한 운명 스토리로 해독하십시오.
-3. 타로의 점괘는 고정된 숙명이 아니라 현재의 흐름을 비추는 나침반임을 자연스럽게 일깨우며, 내담자 본인의 의지와 주체적 실천이 미래를 바꾼다는 긍정적 자율성과 용기를 북돋워 주십시오.${themeSpecificDirective}`;
+1. [★ 최우선 필수: 카드의 상징과 본래 뜻 중심 해독] 카드 이름만 언급하고 지나가는 단순한 수박 겉핥기식 해석을 엄격히 금지합니다. 해당 위치(${spread.positions.join(' → ')})에 놓인 각 카드의 도상학적 상징(그림 속 인물, 도구, 배경 색채, 원소)과 정방향/역방향의 깊은 뜻을 중심 근거로 삼아, 질문자의 고민과 밀접하게 결합하여 해독하십시오.
+2. 각 카드는 실제 타로 상담실에서 1:1로 카드를 짚어가며 들려주듯 생생한 대화체로 풀이하십시오.
+3. 딱딱한 나열식이 아니라, 카드들의 상징과 위치가 서로 말을 건네며 엮이는 하나의 생생한 운명 스토리로 해독하십시오.
+4. 타로의 점괘는 고정된 숙명이 아니라 현재의 흐름을 비추는 나침반임을 자연스럽게 일깨우며, 내담자 본인의 의지와 주체적 실천이 미래를 바꾼다는 긍정적 자율성과 용기를 북돋워 주십시오.${themeSpecificDirective}`;
 }
 
 /** 양자택일/결정형 질문일 때 타로 시스템 프롬프트에 붙이는 추가 지침 */
@@ -920,28 +928,28 @@ export function buildLocalTarotReading(concern: string, cards: any[], photoMode?
     .map((c, i) => {
       const pos = spread.positions[i] || `${i + 1}번 자리`;
       const name = c?.nameKo || c?.kr || `카드 ${i + 1}`;
-      const orient = c?.reversed ? ' (역방향)' : '';
-      const hint = localKeywordHint(c);
-      const kws = c?.keywords?.slice(0, 3).join(', ') || '성장과 통찰';
+      const orient = c?.reversed ? ' (역방향)' : ' (정방향)';
+      const d = getTarotCardDetails(c);
+      const meaningCore = c?.reversed ? d.reversedCore : d.uprightCore;
 
       let storyBody = '';
       if (i === 0 || pos.includes('현재') || pos.includes('마음') || pos.includes('상태') || pos.includes('원인')) {
         storyBody = c?.reversed
-          ? `현재 당신의 내면에서는 **${kws}**의 에너지가 일시적인 정체나 저항을 마주하고 있습니다. 조급해하기보다 깊은 호흡으로 마음의 중심을 잡아야 할 때입니다.`
-          : `지금 당신의 현실은 **${kws}**의 맑고 역동적인 파동 위에 놓여 있습니다. 직관이 가리키는 방향을 신뢰하고 차분하게 흐름을 타세요.`;
+          ? `현재 당신의 내면에서는 **${meaningCore}**의 흐름이 작용하고 있습니다. 도상 속 [${d.symbolWord}]이 말하듯 조급해하기보다 깊은 호흡으로 내면을 먼저 정돈해야 할 때입니다.`
+          : `지금 당신의 현실은 **${meaningCore}**의 맑고 역동적인 파동 위에 놓여 있습니다. [${d.symbolWord}]의 상징처럼 직관이 가리키는 방향을 신뢰하고 차분하게 흐름을 타세요.`;
       } else if (i === 1 || pos.includes('장애') || pos.includes('과정') || pos.includes('상황') || pos.includes('도전')) {
         storyBody = c?.reversed
-          ? `상황 속에서 **${kws}**와 관련된 집착이나 불안을 내려놓을 필요가 있습니다. 시야를 넓게 열어두면 막혔던 해답이 자연스럽게 모습을 드러냅니다.`
-          : `당신을 둘러싼 환경은 **${kws}**의 지혜를 통해 새로운 돌파구를 제시하고 있습니다. 유연한 태도가 상황을 당신의 편으로 이끕니다.`;
+          ? `상황 속에서 **${meaningCore}**와 관련된 불안이나 과열된 집착을 내려놓을 필요가 있습니다. [${d.archetype}]의 지혜처럼 시야를 넓게 열어두면 막혔던 해답이 자연스럽게 모습을 드러냅니다.`
+          : `당신을 둘러싼 환경은 **${meaningCore}**의 깊은 통찰을 통해 새로운 돌파구를 제시하고 있습니다. [${d.symbolWord}]이 주는 유연한 태도가 상황을 당신의 편으로 이끕니다.`;
       } else if (i === 2 || pos.includes('미래') || pos.includes('결과') || pos.includes('조언') || pos.includes('결실')) {
         storyBody = c?.reversed
-          ? `앞으로 다가올 전개는 **${kws}**의 균형을 요구합니다. 겉으로 드러나는 결과보다 내실을 충실히 채우면 더 큰 운이 열리게 됩니다.`
-          : `운명의 나침반은 마침내 **${kws}**의 눈부신 성취와 보상을 가리키고 있습니다. 확신을 갖고 한 걸음 더 전진하십시오.`;
+          ? `앞으로 다가올 전개는 **${meaningCore}**의 내실과 균형을 요구합니다. [${d.archetype}]의 가르침처럼 겉으로 드러나는 결과보다 내면의 진실을 충실히 채우면 더 큰 운이 열리게 됩니다.`
+          : `운명의 나침반은 마침내 **${meaningCore}**의 눈부신 성취와 보상을 가리키고 있습니다. [${d.symbolWord}]의 축복을 믿고 확신을 갖고 한 걸음 더 전진하십시오.`;
       } else {
-        storyBody = `이 자리는 **${kws}**의 상징을 통해, 삶의 중심을 지키며 유연하게 적응하는 지혜가 당신의 길을 비추는 나침반이 됨을 암시합니다.`;
+        storyBody = `이 자리는 [${d.archetype}]의 원형과 **${meaningCore}**의 상징을 통해, 삶의 중심을 지키며 지혜롭게 적응하는 것이 당신의 길을 비추는 나침반이 됨을 암시합니다.`;
       }
 
-      return `· **${pos} — [${name}${orient}]**\n  ${hint ? `_${hint}_\n  ` : ''}${storyBody}`;
+      return `· **${pos} — [${name}${orient}]**\n  _원형: ${d.archetype} | 상징: ${d.symbolWord}_\n  _본래 뜻: ${meaningCore}_\n  ${storyBody}`;
     })
     .join('\n\n');
 
