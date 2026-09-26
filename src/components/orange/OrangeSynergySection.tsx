@@ -41,8 +41,6 @@ import {
   getDynamicVibrationalAffirmation,
   getUserCounselingVibeContext,
   generateAIVibrationalAffirmation,
-  VIBE_PRESETS,
-  VibePreset,
   UserCounselingVibeContext
 } from '@/lib/vibrationalAffirmations';
 
@@ -81,12 +79,72 @@ const FALLBACK_CATALYST: QuantumCatalystData = {
 };
 
 const MANIFESTATION_CATEGORIES = [
-  { id: 'wealth', label: '금전 & 비즈니스 대박', icon: '💎', defaultWish: '월 3,000만원 이상의 자유로운 패시브 인컴과 재정적 독립' },
-  { id: 'career', label: '커리어 & 합격 & 승진', icon: '🚀', defaultWish: '원하던 글로벌 프로젝트 성공 및 꿈의 포지션 안착' },
-  { id: 'love', label: '운명적 사랑 & 소울메이트', icon: '💖', defaultWish: '서로를 깊이 존중하고 영혼을 성장시키는 평생의 인연' },
-  { id: 'health', label: '완벽한 생명력 & 활력', icon: '🌿', defaultWish: '지치지 않는 에너제틱한 건강과 맑고 깊은 숙면' },
-  { id: 'creative', label: '창작 & 영감 폭발', icon: '🎨', defaultWish: '세상을 놀라게 할 위대한 예술작품/콘텐츠 완성' },
-  { id: 'freedom', label: '공간/시간 완전한 자유', icon: '🕊️', defaultWish: '언제 어디서든 원하는 일을 하며 사는 라이프스타일' },
+  {
+    id: 'wealth',
+    label: '금전 & 비즈니스',
+    subLabel: '재정적 독립 · 무한 풍요',
+    icon: '💎',
+    vibe: '무한 풍요 & 기적',
+    vibeId: 'abundance',
+    frequency: 528,
+    freqLabel: '528Hz 풍요',
+    defaultWish: '월 3,000만원 이상의 자유로운 패시브 인컴과 재정적 독립'
+  },
+  {
+    id: 'career',
+    label: '커리어 & 도약',
+    subLabel: '합격 · 승진 · 전문성',
+    icon: '🚀',
+    vibe: '자신감 & 강력한 돌파',
+    vibeId: 'confidence',
+    frequency: 528,
+    freqLabel: '528Hz 돌파',
+    defaultWish: '원하던 글로벌 프로젝트 성공 및 꿈의 포지션 안착'
+  },
+  {
+    id: 'love',
+    label: '운명적 사랑 & 인연',
+    subLabel: '소울메이트 · 온기 회복',
+    icon: '💖',
+    vibe: '사랑 & 온기 회복',
+    vibeId: 'love',
+    frequency: 639,
+    freqLabel: '639Hz 조화',
+    defaultWish: '서로를 깊이 존중하고 영혼을 성장시키는 평생의 인연'
+  },
+  {
+    id: 'health',
+    label: '완벽한 생명력 & 활력',
+    subLabel: '건강 회복 · 평온과 이완',
+    icon: '🌿',
+    vibe: '평온 & 불안 정화',
+    vibeId: 'peace',
+    frequency: 432,
+    freqLabel: '432Hz 치유',
+    defaultWish: '지치지 않는 에너제틱한 건강과 맑고 깊은 숙면'
+  },
+  {
+    id: 'creative',
+    label: '창작 & 영감 폭발',
+    subLabel: '독창적 예술 · 직관 발현',
+    icon: '🎨',
+    vibe: '명료한 통찰 & 직관',
+    vibeId: 'clarity',
+    frequency: 741,
+    freqLabel: '741Hz 영감',
+    defaultWish: '세상을 놀라게 할 위대한 예술작품과 창작의 결실'
+  },
+  {
+    id: 'freedom',
+    label: '공간/시간 완전한 자유',
+    subLabel: '시공간 초월 · 자유로운 삶',
+    icon: '🕊️',
+    vibe: '해방 & 무한한 자유',
+    vibeId: 'freedom',
+    frequency: 852,
+    freqLabel: '852Hz 초월',
+    defaultWish: '언제 어디서든 원하는 일을 하며 사는 자유로운 라이프스타일'
+  },
 ];
 
 function formatWishDate(dateVal: any): string {
@@ -315,30 +373,6 @@ export function OrangeSynergySection() {
     }
   };
 
-  // When user selects a Vibe Preset Chip
-  const handleVibePresetSelect = (preset: VibePreset) => {
-    setSelectedVibe(preset.label);
-    setSelectedVibeId(preset.id);
-    safeLocalStorage.setItem('orange_catalyst_user_vibe', preset.label);
-
-    const nextIdx = affirmationCycleIndex + 1;
-    setAffirmationCycleIndex(nextIdx);
-    const { affirmation } = getDynamicVibrationalAffirmation(
-      selectedCategory,
-      targetWish,
-      dialValue,
-      nextIdx,
-      {
-        counselingTopic: vibeContext.counselingTopic,
-        currentVibe: preset.label
-      }
-    );
-    setCatalystData(prev => ({
-      ...prev,
-      vibrationalAnchorAffirmation: affirmation
-    }));
-  };
-
   // Custom Vibe Submission
   const handleCustomVibeSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -372,20 +406,25 @@ export function OrangeSynergySection() {
   const handleCategorySelect = (cat: typeof MANIFESTATION_CATEGORIES[0]) => {
     setSelectedCategory(cat.id);
     setTargetWish(cat.defaultWish);
+    setSelectedVibe(cat.vibe);
+    setSelectedVibeId(cat.vibeId);
+    setDialValue(cat.frequency);
+
     const nextIdx = affirmationCycleIndex + 1;
     setAffirmationCycleIndex(nextIdx);
     const { affirmation } = getDynamicVibrationalAffirmation(
       cat.id,
       cat.defaultWish,
-      dialValue,
+      cat.frequency,
       nextIdx,
       {
         counselingTopic: vibeContext.counselingTopic,
-        currentVibe: selectedVibe
+        currentVibe: cat.vibe
       }
     );
     setCatalystData(prev => ({
       ...prev,
+      manifestationFrequency: cat.frequency,
       vibrationalAnchorAffirmation: affirmation
     }));
   };
@@ -421,25 +460,28 @@ export function OrangeSynergySection() {
       (entry.category === 'courage' && c.id === 'career') ||
       (entry.category === 'dream' && c.id === 'creative') ||
       (entry.category === 'relationship' && c.id === 'love')
-    );
-    const catId = cat ? cat.id : selectedCategory;
-    if (cat) {
-      setSelectedCategory(cat.id);
-    }
+    ) || MANIFESTATION_CATEGORIES[0];
+
+    setSelectedCategory(cat.id);
+    setSelectedVibe(cat.vibe);
+    setSelectedVibeId(cat.vibeId);
+    setDialValue(cat.frequency);
+
     const nextIdx = affirmationCycleIndex + 1;
     setAffirmationCycleIndex(nextIdx);
     const { affirmation } = getDynamicVibrationalAffirmation(
-      catId,
+      cat.id,
       entry.wish,
-      dialValue,
+      cat.frequency,
       nextIdx,
       {
         counselingTopic: vibeContext.counselingTopic,
-        currentVibe: selectedVibe
+        currentVibe: cat.vibe
       }
     );
     setCatalystData(prev => ({
       ...prev,
+      manifestationFrequency: cat.frequency,
       vibrationalAnchorAffirmation: affirmation
     }));
   };
@@ -766,12 +808,12 @@ export function OrangeSynergySection() {
         <div className="flex items-center justify-between">
           <label className="text-xs font-bold text-orange-300 flex items-center gap-2 font-mono uppercase tracking-wider">
             <Radio size={16} className="text-orange-400" />
-            <span>1. 현실화하고자 하는 핵심 영역 선택</span>
+            <span>현실화 핵심 영역 선택</span>
           </label>
           <span className="text-[10px] text-white/40 font-sans">양자장 동판 각인</span>
         </div>
 
-        {/* Category Chips */}
+        {/* Category Chips - Unified Single Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {MANIFESTATION_CATEGORIES.map((cat) => {
             const isSelected = selectedCategory === cat.id;
@@ -780,14 +822,27 @@ export function OrangeSynergySection() {
                 key={cat.id}
                 type="button"
                 onClick={() => handleCategorySelect(cat)}
-                className={`p-3.5 rounded-2xl border text-left flex items-center gap-2.5 transition-all cursor-pointer ${
+                className={`p-3.5 rounded-2xl border text-left flex flex-col justify-between gap-2.5 transition-all cursor-pointer ${
                   isSelected
-                    ? 'bg-orange-500/25 border-orange-400/80 text-white shadow-[0_0_20px_rgba(249,115,22,0.3)] scale-[1.02]'
-                    : 'bg-white/[0.03] border-white/10 text-white/60 hover:bg-white/5 hover:text-white'
+                    ? 'bg-orange-500/25 border-orange-400/90 text-white shadow-[0_0_20px_rgba(249,115,22,0.35)] scale-[1.02] ring-1 ring-orange-400/50'
+                    : 'bg-white/[0.03] border-white/10 text-white/70 hover:bg-white/5 hover:text-white hover:border-orange-400/30'
                 }`}
               >
-                <span className="text-xl">{cat.icon}</span>
-                <span className="text-xs font-bold font-sans truncate">{cat.label}</span>
+                <div className="flex items-center gap-2.5">
+                  <span className="text-xl shrink-0">{cat.icon}</span>
+                  <div className="min-w-0">
+                    <span className="text-xs font-bold font-sans block truncate text-white">{cat.label}</span>
+                    <span className="text-[10px] text-white/40 block truncate">{cat.subLabel}</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between text-[9px] font-mono pt-1.5 border-t border-white/5">
+                  <span className={isSelected ? 'text-amber-300 font-bold' : 'text-white/40'}>
+                    {cat.freqLabel}
+                  </span>
+                  <span className={`px-1.5 py-0.5 rounded-full truncate max-w-[110px] ${isSelected ? 'bg-orange-500/30 text-orange-200 font-bold' : 'bg-white/5 text-white/40'}`}>
+                    {cat.vibe}
+                  </span>
+                </div>
               </button>
             );
           })}
@@ -815,7 +870,7 @@ export function OrangeSynergySection() {
             placeholder="예: 2026년 가을까지 온전한 경제적 자유를 이루고 사랑하는 사람들과 함께 세계를 여행한다..."
             className="w-full p-4 rounded-2xl bg-black/40 border border-white/10 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-orange-400/60 leading-relaxed resize-none font-sans"
           />
-          {recentWishingWellWish && (
+          {recentWishingWellWish && targetWish !== recentWishingWellWish && (
             <button
               type="button"
               onClick={() => {
@@ -832,7 +887,7 @@ export function OrangeSynergySection() {
               className="text-[11px] text-orange-300 hover:text-orange-200 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 px-3 py-1.5 rounded-full flex items-center gap-1.5 transition-all cursor-pointer mt-2"
             >
               <Sparkles size={12} className="text-orange-400 animate-pulse" />
-              <span>소원의 우물 최근 소원 불러오기: "{recentWishingWellWish.slice(0, 30)}{recentWishingWellWish.length > 30 ? '...' : ''}"</span>
+              <span>우물 최근 소원 적용: "{recentWishingWellWish.slice(0, 30)}{recentWishingWellWish.length > 30 ? '...' : ''}"</span>
             </button>
           )}
         </div>
@@ -890,36 +945,10 @@ export function OrangeSynergySection() {
             </form>
           )}
 
-          {/* Quick Vibe Preset Pills */}
-          <div className="space-y-1.5">
-            <div className="text-[10px] text-white/50 font-mono flex items-center justify-between">
-              <span>현재 진동 주파수 Vibe 선택:</span>
-              <span className="text-amber-300 font-bold">"{selectedVibe}"</span>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {VIBE_PRESETS.map((preset) => {
-                const isSelected = selectedVibeId === preset.id || selectedVibe === preset.label;
-                return (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    onClick={() => handleVibePresetSelect(preset)}
-                    className={`px-2.5 py-2 rounded-xl text-left border flex items-center gap-2 transition-all cursor-pointer group ${
-                      isSelected
-                        ? 'bg-orange-500/25 border-orange-400/90 text-white shadow-[0_0_12px_rgba(249,115,22,0.3)] font-bold'
-                        : 'bg-white/[0.02] hover:bg-orange-500/10 border-white/10 hover:border-orange-400/30 text-white/70 hover:text-white'
-                    }`}
-                  >
-                    <span className="text-sm shrink-0">{preset.icon}</span>
-                    <div className="min-w-0">
-                      <div className="text-[11px] truncate group-hover:text-amber-200 transition-colors font-sans">
-                        {preset.label}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+          {/* Current tuned Vibe indicator */}
+          <div className="flex items-center justify-between text-[11px] bg-black/30 p-2.5 rounded-xl border border-white/5">
+            <span className="text-white/60">선택된 핵심 영역 공명 Vibe:</span>
+            <span className="text-amber-300 font-bold font-mono">"{selectedVibe}"</span>
           </div>
         </div>
 
@@ -950,64 +979,66 @@ export function OrangeSynergySection() {
         </div>
 
         {/* Dynamic Vibrational Anchor Affirmation Interactive Preview Card */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-orange-950/40 via-amber-950/30 to-yellow-950/30 border border-orange-500/30 space-y-2.5 shadow-inner">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] text-orange-300 font-mono font-bold uppercase tracking-wider flex items-center gap-1.5">
-                <Zap size={13} className="text-yellow-400" />
-                VIBRATIONAL ANCHOR AFFIRMATION (주파수 고정 진동 확언)
-              </span>
-              <span className="text-[9px] px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 font-mono border border-orange-400/30">
-                {dialValue}Hz 동조
-              </span>
-              <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-200 font-mono border border-amber-400/30">
-                VIBE: {selectedVibe}
-              </span>
+        {!isSynthesized && (
+          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-orange-950/40 via-amber-950/30 to-yellow-950/30 border border-orange-500/30 space-y-2.5 shadow-inner">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] text-orange-300 font-mono font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <Zap size={13} className="text-yellow-400" />
+                  VIBRATIONAL ANCHOR AFFIRMATION (주파수 고정 진동 확언)
+                </span>
+                <span className="text-[9px] px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 font-mono border border-orange-400/30">
+                  {dialValue}Hz 동조
+                </span>
+                <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-200 font-mono border border-amber-400/30">
+                  VIBE: {selectedVibe}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => cycleNextAffirmation(1)}
+                  disabled={isAffirmationGenerating}
+                  title="상담 주제와 현재 기분(Vibe)에 맞춰 매번 새로운 고진동 확언으로 동적 교체"
+                  className="px-2.5 py-1 rounded-lg bg-orange-500/20 hover:bg-orange-500/30 text-orange-200 border border-orange-500/30 text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer hover:scale-105 active:scale-95 disabled:opacity-50"
+                >
+                  <RefreshCw size={11} className={`text-orange-300 ${isAffirmationGenerating ? 'animate-spin' : ''}`} />
+                  <span>{isAffirmationGenerating ? '확언 조율 중...' : '확언 셔플'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSpeakAffirmation}
+                  title="확언 음성 낭독"
+                  className={`p-1.5 rounded-lg border text-xs transition-all cursor-pointer ${
+                    isAffirmationSpeaking
+                      ? 'bg-amber-500 text-white border-amber-400 animate-pulse'
+                      : 'bg-white/5 hover:bg-white/10 text-white/70 border-white/10'
+                  }`}
+                >
+                  {isAffirmationSpeaking ? <VolumeX size={12} /> : <Volume2 size={12} />}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCopyAffirmation}
+                  title="확언 문장 복사"
+                  className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 border border-white/10 text-xs transition-all cursor-pointer"
+                >
+                  {copiedAffirmation ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                </button>
+              </div>
             </div>
 
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => cycleNextAffirmation(1)}
-                disabled={isAffirmationGenerating}
-                title="상담 주제와 현재 기분(Vibe)에 맞춰 매번 새로운 고진동 확언으로 동적 교체"
-                className="px-2.5 py-1 rounded-lg bg-orange-500/20 hover:bg-orange-500/30 text-orange-200 border border-orange-500/30 text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer hover:scale-105 active:scale-95 disabled:opacity-50"
-              >
-                <RefreshCw size={11} className={`text-orange-300 ${isAffirmationGenerating ? 'animate-spin' : ''}`} />
-                <span>{isAffirmationGenerating ? '확언 조율 중...' : '확언 셔플'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleSpeakAffirmation}
-                title="확언 음성 낭독"
-                className={`p-1.5 rounded-lg border text-xs transition-all cursor-pointer ${
-                  isAffirmationSpeaking
-                    ? 'bg-amber-500 text-white border-amber-400 animate-pulse'
-                    : 'bg-white/5 hover:bg-white/10 text-white/70 border-white/10'
-                }`}
-              >
-                {isAffirmationSpeaking ? <VolumeX size={12} /> : <Volume2 size={12} />}
-              </button>
-              <button
-                type="button"
-                onClick={handleCopyAffirmation}
-                title="확언 문장 복사"
-                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 border border-white/10 text-xs transition-all cursor-pointer"
-              >
-                {copiedAffirmation ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-              </button>
+            <p className="text-xs sm:text-sm font-bold text-amber-100 leading-relaxed tracking-tight break-keep">
+              "{catalystData.vibrationalAnchorAffirmation}"
+            </p>
+
+            <div className="text-[10px] text-white/40 flex items-center gap-1 font-mono">
+              <Sparkles size={10} className="text-amber-400" />
+              <span>최근 대화 상담 맥락 및 '{selectedVibe}' Vibe 파동이 결합되어 실시간 생성된 확언입니다.</span>
             </div>
           </div>
-
-          <p className="text-xs sm:text-sm font-bold text-amber-100 leading-relaxed tracking-tight break-keep">
-            "{catalystData.vibrationalAnchorAffirmation}"
-          </p>
-
-          <div className="text-[10px] text-white/40 flex items-center gap-1 font-mono">
-            <Sparkles size={10} className="text-amber-400" />
-            <span>최근 대화 상담 맥락 및 '{selectedVibe}' Vibe 파동이 결합되어 실시간 생성된 확언입니다.</span>
-          </div>
-        </div>
+        )}
 
         <button
           onClick={handleAccelerateManifestation}
