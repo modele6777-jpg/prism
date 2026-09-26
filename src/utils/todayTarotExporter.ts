@@ -45,15 +45,21 @@ export function formatTodayTarotShareText(data: TarotShareData): string {
   return formatTarotShareText(data);
 }
 
+function isDailyTarotQuery(text?: string | null): boolean {
+  if (!text) return false;
+  return /(?:오늘의?\s*타로|오늘의?\s*운세|오늘의?\s*카드|오늘\s*타로|오늘\s*운세|데일리\s*타로|데일리\s*오라클|일일\s*타로|daily\s*tarot|daily\s*oracle|^오늘$|^daily$)/i.test(text.trim());
+}
+
 export function formatTarotShareText(data: TarotShareData): string {
   const cards: TarotCardShareItem[] = (data.cards && data.cards.length > 0)
     ? data.cards
     : (data.card ? [data.card] : []);
 
-  const title = data.title || (cards.length > 1 ? '78장 타로 마스터 비전 리딩' : '오늘의 데일리 타로 리딩');
+  const isDaily = isDailyTarotQuery(data.title) || isDailyTarotQuery(data.concern) || isDailyTarotQuery(data.spreadName);
+  const title = data.title || (cards.length > 1 ? '78장 타로 마스터 비전 리딩' : '오늘의 데일리 타로');
   const dateText = data.dateStr || new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
-  const spreadText = data.spreadName ? ` · ${data.spreadName}` : '';
-  const concernText = data.concern ? `\n💬 질문/고민: "${data.concern}"\n` : '';
+  const spreadText = (!isDaily && data.spreadName) ? ` · ${data.spreadName}` : '';
+  const concernText = (!isDaily && data.concern && !isDailyTarotQuery(data.concern)) ? `\n💬 질문/고민: "${data.concern}"\n` : '';
 
   // Cards summary text
   let cardsSection = '';
@@ -267,7 +273,8 @@ export async function generateTarotCardCanvas(data: TarotShareData): Promise<HTM
   ctx.letterSpacing = '6px';
   ctx.fillText('✦ PRISM TRINITY ORACLE ✦', width / 2, 95);
 
-  const mainTitle = data.title || (cards.length > 1 ? '78장 타로 마스터 비전' : '오늘의 데일리 타로 리딩');
+  const isDaily = isDailyTarotQuery(data.title) || isDailyTarotQuery(data.concern) || isDailyTarotQuery(data.spreadName);
+  const mainTitle = data.title || (cards.length > 1 ? '78장 타로 마스터 비전' : '오늘의 데일리 타로');
   ctx.fillStyle = '#fef08a';
   ctx.font = 'bold 36px -apple-system, BlinkMacSystemFont, "Pretendard", "Noto Sans KR", sans-serif';
   ctx.letterSpacing = '1px';
@@ -279,7 +286,7 @@ export async function generateTarotCardCanvas(data: TarotShareData): Promise<HTM
     month: '2-digit',
     day: '2-digit',
   });
-  const spreadBadgeText = data.spreadName ? `${todayFormatted} · ${data.spreadName}` : todayFormatted;
+  const spreadBadgeText = (!isDaily && data.spreadName) ? `${todayFormatted} · ${data.spreadName}` : todayFormatted;
 
   ctx.fillStyle = 'rgba(250, 204, 21, 0.15)';
   ctx.strokeStyle = 'rgba(250, 204, 21, 0.4)';
@@ -296,9 +303,9 @@ export async function generateTarotCardCanvas(data: TarotShareData): Promise<HTM
   ctx.letterSpacing = '1px';
   ctx.fillText(spreadBadgeText, width / 2, 183);
 
-  // Question/Concern banner if provided
+  // Question/Concern banner if provided (skip for daily tarot or empty)
   let cardSectionStartY = 215;
-  if (data.concern && data.concern !== '오늘의 타로') {
+  if (!isDaily && data.concern && !isDailyTarotQuery(data.concern)) {
     ctx.fillStyle = 'rgba(168, 85, 247, 0.12)';
     ctx.strokeStyle = 'rgba(168, 85, 247, 0.35)';
     ctx.lineWidth = 1;

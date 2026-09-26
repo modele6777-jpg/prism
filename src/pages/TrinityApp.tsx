@@ -3256,8 +3256,8 @@ function playDailyCardChimeAsync() {
                                         <TodayTarotShareButton
                                           data={{
                                             title: isDailyTarotConcern(tarotConcern) ? '오늘의 데일리 타로' : (tarotSpreadRecommendation?.name || '78장 타로 마스터 비전'),
-                                            concern: tarotConcern,
-                                            spreadName: tarotSpreadRecommendation?.name,
+                                            concern: isDailyTarotConcern(tarotConcern) ? undefined : tarotConcern,
+                                            spreadName: isDailyTarotConcern(tarotConcern) ? undefined : tarotSpreadRecommendation?.name,
                                             cards: drawnCards && drawnCards.length > 0
                                               ? drawnCards.map((c, i) => ({
                                                   id: c.id,
@@ -3425,8 +3425,8 @@ function playDailyCardChimeAsync() {
                                   <TodayTarotShareButton
                                     data={{
                                       title: isDailyTarotConcern(tarotConcern) ? '오늘의 데일리 타로' : (tarotSpreadRecommendation?.name || '78장 타로 마스터 비전'),
-                                      concern: tarotConcern,
-                                      spreadName: tarotSpreadRecommendation?.name,
+                                      concern: isDailyTarotConcern(tarotConcern) ? undefined : tarotConcern,
+                                      spreadName: isDailyTarotConcern(tarotConcern) ? undefined : tarotSpreadRecommendation?.name,
                                       cards: drawnCards && drawnCards.length > 0
                                         ? drawnCards.map((c, i) => ({
                                             id: c.id,

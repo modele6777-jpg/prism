@@ -52,6 +52,7 @@ export function TodayTarotNarrationModal({
   }, [dailyResult]);
 
   const shareData: TodayTarotShareData = useMemo(() => ({
+    title: '오늘의 데일리 타로',
     card: narrationData.card,
     dateStr: narrationData.dateKey
       ? `${narrationData.dateKey.slice(0, 4)}. ${narrationData.dateKey.slice(4, 6)}. ${narrationData.dateKey.slice(6, 8)}`
@@ -172,30 +173,36 @@ export function TodayTarotNarrationModal({
             style={{ background: 'radial-gradient(circle, #f59e0b 0%, #6366f1 50%, transparent 80%)' }}
           />
 
-          {/* Close Button */}
-          <button
-            type="button"
-            onClick={handleClose}
-            className="absolute top-4 right-4 p-2 rounded-full text-white/50 hover:text-white hover:bg-white/10 transition-colors cursor-pointer z-10"
-            title="닫기"
-          >
-            <X size={18} />
-          </button>
-
-          {/* Header Title */}
-          <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-3 pr-10 flex-wrap">
-            <div className="flex flex-col justify-start gap-1">
+          {/* Header Title & Top Actions */}
+          <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-3">
+            <div className="flex flex-col justify-start gap-1 min-w-0">
               <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.25em] text-yellow-400 font-mono">
-                <Sparkles size={13} className="text-yellow-400 animate-pulse" />
-                <span>오늘의 타로 오라클 (Today&apos;s Tarot Oracle)</span>
+                <Sparkles size={13} className="text-yellow-400 animate-pulse shrink-0" />
+                <span className="truncate">오늘의 타로 오라클 (Today&apos;s Tarot Oracle)</span>
               </div>
-              <h2 className="text-lg sm:text-xl font-display font-bold text-white tracking-tight flex items-center gap-2">
+              <h2 className="text-base sm:text-lg font-display font-bold text-white tracking-tight flex items-center gap-2 truncate">
                 <span>오늘의 타로 리딩 & 음성 낭독</span>
               </h2>
             </div>
-            {card && (
-              <TodayTarotShareButton data={shareData} variant="primary" label="결과 공유 / 소장" />
-            )}
+
+            <div className="flex items-center gap-2 shrink-0">
+              {card && (
+                <TodayTarotShareButton
+                  data={shareData}
+                  variant="compact"
+                  label="공유 / 소장"
+                  className="bg-yellow-500/15 hover:bg-yellow-500/25 border-yellow-500/35 text-yellow-300 shadow-sm"
+                />
+              )}
+              <button
+                type="button"
+                onClick={handleClose}
+                className="p-1.5 sm:p-2 rounded-full text-white/50 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                title="닫기"
+              >
+                <X size={18} />
+              </button>
+            </div>
           </div>
 
           {/* Card Showcase Banner or Empty State */}
@@ -344,8 +351,6 @@ export function TodayTarotNarrationModal({
                       Kore
                     </button>
                   </div>
-
-                  <TodayTarotShareButton data={shareData} variant="secondary" label="결과 공유" />
                 </div>
               </div>
             </div>

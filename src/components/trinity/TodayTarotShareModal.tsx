@@ -133,7 +133,10 @@ export function TodayTarotShareModal({ isOpen, onClose, data }: TodayTarotShareM
 
   const cards = (data.cards && data.cards.length > 0) ? data.cards : (data.card ? [data.card] : []);
   const cardNames = cards.map((c) => c.nameKo).join(', ') || '타로 카드';
-  const displayTitle = data.title || (cards.length > 1 ? '타로 마스터 비전' : '오늘의 데일리 타로');
+  const isDaily = /(?:오늘의?\s*타로|오늘의?\s*운세|오늘의?\s*카드|오늘\s*타로|오늘\s*운세|데일리\s*타로|데일리\s*오라클|일일\s*타로)/i.test(
+    `${data.title || ''} ${data.concern || ''} ${data.spreadName || ''}`
+  );
+  const displayTitle = data.title || (isDaily ? '오늘의 데일리 타로' : (cards.length > 1 ? '78장 타로 마스터 비전' : '오늘의 데일리 타로'));
   const hasNativeShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
   return (
@@ -142,7 +145,7 @@ export function TodayTarotShareModal({ isOpen, onClose, data }: TodayTarotShareM
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md"
+        className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md"
         onClick={onClose}
       >
         <motion.div
@@ -159,28 +162,29 @@ export function TodayTarotShareModal({ isOpen, onClose, data }: TodayTarotShareM
             style={{ background: 'radial-gradient(circle, #eab308 0%, #a855f7 50%, transparent 80%)' }}
           />
 
-          {/* Close Button */}
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-full text-white/50 hover:text-white hover:bg-white/10 transition-colors cursor-pointer z-10"
-            title="닫기"
-          >
-            <X size={18} />
-          </button>
-
-          {/* Header Title */}
-          <div className="flex flex-col justify-start gap-1 border-b border-white/10 pb-3 pr-8">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.25em] text-yellow-400 font-mono">
-              <Sparkles size={12} className="text-yellow-400 animate-pulse" />
-              <span>TAROT RESULT SHARE</span>
+          {/* Header Title & Close Button */}
+          <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-3">
+            <div className="flex flex-col justify-start gap-1 min-w-0">
+              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.25em] text-yellow-400 font-mono">
+                <Sparkles size={12} className="text-yellow-400 animate-pulse shrink-0" />
+                <span>TAROT RESULT SHARE</span>
+              </div>
+              <h2 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2 truncate">
+                <span>{displayTitle} 결과 공유 & 소장</span>
+              </h2>
+              <p className="text-xs text-white/60 font-sans truncate">
+                선택된 카드 <strong>[{cardNames}]</strong> 결과 저장 및 공유
+              </p>
             </div>
-            <h2 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
-              <span>{displayTitle} 결과 공유 & 소장</span>
-            </h2>
-            <p className="text-xs text-white/60 font-sans">
-              선택된 카드 <strong>[{cardNames}]</strong> 결과를 텍스트로 복사하거나 고화질 카드로 저장하세요.
-            </p>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 sm:p-2 rounded-full text-white/50 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+              title="닫기"
+            >
+              <X size={18} />
+            </button>
           </div>
 
           {/* Success Banner */}
