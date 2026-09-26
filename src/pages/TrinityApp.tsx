@@ -94,6 +94,7 @@ import { TarotSpread } from "@/components/trinity/TarotSpread";
 import { TarotSpreadSelectionModal } from "@/components/trinity/TarotSpreadSelectionModal";
 import { TodayTarotNarrationModal } from "@/components/trinity/TodayTarotNarrationModal";
 import { LucyTarotAdviceCard } from "@/components/trinity/LucyTarotAdviceCard";
+import { TodayTarotShareButton } from "@/components/trinity/TodayTarotShareModal";
 import { TarotCard, TAROT_DECK, getTarotCardImageUrl } from "@/data/tarotData";
 import { shuffleCardDeck } from "@/lib/cardShuffle";
 import { playTTS, playTTSInChunks, playConversation, stopTTS, useTTSActive, useTTSState, prefetchTTS, prepareNaturalSpeechText } from "@/utils/tts";
@@ -3250,6 +3251,23 @@ function playDailyCardChimeAsync() {
                                         Trinity's Insight
                                       </h4>
                                     </div>
+                                    <div className="flex items-center gap-2">
+                                      {tarotResult && !isTarotGenerating && (
+                                        <TodayTarotShareButton
+                                          data={{
+                                            card: drawnCards?.[0] || (dailyResult?.drawnCard ?? (dailyDrawnCard ?? null)),
+                                            dateStr: new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }),
+                                            conciseSummaryBullets: conciseSummaryBullets,
+                                            diagnosis: displayTarotResult || tarotResult,
+                                            rawBlessing: dailyResult?.blessing,
+                                            frequency: dailyResult?.frequency,
+                                            luckyNumber: dailyResult?.luckyNumber,
+                                            luckyColor: dailyResult?.luckyColor,
+                                          }}
+                                          variant="compact"
+                                          label="공유"
+                                        />
+                                      )}
                                     <button
                                         type="button"
                                         onClick={async () => {
@@ -3269,6 +3287,7 @@ function playDailyCardChimeAsync() {
                                         {isFullReadingTTSActive ? <VolumeX size={12} /> : <Volume2 size={12} />}
                                         <span>{isFullReadingTTSActive ? "중지" : "전체 낭독"}</span>
                                       </button>
+                                    </div>
                                   </div>
 
                                   <div
@@ -3371,8 +3390,8 @@ function playDailyCardChimeAsync() {
                             {/* Tarot Result Bottom Actions: Deep Insight with Lucy + Redraw */}
                             {tarotResult && !isTarotGenerating && (
                               <div className="pt-3 border-t border-white/10 flex flex-col gap-3 w-full shrink-0">
-                                {/* Redraw Button */}
-                                <div className="flex justify-center pt-1">
+                                {/* Redraw & Share Buttons */}
+                                <div className="flex items-center justify-center gap-2.5 pt-1 flex-wrap">
                                   {isDailyTarotConcern(tarotConcern) || isTrinityDailyLockedToday() ? (
                                     <div className="text-[11px] text-yellow-300/80 font-sans py-2 px-5 rounded-full bg-yellow-500/10 border border-yellow-500/25 flex items-center gap-1.5 shadow-sm">
                                       <Sparkles size={12} className="text-yellow-400" />
@@ -3389,6 +3408,20 @@ function playDailyCardChimeAsync() {
                                       <span>새로운 리딩 (Redraw)</span>
                                     </button>
                                   )}
+                                  <TodayTarotShareButton
+                                    data={{
+                                      card: drawnCards?.[0] || (dailyResult?.drawnCard ?? (dailyDrawnCard ?? null)),
+                                      dateStr: new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }),
+                                      conciseSummaryBullets: conciseSummaryBullets,
+                                      diagnosis: displayTarotResult || tarotResult,
+                                      rawBlessing: dailyResult?.blessing,
+                                      frequency: dailyResult?.frequency,
+                                      luckyNumber: dailyResult?.luckyNumber,
+                                      luckyColor: dailyResult?.luckyColor,
+                                    }}
+                                    variant="secondary"
+                                    label="결과 공유 / 소장"
+                                  />
                                 </div>
 
                                 {/* Lucy Deep Insight Card */}

@@ -21,6 +21,8 @@ import {
   type TarotNarrationChapter,
 } from '@/lib/todayTarotNarration';
 import { LucyTarotAdviceCard } from './LucyTarotAdviceCard';
+import { TodayTarotShareButton } from './TodayTarotShareModal';
+import { type TodayTarotShareData } from '@/utils/todayTarotExporter';
 
 export interface TodayTarotNarrationModalProps {
   isOpen: boolean;
@@ -48,6 +50,19 @@ export function TodayTarotNarrationModal({
   const narrationData = useMemo(() => {
     return buildTarotNarrationContent(dailyResult);
   }, [dailyResult]);
+
+  const shareData: TodayTarotShareData = useMemo(() => ({
+    card: narrationData.card,
+    dateStr: narrationData.dateKey
+      ? `${narrationData.dateKey.slice(0, 4)}. ${narrationData.dateKey.slice(4, 6)}. ${narrationData.dateKey.slice(6, 8)}`
+      : undefined,
+    conciseSummaryBullets: narrationData.conciseSummaryBullets,
+    diagnosis: narrationData.cleanDiagnosis || narrationData.rawDiagnosis,
+    rawBlessing: narrationData.rawBlessing,
+    frequency: narrationData.frequency,
+    luckyNumber: narrationData.luckyNumber,
+    luckyColor: narrationData.luckyColor,
+  }), [narrationData]);
 
   // Clean up TTS audio on close
   const handleClose = useCallback(() => {
@@ -168,14 +183,19 @@ export function TodayTarotNarrationModal({
           </button>
 
           {/* Header Title */}
-          <div className="flex flex-col justify-start gap-1 border-b border-white/10 pb-3 pr-8">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.25em] text-yellow-400 font-mono">
-              <Sparkles size={13} className="text-yellow-400 animate-pulse" />
-              <span>오늘의 타로 오라클 (Today&apos;s Tarot Oracle)</span>
+          <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-3 pr-10 flex-wrap">
+            <div className="flex flex-col justify-start gap-1">
+              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.25em] text-yellow-400 font-mono">
+                <Sparkles size={13} className="text-yellow-400 animate-pulse" />
+                <span>오늘의 타로 오라클 (Today&apos;s Tarot Oracle)</span>
+              </div>
+              <h2 className="text-lg sm:text-xl font-display font-bold text-white tracking-tight flex items-center gap-2">
+                <span>오늘의 타로 리딩 & 음성 낭독</span>
+              </h2>
             </div>
-            <h2 className="text-lg sm:text-xl font-display font-bold text-white tracking-tight flex items-center gap-2">
-              <span>오늘의 타로 리딩 & 음성 낭독</span>
-            </h2>
+            {card && (
+              <TodayTarotShareButton data={shareData} variant="primary" label="결과 공유 / 소장" />
+            )}
           </div>
 
           {/* Card Showcase Banner or Empty State */}
@@ -325,14 +345,7 @@ export function TodayTarotNarrationModal({
                     </button>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handleCopyText}
-                    className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition-all cursor-pointer"
-                    title="타로 결과 전체 복사"
-                  >
-                    {isCopied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
-                  </button>
+                  <TodayTarotShareButton data={shareData} variant="secondary" label="결과 공유" />
                 </div>
               </div>
             </div>
@@ -351,19 +364,22 @@ export function TodayTarotNarrationModal({
                     Trinity&apos;s Insight
                   </h4>
                 </div>
-                <button
-                  type="button"
-                  onClick={handlePlayFullNarration}
-                  className={`px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                    isFullPlaying
-                      ? 'bg-yellow-500/25 text-yellow-300 border border-yellow-400/40 animate-pulse'
-                      : 'bg-white/10 hover:bg-white/20 text-white/90 border border-white/15'
-                  }`}
-                  title={isFullPlaying ? '낭독 중지하기' : '전체 리딩 음성으로 듣기'}
-                >
-                  {isFullPlaying ? <VolumeX size={12} /> : <Volume2 size={12} />}
-                  <span>{isFullPlaying ? '중지' : '전체 낭독'}</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <TodayTarotShareButton data={shareData} variant="compact" label="공유" />
+                  <button
+                    type="button"
+                    onClick={handlePlayFullNarration}
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                      isFullPlaying
+                        ? 'bg-yellow-500/25 text-yellow-300 border border-yellow-400/40 animate-pulse'
+                        : 'bg-white/10 hover:bg-white/20 text-white/90 border border-white/15'
+                    }`}
+                    title={isFullPlaying ? '낭독 중지하기' : '전체 리딩 음성으로 듣기'}
+                  >
+                    {isFullPlaying ? <VolumeX size={12} /> : <Volume2 size={12} />}
+                    <span>{isFullPlaying ? '중지' : '전체 낭독'}</span>
+                  </button>
+                </div>
               </div>
 
               {/* ✨ 핵심 3줄 요약 카드 (Quick Summary) — 다른 타로 리딩과 100% 동일 */}
@@ -478,8 +494,11 @@ export function TodayTarotNarrationModal({
               <div />
             )}
 
-            {/* Right: Consult Lucy & Close */}
-            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            {/* Right: Share, Consult Lucy & Close */}
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
+              {card && (
+                <TodayTarotShareButton data={shareData} variant="secondary" label="결과 공유하기" />
+              )}
               {onConsultLucy && (
                 <button
                   type="button"
