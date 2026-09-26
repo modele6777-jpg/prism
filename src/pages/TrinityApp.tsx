@@ -60,6 +60,7 @@ import {
   Coins,
   Lock,
   Trash2,
+  ZoomIn,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useApp, getPersistentUserProfile, setPersistentUserProfile } from "@/contexts/AppContext";
@@ -95,6 +96,7 @@ import { TarotSpreadSelectionModal } from "@/components/trinity/TarotSpreadSelec
 import { TodayTarotNarrationModal } from "@/components/trinity/TodayTarotNarrationModal";
 import { LucyTarotAdviceCard } from "@/components/trinity/LucyTarotAdviceCard";
 import { TodayTarotShareButton } from "@/components/trinity/TodayTarotShareModal";
+import { TarotCardZoomModal } from "@/components/trinity/TarotCardZoomModal";
 import { TarotCard, TAROT_DECK, getTarotCardImageUrl } from "@/data/tarotData";
 import { shuffleCardDeck } from "@/lib/cardShuffle";
 import { playTTS, playTTSInChunks, playConversation, stopTTS, useTTSActive, useTTSState, prefetchTTS, prepareNaturalSpeechText } from "@/utils/tts";
@@ -1496,6 +1498,7 @@ function playDailyCardChimeAsync() {
   const [tarotVirtualMode, setTarotVirtualMode] = useState(false);
   const [tarotResult, setTarotResult] = useState<string | null>(null);
   const [drawnCards, setDrawnCards] = useState<TarotCard[] | null>(null);
+  const [zoomedCard, setZoomedCard] = useState<{ card: TarotCard; slotName?: string } | null>(null);
   const [hideTarotPopup, setHideTarotPopup] = useState(false);
   const [tarotSubMessages, setTarotSubMessages] = useState<
     { role: "user" | "model"; content: string }[]
@@ -3197,9 +3200,15 @@ function playDailyCardChimeAsync() {
                             <div className="flex-1 overflow-y-auto no-scrollbar space-y-5 pb-6">
                               {drawnCards && (
                                 <div className="space-y-2">
-                                  <p className="text-center text-[10px] text-yellow-500/70 font-bold uppercase tracking-widest">
-                                    {tarotSpreadRecommendation.name}
-                                  </p>
+                                  <div className="flex items-center justify-center gap-2 flex-wrap text-center">
+                                    <p className="text-[10px] text-yellow-500/80 font-bold uppercase tracking-widest">
+                                      {tarotSpreadRecommendation.name}
+                                    </p>
+                                    <span className="text-[10px] text-yellow-300/60 font-sans flex items-center gap-1">
+                                      <ZoomIn size={11} className="text-yellow-400" />
+                                      <span>(카드 클릭 시 크게 보기)</span>
+                                    </span>
+                                  </div>
                                   <div className="flex gap-3 flex-wrap justify-center p-3 max-w-full">
                                   {drawnCards.map((c, i) => {
                                     const visual = getTarotCardVisual(c);
@@ -3207,16 +3216,25 @@ function playDailyCardChimeAsync() {
                                     return (
                                       <div
                                         key={i}
-                                        className="w-20 min-h-[7.5rem] bg-zinc-900 border border-yellow-500/50 rounded-2xl flex flex-col items-center justify-between p-2 text-center shadow-[0_0_20px_rgba(234,179,8,0.2)] relative overflow-hidden group hover:border-yellow-400 hover:shadow-[0_0_25px_rgba(234,179,8,0.4)] transition-all duration-300 cursor-pointer"
+                                        onClick={() => setZoomedCard({ card: c, slotName: positionLabel })}
+                                        className="w-20 min-h-[7.5rem] bg-zinc-900 border border-yellow-500/50 rounded-2xl flex flex-col items-center justify-between p-2 text-center shadow-[0_0_20px_rgba(234,179,8,0.2)] relative overflow-hidden group hover:border-yellow-400 hover:shadow-[0_0_25px_rgba(234,179,8,0.4)] transition-all duration-300 cursor-zoom-in active:scale-95"
+                                        title={`${c.nameKo} 카드 크게 보기`}
                                       >
                                         <img 
                                           src={getTarotCardImageUrl(c)} 
                                           alt={c.name}
                                           style={{ transform: c.reversed ? "rotate(180deg)" : undefined }}
-                                          className="absolute inset-0 w-full h-full object-cover z-0 opacity-80 group-hover:opacity-100 transition-opacity duration-300" 
+                                          className="absolute inset-0 w-full h-full object-cover z-0 opacity-80 group-hover:opacity-100 transition-all duration-300 group-hover:scale-105" 
                                         />
                                         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/35 to-black/60 z-10 pointer-events-none" />
                                         
+                                        {/* Hover Zoom Icon Badge */}
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity z-20 pointer-events-none">
+                                          <div className="w-6 h-6 rounded-full bg-yellow-500/90 text-black flex items-center justify-center shadow-lg">
+                                            <ZoomIn size={12} />
+                                          </div>
+                                        </div>
+
                                         <div className="flex justify-between items-center w-full z-20 shrink-0 text-[6px] font-mono text-yellow-500/60">
                                           <span className="truncate max-w-[70%]">{positionLabel}</span>
                                           <Sparkles size={6} className="text-yellow-400 shrink-0" />
@@ -4026,6 +4044,14 @@ function playDailyCardChimeAsync() {
         currentSpread={tarotSpreadRecommendation}
         isAutoRecommended={isAutoRecommended}
         onSelectSpread={(spread) => setCustomSpread(spread)}
+      />
+
+      {/* Tarot Card Zoom / Detail Inspection Modal */}
+      <TarotCardZoomModal
+        isOpen={!!zoomedCard}
+        onClose={() => setZoomedCard(null)}
+        card={zoomedCard?.card ?? null}
+        slotName={zoomedCard?.slotName}
       />
     </div>
   );

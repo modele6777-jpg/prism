@@ -5,7 +5,7 @@ import {
   Sparkles, Heart, Flame, Wind, Coins, BookOpen, Volume2, VolumeX,
   CheckCircle2, RotateCcw, Zap, Sun, Moon, Feather, Check, Palette, ArrowRight, Share2,
   Compass, Shield, ShieldCheck, User, Calendar, Clock, X, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Eye, Layers,
-  Copy
+  Copy, ZoomIn
 } from 'lucide-react';
 import { TAROT_DECK, TarotCard, getTarotCardImageUrl } from '@/data/tarotData';
 import { TarotSpread, SelectedTarotCardEntry } from './TarotSpread';
@@ -13,6 +13,7 @@ import { invokeLLM } from '@/lib/ai';
 import { playTTS, playTTSInChunks, prefetchTTS, stopTTS, useTTSActive, useTTSState, prepareNaturalSpeechText } from '@/utils/tts';
 import { LucyTarotAdviceCard } from './LucyTarotAdviceCard';
 import { TarotResultShareButton } from './TodayTarotShareModal';
+import { TarotCardZoomModal } from './TarotCardZoomModal';
 import { type TarotShareData } from '@/utils/todayTarotExporter';
 import { sendPrismToss } from '@/lib/prismToss';
 import { MUSE_ART_CATALOG } from '@/lib/museDailyArt';
@@ -280,6 +281,8 @@ export function TrinityOracleSection() {
     }
     return 'healing';
   });
+
+  const [zoomedCard, setZoomedCard] = useState<{ card: TarotCard; slotName?: string } | null>(null);
 
   // Track whether the user has explicitly selected a mode or needs to choose
   const [isModeChosen, setIsModeChosen] = useState<boolean>(() => {
@@ -1258,12 +1261,19 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
         {/* Card Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
           <div className="flex items-center gap-3.5">
-            <div className="w-14 h-20 rounded-xl overflow-hidden border border-amber-400/40 shadow-md shrink-0">
+            <div
+              onClick={() => setZoomedCard({ card, slotName: `#${idx + 1} ${slotPositions[idx]}` })}
+              className="group/cardthumb relative w-14 h-20 rounded-xl overflow-hidden border border-amber-400/40 hover:border-amber-400 shadow-md hover:shadow-amber-500/20 shrink-0 cursor-zoom-in transition-all"
+              title="클릭하여 카드 크게 보기"
+            >
               <img
                 src={getTarotCardImageUrl(card)}
                 alt={card.nameKo}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover transition-transform duration-300 group-hover/cardthumb:scale-105"
               />
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/cardthumb:opacity-100 flex items-center justify-center transition-opacity">
+                <ZoomIn className="w-4 h-4 text-amber-300 drop-shadow" />
+              </div>
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -1902,12 +1912,19 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
               <div className="flex flex-wrap items-center justify-around gap-3 flex-1 w-full">
                 {drawnCards.map((card, idx) => (
                   <div key={card.id} className="flex items-center gap-3">
-                    <div className="w-12 h-18 sm:w-14 sm:h-20 rounded-lg overflow-hidden border border-amber-400/40 shadow-md relative shrink-0">
+                    <div
+                      onClick={() => setZoomedCard({ card, slotName: `#${idx + 1} ${slotPositions[idx]}` })}
+                      className="group/thumb relative w-12 h-18 sm:w-14 sm:h-20 rounded-lg overflow-hidden border border-amber-400/40 hover:border-amber-400 shadow-md hover:shadow-amber-500/20 shrink-0 cursor-zoom-in transition-all"
+                      title="클릭하여 카드 크게 보기"
+                    >
                       <img
                         src={getTarotCardImageUrl(card)}
                         alt={card.nameKo}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover/thumb:scale-105"
                       />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center transition-opacity">
+                        <ZoomIn className="w-3.5 h-3.5 text-amber-300 drop-shadow" />
+                      </div>
                     </div>
                     <div>
                       <span className="text-[10px] font-mono text-amber-400/80 block uppercase tracking-wider">
@@ -2125,6 +2142,14 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
           </div>
         )}
       </AnimatePresence>
+
+      {/* Tarot Card Zoom Modal */}
+      <TarotCardZoomModal
+        isOpen={!!zoomedCard}
+        onClose={() => setZoomedCard(null)}
+        card={zoomedCard?.card ?? null}
+        slotName={zoomedCard?.slotName}
+      />
     </div>
   );
 }

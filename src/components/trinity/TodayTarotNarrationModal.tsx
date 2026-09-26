@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Copy,
   Check,
+  ZoomIn,
 } from 'lucide-react';
 import { Streamdown } from '@/components/Streamdown';
 import { playTTSInChunks, stopTTS, useTTSActive, useTTSState } from '@/utils/tts';
@@ -22,6 +23,7 @@ import {
 } from '@/lib/todayTarotNarration';
 import { LucyTarotAdviceCard } from './LucyTarotAdviceCard';
 import { TodayTarotShareButton } from './TodayTarotShareModal';
+import { TarotCardZoomModal } from './TarotCardZoomModal';
 import { type TodayTarotShareData } from '@/utils/todayTarotExporter';
 
 export interface TodayTarotNarrationModalProps {
@@ -43,6 +45,7 @@ export function TodayTarotNarrationModal({
   const [selectedVoice, setSelectedVoice] = useState<'Lucy' | 'Kore'>('Lucy');
   const [activeSpeechType, setActiveSpeechType] = useState<'full' | 'summary' | null>(null);
   const [isCopied, setIsCopied] = useState(false);
+  const [isCardZoomOpen, setIsCardZoomOpen] = useState(false);
 
   const isTTSActive = useTTSActive();
   const ttsState = useTTSState();
@@ -233,12 +236,16 @@ export function TodayTarotNarrationModal({
             </div>
           ) : (
             <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-yellow-500/15 via-amber-500/10 to-purple-950/20 border border-yellow-500/30 shadow-md">
-              <div className="w-16 h-24 sm:w-20 sm:h-32 rounded-xl overflow-hidden border border-yellow-400/40 bg-zinc-900 shadow-lg shrink-0 relative group">
+              <div
+                onClick={() => setIsCardZoomOpen(true)}
+                className="w-16 h-24 sm:w-20 sm:h-32 rounded-xl overflow-hidden border border-yellow-400/40 bg-zinc-900 shadow-lg shrink-0 relative group cursor-zoom-in hover:scale-105 active:scale-95 transition-all hover:border-yellow-300 hover:shadow-[0_0_15px_rgba(234,179,8,0.3)]"
+                title="클릭하여 카드 크게 보기"
+              >
                 {card.imageUrl ? (
                   <img
                     src={card.imageUrl}
                     alt={`${card.nameKo} 타로 카드`}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
                     }}
@@ -249,10 +256,16 @@ export function TodayTarotNarrationModal({
                   </div>
                 )}
                 {card.reversed && (
-                  <div className="absolute inset-x-0 bottom-0 bg-red-950/80 text-[9px] text-red-200 text-center font-bold py-0.5 border-t border-red-500/30">
+                  <div className="absolute inset-x-0 bottom-0 bg-red-950/80 text-[9px] text-red-200 text-center font-bold py-0.5 border-t border-red-500/30 z-10">
                     역방향
                   </div>
                 )}
+                {/* Hover zoom indicator */}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity z-20 pointer-events-none">
+                  <div className="w-6 h-6 rounded-full bg-yellow-500/90 text-black flex items-center justify-center shadow-lg">
+                    <ZoomIn size={12} />
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-1.5 text-center sm:text-left flex-1 min-w-0">
@@ -264,9 +277,20 @@ export function TodayTarotNarrationModal({
                     {card.reversed ? '역방향 (Reversed)' : '정방향 (Upright)'}
                   </span>
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-white tracking-wide">
-                  {card.nameKo} <span className="text-xs text-white/50 font-mono font-normal">({card.name})</span>
-                </h3>
+                <div className="flex items-center justify-center sm:justify-start gap-2.5 flex-wrap">
+                  <h3 className="text-lg sm:text-xl font-bold text-white tracking-wide">
+                    {card.nameKo} <span className="text-xs text-white/50 font-mono font-normal">({card.name})</span>
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setIsCardZoomOpen(true)}
+                    className="px-2 py-0.5 rounded-lg bg-yellow-500/15 hover:bg-yellow-500/25 border border-yellow-500/30 text-yellow-300 text-[10px] font-medium flex items-center gap-1 transition-all cursor-pointer hover:scale-105 active:scale-95"
+                    title="카드 크게 보기"
+                  >
+                    <ZoomIn size={11} />
+                    <span>카드 크게 보기</span>
+                  </button>
+                </div>
                 {card.keywords?.length > 0 && (
                   <div className="flex items-center justify-center sm:justify-start gap-1.5 flex-wrap pt-1">
                     {card.keywords.slice(0, 4).map((kw: string) => (
@@ -531,6 +555,14 @@ export function TodayTarotNarrationModal({
               </button>
             </div>
           </div>
+
+          {/* Tarot Card Detail Zoom Modal */}
+          <TarotCardZoomModal
+            isOpen={isCardZoomOpen}
+            onClose={() => setIsCardZoomOpen(false)}
+            card={card}
+            slotName="오늘의 데일리 타로 · COSMIC ANCHOR"
+          />
         </motion.div>
       </motion.div>
     </AnimatePresence>

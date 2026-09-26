@@ -3,9 +3,10 @@ import { motion } from 'framer-motion';
 import {
   Sparkles, Eye, RefreshCw, Sun, Compass, Activity,
   Flame, Heart, Wind, Coins, ShieldCheck, BookOpen, Zap, Star, Moon,
-  ChevronLeft, ChevronRight, Shuffle,
+  ChevronLeft, ChevronRight, Shuffle, ZoomIn,
 } from 'lucide-react';
 import { TAROT_DECK, TarotCard, getTarotCardImageUrl, rollTarotReversed } from '../../data/tarotData';
+import { TarotCardZoomModal } from './TarotCardZoomModal';
 
 export interface SelectedTarotCardEntry extends TarotCard {
   touchMetadata?: any | null;
@@ -271,6 +272,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
   const [radius, setRadius] = useState(600);
   const [yOffset, setYOffset] = useState(580);
   const [isMobile, setIsMobile] = useState(false);
+  const [zoomedCard, setZoomedCard] = useState<{ card: TarotCard; slotName?: string } | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const wheelLayerRef = useRef<HTMLDivElement>(null);
@@ -859,9 +861,17 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
                       initial={{ scale: 0.25, y: 70, opacity: 0, rotateZ: i % 2 === 0 ? -8 : 8 }}
                       animate={{ scale: 1, y: 0, opacity: 1, rotateZ: 0 }}
                       transition={{ type: 'spring', stiffness: 320, damping: 24 }}
-                      className="absolute inset-0 border-2 border-yellow-400 rounded-xl md:rounded-2xl flex flex-col justify-between p-1.5 sm:p-2 md:p-3 text-center shadow-lg shadow-yellow-500/20 overflow-hidden"
+                      onClick={() => setZoomedCard({ card: { ...drawnCard!, reversed: entry.reversed }, slotName: positionLabel })}
+                      className="absolute inset-0 border-2 border-yellow-400 rounded-xl md:rounded-2xl flex flex-col justify-between p-1.5 sm:p-2 md:p-3 text-center shadow-lg shadow-yellow-500/20 overflow-hidden cursor-zoom-in group hover:border-yellow-300 hover:shadow-yellow-500/40 transition-all active:scale-95"
+                      title={`${drawnCard!.nameKo} 카드 크게 보기`}
                       style={{ contain: 'layout style paint' }}
                     >
+                      {/* Hover Zoom Icon Badge */}
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity z-30 pointer-events-none">
+                        <div className="w-6 h-6 rounded-full bg-yellow-500/90 text-black flex items-center justify-center shadow-lg">
+                          <ZoomIn size={12} />
+                        </div>
+                      </div>
                       <img
                         src={getTarotCardImageUrl(drawnCard!)}
                         alt={drawnCard!.name}
@@ -964,6 +974,14 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
           <ChevronRight size={14} />
         </button>
       </div>
+
+      {/* Tarot Card Detail Zoom Modal */}
+      <TarotCardZoomModal
+        isOpen={!!zoomedCard}
+        onClose={() => setZoomedCard(null)}
+        card={zoomedCard?.card ?? null}
+        slotName={zoomedCard?.slotName}
+      />
     </div>
   );
 };
