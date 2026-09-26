@@ -355,11 +355,9 @@ export function TrinityOracleSection() {
     }
   }, []);
 
-  // Filtered decks according to mode
-  const majorDeck = useMemo(() => TAROT_DECK.filter((c) => c.type === 'major'), []);
+  // 78-card full deck for both modes
   const fullDeck = useMemo(() => TAROT_DECK, []);
-
-  const activeDeckSource = oracleMode === 'healing' ? majorDeck : fullDeck;
+  const activeDeckSource = fullDeck;
 
   const slotPositions = useMemo(() => {
     if (oracleMode === 'healing') {
@@ -413,7 +411,7 @@ export function TrinityOracleSection() {
         localStorage.setItem(STORAGE_ORACLE_MODE_SELECTED, 'true');
       } catch (_) {}
 
-      const deck = targetMode === 'healing' ? TAROT_DECK.filter((c) => c.type === 'major') : TAROT_DECK;
+      const deck = TAROT_DECK;
       const seedNum = trimmed.split('').reduce((acc, char, idx) => acc + char.charCodeAt(0) * (idx + 1), 0);
       const shuffled = [...deck].sort((a, b) => {
         const hashA = (a.id.charCodeAt(0) * 31 + seedNum) % 1000;
@@ -1428,9 +1426,9 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
             </h2>
             <p className="text-xs sm:text-sm text-zinc-300/80 mt-1 font-sans">
               {!isModeChosen
-                ? '원하시는 모드(힐링 22장 메이저 vs 자기계발 78장 풀덱)를 선택하여 시작해 주세요.'
+                ? '원하시는 모드(🌿 힐링 치유 편지 vs ⚡ 자기계발 실행 편지)를 선택하여 시작해 주세요.'
                 : oracleMode === 'healing'
-                ? '지친 마음의 치유와 안식을 위해 사주 본원과 22장 메이저 타로가 전하는 따뜻한 힐링 오라클'
+                ? '지친 마음의 치유와 안식을 위해 사주 본원과 78장 풀덱 타로가 전하는 따뜻한 힐링 오라클'
                 : '역량 강화와 실질적 성장을 위해 사주 추진력과 78장 타로 4원소가 전하는 자기계발 오라클'}
             </p>
           </div>
@@ -1453,7 +1451,7 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
                 />
               )}
               <Heart size={14} className="relative z-10 text-rose-300" />
-              <span className="relative z-10">힐링 (22장 메이저)</span>
+              <span className="relative z-10">힐링 (78장 풀덱)</span>
             </button>
 
             <button
@@ -1593,7 +1591,7 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
                   </h3>
                   <p className="text-xs sm:text-sm text-zinc-300 font-sans leading-relaxed">
                     {oracleMode === 'healing'
-                      ? `${recipientName} 님의 타고난 사주 본원 기운과 22장의 메이저 타로를 융합하여, 오직 지친 마음을 쉬어가게 할 3장의 치유 조각을 찾아냅니다.`
+                      ? `${recipientName} 님의 타고난 사주 본원 기운과 78장의 타로를 융합하여, 오직 지친 마음을 쉬어가게 할 3장의 치유 조각을 찾아냅니다.`
                       : `${recipientName} 님의 사주 실행력과 78장의 타로 4원소를 결합하여, 오늘 실천할 명쾌한 자기계발 해법을 제시합니다.`}
                   </p>
                 </div>
@@ -1703,7 +1701,7 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
                           <Heart size={20} className="text-rose-400 group-hover:scale-110 transition-transform" />
                         </div>
                         <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-400/30">
-                          22장 메이저 아르카나
+                          78장 풀덱 (메이저 & 마이너)
                         </span>
                       </div>
 
@@ -1723,7 +1721,7 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
                     </div>
 
                     <div className="mt-5 w-full py-2.5 rounded-xl bg-rose-500/20 group-hover:bg-rose-500/30 border border-rose-400/40 text-rose-200 text-xs font-bold text-center transition-colors">
-                      🌿 힐링 타로 덱 펼치기
+                      🌿 78장 힐링 타로 덱 펼치기
                     </div>
                   </button>
 
@@ -1773,7 +1771,7 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
                 <div className="text-center mb-2">
                   <div className="flex items-center justify-center gap-2 mb-1">
                     <span className="text-[10px] sm:text-xs font-mono uppercase tracking-widest text-amber-400/80">
-                      {oracleMode === 'healing' ? 'Inner Child Oracle • 22 Major Arcana' : 'Mindset Toolkit • 78 Full Deck'}
+                      {oracleMode === 'healing' ? 'Inner Child Oracle • 78 Full Deck' : 'Mindset Toolkit • 78 Full Deck'}
                     </span>
                     <button
                       type="button"
