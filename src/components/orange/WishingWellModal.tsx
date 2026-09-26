@@ -24,11 +24,13 @@ import {
   loadWishesHistory,
   deduplicateWishes,
 } from '@/lib/wishingWell';
+import { WishingWellSecretRecommendations } from '@/components/orange/WishingWellSecretRecommendations';
 
 interface WishingWellModalProps {
   isOpen?: boolean;
   onClose?: () => void;
   isModal?: boolean;
+  onSwitchMode?: (mode: 'secret' | 'wishingWell' | 'synergy' | 'bible') => void;
 }
 
 const QUICK_WISH_CHIPS: Record<WishCategoryId, string[]> = {
@@ -59,7 +61,12 @@ const QUICK_WISH_CHIPS: Record<WishCategoryId, string[]> = {
   ],
 };
 
-export function WishingWellModal({ isOpen = true, onClose, isModal = true }: WishingWellModalProps) {
+export function WishingWellModal({
+  isOpen = true,
+  onClose,
+  isModal = true,
+  onSwitchMode,
+}: WishingWellModalProps) {
   const { openLucyChat, sendUnifiedMessage } = useApp();
   const [activeTab, setActiveTab] = useState<'cast' | 'history'>('cast');
   const [selectedCategory, setSelectedCategory] = useState<WishCategoryId>('self_love');
@@ -96,12 +103,21 @@ export function WishingWellModal({ isOpen = true, onClose, isModal = true }: Wis
   const selectedCategoryMeta =
     WISH_CATEGORIES.find((c) => c.id === selectedCategory) || WISH_CATEGORIES[0];
 
-  const handleCastWish = async (overrideWish?: string | React.MouseEvent<HTMLButtonElement>) => {
+  const handleCastWish = async (
+    overrideWish?: string | React.MouseEvent<HTMLButtonElement>,
+    overrideCategory?: WishCategoryId
+  ) => {
     setIsCasting(true);
     setErrorMsg(null);
 
     // Soothing crystal water plop sound ("퐁당~")
     playWishingWellPlopSound();
+
+    const targetCategory = overrideCategory || selectedCategory;
+    if (overrideCategory && overrideCategory !== selectedCategory) {
+      setSelectedCategory(overrideCategory);
+    }
+    const catMeta = WISH_CATEGORIES.find((c) => c.id === targetCategory) || selectedCategoryMeta;
 
     const safetyTimer = setTimeout(() => {
       setIsCasting(false);
@@ -112,9 +128,9 @@ export function WishingWellModal({ isOpen = true, onClose, isModal = true }: Wis
       const wishStr = typeof overrideWish === 'string' ? overrideWish : undefined;
       const effectiveWish =
         (wishStr !== undefined ? wishStr : wishInput).trim() ||
-        selectedCategoryMeta.defaultWish ||
+        catMeta.defaultWish ||
         '내면의 평화와 안식을 찾길 소망합니다.';
-      const result = await castWishIntoWell(uid, effectiveWish, selectedCategory);
+      const result = await castWishIntoWell(uid, effectiveWish, targetCategory);
       setLatestResult(result);
       setWishesHistory((prev) => deduplicateWishes([result, ...prev]));
       if (typeof window !== 'undefined') {
@@ -126,6 +142,34 @@ export function WishingWellModal({ isOpen = true, onClose, isModal = true }: Wis
     } finally {
       clearTimeout(safetyTimer);
       setIsCasting(false);
+    }
+  };
+
+  const handleApplyWish = (wishText: string, category: WishCategoryId) => {
+    setSelectedCategory(category);
+    setWishInput(wishText);
+    const textarea = document.getElementById('wishing-well-textarea') as HTMLTextAreaElement | null;
+    if (textarea) {
+      textarea.focus();
+      textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
+  const handleCastDirectly = (wishText: string, category: WishCategoryId) => {
+    setSelectedCategory(category);
+    setWishInput(wishText);
+    void handleCastWish(wishText, category);
+  };
+
+  const handleNavigateToSecret = () => {
+    if (onSwitchMode) {
+      onSwitchMode('secret');
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('prism:switch_orange_mode', { detail: { mode: 'secret' } }));
+    }
+    if (isModal && onClose) {
+      onClose();
     }
   };
 
@@ -417,6 +461,14 @@ export function WishingWellModal({ isOpen = true, onClose, isModal = true }: Wis
 
             {!latestResult && (
               <>
+                {/* 🌟 오늘의 시크릿 x 우물 AI 맞춤 공명 추천 영역 */}
+                <WishingWellSecretRecommendations
+                  onApplyWish={handleApplyWish}
+                  onCastDirectly={handleCastDirectly}
+                  onNavigateToSecret={handleNavigateToSecret}
+                  isCasting={isCasting}
+                />
+
                 {/* Category Selection Glass Grid */}
                 <div className="space-y-3">
                   <label className="text-xs font-bold text-white/85 tracking-wider flex items-center justify-between">

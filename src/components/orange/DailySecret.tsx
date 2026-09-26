@@ -32,7 +32,7 @@ const DailySecretSchema = z.object({
   isReceived: z.boolean().optional().describe('사용자가 직접 키트 받기를 실행하여 개방되었는지 여부'),
 });
 
-type DailySecretData = z.infer<typeof DailySecretSchema>;
+export type DailySecretData = z.infer<typeof DailySecretSchema>;
 
 function generateTailoredSecretFallback(wishStr: string, name = '여행자', seed: number = 0): DailySecretData {
   return generateDynamicSecretKit(wishStr, name, seed);
@@ -165,7 +165,7 @@ function ensureFullKit(
   };
 }
 
-function loadCachedSecret(wishStr: string = '', name: string = '여행자'): DailySecretData | null {
+export function loadCachedSecret(wishStr: string = '', name: string = '여행자'): DailySecretData | null {
   try {
     const isReceivedFlag = localStorage.getItem(dayStorageKey('secret_received')) === 'true' ||
       safeLocalStorage.getItem(dayStorageKey('secret_received')) === 'true';
@@ -235,7 +235,7 @@ function loadCachedSecret(wishStr: string = '', name: string = '여행자'): Dai
   }
 }
 
-function loadWish(): string {
+export function loadWish(): string {
   const appliedWish = localStorage.getItem(dayStorageKey('applied_wish'));
   if (appliedWish) return appliedWish;
   const directWish = localStorage.getItem(dayStorageKey('wish'));
@@ -244,7 +244,7 @@ function loadWish(): string {
   return cached?.appliedWish || '';
 }
 
-function loadWishApplied(): boolean {
+export function loadWishApplied(): boolean {
   try {
     if (localStorage.getItem(dayStorageKey('wish_applied')) === 'true') return true;
     if (Boolean(localStorage.getItem(dayStorageKey('applied_wish')))) return true;

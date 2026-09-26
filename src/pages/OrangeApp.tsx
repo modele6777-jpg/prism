@@ -292,8 +292,19 @@ export default function OrangeApp() {
   useEffect(() => {
     const evName = showWishingWellModal ? "tarot-active" : "tarot-inactive";
     window.dispatchEvent(new CustomEvent(evName));
+
+    const handleSwitchMode = (e: Event) => {
+      const mode = (e as CustomEvent)?.detail?.mode;
+      if (mode) {
+        setActiveMode(mode);
+        setShowWishingWellModal(false);
+      }
+    };
+    window.addEventListener("prism:switch_orange_mode", handleSwitchMode);
+
     return () => {
       window.dispatchEvent(new CustomEvent("tarot-inactive"));
+      window.removeEventListener("prism:switch_orange_mode", handleSwitchMode);
     };
   }, [showWishingWellModal]);
 
@@ -1335,7 +1346,10 @@ export default function OrangeApp() {
                   </motion.div>
                ) : activeMode === 'wishingWell' ? (
                   <motion.div key="wishingWell-top" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full min-w-0 pb-6 flex flex-col items-stretch">
-                     <WishingWellModal isModal={false} />
+                     <WishingWellModal
+                       isModal={false}
+                       onSwitchMode={(mode) => setActiveMode(mode as any)}
+                     />
                   </motion.div>
                ) : activeMode === 'bible' ? (
                   <motion.div key="bible" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12 pb-6">
