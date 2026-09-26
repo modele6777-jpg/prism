@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Leaf, Timer, Sparkles, Wind, Volume2, VolumeX, Check, Copy, RefreshCw, Zap, Award, ArrowRight, ShieldCheck, Heart, Play, Square } from 'lucide-react';
+import { Leaf, Timer, Sparkles, Wind, Volume2, VolumeX, Check, Copy, RefreshCw, Zap, Award, ArrowRight, ShieldCheck, Heart, Play, Square, X, Brain, MessageSquare } from 'lucide-react';
 import { useApp, getPersistentUserProfile } from '@/contexts/AppContext';
 import { invokeLLM } from '@/lib/ai';
 import { recordPrismFeature } from '@/lib/prismOmniSync';
@@ -9,10 +9,12 @@ import { playTTS, stopTTS, prefetchTTS, useTTSActive } from '@/utils/tts';
 interface SanctuaryData {
   title: string;
   tensionArea: string;
+  targetThoughtDetail?: string;
   sedonaInquiryAnswer: string;
   sixtySecondSanctuaryProtocol: string[];
   zeroResistanceDeclaration: string;
   pureLightState: string;
+  releaseInsight?: string;
 }
 
 const FALLBACK_SANCTUARY: SanctuaryData = {
@@ -36,6 +38,15 @@ const TENSION_PRESETS = [
   { id: 'stomach', label: '명치와 복부의 조여듦', icon: '🌀' },
   { id: 'control', label: '모든 것을 통제하려는 강박', icon: '⛓️' },
   { id: 'fear', label: '불확실성에 대한 막연한 두려움', icon: '🌫️' },
+];
+
+const THOUGHT_EMOTION_CHIPS = [
+  { label: '미래 불안 & 초조함', text: '앞일에 대한 불안과 결과가 잘못될까 봐 온종일 초조하고 안절부절못해요' },
+  { label: '관계의 서운함 & 분노', text: '가까운 사람과의 대화에서 서운함과 답답한 응어리가 마음에 남아있어요' },
+  { label: '자책 & 후회', text: '‘그때 더 잘했어야 했는데’ 하는 자책과 후회가 꼬리를 물어요' },
+  { label: '통제 강박 & 완벽주의', text: '내 뜻대로 완벽히 풀리지 않으면 견디기 힘든 통제 강박이 있어요' },
+  { label: '일정 압박 & 번아웃', text: '마감과 할 일에 쫓겨 숨이 가쁘고 지친 피로감이 커요' },
+  { label: '막연한 두려움 & 무기력', text: '이유를 알 수 없는 막연한 두려움과 무기력감에 짓눌려요' },
 ];
 
 export function AuraSynergySection() {
@@ -214,26 +225,43 @@ export function AuraSynergySection() {
 
     const item = TENSION_PRESETS.find(p => p.id === selectedTension);
     const tensionLabel = item ? item.label : '긴장';
-    const combined = customDetail.trim() ? `${tensionLabel} (${customDetail.trim()})` : tensionLabel;
+    const trimmedDetail = customDetail.trim();
+    const combined = trimmedDetail ? `${tensionLabel} (마음의 생각·감정: ${trimmedDetail})` : tensionLabel;
 
-    const systemPrompt = "당신은 오라(AURA)의 완전 해방 방하착 챔버 마스터입니다. 좌측 메뉴 [Letting Go Method]의 세도나 메서드 흘려보내기 5문답과 우측 메뉴 [1-MIN]의 60초 마이크로 집중 명상 동조를 완벽히 융합하여 '완전 해방 방하착 챔버' 가이드를 설계하세요. [필수 낭독 규칙]: 60초 단계별 프로토콜(sixtySecondSanctuaryProtocol)의 4개 안내문은 타이머 경과에 따라 음성 낭독이 중간에 끊기지 않도록, 각 단계별로 공백 포함 25~35자 내외(낭독 3~4초 분량)의 다정하고 간결한 호흡 안내문으로 작성해야 합니다.";
+    const systemPrompt = `당신은 오라(AURA)의 완전 해방 방하착 챔버 마스터입니다.
+좌측 메뉴 [Letting Go Method]의 데이비드 호킨스 & 세도나 메서드 흘려보내기 5문답과 우측 메뉴 [1-MIN]의 60초 마이크로 집중 명상 동조를 완벽히 융합하여 '완전 해방 방하착 챔버' 가이드를 설계하세요.
+
+[★ 최우선 핵심 원칙: 사용자가 작성한 마음에 걸리는 생각·감정의 1:1 맞춤 심층 반영]
+사용자가 '마음에 걸리는 생각이나 쥐고 있는 감정'을 작성한 경우, 이를 가장 중요한 해방 타깃으로 삼아 모든 항목에 직접적이고 유기적으로 녹여내야 합니다:
+1. title: 사용자의 구체적 고민이나 감정이 명확히 해방되는 고유 명칭으로 명명하세요. (예: 〈프로젝트 초조함 완전 방하착〉 528Hz 무저항 챔버)
+2. targetThoughtDetail: 사용자가 입력한 생각·감정의 핵심을 깊은 공감과 함께 명확히 요약하여 제시하세요.
+3. sedonaInquiryAnswer: 사용자가 쥐고 있는 바로 그 생각('왜 그럴까?', '잘해야 해', 특정 상황에 대한 집착)을 직격하여, 손아귀에 쥔 힘을 풀듯 내려놓게 하는 세도나 5문답 기반의 깊은 깨달음 문장으로 작성하세요.
+4. sixtySecondSanctuaryProtocol (4단계 안내문):
+   - [필수 낭독 규칙]: 4개 안내문은 타이머 경과에 따라 음성 TTS 낭독이 중간에 끊기지 않도록, 각 단계별로 공백 포함 25~35자 내외(낭독 3~4초 분량)의 다정하고 간결한 호흡 안내문으로 작성해야 합니다.
+   - 4개 안내문 속에 사용자가 작성한 생각/감정을 다루는 단계별 호흡 여정(1단계: 그 생각/긴장 자각 → 2단계: 그 감정 허용 → 3단계: 그 생각 놓아줌 → 4단계: 텅 빈 평온)을 반드시 녹여내세요.
+5. zeroResistanceDeclaration: 사용자가 적은 바로 그 생각/감정의 끈을 허공으로 놓아버리고 온전한 자유로 회귀하는 1인칭 완전 해방 선언문이어야 합니다.
+6. releaseInsight: 그 생각/감정을 쥐고 있던 무의식적 집착(통제/인정/안전 욕구)을 꿰뚫어보는 한 줄 본질 통찰을 제공하세요.`;
+
     const userPrompt = `[양쪽 메뉴 융합: LETTING GO 방하착 ✕ 1-MIN 마이크로 호흡]
-[집착/긴장 상태]: "${combined}"
+[타겟 신체 긴장 영역]: "${tensionLabel}"
+[사용자가 직접 적은 마음에 걸리는 생각 / 쥐고 있는 감정]: ${trimmedDetail ? `"${trimmedDetail}" (★ 필수: 이 구체적 고민과 감정을 타이틀, 세도나 처방, 60초 프로토콜 4단계, 선언문, 해방 통찰에 직접 녹여내세요)` : '(입력 없음 - 신체 긴장 영역 중심 해방 설계)'}
 [사용자 닉네임]: "${userProfile?.basic?.nickname || '치유자'}"
 
 반드시 아래 JSON 스키마로만 엄격하게 응답하세요:
 {
-  "title": "방하착 챔버 고유 명칭 (예: 528Hz 완전 해방 무저항 챔버)",
+  "title": "방하착 챔버 고유 명칭 (사용자의 고민이 드러나는 이름)",
   "tensionArea": "${tensionLabel}",
-  "sedonaInquiryAnswer": "세도나 5문답을 바탕으로 쥐고 있던 집착을 놓아주는 해방적 깨달음 문장",
+  "targetThoughtDetail": "${trimmedDetail ? '사용자가 작성한 생각/감정의 핵심 요약' : tensionLabel}",
+  "sedonaInquiryAnswer": "사용자의 구체적 생각과 집착을 허공으로 내려놓는 세도나 5문답 해방 문장",
   "sixtySecondSanctuaryProtocol": [
-    "00~15초: 자각 단계 (공백 포함 25~35자 내외, 낭독 4초 이내 간결한 호흡 안내)",
-    "15~35초: 허용 단계 (공백 포함 25~35자 내외, 낭독 4초 이내 간결한 허용 안내)",
-    "35~50초: 놓아줌 단계 (공백 포함 25~35자 내외, 낭독 4초 이내 간결한 흘려보내기 안내)",
-    "50~60초: 순수 현존 (공백 포함 25~35자 내외, 낭독 4초 이내 평온 정착 안내)"
+    "00~15초: 자각 단계 (공백 포함 25~35자 내외, 사용자 고민의 긴장을 바라보는 호흡 안내)",
+    "15~35초: 허용 단계 (공백 포함 25~35자 내외, 그 감정이 머물러도 됨을 인정하는 안내)",
+    "35~50초: 놓아줌 단계 (공백 포함 25~35자 내외, 그 생각의 손아귀를 푸는 흘려보내기 안내)",
+    "50~60초: 순수 현존 (공백 포함 25~35자 내외, 비워진 본래 평온에 안착하는 안내)"
   ],
-  "zeroResistanceDeclaration": "저항 0%로 회귀하는 1인칭 완전 해방 선언문",
-  "pureLightState": "순수 해방 상태 명칭 (예: 저항 0% · 절대 평온)"
+  "zeroResistanceDeclaration": "사용자의 구체적 고민을 내려놓는 1인칭 완전 해방 선언문",
+  "pureLightState": "순수 해방 상태 명칭 (예: 집착 0% · 절대 평온)",
+  "releaseInsight": "이 마음을 내려놓을 때 열리는 본질적 한 줄 통찰"
 }`;
 
     const safetyTimeout = new Promise<SanctuaryData>((resolve) => {
@@ -241,7 +269,25 @@ export function AuraSynergySection() {
         resolve({
           ...FALLBACK_SANCTUARY,
           tensionArea: tensionLabel,
-          title: `〈${tensionLabel} 해방〉 완전 방하착 챔버`
+          targetThoughtDetail: trimmedDetail || tensionLabel,
+          title: trimmedDetail
+            ? `〈${trimmedDetail.length > 15 ? trimmedDetail.slice(0, 15) + '…' : trimmedDetail} 해방〉 완전 방하착 챔버`
+            : `〈${tensionLabel} 해방〉 완전 방하착 챔버`,
+          sedonaInquiryAnswer: trimmedDetail
+            ? `마음을 무겁게 짓누르던 "${trimmedDetail}"에 대한 생각과 통제 욕구를 있는 그대로 허용하고, 허공 속으로 가볍게 흘려보냅니다.`
+            : FALLBACK_SANCTUARY.sedonaInquiryAnswer,
+          sixtySecondSanctuaryProtocol: trimmedDetail ? [
+            `00~15초: 숨을 쉬며 마음속 ${trimmedDetail.length > 10 ? trimmedDetail.slice(0, 10) + '…' : trimmedDetail}의 긴장을 봅니다.`,
+            `15~35초: 지금 올라온 이 감정을 저항 없이 그대로 품어줍니다.`,
+            `35~50초: 호흡을 길게 내쉬며 쥐고 있던 생각을 가볍게 놓습니다.`,
+            `50~60초: 생각이 비워진 자리에서 온전한 자유와 평온을 누립니다.`
+          ] : FALLBACK_SANCTUARY.sixtySecondSanctuaryProtocol,
+          zeroResistanceDeclaration: trimmedDetail
+            ? `나는 "${trimmedDetail}"에 얽매이던 모든 생각과 저항을 놓아주고, 본래의 완전한 자유와 평온으로 돌아옵니다.`
+            : FALLBACK_SANCTUARY.zeroResistanceDeclaration,
+          releaseInsight: trimmedDetail
+            ? `쥐고 있던 생각을 놓아줄 때, 나는 그 생각보다 훨씬 더 광대한 순수 의식임을 발견합니다.`
+            : '저항을 멈출 때, 본래 있던 평화가 스스로 드러납니다.'
         });
       }, 6500);
     });
@@ -257,7 +303,10 @@ export function AuraSynergySection() {
         });
         const parsed = typeof raw === 'string' ? JSON.parse(raw.replace(/```json\n?|\n?```/g, '').trim()) : raw;
         if (parsed && parsed.zeroResistanceDeclaration) {
-          return parsed;
+          return {
+            ...parsed,
+            targetThoughtDetail: parsed.targetThoughtDetail || (trimmedDetail ? trimmedDetail : undefined)
+          };
         }
       } catch (e) {
         console.warn('[AuraSynergy] invokeLLM error:', e);
@@ -284,7 +333,11 @@ export function AuraSynergySection() {
 
   const handleCopy = () => {
     if (!sanctuaryData) return;
-    const text = `⚡ [${sanctuaryData.title}]\n\n🌿 타겟 긴장: ${sanctuaryData.tensionArea}\n💬 세도나 방하착: ${sanctuaryData.sedonaInquiryAnswer}\n\n⏱️ 60초 챔버 프로토콜:\n${sanctuaryData.sixtySecondSanctuaryProtocol.join('\n')}\n\n🕊️ 완전 해방 선언: "${sanctuaryData.zeroResistanceDeclaration}"\n- PRISM AURA Zero-Resistance Sanctuary`;
+    const thoughtSection = (sanctuaryData.targetThoughtDetail && sanctuaryData.targetThoughtDetail !== sanctuaryData.tensionArea)
+      ? `💭 방하착 대상 생각/감정: "${sanctuaryData.targetThoughtDetail}"\n`
+      : '';
+    const insightSection = sanctuaryData.releaseInsight ? `💡 해방 통찰: ${sanctuaryData.releaseInsight}\n` : '';
+    const text = `⚡ [${sanctuaryData.title}]\n\n🌿 타겟 긴장: ${sanctuaryData.tensionArea}\n${thoughtSection}💬 세도나 방하착: ${sanctuaryData.sedonaInquiryAnswer}\n${insightSection}\n⏱️ 60초 챔버 프로토콜:\n${sanctuaryData.sixtySecondSanctuaryProtocol.join('\n')}\n\n🕊️ 완전 해방 선언: "${sanctuaryData.zeroResistanceDeclaration}"\n- PRISM AURA Zero-Resistance Sanctuary`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
@@ -363,17 +416,70 @@ export function AuraSynergySection() {
           })}
         </div>
 
-        <div>
-          <label className="block text-[11px] text-white/50 mb-2 font-medium">
-            마음에 걸리는 생각이나 쥐고 있는 감정이 있다면 자유롭게 적어주세요 (선택):
-          </label>
-          <input
-            type="text"
-            value={customDetail}
-            onChange={(e) => setCustomDetail(e.target.value)}
-            placeholder="예: 이번 프로젝트 결과에 대해 온종일 초조하고 안절부절못하겠어요..."
-            className="w-full px-4 py-3 rounded-2xl bg-black/40 border border-white/10 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-emerald-400/60 font-sans"
-          />
+        {/* Custom Thought/Emotion Detail Input */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold text-emerald-300 flex items-center gap-2 font-mono uppercase tracking-wider">
+              <Sparkles size={15} className="text-emerald-400" />
+              <span>2. 마음에 걸리는 생각이나 쥐고 있는 감정이 있다면 자유롭게 적어주세요 (선택)</span>
+            </label>
+            {customDetail.trim() && (
+              <button
+                type="button"
+                onClick={() => setCustomDetail('')}
+                className="text-[11px] text-white/40 hover:text-white/80 flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                <X size={12} />
+                <span>지우기</span>
+              </button>
+            )}
+          </div>
+
+          <div className="relative">
+            <textarea
+              rows={3}
+              value={customDetail}
+              onChange={(e) => setCustomDetail(e.target.value)}
+              placeholder="예: 이번 프로젝트 결과에 대해 온종일 초조하고 안절부절못하겠어요... / 사람들과의 대화에서 서운하고 답답한 응어리가 남아있어요..."
+              className="w-full px-4 py-3 rounded-2xl bg-black/40 border border-white/10 text-xs sm:text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-emerald-400/60 font-sans resize-none transition-all leading-relaxed"
+              maxLength={300}
+            />
+            <div className="absolute bottom-2.5 right-3 text-[10px] text-white/30 font-mono">
+              {customDetail.length}/300자
+            </div>
+          </div>
+
+          {/* Quick thought / emotion preset chips */}
+          <div className="space-y-1.5 pt-0.5">
+            <span className="text-[10px] text-white/40 font-sans block">
+              💡 표현하기 어려울 땐 아래 추천 감정·생각 칩을 터치해보세요:
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {THOUGHT_EMOTION_CHIPS.map((chip, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    if (customDetail.trim()) {
+                      setCustomDetail((prev) => `${prev.trim()}, ${chip.text}`);
+                    } else {
+                      setCustomDetail(chip.text);
+                    }
+                  }}
+                  className="px-2.5 py-1 rounded-xl text-[11px] bg-white/[0.04] hover:bg-emerald-500/15 border border-white/10 hover:border-emerald-400/40 text-white/70 hover:text-emerald-200 transition-all cursor-pointer font-sans"
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-200/90 leading-relaxed flex items-center gap-2">
+            <Sparkles size={14} className="text-emerald-400 shrink-0" />
+            <span>
+              여기에 적어주신 생각과 감정은 <strong>세도나 5문답 처방</strong>, <strong>60초 단계별 실시간 음성 가이드</strong>, <strong>1인칭 해방 선언문</strong>에 1:1 맞춤으로 직접 스며들어 온전히 녹여냅니다.
+            </span>
+          </div>
         </div>
 
         <button
@@ -429,6 +535,30 @@ export function AuraSynergySection() {
               </button>
             </div>
           </div>
+
+          {/* Target Thought & Emotion Reflection Card */}
+          {(sanctuaryData.targetThoughtDetail || customDetail.trim()) && (
+            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-950/60 to-teal-950/40 border border-emerald-500/30 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold font-mono text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Heart size={14} className="text-emerald-400" />
+                  방하착 대상 마음의 생각 · 감정
+                </span>
+                <span className="text-[10px] text-emerald-400/90 font-mono bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                  1:1 맞춤 해방 동조
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm text-white/95 font-medium leading-relaxed bg-black/40 p-3 rounded-xl border border-white/5">
+                "{sanctuaryData.targetThoughtDetail || customDetail.trim()}"
+              </p>
+              {sanctuaryData.releaseInsight && (
+                <p className="text-[11px] text-emerald-200/80 leading-relaxed flex items-start gap-1.5 pt-0.5">
+                  <Sparkles size={12} className="text-emerald-400 shrink-0 mt-0.5" />
+                  <span><strong>해방 통찰:</strong> {sanctuaryData.releaseInsight}</span>
+                </p>
+              )}
+            </div>
+          )}
 
           {/* 60s Interactive Chamber Timer Widget with Real-time TTS Narration */}
           <div className="p-6 rounded-3xl bg-emerald-950/20 border border-emerald-500/30 flex flex-col items-center justify-center text-center space-y-4 relative overflow-hidden">
