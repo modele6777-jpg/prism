@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import {
   Sparkles,
   Zap,
@@ -9,19 +9,11 @@ import {
   Check,
   Volume2,
   VolumeX,
-  ArrowRight,
   Compass,
   RefreshCw,
-  Layers,
-  History,
-  Coins,
   ChevronDown,
   ChevronUp,
-  Flame,
-  Heart,
   Smile,
-  MessageSquare,
-  Sparkle,
   Edit3
 } from 'lucide-react';
 import { useApp, getPersistentUserProfile } from '@/contexts/AppContext';
@@ -47,35 +39,48 @@ import {
 interface QuantumCatalystData {
   title: string;
   manifestationFrequency: number;
-  fusionMatrix: {
-    secretElement: string;
-    wishWellElement: string;
-    quantumLeapAlchemy: string;
-  };
   sensoryScript: string;
   quantumLeapActions: string[];
   vibrationalAnchorAffirmation: string;
-  secretBibleFormula: string;
-  timelineWindow: string;
+}
+
+export function generateNaturalSensoryScript(category: string, wish: string, vibe?: string): string {
+  const cleanWish = (wish || '').trim().replace(/['"“”.]/g, '');
+
+  switch (category) {
+    case 'wealth':
+      return `아침 햇살이 따스하게 쏟아지는 아늑한 공간에서 향긋하고 따뜻한 커피 잔을 손에 쥐고 있다. 잔고를 확인할 때마다 밀려오는 것은 조급함이나 불안이 아닌, '원하는 모든 것을 자유롭게 누릴 수 있다'는 깊고 충만한 안도감이다. 사랑하는 사람들에게 아낌없이 베풀고 나 자신을 온전히 돌볼 수 있는 여유가 온몸의 세포마다 감사함으로 스며든다. "${cleanWish}"의 결실은 이미 나의 자연스러운 일상이며, 나는 매 순간 평온하고 완전한 풍요의 중심에 서 있다.`;
+
+    case 'career':
+      return `마침내 바라던 정상에 올라 목표를 완벽히 달성했다는 소식을 듣는 순간, 가슴을 가득 채우는 벅찬 전율과 자긍심에 눈시울이 붉어진다. 나를 진심으로 인정해 주는 사람들의 축하와 따뜻한 박수가 귓가에 울리고, 굳은 악수 속에서 지난 모든 노력이 아름답게 꽃피었음을 실감한다. 내가 가진 전문성과 고유한 빛이 세상에 독보적인 가치를 더하고 있다는 보람찬 확신 속에서, "${cleanWish}"의 영광을 온마음으로 당당하게 누린다.`;
+
+    case 'love':
+      return `서로의 눈을 마주하는 것만으로도 세상의 모든 소음이 잦아들고 온전한 평온이 찾아온다. 나를 있는 그대로 깊이 이해하고 무조건적인 사랑으로 안아주는 소중한 사람의 온기가 맞잡은 두 손을 통해 가슴 깊숙이 전해진다. 함께 나누는 다정한 대화와 잔잔한 웃음소리가 공기를 따뜻하게 물들이고, 사랑받고 사랑하고 있다는 흔들림 없는 확신이 영혼을 감싼다. "${cleanWish}"의 기적은 이미 우리 두 사람의 일상 속에 아름답게 정착되었다.`;
+
+    case 'health':
+      return `이른 아침 창문을 열고 맑고 신선한 공기를 깊게 들이마실 때, 머리끝부터 발끝까지 맑고 청량한 생명력이 가득 차오른다. 피로와 긴장은 눈 녹듯 사라졌고, 가볍고 탄력 있는 걸음걸이와 맑은 눈빛으로 하루를 기쁨 속에 시작한다. 밤이면 근심 없이 깊고 평화로운 숙면에 빠져들고, 아침이면 넘치는 활력으로 눈을 뜬다. "${cleanWish}"의 건강함 속에서, 나의 몸과 마음은 지금 완벽한 조화와 젊음을 누리고 있다.`;
+
+    case 'creative':
+      return `오랜 시간 내면에서 잉태되어 온 독창적인 영감과 비전이 마침내 눈부신 작품으로 눈앞에 생생하게 완성되었다. 손끝을 통해 거침없이 흘러나온 창조적 에너지를 바라보는 순간, 온몸에 소름 돋는 카타르시스와 깊은 감격이 밀려온다. 세상에 나만의 고유한 예술과 이야기를 선보였다는 벅찬 성취감 속에서, "${cleanWish}"의 창조적 결실이 수많은 사람들의 마음에 깊은 울림을 전하고 있다.`;
+
+    case 'freedom':
+      return `내가 머물고 싶은 시공간에서, 내가 사랑하는 사람들과 함께 오롯이 내 삶의 주인이 되어 자유롭게 숨 쉬고 있다. 시원하고 투명한 바람이 볼을 스치고, 끝없이 펼쳐진 푸른 하늘을 바라볼 때 어떤 구속도 없는 온전한 해방감이 가슴을 가득 채운다. 시간과 장소의 얽매임 없이 원하는 일을 선택하며 살아가는 매 순간이 눈부신 축복이다. "${cleanWish}"의 라이프스타일은 이미 나의 현실이다.`;
+
+    default:
+      return `따뜻한 햇살과 부드러운 바람이 온몸을 감싸며, 마침내 바라던 모든 것이 완벽하게 실현되었다는 깊은 안도감이 가슴을 가득 채운다. 더 이상 바라는 결핍의 상태가 아니라, 이미 결실을 손에 쥐고 평온하게 미소 짓는 내 모습이 온몸의 감각으로 생생하게 느껴진다. "${cleanWish}"을 향한 오랜 소망은 이미 이루어졌고, 나는 그 벅찬 감사를 온 마음으로 누리고 있다.`;
+  }
 }
 
 const FALLBACK_CATALYST: QuantumCatalystData = {
-  title: "시크릿 끌어당김 × 소원우물 양자 도약 융합 매트릭스",
+  title: "눈부신 풍요와 자유의 양자 현실화",
   manifestationFrequency: 528,
-  fusionMatrix: {
-    secretElement: "시크릿 바이블 3단계 (Ask 명확한 파동 방출 ➜ Believe 기정사실화 ➜ Receive 수용)",
-    wishWellElement: "소원의 우물에 투사된 동전의 간절한 소망 에너지",
-    quantumLeapAlchemy: "528Hz 솔페지오 주파수와 결합하여 미래 시점의 성취를 현재 시간대로 즉각 붕괴(Collapse)"
-  },
-  sensoryScript: "나는 이미 바라는 풍요와 성취의 중심에 서 있다. 손끝으로 만져지는 성공의 감촉, 가슴 벅찬 안도감과 감사함이 온몸의 세포마다 생생하게 맥동한다. 나는 끌어당기는 자이자 이미 그것이다.",
+  sensoryScript: "따스한 햇살이 비추는 아늑한 공간에서 향긋한 커피 잔을 손에 쥐고 있다. 더 이상 일정이나 돈에 쫓기지 않고, 언제든 원하는 선택을 자유롭게 할 수 있다는 깊고 평온한 안도감이 가슴을 가득 채운다. 이미 모든 소망이 이루어졌음에 온 마음으로 감사하며, 이 벅찬 순간을 세포 하나하나로 온전히 만끽한다.",
   quantumLeapActions: [
-    "이미 소원이 이루어진 사람의 걸음걸이와 태도로 오늘 하루를 살아보기",
-    "목표 실현에 필요한 첫 번째 결정(연락, 예약, 결제, 작성 등)을 24시간 내 즉시 실행하기",
-    "자기 전 528Hz 진동을 떠올리며 감사한 결과 상태를 생생히 1분간 시각화하기"
+    "이미 소원이 완벽히 이루어진 사람의 여유로운 태도와 걸음걸이로 오늘 하루를 살아가기",
+    "소망의 실현을 기정사실화하고, 가슴을 뛰게 하는 첫 번째 작은 결정을 24시간 내 행동으로 옮기기",
+    "잠들기 전 침대에서 감사한 미소를 지으며 이미 이루어진 현실의 정경을 1분간 생생히 느끼기"
   ],
-  vibrationalAnchorAffirmation: "나의 의식 주파수는 지금 이 순간 528Hz 기적의 장에 완전히 고정되었으며, 현실은 나의 고진동을 따라 즉각 재배열된다.",
-  secretBibleFormula: "Ask (명확한 주파수 방출) ➜ Believe (이미 도달한 시공간 확신) ➜ Receive (의심 없는 감사 수용)",
-  timelineWindow: "지금 이 순간부터 72시간 양자 중첩 가속기 가동"
+  vibrationalAnchorAffirmation: "나의 의식 주파수는 지금 이 순간 기적의 장에 완전히 고정되었으며, 현실은 나의 고진동을 따라 즉각 재배열된다."
 };
 
 const MANIFESTATION_CATEGORIES = [
@@ -191,8 +196,14 @@ export function OrangeSynergySection() {
       0,
       initialContext
     );
+    const initialSensory = generateNaturalSensoryScript(
+      MANIFESTATION_CATEGORIES[0].id,
+      MANIFESTATION_CATEGORIES[0].defaultWish,
+      initialContext.currentVibe
+    );
     return {
       ...FALLBACK_CATALYST,
+      sensoryScript: initialSensory,
       vibrationalAnchorAffirmation: affirmation
     };
   });
@@ -422,8 +433,10 @@ export function OrangeSynergySection() {
         currentVibe: cat.vibe
       }
     );
+    const naturalSensory = generateNaturalSensoryScript(cat.id, cat.defaultWish, cat.vibe);
     setCatalystData(prev => ({
       ...prev,
+      sensoryScript: naturalSensory,
       manifestationFrequency: cat.frequency,
       vibrationalAnchorAffirmation: affirmation
     }));
@@ -479,8 +492,10 @@ export function OrangeSynergySection() {
         currentVibe: cat.vibe
       }
     );
+    const naturalSensory = generateNaturalSensoryScript(cat.id, entry.wish, cat.vibe);
     setCatalystData(prev => ({
       ...prev,
+      sensoryScript: naturalSensory,
       manifestationFrequency: cat.frequency,
       vibrationalAnchorAffirmation: affirmation
     }));
@@ -491,34 +506,34 @@ export function OrangeSynergySection() {
     const catObj = MANIFESTATION_CATEGORIES.find(c => c.id === selectedCategory);
     const categoryName = catObj ? catObj.label : '목표';
 
-    const systemPrompt = "당신은 오렌지 양자 현실화 가속기(Quantum Catalyst) 마스터입니다. 좌측 메뉴 [Secret]의 내면아이 진동 일치/끌어당김 원리와 우측 메뉴 [WELL]의 소원의 우물 투사 및 즉각적 현실화 에너지를 완벽히 융합하여 이미 실현된 상태의 오감 스크립트와 융합 매트릭스를 생성하세요.";
-    const userPrompt = `[양쪽 메뉴 융합: SECRET 끌어당김 진동 ✕ WELL 소원 투사]
-[소원 카테고리]: ${categoryName}
-[실현 목표]: "${targetWish}"
-[사용자]: "${userProfile?.basic?.nickname || '창조자'}"
-[조율 주파수]: ${dialValue}Hz
-[사용자 최근 상담 맥락]: "${vibeContext.counselingTopic}" (${vibeContext.sourceDescription})
-[사용자 현재 기분(Vibe)]: "${selectedVibe}"
-[소원의 우물 최근 연동]: ${recentWishingWellWish ? `"${recentWishingWellWish}"` : '새로운 소원 투사'}
+    const systemPrompt = `당신은 세계 최고의 끌어당김(The Secret) 및 오감 시각화(Living in the End) 현실화 마스터입니다.
+사용자가 바라는 소망이 '미래에 이루어질 것'이 아니라, '지금 이 순간 물리적 현실에서 100% 완성되어 이미 누리고 있는 상태'를 1인칭 시점의 생생하고 감동적인 오감 현실화 스크립트로 작성합니다.
+
+[오감 현실화 스크립트(sensoryScript) 절대 원칙]
+1. 앱 메뉴 언급 금지: "좌측 메뉴", "우측 메뉴", "소원의 우물", "융합 매트릭스" 같은 앱 기능이나 화면 인터페이스 용어를 절대 쓰지 마십시오.
+2. 기계적 문구 금지: "528Hz 주파수와 결합하여", "을(를)", "양자 도약 연금술이 작동하여" 같은 어색한 번역투나 인위적 문구를 절대 쓰지 마십시오.
+3. 오감(시각·청각·촉각·호흡·온도)과 가슴 벅찬 안도감/환희를 네빌 고다드 식 '이미 이루어진 상태'의 1인칭 현재형("~하고 있다", "~가 전해진다", "~차오른다")으로 문학적이고 자연스럽게 3~4문장으로 서술하십시오.
+4. 읽는 것만으로도 온몸에 전율이 돋고 심장이 따뜻해지는 감동적인 문체여야 합니다.`;
+
+    const userPrompt = `[현실화 소망]: "${targetWish}"
+[핵심 영역]: ${categoryName}
+[사용자 호칭]: "${userProfile?.basic?.nickname || '나'}"
+[현재 진동 무드]: "${selectedVibe}"
+[해소할 내면 고민]: "${vibeContext.counselingTopic}"
+
+위 소망이 100% 이루어져 지금 눈앞에서 만끽하고 있는 현실을 가장 감동적이고 자연스러운 1인칭 오감 스크립트로 완성해 주세요.
 
 반드시 아래 JSON 스키마로만 엄격하게 응답하세요:
 {
-  "title": "양자 현실화 고유 명칭 (예: ${dialValue}Hz 황금 풍요 양자 도약 가속기)",
+  "title": "감동적인 현실화 테마 명칭 (예: 눈부신 경제적 자유의 아침)",
   "manifestationFrequency": ${dialValue},
-  "fusionMatrix": {
-    "secretElement": "시크릿 바이블의 끌어당김 및 주파수 일치 원리가 이 소원에 작동하는 방식 (1~2문장)",
-    "wishWellElement": "소원의 우물에 던져진 간절한 염원이 양자장에 각인되는 원리 (1~2문장)",
-    "quantumLeapAlchemy": "양쪽 메뉴가 융합되어 즉각적으로 시공간을 접어 현실화하는 양자 도약 결과 (1~2문장)"
-  },
-  "sensoryScript": "1인칭 현재형으로 이미 완벽하게 이루어졌을 때의 시각·청각·촉각·감정을 묘사한 생생한 스크립트 (3~4문장)",
+  "sensoryScript": "1인칭 현재형으로 이미 소원이 이루어진 순간의 시각·청각·촉각·온도·벅찬 안도감을 묘사한 지극히 자연스럽고 감동적인 오감 스크립트 (3~4문장, 200~320자 내외)",
   "quantumLeapActions": [
-    "24시간 내 즉시 실행할 양자 도약 실천 1 (구체적 행동)",
-    "24시간 내 즉시 실행할 양자 도약 실천 2 (마인드셋/환경 전환)",
-    "24시간 내 즉시 실행할 양자 도약 실천 3 (취침 전 감사 시각화)"
+    "24시간 내 즉시 실행할 현실화 실천 행동 1",
+    "24시간 내 즉시 실행할 마음가짐 전환 2",
+    "오늘 밤 잠들기 전 1분 감사 시각화 실천 3"
   ],
-  "vibrationalAnchorAffirmation": "상투적이거나 중복된 뻔한 문장을 절대 금지하고, 사용자의 최근 상담 고민('${vibeContext.counselingTopic}')의 저항을 해소하고 현재 기분('${selectedVibe}')의 주파수와 결합하여 '${targetWish}'과 ${dialValue}Hz를 온몸에 각인시키는 전율 돋는 독창적인 1인칭 현재형 고진동 확언 (1문장, 45~80자 내외)",
-  "secretBibleFormula": "시크릿 바이블 3단계 맞춤 가이드라인 (Ask - Believe - Receive)",
-  "timelineWindow": "가속화 타임라인 주기 (예: 72시간 양자 중첩 포털 활성화)"
+  "vibrationalAnchorAffirmation": "소망이 이미 이루어졌음을 선언하는 강력하고 자연스러운 1인칭 현재형 확언 (1문장, 50~80자 내외)"
 }`;
 
     const fallbackAffirmation = getDynamicVibrationalAffirmation(
@@ -532,13 +547,19 @@ export function OrangeSynergySection() {
       }
     ).affirmation;
 
+    const naturalFallbackScript = generateNaturalSensoryScript(selectedCategory, targetWish, selectedVibe);
+
     const safetyTimeout = new Promise<QuantumCatalystData>((resolve) => {
       setTimeout(() => {
         resolve({
-          ...FALLBACK_CATALYST,
-          title: `〈${categoryName}〉 ${dialValue}Hz 양자 현실화 가속기`,
+          title: `〈${categoryName}〉 ${dialValue}Hz 현실화 완성`,
           manifestationFrequency: dialValue,
-          sensoryScript: `나는 이미 '${targetWish}'을(를) 완벽하게 손에 쥐고 풍요를 누리고 있다. ${dialValue}Hz 기적의 파동이 '${selectedVibe}'의 고진동에 공명하며 물질세계로 즉각 현실화된다. 온몸의 세포마다 벅찬 감사의 눈물이 샘솟는다.`,
+          sensoryScript: naturalFallbackScript,
+          quantumLeapActions: [
+            `이미 소원이 완전히 실현된 사람의 여유롭고 당당한 태도로 오늘 하루를 살아가기`,
+            "소망의 실현을 기정사실화하고, 24시간 내 가슴 뛰는 첫 번째 구체적 행동(연락, 예약, 결단) 즉시 실행하기",
+            "오늘 밤 잠들기 전 침대에서 감사의 미소를 지으며 이미 이루어진 평온한 정경을 1분간 오감으로 느끼기"
+          ],
           vibrationalAnchorAffirmation: fallbackAffirmation
         });
       }, 6500);
@@ -585,7 +606,7 @@ export function OrangeSynergySection() {
   };
 
   const handleCopy = () => {
-    const text = `🌲 [${catalystData.title}]\n\n🎯 목표 소원: ${targetWish}\n🌀 진동 주파수: ${catalystData.manifestationFrequency}Hz\n✨ 조율 Vibe: ${selectedVibe}\n\n✨ 이미 이루어진 오감 스크립트:\n"${catalystData.sensoryScript}"\n\n🚀 24시간 양자 도약 실천 행동:\n${catalystData.quantumLeapActions.map((a, i) => `${i+1}. ${a}`).join('\n')}\n\n⚡ 주파수 고정 확언:\n"${catalystData.vibrationalAnchorAffirmation}"\n\n- PRISM ORANGE Quantum Manifestation Catalyst`;
+    const text = `🌲 [${catalystData.title}]\n\n🎯 목표 소원: ${targetWish}\n🌀 진동 주파수: ${catalystData.manifestationFrequency}Hz\n✨ 조율 Vibe: ${selectedVibe}\n\n✨ 이미 이루어진 오감 현실화 스크립트:\n"${catalystData.sensoryScript}"\n\n🚀 24시간 실천 행동:\n${catalystData.quantumLeapActions.map((a, i) => `${i+1}. ${a}`).join('\n')}\n\n⚡ 주파수 고정 확언:\n"${catalystData.vibrationalAnchorAffirmation}"\n\n- PRISM ORANGE Quantum Manifestation Catalyst`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
@@ -603,7 +624,7 @@ export function OrangeSynergySection() {
             <div className="flex items-center gap-2">
               <span className="px-3 py-1 rounded-full text-[10px] font-bold font-mono tracking-widest uppercase bg-orange-500/20 text-orange-300 border border-orange-500/30 flex items-center gap-1.5">
                 <Sparkles size={12} className="text-yellow-400 animate-pulse" />
-                SECRET ✕ WELL FUSION
+                QUANTUM CATALYST
               </span>
               <span className="text-[10px] text-white/40 font-mono">{dialValue}Hz MIRACLE TONE</span>
             </div>
@@ -612,7 +633,7 @@ export function OrangeSynergySection() {
               <span>양자 현실화 가속기 (Quantum Manifestation Catalyst)</span>
             </h2>
             <p className="text-xs sm:text-sm text-orange-100/70 max-w-xl leading-relaxed">
-              <strong>Secret(끌어당김 진동 일치)</strong>과 <strong>WELL(소원의 우물 투사)</strong>의 양쪽 메뉴 에너지를 융합하여, 바라는 미래를 현재 시점으로 즉각 붕괴시키는 〈양자 현실화 가속기〉입니다.
+              솔페지오 진동수와 1인칭 오감 확언을 통해, 바라는 소망을 미래가 아닌 <strong>'지금 이 순간 이미 이루어진 현실'</strong>로 가속 동조시키는 양자 가속기입니다.
             </p>
           </div>
 
@@ -630,178 +651,93 @@ export function OrangeSynergySection() {
         </div>
       </div>
 
-      {/* Dual-Menu Synergy Status Panel */}
-      <div className="p-5 sm:p-6 rounded-[28px] bg-gradient-to-r from-orange-950/40 via-amber-950/30 to-yellow-950/40 border border-orange-500/20 backdrop-blur-xl">
-        <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
-          <div className="flex items-center gap-2">
-            <Layers className="text-orange-400" size={16} />
-            <span className="text-xs font-bold text-orange-200 font-mono tracking-wider uppercase">
-              DUAL-MENU SYNERGY MATRIX : THE SECRET × WISHING WELL
-            </span>
-          </div>
-          <span className="text-[10px] text-white/50 font-mono">
-            {dialValue}Hz 기적 진동 동조
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Left Menu Status: The Secret 3-Step */}
-          <div className="p-4 rounded-2xl bg-black/30 border border-orange-400/20 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-orange-300 flex items-center gap-1.5">
-                <Zap size={13} className="text-orange-400" />
-                좌측 메뉴 : 시크릿 끌어당김 3단계 공식
+      {/* Wishing Well Past History Bar (소원의 우물 과거 소망 불러오기) */}
+      {wishesHistory.length > 0 && (
+        <div className="p-4 sm:p-5 rounded-[24px] bg-gradient-to-r from-amber-950/30 via-zinc-950/40 to-orange-950/30 border border-amber-400/25 space-y-3 backdrop-blur-xl">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Compass size={15} className="text-amber-400" />
+              <span className="text-xs font-bold text-amber-200 font-sans">
+                소원의 우물에 담았던 소망 불러오기
               </span>
-              <span className="text-[10px] text-orange-400 font-mono">진동 일치</span>
+              <span className="text-[10px] text-amber-300 font-mono font-bold bg-amber-500/15 border border-amber-400/25 px-2 py-0.5 rounded-full">
+                과거 소원 {wishesHistory.length}건
+              </span>
             </div>
-            <div className="grid grid-cols-3 gap-1.5 text-center">
-              <div className="p-2 rounded-xl bg-white/[0.04] border border-white/5">
-                <div className="text-[9px] text-white/50">STEP 1</div>
-                <div className="text-xs font-bold text-orange-200 font-sans">Ask (요청)</div>
-                <div className="text-[9px] text-white/40 mt-0.5">명확한 방출</div>
-              </div>
-              <div className="p-2 rounded-xl bg-orange-500/10 border border-orange-400/30">
-                <div className="text-[9px] text-orange-300">STEP 2</div>
-                <div className="text-xs font-bold text-white font-sans">Believe (믿음)</div>
-                <div className="text-[9px] text-orange-200/60 mt-0.5">기정사실화</div>
-              </div>
-              <div className="p-2 rounded-xl bg-white/[0.04] border border-white/5">
-                <div className="text-[9px] text-white/50">STEP 3</div>
-                <div className="text-xs font-bold text-yellow-200 font-sans">Receive (수용)</div>
-                <div className="text-[9px] text-white/40 mt-0.5">감사의 진동</div>
-              </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => fetchWishesHistory()}
+                title="기록 새로고침"
+                className="p-1 rounded-lg text-white/40 hover:text-amber-300 hover:bg-white/5 transition-all cursor-pointer"
+              >
+                <RefreshCw size={12} className={loadingHistory ? 'animate-spin text-amber-400' : ''} />
+              </button>
+              {wishesHistory.length > 2 && (
+                <button
+                  type="button"
+                  onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}
+                  className="text-[11px] text-amber-300 hover:text-amber-200 flex items-center gap-1 cursor-pointer font-sans"
+                >
+                  <span>{isHistoryExpanded ? '접기' : `더보기 (${wishesHistory.length}개)`}</span>
+                  {isHistoryExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Right Menu Status: Wishing Well (소원의 우물 과거 투사 기록 리스트) */}
-          <div className="p-4 rounded-2xl bg-black/30 border border-amber-400/25 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <Compass size={14} className="text-amber-400" />
-                <span className="text-[11px] font-bold text-amber-300">
-                  우측 메뉴 : 소원의 우물 동전 투사
-                </span>
-                <span className="text-[9px] text-amber-300 font-mono font-bold bg-amber-500/15 border border-amber-400/25 px-1.5 py-0.5 rounded-full">
-                  과거 투사 {wishesHistory.length}건
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => fetchWishesHistory()}
-                  title="기록 새로고침"
-                  className="p-1 rounded-lg text-white/40 hover:text-amber-300 hover:bg-white/5 transition-all cursor-pointer"
-                >
-                  <RefreshCw size={11} className={loadingHistory ? 'animate-spin text-amber-400' : ''} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (typeof window !== 'undefined') {
-                      window.dispatchEvent(new CustomEvent('prism-tab-change', { detail: { tab: 'wishingWell' } }));
-                    }
-                  }}
-                  className="text-[10px] text-amber-300/80 hover:text-amber-200 flex items-center gap-0.5 transition-all cursor-pointer"
-                >
-                  <span>우물 가기</span>
-                  <ArrowRight size={10} />
-                </button>
-              </div>
-            </div>
+          <div className={`space-y-1.5 overflow-y-auto pr-1 ${isHistoryExpanded ? 'max-h-56' : 'max-h-36'}`}>
+            {(isHistoryExpanded ? wishesHistory : wishesHistory.slice(0, 2)).map((item, idx) => {
+              const isSelected = targetWish === item.wish;
+              const catMeta = WISH_CATEGORIES.find(c => c.id === item.category);
 
-            {/* Past Wish Records Display */}
-            {loadingHistory ? (
-              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 text-center text-[11px] text-white/40 flex items-center justify-center gap-2">
-                <RefreshCw size={12} className="animate-spin text-amber-400" />
-                <span>과거 투사된 동전의 소원을 불러오는 중...</span>
-              </div>
-            ) : wishesHistory.length > 0 ? (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-[10px] text-amber-200/60 font-mono">
-                  <span>과거 투사 기록 (클릭 시 아래 목표로 자동 입력):</span>
-                  {wishesHistory.length > 2 && (
-                    <button
-                      type="button"
-                      onClick={() => setIsHistoryExpanded(!isHistoryExpanded)}
-                      className="text-amber-300 hover:text-amber-200 flex items-center gap-0.5 underline cursor-pointer"
-                    >
-                      <span>{isHistoryExpanded ? '접기 (최근 2개)' : `더보기 (총 ${wishesHistory.length}개)`}</span>
-                      {isHistoryExpanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-                    </button>
-                  )}
+              return (
+                <div
+                  key={item.id || idx}
+                  onClick={() => handleSelectWishFromHistory(item)}
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer group ${
+                    isSelected
+                      ? 'bg-amber-500/20 border-amber-400/80 shadow-[0_0_12px_rgba(245,158,11,0.2)]'
+                      : 'bg-white/[0.03] hover:bg-amber-500/10 border-white/10 hover:border-amber-400/30'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-1 mb-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[9px] font-bold text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-400/20">
+                        {catMeta?.emoji || '🪙'} {item.categoryLabel || catMeta?.label || '소원'}
+                      </span>
+                      {item.crystalKeyword && (
+                        <span className="text-[9px] text-yellow-200/80 font-mono bg-yellow-500/10 px-1 rounded border border-yellow-500/20">
+                          ✨ {item.crystalKeyword}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[9px] text-white/40 font-mono shrink-0">
+                      {formatWishDate(item.createdAt)}
+                    </span>
+                  </div>
+
+                  <p className="text-xs font-semibold text-white/90 group-hover:text-amber-100 transition-colors line-clamp-2">
+                    "{item.wish}"
+                  </p>
+
+                  <div className="mt-1 flex items-center justify-between text-[9px]">
+                    <span className="text-amber-400/70 group-hover:text-amber-300 font-mono flex items-center gap-1">
+                      <Sparkles size={9} />
+                      {isSelected ? '현재 가속 목표 선택됨' : '목표로 불러오기'}
+                    </span>
+                    {isSelected && (
+                      <span className="text-emerald-400 font-bold flex items-center gap-0.5">
+                        <CheckCircle size={10} /> 활성
+                      </span>
+                    )}
+                  </div>
                 </div>
-
-                <div className={`space-y-1.5 overflow-y-auto pr-1 ${isHistoryExpanded ? 'max-h-56' : 'max-h-36'}`}>
-                  {(isHistoryExpanded ? wishesHistory : wishesHistory.slice(0, 2)).map((item, idx) => {
-                    const isSelected = targetWish === item.wish;
-                    const catMeta = WISH_CATEGORIES.find(c => c.id === item.category);
-
-                    return (
-                      <div
-                        key={item.id || idx}
-                        onClick={() => handleSelectWishFromHistory(item)}
-                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer group ${
-                          isSelected
-                            ? 'bg-amber-500/20 border-amber-400/80 shadow-[0_0_12px_rgba(245,158,11,0.2)]'
-                            : 'bg-white/[0.03] hover:bg-amber-500/10 border-white/10 hover:border-amber-400/30'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between gap-1 mb-1">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-[9px] font-bold text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-400/20">
-                              {catMeta?.emoji || '🪙'} {item.categoryLabel || catMeta?.label || '소원'}
-                            </span>
-                            {item.crystalKeyword && (
-                              <span className="text-[9px] text-yellow-200/80 font-mono bg-yellow-500/10 px-1 rounded border border-yellow-500/20">
-                                ✨ {item.crystalKeyword}
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-[9px] text-white/40 font-mono shrink-0">
-                            {formatWishDate(item.createdAt)}
-                          </span>
-                        </div>
-
-                        <p className="text-xs font-semibold text-white/90 group-hover:text-amber-100 transition-colors line-clamp-2">
-                          "{item.wish}"
-                        </p>
-
-                        <div className="mt-1 flex items-center justify-between text-[9px]">
-                          <span className="text-amber-400/70 group-hover:text-amber-300 font-mono flex items-center gap-1">
-                            <Sparkles size={9} />
-                            {isSelected ? '현재 가속 목표 선택됨' : '목표로 불러오기'}
-                          </span>
-                          {isSelected && (
-                            <span className="text-emerald-400 font-bold flex items-center gap-0.5">
-                              <CheckCircle size={10} /> 활성
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : (
-              <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 text-center space-y-2">
-                <p className="text-[11px] text-white/50">아직 우물에 투사된 동전 소원이 없습니다.</p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (typeof window !== 'undefined') {
-                      window.dispatchEvent(new CustomEvent('prism-tab-change', { detail: { tab: 'wishingWell' } }));
-                    }
-                  }}
-                  className="px-3 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-[10px] font-bold transition-all cursor-pointer inline-flex items-center gap-1"
-                >
-                  <Sparkles size={11} className="text-amber-400" />
-                  <span>소원의 우물에서 동전 던지기</span>
-                </button>
-              </div>
-            )}
+              );
+            })}
           </div>
         </div>
-      </div>
+      )}
 
       {/* Target Wish Formulation Card */}
       <div className="glass p-6 sm:p-8 rounded-[32px] border border-white/10 space-y-6">
@@ -1105,36 +1041,17 @@ export function OrangeSynergySection() {
             </div>
           </div>
 
-          {/* Fusion Matrix Report */}
-          {catalystData.fusionMatrix && (
-            <div className="p-5 rounded-3xl bg-orange-950/30 border border-orange-400/30 space-y-3">
-              <div className="flex items-center gap-2 text-orange-300 text-xs font-bold font-mono uppercase tracking-wider">
-                <Layers size={14} className="text-orange-400" />
-                <span>양쪽 메뉴 융합 매트릭스 (Fusion Matrix)</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 space-y-1">
-                  <div className="text-[10px] font-bold text-orange-400">좌측 : 시크릿 끌어당김 진동</div>
-                  <div className="text-xs text-white/80 font-sans leading-relaxed">{catalystData.fusionMatrix.secretElement}</div>
-                </div>
-                <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 space-y-1">
-                  <div className="text-[10px] font-bold text-amber-400">우측 : 소원 우물 투사 각인</div>
-                  <div className="text-xs text-white/80 font-sans leading-relaxed">{catalystData.fusionMatrix.wishWellElement}</div>
-                </div>
-                <div className="p-3.5 rounded-2xl bg-black/40 border border-yellow-500/30 space-y-1">
-                  <div className="text-[10px] font-bold text-yellow-300">융합 : 양자 도약 연금술</div>
-                  <div className="text-xs text-white/80 font-sans leading-relaxed">{catalystData.fusionMatrix.quantumLeapAlchemy}</div>
-                </div>
-              </div>
+          {/* Sensory Script Card - Prominently Displayed Centerpiece */}
+          <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-orange-900/35 via-zinc-900/60 to-yellow-900/25 border border-orange-400/50 relative shadow-2xl space-y-3.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-mono text-orange-300 uppercase tracking-widest font-bold flex items-center gap-1.5">
+                <Sparkles size={14} className="text-yellow-400 animate-pulse" />
+                이미 이루어진 오감 현실화 스크립트 (Living in the End)
+              </span>
+              <span className="text-[10px] text-amber-300/80 font-mono bg-amber-500/10 border border-amber-400/20 px-2 py-0.5 rounded-full">
+                오감 몰입 정렬
+              </span>
             </div>
-          )}
-
-          {/* Sensory Script Card */}
-          <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-orange-900/30 via-zinc-900/50 to-yellow-900/20 border border-orange-400/40 relative shadow-inner space-y-3">
-            <span className="text-[10px] font-mono text-orange-300 uppercase tracking-widest font-bold flex items-center gap-1.5">
-              <Sparkles size={14} className="text-yellow-400" />
-              이미 이루어진 오감 현실화 스크립트 (Sensory Script)
-            </span>
             <p className="text-base sm:text-lg font-bold text-white leading-relaxed tracking-tight break-keep">
               "{catalystData.sensoryScript}"
             </p>
