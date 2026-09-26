@@ -2698,29 +2698,6 @@ export function ArtRecommendationView() {
         )}
       </AnimatePresence>
 
-      {/* 🚀 플로팅 액션 버튼: 스크롤을 내려도 모바일/데스크톱 화면 하단에 '오늘의 예술 추천 새로 생성' 상시 표출 */}
-      {recommendation && !loading && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          className="fixed bottom-[calc(var(--sab,0px)+5.25rem)] md:bottom-8 right-3 sm:right-6 md:right-8 z-40 pointer-events-auto"
-        >
-          <button
-            type="button"
-            onClick={() => {
-              void handleRecommendArt({ forceRefresh: true, randomOffset: Date.now(), userConcern: customConcern.trim() });
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            className="prism-rainbow-btn py-2.5 sm:py-3 px-3.5 sm:px-5 rounded-full text-xs font-black uppercase tracking-wider text-white shadow-2xl flex items-center gap-2 border border-white/20 hover:scale-105 active:scale-95 transition-all cursor-pointer backdrop-blur-md"
-            title="오늘의 예술 추천 새로 생성하기"
-          >
-            <Sparkles size={14} className="text-yellow-300 animate-pulse" />
-            <span className="hidden sm:inline">🎨 오늘의 예술 추천 새로 생성</span>
-            <span className="sm:hidden">🎨 추천 새로 생성</span>
-          </button>
-        </motion.div>
-      )}
-
     </div>
   );
 }
