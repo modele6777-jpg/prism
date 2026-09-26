@@ -5,6 +5,7 @@
 
 import { calculateDetailedSaju } from '@/lib/sajuAnalysis';
 import type { UserProfile } from '@/lib/sharedState';
+import { extractConciseSummary } from '@/lib/tarotSummaryUtils';
 
 // ✨ Constants
 export const HS = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
@@ -979,7 +980,7 @@ _"카드는 정해진 운명을 가두는 틀이 아니라, 당신 안의 빛을
 }
 
 /**
- * 타로 결과가 중간에 끊기거나 미완성으로 남지 않도록 완결성을 보장하는 함수
+ * 타로 결과가 중간에 끊기거나 미완성으로 남지 않도록 5단계 완결성을 보장하는 함수
  */
 export function ensureCompleteTarotReading(
   text: string,
@@ -990,31 +991,71 @@ export function ensureCompleteTarotReading(
     return buildLocalTarotReading(concern, cards || []);
   }
 
-  // 리딩 후반부(5단계 축복)가 누락되어 끊긴 경우만 필요한 부분 보완
-  const hasStep5 =
-    text.includes("5.") ||
-    text.includes("5단계") ||
-    text.includes("영혼의 한마디") ||
-    text.includes("축복");
+  let cleaned = text.trim();
+  const localFull = Array.isArray(cards) && cards.length > 0 ? buildLocalTarotReading(concern, cards) : '';
 
-  if (!hasStep5 && Array.isArray(cards) && cards.length > 0) {
-    const localFull = buildLocalTarotReading(concern, cards);
-    const hasStep4 = text.includes("4.") || text.includes("4단계") || text.includes("실천 처방");
-    if (hasStep4) {
-      // 4단계가 이미 있으므로 5단계 축복만 보완하여 중복 방지
-      const step5Match = localFull.match(/### ✨ 5\.[\s\S]*/);
-      if (step5Match) {
-        return text.trim() + "\n\n" + step5Match[0];
-      }
-    } else {
+  // 1. 4단계 및 5단계 완결성 엄밀 판정
+  const step4Pattern = /(?:###\s*(?:🌿\s*)?4[\.\s]|4단계|운의\s*흐름을\s*바꿀|개운\s*가이드|실천\s*처방)/;
+  const step5Pattern = /(?:###\s*(?:✨\s*)?5[\.\s]|5단계|영혼의\s*한마디|당신의\s*길을\s*축복하는)/;
+
+  const hasStep4 = step4Pattern.test(cleaned);
+  const hasStep5 = step5Pattern.test(cleaned);
+
+  let step5IsIncomplete = false;
+  if (hasStep5) {
+    const step5Idx = cleaned.search(step5Pattern);
+    const step5Content = cleaned.slice(step5Idx);
+    // 5단계 헤더 이후 본문 길이가 45자 미만이거나 문장이 중단된 경우
+    if (step5Content.length < 50 || /[,;:—\-\s]$/.test(cleaned) || !/[.!?…"'\*_]$/.test(cleaned)) {
+      step5IsIncomplete = true;
+    }
+  }
+
+  // 2. 누락되거나 잘린 섹션을 로컬 오라클로 온전히 보완
+  if (localFull) {
+    if (!hasStep4) {
+      // 4단계와 5단계가 모두 누락된 경우
       const step4Match = localFull.match(/### 🌿 4\.[\s\S]*/);
       if (step4Match) {
-        return text.trim() + "\n\n" + step4Match[0];
+        cleaned = cleaned + "\n\n" + step4Match[0];
+      }
+    } else if (!hasStep5 || step5IsIncomplete) {
+      // 4단계는 있으나 5단계가 누락되었거나 끝부분이 중간에 끊긴 경우
+      if (step5IsIncomplete) {
+        const step5Idx = cleaned.search(step5Pattern);
+        cleaned = cleaned.slice(0, step5Idx).trim();
+      }
+      const step5Match = localFull.match(/### ✨ 5\.[\s\S]*/);
+      if (step5Match) {
+        cleaned = cleaned + "\n\n" + step5Match[0];
       }
     }
   }
 
-  return text;
+  // 3. 미완성 마크다운 서식 닫기
+  const quoteCount = (cleaned.match(/"/g) || []).length;
+  if (quoteCount % 2 !== 0) cleaned += '"';
+  const italicCount = (cleaned.match(/_/g) || []).length;
+  if (italicCount % 2 !== 0) cleaned += '_';
+  const boldCount = (cleaned.match(/\*\*/g) || []).length;
+  if (boldCount % 2 !== 0) cleaned += '**';
+
+  // 4. 종결 부호 보완
+  if (!/[.!?…"'\*_]$/.test(cleaned)) {
+    cleaned += '.';
+  }
+
+  // 5. 핵심 3줄 요약 블록 누락 방지 (리딩 본문 끝에 요약이 없으면 자동 생성 보완)
+  const hasSummaryBlock = /(?:\[핵심\s*(?:3줄\s*|세줄\s*)?요약\]|###\s*.*핵심\s*(?:3줄\s*|세줄\s*)?요약|###\s*.*핵심\s*요약|\[핵심\s*요약\])/i.test(cleaned);
+  if (!hasSummaryBlock) {
+    const summaryLines = extractConciseSummary(cleaned, cards?.[0]);
+    if (summaryLines.length === 3) {
+      cleaned += `\n\n[핵심 3줄 요약]\n- ${summaryLines[0]}\n- ${summaryLines[1]}\n- ${summaryLines[2]}`;
+    }
+  }
+
+  return cleaned;
 }
+
 
 

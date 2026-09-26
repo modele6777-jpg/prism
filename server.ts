@@ -1015,6 +1015,7 @@ ${content}
 
         const config = {
           systemInstruction,
+          maxOutputTokens: 8192,
           responseMimeType: "application/json",
           responseSchema: {
             type: "OBJECT",

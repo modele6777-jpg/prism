@@ -2,6 +2,7 @@ import { getTodayDateKey } from '@/lib/dailyCache';
 import { getTarotCardImageUrl, type TarotCard } from '@/data/tarotData';
 import { prepareNaturalSpeechText } from '@/utils/speechText';
 import { extractConciseSummary, stripSummaryFromTarotText } from '@/lib/tarotSummaryUtils';
+import { ensureCompleteTarotReading } from '@/lib/trinity/utils';
 
 export interface TarotNarrationChapter {
   id: 'card_anchor' | 'summary' | 'master_diagnosis' | 'action_remedy' | 'blessing_frequency';
@@ -105,7 +106,7 @@ export function buildTarotNarrationContent(dailyResult: any): TarotNarrationData
     : ['변화', '직관', '도약', '조율'];
   const imageUrl = getTarotCardImageUrl(drawnCard);
 
-  const fullSourceText = String(
+  const rawSourceText = String(
     dailyResult.diagnosis ||
     dailyResult.summary ||
     dailyResult.prescription ||
@@ -113,7 +114,13 @@ export function buildTarotNarrationContent(dailyResult: any): TarotNarrationData
     '오늘 하루는 내면의 직관과 차분한 호흡에 집중할 때 가장 맑고 조화로운 길이 열립니다.'
   ).trim();
 
-  const conciseSummaryBullets = extractConciseSummary(fullSourceText);
+  const fullSourceText = ensureCompleteTarotReading(
+    rawSourceText,
+    "오늘의 데일리 타로 리딩",
+    drawnCard ? [drawnCard] : []
+  );
+
+  const conciseSummaryBullets = extractConciseSummary(fullSourceText, drawnCard || dailyResult);
   const cleanDiag = cleanDiagnosisText(fullSourceText);
 
   const summarySpeechText = prepareNaturalSpeechText(
