@@ -4,6 +4,7 @@ import { Sparkles, BookMarked, Zap } from "lucide-react";
 import { safeSessionStorage } from "@/utils/safeStorage";
 import { getTossRule, executeSmartToss, type ChannelTossRule } from "@/lib/prismTossRegistry";
 import { useSpecialFeatureChromeHidden, SPECIAL_FEATURE_CHROME_HIDDEN_CLASS } from "@/components/SpecialFeaturePanel";
+import { playAudioHaptic } from "@/lib/audioHaptics";
 
 interface SpecialFeatureFabGroupProps {
   children: React.ReactNode;
@@ -65,7 +66,10 @@ export function SpecialFeatureButton({
 
       <motion.button
         type="button"
-        onClick={onClick}
+        onClick={() => {
+          playAudioHaptic('tap_light');
+          onClick();
+        }}
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.94 }}
         className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 cursor-pointer relative overflow-hidden text-white backdrop-blur-xl border border-white/25 shadow-lg transition-all bg-gradient-to-tr from-slate-900/90 via-slate-800/80 to-slate-700/70 active:scale-95 ${
@@ -101,7 +105,10 @@ export function ChatFabButton({ onClick, className = "" }: ChatFabButtonProps) {
 
       <motion.button
         type="button"
-        onClick={onClick}
+        onClick={() => {
+          playAudioHaptic('tap_light');
+          onClick();
+        }}
         whileHover={{ scale: 1.1, rotate: [0, -3, 3, 0] }}
         whileTap={{ scale: 0.92 }}
         className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 cursor-pointer outline-none relative text-white border border-purple-300/40 ring-1 ring-purple-400/30 shadow-[0_0_16px_rgba(168,85,247,0.45),0_4px_12px_rgba(0,0,0,0.5)] hover:shadow-[0_0_24px_rgba(236,72,153,0.6),0_6px_16px_rgba(0,0,0,0.6)] active:scale-95 transition-all bg-gradient-to-tr from-[#1e1b4b] via-[#7c3aed] to-[#ec4899] overflow-hidden"

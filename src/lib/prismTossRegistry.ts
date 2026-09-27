@@ -1,5 +1,6 @@
 import { sendPrismToss, type PrismTossPayload } from './prismToss';
 import { resolveCanonicalPath } from './prismRouteRegistry';
+import { playAudioHaptic } from './audioHaptics';
 
 export interface TossDestination {
   id: string;
@@ -419,11 +420,7 @@ export function executeSmartToss(
     return;
   }
 
-  try {
-    if (typeof window !== 'undefined' && 'vibrate' in navigator) {
-      navigator.vibrate?.(40);
-    }
-  } catch (_) {}
+  playAudioHaptic('tap_impact');
 
   const extractedMsg = contextData?.text || contextData?.contextMessage || `${sourceApp} 세션에서 연계된 토스`;
 

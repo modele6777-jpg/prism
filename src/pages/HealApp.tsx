@@ -23,6 +23,7 @@ import { OneMinuteMeditationView } from '@/components/heal/OneMinuteMeditationVi
 import { AuraSynergySection } from '@/components/heal/AuraSynergySection';
 import { openChannelIntro } from '@/components/common/ChannelIntroModal';
 import { useBinauralBeat } from '@/hooks/useBinauralBeat';
+import { playAudioHaptic } from '@/lib/audioHaptics';
 import { z } from 'zod';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, LineChart, Line, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from 'recharts';
 import { CalendarView } from '@/components/CalendarView';
@@ -410,6 +411,7 @@ function DailyOracleSection({
     setSelectedCardIdx(idx);
     setSelectedTimeSpaceCard(card);
     setGachaStep(2); // Play Rising and Mist Burst Animation
+    playAudioHaptic('card_draw');
     
     // Beautiful chime arpeggio
     try {

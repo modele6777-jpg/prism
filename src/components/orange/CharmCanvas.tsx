@@ -16,6 +16,7 @@ import {
   isCharmFromToday,
   loadTalismanChest,
 } from '@/lib/charmStorage';
+import { playAudioHaptic } from '@/lib/audioHaptics';
 
 interface CharmCanvasProps {
   onSuggestText?: (text: string) => void;
@@ -828,6 +829,8 @@ export const CharmCanvas: React.FC<CharmCanvasProps> = ({ onSuggestText, onChang
     setTimeout(() => {
       setIsForging(false);
       setHasDrawnToday(true);
+      playAudioHaptic('card_draw');
+      setTimeout(() => playAudioHaptic('save_success', { volume: 0.9 }), 180);
       triggerToast(`🎨 오늘의 고품격 [${rarity === 'Legendary' ? '레전더리' : '레어'} 천명 부적]이 안전하게 조율 주조되었습니다!`);
     }, 300);
   };
@@ -847,6 +850,7 @@ export const CharmCanvas: React.FC<CharmCanvasProps> = ({ onSuggestText, onChang
     } catch (e) {
       console.error(e);
     }
+    playAudioHaptic('save_success');
     triggerToast(`⚡ ${ELEMENT_DETAILS[activeCharm.element].name} 만사대길 보양 버프가 마취 장착되었습니다!`);
   };
 
@@ -869,6 +873,7 @@ export const CharmCanvas: React.FC<CharmCanvasProps> = ({ onSuggestText, onChang
     link.download = `PRISM_SACRED_CHARM_${activeCharm.element}_${activeCharm.rarity}_${Date.now()}.png`;
     link.href = activeCharm.dataUrl;
     link.click();
+    playAudioHaptic('save_success');
     triggerToast('스마트폰 락스크리 전용 최고화질 부적 원화가 기기에 안전하게 복사 저장되었습니다.');
   };
 

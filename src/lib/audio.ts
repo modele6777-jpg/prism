@@ -1118,5 +1118,5 @@ export function playWishingWellPlopSound(): void {
   }
 }
 
-
-
+// Re-export audio haptic feedback engine
+export * from './audioHaptics';

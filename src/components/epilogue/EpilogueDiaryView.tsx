@@ -34,6 +34,7 @@ import { invokeEpilogueSummaryLLM, invokeMindDiaryLLM, invokeLucyMidnightWhisper
 import { TTSButton } from '@/components/TTSButton';
 import { EpilogueAchievementShareModal } from './EpilogueAchievementShareModal';
 import { calculateEpilogueAchievementStats } from '@/types/epilogueAchievement';
+import { playAudioHaptic } from '@/lib/audioHaptics';
 
 export interface EpilogueDiaryEntry {
   id: string;
@@ -453,6 +454,7 @@ export function EpilogueDiaryView() {
       lastSavedSignatureRef.current = verifySignature;
 
       setAutoSaved(true);
+      playAudioHaptic('save_auto');
       const hideTimer = setTimeout(() => setAutoSaved(false), 2000);
       return () => clearTimeout(hideTimer);
     }, 1000);
@@ -693,6 +695,7 @@ export function EpilogueDiaryView() {
       );
       setAutoSaved(false);
       setSavedSuccess(true);
+      playAudioHaptic('save_success');
       setTimeout(() => setSavedSuccess(false), 2500);
     } catch (err) {
       console.error('[EpilogueDiary] Save failed:', err);

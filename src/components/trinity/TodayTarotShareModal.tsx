@@ -18,6 +18,7 @@ import {
   downloadCanvasAsPng,
   shareTodayTarot,
 } from '@/utils/todayTarotExporter';
+import { playAudioHaptic } from '@/lib/audioHaptics';
 
 export interface TodayTarotShareModalProps {
   isOpen: boolean;
@@ -94,6 +95,7 @@ export function TodayTarotShareModal({ isOpen, onClose, data }: TodayTarotShareM
       const filename = `prism_today_tarot_${dateKey}_${cardName}.png`;
 
       await downloadCanvasAsPng(canvas, filename);
+      playAudioHaptic('save_success');
       setShareSuccessNotice('고해상도 카드 이미지가 저장되었습니다! 🖼️');
       setTimeout(() => setShareSuccessNotice(null), 3500);
     } catch (e) {

@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { TTSButton } from '@/components/TTSButton';
 import { ImageOutputActions } from '@/components/ImageOutputActions';
+import { playAudioHaptic } from '@/lib/audioHaptics';
 import {
   HOPONOPONO_TOOL_CATALOG,
   getHoponoponoToolFallbackImageUrl,
@@ -128,7 +129,10 @@ export function HoponoponoToolPicker({
               type="button"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => onSelect(tool.id)}
+              onClick={() => {
+                playAudioHaptic('card_snap');
+                onSelect(tool.id);
+              }}
               className={`p-3.5 rounded-2xl text-left border transition-all cursor-pointer flex flex-col justify-between min-h-[96px] ${
                 isActive
                   ? 'bg-sky-500/15 border-sky-400/40 shadow-[0_0_12px_rgba(56,189,248,0.15)] ring-1 ring-sky-400/30'
@@ -202,7 +206,10 @@ export function HoponoponoToolResultCard({
         {onDelete && !compact && (
           <button
             type="button"
-            onClick={onDelete}
+            onClick={() => {
+              playAudioHaptic('delete_discard');
+              onDelete();
+            }}
             className="self-start px-3 py-1.5 rounded-lg bg-white/5 hover:bg-rose-500/10 border border-white/5 hover:border-rose-500/20 text-white/40 hover:text-rose-300 text-xs flex items-center gap-1.5 transition-all cursor-pointer"
           >
             <Trash2 size={12} />

@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { TAROT_DECK, TarotCard, getTarotCardImageUrl, rollTarotReversed } from '../../data/tarotData';
 import { TarotCardZoomModal } from './TarotCardZoomModal';
+import { playAudioHaptic } from '@/lib/audioHaptics';
 
 export interface SelectedTarotCardEntry extends TarotCard {
   touchMetadata?: any | null;
@@ -556,12 +557,8 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
     (cardToSelect: TarotCard) => {
       if (isFinishing || hasCompletedRef.current || selectedEntries.length >= maxCards) return;
 
-      // Tactile haptic vibration on mobile
-      try {
-        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-          navigator.vibrate(15);
-        }
-      } catch (_) {}
+      // Tactile audio haptic feedback (acoustic + physical vibration)
+      playAudioHaptic('card_draw');
 
       setSelectedEntries((prev) => {
         if (prev.some((entry) => entry.card.id === cardToSelect.id) || prev.length >= maxCards) return prev;
@@ -571,7 +568,8 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
           if (hasCompletedRef.current) return next;
           hasCompletedRef.current = true;
           setIsFinishing(true);
-          // Allow final card animation to smoothly settle before completing
+          // Affirming chord & settling animation
+          playAudioHaptic('save_success', { volume: 0.9 });
           window.setTimeout(() => {
             onComplete(
               next.map((entry) => ({
@@ -590,12 +588,14 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
 
   // Quick Spin & Shuffle Controls (Strictly shuffles ONLY remaining unpicked cards)
   const handleQuickSpin = (direction: 'left' | 'right') => {
+    playAudioHaptic('card_draw', { volume: 0.65 });
     stopMomentum();
     const impulse = direction === 'left' ? -6 : 6;
     startMomentum(impulse);
   };
 
   const handleShuffleDeck = () => {
+    playAudioHaptic('card_shuffle');
     stopMomentum();
     setDeck((prevDeck) => {
       const remaining = prevDeck.filter((card) => !selectedIds.includes(card.id));
@@ -657,6 +657,9 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
         const nextId = hovered?.id || null;
         if (nextId !== hoveredCardId) {
           setHoveredCardId(nextId);
+          if (nextId) {
+            playAudioHaptic('card_hover');
+          }
         }
       }
       return;

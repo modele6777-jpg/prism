@@ -19,6 +19,7 @@ import {
   setDevicePerfOverride,
   getPerfProfile,
 } from '@/lib/perfMode';
+import { playAudioHaptic, isAudioHapticsEnabled, setAudioHapticsEnabled } from '@/lib/audioHaptics';
 
 const SECTIONS = [
   { id: 'basic', label: '기본 정보', icon: User, color: 'oklch(0.75 0.12 50)', desc: '이름 · 생년월일 · 성별' },
@@ -101,6 +102,7 @@ export default function ProfileModal({ isOpen, onClose }: { isOpen: boolean; onC
   const [pairingLoading, setPairingLoading] = useState(false);
   const [pairingStatus, setPairingStatus] = useState<string | null>(null);
   const [perfOverride, setPerfOverride] = useState<string | null>(getDevicePerfOverride());
+  const [audioHaptics, setAudioHaptics] = useState(() => isAudioHapticsEnabled());
 
   const initialProfile = sharedState?.userProfile || getPersistentUserProfile();
 
@@ -207,6 +209,7 @@ export default function ProfileModal({ isOpen, onClose }: { isOpen: boolean; onC
       
       if (!silent) {
         setSaved(true);
+        playAudioHaptic('save_success');
         setTimeout(() => setSaved(false), 2000);
       }
     } catch (err) {
@@ -681,6 +684,55 @@ export default function ProfileModal({ isOpen, onClose }: { isOpen: boolean; onC
                     : isIPhoneXSClass()
                     ? '✓ 자동 활성됨'
                     : 'iPhone X/XS 모드 켜기'}
+                </button>
+              </div>
+            </div>
+
+            {/* 🎧 오디오 햅틱 피드백 */}
+            <div className="p-4 rounded-[22px] sm:rounded-[24px] bg-[#141522] border border-white/10 flex flex-col gap-3 mt-1">
+              <div className="flex items-center justify-between flex-wrap gap-1">
+                <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                  🎧 오디오 햅틱 피드백 (Audio Haptics)
+                </span>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold flex items-center gap-1 border ${
+                  audioHaptics
+                    ? 'text-sky-300 bg-sky-500/20 border-sky-500/30'
+                    : 'text-white/40 bg-white/5 border-white/10'
+                }`}>
+                  {audioHaptics ? '● 활성화됨' : '○ 꺼짐'}
+                </span>
+              </div>
+              <p className="text-[11px] text-white/50 leading-relaxed">
+                타로 카드 뽑기, 저장 완료, 탭 인터랙션 시 섬세한 음향과 기기 진동(지원 기기)으로 물리적 카드와 스위치의 촉감을 생생하게 재현합니다.
+              </p>
+              <div className="flex items-center justify-between pt-1 border-t border-white/5 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    playAudioHaptic('card_draw');
+                    setTimeout(() => playAudioHaptic('save_success', { volume: 0.8 }), 220);
+                  }}
+                  className="text-[11px] font-medium px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 text-white/70 hover:text-white transition-all cursor-pointer"
+                >
+                  🔔 촉감 사운드 테스트
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !audioHaptics;
+                    setAudioHaptics(next);
+                    setAudioHapticsEnabled(next);
+                    if (next) {
+                      playAudioHaptic('save_success');
+                    }
+                  }}
+                  className={`text-[11px] font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
+                    audioHaptics
+                      ? 'bg-sky-500/20 text-sky-300 border-sky-500/40 hover:bg-sky-500/30'
+                      : 'bg-white/5 text-white/60 border-white/10 hover:text-white'
+                  }`}
+                >
+                  {audioHaptics ? '✓ 켜짐' : '오디오 햅틱 켜기'}
                 </button>
               </div>
             </div>

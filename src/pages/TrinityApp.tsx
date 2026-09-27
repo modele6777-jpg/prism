@@ -95,6 +95,7 @@ import { AcimHandbookModal } from "@/components/trinity/AcimHandbookModal";
 import { useBinauralBeat } from "@/hooks/useBinauralBeat";
 import { TarotSpread } from "@/components/trinity/TarotSpread";
 import { TarotSpreadSelectionModal } from "@/components/trinity/TarotSpreadSelectionModal";
+import { playAudioHaptic } from "@/lib/audioHaptics";
 import { TodayTarotNarrationModal } from "@/components/trinity/TodayTarotNarrationModal";
 import { LucyTarotAdviceCard } from "@/components/trinity/LucyTarotAdviceCard";
 import { TodayTarotShareButton } from "@/components/trinity/TodayTarotShareModal";
@@ -1154,12 +1155,8 @@ function playDailyCardChimeAsync() {
       setShowDailyModal(true);
       return;
     }
-    // Mobile tactile haptic vibration
-    try {
-      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-        navigator.vibrate([25, 45, 30]);
-      }
-    } catch (_) {}
+    // Tactile audio haptic feedback for card draw
+    playAudioHaptic('card_draw');
 
     // Instant non-blocking chime execution
     playDailyCardChimeAsync();
@@ -1293,11 +1290,7 @@ function playDailyCardChimeAsync() {
                 transition: { type: "spring", stiffness: 450, damping: 15 },
               }}
               onTouchStart={() => {
-                try {
-                  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-                    navigator.vibrate(15);
-                  }
-                } catch (_) {}
+                playAudioHaptic('card_snap', { volume: 0.5 });
               }}
               onClick={() => selectDailyTarotCard(card, idx)}
               className={cardClass}

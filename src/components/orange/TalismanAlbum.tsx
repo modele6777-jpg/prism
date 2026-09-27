@@ -12,6 +12,7 @@ import {
   isCharmFromToday,
   loadTalismanChest,
 } from '@/lib/charmStorage';
+import { playAudioHaptic } from '@/lib/audioHaptics';
 
 const ELEMENT_DETAILS = {
   wood: {
@@ -94,6 +95,7 @@ export function TalismanAlbum({ onClose }: { onClose?: () => void }) {
       persistEquippedCharm(charm);
       setEquippedCharm(charm);
       notifyCharmChanged();
+      playAudioHaptic('save_success');
       triggerToast('부적 오행 영성 버프가 성공적으로 장착되었습니다.');
     } catch (err) {
       console.error(err);
@@ -116,6 +118,7 @@ export function TalismanAlbum({ onClose }: { onClose?: () => void }) {
     link.download = `PRISM_CHARM_${charm.element}_${charm.rarity}_${Date.now()}.png`;
     link.href = charm.dataUrl;
     link.click();
+    playAudioHaptic('save_success');
     triggerToast('스마트폰 락스크린 고화질 원화가 다운로드되었습니다.');
   };
 
@@ -131,6 +134,7 @@ export function TalismanAlbum({ onClose }: { onClose?: () => void }) {
 
     const filtered = talismanChest.filter(t => t.id !== id);
     setTalismanChest(filtered);
+    playAudioHaptic('delete_discard');
     try {
       localStorage.setItem(PRISM_TALISMAN_CHEST_KEY, JSON.stringify(filtered));
       if (equippedCharm?.id === id) {
