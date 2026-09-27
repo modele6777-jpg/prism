@@ -140,7 +140,7 @@ export function LucyTarotAdviceCard({
   const isGrowth = mode === 'oracle' && oracleMode === 'growth';
 
   const badgeTitle = isHealing
-    ? '루시 ✕ 제제의 힐링 오라클 조언'
+    ? '사주 ✕ 타로 오라클 마스터 조언'
     : isGrowth
     ? '루시의 그로스 실행 코칭'
     : '루시의 특별 맞춤 조언';
@@ -159,7 +159,7 @@ export function LucyTarotAdviceCard({
     const defaultTitle = mode === 'daily'
       ? '오늘의 데일리 타로'
       : mode === 'oracle'
-      ? (oracleMode === 'healing' ? '제제의 치유 오라클' : '루시의 성장 오라클')
+      ? (oracleMode === 'healing' ? '사주 ✕ 타로 마스터 오라클' : '루시의 성장 오라클')
       : '78장 타로 마스터 비전';
 
     return {
