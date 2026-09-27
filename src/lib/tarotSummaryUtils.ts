@@ -2,31 +2,46 @@
  * 타로 리딩 핵심 3줄 요약 추출 및 하단 중복 요약 블록 분리 유틸리티
  */
 
+/**
+ * 🔮 트리니티 마스터 직관적 결단 섹션 및 리딩에서 YES / NO 제거 및 품격 있는 실행 선언으로 정제
+ */
+export function sanitizeTarotDecisionYesNo(text: string): string {
+  if (!text) return "";
+  return text
+    .replace(/\[\s*(?:확실한\s*)?YES\s*\]/gi, '[적극적인 실행과 도약 권장]')
+    .replace(/\[\s*결단이\s*필요한\s*YES\s*\]/gi, '[준비를 마친 후 적극 실행 권장]')
+    .replace(/\[\s*(?:단호한\s*)?NO\s*\]/gi, '[신중한 호흡 조율 및 내실 다지기]')
+    .replace(/\[\s*신중한\s*타이밍\s*조율\s*\]/gi, '[신중한 검토와 페이스 조절 필요]')
+    .replace(/\bYES\b/gi, '적극 실행')
+    .replace(/\bNO\b/gi, '신중 검토');
+}
+
 export function stripSummaryFromTarotText(text: string): string {
   if (!text) return "";
+  const sanitizedInput = sanitizeTarotDecisionYesNo(text);
 
   // 1. 후행 핵심 요약 섹션 안전하게 분리
   // 요약 블록은 본문(1~5단계) 맨 마지막에 위치하므로 5단계 축복 섹션 이후 또는 후반부(하위 40%)에서만 탐색
-  const step5Match = text.match(/(?:###\s*(?:✨\s*)?5[\.\s]|5단계|영혼의\s*한마디|당신의\s*길을\s*축복하는)/i);
+  const step5Match = sanitizedInput.match(/(?:###\s*(?:✨\s*)?5[\.\s]|5단계|영혼의\s*한마디|당신의\s*길을\s*축복하는)/i);
   const searchStart = step5Match && step5Match.index !== undefined
     ? step5Match.index + 20
-    : Math.floor(text.length * 0.55);
+    : Math.floor(sanitizedInput.length * 0.55);
 
-  const endChunk = text.slice(searchStart);
+  const endChunk = sanitizedInput.slice(searchStart);
   const summaryHeaderMatch = endChunk.match(
     /(?:\r?\n|^)\s*(?:#{1,6}\s*)?(?:✨\s*)?(?:\[\s*)?(?:핵심\s*(?:3줄\s*|세줄\s*)?요약|3줄\s*요약|Quick\s*Summary)(?:\])?\s*(?::)?\s*(?:\r?\n|$)/i
   );
 
   if (summaryHeaderMatch && summaryHeaderMatch.index !== undefined) {
     const cutPos = searchStart + summaryHeaderMatch.index;
-    let cleaned = text.slice(0, cutPos).trim();
+    let cleaned = sanitizedInput.slice(0, cutPos).trim();
     // 잔여 불릿 라인도 안전하게 정리
     cleaned = cleaned.replace(/(?:\r?\n)\s*[-*•·]?\s*\[(?:현재\s*에너지|방향과\s*결단|실천\s*처방)\][^\r\n]*/gi, "").trim();
     return cleaned;
   }
 
   // 2. 말머리 없이 본문 끝부분에 불릿 형태로만 남은 경우만 끝부분 정리
-  let cleaned = text.replace(/(?:\r?\n)\s*[-*•·]?\s*\[(?:현재\s*에너지|방향과\s*결단|실천\s*처방)\][^\r\n]*$/gi, "").trim();
+  let cleaned = sanitizedInput.replace(/(?:\r?\n)\s*[-*•·]?\s*\[(?:현재\s*에너지|방향과\s*결단|실천\s*처방)\][^\r\n]*$/gi, "").trim();
   return cleaned;
 }
 
@@ -358,13 +373,13 @@ export function extractOracleConciseSummary(params: OracleConciseSummaryParams):
     }
 
     return [
-      fmt('마음 진단', diag),
-      fmt('치유의 빛', light),
-      fmt('안식 처방', action),
+      fmt('현재 에너지', diag),
+      fmt('방향과 결단', light),
+      fmt('실천 처방', action),
     ];
   } else {
     // Growth Mode
-    // 1. [현실 진단]
+    // 1. [현재 에너지] (현실 진단)
     let diag = '';
     if (paragraphs.length > 0) {
       const p1 = paragraphs[0];
@@ -377,7 +392,7 @@ export function extractOracleConciseSummary(params: OracleConciseSummaryParams):
       diag = '막연한 불안과 미루기를 멈추고, 지금 직면한 성장의 본질적 과제를 정면으로 마주하세요.';
     }
 
-    // 2. [전략 방향]
+    // 2. [방향과 결단] (전략 방향)
     let strategy = '';
     if (macroFocus && macroFocus.trim().length > 5) {
       strategy = macroFocus.trim();
@@ -392,7 +407,7 @@ export function extractOracleConciseSummary(params: OracleConciseSummaryParams):
       strategy = '우선순위를 단 하나로 압축하고 분산된 에너지를 명확한 실행 나침반에 집중하세요.';
     }
 
-    // 3. [즉각 실행]
+    // 3. [실천 처방] (즉각 실행)
     let mission = '';
     if (microMission?.title) {
       mission = `${microMission.title}${microMission.action_tip ? ` — ${microMission.action_tip}` : ''}`;
@@ -408,9 +423,9 @@ export function extractOracleConciseSummary(params: OracleConciseSummaryParams):
     }
 
     return [
-      fmt('현실 진단', diag),
-      fmt('전략 방향', strategy),
-      fmt('즉각 실행', mission),
+      fmt('현재 에너지', diag),
+      fmt('방향과 결단', strategy),
+      fmt('실천 처방', mission),
     ];
   }
 }

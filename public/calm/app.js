@@ -63,6 +63,11 @@ document.addEventListener('DOMContentLoaded', () => {
       renderWorkbook();
     }
 
+    if (targetTabId === 'tab-exercises' && typeof renderExercisesGrid === 'function') {
+      const activeBtn = document.querySelector('.exercises-filter-strip .filter-pill-btn.active');
+      renderExercisesGrid(activeBtn ? activeBtn.dataset.chapter : 'all');
+    }
+
     if (shouldScroll) {
       window.scrollTo({ top: 400, behavior: 'smooth' });
     }
@@ -552,9 +557,11 @@ document.addEventListener('DOMContentLoaded', () => {
       return ex.chapter.toString() === filterChapter;
     });
 
-    filtered.forEach(ex => {
+    filtered.forEach((ex, idx) => {
       const card = document.createElement('div');
       card.className = 'studio-ex-card';
+      const staggerDelay = Math.min(idx * 0.032, 0.55).toFixed(3);
+      card.style.animationDelay = `${staggerDelay}s`;
       const chapter = ex.chapter || 1;
       const tag = ex.tag || '마음 연습';
       const page = ex.page || 18;

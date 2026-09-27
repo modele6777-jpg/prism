@@ -40,7 +40,7 @@ const openai = new OpenAI({
 });
 
 // @ts-ignore
-export const modelName = import.meta.env?.VITE_GEMINI_MODEL || (aiType === "grok" ? "grok-4.3" : "gemini-3.7-flash");
+export const modelName = import.meta.env?.VITE_GEMINI_MODEL || (aiType === "grok" ? "grok-4.3" : "gemini-3.8-flash");
 
 export interface Message {
   role: "system" | "user" | "model" | "assistant";

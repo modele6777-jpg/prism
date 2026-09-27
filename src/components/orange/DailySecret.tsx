@@ -916,8 +916,11 @@ export function DailySecret() {
       setWish(options.targetWish);
     }
 
+    setLoading(true);
+    setIsAiEnhancing(true);
+
     const now = Date.now();
-    // ⚡ 1. 즉시 0초 만에 완벽한 맞춤 시크릿 키트 생성 및 개방 (Zero-Latency Instant Open)
+    // ⚡ 1. 맞춤 시크릿 키트 고밀도 문맥 정제 (Instant & Resilient Kit)
     const instantKit = generateTailoredSecretFallback(effectiveWish, name, activeSeed);
     const initialData: DailySecretData = {
       ...instantKit,
@@ -926,72 +929,81 @@ export function DailySecret() {
       isReceived: true,
     };
 
-    localStorage.setItem(dayStorageKey('secret_received'), 'true');
-    safeLocalStorage.setItem(dayStorageKey('secret_received'), 'true');
+    const persistSecret = (secretData: DailySecretData) => {
+      setData(secretData);
+      localStorage.setItem(dayStorageKey('secret_received'), 'true');
+      safeLocalStorage.setItem(dayStorageKey('secret_received'), 'true');
 
-    // 🚀 지체 없이 화면 즉각 개방 (한 번 터치로 즉각 열림 보장)
-    setData(initialData);
-    setLoading(false);
+      if (hasWish) {
+        localStorage.setItem(dayStorageKey('wish_applied'), 'true');
+        localStorage.setItem(dayStorageKey('applied_wish'), effectiveWish);
+        localStorage.setItem(dayStorageKey('wish'), effectiveWish);
+        safeLocalStorage.setItem(`orange_daily_secret_applied_wish_${todayKey()}`, effectiveWish);
+        safeLocalStorage.setItem(`orange_daily_secret_wish_${todayKey()}`, effectiveWish);
+        safeLocalStorage.setItem(`orange_daily_secret_wish_applied_${todayKey()}`, 'true');
+        setWish(effectiveWish);
+        setWishApplied(true);
+      } else {
+        localStorage.removeItem(dayStorageKey('applied_wish'));
+        localStorage.removeItem(dayStorageKey('wish_applied'));
+        safeLocalStorage.removeItem(`orange_daily_secret_applied_wish_${todayKey()}`);
+        safeLocalStorage.removeItem(`orange_daily_secret_wish_applied_${todayKey()}`);
+        setWishApplied(false);
+      }
 
-    if (hasWish) {
-      localStorage.setItem(dayStorageKey('wish_applied'), 'true');
-      localStorage.setItem(dayStorageKey('applied_wish'), effectiveWish);
-      localStorage.setItem(dayStorageKey('wish'), effectiveWish);
-      safeLocalStorage.setItem(`orange_daily_secret_applied_wish_${todayKey()}`, effectiveWish);
-      safeLocalStorage.setItem(`orange_daily_secret_wish_${todayKey()}`, effectiveWish);
-      safeLocalStorage.setItem(`orange_daily_secret_wish_applied_${todayKey()}`, 'true');
-      setWish(effectiveWish);
-      setWishApplied(true);
-    } else {
-      localStorage.removeItem(dayStorageKey('applied_wish'));
-      localStorage.removeItem(dayStorageKey('wish_applied'));
-      safeLocalStorage.removeItem(`orange_daily_secret_applied_wish_${todayKey()}`);
-      safeLocalStorage.removeItem(`orange_daily_secret_wish_applied_${todayKey()}`);
-      setWishApplied(false);
-    }
+      const secretPayload = JSON.stringify({
+        date: todayKey(),
+        data: secretData,
+        updatedAt: secretData.updatedAt || Date.now(),
+        isReceived: true,
+      });
+      localStorage.setItem(STORAGE_KEY, secretPayload);
+      localStorage.setItem(`orange_daily_secret_${todayKey()}`, secretPayload);
+      localStorage.setItem('orange_daily_secret_cache', secretPayload);
+      safeLocalStorage.setItem(STORAGE_KEY, secretPayload);
+      safeLocalStorage.setItem(`orange_daily_secret_${todayKey()}`, secretPayload);
+      safeLocalStorage.setItem('orange_daily_secret_cache', secretPayload);
 
-    const secretPayload = JSON.stringify({ date: todayKey(), data: initialData, updatedAt: now, isReceived: true });
-    localStorage.setItem(STORAGE_KEY, secretPayload);
-    localStorage.setItem(`orange_daily_secret_${todayKey()}`, secretPayload);
-    localStorage.setItem('orange_daily_secret_cache', secretPayload);
-    safeLocalStorage.setItem(STORAGE_KEY, secretPayload);
-    safeLocalStorage.setItem(`orange_daily_secret_${todayKey()}`, secretPayload);
-    safeLocalStorage.setItem('orange_daily_secret_cache', secretPayload);
-
-    // Cross-device sync
-    try {
-      const today = todayKey();
-      void updateSharedState({
-        dailySecrets: {
-          ...(sharedState?.dailySecrets || {}),
-          [today]: {
-            ...initialData,
-            appliedWish: hasWish ? effectiveWish : undefined,
-            updatedAt: now,
-            timestamp: now,
-            practice,
-            gratitudeChecked,
-            extraGratitude,
-            script: script || (initialData.scriptingStarter ? `${initialData.scriptingStarter}\n\n` : ''),
+      // Cross-device sync
+      try {
+        const today = todayKey();
+        void updateSharedState({
+          dailySecrets: {
+            ...(sharedState?.dailySecrets || {}),
+            [today]: {
+              ...secretData,
+              appliedWish: hasWish ? effectiveWish : undefined,
+              updatedAt: secretData.updatedAt || Date.now(),
+              timestamp: secretData.updatedAt || Date.now(),
+              practice,
+              gratitudeChecked,
+              extraGratitude,
+              script: script || (secretData.scriptingStarter ? `${secretData.scriptingStarter}\n\n` : ''),
+            },
           },
-        },
-        lastOrangeDailySync: now,
-      }, 'ORANGE');
-    } catch (_) {}
+          lastOrangeDailySync: Date.now(),
+        }, 'ORANGE');
+      } catch (_) {}
 
-    recordPrismFeature({
-      app: 'orange',
-      featureName: '시크릿(The Secret) 확언 키트',
-      summary: `확언: "${initialData.affirmation}", 요청(Ask): "${initialData.desire}"${hasWish ? ` (소원: "${effectiveWish}")` : ''}`,
-      details: initialData,
-    });
+      recordPrismFeature({
+        app: 'orange',
+        featureName: '시크릿(The Secret) 확언 키트',
+        summary: `확언: "${secretData.affirmation}", 요청(Ask): "${secretData.desire}"${hasWish ? ` (소원: "${effectiveWish}")` : ''}`,
+        details: secretData,
+      });
 
-    if (initialData.scriptingStarter && !script.trim()) {
-      setScript(`${initialData.scriptingStarter}\n\n`);
+      if (secretData.scriptingStarter && !script.trim()) {
+        setScript(`${secretData.scriptingStarter}\n\n`);
+      }
+    };
+
+    // If data already exists or no custom wish, show initial immediately
+    if (data || !hasWish) {
+      persistSecret(initialData);
+      setLoading(false);
     }
 
-    // 🌟 2. 백그라운드 AI 심화 개선 (비동기 보강, 6초 타임아웃)
-    // 키트가 0초 만에 이미 개방되어 감상 가능하므로, 네트워크 실패/지연이 있어도 사용자를 차단하지 않음
+    // 🌟 2. AI 심화 직조 (맞춤 소원의 정확한 인과 맥락과 주어 100% 반영)
     try {
       const randomCosmicThemes = [
         '우주의 무한한 풍요와 부의 유입',
@@ -1008,25 +1020,27 @@ export function DailySecret() {
         '핵심 원리: Ask(명확한 요청) → Believe(흔들림 없는 믿음) → Receive(이미 받은 것처럼 느끼고 수용).',
         '생각과 감정의 주파수가 실제 현실을 강력하게 끌어당깁니다.',
         '',
-        '★★★ [절대 필수: 문학적 깊이 & 각 항목별 100% 독창적 문장 규칙] ★★★',
-        '1. 판에 박힌 기계적 템플릿(예: "나의 소원 ...은 이루어졌으며", "조용히 눈을 감고...", "모든 불안이 사라지고...")을 절대 복사하듯 쓰지 마십시오.',
-        '2. 사용자의 소원과 고민을 깊이 있는 공감과 통찰로 어루만져, 읽는 순간 가슴이 벅차오르고 온몸에 전율이 도는 예술적이고 품격 있는 문장을 창조하십시오.',
-        '3. affirmation: 소원이 이미 완벽히 성취된 현실을 선언하는 1인칭 현재완료형 선언문 1문장입니다.',
-        '4. reflection: 의심과 조급함을 내려놓고 우주의 순리를 신뢰하도록 이끄는 깊은 철학적 사색 글 2~3문장입니다. (절대 affirmation과 같은 문장을 반복하지 마십시오).',
-        '5. action: 소원을 이미 이룬 사람의 당당함으로 오늘 즉시 행할 수 있는 구체적인 일상 미션 1문장입니다.',
-        '6. desire: 우주에 올리는 맑고 순수한 청원 1문장입니다.',
-        '7. visualizationGuide: [중요: 68초 시각화 스튜디오용 1분 분량 명상 가이드] 음성 낭독(TTS) 시 실제로 약 1분(60초 전후) 동안 차분하고 깊은 몰입이 유지되도록, 한국어 공백 포함 약 350~450자 분량의 풍부하고 단계적인 오감 정경으로 작성하십시오. (호흡 이완 유도 -> 소원이 이루어진 구체적 순간의 시각/청각/촉각/온기 묘사 -> 안도감과 환희의 감정 절정 -> 심장 중심 주파수 각인 마무리).',
-        '8. feelingAnchor: 성취의 순간 가슴 깊이 차오르는 전율과 안도감을 압축한 독창적인 1줄 감정 앵커입니다.',
-        '9. mirrorPhrase: 거울 속 자신과 눈을 맞추며 가슴을 울리는 진실된 선언 1문장입니다.',
-        '10. eveningPrompt: 하루를 평온히 닫고 우주의 은혜에 몸을 맡기는 저녁 감사 1문장입니다.',
-        '11. scriptingStarter: 마침내 기적이 일어난 오늘 하루를 감사함으로 기록하는 일기 첫 문장입니다.',
-        '12. gratitudeSeeds: 소원 성취의 주파수를 여는 서로 다른 3가지의 구체적 감사 문장입니다.',
-        '13. [언어 절대 준수] 모든 문장은 반드시 100% 품격 있는 한국어로만 작성해야 합니다.',
+        '★★★ [절대 필수: 맞춤소원 맥락 100% 정밀 반영 & 앞뒤 문맥 일치 규칙] ★★★',
+        '1. 사용자가 소원을 입력한 경우, 소원에 담긴 구체적 대상(시험 과목/이름, 회사/직무, 가족/인물 관계, 질병/신체 부위, 금액/매출 등)을 반드시 확언의 핵심 주어로 정확하게 반영하십시오.',
+        '2. [주어 및 시점의 완벽한 일치] 소원의 주어가 본인이 아닌 가족/타인(예: "엄마 무릎 수술 잘 끝나게", "우리 아들 대학 합격")인 경우, 억지로 "나는 ~했다"로 시작하여 문맥을 왜곡하지 마십시오. "사랑하는 어머니의 무릎 수술이 가장 안전하고 완벽하게 마무리되어...", "대견한 우리 아들이 원하던 대학에 당당히 합격하여..." 처럼 해당 인물의 성취와 회복을 주어로 온전히 살리고, 그로 인해 가족과 내가 느끼는 벅찬 안도와 기쁨을 뒤이어 자연스럽게 서술하십시오.',
+        '3. [인과 관계와 앞뒤 맥락의 절대 일치] 확언의 앞 문장(소망했던 구체적 상황이 이미 완벽히 실현된 상태)과 뒤 문장(그로 인해 누리는 벅찬 감격, 평온, 자부심, 감사)이 원인-결과의 복문으로 물 흐르듯 자연스럽게 이어져야 합니다. (예: 시험 합격 소원인데 엉뚱하게 재물/부자 이야기를 하거나, 건강 소원인데 사업 이야기를 섞는 맥락 불일치 절대 금지).',
+        '4. [기계적 어미 절대 금지] 따옴표로 소원 문장을 붙이거나(예: "소원"의 결실을...), "~하게 해주세요", "~으면 좋겠어요" 등의 간청형 어미를 그대로 복사하지 말고, 품격 있는 완료형 문장으로 재구성하십시오.',
+        '5. affirmation(확언): 소원의 간절한 바람이 마침내 이루어진 바로 그 순간의 전율과 안도가 생생히 느껴지는 완성형 선언문 1~2문장입니다.',
+        '6. reflection: 해당 소망을 품었을 때 찾아오는 특유의 불안과 조급함을 달래고, 우주의 순리를 신뢰하도록 이끄는 깊은 철학적 사색 2~3문장입니다. (affirmation과 절대 중복 금지).',
+        '7. action: 이 소원을 이미 이룬 사람의 당당함과 여유로 오늘 당장 행할 수 있는 구체적인 일상 실천 1문장입니다.',
+        '8. desire: 우주에 올리는 맑고 품격 있는 청원 1문장입니다.',
+        '9. visualizationGuide: [68초 시각화 스튜디오용 1분 분량 명상 가이드] 음성 낭독(TTS) 시 실제로 약 1분(60초 전후) 동안 차분하고 깊은 몰입이 유지되도록, 한국어 공백 포함 약 350~450자 분량으로 작성하십시오. (호흡 이완 유도 -> 소원이 이루어진 구체적 순간의 시각/청각/촉각/온기 묘사 -> 안도감과 환희의 감정 절정 -> 심장 중심 주파수 각인 마무리).',
+        '10. feelingAnchor: 성취의 순간 가슴 깊이 차오르는 전율과 안도감을 압축한 독창적인 1줄 감정 앵커입니다.',
+        '11. mirrorPhrase: 거울 속 자신과 눈을 맞추며 가슴을 울리는 진실된 선언 1문장입니다.',
+        '12. eveningPrompt: 하루를 평온히 닫고 우주의 은혜에 몸을 맡기는 저녁 감사 1문장입니다.',
+        '13. scriptingStarter: 마침내 기적이 일어난 오늘 하루를 감사함으로 기록하는 일기 첫 문장입니다.',
+        '14. gratitudeSeeds: 소원 성취의 주파수를 여는 서로 다른 3가지의 구체적 감사 문장입니다.',
+        '15. [언어 절대 준수] 모든 문장은 반드시 100% 품격 있는 한국어로만 작성해야 합니다.',
         '',
         hasWish
           ? [
-              `사용자가 오늘 우주에 요청한 구체적 소원: "${effectiveWish}"`,
-              `위 소원 "${effectiveWish}"의 구체적 정황과 감정을 깊이 분석하여, 모든 항목을 이 소원에 특화된 고유하고 감동적인 내용으로 작성하세요.`,
+              `[사용자 맞춤소원 원문]: "${effectiveWish}"`,
+              `위 소원 "${effectiveWish}"의 구체적 정황, 인물, 목표를 깊이 분석하여, affirmation부터 gratitudeSeeds까지 9개 항목 전체가 오직 이 소원의 완벽한 성취에 100% 집중되도록 작성하세요. 앞뒤 맥락이 완벽하게 일치해야 합니다.`,
             ].join('\n')
           : `사용자가 별도의 소원을 적지 않았으므로, 오늘의 특별한 영적 테마 [${todayTheme}]를 중심으로 풍요, 평온, 성공, 사랑, 건강을 강력하게 끌어당기는 조화롭고 독창적인 시크릿 키트를 작성하세요.`,
         '',
@@ -1035,10 +1049,8 @@ export function DailySecret() {
       ].filter(Boolean).join('\n');
 
       const userPrompt = hasWish
-        ? `[${name}님의 핵심 고민 / 소원: "${effectiveWish}"]\n[무작위 시드: ${Date.now()}-${activeSeed}]\n\n위 고민/소원의 본질을 깊이 꿰뚫어보고, 기존의 뻔한 템플릿 문장을 완전히 탈피하여 ${name}님만을 위한 가슴 벅찬 독창적 맞춤 시크릿 키트를 작성해 주세요.\n특히 68초 시각화(visualizationGuide)는 타이머 동안 실제로 약 1분간 음성 낭독되므로 공백 포함 350~450자 분량으로 호흡 유도부터 소원 성취의 오감 정경과 벅찬 감정의 전율을 단계별로 매우 생생하고 상세하게 묘사해 주시고, 확언(affirmation) 역시 "${effectiveWish}" 소망이 실현된 바로 그 순간의 감각과 전율이 생생하게 살아 숨 쉬어야 합니다.`
+        ? `[사용자 맞춤소원 원문: "${effectiveWish}"]\n[성명/닉네임: ${name}]\n[무작위 시드: ${Date.now()}-${activeSeed}]\n\n위 맞춤소원 "${effectiveWish}"의 구체적인 목표와 대상, 정황을 100% 정확하게 반영하여, 앞뒤 맥락이 한 치의 어긋남 없이 완벽하게 연결되는 감동적인 시크릿 키트를 작성해 주세요.\n\n특히 확언(affirmation)은 사용자가 적은 "${effectiveWish}" 소망의 핵심 인물과 목표가 눈앞에서 완벽하게 이루어진 기적의 순간을 생생하게 담아내야 합니다. 앞 절의 성취 내용과 뒷 절의 벅찬 감격/평온이 물 흐르듯 자연스럽게 이어지도록 최고의 문장력으로 직조해 주십시오.`
         : `[오늘의 영적 테마: ${todayTheme}]\n[무작위 시드: ${Date.now()}-${activeSeed}]\n${name}님을 위한 오늘만의 독창적이고 가슴 벅찬 시크릿 키트를 주세요. 이전에 자주 나온 진부하거나 똑같은 문구를 완전히 피하고, 마음속 고민을 녹이고 풍요와 평온을 여는 품격 있는 새로운 맞춤 확언과 도구들을 작성해 주세요.`;
-
-      setIsAiEnhancing(true);
 
       const aiPromise = invokeLLMStructured({
         messages: [
@@ -1048,11 +1060,25 @@ export function DailySecret() {
         schema: DailySecretSchema,
       });
 
+      // 맞춤소원 신규 개방 시에는 AI 응답을 최대 3.5초 대기하여 최상의 AI 생성 키트를 우선 노출
+      const waitTimeout = !data && hasWish ? 3500 : 15000;
       const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('AI background enhancement timeout')), 15000)
+        setTimeout(() => reject(new Error('AI wait timeout')), waitTimeout)
       );
 
-      const aiResult = await Promise.race([aiPromise, timeoutPromise]);
+      let aiResult: DailySecretData | null = null;
+      try {
+        aiResult = await Promise.race([aiPromise, timeoutPromise]);
+      } catch (raceErr) {
+        // First wait timeout occurred: open initial data immediately if not opened yet
+        if (!data) {
+          persistSecret(initialData);
+          setLoading(false);
+        }
+        // Then continue awaiting background AI if still pending
+        aiResult = await aiPromise.catch(() => null);
+      }
+
       if (
         aiResult &&
         aiResult.affirmation &&
@@ -1061,23 +1087,26 @@ export function DailySecret() {
       ) {
         const enriched = ensureFullKit(aiResult, effectiveWish, name, activeSeed);
         if (enriched) {
-          const enrichedFinal: DailySecretData = { ...enriched, appliedWish: hasWish ? effectiveWish : undefined, updatedAt: Date.now() };
-          setData(enrichedFinal);
-          const enrichedPayload = JSON.stringify({ date: todayKey(), data: enrichedFinal, updatedAt: Date.now() });
-          localStorage.setItem(STORAGE_KEY, enrichedPayload);
-          localStorage.setItem(`orange_daily_secret_${todayKey()}`, enrichedPayload);
-          localStorage.setItem('orange_daily_secret_cache', enrichedPayload);
-          safeLocalStorage.setItem(STORAGE_KEY, enrichedPayload);
-          safeLocalStorage.setItem(`orange_daily_secret_${todayKey()}`, enrichedPayload);
-          safeLocalStorage.setItem('orange_daily_secret_cache', enrichedPayload);
+          const enrichedFinal: DailySecretData = {
+            ...enriched,
+            appliedWish: hasWish ? effectiveWish : undefined,
+            updatedAt: Date.now(),
+            isReceived: true,
+          };
+          persistSecret(enrichedFinal);
         }
+      } else if (!data) {
+        persistSecret(initialData);
       }
     } catch (_) {
-      // Background AI error or timeout is completely silent because initialData is already active and perfect
+      if (!data) {
+        persistSecret(initialData);
+      }
     } finally {
+      setLoading(false);
       setIsAiEnhancing(false);
     }
-  }, [buildPromptContext, extraGratitude, gratitudeChecked, practice, redrawSeed, script, sharedState, updateSharedState, wish]);
+  }, [buildPromptContext, data, extraGratitude, gratitudeChecked, practice, redrawSeed, script, sharedState, updateSharedState, wish]);
 
   const handleSelectWishExample = useCallback((text: string, immediateOpen = false) => {
     setWish(text);
@@ -1319,12 +1348,17 @@ export function DailySecret() {
             <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
               <button
                 type="button"
+                disabled={loading}
                 onClick={() => void receiveSecret({ force: true, targetWish: wish })}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500/25 to-orange-500/25 hover:from-amber-500/35 hover:to-orange-500/35 border border-amber-500/40 text-amber-100 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-lg shadow-amber-950/40 active:scale-95"
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500/25 to-orange-500/25 hover:from-amber-500/35 hover:to-orange-500/35 border border-amber-500/40 text-amber-100 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-lg shadow-amber-950/40 active:scale-95 disabled:opacity-60"
               >
-                <Sparkles size={13} className="text-amber-400" />
+                <Sparkles size={13} className={loading ? 'text-amber-400 animate-spin' : 'text-amber-400'} />
                 <span>
-                  {wish.trim() ? '소원 맞춤 키트 받기' : '오늘의 시크릿 키트 받기'}
+                  {loading
+                    ? '맞춤 키트 직조 중...'
+                    : wish.trim()
+                    ? '소원 맞춤 키트 받기'
+                    : '오늘의 시크릿 키트 받기'}
                 </span>
               </button>
             </div>
@@ -1340,20 +1374,35 @@ export function DailySecret() {
         >
           <button
             type="button"
+            disabled={loading}
             onClick={() => void receiveSecret({ force: true, targetWish: wish })}
-            className="w-full group relative overflow-hidden rounded-[28px] border border-amber-500/30 bg-gradient-to-br from-amber-500/15 via-white/5 to-orange-500/10 p-8 sm:p-10 text-center shadow-2xl shadow-amber-500/10 transition-all hover:border-amber-400/50 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+            className="w-full group relative overflow-hidden rounded-[28px] border border-amber-500/30 bg-gradient-to-br from-amber-500/15 via-white/5 to-orange-500/10 p-8 sm:p-10 text-center shadow-2xl shadow-amber-500/10 transition-all hover:border-amber-400/50 hover:scale-[1.01] active:scale-[0.99] cursor-pointer disabled:cursor-wait"
           >
             <div className="absolute inset-0 bg-amber-500/10 blur-[80px] opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="relative z-10 flex flex-col items-center gap-4">
               <div className="w-16 h-16 rounded-full border border-amber-500/30 bg-amber-500/10 flex items-center justify-center shadow-[0_0_30px_rgba(245,158,11,0.25)]">
-                <KeyRound size={28} className="text-amber-400 animate-pulse" />
+                {loading ? (
+                  <Sparkles size={28} className="text-amber-400 animate-spin" />
+                ) : (
+                  <KeyRound size={28} className="text-amber-400 animate-pulse" />
+                )}
               </div>
               <div className="space-y-2">
                 <p className="text-lg sm:text-xl font-bold text-white tracking-tight">
-                  {wish.trim() ? '소원 맞춤 시크릿 키트 받기' : '오늘의 시크릿 키트 받기'}
+                  {loading
+                    ? wish.trim()
+                      ? '소원 맞춤 시크릿 키트 직조 중...'
+                      : '오늘의 시크릿 키트 수신 중...'
+                    : wish.trim()
+                    ? '소원 맞춤 시크릿 키트 받기'
+                    : '오늘의 시크릿 키트 받기'}
                 </p>
                 <p className="text-[10px] sm:text-xs text-white/40 font-sans">
-                  {wish.trim() ? `"${wish.trim().slice(0, 20)}${wish.trim().length > 20 ? '...' : ''}" 맞춤형 확언 + 시각화 + 감사 + 실천` : '확언 + 68초 시각화 + 감사 + 실천 도구'}
+                  {loading
+                    ? '소원의 앞뒤 맥락을 완벽히 일치시킨 기적의 확언을 준비하고 있습니다'
+                    : wish.trim()
+                    ? `"${wish.trim().slice(0, 20)}${wish.trim().length > 20 ? '...' : ''}" 맞춤형 확언 + 시각화 + 감사 + 실천`
+                    : '확언 + 68초 시각화 + 감사 + 실천 도구'}
                 </p>
               </div>
             </div>

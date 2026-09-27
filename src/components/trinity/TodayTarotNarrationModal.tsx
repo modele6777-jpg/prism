@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   X,
   Sparkles,
+  AlertCircle,
   Volume2,
   VolumeX,
   Play,
@@ -376,7 +377,6 @@ export function TodayTarotNarrationModal({
                   </h4>
                 </div>
                 <div className="flex items-center gap-2">
-                  <TodayTarotShareButton data={shareData} variant="compact" label="공유" />
                   <button
                     type="button"
                     onClick={handlePlayFullNarration}
@@ -475,6 +475,17 @@ export function TodayTarotNarrationModal({
                 className="mt-3"
                 onConsultLucy={handleConsult}
               />
+
+              {/* ⚠️ 타로 성찰 주의사항 (맹목적 믿음 지양 상시 표시) */}
+              <div className="mt-3.5 p-3.5 sm:p-4 rounded-2xl bg-amber-500/[0.08] border border-amber-500/30 space-y-1.5 text-xs text-white/85 shadow-sm">
+                <div className="flex items-center gap-1.5 font-bold text-amber-300 text-xs">
+                  <AlertCircle size={14} className="text-amber-400 shrink-0" />
+                  <span>타로 성찰 주의사항 (맹목적 믿음 지양)</span>
+                </div>
+                <p className="leading-relaxed text-white/70 break-keep text-[11px] sm:text-xs">
+                  타로는 미래를 결정짓는 절대적 예언이 아니라, 자신의 내면을 성찰하고 더 나은 선택을 돕는 지혜의 나침반입니다. 맹목적인 믿음을 지양하고, 모든 운명의 결정권과 최종 열쇠는 언제나 당신 자신의 주체적인 의지와 지혜에 있습니다.
+                </p>
+              </div>
             </div>
           )}
 

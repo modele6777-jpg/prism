@@ -169,9 +169,9 @@ export function WishingWellSecretRecommendations({
         )}
       </div>
 
-      {/* 3 AI Recommended Cards Grid */}
-      <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-3.5">
-        {recommendations.map((rec) => {
+      {/* 1순위 AI 추천 단일 최적 카드 */}
+      <div className="relative z-10 w-full">
+        {recommendations.slice(0, 1).map((rec) => {
           const isApplied = appliedId === rec.id;
 
           return (
@@ -180,44 +180,50 @@ export function WishingWellSecretRecommendations({
               layout
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`p-4 sm:p-5 rounded-2xl bg-white/[0.04] hover:bg-white/[0.07] border ${rec.borderClass} transition-all flex flex-col justify-between space-y-3.5 backdrop-blur-xl relative overflow-hidden group/card shadow-[0_8px_20px_rgba(0,0,0,0.25)]`}
+              className={`p-5 sm:p-6 rounded-2xl bg-white/[0.05] hover:bg-white/[0.08] border ${rec.borderClass} transition-all flex flex-col justify-between space-y-4 backdrop-blur-xl relative overflow-hidden group/card shadow-[0_10px_30px_rgba(0,0,0,0.3)]`}
             >
-              <div className="space-y-3">
+              <div className="space-y-3.5">
                 {/* Card Top Metadata */}
-                <div className="flex items-center justify-between gap-2">
-                  <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${rec.badgeClass} flex items-center gap-1 font-mono`}>
-                    <span>{rec.categoryEmoji}</span>
-                    <span>{rec.categoryLabel}</span>
-                  </span>
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-400/25 to-yellow-400/25 text-amber-200 border border-amber-300/40 font-mono tracking-wider flex items-center gap-1 shadow-sm">
+                      <Sparkles size={11} className="text-amber-300" />
+                      <span>1순위 AI 최우선 추천</span>
+                    </span>
+                    <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${rec.badgeClass} flex items-center gap-1 font-mono`}>
+                      <span>{rec.categoryEmoji}</span>
+                      <span>{rec.categoryLabel}</span>
+                    </span>
+                  </div>
 
-                  <span className="text-[10px] font-semibold text-white/50 tracking-wider">
+                  <span className="text-[11px] font-semibold text-white/50 tracking-wider">
                     {rec.dimensionLabel}
                   </span>
                 </div>
 
                 {/* Wish Content */}
-                <p className="text-xs sm:text-[13px] text-white/95 font-sans leading-relaxed font-medium break-keep">
+                <p className="text-sm sm:text-base text-white/95 font-sans leading-relaxed font-semibold break-keep">
                   {rec.wishText}
                 </p>
 
                 {/* Synergy Explanation Box */}
-                <div className="p-2.5 rounded-xl bg-black/35 border border-white/5 space-y-0.5 text-[10px] text-white/65">
+                <div className="p-3 rounded-xl bg-black/40 border border-white/5 space-y-1 text-xs text-white/70">
                   <div className="flex items-center gap-1 text-amber-300/90 font-bold">
-                    <Zap size={10} />
+                    <Zap size={11} />
                     <span>시너지 원리</span>
                   </div>
-                  <p className="leading-snug text-white/70 break-keep">
+                  <p className="leading-relaxed text-white/75 break-keep">
                     {rec.synergyReason}
                   </p>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-2 border-t border-white/[0.08] flex items-center gap-2">
+              <div className="pt-3 border-t border-white/[0.08] flex items-center gap-2.5">
                 <button
                   type="button"
                   onClick={() => handleApply(rec)}
-                  className={`flex-1 py-2 px-3 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
+                  className={`flex-1 py-2.5 px-4 rounded-xl border text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 ${
                     isApplied
                       ? 'bg-emerald-500/25 border-emerald-400 text-emerald-200'
                       : 'bg-white/[0.06] hover:bg-white/[0.12] border-white/15 text-white/85 hover:text-white'
@@ -226,12 +232,12 @@ export function WishingWellSecretRecommendations({
                 >
                   {isApplied ? (
                     <>
-                      <Check size={12} className="text-emerald-300" />
+                      <Check size={14} className="text-emerald-300" />
                       <span>입력창 적용됨!</span>
                     </>
                   ) : (
                     <>
-                      <Send size={11} className="text-white/60" />
+                      <Send size={13} className="text-white/60" />
                       <span>소원 적용</span>
                     </>
                   )}
@@ -241,11 +247,11 @@ export function WishingWellSecretRecommendations({
                   type="button"
                   disabled={isCasting}
                   onClick={() => handleDirectCast(rec)}
-                  className="py-2 px-3 rounded-xl bg-gradient-to-r from-amber-400/90 via-amber-300/90 to-yellow-300/90 hover:from-amber-300 hover:to-yellow-200 text-slate-950 font-black text-xs transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-95 shadow-[0_4px_14px_rgba(245,158,11,0.3)] disabled:opacity-40"
+                  className="py-2.5 px-5 rounded-xl bg-gradient-to-r from-amber-400/90 via-amber-300/90 to-yellow-300/90 hover:from-amber-300 hover:to-yellow-200 text-slate-950 font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-[0_4px_16px_rgba(245,158,11,0.35)] disabled:opacity-40"
                   title="이 소원을 즉시 우물에 띄웁니다 (퐁당~)"
                 >
-                  <Droplet size={12} className="text-slate-950 fill-slate-950" />
-                  <span>바로 띄우기</span>
+                  <Droplet size={14} className="text-slate-950 fill-slate-950" />
+                  <span>우물에 바로 띄우기</span>
                 </button>
               </div>
             </motion.div>

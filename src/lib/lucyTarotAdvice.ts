@@ -2,6 +2,7 @@ import { TarotCard } from '@/data/tarotData';
 import { invokeLLMStructured } from '@/lib/ai';
 import { z } from 'zod';
 import { getTarotCardDetails } from '@/lib/dailyTarotOracle';
+import { hasKoreanJongseong } from '@/lib/tarotSummaryUtils';
 
 export interface LucyTarotAdvice {
   headline: string;
@@ -53,38 +54,39 @@ export function buildLucyAdviceSpeechText(headline: string, advice: string, acti
  * 100% reliable offline, sub-millisecond latency.
  */
 export function buildDeterministicLucyAdvice(params: LucyTarotAdviceParams): LucyTarotAdvice {
-  const nick = params.nickname?.trim() || '여행자';
+  const rawNick = params.nickname?.trim() || '여행자';
+  const nickVocative = hasKoreanJongseong(rawNick) ? `${rawNick}아` : `${rawNick}야`;
   const concern = (params.tarotConcern || '').trim();
   const primaryCard = params.cards && params.cards.length > 0
     ? params.cards[params.cards.length - 1] // Last card in spread or single drawn card
     : null;
   const isReversed = !!primaryCard?.reversed;
   const cardName = primaryCard?.nameKo || primaryCard?.name || '운명의 인도자';
+  const cardParticle = hasKoreanJongseong(cardName) ? '이' : '가';
   const details = primaryCard ? getTarotCardDetails(primaryCard) : null;
   const cardMeaning = details ? (isReversed ? details.reversedCore : details.uprightCore) : '';
-  const cardSymbol = details?.symbolWord || '';
 
   // 1. Oracle Tarot Mode
   if (params.mode === 'oracle') {
     if (params.oracleMode === 'healing') {
       const headline = isReversed
-        ? `${nick}야, [${cardName}]의 뜻처럼 조급해 말고 쉬어가도 돼`
-        : `${nick}야, [${cardName}] 카드가 전하는 치유의 뜻을 믿어봐`;
-      const advice = `지금 펼쳐진 [${cardName}] 카드는 ${cardSymbol ? `[${cardSymbol}]의 도상과 함께 ` : ''}“${cardMeaning || '지친 마음에 깊은 온기가 필요함'}”을 말해주고 있어. 남들의 속도나 기대에 맞추려 애쓰지 마. 잠시 모든 짐을 내려놓고 가만히 숨을 고르는 것만으로도 충분히 아름답고 온전해.`;
-      const actionTip = `따뜻한 차 한 잔을 천천히 마시며 어깨에 들어간 긴장을 부드럽게 풀어줘.`;
+        ? `${nickVocative}, 지금은 조급해 말고 잠시 쉬어가도 돼`
+        : `${nickVocative}, [${cardName}] 카드가 따스한 온기를 건네고 있어`;
+      const advice = `오늘 모습을 드러낸 [${cardName}] 카드${cardParticle} 지친 마음에 깊은 쉼과 위로가 필요함을 다정하게 일깨워주고 있어. 남들의 기대나 세상의 속도에 쫓기듯 맞추려 애쓰지 마. 잠시 모든 짐을 내려놓고 편안히 숨을 고르는 것만으로도, 너는 이미 충분히 온전하고 소중해.`;
+      const actionTip = `따뜻한 차 한 잔을 천천히 마시며, 가슴에 손을 얹고 깊은 심호흡 3번 하기.`;
       return {
         headline,
         advice,
         actionTip,
         speechText: buildLucyAdviceSpeechText(headline, advice, actionTip),
-        keyword: `#마음의안식 #치유와회복`,
+        keyword: `#마음의안식 #온전한치유`,
       };
     } else {
       // Growth Mode
       const headline = isReversed
-        ? `${nick}야, [${cardName}]의 교훈처럼 내실을 먼저 단단히 다져봐`
-        : `${nick}야, [${cardName}]의 뜻처럼 네 직관이 가리키는 곳으로 나아가`;
-      const advice = `오늘 모습을 드러낸 [${cardName}] 카드는 ${cardSymbol ? `[${cardSymbol}]의 상징처럼 ` : ''}“${cardMeaning || '네 안의 잠재력이 꽃피울 준비를 마쳤음'}”을 선명하게 비춰주고 있어. 두려움에 머뭇거리기보다, 오늘 네 손으로 이룰 수 있는 작은 성공 하나에 온 힘을 집중해 봐. 넌 이미 해낼 힘이 있어.`;
+        ? `${nickVocative}, [${cardName}]의 교훈처럼 내실을 먼저 단단히 다져봐`
+        : `${nickVocative}, [${cardName}]의 뜻처럼 네 직관이 가리키는 곳으로 나아가`;
+      const advice = `오늘 모습을 드러낸 [${cardName}] 카드${cardParticle} 네 안의 소중한 잠재력이 꽃피울 준비를 마쳤음을 선명하게 비춰주고 있어. 두려움에 머뭇거리기보다, 오늘 네 손으로 이룰 수 있는 작은 실행 하나에 집중해 봐. 넌 이미 해낼 충분한 힘을 품고 있어.`;
       const actionTip = `오늘 할 일 중 가장 중요한 1가지를 정하고 망설임 없이 15분간 몰입해 보기.`;
       return {
         headline,
@@ -104,67 +106,67 @@ export function buildDeterministicLucyAdvice(params: LucyTarotAdviceParams): Luc
   else if (primaryCard?.id?.startsWith('pent_')) suit = 'pentacles';
   else if (primaryCard?.type === 'major') suit = 'major';
 
-  let headline = `${nick}야, [${cardName}]의 파동이 오늘 네 길을 밝히고 있어`;
+  let headline = `${nickVocative}, [${cardName}]의 파동이 오늘 네 길을 밝히고 있어`;
   let advice = `오늘 카드가 비추는 핵심은 내면의 신뢰야. 외부의 소음에 흔들리지 말고 네 마음의 중심을 굳건히 세워봐.`;
   let actionTip = `창밖 하늘을 바라보며 깊은 심호흡 3번으로 머릿속을 맑게 비우기.`;
   let keyword = `#직관과확신 #운명의빛`;
 
   if (suit === 'wands') {
     if (isReversed) {
-      headline = `${nick}야, 조급한 열정보다 완급 조절이 필요한 타이밍이야`;
-      advice = `[${cardName}] 카드가 역방향으로 나온 건 에너지가 과열되었거나 방향이 분산되었음을 뜻해. 서두르지 말고 한 발 물러서서 호흡을 가다듬어 봐. 쉬어가는 것도 열정의 일부야.`;
-      actionTip = `오늘 무리한 일정 하나는 내일로 넘기고 가벼운 산책으로 에너지를 재충전해 봐.`;
-      keyword = `#완급조절 #에너지조율`;
+      headline = `${nickVocative}, 서두르지 말고 에너지를 한곳에 모아봐`;
+      advice = `[${cardName}] 카드는 열정이 분산되어 번아웃이 오지 않도록 주의하라는 신호야. 오늘은 여러 일을 벌이기보다 가장 중요한 한 가지에 집중해 봐.`;
+      actionTip = `오늘 꼭 끝내야 할 우선순위 1가지만 수첩에 적고 나머지는 잠시 내려놓기.`;
+      keyword = `#선택과집중 #호흡조절`;
     } else {
-      headline = `${nick}야, 네 안의 열정에 확신을 갖고 앞으로 전진해 봐`;
-      advice = `[${cardName}] 카드의 강렬한 불꽃이 네 행동을 이끌고 있어. 그동안 품어온 생각이나 계획이 있다면 주저하지 말고 힘차게 첫걸음을 떼어봐. 네 열정이 길을 열어줄 거야.`;
-      actionTip = `마음속으로 미뤄왔던 행동 1가지를 지금 바로 5분 안에 시작하기.`;
-      keyword = `#용기있는실행 #열정의불꽃`;
+      headline = `${nickVocative}, 네 가슴속 불꽃을 믿고 당당히 행동해 봐`;
+      advice = `[${cardName}] 카드가 역동적인 창조의 힘을 건네고 있어. 생각만 하던 계획을 망설이지 말고 행동으로 옮기면 놀라운 결과가 열릴 거야.`;
+      actionTip = `망설였던 연락이나 실행을 지금 즉시 첫걸음 떼어보기.`;
+      keyword = `#용기와실행 #뜨거운열정`;
     }
   } else if (suit === 'cups') {
     if (isReversed) {
-      headline = `${nick}야, 타인의 감정에 휘둘리지 말고 네 감정을 먼저 돌봐`;
-      advice = `[${cardName}] 카드는 지금 네 마음의 컵이 넘쳐흐르지 않도록 경계를 지키라고 당부하고 있어. 타인을 배려하느라 정작 네 속마음을 억누르지 않았는지 다정하게 물어봐줘.`;
-      actionTip = `거울 속 나를 보며 '내 마음이 제일 소중해'라고 다정하게 속삭여주기.`;
-      keyword = `#감정의보호 #자기자비`;
+      headline = `${nickVocative}, 감정의 소용돌이에서 한 발짝 물러서 봐`;
+      advice = `[${cardName}] 카드는 타인의 감정이나 기대에 휘둘리지 말고 스스로의 감정을 먼저 안아주라고 말해. 네 평온이 세상에서 가장 소중해.`;
+      actionTip = `미온수 한 잔을 천천히 마시며 '나는 지금 평온하다' 속으로 말해보기.`;
+      keyword = `#감정의이완 #마음의중심`;
     } else {
-      headline = `${nick}야, 따뜻한 마음의 온기와 공감을 아끼지 마`;
-      advice = `[${cardName}] 카드의 맑은 샘물이 네 주변을 부드럽게 감싸고 있어. 오늘 건네는 다정한 말 한마디와 따뜻한 경청이 뜻밖의 귀인과 화합을 불러올 거야.`;
-      actionTip = `소중한 사람에게 '고맙다'는 안부 문자 한 줄 따뜻하게 전해보기.`;
-      keyword = `#사랑과공명 #다정한연결`;
+      headline = `${nickVocative}, 너 자신과 주변을 향해 사랑의 마음을 열어봐`;
+      advice = `[${cardName}] 카드는 따스한 교감과 공감의 기운을 전하고 있어. 진심 어린 미소와 다정한 한마디가 막혔던 관계의 문을 부드럽게 열어줄 거야.`;
+      actionTip = `고마운 사람이나 스스로에게 '고마워, 수고했어'라는 다정한 한마디 건네기.`;
+      keyword = `#사랑과조화 #다정한연결`;
     }
   } else if (suit === 'swords') {
     if (isReversed) {
-      headline = `${nick}야, 꼬리를 무는 걱정과 불안의 고리를 끊어내자`;
-      advice = `[${cardName}] 카드가 역방향일 때는 생각에 생각이 꼬리를 물어 마음이 피로해지기 쉬워. 생각한다고 해결되지 않는 고민은 지금 당장 머릿속에서 흘려보내자.`;
-      actionTip = `머릿속을 어지럽히는 생각들을 종이에 적은 뒤 찢어서 휴지통에 버리기.`;
-      keyword = `#마음비우기 #방하착`;
+      headline = `${nickVocative}, 머릿속 걱정의 고리를 끊고 단순해져 봐`;
+      advice = `[${cardName}] 카드는 지나친 생각과 불안이 현실을 가리고 있음을 짚어주고 있어. 머리로 모든 것을 계산하려 하지 말고 몸을 움직여 봐.`;
+      actionTip = `가벼운 스트레칭이나 산책으로 머릿속 복잡한 생각을 비워내기.`;
+      keyword = `#생각비우기 #명쾌한휴식`;
     } else {
-      headline = `${nick}야, 명료한 이성과 직관으로 결단을 내릴 때야`;
-      advice = `[${cardName}] 카드의 날카로운 통찰이 안개를 걷어내고 있어. 감정에 치우치기보다 현실적인 사실과 우선순위를 기준으로 정리하면 가장 현명한 해답이 보일 거야.`;
-      actionTip = `선택의 기준 3가지를 노트에 단문으로 정리해 우선순위 확정하기.`;
-      keyword = `#명료한판단 #단단한결단`;
+      headline = `${nickVocative}, 명쾌한 통찰과 결단으로 길을 뚫어봐`;
+      advice = `[${cardName}] 카드가 지혜의 칼날처럼 명확한 판단력을 선물하고 있어. 모호한 상황을 두려워하지 말고, 네 원칙에 따라 솔직하게 소통해 봐.`;
+      actionTip = `문제가 되는 상황의 핵심 원인을 종이에 단 1줄로 요약해 보기.`;
+      keyword = `#지혜와결단 #명확한시선`;
     }
   } else if (suit === 'pentacles') {
     if (isReversed) {
-      headline = `${nick}야, 조급한 결실보다 눈앞의 현실적 기반을 점검해 봐`;
+      headline = `${nickVocative}, 조급한 결실보다 눈앞의 현실적 기반을 점검해 봐`;
       advice = `[${cardName}] 카드는 기초가 탄탄해야 큰 열매를 맺을 수 있음을 일깨워주고 있어. 단기적인 이익이나 결과에 집착하지 말고, 작은 루틴과 건강부터 차근차근 챙겨봐.`;
       actionTip = `지출 내역을 점검하거나 오늘 먹은 음식을 건강하게 되돌아보기.`;
       keyword = `#현실점검 #기반다지기`;
     } else {
-      headline = `${nick}야, 네가 흘린 땀과 노력은 결코 배신하지 않아`;
+      headline = `${nickVocative}, 네가 흘린 땀과 노력은 결코 배신하지 않아`;
       advice = `[${cardName}] 카드의 풍요로운 대지가 네 곁에 있어. 매일 꾸준히 쌓아온 너만의 정성이 이제 든든한 결실로 나타나기 시작할 거야. 스스로의 가치를 굳게 믿어.`;
       actionTip = `오늘 나를 위해 작지만 확실한 보상(맛있는 간식이나 편안한 휴식) 선물하기.`;
       keyword = `#풍요와안정 #성실의결실`;
     }
   } else if (suit === 'major') {
     if (isReversed) {
-      headline = `${nick}야, 거대한 전환점 앞에서는 내면의 중심이 제일 중요해`;
+      headline = `${nickVocative}, 거대한 전환점 앞에서는 내면의 중심이 제일 중요해`;
       advice = `[${cardName}] 메이저 카드의 역방향 파동은 무리하게 상황을 통제하려 하지 말고 흐름을 유연하게 수용하라는 우주의 신호야. 때로는 힘을 뺄 때 가장 큰 지혜가 생겨나.`;
       actionTip = `눈을 감고 1분간 어깨와 턱의 힘을 툭 빼며 호흡에 머물기.`;
       keyword = `#수용과이완 #내면의지혜`;
     } else {
-      headline = `${nick}야, 우주가 네 삶에 거대한 축복의 문을 열어주고 있어`;
+      headline = `${nickVocative}, 우주가 네 삶에 거대한 축복의 문을 열어주고 있어`;
       advice = `[${cardName}] 메이저 카드가 전하는 영혼의 메시지는 명확해. 지금 네가 겪는 모든 순간이 더 큰 너로 나아가기 위한 소중한 여정이야. 가슴 뛰는 방향을 향해 당당히 걸어가.`;
       actionTip = `오늘 가장 설레는 목표를 다이어리 맨 윗줄에 굵게 적어두기.`;
       keyword = `#운명의축복 #새로운도약`;
@@ -217,16 +219,24 @@ export async function getEnhancedLucyTarotAdvice(
           })
           .join(', ');
 
+        const isHealingOracle = params.mode === 'oracle' && params.oracleMode === 'healing';
+        const isGrowthOracle = params.mode === 'oracle' && params.oracleMode === 'growth';
+
+        const cleanConcern = (params.tarotConcern || '')
+          .replace(/^(?:제제의\s*치유\s*오라클|루시의\s*성장\s*오라클)$/, isHealingOracle ? '지친 마음의 온전한 쉼과 내면아이 치유' : '현실적인 성장과 목표 실행')
+          || (isHealingOracle ? '지친 마음의 온전한 쉼과 내면아이 치유' : '오늘의 타로 운세');
+
         const systemPrompt = `당신은 PRISM의 모든 차원을 인도하는 따뜻하고 통찰력 넘치는 AI 마스터 가이드 '루시(Lucy)'입니다.
 질문자가 방금 뽑은 타로/오라클 카드의 파동과 질문 고민에 맞추어, 질문자의 마음을 보듬고 명쾌한 방향성을 전해주는 '루시의 1:1 특별 조언'을 생성하세요.
 
 [필수 원칙]:
-1. [루시 페르소나 어조]: 질문자(${params.nickname || '여행자'})에게 반말(~해봐, ~야, ~할 거야, ~을 잊지 마)로 100% 다정하고 명쾌하게 이야기하세요.
-2. [★ 카드 상징과 본래 뜻 중심 리딩]: 질문자가 뽑은 카드([${cardsSummary || '타로 카드'}])의 고유한 도상 상징과 본질적인 의미(정/역방향의 깊은 뜻)를 조언의 가장 중요한 근거로 삼아, 카드의 본래 뜻을 중심으로 질문 고민("${params.tarotConcern || '오늘의 운세'}")을 명쾌하게 풀어내세요.
-3. [간결성]: 길게 늘어놓지 말고 headline(15자 내외 - 카드의 뜻 반영), advice(2~3문장 - 카드의 상징과 본래 의미를 자연스럽게 담을 것), actionTip(1문장 실천), keyword(#키워드 2개)로 산뜻하게 정돈하세요.`;
+1. [루시 페르소나 어조]: 질문자(${params.nickname || '여행자'})에게 반말(~해봐, ~야, ~할 거야, ~을 잊지 마)로 100% 다정하고 명쾌하게 이야기하세요. 질문자의 호칭 뒤에 조사를 붙일 때 받침 유무(받침 있으면 '아', 없으면 '야')를 문법에 맞게 정확히 지키세요.
+2. [시스템/기능 명칭 누출 절대 금지]: '오라클', '제제의 치유', '루시의 성장' 같은 기능 명칭이나 시스템 명칭을 문맥 없이 기계적으로 넣지 마십시오.
+3. [★ 카드 상징과 본래 뜻 중심 리딩]: 질문자가 뽑은 카드([${cardsSummary || '타로 카드'}])의 고유한 도상 상징과 본질적인 의미(정/역방향의 깊은 뜻)를 조언의 가장 중요한 근거로 삼아, 카드의 본래 뜻을 중심으로 질문 고민("${cleanConcern}")을 따뜻하고 유려한 한국어로 풀어내세요.
+4. [간결성]: 길게 늘어놓지 말고 headline(15자 내외 - 카드의 뜻 반영), advice(2~3문장 - 카드의 상징과 본래 의미를 자연스럽게 담을 것), actionTip(1문장 실천), keyword(#키워드 2개)로 산뜻하게 정돈하세요.`;
 
         const userMsg = `질문자: ${params.nickname || '여행자'}
-고민/질문: "${params.tarotConcern || '오늘의 타로 운세'}"
+고민/질문: "${cleanConcern}"
 타로 카드: [${cardsSummary || '주요 카드'}]
 리딩 요약: ${params.readingText ? params.readingText.slice(0, 300) : '완전한 에너지 조율'}`;
 

@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "motion/react";
 import {
   ArrowLeft,
   Sparkles,
+  AlertCircle,
   Send,
   Volume2,
   VolumeX,
@@ -1555,10 +1556,12 @@ function playDailyCardChimeAsync() {
     return stripSummaryFromTarotText(tarotResult);
   }, [tarotResult]);
 
-  // 🔊 타로 결과 음성 낭독 전용 텍스트 (핵심 3줄 요약 완전 배제: 본문 1~5단계 순수 리딩만 낭독)
+  // 🔊 타로 결과 음성 낭독 전용 텍스트 (핵심 3줄 요약 완전 배제: 본문 1~5단계 순수 리딩 + 맨 마지막 맹목적 믿음 경계 성찰 주의문 낭독)
   const tarotSpeechReadingText = useMemo(() => {
     if (!tarotResult) return "";
-    return prepareNaturalSpeechText(stripSummaryFromTarotText(tarotResult));
+    const cleanBody = prepareNaturalSpeechText(stripSummaryFromTarotText(tarotResult));
+    const cautionSpeech = "주의사항을 전해드립니다. 타로는 정해진 미래를 맹목적으로 따르기 위한 것이 아니며, 현재의 마음을 비추고 현명한 선택을 돕는 내면의 성찰 도구입니다. 맹목적인 믿음을 지양하고, 모든 운명의 결정권과 최종 열쇠는 언제나 당신 자신의 주체적인 지혜와 용기에 있음을 기억하세요.";
+    return `${cleanBody}\n\n${cautionSpeech}`;
   }, [tarotResult]);
 
   const summarySpeechText = useMemo(() => {
@@ -2379,8 +2382,8 @@ function playDailyCardChimeAsync() {
 - 각 카드마다 단순히 키워드를 나열하는 데 그치지 않고, "이 카드 속 [인물/도구/상징]이 의미하는 바는 바로..."와 같이 카드의 상징적 의미를 내담자의 실제 현실 속 사건, 감정, 관계와 밀접하게 결합하여 한 편의 드라마처럼 깊이 있게 풀어내십시오.
 
 ### 🔮 3. 트리니티 마스터의 직관적 결단 & 방향성
-- 내담자의 질문("${tarotConcern}")에 대해 카드가 가리키는 고유한 뜻과 상징에 근거하여 명확한 최종 판정을 내리십시오.
-- **[확실한 YES / 결단이 필요한 YES / 단호한 NO / 신중한 전환 필요]** (또는 양자택일 시 **[최종 선택: OO]**)를 굵은 글씨로 선언하고, 뽑힌 카드의 본질적 의미와 상징이 왜 이 방향을 지목하는지 그 필연적 이유를 확신에 찬 목소리로 들려주십시오.
+- 내담자의 질문("${tarotConcern}")에 대해 카드가 가리키는 고유한 뜻과 상징에 근거하여 명확한 최종 결단과 방향성을 내리십시오.
+- 'YES'나 'NO'라는 단답형/영문 단어를 절대 사용하지 말고, **[적극적인 실행과 도약 권장 / 신중한 준비와 호흡 조율 / 새로운 관점 전환 필요]** (또는 양자택일 시 **[최종 선택: OO]**)와 같이 품격 있고 명확한 실천 방향으로 굵게 선언하고, 뽑힌 카드의 본질적 의미와 상징이 왜 이 방향을 지목하는지 그 필연적 이유를 확신에 찬 목소리로 들려주십시오.
 
 ### 🌿 4. 운의 흐름을 바꿀 마스터의 실천 처방 (개운 가이드)
 - 머리로만 아는 것은 운을 바꾸지 못합니다. 뽑힌 카드가 담고 있는 긍정의 에너지를 증폭하고 그림자의 위험을 예방할 수 있도록, 카드의 상징과 뜻에서 도출된 현실적이고 구체적인 행동 처방(마음가짐, 소통 방식, 피해야 할 행동, 행운의 행동 등)을 다정하면서도 명확하게 짚어주십시오.
@@ -3223,15 +3226,6 @@ function playDailyCardChimeAsync() {
                                       <span>{tarotSpreadRecommendation.name} ({drawnCards.length}장 스프레드)</span>
                                     </p>
                                     <div className="flex items-center gap-2">
-                                      <button
-                                        type="button"
-                                        onClick={() => setCardFlipCycle((prev) => prev + 1)}
-                                        className="text-[10px] px-2.5 py-1 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 text-yellow-300 font-sans flex items-center gap-1.5 transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm"
-                                        title="카드 뒤집기 애니메이션 다시 재생"
-                                      >
-                                        <RotateCw size={10} className="text-yellow-400" />
-                                        <span>뒤집기 다시 보기</span>
-                                      </button>
                                       <span className="text-[10px] text-yellow-300/70 font-sans flex items-center gap-1">
                                         <ZoomIn size={11} className="text-yellow-400" />
                                         <span>(카드 클릭 시 3D 확대)</span>
@@ -3272,37 +3266,7 @@ function playDailyCardChimeAsync() {
                                       </h4>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                      {tarotResult && !isTarotGenerating && (
-                                        <TodayTarotShareButton
-                                          data={{
-                                            title: isDailyTarotConcern(tarotConcern) ? '오늘의 데일리 타로' : (tarotSpreadRecommendation?.name || '78장 타로 마스터 비전'),
-                                            concern: isDailyTarotConcern(tarotConcern) ? undefined : tarotConcern,
-                                            spreadName: isDailyTarotConcern(tarotConcern) ? undefined : tarotSpreadRecommendation?.name,
-                                            cards: drawnCards && drawnCards.length > 0
-                                              ? drawnCards.map((c, i) => ({
-                                                  id: c.id,
-                                                  nameKo: c.nameKo,
-                                                  name: c.name,
-                                                  reversed: !!c.reversed,
-                                                  keywords: c.keywords,
-                                                  imageUrl: getTarotCardImageUrl(c),
-                                                  slotName: tarotSpreadRecommendation?.positions?.[i] || `#${i + 1} 카드`,
-                                                }))
-                                              : undefined,
-                                            card: drawnCards?.[0] || (dailyResult?.drawnCard ?? (dailyDrawnCard ?? null)),
-                                            dateStr: new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }),
-                                            conciseSummaryBullets: conciseSummaryBullets,
-                                            diagnosis: displayTarotResult || tarotResult,
-                                            rawBlessing: dailyResult?.blessing,
-                                            frequency: dailyResult?.frequency,
-                                            luckyNumber: dailyResult?.luckyNumber,
-                                            luckyColor: dailyResult?.luckyColor,
-                                          }}
-                                          variant="compact"
-                                          label="공유"
-                                        />
-                                      )}
-                                    <button
+                                      <button
                                         type="button"
                                         onClick={async () => {
                                           if (isFullReadingTTSActive) {
@@ -3406,6 +3370,19 @@ function playDailyCardChimeAsync() {
                                                 saju={calculateDetailedSaju(sharedState?.userProfile || getPersistentUserProfile())}
                                                 className="mt-3"
                                               />
+                                            </div>
+                                          )}
+
+                                          {/* ⚠️ 타로 성찰 주의사항 (맹목적 믿음 지양 상시 표시) */}
+                                          {tarotResult && !isTarotGenerating && (
+                                            <div className="mt-4 p-4 rounded-2xl bg-amber-500/[0.08] border border-amber-500/30 space-y-1.5 text-xs text-white/85 shadow-sm">
+                                              <div className="flex items-center gap-1.5 font-bold text-amber-300 text-xs">
+                                                <AlertCircle size={14} className="text-amber-400 shrink-0" />
+                                                <span>타로 성찰 주의사항 (맹목적 믿음 지양)</span>
+                                              </div>
+                                              <p className="leading-relaxed text-white/70 break-keep text-[11px] sm:text-xs">
+                                                타로는 미래를 결정짓는 절대적 예언이 아니라, 자신의 내면을 성찰하고 더 나은 선택을 돕는 지혜의 나침반입니다. 맹목적인 믿음을 지양하고, 모든 운명의 결정권과 최종 열쇠는 언제나 당신 자신의 주체적인 의지와 지혜에 있습니다.
+                                              </p>
                                             </div>
                                           )}
                                         {isTarotGenerating && (

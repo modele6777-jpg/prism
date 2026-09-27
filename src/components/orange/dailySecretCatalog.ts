@@ -731,6 +731,581 @@ export function getDailySecretIndex(seed: number = 0): number {
  * Generate a dynamic secret kit with high diversity, date seeding, and custom wish integration
  */
 /**
+ * 한글 받침 유무에 따른 올바른 조사 부착 헬퍼
+ */
+export function getKoreanParticle(word: string, type: '은/는' | '이/가' | '을/를' | '과/와' | '으로/로'): string {
+  if (!word) return '';
+  const trimmed = word.trim().replace(/['"“”‘’]/g, '');
+  if (!trimmed) return '';
+  const lastChar = trimmed.slice(-1);
+  const code = lastChar.charCodeAt(0);
+  // 한글 유니코드 범위: 0xAC00 ~ 0xD7A3
+  if (code < 0xac00 || code > 0xd7a3) {
+    const defaultMap = {
+      '은/는': '은',
+      '이/가': '이',
+      '을/를': '을',
+      '과/와': '과',
+      '으로/로': '으로',
+    };
+    return defaultMap[type];
+  }
+  const hasJongseong = (code - 0xac00) % 28 !== 0;
+  const jongseong = (code - 0xac00) % 28;
+
+  switch (type) {
+    case '은/는':
+      return hasJongseong ? '은' : '는';
+    case '이/가':
+      return hasJongseong ? '이' : '가';
+    case '을/를':
+      return hasJongseong ? '을' : '를';
+    case '과/와':
+      return hasJongseong ? '과' : '와';
+    case '으로/로':
+      return !hasJongseong || jongseong === 8 ? '로' : '으로';
+  }
+}
+
+export function attachParticle(word: string, type: '은/는' | '이/가' | '을/를' | '과/와' | '으로/로'): string {
+  return `${word}${getKoreanParticle(word, type)}`;
+}
+
+export interface RefinedWishContext {
+  originalWish: string;
+  cleanedWish: string;
+  theme: 'abundance' | 'success' | 'love' | 'health' | 'peace' | 'miracle';
+  coreGoal: string;
+  subjectType: 'self' | 'parents' | 'child' | 'spouse' | 'partner' | 'family' | 'other';
+  subjectName: string;
+  affirmations: string[];
+  achievedPhrase: string;
+  fruitPhrase: string;
+  actionMission: string;
+  feelingPhrase: string;
+  mirrorDeclaration: string;
+  eveningGratitude: string;
+  scriptingIntro: string;
+}
+
+/**
+ * 맞춤소원의 문장 끝에 붙은 소망형·간구형 어미를 깔끔하게 정제합니다.
+ */
+function cleanWishEndings(raw: string): string {
+  let text = raw.trim();
+
+  // 복합 간청 및 소망 어미 패턴 순차 제거
+  const stripRegexes: RegExp[] = [
+    // ~었/았/였/됐/졌으면 좋겠어요 / 다 / 어 / 습니다 / 까
+    /(?:\s*(?:꼭|반드시|제발|간절히|무사히|모두|다|정말|진짜))?\s*(?:(?:[가-힣]+(?:았|었|였|됐|됬|졌)으면)|(?:[가-힣]+면))\s*좋겠(?:어요|다|어|습니(?:다|까))?$/g,
+    // ~고 싶어요 / 다 / 어 / 습니다 (예: 잘하고 싶어요, 찍고 싶어요, 살고 싶어요, 지내고 싶어요 등)
+    /(?:\s*(?:꼭|반드시|제발|간절히|무사히|모두|다|정말|진짜))?\s*(?:[가-힣]+고\s*싶(?:어요|다|어|습니(?:다|까))?)$/g,
+    // ~게 해주세요 / 해줘 / 해주십시오 / 해주시길 (예: 붙게 해주세요, 많아지게 해주세요, 당첨되게 해주세요 등)
+    /(?:\s*(?:꼭|반드시|제발|간절히|무사히|모두|다|정말|진짜))?\s*(?:[가-힣]+게\s*(?:해\s*주세요|해주세요|해\s*줘|해줘|해\s*주십시오|해\s*주시길|되기를|되길|바라(?:요|니다|며)?|원해(?:요)?))$/g,
+    // ~길 바랍니다 / 원합니다 / 소망합니다 / 기도합니다
+    /(?:\s*(?:꼭|반드시|제발|간절히|무사히|모두|다|정말|진짜))?\s*(?:[가-힣]+길\s*(?:바라(?:요|니다|며)?|원해(?:요)?|기도해(?:요)?|소망해(?:요)?))$/g,
+    // ~기를 바랍니다 / 원합니다 / 소망합니다
+    /(?:\s*(?:꼭|반드시|제발|간절히|무사히|모두|다|정말|진짜))?\s*(?:[가-힣]+기를\s*(?:바라(?:요|니다|며)?|원해(?:요)?|기도해(?:요)?|소망해(?:요)?))$/g,
+    // 단독 간구 표현
+    /(?:\s*(?:해\s*주세요|해주세요|해\s*줘|해줘|해\s*주십시오|해\s*주시길|바랍니다|바라요|바래요|원합니다|원해요|소망합니다|소원입니다|소원|기도합니다|기도드려요))$/g,
+    // 단독 ~으면/면 좋겠다
+    /(?:\s*(?:좋겠(?:어요|다|어|습니(?:다|까))?))$/g,
+  ];
+
+  for (const reg of stripRegexes) {
+    text = text.replace(reg, '').trim();
+  }
+
+  // 동사 어미 잔재 정돈 (예: ~하게, ~되게, ~해서, ~하고, ~넘기게 등)
+  text = text
+    .replace(/(?:잘\s*끝나고|끝나고|풀고|되고|하고|보고|가고|나오고|있고|해서|하여)$/g, '')
+    .replace(/(?:하게|되게|받게|가게|보게|풀리게|낫게|나오게|넘기게|찍게)$/g, '')
+    .replace(/(?:하기를|되기를|이루기를|받기를|가기를|보기를)$/g, '')
+    .replace(/(?:하기|되기|이루기|받기|가기|보기|넘기기|모으기|벌기|달성하기)$/g, '')
+    .replace(/(?:했으면|되었으면|됐으면|왔으면|갔으면)$/g, '')
+    .trim();
+
+  // 문두/문미 부사어 정돈
+  text = text.replace(/^(?:꼭|반드시|제발|간절히|무사히|정말|진짜)\s+/g, '').trim();
+  text = text.replace(/\s+(?:꼭|반드시|제발|간절히|무사히|정말|진짜|완전히|다|모두|잘|안)$/g, '').trim();
+
+  return text || raw.trim();
+}
+
+/**
+ * 사용자의 맞춤소원 문장을 정밀 분석하여
+ * 주어 대상, 핵심 성취 목표, 감정 맥락을 100% 일치시켜
+ * 앞뒤 맥락이 완벽하게 이어지는 품격 있는 한국어 확언 키트를 직조합니다.
+ */
+export function refineWishContext(rawWish: string, name: string = '여행자'): RefinedWishContext {
+  const originalWish = rawWish.trim();
+  const clean = originalWish
+    .replace(/^["'“”‘’\(\)\[\]\{\}\<\>]+|["'“”‘’\(\)\[\]\{\}\<\>]+$/g, '')
+    .trim();
+
+  const stripped = cleanWishEndings(clean);
+  const lower = clean.toLowerCase();
+
+  // 1. 소원의 주어(대상) 식별
+  let subjectType: 'self' | 'parents' | 'child' | 'spouse' | 'partner' | 'family' | 'other' = 'self';
+  let subjectName = name || '나';
+
+  if (/어머니|엄마|모친/.test(clean)) {
+    subjectType = 'parents';
+    subjectName = '어머니';
+  } else if (/아버지|아빠|부친/.test(clean)) {
+    subjectType = 'parents';
+    subjectName = '아버지';
+  } else if (/부모님|시부모|시아버지|시어머니|장인|장모/.test(clean)) {
+    subjectType = 'parents';
+    subjectName = '부모님';
+  } else if (/아들|우리\s*아들/.test(clean)) {
+    subjectType = 'child';
+    subjectName = '아들';
+  } else if (/딸|우리\s*딸/.test(clean)) {
+    subjectType = 'child';
+    subjectName = '딸';
+  } else if (/아이|우리\s*아이|자녀|아기|애기/.test(clean)) {
+    subjectType = 'child';
+    subjectName = '아이';
+  } else if (/남편|신랑|와이프|아내|배우자|집사람/.test(clean)) {
+    subjectType = 'spouse';
+    subjectName = /남편|신랑/.test(clean) ? '남편' : '아내';
+  } else if (/남자친구|남친|여자친구|여친|연인|애인|그\s*사람/.test(clean)) {
+    subjectType = 'partner';
+    subjectName = /남자친구|남친/.test(clean) ? '남자친구' : /여자친구|여친/.test(clean) ? '여자친구' : '연인';
+  } else if (/친구|동료/.test(clean)) {
+    subjectType = 'other';
+    subjectName = /친구/.test(clean) ? '친구' : '동료';
+  } else if (/가족|식구|우리\s*집|형|오빠|누나|언니|동생/.test(clean)) {
+    subjectType = 'family';
+    subjectName = '가족';
+  }
+
+  // 2. 도메인 테마 및 세부 유형 식별
+  let theme: 'abundance' | 'success' | 'love' | 'health' | 'peace' | 'miracle' = 'peace';
+
+  const isRelationHarmony =
+    /사이|관계|대화|소통|다정|친해|친하게|화해|오해|갈등|다투지|다투|싸우지|싸움|잘\s*지내|마음\s*터놓/.test(clean);
+
+  const isWorkplaceCareer =
+    /(?:새로운\s*)?부서|이동|전근|발령|보직|적응|직장|회사|업무|일\s*잘|인정받|인정\s*받|역량|동료|상사|팀장|이직|입사|취업|승진|진급/.test(clean);
+
+  const isExamPass =
+    /시험|합격|수능|고시|임용|자격증|토익|토플|공무원|기사|면접|도로주행|운전면허|붙게|붙었으면|취득/.test(clean);
+
+  const isHealth =
+    /건강|치유|회복|완치|수술|시술|통증|치료|병원|질병|질환|허리|목|어깨|무릎|관절|디스크|수면|불면|숙면|잠|푹\s*자|개운|활력|다이어트|체중|살|바디프로필|컨디션|아픔|안\s*아프/.test(lower);
+
+  const isAbundance =
+    /돈|재물|금전|부자|수입|매출|연봉|월급|빚|대출|채무|상환|완제|자산|통장|투자|수익|부동산|아파트|내\s*집|가게|카페|식당|창업|경제|대박|청약|계약|주식/.test(lower);
+
+  const isRomance =
+    (/연애|인연|결혼|남친|여친|남자친구|여자친구|사랑|재회|짝사랑/.test(lower)) && subjectType !== 'parents' && subjectType !== 'child';
+
+  const isMiracle =
+    /로또|복권|당첨|기적|행운|축복|마법|은혜|우주|뜻밖/.test(lower);
+
+  if (isRelationHarmony) {
+    theme = 'love';
+  } else if (isWorkplaceCareer || isExamPass) {
+    theme = 'success';
+  } else if (isHealth) {
+    theme = 'health';
+  } else if (isAbundance) {
+    theme = 'abundance';
+  } else if (isRomance) {
+    theme = 'love';
+  } else if (isMiracle) {
+    theme = 'miracle';
+  }
+
+  // 3. 상황별 핵심 목표(coreGoal) 및 100% 문맥 일치 확언 리스트 생성
+  let coreGoal = stripped;
+  let affirmations: string[] = [];
+  let achievedPhrase = '';
+  let fruitPhrase = '';
+  let actionMission = '';
+  let feelingPhrase = '';
+  let mirrorDeclaration = '';
+  let eveningGratitude = '';
+  let scriptingIntro = '';
+
+  // === Case 1: 관계 회복 / 가족 화합 / 다정한 소통 (Relation Harmony) ===
+  if (isRelationHarmony) {
+    theme = 'love';
+    if (subjectType === 'child') {
+      const withChild = attachParticle(subjectName, '과/와');
+      coreGoal = `사랑하는 ${subjectName}과의 따뜻하고 다정한 관계 회복`;
+      achievedPhrase = `사랑하는 우리 ${withChild} 따뜻한 대화와 사랑을 깊이 나누어`;
+      fruitPhrase = '서로를 이해하고 아껴주는 돈독한 온기 속에서 매일 웃음꽃 가득한 평온을 누리고 있습니다';
+      affirmations = [
+        `사랑하는 우리 ${withChild} 따뜻한 눈빛으로 마음을 터놓고 다정하게 대화하는 일상을 온전히 누리고 있으며, 서로를 깊이 이해하고 아껴주는 돈독한 사랑 속에서 마음에 평온과 웃음꽃이 가득합니다.`,
+        `나의 진심 어린 사랑과 다정한 배려가 ${subjectName}의 마음에 온전히 닿아 둘도 없이 편안하고 다정한 사이가 되었으며, 마주 볼 때마다 서로에게 든든한 힘이 되어주는 감사한 기적을 만끽하고 있습니다.`,
+        `${withChild} 나 사이에 흐르던 모든 서운함과 벽이 봄눈 녹듯 사르르 풀려 서로의 손을 다정하게 꼭 쥐었으며, 매일 감사와 온기가 넘쳐나는 행복한 가정을 누리고 있습니다.`,
+        `온 우주가 우리 가족의 사랑과 화합을 축복하여 ${withChild} 함께하는 모든 순간이 다정한 미소와 포근한 안식으로 빛나고 있습니다.`,
+      ];
+      actionMission = `오늘 ${subjectName}에게 다정한 눈빛과 함께 ‘늘 고맙고 사랑한다’는 따뜻한 온기 전하기`;
+      feelingPhrase = `${subjectName}의 환하고 다정한 웃음을 마주할 때 가슴 가득 차오르는 뭉클한 사랑과 안도감`;
+      mirrorDeclaration = `너는 자녀에게 가장 든든하고 따뜻한 사랑의 안식처야. 너의 진심은 이미 온전히 닿아 있어.`;
+      eveningGratitude = `${subjectName}과의 마음에 다정한 평화와 사랑이 가득 깃든 오늘 하루에 깊이 감사합니다.`;
+      scriptingIntro = `오늘 ${subjectName}과 따뜻하게 눈을 맞추며 웃었다. 우리 사이에 흐르는 다정한 온기가 참으로 감사하다.`;
+    } else if (subjectType === 'parents') {
+      const withParents = attachParticle(subjectName, '과/와');
+      coreGoal = `사랑하는 ${subjectName}과의 따뜻한 소통과 화목`;
+      achievedPhrase = `사랑하는 ${withParents} 따뜻한 대화와 사랑을 나누어`;
+      fruitPhrase = '가정 안에 평화와 화목의 온기가 넘쳐나고 있습니다';
+      affirmations = [
+        `사랑하는 ${withParents} 따뜻한 대화와 사랑을 나누며 서로를 향한 깊은 이해와 평온을 누리고 있으며, 온 가족이 다정하게 웃음 지으며 행복한 온기를 만끽하고 있습니다.`,
+        `${subjectName}의 은혜에 감사하며 다정한 미소로 서로의 마음을 보듬어주고 있으며, 가정 안에 평화와 화목의 웃음꽃이 가득합니다.`,
+        `부모님과의 마음에 오랜 응어리가 말끔히 풀려 편안하고 자유로운 사랑을 나누고 있으며, 매 순간 감사와 안식 속에 평온한 하루를 살아갑니다.`,
+      ];
+      actionMission = `오늘 ${subjectName}께 다정한 안부 전화나 문자로 ‘늘 건강하시고 감사하다’는 사랑의 마음 전하기`;
+      feelingPhrase = `부모님의 편안한 미소를 뵐 때 가슴속 깊이 밀려오는 평온과 따뜻한 효도의 보람`;
+      mirrorDeclaration = `너의 따뜻한 마음이 부모님께 최고의 기쁨이야. 너는 사랑을 나눌 줄 아는 다정한 사람이야.`;
+      eveningGratitude = `부모님과의 관계에 평화와 사랑의 온기를 허락해 준 우주의 은혜에 진심으로 감사합니다.`;
+      scriptingIntro = `부모님과 오랜만에 편안하게 웃으며 대화를 나누었다. 마음에 깊은 평화가 깃든다.`;
+    } else if (subjectType === 'spouse') {
+      coreGoal = `배우자와의 다정한 대화와 깊은 사랑 회복`;
+      achievedPhrase = `서로를 향한 따뜻한 이해와 신뢰 속에서 다정한 사랑을 되찾아`;
+      fruitPhrase = '마주 볼 때마다 서로의 손을 꼭 쥐며 평온하고 행복한 가정을 누리고 있습니다';
+      affirmations = [
+        `서로를 향한 따뜻한 이해와 신뢰 속에서 다정한 대화와 사랑이 다시 꽃피어났으며, 마주 볼 때마다 서로의 손을 꼭 쥐며 평온하고 행복한 가정을 누리고 있습니다.`,
+        `부부 사이에 흐르던 모든 오해와 서운함이 눈 녹듯 사라져 세상에서 가장 편안한 안식처가 되어주고 있으며, 매일 감사의 온기로 가득합니다.`,
+        `서로의 존재가 인생의 가장 든든한 축복임을 온 마음으로 깨닫고, 아낌없는 존중과 배려 속에서 날마다 더 깊은 사랑을 누리고 있습니다.`,
+      ];
+      actionMission = '오늘 배우자에게 ‘오늘 하루도 정말 고생 많았어, 고마워’라는 다정한 격려의 말 먼저 건네기';
+      feelingPhrase = '서로의 손을 포근히 맞잡았을 때 가슴을 가득 채우는 깊은 안도감과 가정의 평화';
+      mirrorDeclaration = '너는 가정에 평화와 사랑을 피워내는 지혜로운 사람이야.';
+      eveningGratitude = '가장 가까운 배우자와 다정하게 손을 맞잡고 평온한 밤을 맞이함에 감사합니다.';
+      scriptingIntro = `서로 마주 보며 미소 지었다. 다정한 대화 한마디가 우리 부부의 마음을 환하게 밝혔다.`;
+    } else {
+      const withTarget = attachParticle(subjectName, '과/와');
+      coreGoal = `${subjectName}와의 오해 해소와 진실한 화해`;
+      achievedPhrase = `${withTarget}의 모든 오해와 앙금을 눈 녹듯 풀고`;
+      fruitPhrase = '이전보다 훨씬 더 깊은 신뢰와 다정한 배려로 서로를 존중하고 있습니다';
+      affirmations = [
+        `서로의 진심 어린 눈빛 속에 모든 오해와 서운함이 봄눈처럼 사르르 녹아내려 ${withTarget}의 깊은 신뢰와 사랑을 되찾았으며, 이전보다 훨씬 더 성숙하고 다정한 온기로 서로를 아끼고 배려하고 있습니다.`,
+        `마침내 ${withTarget} 마음을 터놓고 따뜻하게 소통하여 다시 서로의 손을 꼭 쥐었으며, 온 우주가 우리 두 사람의 화해를 축복하여 매 순간 평온하고 다정한 행복을 만끽하고 있습니다.`,
+        `마음속에 맺혀 있던 묵은 매듭이 말끔히 풀려 가슴 가득 시원한 안도감이 차올랐으며, 서로의 존재가 세상에서 가장 든든한 축복임을 다시금 확인하고 있습니다.`,
+      ];
+      actionMission = `그 사람을 떠올릴 때 원망 대신 ‘당신과 내 영혼 사이에 가장 맑은 평화가 깃듭니다’라고 축복하기`;
+      feelingPhrase = '마음속 묵은 오해가 풀리고 따뜻한 눈빛을 마주했을 때 차오르는 시원한 해방감';
+      mirrorDeclaration = '너의 진심은 누구에게나 맑게 닿아 있어. 너는 평화를 창조하는 사람이야.';
+      eveningGratitude = '소중한 인연과의 관계가 맑게 풀려 평온한 마음으로 하루를 마감함에 감사합니다.';
+      scriptingIntro = `오랫동안 무겁던 마음이 눈 녹듯 풀렸다. 따뜻한 대화 속에 우리는 다시 진심 어린 미소를 나눴다.`;
+    }
+  }
+
+  // === Case 2: 직장 / 부서 이동 / 업무 인정 / 이직 (Workplace & Career) ===
+  else if (isWorkplaceCareer && !isExamPass) {
+    theme = 'success';
+    if (/부서|이동|전근|발령|보직/.test(clean)) {
+      coreGoal = '새로운 부서 이동과 탁월한 업무 역량 인정';
+      achievedPhrase = '원하던 부서로 성공적으로 이동하여 뛰어난 역량과 성실함으로 깊은 인정을 받아';
+      fruitPhrase = '좋은 동료들과 함께 보람차고 즐겁게 능력을 펼치며 매일 성취감 넘치는 일상을 누리고 있습니다';
+      affirmations = [
+        `원하던 부서로 성공적으로 이동하여 뛰어난 업무 역량과 성실함으로 깊은 인정을 받고 있으며, 좋은 동료들과 함께 보람차고 즐겁게 능력을 펼치고 있습니다.`,
+        `새로운 환경에서 나의 실력과 가치를 온전히 발휘하여 상사와 동료 모두에게 두터운 신뢰를 받고 있으며, 날마다 성취감 넘치는 일상을 살아가고 있습니다.`,
+        `나에게 가장 어울리는 자리에서 즐겁게 일하며 매일 눈부신 성과와 인정을 이끌어내고 있으며, 안정되고 행복한 직장 생활을 감사함 속에 누리고 있습니다.`,
+        `나의 고유한 능력과 긍정적인 에너지가 새로운 팀을 빛내는 자랑스러운 주역이 되었으며, 일의 보람과 인정 속에서 당당하고 행복하게 성장하고 있습니다.`,
+      ];
+      actionMission = '오늘 출근길이나 책상 앞에 설 때 ‘이미 새로운 부서에서 인정받는 프로’의 당당한 어깨와 환한 미소 짓기';
+      feelingPhrase = '동료와 상사에게 따뜻한 칭찬과 인정을 받았을 때 가슴 깊이 차오르는 뿌듯한 자부심';
+      mirrorDeclaration = '너는 어느 자리에서든 빛을 발하는 뛰어난 인재야. 세상이 너의 실력을 인정하고 있어.';
+      eveningGratitude = '새로운 부서에서 나의 능력이 온전히 인정받고 보람차게 일할 수 있음에 깊이 감사합니다.';
+      scriptingIntro = `새 부서에서 훌륭한 성과를 인정받았다. 동료들의 신뢰와 칭찬 속에 보람찬 하루를 보냈다.`;
+    } else if (/적응|이직|새로운\s*직장|입사/.test(clean)) {
+      coreGoal = '새로운 일터 적응과 탁월한 업무 인정';
+      achievedPhrase = '새로운 일터에 완벽하게 안착하여 뛰어난 역량과 성실함으로 두터운 신뢰를 얻어';
+      fruitPhrase = '좋은 동료들의 환대와 존중 속에서 보람차고 안정된 직장 생활을 만끽하고 있습니다';
+      affirmations = [
+        `새로운 일터에 완벽하게 적응하여 뛰어난 실력과 성실함으로 모두의 깊은 신뢰와 인정을 받고 있으며, 하루하루 보람차고 안정된 직장 생활을 만끽하고 있습니다.`,
+        `좋은 동료들의 따뜻한 환대 속에서 나의 역량을 당당히 펼치며 기대 이상의 탁월한 성과를 거두고 있으며, 내 선택이 옳았음을 매 순간 감사함으로 확신하고 있습니다.`,
+        `나의 가치와 잠재력을 온전히 인정해 주는 최상의 환경에서 즐겁게 일하고 있으며, 날마다 새로운 성장과 성취의 기쁨을 누리고 있습니다.`,
+      ];
+      actionMission = '오늘 만나는 동료에게 먼저 환한 눈인사와 함께 다정한 칭찬 건네기';
+      feelingPhrase = '새로운 직장에서 나의 진가가 인정받고 온전히 소속되었을 때 느껴지는 든든한 안정감';
+      mirrorDeclaration = '너는 어디서든 사랑받고 인정받는 능력 있는 사람이야.';
+      eveningGratitude = '새로운 일터에 성공적으로 안착하여 마음 편히 일할 수 있음에 깊이 감사합니다.';
+      scriptingIntro = `직장에서 완벽히 자리를 잡았다. 동료들과의 호흡도 척척 맞고 업무도 순조롭게 풀린다.`;
+    } else {
+      coreGoal = '직장에서의 탁월한 업무 성과와 인정';
+      achievedPhrase = '직장에서 탁월한 업무 능력과 성실함을 온전히 인정받아';
+      fruitPhrase = '상사와 동료 모두의 두터운 신뢰 속에서 보람과 자부심 가득한 성공을 누리고 있습니다';
+      affirmations = [
+        `직장에서 탁월한 업무 능력과 성실함을 온전히 인정받아 동료와 상사 모두의 두터운 신뢰를 한 몸에 받고 있으며, 매일 보람과 자부심이 가득한 성공적인 커리어를 누리고 있습니다.`,
+        `나의 열정과 실력이 눈부신 성과로 증명되어 일터에서 가장 빛나는 핵심 인재로 우뚝 섰으며, 일하는 기쁨과 풍성한 결실 속에 당당한 하루를 살아갑니다.`,
+        `모든 업무가 물 흐르듯 순조롭게 풀리고 상상 이상의 좋은 결실을 맺고 있으며, 함께하는 이들의 지지와 존경 속에 날마다 눈부시게 도약하고 있습니다.`,
+      ];
+      actionMission = '오늘 마주하는 업무 하나를 ‘이미 최고의 인정을 받는 프로의 여유’로 깔끔하게 매듭짓기';
+      feelingPhrase = '프로젝트를 훌륭히 완수하고 박수와 칭찬을 받을 때 온몸을 감싸는 짜릿한 성취감';
+      mirrorDeclaration = '너의 능력과 헌신은 이미 일터에서 가장 눈부시게 빛나고 있어.';
+      eveningGratitude = '오늘 하루도 나의 실력을 당당히 증명하고 큰 인정을 받음에 진심으로 감사합니다.';
+      scriptingIntro = `오늘 직장에서 큰 칭찬과 인정을 받았다. 내 노력이 최고의 결실로 돌아와 참으로 뿌듯하다.`;
+    }
+  }
+
+  // === Case 3: 시험 / 자격증 / 면접 / 운전면허 합격 (Exam & Pass) ===
+  else if (isExamPass) {
+    theme = 'success';
+    if (/운전면허|도로주행/.test(clean)) {
+      coreGoal = '운전면허 도로주행 시험 단번에 최종 합격';
+      achievedPhrase = '운전면허 도로주행 시험을 완벽하고 안전하게 치러내어 당당히 합격하여';
+      fruitPhrase = '홀가분한 안도감과 자부심 가득한 미소로 자유로운 드라이브의 기쁨을 누리고 있습니다';
+      affirmations = [
+        `나는 운전면허 도로주행 시험의 모든 코스를 완벽하고 안전하게 완주하여 당당히 최종 합격의 영광을 거머쥐었으며, 홀가분한 안도와 자부심 가득한 미소로 기쁨을 누리고 있습니다.`,
+        `흔들림 없는 침착함과 완벽한 감각으로 시험관의 호평 속에 도로주행 시험에 단번에 합격하였으며, 내 손에 쥐어진 합격의 결실에 온 마음으로 감사합니다.`,
+        `모든 도로와 신호가 나를 안전하게 도왔으며, 멋지게 합격증을 손에 쥐고 드라이브를 즐기는 자랑스러운 내 자신을 온전히 만끽하고 있습니다.`,
+      ];
+      actionMission = '운전대를 편안하게 쥐고 있는 모습을 상상하며 ‘나는 이미 능숙하고 안전한 베스트 드라이버’라고 미소 짓기';
+      feelingPhrase = '시험관으로부터 "합격입니다"라는 말을 들었을 때 가슴을 쓸어내리는 벅찬 안도감';
+      mirrorDeclaration = '너는 차분하고 침착하게 모든 관문을 통과하는 훌륭한 합격자야.';
+      eveningGratitude = '도로주행 시험에 단번에 합격하여 홀가분한 마음으로 단잠을 청함에 깊이 감사합니다.';
+      scriptingIntro = `드디어 해냈다! 도로주행 시험에 당당히 합격했다. 손에 쥔 합격 도장을 보며 환호성을 질렀다.`;
+    } else {
+      let examSubject = '목표 시험';
+      if (/토익/.test(clean)) {
+        const scoreMatch = clean.match(/토익\s*\d+점?/);
+        examSubject = scoreMatch ? scoreMatch[0] : '토익 시험';
+      } else if (/수능/.test(clean)) {
+        examSubject = '수능 시험';
+      } else if (/공무원/.test(clean)) {
+        examSubject = '공무원 시험';
+      } else if (/임용/.test(clean)) {
+        examSubject = '임용고시';
+      } else if (/자격증/.test(clean)) {
+        examSubject = '자격증 시험';
+      } else {
+        const candidate = stripped.replace(/시험\s*합격/g, '시험').replace(/합격$/g, '').trim();
+        examSubject = candidate || '목표 시험';
+      }
+
+      coreGoal = `${examSubject} 최종 합격`;
+      achievedPhrase = `${examSubject}에서 당당히 최고의 성적으로 최종 합격하여`;
+      fruitPhrase = '최고의 실력과 결실로 스스로의 가치를 증명하고 벅찬 보람과 자부심을 온전히 누리고 있습니다';
+      affirmations = [
+        `나는 간절히 준비해 온 ${examSubject}에서 당당히 최종 합격의 영광을 거머쥐었으며, 나의 탁월한 실력과 노력이 눈부신 결실로 증명되어 가슴 벅찬 자부심과 보람을 온전히 누리고 있습니다.`,
+        `마침내 ${examSubject}의 모든 관문을 완벽하게 통과하여 원하던 최고의 성취를 이루어냈으며, 온 우주가 내 진심과 열정에 화답하여 상상 이상의 찬란한 도약이 현실이 되었습니다.`,
+        `나는 ${attachParticle(examSubject, '을/를')} 멋지게 정복한 자랑스러운 주인공으로서, 안도의 환희와 흔들림 없는 확신 속에 감사하고 행복한 하루를 살아갑니다.`,
+        `우주의 완전한 타이밍 안에서 ${examSubject} 합격의 문이 활짝 열렸으며, 그토록 바라던 꿈이 내 눈앞에 환한 빛으로 실현되어 세상을 향해 당당히 나아갑니다.`,
+      ];
+      actionMission = '오늘 공부나 준비할 핵심 노트 한 장을 ‘이미 합격한 자의 환한 미소와 여유’로 기분 좋게 훑어보기';
+      feelingPhrase = '합격자 명단에서 내 이름을 확인하는 순간 온몸을 타고 흘러내리는 전율과 안도의 눈물';
+      mirrorDeclaration = '너는 이미 모든 관문을 당당히 돌파한 훌륭한 합격자야. 세상이 너의 실력을 인정하고 있어.';
+      eveningGratitude = `${examSubject} 합격의 벅찬 영광이 현실이 되어 편안한 마음으로 단잠을 청합니다. 감사합니다.`;
+      scriptingIntro = `마침내 ${examSubject} 합격 통보를 마주했다! 가슴이 터질 듯한 감격과 눈물이 흘러내렸다.`;
+    }
+  }
+
+  // === Case 4: 건강 / 수술 / 통증 / 수면 / 다이어트 (Health & Wellness) ===
+  else if (theme === 'health') {
+    if (subjectType === 'parents' || subjectType === 'child' || subjectType === 'spouse' || subjectType === 'family') {
+      const surgeryNoun = /수술|시술/.test(clean) ? '수술 성공과 완벽한 회복' : '건강 회복과 완치';
+      coreGoal = `사랑하는 ${subjectName}의 ${surgeryNoun}`;
+      achievedPhrase = `사랑하는 ${subjectName}의 치료와 회복이 가장 안전하고 완벽하게 마무리되어`;
+      fruitPhrase = '모든 염려가 눈 녹듯 사라지고 통증 없는 맑은 생명력으로 온 가족이 깊은 안도와 기쁨을 누리고 있습니다';
+      affirmations = [
+        `사랑하는 ${subjectName}의 모든 치료와 회복이 가장 안전하고 완벽하게 마무리되어 모든 걱정이 눈 녹듯 사라졌으며, 가뿐하고 맑은 생명력으로 온전히 회복되어 온 가족의 마음에 깊은 안도와 평온의 웃음꽃이 피어났습니다.`,
+        `우주의 따뜻한 치유의 빛이 ${subjectName}의 몸과 마음에 가득 스며들어 모든 통증과 불편함이 씻은 듯 사라졌으며, 날마다 눈부시게 활력을 되찾아 가족 모두가 벅찬 감사와 행복의 온기를 누리고 있습니다.`,
+        `${subjectName}께서 아무 탈 없이 건강을 완전히 되찾아 편안하고 환한 미소로 일상을 거니시고 계시며, 깊은 치유와 안도의 은혜에 온 가족이 진심으로 감사합니다.`,
+        `온 우주가 우리 ${subjectName}의 완벽한 회복을 축복하여 매 순간 몸과 마음이 날아갈 듯 가뿐해졌으며, 사랑하는 가족과 함께하는 매일이 건강과 감사의 기적으로 가득 차 있습니다.`,
+      ];
+      actionMission = `오늘 ${subjectName}께 다정하고 따뜻한 안부 전화나 문자를 건네며 ‘이미 완벽하게 건강해진 모습’에 감사하기`;
+      feelingPhrase = `${subjectName}의 밝고 편안한 웃음소리를 들었을 때 가슴을 가득 채우는 뭉클한 안도감과 감사`;
+      mirrorDeclaration = `너의 사랑과 간절한 기도가 ${subjectName}에게 가장 강력한 치유의 빛이 되어주고 있어.`;
+      eveningGratitude = `${subjectName}의 건강이 날마다 눈부시게 회복되고 온 가족이 평온한 밤을 맞이함에 깊이 감사합니다.`;
+      scriptingIntro = `오늘 ${subjectName}의 건강 소식을 듣고 가슴을 쓸어내렸다. 모든 것이 정상으로 돌아오고 기적처럼 회복되었다.`;
+    } else if (/잠|수면|불면|숙면|푹\s*자|개운|기상/.test(lower)) {
+      coreGoal = '깊고 편안한 숙면과 개운하고 활기찬 아침 맞이';
+      achievedPhrase = '밤마다 구름에 안기듯 깊고 달콤한 숙면 속으로 편안히 빠져들어';
+      fruitPhrase = '아침이면 머리가 맑고 온몸이 날아갈 듯 가뿐하고 상쾌한 활력을 온전히 누리고 있습니다';
+      affirmations = [
+        `밤마다 침대에 눕자마자 모든 긴장과 불안이 눈 녹듯 사라져 구름에 안기듯 깊고 달콤한 숙면 속으로 편안히 빠져들고 있으며, 아침이면 머리가 맑고 온몸이 날아갈 듯 가뿐하고 상쾌한 활력을 온전히 누리고 있습니다.`,
+        `내 몸과 마음이 가장 조화롭고 건강한 리듬을 완전히 되찾아 밤에는 깊은 안식을, 낮에는 생기 넘치는 활력을 충만하게 만끽하고 있으며, 매일 아침 맞이하는 새로운 하루가 감사와 축복으로 가득합니다.`,
+        `모든 불안과 잡념을 평온히 내려놓고 깊은 잠 속에서 완전한 세포 치유와 회복을 이루었으며, 거울을 볼 때마다 맑고 생기 넘치는 얼굴에 미소가 절로 피어납니다.`,
+      ];
+      actionMission = '잠자리에 들기 전 양손을 가슴에 얹고 ‘오늘 하루도 수고했어, 편안히 쉬렴’이라고 속삭이기';
+      feelingPhrase = '아침에 눈을 떴을 때 머릿속이 티 없이 맑고 온몸의 세포가 상쾌하게 깨어나는 해방감';
+      mirrorDeclaration = '너의 몸은 밤마다 완벽한 쉼과 회복을 누리고 있어. 평온은 너의 본래 상태야.';
+      eveningGratitude = '달콤하고 깊은 숙면을 허락해 준 아늑한 잠자리와 우주의 평온에 감사합니다.';
+      scriptingIntro = `어젯밤 정말 푹 잤다. 아침에 눈을 뜨는 순간 온몸이 날아갈 듯 가볍고 개운했다.`;
+    } else if (/다이어트|체중|살|감량|바디프로필|몸매/.test(clean)) {
+      coreGoal = '건강한 체중 감량과 아름다운 이상적인 몸매 완성';
+      achievedPhrase = '목표했던 체중 감량을 건강하고 가뿐하게 달성하여';
+      fruitPhrase = '최상의 컨디션과 탄탄하고 아름다운 바디라인 속에서 넘치는 자신감을 누리고 있습니다';
+      affirmations = [
+        `건강한 식습관과 가뿐한 일상이 자연스러운 습관이 되어 마침내 원하는 목표 체중과 아름다운 몸매를 가뿐하게 달성하였으며, 거울을 볼 때마다 넘치는 자신감과 자부심으로 하루하루가 행복합니다.`,
+        `내 몸의 신진대사와 생명력이 최상의 조화를 이루어 군더더기 없는 균형 잡힌 바디라인을 실현하였으며, 날아갈 듯 가벼운 신체와 맑은 에너지로 인생 최고의 리즈 시절을 온전히 만끽하고 있습니다.`,
+        `자신감 넘치는 눈빛으로 거울 앞에 서서 가장 빛나는 내 모습을 멋지게 마주하고 있으며, 스스로를 온전히 사랑하고 아끼는 보람 속에 매일이 감사로 충만합니다.`,
+      ];
+      actionMission = '시원한 물 한 잔을 마시며 ‘내 몸은 매 순간 가장 이상적인 균형을 향해 나아간다’고 축복하기';
+      feelingPhrase = '원하던 가벼운 옷을 입고 거울 앞에 섰을 때 가슴 가득 차오르는 뿌듯한 자부심';
+      mirrorDeclaration = '너는 건강하고 빛나는 에너지를 지닌 매력적인 사람이야. 너의 몸은 완벽한 조화를 이루고 있어.';
+      eveningGratitude = '오늘 하루도 활기차고 가뿐하게 움직여 준 내 소중한 몸과 생명력에 깊이 감사합니다.';
+      scriptingIntro = `체중계에 찍힌 숫자를 보며 환호성을 질렀다! 몸이 날아갈 듯 가볍고 에너지가 넘쳐흐른다.`;
+    } else if (/통증|허리|목|어깨|무릎|디스크|관절|두통/.test(clean)) {
+      coreGoal = '불편했던 신체 통증 완치와 가뿐한 몸 회복';
+      achievedPhrase = '불편했던 통증과 긴장이 봄눈 녹듯 말끔히 사라지고';
+      fruitPhrase = '새털처럼 가볍고 부드러운 몸으로 일상의 소소한 기쁨을 활기차게 누리고 있습니다';
+      affirmations = [
+        `나를 괴롭히던 모든 통증과 긴장이 봄눈 녹듯 온전히 사라졌으며, 깃털처럼 가볍고 유연한 몸으로 일상의 눈부신 기쁨과 편안한 활력을 온전히 누리고 있습니다.`,
+        `내 몸의 60조 개 세포가 지닌 무한한 자연 치유력이 완벽하게 발현되어 마침내 건강한 균형을 되찾았으며, 매 순간 상쾌하고 활기찬 에너지가 온몸을 감싸고 있습니다.`,
+        `숨을 들이마시고 내쉴 때마다 깊은 치유의 에너지가 채워져 불편했던 부위가 맑고 가뿐하게 회복되었으며, 통증 없는 편안한 자유 속에서 감사한 하루를 살아갑니다.`,
+      ];
+      actionMission = '양 어깨를 툭 떨어뜨리고 깊은 숨을 3번 들이마시며 ‘내 몸은 이미 완벽히 치유되었다’고 미소 짓기';
+      feelingPhrase = '온몸의 통증이 씻은 듯 사라져 가볍게 걸을 때 밀려오는 벅찬 해방감';
+      mirrorDeclaration = '너의 몸은 놀라운 치유력을 품고 있어. 모든 세포가 날마다 건강하게 재생되고 있어.';
+      eveningGratitude = '통증 없이 편안하고 안락하게 몸을 뉘일 수 있는 쉼과 깊은 회복의 밤에 감사합니다.';
+      scriptingIntro = `오늘 하루 종일 몸이 놀랍도록 가볍고 편안했다. 맑은 기운으로 일상을 누릴 수 있음에 감사하다.`;
+    } else {
+      coreGoal = '건강한 생명력과 최상의 활력 회복';
+      achievedPhrase = '심신의 모든 피로가 씻은 듯 사라지고 완전한 활력을 되찾아';
+      fruitPhrase = '머리는 맑고 몸은 생동감으로 가득 차 매 순간 최상의 컨디션을 누리고 있습니다';
+      affirmations = [
+        `나를 지탱하는 모든 신경과 세포가 완전한 생명력으로 맑게 깨어나 최상의 컨디션을 온전히 회복하였으며, 머리는 맑고 몸은 생동감으로 가득 차 매 순간 감사한 하루를 누리고 있습니다.`,
+        `우주의 따뜻한 사랑이 내 온몸 구석구석을 채워 지친 피로와 스트레스가 봄눈처럼 녹아내렸으며, 편안한 호흡과 깊은 안식 속에서 날마다 눈부신 활력을 회복하고 있습니다.`,
+        `내 안의 무한한 회복 탄력성이 매 순간 기적을 만들어내어 심신이 완벽한 조화를 이루었으며, 건강하고 맑은 신체로 소중한 일상을 감사함 속에 영위하고 있습니다.`,
+      ];
+      actionMission = '창문을 열고 맑은 공기를 가슴 깊이 들이마시며 ‘생명의 기운이 나를 가득 채운다’고 선언하기';
+      feelingPhrase = '온몸의 감각이 맑게 깨어나며 뿜어져 나오는 상쾌하고 충만한 생명력의 온기';
+      mirrorDeclaration = '너는 건강하고 맑은 에너지를 지닌 축복받은 존재야. 너의 내면은 이미 완전해.';
+      eveningGratitude = '오늘 하루도 지친 기색 없이 건강하게 나를 지켜준 내 몸과 맑은 호흡에 감사합니다.';
+      scriptingIntro = `몸과 마음이 이토록 가볍고 상쾌할 수 있을까! 맑은 에너지로 완벽한 하루를 보냈다.`;
+    }
+  }
+
+  // === Case 5: 재물 / 사업 / 매출 / 부동산 / 대출 완제 (Abundance) ===
+  else if (theme === 'abundance') {
+    if (/빚|대출|채무|상환|완제/.test(clean)) {
+      coreGoal = '모든 대출금 완제와 온전한 재정적 자유';
+      achievedPhrase = '모든 부채와 대출금을 깨끗하게 전액 상환하여';
+      fruitPhrase = '홀가분한 어깨와 차고 넘치는 통장 잔고 속에서 진정한 재정적 자유를 누리고 있습니다';
+      affirmations = [
+        `마침내 모든 재정적 얽힘과 대출금을 깨끗하고 완벽하게 전액 상환하여 가슴을 짓누르던 무거운 짐을 완전히 벗어던졌으며, 홀가분한 어깨와 든든한 통장 잔고 속에서 진정한 재정적 자유를 만끽하고 있습니다.`,
+        `우주의 무한한 풍요가 생각지도 못한 방식으로 내 삶에 쏟아져 들어와 모든 빚을 시원하게 청산하였으며, 통장의 잔고가 날마다 불어나는 넉넉함과 평온을 누리고 있습니다.`,
+        `돈에 대한 모든 결핍과 두려움이 눈 녹듯 사라지고 차고 넘치는 부의 파도가 내 삶을 채우고 있으며, 홀가분하고 당당한 마음으로 세상을 향해 환하게 미소 짓습니다.`,
+      ];
+      actionMission = '지갑을 열거나 은행 앱을 볼 때 ‘모든 막힘이 풀려 홀가분해진 자유’를 상상하며 편안한 미소 짓기';
+      feelingPhrase = '대출 완납 증명서를 확인한 순간 가슴을 짓누르던 짐이 스르륵 사라지는 깊은 안도감';
+      mirrorDeclaration = '너는 돈의 굴레에서 완전히 벗어나 차고 넘치는 풍요를 누릴 위대한 사람이야.';
+      eveningGratitude = '모든 재정적 얽힘이 깨끗이 해결되고 온전한 자유를 누림에 깊이 감사합니다.';
+      scriptingIntro = `오늘 드디어 마지막 남은 상환을 끝마치고 전액 완제에 성공했다! 날아갈 것만 같다.`;
+    } else if (/매출|가게|카페|식당|사업|수익|손님|대박|고객|주문/.test(clean)) {
+      coreGoal = '일터의 눈부신 번창과 목표 매출 달성';
+      achievedPhrase = '나의 일터와 사업이 기대 이상의 눈부신 번창을 이루어';
+      fruitPhrase = '매일 밀려드는 손님들과 풍성한 매출 속에서 번창하는 부와 기쁨을 누리고 있습니다';
+      affirmations = [
+        `나의 일터와 매장이 기대 이상의 놀라운 번창을 이루어 매일 기분 좋은 손님들의 발걸음과 감사의 매출이 밀려들고 있으며, 차고 넘치는 물질적 풍요와 일의 보람을 풍성하게 만끽하고 있습니다.`,
+        `우주의 번영의 파동이 내 사업과 일터로 거침없이 흘러들어와 역대 최고 매출을 가뿐하게 경신하였으며, 함께하는 모든 이들에게 기쁨과 가치를 전하는 자랑스러운 명당이 되었습니다.`,
+        `매일 정산표를 마주할 때마다 감사와 환희의 탄성이 터져 나오고 있으며, 정직한 땀방울과 진심이 상상 이상의 거대한 부와 성공으로 되돌아오고 있습니다.`,
+      ];
+      actionMission = '일터나 매장을 둘러보며 ‘이곳을 찾는 모든 이들이 큰 행복과 축복을 얻는다’고 진심으로 축복하기';
+      feelingPhrase = '마감 정산표에 찍힌 놀라운 매출 숫자를 확인하며 온몸에 돋는 짜릿한 감격의 소름';
+      mirrorDeclaration = '너의 일터는 풍요와 기쁨이 샘솟는 우주의 명당이야. 번영은 너의 당연한 권리야.';
+      eveningGratitude = '풍성한 매출과 찾아와 준 고마운 손님들 덕분에 보람과 감사가 넘치는 하루에 감사합니다.';
+      scriptingIntro = `오늘 마감 매출이 역대 최고치를 경신했다! 기분 좋은 발걸음의 손님들로 하루 종일 북적였다.`;
+    } else if (/집|아파트|부동산|청약/.test(clean)) {
+      coreGoal = '내 집 마련 청약 당첨과 아늑한 보금자리 입주';
+      achievedPhrase = '가장 따뜻하고 아늑한 보금자리를 온전히 마련하여';
+      fruitPhrase = '채광이 가득한 거실에서 든든한 안정감과 삶의 풍요로움을 만끽하고 있습니다';
+      affirmations = [
+        `우주의 완전한 섭리 안에서 그토록 바라던 청약 당첨과 내 집 마련의 문이 활짝 열렸으며, 채광 가득한 안락한 새 보금자리에서 가족과 함께 깊은 평온과 풍요로운 행복을 온전히 누리고 있습니다.`,
+        `마침내 당첨자 명단에서 당당히 이름을 확인하여 온 세상을 다 가진 듯 벅찬 감격의 환희를 맛보았으며, 우리 가족의 미래를 지켜줄 따뜻한 안식처를 얻음에 온 마음으로 감사합니다.`,
+        `가장 조화롭고 안전한 명당의 기운이 깃든 내 집에서 매일 평온한 휴식을 누리고 있으며, 날마다 더 큰 복과 번영이 우리 보금자리에 쏟아져 들어옵니다.`,
+      ];
+      actionMission = '현재 머무는 공간의 한구석을 정성스럽게 닦으며 ‘새로운 내 집의 따스한 온기’를 미리 느끼기';
+      feelingPhrase = '내 명의의 새 보금자리 현관문을 열고 들어서는 순간 가슴 벅차게 밀려오는 깊은 안도감';
+      mirrorDeclaration = '너는 가장 안전하고 아름다운 보금자리에서 평화롭게 번영할 자격이 있어.';
+      eveningGratitude = '안락한 보금자리와 온기 가득한 삶의 쉼터를 허락해 준 우주의 은혜에 진심으로 감사합니다.';
+      scriptingIntro = `새 집 계약을 완벽히 마쳤다. 거실 창문으로 쏟아지는 햇살을 바라보며 깊은 감사의 눈물을 흘렸다.`;
+    } else {
+      coreGoal = '풍요로운 재정적 번영과 물질적 자유';
+      achievedPhrase = '풍성한 금전적 결실과 번영을 손에 쥐어';
+      fruitPhrase = '예상치 못한 뜻밖의 금전적 축복과 넘쳐나는 물질적 여유를 편안히 누리고 있습니다';
+      affirmations = [
+        `우주의 무한한 풍요가 생각지도 못한 뜻밖의 통로를 통해 내 삶으로 거침없이 쏟아져 들어오고 있으며, 넉넉하고 당당한 재정적 자유를 편안하게 누리고 있습니다.`,
+        `통장 잔고를 확인할 때마다 마음 깊은 곳에서 차오르는 든든함과 감사함이 넘쳐나며, 돈에 대한 모든 불안이 사라지고 풍요가 풍요를 부르는 기적의 선순환 속에 살아가고 있습니다.`,
+        `나는 부와 번영을 끌어당기는 강력한 우주의 자석이며, 내가 베푸는 모든 감사가 수백 배의 거대한 물질적 축복으로 되돌아옴을 확신 속에 누립니다.`,
+      ];
+      actionMission = '오늘 천 원짜리 한 장을 쓰더라도 ‘풍요를 누리게 해 줘서 고맙다’는 진심 어린 감사로 지출하기';
+      feelingPhrase = '통장 잔고를 확인할 때마다 가슴 깊은 곳에서 차오르는 든든함과 넉넉한 여유';
+      mirrorDeclaration = '너는 부와 번영을 무한히 누릴 자격이 있는 사람이야. 풍요는 이미 네 안에 있어.';
+      eveningGratitude = '차고 넘치는 우주의 재물과 물질적 축복이 내 삶에 흘러들어옴에 깊이 감사합니다.';
+      scriptingIntro = `생각지도 못한 방식으로 놀라운 금전적 축복이 쏟아져 들어왔다. 우주의 선물에 감사할 따름이다.`;
+    }
+  }
+
+  // === Case 6: 연애 / 사랑 / 인연 (Romance) ===
+  else if (theme === 'love') {
+    coreGoal = '진실하고 다정한 최고의 인연과의 행복한 연애';
+    achievedPhrase = '마음 깊이 바라던 아름다운 사랑의 결실을 맺어';
+    fruitPhrase = '있는 그대로 존중받고 아낌없이 사랑을 주고받으며 매 순간 충만한 행복을 누리고 있습니다';
+    affirmations = [
+      `나를 온전히 존중하고 깊이 아껴주는 가장 아름다운 운명의 인연과 마침내 기적처럼 연결되어 따뜻하고 설레는 사랑의 결실을 맺었으며, 매 순간 거짓 없는 진실한 사랑과 행복을 충만하게 주고받고 있습니다.`,
+      `있는 그대로의 내 모습을 깊이 사랑해 주는 다정한 사람 곁에서 세상에서 가장 안전하고 따뜻한 안식을 누리고 있으며, 함께 걸어가는 모든 순간이 감사와 기쁨의 축복으로 빛납니다.`,
+      `내 안의 충만한 자존감과 사랑의 에너지가 최고의 인연을 자석처럼 끌어당겼으며, 서로를 배려하고 응원하는 건강하고 아름다운 관계 속에서 매일 감격스러운 하루를 보냅니다.`,
+    ];
+    actionMission = '거울 속 자신을 바라보며 ‘너는 참 다정하고 사랑스러운 존재야’라고 진심으로 말해주기';
+    feelingPhrase = '사랑하는 사람 곁에서 느껴지는 세상에서 가장 안전하고 평화로운 안식처의 온기';
+    mirrorDeclaration = '너는 온 우주의 무조건적인 사랑을 받는 특별한 사람이야. 사랑은 언제나 너와 함께해.';
+    eveningGratitude = '내 삶을 가득 채우는 따뜻한 사랑과 진실된 인연의 축복에 진심으로 감사합니다.';
+    scriptingIntro = `오늘 하루가 온통 사랑과 감사로 가득했다. 진심으로 나를 아껴주는 이가 곁에 있어 행복하다.`;
+  }
+
+  // === Case 7: 기적 / 로또 / 평온 / 일반 (Miracle & Peace) ===
+  else {
+    if (/로또|복권|당첨/.test(clean)) {
+      theme = 'miracle';
+      coreGoal = '로또 1등 당첨과 상상 이상의 재정적 자유';
+      achievedPhrase = '로또 1등 당첨의 기적을 거머쥐어';
+      fruitPhrase = '상상 이상의 거대한 재정적 자유와 평온 속에서 나와 소중한 이들을 위한 선한 영향력을 누리고 있습니다';
+      affirmations = [
+        `온 우주의 무한한 축복과 행운이 내 삶에 기적처럼 쏟아져 들어와 로또 1등 당첨의 영광을 거머쥐었으며, 상상 이상의 거대한 재정적 자유와 평온 속에서 나와 소중한 이들을 위한 선한 영향력을 마음껏 펼치고 있습니다.`,
+        `마침내 당첨 번호 6자리가 완벽히 일치하는 기적의 순간을 마주하여 가슴 벅찬 감격의 전율을 온몸으로 누리고 있으며, 우주가 건네준 이 풍요로운 선물을 지혜롭고 감사하게 누리고 있습니다.`,
+        `돈에 대한 모든 걱정이 단번에 사라지고 평생을 넉넉히 누릴 수 있는 부와 평온이 내 삶에 안착하였으며, 감사와 기쁨으로 충만한 매일을 축복 속에 살아갑니다.`,
+      ];
+      actionMission = '지갑 속 복권을 소중히 어루만지며 ‘이미 이루어진 거대한 행운의 기적’에 미리 감사하기';
+      feelingPhrase = '당첨 결과를 확인하는 순간 심장이 멎을 듯 벅차오르는 감격의 환희와 전율';
+      mirrorDeclaration = '너는 우주의 거대한 기적을 마땅히 누릴 자격이 있는 사람이야. 행운은 네 곁에 있어.';
+      eveningGratitude = '상상 이상의 놀라운 기적과 재정적 자유를 허락해 주신 우주의 거대한 축복에 감사합니다.';
+      scriptingIntro = `믿기지 않는 기적이 현실로 일어났다! 1등 당첨의 소식을 마주하고 눈물을 흘렸다.`;
+    } else {
+      coreGoal = `${stripped} 온전한 성취`;
+      achievedPhrase = `마음속 깊이 품어 온 소망을 마침내 온전히 성취하여`;
+      fruitPhrase = '삶의 모든 막힘이 시원하게 풀리고 상상 이상의 벅찬 평온과 결실을 누리고 있습니다';
+      affirmations = [
+        `나를 짓누르던 모든 불안과 걱정이 아침 햇살에 안개 걷히듯 온전히 사라졌으며, 마침내 간절히 바라던 소망이 기적처럼 이루어져 잔잔한 호수처럼 깊고 단단한 내면의 평온과 절대적인 자유를 누리고 있습니다.`,
+        `우주의 가장 완벽하고 지혜로운 타이밍 안에서 간절한 소망의 결실이 눈부시게 완성되었으며, 삶의 모든 막힘이 시원하게 뚫리고 상상 이상의 벅찬 감사와 축복이 내 일상에 환하게 펼쳐졌습니다.`,
+        `모든 일은 나를 가장 완전하고 아름다운 길로 이끌고 있음을 확신하며, 가슴 가득 차오르는 충만한 안도감과 고요한 행복 속에서 오늘을 감사히 살아갑니다.`,
+      ];
+      actionMission = '잠시 눈을 감고 미간의 긴장을 풀며 ‘이미 모든 것이 순리대로 이루어졌다’고 10초간 안식하기';
+      feelingPhrase = '어두운 터널을 지나 눈부신 지평선 위로 마침내 찬란한 태양이 떠오르는 순간의 벅찬 감격';
+      mirrorDeclaration = '너는 기적을 마땅히 누릴 자격이 있는 사람이야. 우주는 언제나 네 편이야.';
+      eveningGratitude = '가장 완전하고 조화로운 타이밍에 모든 소망을 펼쳐주는 우주의 은혜에 깊이 감사합니다.';
+      scriptingIntro = `기적이 실제로 내 삶에 일어났다. 염원하던 소망이 눈앞의 찬란한 현실이 되었다.`;
+    }
+  }
+
+  return {
+    originalWish,
+    cleanedWish: clean,
+    theme,
+    coreGoal,
+    subjectType,
+    subjectName,
+    affirmations,
+    achievedPhrase,
+    fruitPhrase,
+    actionMission,
+    feelingPhrase,
+    mirrorDeclaration,
+    eveningGratitude,
+    scriptingIntro,
+  };
+}
+
+/**
  * 68초 시각화 스튜디오 전용 고밀도 오감 몰입 낭독 가이드 생성기 (약 1분 / 350~450자 분량)
  * 차분한 호흡 이완 -> 구체적 정경과 오감 묘사 -> 안도감과 환희의 감정 극대화 -> 심장 중심 주파수 각인
  */
@@ -742,10 +1317,11 @@ export function createImmersiveVisualizationGuide(
 ): string {
   const cleanWish = wishStr.trim().replace(/^["']|["']$/g, '');
   if (cleanWish) {
+    const ctx = refineWishContext(cleanWish, name);
     const templates = [
-      `편안하게 눈을 감고, 천천히 숨을 들이마시고 깊게 내쉬어 봅니다. 어깨와 미간의 긴장이 부드럽게 풀리며 내면의 깊은 고요가 찾아옵니다. 이제 당신의 눈앞에 "${cleanWish}"의 소망이 마침내 눈부시게 이루어진 순간이 영화 속 한 장면처럼 선명하게 펼쳐집니다. 당신을 감싸는 공기의 따스한 온기와 소중한 사람들의 환한 축하의 목소리, 떨리는 가슴으로 결과를 마주하며 흘러나오는 안도의 숨결을 온몸의 감각으로 생생하게 느껴 보세요. 모든 걱정과 의심은 아침 햇살에 녹아내리고, "마침내 해냈구나, 온 우주가 나를 도왔구나" 하는 벅찬 감격과 감사의 전율이 머리끝부터 발끝까지 따뜻하게 퍼져나갑니다. 편안한 미소를 얼굴에 띄운 채, 지금 이 순간 가슴 가득 차오른 행복의 주파수를 심장 깊숙이 새겨 넣습니다. 당신은 이미 원하는 모든 것을 온전히 누리고 있습니다.`,
-      `조용히 호흡에 집중하며 온몸의 긴장을 툭 내려놓습니다. 숨을 들이마실 때마다 맑은 우주의 에너지가 채워지고, 내쉴 때마다 해묵은 조급함이 흩어집니다. 상상해 보세요. 마침내 "${cleanWish}"이(가) 가장 완벽하고 기적 같은 형태로 현실에 완성되었습니다. 당신의 손끝에 닿는 생생한 촉감, 눈앞에 펼쳐진 환한 광경, 그리고 귓가를 맴도는 감격스러운 축복의 소리가 오감을 타고 선명하게 깨어납니다. 가슴을 짓누르던 모든 불안이 사라지고, 온몸의 세포 하나하나가 형언할 수 없는 자유와 충만한 기쁨으로 노래합니다. 이 놀라운 현실을 이미 손에 쥔 당당하고 평온한 나 자신을 느끼며, 우주가 건네준 이 아름다운 선물을 온 마음으로 기쁘게 끌어안습니다. 당신의 소망은 이미 이루어졌습니다.`,
-      `눈을 감고 가슴 한가운데에 손을 가볍게 얹어 봅니다. 규칙적이고 따뜻한 심장 박동과 함께, 내면의 무한한 창조 공간으로 들어갑니다. 바로 지금, 당신의 간절한 염원이었던 "${cleanWish}"의 기적이 눈앞에 찬란하게 완성되어 있습니다. 환호하는 주변의 따뜻한 시선들, 안도의 눈물과 함께 차오르는 벅찬 미소, 그리고 온 세상을 다 가진 듯한 평온한 자신감이 온몸을 가득 채웁니다. "정말로 이루어졌구나, 나는 충분히 이 축복을 받을 자격이 있구나" 하는 깊은 확신이 영혼 깊은 곳까지 스며듭니다. 온 우주가 당신을 위해 준비한 완벽한 풍요와 조화 속에 온전히 머무르세요. 이 벅찬 감정의 주파수가 영원히 당신의 현실을 지켜줄 것입니다.`
+      `편안하게 눈을 감고, 천천히 숨을 들이마시고 깊게 내쉬어 봅니다. 어깨와 미간의 긴장이 부드럽게 풀리며 내면의 깊은 고요가 찾아옵니다. 이제 당신의 눈앞에 그토록 간절히 염원하던 "${ctx.coreGoal}"이(가) 마침내 눈부시게 이루어진 순간이 영화 속 한 장면처럼 선명하게 펼쳐집니다. 당신을 감싸는 공기의 따스한 온기와 소중한 사람들의 환한 축하의 목소리, 떨리는 가슴으로 결과를 마주하며 흘러나오는 안도의 숨결을 온몸의 감각으로 생생하게 느껴 보세요. 모든 걱정과 의심은 아침 햇살에 녹아내리고, "마침내 해냈구나, 온 우주가 나를 도왔구나" 하는 벅찬 감격과 감사의 전율이 머리끝부터 발끝까지 따뜻하게 퍼져나갑니다. 편안한 미소를 얼굴에 띄운 채, 지금 이 순간 가슴 가득 차오른 행복의 주파수를 심장 깊숙이 새겨 넣습니다. 당신은 이미 원하는 모든 것을 온전히 누리고 있습니다.`,
+      `조용히 호흡에 집중하며 온몸의 긴장을 툭 내려놓습니다. 숨을 들이마실 때마다 맑은 우주의 에너지가 채워지고, 내쉴 때마다 해묵은 조급함이 흩어집니다. 상상해 보세요. 마침내 "${ctx.coreGoal}"의 축복이 가장 완벽하고 기적 같은 형태로 당신의 일상에 완성되었습니다. 당신의 손끝에 닿는 생생한 촉감, 눈앞에 펼쳐진 환한 광경, 그리고 귓가를 맴도는 감격스러운 축복의 소리가 오감을 타고 선명하게 깨어납니다. 가슴을 짓누르던 모든 불안이 사라지고, 온몸의 세포 하나하나가 형언할 수 없는 자유와 충만한 기쁨으로 노래합니다. 이 놀라운 현실을 이미 손에 쥔 당당하고 평온한 나 자신을 느끼며, 우주가 건네준 이 아름다운 선물을 온 마음으로 기쁘게 끌어안습니다. 당신의 소망은 이미 이루어졌습니다.`,
+      `눈을 감고 가슴 한가운데에 손을 가볍게 얹어 봅니다. 규칙적이고 따뜻한 심장 박동과 함께, 내면의 무한한 창조 공간으로 들어갑니다. 바로 지금, 당신의 간절한 염원이었던 "${ctx.coreGoal}"의 기적이 눈앞에 찬란하게 완성되어 있습니다. 환호하는 주변의 따뜻한 시선들, 안도의 눈물과 함께 차오르는 벅찬 미소, 그리고 온 세상을 다 가진 듯한 평온한 자신감이 온몸을 가득 채웁니다. "정말로 이루어졌구나, 나는 충분히 이 축복을 받을 자격이 있구나" 하는 깊은 확신이 영혼 깊은 곳까지 스며듭니다. 온 우주가 당신을 위해 준비한 완벽한 풍요와 조화 속에 온전히 머무르세요. 이 벅찬 감정의 주파수가 영원히 당신의 현실을 지켜줄 것입니다.`
     ];
     const idx = Math.abs(seed + getDailySecretIndex()) % templates.length;
     return templates[idx];
@@ -777,93 +1353,42 @@ export function generateDynamicSecretKit(
   updatedAt: number;
 } {
   const cleanWish = wishStr.trim();
-  const lower = cleanWish.toLowerCase();
   const isCustomWish = Boolean(cleanWish && cleanWish !== '온전한 내면의 평온과 뜻밖의 풍요로운 행운');
 
-  // If user entered a custom wish, match category or tailor dynamically
+  // If user entered a custom wish, perform deep NLP contextual synthesis
   if (isCustomWish) {
-    let matchedTheme: 'abundance' | 'success' | 'love' | 'health' | 'peace' | 'miracle' = 'peace';
+    const ctx = refineWishContext(cleanWish, name);
+    const themedKits = SECRET_CATALOG.filter((k) => k.theme === ctx.theme);
+    const selectedBase = themedKits[Math.abs(seed) % themedKits.length] || SECRET_CATALOG[0];
 
-    if (/돈|재물|금전|부자|수입|매출|연봉|빚|채무|자산|투자|수익|통장|부동산|경제/.test(lower)) {
-      matchedTheme = 'abundance';
-    } else if (/시험|합격|자격증|취득|수능|고시|임용|승진|면접|평가|성적|취업|입사|성공|프로젝트|목표|사업/.test(lower)) {
-      matchedTheme = 'success';
-    } else if (/연애|사랑|인연|결혼|화해|남친|여친|배우자|이별|재회|짝사랑|인간관계|친구|가족|대화|갈등/.test(lower)) {
-      matchedTheme = 'love';
-    } else if (/건강|피로|치유|통증|수면|불면|잠|활력|다이어트|몸|질병|치료|컨디션|아픔/.test(lower)) {
-      matchedTheme = 'health';
-    } else if (/기적|행운|운|기회|소원|선물|축복|마법|은혜|우주/.test(lower)) {
-      matchedTheme = 'miracle';
-    } else {
-      matchedTheme = 'peace';
-    }
+    // 앞뒤 맥락이 완벽하게 일치하고, 맞춤소원의 세부 내용이 한눈에 살아 숨 쉬는 완성형 확언 선택
+    const affIndex = Math.abs(seed + getDailySecretIndex()) % ctx.affirmations.length;
+    const finalAffirmation = ctx.affirmations[affIndex];
 
-    const themedKits = SECRET_CATALOG.filter((k) => k.theme === matchedTheme);
-    const selectedBase = themedKits[Math.abs(seed) % themedKits.length];
-
-    // Dynamic tailored variations embedding the custom wish by theme
-    let customAffirmationTemplates: string[] = [];
-
-    if (matchedTheme === 'abundance') {
-      customAffirmationTemplates = [
-        `나는 "${cleanWish}"의 풍요로운 결실을 이미 온전히 손에 쥐었으며, 매일 상상 이상의 번영과 풍성한 부가 기적처럼 쏟아져 들어옵니다.`,
-        `"${cleanWish}"을(를) 향한 우주의 문이 활짝 열렸으며, 나는 감사와 확신의 주파수로 차고 넘치는 재정적 자유와 풍요를 당당히 누립니다.`,
-        `나는 간절히 염원하던 "${cleanWish}"의 현실을 이미 살아가고 있으며, 모든 금전적 막힘이 시원하게 풀려 벅찬 기쁨을 경험합니다.`,
-        `"${cleanWish}"의 축복이 내 삶에 완벽히 채워졌으며, 나는 여유롭고 당당한 풍요 속에서 세상에 선한 영향력을 나눕니다.`
-      ];
-    } else if (matchedTheme === 'success') {
-      customAffirmationTemplates = [
-        `나는 간절히 준비해 온 "${cleanWish}"을(를) 당당히 성취해 냈으며, 나의 탁월한 역량과 열정으로 최고의 자리에서 눈부시게 빛나고 있습니다.`,
-        `"${cleanWish}"의 완벽한 성공이 이미 눈앞의 현실이 되었으며, 모든 길과 인연이 나를 도와 상상 이상의 위대한 도약을 완성했습니다.`,
-        `나는 "${cleanWish}"의 목표를 이미 완벽하게 달성한 주인공으로서, 깊은 자부심과 충만한 확신을 가슴에 품고 살아갑니다.`,
-        `내 안의 무한한 잠재력이 깨어나 "${cleanWish}"의 기적을 완벽히 실현시켰으며, 나의 발걸음마다 승리와 영광이 함께합니다.`
-      ];
-    } else if (matchedTheme === 'love') {
-      customAffirmationTemplates = [
-        `나는 "${cleanWish}"의 따뜻한 축복 속에 살아가고 있으며, 서로를 깊이 아끼고 존중하는 진실한 사랑과 평화로운 행복을 매 순간 만끽합니다.`,
-        `"${cleanWish}"을(를) 향한 내 마음의 주파수가 온 우주와 공명하여, 모든 오해와 갈등은 녹아내리고 깊은 신뢰와 사랑으로 가득 찼습니다.`,
-        `나는 이미 "${cleanWish}"의 조화롭고 다정한 관계 속에서 온전한 사랑을 주고받으며, 매일 깊은 감사와 안도감을 느낍니다.`,
-        `온 우주의 선한 에너지가 나와 소중한 인연을 축복하여, "${cleanWish}"의 기적 같은 사랑과 화해가 지금 여기에 완성되었습니다.`
-      ];
-    } else if (matchedTheme === 'health') {
-      customAffirmationTemplates = [
-        `내 몸과 마음의 모든 세포는 "${cleanWish}"의 온전한 회복과 치유를 이루었으며, 매일 아침 가볍고 맑은 생명력으로 충만합니다.`,
-        `"${cleanWish}"의 눈부신 치유 에너지가 내 온몸 구석구석을 가득 채워, 모든 피로와 통증은 사라지고 깊은 활력과 평온을 누립니다.`,
-        `나는 이미 "${cleanWish}"의 건강하고 균형 잡힌 심신으로 완벽히 거듭났으며, 온몸 가득 넘쳐나는 에너지로 매 순간을 기쁘게 살아갑니다.`,
-        `우주의 무한한 생명력이 내 몸을 감싸 안아 "${cleanWish}"의 기적을 선물하였으며, 나의 숨결마다 완전한 건강과 평화가 깃듭니다.`
-      ];
-    } else if (matchedTheme === 'miracle') {
-      customAffirmationTemplates = [
-        `온 우주가 나의 간절한 소망 "${cleanWish}"을(를) 완벽히 이루기 위해 일사불란하게 돕고 있으며, 나는 오늘 기대치 않았던 놀라운 기적과 축복을 기쁘게 마주합니다.`,
-        `"${cleanWish}"을(를) 향한 내 안의 모든 의심과 조급함은 녹아내렸고, 상상 이상의 신비로운 기적과 뜻밖의 은혜가 삶의 전면에 펼쳐졌습니다.`,
-        `나는 이미 "${cleanWish}"의 기적을 선물받은 감사와 감격 속에 존재하며, 매 순간 온 우주의 세심한 배려와 사랑을 온몸으로 실감합니다.`,
-        `온 우주의 선한 힘이 나를 가장 안전하고 완벽한 타이밍으로 이끌어 주어, "${cleanWish}"의 눈부신 기적이 내 현실이 되었습니다.`
-      ];
-    } else {
-      customAffirmationTemplates = [
-        `나는 간절히 염원하던 "${cleanWish}"의 현실을 이미 온전히 살아내고 있으며, 내 삶의 모든 막힘이 시원하게 풀려 상상 이상의 벅찬 결실과 깊은 평온이 지금 여기에 실현되었습니다.`,
-        `"${cleanWish}"을(를) 향한 내 안의 모든 저항과 의심은 완전히 녹아내렸고, 온 우주의 선한 힘이 나를 도와 가장 아름답고 완벽한 기적을 완성해 냈습니다.`,
-        `나는 이미 "${cleanWish}"의 축복을 손에 쥔 당당하고 평온한 나 자신으로 존재하며, 매 순간 형언할 수 없는 안도감과 충만한 번영을 경험합니다.`,
-        `온 우주가 나를 가장 안전하고 완벽한 길로 이끌어 주어, "${cleanWish}"의 아름다운 기적이 내 삶의 모든 순간을 환히 밝힙니다.`
-      ];
-    }
-
-    const affIndex = Math.abs(seed + getDailySecretIndex()) % customAffirmationTemplates.length;
+    // 성찰(Reflection) 역시 해당 소망의 의심과 불안을 해소하는 문맥 맞춤형으로 직조
+    const reflectionsByTheme = {
+      success: `의심과 조급함은 과거의 환영일 뿐입니다. 당신이 간절히 준비하고 품어온 목표는 이미 우주의 차원에서 완성되었습니다. 결과에 매달려 스스로를 재촉하지 마세요. 이미 합격하고 성취한 사람의 평온하고 당당한 주파수를 유지할 때, 현실은 가장 완벽한 속도로 당신에게 걸어옵니다.`,
+      abundance: `결핍에 시선을 두면 결핍이 증폭되고, 이미 존재하는 풍요에 감사하면 더 큰 번영이 쏟아져 들어옵니다. 당신의 모든 필요는 이미 완벽하게 채워지고 있습니다. 통장의 숫자나 현실의 장애물에 동요하지 마십시오. 이미 모든 부와 자유를 손에 쥔 자의 너그럽고 여유로운 마음으로 세상을 대하세요.`,
+      love: `진실한 관계와 사랑은 억지로 붙잡는 것이 아니라, 내 안의 충만한 자존감과 평화로부터 흘러넘치는 것입니다. 마음속 모든 불안과 서운함을 우주의 강물에 흘려보내세요. 당신이 스스로를 온전히 존중하고 사랑할 때, 소중한 인연 역시 가장 아름답고 다정한 모습으로 당신 곁에 머뭅니다.`,
+      health: `우리의 몸은 무한한 생명 지능을 품고 있으며, 쉼 없이 완벽한 조화와 건강을 향해 스스로를 치유하고 있습니다. 아픔과 피로에 두려움으로 저항하기보다, 지금 이 순간 나를 지탱해 주는 숨결 하나하나에 깊은 감사를 보내세요. 당신의 모든 세포는 사랑의 빛 속에서 날마다 눈부시게 새로워지고 있습니다.`,
+      miracle: `기적은 우연히 일어나는 것이 아니라, 온전한 신뢰와 내맡김의 상태에서 자연스럽게 꽃피는 우주의 선물입니다. '어떻게 이루어질까' 머리로 계산하지 마십시오. 상상 이상의 완벽한 방법으로 길을 여시는 우주의 지혜를 믿을 때, 당신의 삶에는 매일 감격스러운 뜻밖의 축복이 펼쳐집니다.`,
+      peace: `삶의 모든 것은 가장 완벽한 순리대로 흐르고 있습니다. 조급하게 통제하려던 손을 펴고 우주의 거대한 품에 편안히 안식하세요. 모든 저항을 내려놓은 고요한 심장 속에서, 당신이 꿈꾸던 아름다운 소망이 마침내 선명한 현실로 피어납니다.`
+    };
 
     return {
-      affirmation: customAffirmationTemplates[affIndex],
-      reflection: selectedBase.reflection,
-      action: selectedBase.action,
-      desire: `우주여, ${name ? name + '의 삶에 ' : ''}"${cleanWish}"의 소망이 가장 지혜롭고 아름다운 방식으로 피어나게 하옵소서.`,
+      affirmation: finalAffirmation,
+      reflection: reflectionsByTheme[ctx.theme] || selectedBase.reflection,
+      action: ctx.actionMission || selectedBase.action,
+      desire: `우주여, ${name ? name + '의 삶에 ' : ''}${ctx.coreGoal}의 소망이 가장 지혜롭고 아름다운 방식으로 피어나게 하옵소서.`,
       visualizationGuide: createImmersiveVisualizationGuide(cleanWish, selectedBase, name, seed),
-      feelingAnchor: selectedBase.feelingAnchor,
-      mirrorPhrase: selectedBase.mirrorPhrase,
-      eveningPrompt: selectedBase.eveningPrompt,
-      scriptingStarter: selectedBase.scriptingStarter,
+      feelingAnchor: ctx.feelingPhrase || selectedBase.feelingAnchor,
+      mirrorPhrase: ctx.mirrorDeclaration || selectedBase.mirrorPhrase,
+      eveningPrompt: ctx.eveningGratitude || selectedBase.eveningPrompt,
+      scriptingStarter: ctx.scriptingIntro || selectedBase.scriptingStarter,
       gratitudeSeeds: [
-        `나의 소망 "${cleanWish}"이(가) 우주의 완전한 질서 속에서 가장 조화롭게 이루어지고 있음에 감사합니다.`,
-        selectedBase.gratitudeSeeds[1],
-        selectedBase.gratitudeSeeds[2],
+        `나의 소망 "${ctx.coreGoal}"이(가) 우주의 완전한 질서 속에서 가장 조화롭게 이루어지고 있음에 감사합니다.`,
+        `이루어지는 과정 속에서 나를 지켜주고 도와주는 모든 보이지 않는 은혜와 인연들에 깊이 감사합니다.`,
+        `이미 모든 것을 선물받은 사람으로서 내 마음에 가득 차오르는 평온과 감사의 충만함에 감사합니다.`,
       ],
       appliedWish: cleanWish,
       updatedAt: Date.now(),

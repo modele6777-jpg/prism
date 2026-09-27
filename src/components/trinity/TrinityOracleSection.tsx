@@ -5,7 +5,7 @@ import {
   Sparkles, Heart, Flame, Wind, Coins, BookOpen, Volume2, VolumeX,
   CheckCircle2, RotateCcw, Zap, Sun, Moon, Feather, Check, Palette, ArrowRight, Share2,
   Compass, Shield, ShieldCheck, User, Calendar, Clock, X, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Eye, Layers,
-  Copy, ZoomIn
+  Copy, ZoomIn, AlertCircle
 } from 'lucide-react';
 import { TAROT_DECK, TarotCard, getTarotCardImageUrl } from '@/data/tarotData';
 import { TarotSpread, SelectedTarotCardEntry } from './TarotSpread';
@@ -1118,146 +1118,73 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
     );
   };
 
-  // 🌟 78장 오라클 핵심 3줄 요약 전용 카드 렌더러
+  // 🌟 78장 오라클 핵심 3줄 요약 전용 카드 렌더러 (다른 타로 결과와 100% 동일한 UI)
   const renderOracleSummaryCard = () => {
     if (!oracleSummaryBullets || oracleSummaryBullets.length === 0) return null;
-    const isHealing = oracleMode === 'healing';
 
     return (
-      <div className={`p-4 sm:p-5 rounded-3xl border shadow-xl relative overflow-hidden backdrop-blur-xl transition-all ${
-        isHealing
-          ? 'bg-gradient-to-br from-rose-950/25 via-zinc-950/90 to-amber-950/25 border-rose-400/35 shadow-rose-950/20'
-          : 'bg-gradient-to-br from-cyan-950/25 via-zinc-950/90 to-amber-950/25 border-amber-400/35 shadow-amber-950/20'
-      }`}>
-        <div className={`absolute top-0 right-0 w-48 h-48 rounded-full blur-3xl pointer-events-none ${
-          isHealing ? 'bg-rose-500/10' : 'bg-cyan-500/10'
-        }`} />
-
-        {/* Card Header */}
-        <div className="flex items-center justify-between gap-3 pb-3 border-b border-white/10 relative z-10">
-          <div className="flex items-center gap-2.5">
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border ${
-              isHealing
-                ? 'bg-rose-500/20 border-rose-400/40 text-rose-300'
-                : 'bg-amber-500/20 border-amber-400/40 text-amber-300'
-            }`}>
-              {isHealing ? <Heart size={16} className="text-rose-300" /> : <Zap size={16} className="text-amber-300" />}
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className={`text-[10px] font-mono uppercase tracking-widest ${
-                  isHealing ? 'text-rose-400/90' : 'text-amber-400/90'
-                }`}>
-                  {isHealing ? 'HEALING SUMMARY' : 'GROWTH ACTION SUMMARY'}
-                </span>
-                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${
-                  isHealing
-                    ? 'bg-rose-500/20 text-rose-200 border-rose-400/30'
-                    : 'bg-amber-500/20 text-amber-200 border-amber-400/30'
-                }`}>
-                  {isHealing ? '제제의 치유 요약' : '루시의 실행 요약'}
-                </span>
-              </div>
-              <h4 className="text-sm sm:text-base font-bold font-serif text-white">
-                {isHealing ? '🌿 마음 치유 핵심 3줄 요약' : '⚡ 자기계발 돌파 핵심 3줄 요약'}
-              </h4>
-            </div>
+      <div className="p-4 rounded-2xl bg-gradient-to-r from-yellow-500/15 via-amber-500/10 to-transparent border border-yellow-500/35 shadow-inner">
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-1.5 text-yellow-300 font-bold text-xs">
+            <Sparkles size={13} className="text-yellow-400 animate-pulse" />
+            <span>✨ 핵심 3줄 요약 (Quick Summary)</span>
           </div>
-
           <div className="flex items-center gap-2">
-            {/* 요약 TTS 버튼 */}
             {oracleSummarySpeechText && (
               <button
                 type="button"
                 onClick={handleToggleOracleSummaryTTS}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95 ${
+                className={`px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
                   isOracleSummaryTTSActive
-                    ? 'bg-rose-500/30 text-rose-200 border border-rose-400/60 ring-2 ring-rose-400/30 animate-pulse'
-                    : isHealing
-                      ? 'bg-rose-500/15 hover:bg-rose-500/25 text-rose-200 border border-rose-400/35 hover:border-rose-400/60'
-                      : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 border border-amber-400/35 hover:border-amber-400/60'
+                    ? 'bg-yellow-400/25 text-yellow-300 border border-yellow-400/40 animate-pulse'
+                    : 'bg-white/10 hover:bg-white/20 text-white/90 border border-white/15'
                 }`}
-                title={isOracleSummaryTTSActive ? '요약 낭독 중지' : '핵심 3줄 요약 음성으로 듣기'}
+                title={isOracleSummaryTTSActive ? '요약 낭독 중지' : '핵심 3줄 요약 음성 낭독'}
               >
-                {isOracleSummaryTTSActive ? (
-                  <>
-                    <VolumeX size={13} className="text-rose-300" />
-                    <span className="text-[11px]">중지</span>
-                    <span className="flex gap-0.5 ml-0.5">
-                      <span className="w-1 h-2 bg-rose-300 rounded-full animate-bounce" />
-                      <span className="w-1 h-3 bg-rose-200 rounded-full animate-bounce [animation-delay:0.15s]" />
-                      <span className="w-1 h-2 bg-rose-400 rounded-full animate-bounce [animation-delay:0.3s]" />
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <Volume2 size={13} className={isHealing ? 'text-rose-300' : 'text-amber-300'} />
-                    <span className="text-[11px]">요약 듣기</span>
-                  </>
-                )}
+                {isOracleSummaryTTSActive ? <VolumeX size={11} /> : <Volume2 size={11} />}
+                <span>{isOracleSummaryTTSActive ? '중지' : '요약 듣기'}</span>
               </button>
             )}
-
-            {/* 3줄 요약 복사 버튼 */}
             <button
               type="button"
               onClick={() => {
-                const header = isHealing ? '【제제의 치유 오라클 핵심 3줄 요약】' : '【루시의 성장 오라클 핵심 3줄 요약】';
+                const header = '【핵심 3줄 요약】';
                 const copyText = `${header}\n${oracleSummaryBullets.join('\n')}`;
                 navigator.clipboard?.writeText(copyText).then(() => {
                   setIsSummaryCopied(true);
                   setTimeout(() => setIsSummaryCopied(false), 2000);
                 }).catch(() => {});
               }}
-              className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 hover:text-white text-xs flex items-center gap-1 transition-all cursor-pointer"
+              className="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white text-[10px] font-medium flex items-center gap-1 transition-all cursor-pointer"
               title="핵심 3줄 요약 클립보드 복사"
             >
-              {isSummaryCopied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
-              <span className="hidden sm:inline text-[11px]">{isSummaryCopied ? '복사됨' : '요약 복사'}</span>
+              {isSummaryCopied ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
+              <span>{isSummaryCopied ? '복사됨' : '복사'}</span>
             </button>
           </div>
         </div>
 
-        {/* 3-Bullet Points */}
-        <div className="mt-3.5 space-y-2.5 relative z-10 font-sans">
+        <ul className="space-y-2 text-xs text-white/90 leading-relaxed font-sans">
           {oracleSummaryBullets.map((bullet, idx) => {
             const match = bullet.match(/^\[([^\]]+)\]\s*(.*)$/);
             const tag = match ? match[1] : null;
             const content = match ? match[2] : bullet;
 
-            // Mode-specific tag badge styling
-            let badgeClass = 'bg-amber-400/20 text-amber-200 border-amber-400/30';
-            if (tag === '마음 진단') badgeClass = 'bg-rose-500/20 text-rose-300 border-rose-400/35';
-            else if (tag === '치유의 빛') badgeClass = 'bg-amber-400/20 text-amber-200 border-amber-400/35';
-            else if (tag === '안식 처방') badgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-400/35';
-            else if (tag === '현실 진단') badgeClass = 'bg-orange-500/20 text-orange-300 border-orange-400/35';
-            else if (tag === '전략 방향') badgeClass = 'bg-cyan-500/20 text-cyan-300 border-cyan-400/35';
-            else if (tag === '즉각 실행') badgeClass = 'bg-yellow-400/20 text-yellow-200 border-yellow-400/35';
-
             return (
-              <div
-                key={idx}
-                className="flex items-start gap-2.5 p-2.5 sm:p-3 rounded-2xl bg-black/40 border border-white/5 hover:border-white/10 transition-colors"
-              >
-                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold font-mono shrink-0 mt-0.5 border ${
-                  isHealing
-                    ? 'bg-rose-500/15 text-rose-300 border-rose-400/30'
-                    : 'bg-amber-500/15 text-amber-300 border-amber-400/30'
-                }`}>
-                  {idx + 1}
-                </span>
-                <div className="flex-1 min-w-0 text-xs sm:text-sm text-zinc-100 leading-relaxed">
+              <li key={idx} className="flex items-start gap-2">
+                <span className="text-yellow-400 font-bold shrink-0 mt-0.5">•</span>
+                <div className="leading-snug">
                   {tag && (
-                    <span className={`inline-block px-2 py-0.5 mr-2 rounded-md text-[11px] font-bold border ${badgeClass} shrink-0 align-middle`}>
+                    <span className="inline-block px-1.5 py-0.5 mr-1.5 rounded text-[10px] font-bold bg-yellow-400/20 text-yellow-300 border border-yellow-400/30">
                       {tag}
                     </span>
                   )}
-                  <span className="align-middle font-normal">{content}</span>
+                  <span>{content}</span>
                 </div>
-              </div>
+              </li>
             );
           })}
-        </div>
+        </ul>
       </div>
     );
   };
@@ -2211,13 +2138,23 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
                 {/* 🌟 오라클 타로 맨 하단 루시의 맞춤 치유 조언 (TTS 가능) */}
                 <LucyTarotAdviceCard
                   cards={drawnCards}
-                  tarotConcern={inquiryText || '제제의 치유 오라클'}
+                  tarotConcern={inquiryText || '지친 마음의 온전한 쉼과 내면아이 치유'}
                   readingText={healingResult.message}
                   mode="oracle"
                   oracleMode="healing"
                   saju={saju}
                   className="mt-4"
                 />
+                {/* ⚠️ 타로 성찰 주의사항 (맹목적 믿음 지양 상시 표시) */}
+                <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-500/[0.08] border border-amber-500/30 space-y-1.5 text-xs text-white/85 shadow-sm">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-300 text-xs">
+                    <AlertCircle size={14} className="text-amber-400 shrink-0" />
+                    <span>타로 성찰 주의사항 (맹목적 믿음 지양)</span>
+                  </div>
+                  <p className="leading-relaxed text-white/70 break-keep text-[11px] sm:text-xs">
+                    타로는 미래를 결정짓는 절대적 예언이 아니라, 자신의 내면을 성찰하고 더 나은 선택을 돕는 지혜의 나침반입니다. 맹목적인 믿음을 지양하고, 모든 운명의 결정권과 최종 열쇠는 언제나 당신 자신의 주체적인 의지와 지혜에 있습니다.
+                  </p>
+                </div>
               </div>
             ) : oracleMode === 'growth' && growthResult ? (
               /* [GROWTH RESULT VIEW: ONLY LUCY'S SACRED GROWTH ACTION LETTER] */
@@ -2229,13 +2166,23 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
                 {/* 🌟 오라클 타로 맨 하단 루시의 맞춤 성장 조언 (TTS 가능) */}
                 <LucyTarotAdviceCard
                   cards={drawnCards}
-                  tarotConcern={inquiryText || '루시의 성장 오라클'}
+                  tarotConcern={inquiryText || '현실적인 도전과 자기계발 성장 돌파'}
                   readingText={growthResult.message || growthResult.macro_focus}
                   mode="oracle"
                   oracleMode="growth"
                   saju={saju}
                   className="mt-4"
                 />
+                {/* ⚠️ 타로 성찰 주의사항 (맹목적 믿음 지양 상시 표시) */}
+                <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-500/[0.08] border border-amber-500/30 space-y-1.5 text-xs text-white/85 shadow-sm">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-300 text-xs">
+                    <AlertCircle size={14} className="text-amber-400 shrink-0" />
+                    <span>타로 성찰 주의사항 (맹목적 믿음 지양)</span>
+                  </div>
+                  <p className="leading-relaxed text-white/70 break-keep text-[11px] sm:text-xs">
+                    타로는 미래를 결정짓는 절대적 예언이 아니라, 자신의 내면을 성찰하고 더 나은 선택을 돕는 지혜의 나침반입니다. 맹목적인 믿음을 지양하고, 모든 운명의 결정권과 최종 열쇠는 언제나 당신 자신의 주체적인 의지와 지혜에 있습니다.
+                  </p>
+                </div>
               </div>
             ) : null}
           </motion.div>
