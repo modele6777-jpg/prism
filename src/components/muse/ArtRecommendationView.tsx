@@ -1793,7 +1793,7 @@ export function ArtRecommendationView() {
           MUSE SPECIAL FEATURE
         </div>
         <h2 className="text-3xl md:text-5xl font-sans font-bold tracking-tight text-white leading-tight">
-          오늘의 <span className="text-blue-400">예술 추천</span>
+          Daily <span className="text-blue-400">ART</span>
         </h2>
         <p className="text-sm text-white/50 max-w-xl mx-auto leading-relaxed font-sans">
           당신의 마음에 잠재된 영적 에너지를 깨우기 위해 뮤즈가 큐레이션하는 고전을 만나보세요. 

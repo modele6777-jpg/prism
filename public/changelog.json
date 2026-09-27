@@ -1,5 +1,14 @@
 [
   {
+    "version": "1.4.123",
+    "summary": "MUSE 상단 서브 내비게이션 및 추천 화면 제목을 'Daily ART'로 대문자 스타일 통일",
+    "builtAt": "2026-09-27T22:15:30.000Z",
+    "items": [
+      "MUSE 앱 상단 서브 내비게이션 메뉴 라벨을 'Daily ART'로 변경하여 다른 대문자 메뉴(MATE, MASTERCLASS)와 시각적·스타일적 일관성 완성",
+      "예술 추천 메인 뷰(ArtRecommendationView) 헤더 타이틀을 'Daily ART'로 업데이트하여 메뉴와 뷰 제목 통일"
+    ]
+  },
+  {
     "version": "1.4.122",
     "summary": "섬세하고 품격 있는 오디오 햅틱 피드백(카드 드로우, 저장 완료, 탭 인터랙션) 엔진 도입",
     "builtAt": "2026-09-27T22:11:00.000Z",
