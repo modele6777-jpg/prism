@@ -12,7 +12,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import ReloadPrompt from "./components/ReloadPrompt";
 import InstallPrompt from "./components/InstallPrompt";
 import { GlobalHandbookAudioWidget } from "./components/GlobalHandbookAudioWidget";
-import { BackgroundMoodPicker } from "./components/audio/BackgroundMoodPicker";
+import { ChannelIntroModal } from "./components/common/ChannelIntroModal";
 import { PageLoader } from "./components/PageLoader";
 import { PrismRainbowLoader } from "./components/PrismRainbowLoader";
 import { LucyAuraLoader } from "./components/LucyAuraLoader";
@@ -377,7 +377,7 @@ function AppContent() {
 
       <ReloadPrompt />
       <InstallPrompt />
-      <BackgroundMoodPicker />
+      <ChannelIntroModal />
       <GlobalHandbookAudioWidget />
       <SelectionBridgeToolbar />
       <UpdateNoticeModal

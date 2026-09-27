@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useApp, getPersistentUserProfile, setPersistentUserProfile } from '@/contexts/AppContext';
 import { useBinauralBeat } from '@/hooks/useBinauralBeat';
+import { openChannelIntro } from '@/components/common/ChannelIntroModal';
 import { useScrollToTopOnChange } from '@/hooks/useScrollToTopOnChange';
 import { useSpecialFeatureChromeHidden, SPECIAL_FEATURE_CHROME_HIDDEN_CLASS } from '@/components/SpecialFeaturePanel';
 import { loadProfileFromAllVaults, saveProfileToAllVaults } from '@/lib/profileVault';
@@ -730,18 +731,18 @@ export default function EpilogueApp() {
         <div className="flex items-center gap-2.5 sm:gap-3">
           <div
             className="relative w-11 h-11 rounded-full border border-white/10 flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.05)] group backdrop-blur-md cursor-pointer transition-transform active:scale-95 shrink-0"
-            onClick={() => toggleBinaural('epilogue')}
-            title={isBinauralPlaying ? "배경 무드 사운드 피커 열기 (재생 중)" : "배경 무드 사운드 피커 (해변의 파도 · 빗소리 · 백색소음)"}
+            onClick={() => openChannelIntro('epilogue')}
+            title="에필로그 밤 서재 채널 소개 (클릭)"
           >
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 20, repeat: Number.POSITIVE_INFINITY, ease: 'linear' }}
-              className={`absolute inset-0 rounded-full border ${isBinauralPlaying ? 'border-purple-400 shadow-[0_0_15px_rgba(192,132,252,0.6)]' : 'border-dashed border-purple-400/40'}`}
+              className="absolute inset-0 rounded-full border border-dashed border-emerald-400/40 group-hover:border-emerald-400 group-hover:shadow-[0_0_15px_rgba(52,211,153,0.5)] transition-all"
             />
-            <div className={`absolute inset-[3px] rounded-full border flex items-center justify-center transition-all ${isBinauralPlaying ? 'bg-purple-500/20 border-purple-400/50' : 'border-white/5 bg-white/5'}`}>
+            <div className="absolute inset-[3px] rounded-full border border-emerald-400/30 bg-emerald-500/10 group-hover:bg-emerald-500/20 flex items-center justify-center transition-all">
               <Moon
                 size={20}
-                className={`relative z-10 text-purple-400 drop-shadow-[0_0_12px_rgba(192,132,252,0.8)] transition-transform group-hover:scale-110 duration-500 ${isBinauralPlaying ? 'animate-bounce' : 'animate-pulse'}`}
+                className="relative z-10 text-emerald-400 drop-shadow-[0_0_12px_rgba(52,211,153,0.8)] transition-transform group-hover:scale-110 duration-300 animate-pulse"
                 strokeWidth={1.5}
               />
             </div>

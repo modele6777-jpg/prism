@@ -26,6 +26,7 @@ import NoticeModal from '@/components/NoticeModal';
 import imageCompression from 'browser-image-compression';
 import { SecretBible } from '@/components/orange/SecretBible';
 import { useBinauralBeat } from '@/hooks/useBinauralBeat';
+import { openChannelIntro } from '@/components/common/ChannelIntroModal';
 import { recordPrismFeature, recordDailyOracleResult } from '@/lib/prismOmniSync';
 import { DailySecret } from '@/components/orange/DailySecret';
 import { WishingWellModal } from '@/components/orange/WishingWellModal';
@@ -1287,16 +1288,16 @@ export default function OrangeApp() {
          <div className="flex items-center gap-2.5 sm:gap-3">
             <div 
               className="relative w-11 h-11 rounded-full border border-white/10 flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.05)] group backdrop-blur-md cursor-pointer transition-transform active:scale-95 shrink-0" 
-              onClick={() => toggleBinaural('orange')}
-              title={isBinauralPlaying ? "배경 무드 사운드 피커 열기 (재생 중)" : "배경 무드 사운드 피커 (백색소음 · 빗소리 · 새소리)"}
+              onClick={() => openChannelIntro('orange')}
+              title="오렌지 성찰 & 소원의 우물 채널 소개 (클릭)"
             >
                <motion.div 
                  animate={{ rotate: 360 }} 
                  transition={{ duration: 20, repeat: Number.POSITIVE_INFINITY, ease: "linear" }} 
-                 className={`absolute inset-0 rounded-full border ${isBinauralPlaying ? 'border-orange-400 shadow-[0_0_15px_rgba(251,146,60,0.6)]' : 'border-dashed border-white/30'}`} 
+                 className="absolute inset-0 rounded-full border border-dashed border-orange-400/40 group-hover:border-orange-400 group-hover:shadow-[0_0_15px_rgba(251,146,60,0.5)] transition-all" 
                />
-               <div className={`absolute inset-[3px] rounded-full border flex items-center justify-center transition-all ${isBinauralPlaying ? 'bg-orange-500/20 border-orange-400/50' : 'border-white/5 bg-white/5'}`}>
-                 <TreeDeciduous size={20} className={`relative z-10 text-orange-400 drop-shadow-[0_0_12px_currentColor] transition-transform group-hover:scale-110 duration-500 ${isBinauralPlaying ? 'animate-bounce' : 'animate-pulse'}`} strokeWidth={1.5} />
+               <div className="absolute inset-[3px] rounded-full border border-orange-400/30 bg-orange-500/10 group-hover:bg-orange-500/20 flex items-center justify-center transition-all">
+                 <TreeDeciduous size={20} className="relative z-10 text-orange-400 drop-shadow-[0_0_12px_currentColor] transition-transform group-hover:scale-110 duration-300 animate-pulse" strokeWidth={1.5} />
                </div>
             </div>
             <div className="cursor-pointer flex flex-col justify-center select-none" onClick={() => navigate('/')}>

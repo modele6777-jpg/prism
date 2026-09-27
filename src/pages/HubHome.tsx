@@ -19,6 +19,7 @@ import { UniverseInsightCard } from '@/components/UniverseInsightCard';
 import { type UniverseInsightItem } from '@/data/universeInsights';
 import { useBinauralBeat } from '@/hooks/useBinauralBeat';
 import { LucKeyLogoText } from '@/components/LucKeyLogoText';
+import { openChannelIntro } from '@/components/common/ChannelIntroModal';
 import { GoalProgressRingDashboard } from '@/components/goals/GoalProgressRingDashboard';
 import { TodayLucyPersonaCard } from '@/components/TodayLucyPersonaCard';
 
@@ -448,16 +449,16 @@ export default function HubHome() {
         <div className="flex items-center gap-2.5 sm:gap-3">
           <div 
             className="relative w-11 h-11 rounded-full border border-white/10 flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.05)] group backdrop-blur-md cursor-pointer transition-transform active:scale-95 shrink-0"
-            onClick={() => toggleBinaural('hub')}
-            title={isBinauralPlaying ? "배경 무드 사운드 피커 열기 (재생 중)" : "배경 무드 사운드 피커 (빗소리 · 백색소음 · 새소리)"}
+            onClick={() => openChannelIntro('hub')}
+            title="프롤로그 허브 채널 소개 (클릭)"
           >
              <motion.div 
                animate={{ rotate: 360 }} 
-               transition={{ duration: isBinauralPlaying ? 8 : 20, repeat: Number.POSITIVE_INFINITY, ease: "linear" }} 
-               className={`absolute inset-0 rounded-full border ${isBinauralPlaying ? 'border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.6)]' : 'border-dashed border-white/30'}`} 
+               transition={{ duration: 20, repeat: Number.POSITIVE_INFINITY, ease: "linear" }} 
+               className="absolute inset-0 rounded-full border border-dashed border-red-500/40 group-hover:border-red-400 group-hover:shadow-[0_0_15px_rgba(239,68,68,0.5)] transition-all" 
              />
-             <div className={`absolute inset-[3px] rounded-full border flex items-center justify-center transition-all ${isBinauralPlaying ? 'bg-red-500/20 border-red-500/50' : 'border-white/5 bg-white/5'}`}>
-               <Sun size={20} className={`relative z-10 text-red-500 drop-shadow-[0_0_12px_rgba(239,68,68,0.8)] transition-transform group-hover:scale-110 duration-500 ${isBinauralPlaying ? 'animate-bounce' : 'animate-pulse'}`} strokeWidth={1.5} />
+             <div className="absolute inset-[3px] rounded-full border border-red-500/30 bg-red-500/10 group-hover:bg-red-500/20 flex items-center justify-center transition-all">
+               <Sun size={20} className="relative z-10 text-red-500 drop-shadow-[0_0_12px_rgba(239,68,68,0.8)] transition-transform group-hover:scale-110 duration-300 animate-pulse" strokeWidth={1.5} />
              </div>
           </div>
           <div className="cursor-pointer flex flex-col justify-center select-none" onClick={() => navigate('/')}>

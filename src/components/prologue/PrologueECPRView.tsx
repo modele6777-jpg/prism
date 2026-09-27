@@ -16,6 +16,7 @@ import {
   Check,
   Copy,
   Volume2,
+  VolumeX,
   RefreshCw,
   Wand2,
   ChevronRight,
@@ -289,6 +290,7 @@ export function PrologueECPRView() {
   const [breathPhase, setBreathPhase] = useState<'inhale' | 'hold' | 'exhale'>('inhale');
   const [breathCountdown, setBreathCountdown] = useState<number>(4);
   const [breathCycleCount, setBreathCycleCount] = useState<number>(0);
+  const [isBreathVoiceEnabled, setIsBreathVoiceEnabled] = useState<boolean>(true);
 
   // 5-4-3-2-1 Grounding Checklist State
   const [groundingChecked, setGroundingChecked] = useState<boolean[]>([false, false, false, false, false]);
@@ -335,6 +337,39 @@ export function PrologueECPRView() {
     }
     return () => clearInterval(timer);
   }, [isBreathingActive, breathPhase]);
+
+  // 4-7-8 Real-time TTS Voice Coaching Effect
+  useEffect(() => {
+    if (!isBreathingActive) {
+      return;
+    }
+    if (!isBreathVoiceEnabled) {
+      stopTTS();
+      return;
+    }
+
+    const sessionToken = `b478_${Date.now()}_${breathPhase}_${breathCycleCount}`;
+    let phrase = '';
+
+    if (breathPhase === 'inhale') {
+      phrase = breathCycleCount === 0
+        ? '4-7-8 진정 호흡을 시작합니다. 코로 깊이 숨을 들이마십니다.'
+        : '코로 깊이 숨을 들이마십니다.';
+      prefetchTTS('숨을 멈추고 고요한 온기를 채웁니다.', 'Kore', '치유').catch(() => {});
+    } else if (breathPhase === 'hold') {
+      phrase = '숨을 멈추고 고요한 온기를 채웁니다.';
+      prefetchTTS('입으로 후 내쉬며 긴장을 완전히 비워냅니다.', 'Kore', '치유').catch(() => {});
+    } else if (breathPhase === 'exhale') {
+      phrase = '입으로 후 내쉬며 긴장을 완전히 비워냅니다.';
+      prefetchTTS('코로 깊이 숨을 들이마십니다.', 'Kore', '치유').catch(() => {});
+    }
+
+    if (phrase) {
+      playTTS(phrase, 'Kore', false, '치유', sessionToken, false, phrase).catch((err) => {
+        console.warn('[4-7-8 Breathing TTS] Playback warning:', err);
+      });
+    }
+  }, [isBreathingActive, breathPhase, breathCycleCount, isBreathVoiceEnabled]);
 
   // Current active EFT Point
   const currentEFTPoint = EFT_POINTS[activeEFTIndex] || EFT_POINTS[0];
@@ -429,6 +464,7 @@ export function PrologueECPRView() {
   };
 
   const resetBreathing = () => {
+    stopTTS();
     setIsBreathingActive(false);
     setBreathPhase('inhale');
     setBreathCountdown(4);
@@ -625,10 +661,45 @@ export function PrologueECPRView() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            {/* 4-7-8 Full Guide TTS Button */}
+            <div className="flex items-center gap-1.5 bg-sky-500/10 border border-sky-400/25 px-2.5 py-1.5 rounded-2xl">
+              <span className="text-[11px] text-sky-200/90 font-medium hidden sm:inline">호흡 가이드 낭독</span>
+              <TTSButton
+                text="미주신경 리셋 4-7-8 응급 진정 호흡기입니다. 코로 4초간 맑은 공기를 가슴 깊이 들이마시고, 7초간 숨을 멈추어 심장에 고요한 온기를 채운 뒤, 입으로 8초간 후 소리를 내며 온몸의 긴장을 완전히 비워냅니다. 호흡 가이드 시작 버튼을 누르면 실시간 음성 코칭과 함께 편안하게 호흡을 리셋할 수 있습니다."
+                voice="Kore"
+                className="text-sky-200 hover:text-white bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/40"
+              />
+            </div>
+
+            {/* Voice Coaching Toggle (ON/OFF) */}
             <button
               type="button"
-              onClick={() => setIsBreathingActive(!isBreathingActive)}
+              onClick={() => {
+                if (isBreathVoiceEnabled) {
+                  stopTTS();
+                }
+                setIsBreathVoiceEnabled(!isBreathVoiceEnabled);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-semibold transition-all cursor-pointer border ${
+                isBreathVoiceEnabled
+                  ? 'bg-sky-500/20 border-sky-400/40 text-sky-300 hover:bg-sky-500/30'
+                  : 'bg-white/5 border-white/10 text-white/40 hover:text-white'
+              }`}
+              title={isBreathVoiceEnabled ? '실시간 음성 코칭 켜짐 (클릭 시 끄기)' : '실시간 음성 코칭 꺼짐 (클릭 시 켜기)'}
+            >
+              {isBreathVoiceEnabled ? <Volume2 size={13} /> : <VolumeX size={13} />}
+              <span>{isBreathVoiceEnabled ? '음성 코칭 ON' : '음성 코칭 OFF'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (isBreathingActive) {
+                  stopTTS();
+                }
+                setIsBreathingActive(!isBreathingActive);
+              }}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer shadow-lg active:scale-95 ${
                 isBreathingActive
                   ? 'bg-rose-500/80 hover:bg-rose-600 text-white border border-rose-400/40 shadow-rose-500/20'
@@ -716,14 +787,22 @@ export function PrologueECPRView() {
 
           {/* Real-time Guidance Message */}
           <div className="text-center max-w-md space-y-1">
-            <p className="text-sm sm:text-base font-bold text-white">
-              {isBreathingActive
-                ? breathPhase === 'inhale'
-                  ? '코로 천천히 맑은 공기를 가슴 깊이 들이마십니다 (4초)'
-                  : breathPhase === 'hold'
-                  ? '숨을 멈추고 심장에 고요한 온기를 채웁니다 (7초)'
-                  : '입으로 "후-" 소리를 내며 긴장을 완전히 비워냅니다 (8초)'
-                : '버튼을 눌러 4-7-8 호흡을 3회 반복하면 뇌의 위기 반응이 즉각 멈춥니다.'}
+            <p className="text-sm sm:text-base font-bold text-white flex items-center justify-center gap-2 flex-wrap">
+              <span>
+                {isBreathingActive
+                  ? breathPhase === 'inhale'
+                    ? '코로 천천히 맑은 공기를 가슴 깊이 들이마십니다 (4초)'
+                    : breathPhase === 'hold'
+                    ? '숨을 멈추고 심장에 고요한 온기를 채웁니다 (7초)'
+                    : '입으로 "후-" 소리를 내며 긴장을 완전히 비워냅니다 (8초)'
+                  : '버튼을 눌러 4-7-8 호흡을 3회 반복하면 뇌의 위기 반응이 즉각 멈춥니다.'}
+              </span>
+              {isBreathingActive && isBreathVoiceEnabled && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-sky-500/20 text-[10px] text-sky-300 font-mono">
+                  <Volume2 size={10} className="animate-pulse" />
+                  <span>Kore 음성 코칭</span>
+                </span>
+              )}
             </p>
             <p className="text-xs text-white/40">
               어깨의 힘을 빼고 턱의 긴장을 풀어주세요.

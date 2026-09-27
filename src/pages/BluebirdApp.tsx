@@ -31,6 +31,7 @@ import { recordPrismFeature, recordDailyOracleResult } from '@/lib/prismOmniSync
 import { HoponoponoBible } from '@/components/bluebird/HoponoponoBible';
 import { SecretMessage } from '@/components/bluebird/SecretMessage';
 import { BluebirdSynergySection } from '@/components/bluebird/BluebirdSynergySection';
+import { openChannelIntro } from '@/components/common/ChannelIntroModal';
 import { HoponoponoToolPicker, HoponoponoToolResultCard } from '@/components/bluebird/HoponoponoToolGenerator';
 import {
   generateHoponoponoTool,
@@ -2532,16 +2533,16 @@ export default function BluebirdApp() {
          <div className="flex items-center gap-2.5 sm:gap-3">
             <div 
               className="relative w-11 h-11 rounded-full border border-white/10 flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.05)] group backdrop-blur-md cursor-pointer transition-transform active:scale-95 shrink-0" 
-              onClick={() => toggleBinaural('bluebird')}
-              title={isBinauralPlaying ? "배경 무드 사운드 피커 열기 (재생 중)" : "배경 무드 사운드 피커 (숲속 새소리 · 빗소리 · 백색소음)"}
+              onClick={() => openChannelIntro('bluebird')}
+              title="파랑새의 성소 채널 소개 (클릭)"
             >
                <motion.div 
                  animate={{ rotate: 360 }} 
                  transition={{ duration: 20, repeat: Number.POSITIVE_INFINITY, ease: "linear" }} 
-                 className={`absolute inset-0 rounded-full border ${isBinauralPlaying ? 'border-sky-400 shadow-[0_0_15px_rgba(56,189,248,0.6)]' : 'border-dashed border-white/30'}`} 
+                 className="absolute inset-0 rounded-full border border-dashed border-sky-400/40 group-hover:border-sky-400 group-hover:shadow-[0_0_15px_rgba(56,189,248,0.5)] transition-all" 
                />
-               <div className={`absolute inset-[3px] rounded-full border flex items-center justify-center transition-all ${isBinauralPlaying ? 'bg-sky-500/20 border-sky-400/50' : 'border-white/5 bg-white/5'}`}>
-                 <Bird size={20} className={`relative z-10 text-sky-400 drop-shadow-[0_0_12px_currentColor] transition-transform group-hover:scale-110 duration-500 ${isBinauralPlaying ? 'animate-bounce' : 'animate-pulse'}`} strokeWidth={1.5} />
+               <div className="absolute inset-[3px] rounded-full border border-sky-400/30 bg-sky-500/10 group-hover:bg-sky-500/20 flex items-center justify-center transition-all">
+                 <Bird size={20} className="relative z-10 text-sky-400 drop-shadow-[0_0_12px_currentColor] transition-transform group-hover:scale-110 duration-300 animate-pulse" strokeWidth={1.5} />
                </div>
             </div>
             <div className="cursor-pointer flex flex-col justify-center select-none" onClick={() => navigate('/')}>

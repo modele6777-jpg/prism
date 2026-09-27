@@ -108,6 +108,7 @@ import { DailyOracleLoadingOverlay } from "@/components/DailyOracleLoadingOverla
 import { z } from "zod";
 import { Streamdown } from "@/components/Streamdown";
 import { useBinauralBeat } from "@/hooks/useBinauralBeat";
+import { openChannelIntro } from "@/components/common/ChannelIntroModal";
 import { LucKeyLogoText } from "@/components/LucKeyLogoText";
 import { ArtistWayBible } from "@/components/muse/ArtistWayBible";
 import { ArtistWayHandbookModal } from "@/components/muse/ArtistWayHandbookModal";
@@ -2180,8 +2181,8 @@ ${concernContext ? `사용자가 들려준 현재 고민과 상황에 100% 공�
         <div className="flex items-center gap-2.5 sm:gap-3">
           <div 
             className="relative w-11 h-11 rounded-full border border-white/10 flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.05)] group backdrop-blur-md cursor-pointer transition-transform active:scale-95 shrink-0" 
-            onClick={() => toggleBinaural('muse')}
-            title={isBinauralPlaying ? "배경 무드 사운드 피커 열기 (재생 중)" : "배경 무드 사운드 피커 (숲속 새소리 · 빗소리 · 백색소음)"}
+            onClick={() => openChannelIntro('muse')}
+            title="뮤즈 예술처방 채널 소개 (클릭)"
           >
             <motion.div
               animate={{ rotate: 360 }}
@@ -2190,12 +2191,12 @@ ${concernContext ? `사용자가 들려준 현재 고민과 상황에 100% 공�
                 repeat: Number.POSITIVE_INFINITY,
                 ease: "linear",
               }}
-              className={`absolute inset-0 rounded-full border ${isBinauralPlaying ? 'border-blue-400 shadow-[0_0_15px_rgba(96,165,250,0.6)]' : 'border-dashed border-white/30'}`}
+              className="absolute inset-0 rounded-full border border-dashed border-purple-400/40 group-hover:border-purple-400 group-hover:shadow-[0_0_15px_rgba(168,85,247,0.5)] transition-all"
             />
-            <div className={`absolute inset-[3px] rounded-full border flex items-center justify-center transition-all ${isBinauralPlaying ? 'bg-blue-500/20 border-blue-400/50' : 'border-white/5 bg-white/5'}`}>
-              <Music
+            <div className="absolute inset-[3px] rounded-full border border-purple-400/30 bg-purple-500/10 group-hover:bg-purple-500/20 flex items-center justify-center transition-all">
+              <Palette
                 size={20}
-                className={`relative z-10 text-blue-400 drop-shadow-[0_0_12px_currentColor] transition-transform group-hover:scale-110 duration-500 ${isBinauralPlaying ? 'animate-bounce' : 'animate-pulse'}`}
+                className="relative z-10 text-purple-400 drop-shadow-[0_0_12px_currentColor] transition-transform group-hover:scale-110 duration-300 animate-pulse"
                 strokeWidth={1.5}
               />
             </div>
