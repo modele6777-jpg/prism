@@ -35,7 +35,7 @@ export function MuseSynergySection() {
   }, []);
 
   const [dialogueData, setDialogueData] = useState<MasterpieceDialogueData>(initialDialogue);
-  const [isSynthesized, setIsSynthesized] = useState<boolean>(true); // 기본적으로 바로 감상 가능하도록 활성화
+  const [isSynthesized, setIsSynthesized] = useState<boolean>(false); // 생성 버튼을 명시적으로 눌러야 마스터클래스 대화가 시작되도록 변경
   const [copied, setCopied] = useState<boolean>(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState<boolean>(false);
   const isTTSActive = useTTSActive();
@@ -188,7 +188,8 @@ export function MuseSynergySection() {
 
     const freshDialogue = getMasterpieceDynamicDialogue(master, userCreativeDilemma, userProfile);
     setDialogueData(freshDialogue);
-    setIsSynthesized(true);
+    // 거장을 새로 선택했을 때도 생성 버튼을 눌러야 결과가 생성되도록 초기화
+    setIsSynthesized(false);
   };
 
   // 거장의 1:1 심층 마스터클래스 AI 생성 시작 (충분한 25초 타임아웃 및 정밀 프롬프트)
@@ -441,7 +442,7 @@ export function MuseSynergySection() {
       </motion.div>
 
       {/* Synthesized Masterclass Output */}
-      {isSynthesized && (
+      {isSynthesized ? (
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -863,6 +864,19 @@ export function MuseSynergySection() {
             </p>
           </motion.div>
         </motion.div>
+      ) : (
+        /* Standby State: Before Starting Masterclass */
+        <div className="rounded-[32px] sm:rounded-[40px] border border-dashed border-white/15 bg-white/[0.02] p-8 sm:p-12 text-center flex flex-col items-center justify-center space-y-4">
+          <div className="w-16 h-16 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shadow-[0_0_25px_rgba(59,130,246,0.15)]">
+            <Sparkles size={28} />
+          </div>
+          <div className="space-y-1.5 max-w-md">
+            <h4 className="text-base font-bold text-white">마스터클래스 1:1 대화 대기</h4>
+            <p className="text-xs text-white/50 leading-relaxed font-sans">
+              마스터클래스를 진행할 거장을 선택하고 필요시 창작 고민을 입력한 후, 상단의 <strong>〈{selectedMaster.name.split('(')[0]}의 1:1 맞춤 영감 마스터클래스 대화〉 시작하기</strong> 버튼을 누르면 1:1 조언과 명작 통찰이 펼쳐집니다.
+            </p>
+          </div>
+        </div>
       )}
     </div>
   );
