@@ -43,6 +43,7 @@ import {
 } from '@/lib/lettingGoWisdom';
 import { SEDONA_CORE_CANON } from '@/lib/sedonaWisdom';
 import { getTodayDateKey } from '@/lib/dailyCache';
+import { getKoreanParticle, attachKoreanParticle, extractCleanConcernNoun } from '@/utils/koreanGrammar';
 
 // Web Audio API Solfeggio Sound Generator
 function playSolfeggioTone(freq: number, durationMs = 3000) {
@@ -352,14 +353,15 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
     setIsGeneratingResult(true);
     setCurrentStep(4);
 
-    const issueText = targetIssue.trim() || '마음의 무거운 응어리';
-    const emotionText = selectedEmotion.nameKo;
+    const rawIssue = targetIssue.trim() || '마음의 무거운 응어리';
+    const cleanIssue = extractCleanConcernNoun(rawIssue, '마음의 응어리');
+    const emoShort = selectedEmotion.nameKo.split(' ')[0];
+    const desireShort = selectedDesire.nameKo.split(' ')[0];
     const levelNum = selectedEmotion.level;
     const zoneText = selectedZone.name;
-    const desireText = selectedDesire.nameKo;
     const reliefScore = Math.max(0, preSuds - postSuds);
 
-    const summaryNote = `[방하착 완료] ${issueText} (${emotionText} · Lv.${levelNum}) — ${desireText} 및 무의식 집착을 가볍게 흘려보냄 (고통 전압: ${preSuds} → ${postSuds})`;
+    const summaryNote = `[방하착 완료] ${cleanIssue} (${emoShort} · Lv.${levelNum}) — ${desireShort} 욕구 및 무의식 집착을 가볍게 흘려보냄 (고통 전압: ${preSuds} → ${postSuds})`;
 
     setPrescription(summaryNote);
     setIsGeneratingResult(false);
@@ -367,11 +369,11 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
     // Save to history
     const newEntry: ReleaseHistoryEntry = {
       id: `rel_${Date.now()}`,
-      targetIssue: issueText,
-      emotionName: emotionText,
+      targetIssue: cleanIssue,
+      emotionName: emoShort,
       consciousnessLevel: levelNum,
       somaticZone: zoneText,
-      rootDesireName: desireText,
+      rootDesireName: `${desireShort} 욕구`,
       preSuds,
       postSuds,
       date: todayKey,
@@ -387,15 +389,15 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
     if (firebaseUser?.uid) {
       addDoc(collection(db, 'heal_history', firebaseUser.uid, 'entries'), {
         type: 'letting_go_master',
-        title: `방하착 마스터 릴리즈: ${issueText}`,
+        title: `방하착 마스터 릴리즈: ${cleanIssue}`,
         content: summaryNote,
         createdAt: serverTimestamp(),
         metadata: {
-          targetIssue: issueText,
-          emotion: emotionText,
+          targetIssue: cleanIssue,
+          emotion: emoShort,
           level: levelNum,
           somaticZone: zoneText,
-          rootDesire: desireText,
+          rootDesire: `${desireShort} 욕구`,
           preSuds,
           postSuds,
           date: todayKey,
@@ -1116,7 +1118,9 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
                 <div className="space-y-3">
                   <div className="flex items-start gap-3">
                     <span className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold flex items-center justify-center shrink-0">1</span>
-                    <p className="text-sm text-slate-200">"지금 느껴지는 {selectedEmotion.nameKo.split(' ')[0]}과 {selectedDesire.nameKo.split(' ')[0]}을 있는 그대로 기꺼이 환영할 수 있나요?"</p>
+                    <p className="text-sm text-slate-200">
+                      "지금 느껴지는 {attachKoreanParticle(selectedEmotion.nameKo.split(' ')[0], '과/와')} {selectedDesire.nameKo.split(' ')[0]} 욕구{getKoreanParticle('욕구', '을/를')} 있는 그대로 기꺼이 환영할 수 있나요?"
+                    </p>
                   </div>
                   <div className="flex items-start gap-3">
                     <span className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold flex items-center justify-center shrink-0">2</span>
@@ -1232,13 +1236,13 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
                 <div className="p-3 rounded-2xl bg-black/40">
                   <span className="text-[10px] text-white/40 block">정화 대상</span>
                   <span className="text-xs font-bold text-emerald-300 truncate block mt-1">
-                    {targetIssue.trim() || '마음의 억압'}
+                    {extractCleanConcernNoun(targetIssue.trim(), '마음의 억압')}
                   </span>
                 </div>
                 <div className="p-3 rounded-2xl bg-black/40">
                   <span className="text-[10px] text-white/40 block">해체된 감정 &amp; 욕구</span>
                   <span className="text-xs font-bold text-white block mt-1">
-                    {selectedEmotion.nameKo.split(' ')[0]} &bull; {selectedDesire.nameKo.split(' ')[0]}
+                    {selectedEmotion.nameKo.split(' ')[0]} &bull; {selectedDesire.nameKo.split(' ')[0]} 욕구
                   </span>
                 </div>
                 <div className="p-3 rounded-2xl bg-black/40">
@@ -1282,7 +1286,7 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
                     <span className="text-sm font-bold text-emerald-200">루시와 1:1 심층 치유 상담 (Deep Insight)</span>
                   </div>
                   <p className="text-xs text-white/70 font-sans leading-relaxed">
-                    오늘 방하착한 [{selectedEmotion.nameKo}]과 [{selectedDesire.nameKo}] 세션 데이터를 바탕으로, 루시와 함께 일상 속 평온을 온전히 뿌리내리세요.
+                    오늘 방하착한 [{selectedEmotion.nameKo.split(' ')[0]}]{getKoreanParticle(selectedEmotion.nameKo.split(' ')[0], '과/와')} [{selectedDesire.nameKo.split(' ')[0]} 욕구] 세션 데이터를 바탕으로, 루시와 함께 일상 속 평온을 온전히 뿌리내리세요.
                   </p>
                 </div>
                 <button

@@ -5,6 +5,7 @@ import { useApp, getPersistentUserProfile } from '@/contexts/AppContext';
 import { invokeLLM } from '@/lib/ai';
 import { recordPrismFeature } from '@/lib/prismOmniSync';
 import { playTTS, stopTTS, prefetchTTS, useTTSActive } from '@/utils/tts';
+import { extractCleanConcernNoun, getKoreanParticle, attachKoreanParticle } from '@/utils/koreanGrammar';
 
 interface SanctuaryData {
   title: string;
@@ -225,33 +226,42 @@ export function AuraSynergySection() {
     const item = TENSION_PRESETS.find(p => p.id === selectedTension);
     const tensionLabel = item ? item.label : '긴장';
     const trimmedDetail = customDetail.trim();
-    const combined = trimmedDetail ? `${tensionLabel} (마음의 생각·감정: ${trimmedDetail})` : tensionLabel;
+    const concernTopic = extractCleanConcernNoun(trimmedDetail, tensionLabel);
+    const combined = trimmedDetail ? `${tensionLabel} (마음의 생각·감정: ${concernTopic})` : tensionLabel;
 
     const systemPrompt = `당신은 오라(AURA)의 완전 해방 방하착 챔버 마스터입니다.
 좌측 메뉴 [Letting Go Method]의 데이비드 호킨스 & 세도나 메서드 흘려보내기 5문답과 우측 메뉴 [1-MIN]의 60초 마이크로 집중 명상 동조를 완벽히 융합하여 '완전 해방 방하착 챔버' 가이드를 설계하세요.
 
-[★ 최우선 핵심 원칙: 사용자가 작성한 마음에 걸리는 생각·감정의 1:1 맞춤 심층 반영]
-사용자가 '마음에 걸리는 생각이나 쥐고 있는 감정'을 작성한 경우, 이를 가장 중요한 해방 타깃으로 삼아 모든 항목에 직접적이고 유기적으로 녹여내야 합니다:
-1. title: 사용자의 구체적 고민이나 감정이 명확히 해방되는 고유 명칭으로 명명하세요. (예: 〈프로젝트 초조함 완전 방하착〉 528Hz 무저항 챔버)
-2. targetThoughtDetail: 사용자가 입력한 생각·감정의 핵심을 깊은 공감과 함께 명확히 요약하여 제시하세요.
-3. sedonaInquiryAnswer: 사용자가 쥐고 있는 바로 그 생각('왜 그럴까?', '잘해야 해', 특정 상황에 대한 집착)을 직격하여, 손아귀에 쥔 힘을 풀듯 내려놓게 하는 세도나 5문답 기반의 깊은 깨달음 문장으로 작성하세요.
-4. zeroResistanceDeclaration: 사용자가 적은 바로 그 생각/감정의 끈을 허공으로 놓아버리고 온전한 자유로 회귀하는 1인칭 완전 해방 선언문이어야 합니다.
-5. pureLightState: 순수 해방 상태 명칭 (예: 집착 0% · 절대 평온)
-6. releaseInsight: 그 생각/감정을 쥐고 있던 무의식적 집착(통제/인정/안전 욕구)을 꿰뚫어보는 한 줄 본질 통찰을 제공하세요.
+[★ 최우선 문맥 완성도 및 한국어 문법 원칙 - 문맥 상 오류 원천 배제]
+1. 원문 서술형 문장의 품격 있는 명사구 정제:
+   사용자의 고민이 구어체 서술형 문장(예: '~못해요', '~남아있어요', '~있어요', '~물어요')으로 입력되었더라도, 결합할 때 절대 원문을 어색하게 따옴표로 감싸거나 서술형 어미 뒤에 조사를 붙이지 마세요(예: "안절부절못해요에 대한 생각" ❌, "〈안절부절못해요 해방〉" ❌).
+   반드시 문맥에 자연스러운 품격 있는 명사구(예: '미래에 대한 불안과 초조함', '상대에 대한 서운함과 마음의 응어리', '과거에 대한 자책과 후회')로 정제하여 완결된 문장으로 작성하세요.
+2. 올바른 한국어 조사(은/는, 이/가, 을/를, 과/와, 으로/로) 문법 철저 준수:
+   받침 유무에 따른 올바른 조사를 결합하여 어색함이 전혀 없는 매끄럽고 유려한 문장이어야 합니다.
+3. 세련되고 완결성 높은 타이틀(title):
+   〈고민 핵심 명사구 해방〉 528Hz 무저항 챔버 (예: 〈미래 불안과 초조함 해방〉 528Hz 무저항 챔버, 〈관계의 서운함과 응어리 방하착〉 528Hz 무저항 챔버) 형태로 자연스럽게 명명하세요.
+4. 깊은 공감의 요약(targetThoughtDetail):
+   사용자의 고민 핵심을 따뜻하고 정갈하게 정제하여 한 줄 명사구/요약문으로 정리하세요.
+5. 세도나 5문답 깨달음(sedonaInquiryAnswer):
+   손아귀의 힘을 풀듯 마음의 짐을 내려놓게 하는 깊고 유려한 성찰 문장으로 작성하세요.
+6. 1인칭 완전 해방 선언문(zeroResistanceDeclaration):
+   번역투나 기계적 결합이 없는, 낭독했을 때 깊은 안도감이 밀려오는 당당하고 평화로운 1인칭 해방 선언문이어야 합니다.
+7. 본질 통찰(releaseInsight):
+   그 마음을 쥐고 있던 통제·인정·안전의 에고 결핍을 꿰뚫어보는 한 줄의 지혜 통찰을 제시하세요.
 (※ 60초 단계별 방하착 프로토콜은 시간에 맞춘 표준 고정 가이드로 안전하게 자동 동조됩니다)`;
 
     const userPrompt = `[양쪽 메뉴 융합: LETTING GO 방하착 ✕ 1-MIN 마이크로 호흡]
 [타겟 신체 긴장 영역]: "${tensionLabel}"
-[사용자가 직접 적은 마음에 걸리는 생각 / 쥐고 있는 감정]: ${trimmedDetail ? `"${trimmedDetail}" (★ 필수: 이 구체적 고민과 감정을 타이틀, 세도나 처방, 선언문, 해방 통찰에 직접 녹여내세요)` : '(입력 없음 - 신체 긴장 영역 중심 해방 설계)'}
+[사용자가 직접 적은 마음에 걸리는 생각 / 쥐고 있는 감정]: ${trimmedDetail ? `"${trimmedDetail}" (핵심 정제 주제: "${concernTopic}")` : '(입력 없음 - 신체 긴장 영역 중심 해방 설계)'}
 [사용자 닉네임]: "${userProfile?.basic?.nickname || '치유자'}"
 
-반드시 아래 JSON 스키마로만 엄격하게 응답하세요:
+반드시 아래 JSON 스키마로만 엄격하게 응답하세요 (문맥 상 오류 및 비문 절대 금지):
 {
-  "title": "방하착 챔버 고유 명칭 (사용자의 고민이 드러나는 이름)",
+  "title": "〈${concernTopic} 해방〉 528Hz 무저항 챔버",
   "tensionArea": "${tensionLabel}",
-  "targetThoughtDetail": "${trimmedDetail ? '사용자가 작성한 생각/감정의 핵심 요약' : tensionLabel}",
-  "sedonaInquiryAnswer": "사용자의 구체적 생각과 집착을 허공으로 내려놓는 세도나 5문답 해방 문장",
-  "zeroResistanceDeclaration": "사용자의 구체적 고민을 내려놓는 1인칭 완전 해방 선언문",
+  "targetThoughtDetail": "${trimmedDetail ? concernTopic : tensionLabel}",
+  "sedonaInquiryAnswer": "손아귀에 쥔 힘을 풀듯 ${attachKoreanParticle(concernTopic, '을/를')} 허공으로 내려놓는 깊은 깨달음의 세도나 해방 문장",
+  "zeroResistanceDeclaration": "나는 ${attachKoreanParticle(concernTopic, '을/를')} 가볍게 놓아주고 본래의 자유로 돌아온다는 1인칭 완전 해방 선언문",
   "pureLightState": "순수 해방 상태 명칭 (예: 집착 0% · 절대 평온)",
   "releaseInsight": "이 마음을 내려놓을 때 열리는 본질적 한 줄 통찰"
 }`;
@@ -261,16 +271,14 @@ export function AuraSynergySection() {
         resolve({
           ...FALLBACK_SANCTUARY,
           tensionArea: tensionLabel,
-          targetThoughtDetail: trimmedDetail || tensionLabel,
-          title: trimmedDetail
-            ? `〈${trimmedDetail.length > 15 ? trimmedDetail.slice(0, 15) + '…' : trimmedDetail} 해방〉 완전 방하착 챔버`
-            : `〈${tensionLabel} 해방〉 완전 방하착 챔버`,
+          targetThoughtDetail: concernTopic,
+          title: `〈${concernTopic} 해방〉 528Hz 무저항 챔버`,
           sedonaInquiryAnswer: trimmedDetail
-            ? `마음을 무겁게 짓누르던 "${trimmedDetail}"에 대한 생각과 통제 욕구를 있는 그대로 허용하고, 허공 속으로 가볍게 흘려보냅니다.`
+            ? `마음을 무겁게 짓누르던 ${attachKoreanParticle(concernTopic, '과/와')} 통제 욕구를 있는 그대로 허용하고, 허공 속으로 가볍게 흘려보냅니다.`
             : FALLBACK_SANCTUARY.sedonaInquiryAnswer,
           sixtySecondSanctuaryProtocol: FIXED_SANCTUARY_PROTOCOL,
           zeroResistanceDeclaration: trimmedDetail
-            ? `나는 "${trimmedDetail}"에 얽매이던 모든 생각과 저항을 놓아주고, 본래의 완전한 자유와 평온으로 돌아옵니다.`
+            ? `나는 ${concernTopic}에 얽매이던 모든 생각과 저항을 놓아주고, 본래의 완전한 자유와 평온으로 돌아옵니다.`
             : FALLBACK_SANCTUARY.zeroResistanceDeclaration,
           releaseInsight: trimmedDetail
             ? `쥐고 있던 생각을 놓아줄 때, 나는 그 생각보다 훨씬 더 광대한 순수 의식임을 발견합니다.`
