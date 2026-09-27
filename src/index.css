@@ -1357,6 +1357,52 @@ html.perf-reduced .cosmic-star-flare {
   backdrop-filter: blur(28px) saturate(180%);
   -webkit-backdrop-filter: blur(28px) saturate(180%);
   box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.45), 0 2px 8px -2px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  overflow: hidden;
 }
+
+/* Subtle Shimmering Light Effect Gliding Horizontally on Bottom Border */
+.top-nav::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 45%;
+  height: 1.5px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(168, 85, 247, 0.15) 15%,
+    rgba(216, 180, 254, 0.75) 45%,
+    rgba(255, 255, 255, 0.95) 50%,
+    rgba(216, 180, 254, 0.75) 55%,
+    rgba(168, 85, 247, 0.15) 85%,
+    transparent 100%
+  );
+  filter: drop-shadow(0 0 6px rgba(192, 132, 252, 0.9)) drop-shadow(0 0 2px rgba(255, 255, 255, 0.9));
+  animation: top-nav-celestial-shimmer 4.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+  z-index: 10;
+}
+
+@keyframes top-nav-celestial-shimmer {
+  0% {
+    transform: translateX(-150%);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translateX(350%);
+    opacity: 0;
+  }
+}
+
 
 

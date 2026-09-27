@@ -113,7 +113,50 @@ button, a, input, textarea, select {
   justify-content: space-between;
   align-items: center;
   transition: all 0.2s ease;
+  overflow: hidden;
 }
+
+.top-nav::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 45%;
+  height: 1.5px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(201, 138, 88, 0.2) 15%,
+    rgba(255, 255, 255, 0.95) 50%,
+    rgba(162, 89, 59, 0.5) 85%,
+    transparent 100%
+  );
+  filter: drop-shadow(0 0 5px rgba(201, 138, 88, 0.85));
+  animation: top-nav-calm-shimmer 4.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+  z-index: 10;
+}
+
+@keyframes top-nav-calm-shimmer {
+  0% {
+    transform: translateX(-150%);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translateX(350%);
+    opacity: 0;
+  }
+}
+
 
 .brand-wrapper {
   display: flex;

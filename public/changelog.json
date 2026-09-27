@@ -1,5 +1,15 @@
 [
   {
+    "version": "1.4.107",
+    "summary": ".top-nav 하단 테두리에 수평으로 유려하게 활주하는 셀레스티얼 쉬머링 라이트(Shimmering Light) 애니메이션 탑재",
+    "builtAt": "2026-09-27T03:30:00.000Z",
+    "items": [
+      ".top-nav 요소 하단 테두리에 가상 요소(::after) 기반의 유려한 수평 쉬머링 광원 애니메이션(top-nav-celestial-shimmer) 구현",
+      "신비로운 보랏빛/황금빛 성운 그라데이션 및 드롭 섀도우 글로우를 결합하여 스티키 네비게이션에 프리미엄 셀레스티얼 미학 완성도 부여",
+      "GPU 가속 transform(translateX) 적용으로 프레임 드랍 없는 부드러운 120fps 활주 효과 보장"
+    ]
+  },
+  {
     "version": "1.4.106",
     "summary": ".top-nav 백드롭 블러(backdrop-filter) 강도 상향 및 배경 불투명도 미세 조정을 통한 어두운 UI 대비 글래스모피즘 입체감 강화",
     "builtAt": "2026-09-27T03:25:00.000Z",
