@@ -17,16 +17,27 @@ interface SanctuaryData {
   releaseInsight?: string;
 }
 
+// 🌟 60초 단계별 방하착 가이드 고정 프로토콜 (각 구간별 시간에 맞춤 설계되어 끊김 및 스킵 방지)
+export const FIXED_SANCTUARY_PROTOCOL = [
+  "00~15초: 숨을 천천히 들이쉬며 몸과 마음의 긴장을 가만히 바라봅니다.",
+  "15~35초: 지금 올라온 이 감정이 잠시 머물러도 온전히 괜찮다고 인정합니다.",
+  "35~50초: 호흡을 길게 내쉬며 손아귀에 쥐고 있던 힘을 가볍게 놓아줍니다.",
+  "50~60초: 비워진 자리에서 온전한 자유와 순수한 평온을 누립니다."
+];
+
+// 음성(TTS) 낭독용 시간 맞춤 고정 문장 (각 3초대 분량으로 남은 시간 동안 깊은 침묵과 호흡 유지)
+export const FIXED_SANCTUARY_SPEECHES = [
+  "1단계, 자각입니다. 숨을 천천히 들이쉬며 몸과 마음의 긴장을 바라봅니다.",
+  "2단계, 허용입니다. 지금 올라온 이 감정이 머물러도 온전히 괜찮습니다.",
+  "3단계, 놓아줌입니다. 호흡을 길게 내쉬며 쥐고 있던 힘을 가볍게 놓아줍니다.",
+  "4단계, 평온입니다. 비워진 자리에서 온전한 자유와 평화를 누립니다."
+];
+
 const FALLBACK_SANCTUARY: SanctuaryData = {
   title: "완전 해방 방하착 챔버 (Zero-Resistance Sanctuary)",
   tensionArea: "가슴 답답함 & 어깨 긴장",
   sedonaInquiryAnswer: "지금 쥐고 있는 통제의 욕구와 불안을 가슴 밖으로 완전히 열어놓습니다. 손을 펴듯 마음에 쥔 힘을 내려놓습니다.",
-  sixtySecondSanctuaryProtocol: [
-    "00~15초: 숨을 천천히 들이쉬며 굳어있던 몸을 편안하게 바라봅니다.",
-    "15~35초: 지금 이 느낌이 잠시 머물러도 온전히 괜찮다고 인정합니다.",
-    "35~50초: 호흡을 길게 내쉬며 쥐고 있던 힘을 가볍게 흘려보냅니다.",
-    "50~60초: 비워진 가슴 안에서 순수한 고요와 자유를 온전히 누립니다."
-  ],
+  sixtySecondSanctuaryProtocol: FIXED_SANCTUARY_PROTOCOL,
   zeroResistanceDeclaration: "나는 모든 저항과 집착을 허공 속으로 가볍게 흘려보내고, 본래의 완전한 자유와 평온으로 돌아옵니다.",
   pureLightState: "저항 0% · 순수 현존 (Zero-Resistance Pure Presence)"
 };
@@ -116,23 +127,17 @@ export function AuraSynergySection() {
   }, []);
 
   // Helper to extract clean voice prompt from protocol item
-  const getCleanPhaseSpeech = (text: string, phaseIndex: number): string => {
-    const raw = text.replace(/^\d+~\d+초\s*:\s*/, '').replace(/['"“”‘’]/g, '').trim();
-    const phasePrefixes = [
-      '1단계, 자각입니다. ',
-      '2단계, 허용입니다. ',
-      '3단계, 놓아줌입니다. ',
-      '4단계, 평온입니다. '
-    ];
-    return (phasePrefixes[phaseIndex] || '') + raw;
+  // 시간에 맞춤 설계된 고정 문장 반환으로 긴 문장 스킵 및 잘림 현상 원천 방지
+  const getCleanPhaseSpeech = (_text: string, phaseIndex: number): string => {
+    return FIXED_SANCTUARY_SPEECHES[phaseIndex] || FIXED_SANCTUARY_SPEECHES[0];
   };
 
   // Compute current protocol phase from remaining seconds
   // 60s total:
-  // Phase 0: 60 ~ 46 (0~15s elapsed)
-  // Phase 1: 45 ~ 26 (15~35s elapsed)
-  // Phase 2: 25 ~ 11 (35~50s elapsed)
-  // Phase 3: 10 ~ 1  (50~60s elapsed)
+  // Phase 0: 60 ~ 46 (0~15s elapsed, 15초 구간)
+  // Phase 1: 45 ~ 26 (15~35s elapsed, 20초 구간)
+  // Phase 2: 25 ~ 11 (35~50s elapsed, 15초 구간)
+  // Phase 3: 10 ~ 1  (50~60s elapsed, 10초 구간)
   // Complete: 0
   const getCurrentPhaseIndex = (timer: number): number => {
     if (timer > 45) return 0;
@@ -171,14 +176,11 @@ export function AuraSynergySection() {
     const currentPhase = getCurrentPhaseIndex(chamberTimer);
     if (currentPhase < 4 && lastSpokenPhaseRef.current !== currentPhase) {
       lastSpokenPhaseRef.current = currentPhase;
-      const protocolText = sanctuaryData.sixtySecondSanctuaryProtocol[currentPhase];
-      if (protocolText) {
-        const speechText = getCleanPhaseSpeech(protocolText, currentPhase);
-        if (!chamberSessionIdRef.current) {
-          chamberSessionIdRef.current = `sanctuary_${Date.now()}`;
-        }
-        playTTS(speechText, 'Kore', false, '치유', chamberSessionIdRef.current, true);
+      const speechText = getCleanPhaseSpeech(FIXED_SANCTUARY_PROTOCOL[currentPhase], currentPhase);
+      if (!chamberSessionIdRef.current) {
+        chamberSessionIdRef.current = `sanctuary_${Date.now()}`;
       }
+      playTTS(speechText, 'Kore', false, '치유', chamberSessionIdRef.current, true);
     }
   }, [chamberTimer, isChamberActive, isTtsGuideEnabled, sanctuaryData]);
 
@@ -199,17 +201,14 @@ export function AuraSynergySection() {
       chamberSessionIdRef.current = sessId;
 
       // Pre-warm / prefetch all 4 phase scripts immediately to avoid audio delay
-      if (sanctuaryData?.sixtySecondSanctuaryProtocol) {
-        sanctuaryData.sixtySecondSanctuaryProtocol.forEach((proto, idx) => {
-          const speech = getCleanPhaseSpeech(proto, idx);
-          prefetchTTS(speech, 'Kore', '치유').catch(() => {});
-        });
-      }
+      FIXED_SANCTUARY_SPEECHES.forEach((speech) => {
+        prefetchTTS(speech, 'Kore', '치유').catch(() => {});
+      });
 
       // Immediately start 1st phase speech with sequence session ID
-      if (isTtsGuideEnabled && sanctuaryData?.sixtySecondSanctuaryProtocol?.[0]) {
+      if (isTtsGuideEnabled) {
         lastSpokenPhaseRef.current = 0;
-        const firstSpeech = getCleanPhaseSpeech(sanctuaryData.sixtySecondSanctuaryProtocol[0], 0);
+        const firstSpeech = getCleanPhaseSpeech(FIXED_SANCTUARY_PROTOCOL[0], 0);
         playTTS(firstSpeech, 'Kore', false, '치유', sessId, true);
       }
     }
@@ -236,15 +235,14 @@ export function AuraSynergySection() {
 1. title: 사용자의 구체적 고민이나 감정이 명확히 해방되는 고유 명칭으로 명명하세요. (예: 〈프로젝트 초조함 완전 방하착〉 528Hz 무저항 챔버)
 2. targetThoughtDetail: 사용자가 입력한 생각·감정의 핵심을 깊은 공감과 함께 명확히 요약하여 제시하세요.
 3. sedonaInquiryAnswer: 사용자가 쥐고 있는 바로 그 생각('왜 그럴까?', '잘해야 해', 특정 상황에 대한 집착)을 직격하여, 손아귀에 쥔 힘을 풀듯 내려놓게 하는 세도나 5문답 기반의 깊은 깨달음 문장으로 작성하세요.
-4. sixtySecondSanctuaryProtocol (4단계 안내문):
-   - [필수 낭독 규칙]: 4개 안내문은 타이머 경과에 따라 음성 TTS 낭독이 중간에 끊기지 않도록, 각 단계별로 공백 포함 25~35자 내외(낭독 3~4초 분량)의 다정하고 간결한 호흡 안내문으로 작성해야 합니다.
-   - 4개 안내문 속에 사용자가 작성한 생각/감정을 다루는 단계별 호흡 여정(1단계: 그 생각/긴장 자각 → 2단계: 그 감정 허용 → 3단계: 그 생각 놓아줌 → 4단계: 텅 빈 평온)을 반드시 녹여내세요.
-5. zeroResistanceDeclaration: 사용자가 적은 바로 그 생각/감정의 끈을 허공으로 놓아버리고 온전한 자유로 회귀하는 1인칭 완전 해방 선언문이어야 합니다.
-6. releaseInsight: 그 생각/감정을 쥐고 있던 무의식적 집착(통제/인정/안전 욕구)을 꿰뚫어보는 한 줄 본질 통찰을 제공하세요.`;
+4. zeroResistanceDeclaration: 사용자가 적은 바로 그 생각/감정의 끈을 허공으로 놓아버리고 온전한 자유로 회귀하는 1인칭 완전 해방 선언문이어야 합니다.
+5. pureLightState: 순수 해방 상태 명칭 (예: 집착 0% · 절대 평온)
+6. releaseInsight: 그 생각/감정을 쥐고 있던 무의식적 집착(통제/인정/안전 욕구)을 꿰뚫어보는 한 줄 본질 통찰을 제공하세요.
+(※ 60초 단계별 방하착 프로토콜은 시간에 맞춘 표준 고정 가이드로 안전하게 자동 동조됩니다)`;
 
     const userPrompt = `[양쪽 메뉴 융합: LETTING GO 방하착 ✕ 1-MIN 마이크로 호흡]
 [타겟 신체 긴장 영역]: "${tensionLabel}"
-[사용자가 직접 적은 마음에 걸리는 생각 / 쥐고 있는 감정]: ${trimmedDetail ? `"${trimmedDetail}" (★ 필수: 이 구체적 고민과 감정을 타이틀, 세도나 처방, 60초 프로토콜 4단계, 선언문, 해방 통찰에 직접 녹여내세요)` : '(입력 없음 - 신체 긴장 영역 중심 해방 설계)'}
+[사용자가 직접 적은 마음에 걸리는 생각 / 쥐고 있는 감정]: ${trimmedDetail ? `"${trimmedDetail}" (★ 필수: 이 구체적 고민과 감정을 타이틀, 세도나 처방, 선언문, 해방 통찰에 직접 녹여내세요)` : '(입력 없음 - 신체 긴장 영역 중심 해방 설계)'}
 [사용자 닉네임]: "${userProfile?.basic?.nickname || '치유자'}"
 
 반드시 아래 JSON 스키마로만 엄격하게 응답하세요:
@@ -253,12 +251,6 @@ export function AuraSynergySection() {
   "tensionArea": "${tensionLabel}",
   "targetThoughtDetail": "${trimmedDetail ? '사용자가 작성한 생각/감정의 핵심 요약' : tensionLabel}",
   "sedonaInquiryAnswer": "사용자의 구체적 생각과 집착을 허공으로 내려놓는 세도나 5문답 해방 문장",
-  "sixtySecondSanctuaryProtocol": [
-    "00~15초: 자각 단계 (공백 포함 25~35자 내외, 사용자 고민의 긴장을 바라보는 호흡 안내)",
-    "15~35초: 허용 단계 (공백 포함 25~35자 내외, 그 감정이 머물러도 됨을 인정하는 안내)",
-    "35~50초: 놓아줌 단계 (공백 포함 25~35자 내외, 그 생각의 손아귀를 푸는 흘려보내기 안내)",
-    "50~60초: 순수 현존 (공백 포함 25~35자 내외, 비워진 본래 평온에 안착하는 안내)"
-  ],
   "zeroResistanceDeclaration": "사용자의 구체적 고민을 내려놓는 1인칭 완전 해방 선언문",
   "pureLightState": "순수 해방 상태 명칭 (예: 집착 0% · 절대 평온)",
   "releaseInsight": "이 마음을 내려놓을 때 열리는 본질적 한 줄 통찰"
@@ -276,12 +268,7 @@ export function AuraSynergySection() {
           sedonaInquiryAnswer: trimmedDetail
             ? `마음을 무겁게 짓누르던 "${trimmedDetail}"에 대한 생각과 통제 욕구를 있는 그대로 허용하고, 허공 속으로 가볍게 흘려보냅니다.`
             : FALLBACK_SANCTUARY.sedonaInquiryAnswer,
-          sixtySecondSanctuaryProtocol: trimmedDetail ? [
-            `00~15초: 숨을 쉬며 마음속 ${trimmedDetail.length > 10 ? trimmedDetail.slice(0, 10) + '…' : trimmedDetail}의 긴장을 봅니다.`,
-            `15~35초: 지금 올라온 이 감정을 저항 없이 그대로 품어줍니다.`,
-            `35~50초: 호흡을 길게 내쉬며 쥐고 있던 생각을 가볍게 놓습니다.`,
-            `50~60초: 생각이 비워진 자리에서 온전한 자유와 평온을 누립니다.`
-          ] : FALLBACK_SANCTUARY.sixtySecondSanctuaryProtocol,
+          sixtySecondSanctuaryProtocol: FIXED_SANCTUARY_PROTOCOL,
           zeroResistanceDeclaration: trimmedDetail
             ? `나는 "${trimmedDetail}"에 얽매이던 모든 생각과 저항을 놓아주고, 본래의 완전한 자유와 평온으로 돌아옵니다.`
             : FALLBACK_SANCTUARY.zeroResistanceDeclaration,
@@ -305,6 +292,7 @@ export function AuraSynergySection() {
         if (parsed && parsed.zeroResistanceDeclaration) {
           return {
             ...parsed,
+            sixtySecondSanctuaryProtocol: FIXED_SANCTUARY_PROTOCOL,
             targetThoughtDetail: parsed.targetThoughtDetail || (trimmedDetail ? trimmedDetail : undefined)
           };
         }
@@ -316,6 +304,7 @@ export function AuraSynergySection() {
 
     try {
       const result = await Promise.race([runAI(), safetyTimeout]);
+      result.sixtySecondSanctuaryProtocol = FIXED_SANCTUARY_PROTOCOL;
       setSanctuaryData(result);
       recordPrismFeature({
         app: 'heal',
