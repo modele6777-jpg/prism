@@ -1782,7 +1782,12 @@ export function ArtRecommendationView() {
   return (
     <div className="w-full max-w-3xl mx-auto space-y-8 px-4 py-6 md:py-12 text-white">
       {/* Intro Header */}
-      <div className="text-center space-y-4">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="text-center space-y-4"
+      >
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300 font-bold uppercase tracking-widest shadow-lg animate-pulse">
           <Palette size={14} className="text-blue-400" />
           MUSE SPECIAL FEATURE
@@ -1841,7 +1846,7 @@ export function ArtRecommendationView() {
             </button>
           </div>
         )}
-      </div>
+      </motion.div>
 
       {/* Prism Toss Pipeline Active Banner */}
       {activeToss && (

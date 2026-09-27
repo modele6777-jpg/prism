@@ -316,7 +316,12 @@ export function MuseSynergySection() {
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8 pb-12 text-white font-sans">
       {/* Header Banner */}
-      <div className="relative overflow-hidden rounded-[32px] sm:rounded-[40px] p-6 sm:p-10 border border-blue-500/30 bg-gradient-to-br from-blue-950/50 via-zinc-950/90 to-violet-950/40 shadow-[0_0_50px_rgba(59,130,246,0.15)] backdrop-blur-2xl">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="relative overflow-hidden rounded-[32px] sm:rounded-[40px] p-6 sm:p-10 border border-blue-500/30 bg-gradient-to-br from-blue-950/50 via-zinc-950/90 to-violet-950/40 shadow-[0_0_50px_rgba(59,130,246,0.15)] backdrop-blur-2xl"
+      >
         <div className="absolute top-0 right-0 w-80 h-80 rounded-full bg-blue-500/10 blur-[100px] pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-60 h-60 rounded-full bg-violet-500/10 blur-[80px] pointer-events-none" />
 
@@ -350,10 +355,15 @@ export function MuseSynergySection() {
             <span>{isAudioPlaying ? '639Hz 영감 주파수 재생 중' : '639Hz 주파수 켜기'}</span>
           </button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Master Selection Form */}
-      <div className="glass p-6 sm:p-8 rounded-[32px] border border-white/10 space-y-6">
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.55, delay: 0.06, ease: [0.16, 1, 0.3, 1] }}
+        className="glass p-6 sm:p-8 rounded-[32px] border border-white/10 space-y-6"
+      >
         <div className="flex items-center justify-between">
           <label className="text-xs font-bold text-blue-300 flex items-center gap-2 font-mono uppercase tracking-wider">
             <User size={16} className="text-blue-400" />
@@ -428,7 +438,7 @@ export function MuseSynergySection() {
             </>
           )}
         </button>
-      </div>
+      </motion.div>
 
       {/* Synthesized Masterclass Output */}
       {isSynthesized && (
@@ -477,7 +487,12 @@ export function MuseSynergySection() {
           {/* 🌟 명곡 / 명시 / 명언 / 명화 분야별 맞춤 감상 섹션 */}
           {dialogueData.category === 'music' ? (
             /* 1. 명곡(Music)일 때: 실제 음악 플레이어 및 감상 가이드 표출 */
-            <div className="relative rounded-[32px] p-6 sm:p-8 bg-gradient-to-br from-rose-950/30 via-zinc-900 to-black border border-rose-500/30 shadow-2xl backdrop-blur-2xl space-y-6">
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+              className="relative rounded-[32px] p-6 sm:p-8 bg-gradient-to-br from-rose-950/30 via-zinc-900 to-black border border-rose-500/30 shadow-2xl backdrop-blur-2xl space-y-6"
+            >
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
                 <div className="flex items-center gap-2.5">
                   <span className="px-3.5 py-1.5 rounded-xl bg-rose-500/15 border border-rose-400/30 text-[11px] font-black uppercase tracking-widest text-rose-300 flex items-center gap-1.5 shadow-sm">
@@ -516,10 +531,15 @@ export function MuseSynergySection() {
                   youtubeVideoId={dialogueData.musicVideoId}
                 />
               </div>
-            </div>
+            </motion.div>
           ) : dialogueData.category === 'poem' ? (
             /* 2. 명시(Poem)일 때: 시 원문 글귀가 그대로 온전히 표출 */
-            <div className="relative rounded-[32px] p-6 sm:p-8 bg-gradient-to-br from-emerald-950/30 via-zinc-900 to-black border border-emerald-500/30 shadow-2xl backdrop-blur-2xl space-y-6">
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+              className="relative rounded-[32px] p-6 sm:p-8 bg-gradient-to-br from-emerald-950/30 via-zinc-900 to-black border border-emerald-500/30 shadow-2xl backdrop-blur-2xl space-y-6"
+            >
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
                 <div className="flex items-center gap-2.5">
                   <span className="px-3.5 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-400/30 text-[11px] font-black uppercase tracking-widest text-emerald-300 flex items-center gap-1.5 shadow-sm">
@@ -551,10 +571,15 @@ export function MuseSynergySection() {
                   {dialogueData.poemText}
                 </p>
               </div>
-            </div>
+            </motion.div>
           ) : dialogueData.category === 'quote' ? (
             /* 3. 명언(Quote)일 때: 명언 글귀 원문이 그대로 온전히 표출 */
-            <div className="relative rounded-[32px] p-6 sm:p-8 bg-gradient-to-br from-amber-950/30 via-zinc-900 to-black border border-amber-500/30 shadow-2xl backdrop-blur-2xl space-y-6">
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+              className="relative rounded-[32px] p-6 sm:p-8 bg-gradient-to-br from-amber-950/30 via-zinc-900 to-black border border-amber-500/30 shadow-2xl backdrop-blur-2xl space-y-6"
+            >
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
                 <div className="flex items-center gap-2.5">
                   <span className="px-3.5 py-1.5 rounded-xl bg-amber-500/15 border border-amber-400/30 text-[11px] font-black uppercase tracking-widest text-amber-300 flex items-center gap-1.5 shadow-sm">
@@ -590,10 +615,15 @@ export function MuseSynergySection() {
                   — {dialogueData.quoteSource}
                 </span>
               </div>
-            </div>
+            </motion.div>
           ) : (
             /* 4. 명화(Painting)일 때: 원작 우선 구성 + 저작권/실패 시 AI 재현 */
-            <div className="relative rounded-[32px] p-6 sm:p-8 bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-blue-500/30 shadow-2xl backdrop-blur-2xl space-y-6">
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+              className="relative rounded-[32px] p-6 sm:p-8 bg-gradient-to-br from-white/[0.04] to-white/[0.01] border border-blue-500/30 shadow-2xl backdrop-blur-2xl space-y-6"
+            >
               <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-4">
                 <div className="flex items-center gap-2.5">
                   <span className="px-3.5 py-1.5 rounded-xl bg-blue-500/15 border border-blue-400/30 text-[11px] font-black uppercase tracking-widest text-blue-300 flex items-center gap-1.5 shadow-sm">
@@ -756,11 +786,16 @@ export function MuseSynergySection() {
                   </div>
                 </>
               )}
-            </div>
+            </motion.div>
           )}
 
           {/* 💡 작품에 깃든 창조적 비밀과 통찰 (동적 생성 및 거장별 고유 통찰) */}
-          <div className="p-5 rounded-2xl bg-blue-950/30 border border-blue-500/25 space-y-2">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.14, ease: [0.16, 1, 0.3, 1] }}
+            className="p-5 rounded-2xl bg-blue-950/30 border border-blue-500/25 space-y-2"
+          >
             <span className="text-[10px] font-mono text-blue-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
               <BookOpen size={13} />
               작품에 깃든 창조적 비밀과 통찰
@@ -768,10 +803,15 @@ export function MuseSynergySection() {
             <p className="text-xs sm:text-sm text-blue-100/90 leading-relaxed font-sans">
               "{dialogueData.masterpieceInsight}"
             </p>
-          </div>
+          </motion.div>
 
           {/* 💬 거장의 1:1 직접 조언 (동적 생성 및 사용자 고민 맞춤 반영) */}
-          <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-blue-900/30 via-zinc-900/50 to-indigo-900/20 border border-blue-400/40 relative shadow-inner space-y-3">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-blue-900/30 via-zinc-900/50 to-indigo-900/20 border border-blue-400/40 relative shadow-inner space-y-3"
+          >
             <span className="text-[10px] font-mono text-blue-300 uppercase tracking-widest font-bold flex items-center gap-1.5">
               <Sparkles size={14} className="text-yellow-400" />
               {dialogueData.masterName}의 1:1 직접 조언 (Direct Advice)
@@ -779,10 +819,15 @@ export function MuseSynergySection() {
             <p className="text-base sm:text-lg font-bold text-white leading-relaxed tracking-tight break-keep">
               "{dialogueData.masterDirectAdvice}"
             </p>
-          </div>
+          </motion.div>
 
           {/* Technique & Palette Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.26, ease: [0.16, 1, 0.3, 1] }}
+            className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+          >
             <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/10 space-y-2">
               <span className="text-[10px] font-mono font-bold text-amber-300 uppercase flex items-center gap-1.5">
                 <Lightbulb size={12} /> 거장의 창작 돌파 기법
@@ -800,10 +845,15 @@ export function MuseSynergySection() {
                 ))}
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* 🌟 CREATIVE SPARK AFFIRMATION (동적 생성) */}
-          <div className="p-5 rounded-2xl bg-gradient-to-r from-blue-950/60 via-indigo-950/50 to-purple-950/60 border border-blue-500/40 space-y-2">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.32, ease: [0.16, 1, 0.3, 1] }}
+            className="p-5 rounded-2xl bg-gradient-to-r from-blue-950/60 via-indigo-950/50 to-purple-950/60 border border-blue-500/40 space-y-2"
+          >
             <span className="text-[10px] text-blue-300 font-mono font-bold uppercase tracking-wider flex items-center gap-1.5">
               <Sparkles size={12} className="text-yellow-400" />
               CREATIVE SPARK AFFIRMATION
@@ -811,7 +861,7 @@ export function MuseSynergySection() {
             <p className="text-sm sm:text-base font-black text-white leading-relaxed">
               "{dialogueData.inspirationAffirmation}"
             </p>
-          </div>
+          </motion.div>
         </motion.div>
       )}
     </div>

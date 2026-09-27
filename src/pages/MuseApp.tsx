@@ -2248,8 +2248,10 @@ ${concernContext ? `사용자가 들려준 현재 고민과 상황에 100% 공�
             {activeMode === 'synergy' ? (
               <motion.div
                 key="muse-synergy"
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                 className="w-full max-w-5xl mx-auto flex-1 flex flex-col pt-3 sm:pt-5 pb-16 md:pb-24"
               >
                 <MuseSynergySection />
@@ -2257,8 +2259,10 @@ ${concernContext ? `사용자가 들려준 현재 고민과 상황에 100% 공�
             ) : activeMode === 'roleModel' ? (
               <motion.div
                 key="roleModel"
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                 className="w-full max-w-6xl mx-auto flex-1 flex flex-col pt-3 sm:pt-5 pb-16 md:pb-24"
               >
                 <RoleModelModal
@@ -2280,9 +2284,16 @@ ${concernContext ? `사용자가 들려준 현재 고민과 상황에 100% 공�
                 </p>
               </motion.div>
             ) : (activeMode as any) === "soul_inactive" ? (
-              <div className="text-center py-24 text-white/40">
+              <motion.div
+                key="soul_inactive"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                className="text-center py-24 text-white/40"
+              >
                 모달 팝업으로 결과를 확인하고, 아래 기능은 닫혀있습니다.
-              </div>
+              </motion.div>
             ) : false ? (
               <div>
                 {insightResult ? (
@@ -2894,8 +2905,10 @@ ${concernContext ? `사용자가 들려준 현재 고민과 상황에 100% 공�
             ) : activeMode === "history" ? (
               <motion.div
                 key="history"
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                 className="space-y-8 pb-8 sm:pb-12"
               >
                 <div className="glass p-10 rounded-[60px] border border-blue-700/20 relative overflow-hidden">
@@ -3008,8 +3021,10 @@ ${concernContext ? `사용자가 들려준 현재 고민과 상황에 100% 공�
             ) : activeMode === "bible" ? (
               <motion.div
                 key="bible"
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                 className="space-y-6 md:space-y-8 pb-8 sm:pb-12 pt-4 md:pt-8"
               >
                 <div className="space-y-10">
@@ -3021,8 +3036,10 @@ ${concernContext ? `사용자가 들려준 현재 고민과 상황에 100% 공�
             ) : activeMode === "simple" ? (
               <motion.div
                 key="simple"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                 className="flex-1 flex flex-col items-center justify-center pt-24 pb-40"
               >
                 <div className="w-full max-w-2xl glass p-5 md:p-12 rounded-[28px] md:rounded-[64px] border border-blue-500/30 shadow-2xl relative overflow-hidden group">
@@ -3071,8 +3088,10 @@ ${concernContext ? `사용자가 들려준 현재 고민과 상황에 100% 공�
             ) : activeMode === 'artRecommendation' ? (
               <motion.div
                 key="artRecommendation"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                 className="w-full max-w-3xl mx-auto flex-1 flex flex-col justify-start pt-2 sm:pt-4 pb-20 md:pb-24"
               >
                 <ArtRecommendationView />
