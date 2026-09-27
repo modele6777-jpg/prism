@@ -833,17 +833,28 @@ export function PrologueTodoSection() {
         </div>
 
         {/* Progress Gauge */}
-        <div className="w-full h-3 rounded-full bg-black/40 overflow-hidden border border-white/10 relative p-0.5">
+        <div className="w-full h-3 rounded-full bg-black/50 overflow-hidden border border-white/10 relative p-0.5 shadow-inner">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${progressPercent}%` }}
-            transition={{ duration: 0.6, ease: 'easeOut' }}
-            className={`h-full rounded-full transition-all duration-500 ${
+            transition={{ duration: 0.95, ease: [0.16, 1, 0.3, 1] }}
+            className={`h-full rounded-full relative overflow-hidden ${
               isAllCompleted
-                ? 'bg-gradient-to-r from-amber-400 via-rose-400 to-indigo-400 shadow-[0_0_15px_rgba(251,191,36,0.6)]'
-                : 'bg-gradient-to-r from-indigo-500 via-purple-500 to-amber-500 shadow-[0_0_12px_rgba(99,102,241,0.5)]'
+                ? 'bg-gradient-to-r from-amber-400 via-rose-400 to-indigo-400 shadow-[0_0_16px_rgba(251,191,36,0.7),0_0_28px_rgba(244,63,94,0.35)]'
+                : 'bg-gradient-to-r from-indigo-500 via-purple-500 to-amber-500 shadow-[0_0_14px_rgba(99,102,241,0.65),0_0_24px_rgba(168,85,247,0.35)]'
             }`}
-          />
+          >
+            {/* Subtle traveling light shimmer */}
+            <motion.div
+              animate={{ x: ['-100%', '100%'] }}
+              transition={{ duration: 2.6, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/35 to-transparent pointer-events-none"
+            />
+            {/* Radiant leading edge glow bead */}
+            {progressPercent > 0 && progressPercent < 100 && (
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-white shadow-[0_0_8px_#ffffff,0_0_14px_rgba(199,210,254,0.9)]" />
+            )}
+          </motion.div>
         </div>
 
         {/* Celebration Banner when 100% complete */}

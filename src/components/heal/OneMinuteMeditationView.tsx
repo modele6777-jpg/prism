@@ -510,6 +510,19 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
 
   const progressPercent = ((TOTAL_DURATION - secondsRemaining) / TOTAL_DURATION) * 100;
 
+  // Track session progress updates for smooth rotation animation feedback
+  const [isUpdating, setIsUpdating] = useState(false);
+  const prevProgressRef = useRef(progressPercent);
+
+  useEffect(() => {
+    if (isRunning && prevProgressRef.current !== progressPercent) {
+      prevProgressRef.current = progressPercent;
+      setIsUpdating(true);
+      const timer = setTimeout(() => setIsUpdating(false), 650);
+      return () => clearTimeout(timer);
+    }
+  }, [progressPercent, isRunning]);
+
   // Phase text & animation scale
   const getPhaseInfo = () => {
     switch (breathPhase) {
@@ -558,57 +571,133 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
         </p>
 
         {/* Top Feature Nav Tabs */}
-        <div className="flex items-center gap-1 p-1 bg-white/5 border border-white/10 rounded-2xl mt-3 backdrop-blur-md">
-          <button
-            onClick={() => setActiveTab('custom')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
-              activeTab === 'custom'
-                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/25'
-                : 'text-white/50 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <Sparkles size={14} />
-            <span>맞춤 처방</span>
-          </button>
+        <div className="top-nav sticky top-2 z-20 flex items-center justify-between flex-wrap gap-2 p-1.5 bg-zinc-950/85 border border-white/10 rounded-2xl mt-3 backdrop-blur-xl shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5),0_2px_8px_-2px_rgba(0,0,0,0.35)]">
+          <div className="nav-actions flex items-center gap-1.5 flex-wrap">
+            <button
+              onClick={() => setActiveTab('custom')}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                activeTab === 'custom'
+                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/25'
+                  : 'text-white/50 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Sparkles size={14} />
+              <span>맞춤 처방</span>
+            </button>
 
-          <button
-            onClick={() => setActiveTab('session')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
-              activeTab === 'session'
-                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/25'
-                : 'text-white/50 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <Timer size={14} />
-            <span>1분 호흡 세션</span>
-          </button>
+            <button
+              onClick={() => setActiveTab('session')}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                activeTab === 'session'
+                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/25'
+                  : 'text-white/50 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Timer size={14} />
+              <span>1분 호흡 세션</span>
+            </button>
 
-          <button
-            onClick={() => setActiveTab('settings')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
-              activeTab === 'settings'
-                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/25'
-                : 'text-white/50 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <SlidersHorizontal size={14} />
-            <span>스튜디오 설정</span>
-          </button>
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                activeTab === 'settings'
+                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/25'
+                  : 'text-white/50 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <SlidersHorizontal size={14} />
+              <span>스튜디오 설정</span>
+            </button>
 
-          <button
-            onClick={() => {
-              setActiveTab('history');
-              refreshHistory();
-            }}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
-              activeTab === 'history'
-                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/25'
-                : 'text-white/50 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <History size={14} />
-            <span>기록실 ({stats.totalSessions})</span>
-          </button>
+            <button
+              onClick={() => {
+                setActiveTab('history');
+                refreshHistory();
+              }}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                activeTab === 'history'
+                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/25'
+                  : 'text-white/50 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <History size={14} />
+              <span>기록실 ({stats.totalSessions})</span>
+            </button>
+
+            {/* Discreet Circular Progress Indicator for Current Practice Session */}
+            <button
+              type="button"
+              onClick={() => setActiveTab('session')}
+              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-xs font-mono ml-0.5 select-none transition-all cursor-pointer group shadow-sm ${
+                isUpdating
+                  ? 'bg-emerald-500/15 border-emerald-400/40 shadow-[0_0_12px_rgba(16,185,129,0.25)]'
+                  : 'bg-white/5 hover:bg-white/10 border-white/10'
+              }`}
+              title={`현재 호흡 연습 세션 진행도: ${Math.round(progressPercent)}% (${secondsRemaining}초 남음)`}
+            >
+              <div className="relative w-5 h-5 flex items-center justify-center shrink-0">
+                {/* Rotating SVG Ring Layer */}
+                <div
+                  className={`absolute inset-0 w-full h-full flex items-center justify-center ${
+                    isUpdating
+                      ? 'animate-progress-update-pulse'
+                      : isRunning
+                      ? 'animate-progress-spin-smooth'
+                      : 'transition-transform duration-500'
+                  }`}
+                >
+                  <svg className="w-full h-full -rotate-90" viewBox="0 0 24 24">
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="9"
+                      fill="none"
+                      stroke="rgba(255, 255, 255, 0.12)"
+                      strokeWidth="2.5"
+                    />
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="9"
+                      fill="none"
+                      stroke={activeTheme.color}
+                      strokeWidth="2.5"
+                      strokeDasharray={56.54}
+                      strokeDashoffset={56.54 - (56.54 * Math.max(0, Math.min(100, progressPercent))) / 100}
+                      strokeLinecap="round"
+                      className="transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
+                      style={{
+                        filter: `drop-shadow(0 0 4px ${activeTheme.color}90)`,
+                      }}
+                    />
+                  </svg>
+                </div>
+
+                {/* Upright Center Content */}
+                <div className="relative z-10 flex items-center justify-center pointer-events-none">
+                  {progressPercent >= 100 ? (
+                    <Check size={9} className="text-emerald-400 stroke-[3]" />
+                  ) : isRunning ? (
+                    <span className="text-[7px] font-bold text-emerald-300">
+                      {secondsRemaining}
+                    </span>
+                  ) : (
+                    <span className="text-[7px] font-bold text-white/50">
+                      {Math.round(progressPercent)}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-baseline gap-1 text-[11px] font-mono leading-none">
+                <span className="text-[9px] uppercase tracking-wide text-white/40 font-sans hidden sm:inline">
+                  연습
+                </span>
+                <span className={`font-bold transition-colors duration-300 ${isUpdating ? 'text-emerald-300' : 'text-white/90'}`}>
+                  {Math.round(progressPercent)}%
+                </span>
+              </div>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -736,7 +825,10 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
                     strokeDasharray={276.46}
                     strokeDashoffset={276.46 - (276.46 * progressPercent) / 100}
                     strokeLinecap="round"
-                    className="transition-all duration-1000 ease-linear"
+                    className="transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)]"
+                    style={{
+                      filter: 'drop-shadow(0 0 6px rgba(16,185,129,0.7)) drop-shadow(0 0 14px rgba(6,182,212,0.4))',
+                    }}
                   />
                   <defs>
                     <linearGradient id="emeraldGradient" x1="0%" y1="0%" x2="100%" y2="100%">

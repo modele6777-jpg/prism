@@ -1,13 +1,12 @@
 {
   "name": "luckey",
-  "version": "1.4.98",
-  "summary": "호흡 스튜디오(Breathing Studio) 환경 설정 내 햅틱 피드백(Haptic Feedback) 토글 및 들숨·날숨 모바일 미세 진동 펄스 엔진 탑재",
-  "builtAt": "2026-09-26T11:57:00.000Z",
+  "version": "1.4.103",
+  "summary": "연습 세션 데이터 실시간 갱신 시 원형 프로그레스 인디케이터 부드러운 회전(CSS Rotation) 애니메이션 및 펄스 피드백 탑재",
+  "builtAt": "2026-09-27T01:55:00.000Z",
   "items": [
-    "호흡 스튜디오(Breathing Studio) 설정 패널에 'Haptic Feedback' 스위치 토글을 추가하여 모바일 기기에서 들숨(Inhale)과 날숨(Exhale) 시 부드러운 진동 펄스를 전달하도록 구현",
-    "들숨 시 서서히 커지는 상승 3단계 팽창 진동([35ms, 45ms, 55ms])과 날숨 시 차분히 내려앉는 이완 3단계 펄스([50ms, 35ms, 20ms])를 분리 설계하여 눈을 감고도 호흡 리듬을 명확히 체감 가능",
-    "세션 상단 빠른 햅틱 토글 버튼, 스튜디오 설정 내 디바이스 진동 지원 상태 확인 및 들숨/날숨 진동 감각 사전 테스트 기능 제공",
-    "localStorage 영구 저장 및 크로스 컴포넌트 이벤트 동기화(breathing-haptic-setting-changed) 지원"
+    "호흡 세션 진행 및 필사 타자 입력 등 세션 데이터가 갱신될 때 원형 프로그레스 인디케이터가 부드럽게 회전하는 CSS 키프레임 애니메이션(progress-spin-smooth & progress-spin-pulse) 구현",
+    "데이터 갱신 시각 피드백: 수치 변경 시 0.65초간 360도 가감속 펄스 회전과 함께 텍스트 하이라이트 및 은은한 글로우 오라 활성화",
+    "회전 중에도 중앙의 잔여 시간/완료 체크 표시가 흔들리지 않고 가독성을 유지하도록 레이어 구조 최적화"
   ],
   "author": "Antigravity AI Agent",
   "buildEnvironment": "cloud-run"

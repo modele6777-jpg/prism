@@ -1,52 +1,79 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  BinauralState,
+  moodSoundEngine,
+  MoodAudioState,
+  MoodSoundId,
+  MOOD_PRESETS,
+  MoodPreset,
+} from '@/lib/moodSoundEngine';
+import {
   BinauralPreset,
   BINAURAL_PRESETS,
-  getBinauralState,
-  subscribeBinauralState,
-  toggleBinauralBeat,
-  startBinauralBeat,
-  stopBinauralBeat,
   normalizeBinauralAppId,
 } from '@/lib/binauralBeats';
 
+const APP_TO_MOOD_MAP: Record<string, MoodSoundId> = {
+  hub: 'rain',
+  bluebird: 'forest',
+  heal: 'rain',
+  orange: 'whitenoise',
+  muse: 'forest',
+  epilogue: 'ocean',
+  trinity: 'binaural',
+};
+
 export function useBinauralBeat(currentAppId?: string) {
-  const [state, setState] = useState<BinauralState>(() => getBinauralState());
+  const [moodState, setMoodState] = useState<MoodAudioState>(() => moodSoundEngine.getState());
 
   useEffect(() => {
-    return subscribeBinauralState((newState) => {
-      setState(newState);
+    return moodSoundEngine.subscribe((next) => {
+      setMoodState(next);
     });
   }, []);
 
   const normalizedCurrent = currentAppId ? normalizeBinauralAppId(currentAppId) : null;
-  const isCurrentAppPlaying = !!(state.isPlaying && normalizedCurrent && state.activeAppId === normalizedCurrent);
+  const isCurrentAppPlaying = moodState.isPlaying;
 
   const toggle = useCallback((targetAppId?: string) => {
-    const idToToggle = targetAppId || currentAppId || 'bluebird';
-    return toggleBinauralBeat(idToToggle);
-  }, [currentAppId]);
+    // Open the background mood picker so user can pick rain, white noise, forest birds, etc.
+    const appId = targetAppId || currentAppId || 'hub';
+    const targetMood = APP_TO_MOOD_MAP[appId] || 'rain';
+
+    if (!moodState.isPlaying) {
+      void moodSoundEngine.startMood(targetMood);
+    }
+    moodSoundEngine.setPickerOpen(true);
+  }, [moodState.isPlaying, currentAppId]);
 
   const start = useCallback((targetAppId?: string) => {
-    const idToStart = targetAppId || currentAppId || 'bluebird';
-    return startBinauralBeat(idToStart);
+    const appId = targetAppId || currentAppId || 'hub';
+    const targetMood = APP_TO_MOOD_MAP[appId] || 'rain';
+    void moodSoundEngine.startMood(targetMood);
+    moodSoundEngine.setPickerOpen(true);
   }, [currentAppId]);
 
   const stop = useCallback(() => {
-    stopBinauralBeat();
+    moodSoundEngine.stop();
   }, []);
 
-  const preset: BinauralPreset | undefined = normalizedCurrent ? BINAURAL_PRESETS[normalizedCurrent] : state.activePreset || undefined;
+  const openPicker = useCallback(() => {
+    moodSoundEngine.setPickerOpen(true);
+  }, []);
+
+  const preset: BinauralPreset | undefined = normalizedCurrent ? BINAURAL_PRESETS[normalizedCurrent] : undefined;
+  const currentMood: MoodPreset = MOOD_PRESETS.find(p => p.id === moodState.activeMood) || MOOD_PRESETS[0];
 
   return {
-    isPlaying: state.isPlaying,
+    isPlaying: moodState.isPlaying,
     isCurrentAppPlaying,
-    activeAppId: state.activeAppId,
-    activePreset: state.activePreset,
+    activeAppId: currentAppId || null,
+    activePreset: preset || null,
+    activeMood: moodState.activeMood,
+    currentMood,
     preset,
     toggle,
     start,
     stop,
+    openPicker,
   };
 }

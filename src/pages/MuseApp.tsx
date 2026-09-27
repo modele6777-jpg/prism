@@ -2181,7 +2181,7 @@ ${concernContext ? `사용자가 들려준 현재 고민과 상황에 100% 공�
           <div 
             className="relative w-11 h-11 rounded-full border border-white/10 flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.05)] group backdrop-blur-md cursor-pointer transition-transform active:scale-95 shrink-0" 
             onClick={() => toggleBinaural('muse')}
-            title={isBinauralPlaying ? "뮤즈 바이노럴 비트 끄기" : "뮤즈 바이노럴 비트 재생하기"}
+            title={isBinauralPlaying ? "배경 무드 사운드 피커 열기 (재생 중)" : "배경 무드 사운드 피커 (숲속 새소리 · 빗소리 · 백색소음)"}
           >
             <motion.div
               animate={{ rotate: 360 }}

@@ -217,13 +217,13 @@ function ConcentricProgressRings({
                 strokeDasharray={circumference}
                 initial={{ strokeDashoffset: circumference }}
                 animate={{ strokeDashoffset }}
-                transition={{ duration: 1.2, ease: 'easeOut', delay: index * 0.12 }}
+                transition={{ duration: 1.35, ease: [0.16, 1, 0.3, 1], delay: index * 0.08 }}
                 style={{
                   filter: isCompleted
-                    ? `drop-shadow(0 0 6px ${goal.glowColor})`
+                    ? `drop-shadow(0 0 6px ${goal.glowColor}) drop-shadow(0 0 14px ${goal.glowColor}90)`
                     : isHighlighted
-                    ? `drop-shadow(0 0 8px ${goal.glowColor})`
-                    : undefined,
+                    ? `drop-shadow(0 0 8px ${goal.glowColor}) drop-shadow(0 0 16px ${goal.glowColor}80)`
+                    : `drop-shadow(0 0 4px ${goal.glowColor}55) drop-shadow(0 0 10px ${goal.glowColor}30)`,
                 }}
               />
             </g>
@@ -312,9 +312,11 @@ function SingleProgressRing({
           strokeDasharray={circumference}
           initial={{ strokeDashoffset: circumference }}
           animate={{ strokeDashoffset }}
-          transition={{ duration: 0.9, ease: 'easeOut' }}
+          transition={{ duration: 1.05, ease: [0.16, 1, 0.3, 1] }}
           style={{
-            filter: isCompleted ? `drop-shadow(0 0 6px ${glowColor})` : undefined,
+            filter: isCompleted
+              ? `drop-shadow(0 0 6px ${glowColor}) drop-shadow(0 0 12px ${glowColor}80)`
+              : `drop-shadow(0 0 4px ${glowColor}50) drop-shadow(0 0 8px ${glowColor}25)`,
           }}
         />
       </svg>

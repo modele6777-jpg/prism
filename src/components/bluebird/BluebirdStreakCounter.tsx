@@ -114,13 +114,22 @@ export function BluebirdStreakCounter({
                 </span>
                 <span className="text-amber-300 font-black">{progressPercent}%</span>
               </div>
-              <div className="w-full h-2 sm:h-2.5 rounded-full bg-black/60 border border-white/10 p-0.5 overflow-hidden">
+              <div className="w-full h-2 sm:h-2.5 rounded-full bg-black/60 border border-white/10 p-0.5 overflow-hidden relative shadow-inner">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${progressPercent}%` }}
-                  transition={{ duration: 0.8, ease: 'easeOut' }}
-                  className="h-full rounded-full bg-gradient-to-r from-sky-400 via-teal-300 to-amber-300 shadow-[0_0_10px_rgba(56,189,248,0.7)]"
-                />
+                  transition={{ duration: 1.0, ease: [0.16, 1, 0.3, 1] }}
+                  className="h-full rounded-full bg-gradient-to-r from-sky-400 via-teal-300 to-amber-300 shadow-[0_0_14px_rgba(56,189,248,0.7),0_0_24px_rgba(251,191,36,0.35)] relative overflow-hidden"
+                >
+                  <motion.div
+                    animate={{ x: ['-100%', '100%'] }}
+                    transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/35 to-transparent pointer-events-none"
+                  />
+                  {progressPercent > 0 && progressPercent < 100 && (
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_6px_#ffffff,0_0_10px_rgba(56,189,248,0.9)]" />
+                  )}
+                </motion.div>
               </div>
             </div>
 
@@ -223,13 +232,22 @@ export function BluebirdStreakCounter({
             <span className="text-sky-300 font-bold">{progressPercent}% 완료</span>
           </div>
 
-          <div className="w-full h-3 rounded-full bg-zinc-950 border border-white/10 p-0.5 overflow-hidden">
+          <div className="w-full h-3 rounded-full bg-zinc-950 border border-white/10 p-0.5 overflow-hidden relative shadow-inner">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${progressPercent}%` }}
-              transition={{ duration: 0.8, ease: 'easeOut' }}
-              className="h-full rounded-full bg-gradient-to-r from-sky-500 via-teal-400 to-amber-400 shadow-[0_0_15px_rgba(56,189,248,0.8)]"
-            />
+              transition={{ duration: 1.0, ease: [0.16, 1, 0.3, 1] }}
+              className="h-full rounded-full bg-gradient-to-r from-sky-500 via-teal-400 to-amber-400 shadow-[0_0_16px_rgba(56,189,248,0.75),0_0_26px_rgba(251,191,36,0.35)] relative overflow-hidden"
+            >
+              <motion.div
+                animate={{ x: ['-100%', '100%'] }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/35 to-transparent pointer-events-none"
+              />
+              {progressPercent > 0 && progressPercent < 100 && (
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-white shadow-[0_0_8px_#ffffff,0_0_12px_rgba(56,189,248,0.9)]" />
+              )}
+            </motion.div>
           </div>
 
           <div className="flex items-center justify-between text-[11px] text-white/50">

@@ -1313,3 +1313,49 @@ html.perf-reduced .cosmic-star-flare {
 .animate-rainbow-wave {
   animation: rainbow-wave 4s ease infinite;
 }
+
+/* Circular Progress Indicator Smooth Rotation on Data Update */
+@keyframes progress-spin-smooth {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes progress-spin-pulse {
+  0% {
+    transform: rotate(0deg) scale(0.96);
+  }
+  45% {
+    transform: rotate(180deg) scale(1.08);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+.animate-progress-spin-smooth {
+  animation: progress-spin-smooth 3.2s linear infinite;
+  transform-origin: center;
+  will-change: transform;
+}
+
+.animate-progress-update-pulse {
+  animation: progress-spin-pulse 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: center;
+  will-change: transform;
+}
+
+/* Top Nav Sticky Position & Visual Separation Box Shadow */
+.top-nav {
+  position: sticky;
+  top: 0.5rem;
+  z-index: 25;
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.45), 0 2px 8px -2px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+

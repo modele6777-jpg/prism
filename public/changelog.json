@@ -1,5 +1,55 @@
 [
   {
+    "version": "1.4.103",
+    "summary": "연습 세션 데이터 실시간 갱신 시 원형 프로그레스 인디케이터 부드러운 회전(CSS Rotation) 애니메이션 및 펄스 피드백 탑재",
+    "builtAt": "2026-09-27T01:55:00.000Z",
+    "items": [
+      "호흡 세션 진행 및 필사 타자 입력 등 세션 데이터가 갱신될 때 원형 프로그레스 인디케이터가 부드럽게 회전하는 CSS 키프레임 애니메이션(progress-spin-smooth & progress-spin-pulse) 구현",
+      "데이터 갱신 시각 피드백: 수치 변경 시 0.65초간 360도 가감속 펄스 회전과 함께 텍스트 하이라이트 및 은은한 글로우 오라 활성화",
+      "회전 중에도 중앙의 잔여 시간/완료 체크 표시가 흔들리지 않고 가독성을 유지하도록 레이어 구조 최적화"
+    ]
+  },
+  {
+    "version": "1.4.102",
+    "summary": "상단 네비게이션 액션(.top-nav .nav-actions) 내 실시간 연습 세션 원형 프로그레스 인디케이터(Circular Progress) 탑재",
+    "builtAt": "2026-09-27T01:37:00.000Z",
+    "items": [
+      "상단 네비게이션 바(.top-nav .nav-actions) 버튼 우측에 현재 연습 세션(호흡 명상 스튜디오 및 마인드풀 필사 타자 연습)의 완료 상태를 한눈에 파악할 수 있는 미니멀 원형 프로그레스 인디케이터 탑재",
+      "세션 진행도(0~100%) 및 잔여 시간에 동기화되는 SVG 스트로크 대시 애니메이션(stroke-dashoffset), 테마 맞춤 은은한 글로우 및 완료 시 체크 아이콘 피드백 연출",
+      "인디케이터 클릭 시 현재 진행 중인 세션 화면으로 즉각 전환 가능한 원클릭 바로가기 인터랙션 제공"
+    ]
+  },
+  {
+    "version": "1.4.101",
+    "summary": "배경 무드 사운드 피커(Mood Picker) 환경 전환 시 다층 앰비언트 배경 트랜지션 애니메이션 및 유기적 오라 연출 강화",
+    "builtAt": "2026-09-27T01:30:00.000Z",
+    "items": [
+      "무드 피커 내 신규 사운드 환경 선택 시 모달 내부와 전역 백드롭 전체가 해당 테마의 색상과 빛으로 부드럽게 크로스페이드되는 다층 환경 트랜지션(Cross-fading Atmospheric Transition) 구현",
+      "각 음향 환경별(빗소리·숲속 새소리·백색소음·파도·바이노럴·모닥불) 고유 베이스 그라데이션, 유동 코어 헤일로(Flowing Core Halo), 앰비언트 글로우 블롭 및 미세 스타라이트 그리드 레이어 탑재",
+      "사운드 선택 변경 시 실시간 공간 키워드 배너 전환 및 카드 선택 글로우(layoutId: active-mood-glow) 스무스 애니메이션 적용"
+    ]
+  },
+  {
+    "version": "1.4.100",
+    "summary": "상단 아이콘 탭 배경 무드 사운드 피커(Background Mood Picker) 탑재: 빗소리·화이트노이즈·숲속 새소리 실시간 앰비언트 엔진 연동",
+    "builtAt": "2026-09-27T01:25:00.000Z",
+    "items": [
+      "각 앱 및 허브 상단 브랜딩 아이콘 탭 시 단순 바이노럴 비트 단일 재생 대신 '배경 무드 사운드 피커(Background Mood Picker)' 모달이 열리도록 전면 개편",
+      "아늑한 빗소리(Gentle Rain), 핑크 & 화이트 노이즈(Calm Pink Noise), 숲속 새소리와 솔바람(Forest Birds), 해변의 파도(Ocean Waves), 432Hz 치유 바이노럴 비트(Binaural Beats), 따스한 모닥불(Warm Fireplace)의 6가지 앰비언트 프로시저럴 합성 엔진 구현",
+      "앱 전역(App.tsx) 마운트 및 볼륨 조절 슬라이더, 실시간 이퀄라이저 애니메이션, 백그라운드 끊김 없는 연속 재생 지원"
+    ]
+  },
+  {
+    "version": "1.4.99",
+    "summary": "프로그레스 게이지(Progress Gauge) 애니메이션 이징 곡선(Cubic-Bezier Easing) 개선 및 다층 네온 글로우 오라 효과 고도화",
+    "builtAt": "2026-09-27T01:15:00.000Z",
+    "items": [
+      "프롤로그 퀘스트 게이지(PrologueTodoSection), 파랑새 40일 스트릭 게이지(BluebirdStreakCounter), 목표 달성 링 대시보드(GoalProgressRingDashboard), 호흡 링 게이지(OneMinuteMeditationView) 전반의 애니메이션에 고급 감속 곡선([0.16, 1, 0.3, 1] quintic ease-out)을 적용하여 벨벳처럼 부드러운 가감속 모션 구현",
+      "게이지 채움 트랙에 다층 멀티티어 네온 글로우(Multi-tier Glow Box-Shadow & Drop-Shadow)와 흐르는 앰비언트 빛결 쉬머(Traveling Shimmer Sheen) 효과를 탑재하여 시각적 깊이감 및 피드백 전달력 극대화",
+      "진행 중인 게이지 선단에 실시간으로 빛나는 리딩 비드(Leading Light Bead) 파티클을 추가하여 진행 현황을 직관적이고 감각적으로 인지할 수 있도록 개선"
+    ]
+  },
+  {
     "version": "1.4.98",
     "summary": "호흡 스튜디오(Breathing Studio) 환경 설정 내 햅틱 피드백(Haptic Feedback) 토글 및 들숨·날숨 모바일 미세 진동 펄스 엔진 탑재",
     "builtAt": "2026-09-26T11:57:00.000Z",

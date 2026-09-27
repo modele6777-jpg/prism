@@ -421,17 +421,17 @@ export function LucKeyCosmicLoader({
         )}
 
         {/* 🌈 Animated Cosmic Shimmer Progress Gauge */}
-        <div className="w-48 sm:w-56 h-[3px] bg-white/10 rounded-full mt-5 overflow-hidden relative backdrop-blur-sm border border-white/5">
+        <div className="w-48 sm:w-56 h-[3.5px] bg-white/10 rounded-full mt-5 overflow-hidden relative backdrop-blur-sm border border-white/10 shadow-[0_0_10px_rgba(56,189,248,0.15)]">
           <motion.div
             animate={{
               x: ['-100%', '100%'],
             }}
             transition={{
-              duration: 1.9,
+              duration: 2.2,
               repeat: Number.POSITIVE_INFINITY,
-              ease: 'easeInOut',
+              ease: [0.37, 0, 0.63, 1],
             }}
-            className="w-full h-full rounded-full bg-gradient-to-r from-amber-400 via-emerald-400 via-cyan-400 to-purple-500 shadow-[0_0_12px_rgba(52,211,153,0.7)]"
+            className="w-full h-full rounded-full bg-gradient-to-r from-amber-400 via-emerald-400 via-cyan-400 to-purple-500 shadow-[0_0_14px_rgba(52,211,153,0.8),0_0_24px_rgba(56,189,248,0.45)]"
           />
         </div>
       </div>

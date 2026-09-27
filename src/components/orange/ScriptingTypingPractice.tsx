@@ -283,10 +283,23 @@ export function ScriptingTypingPractice({
 
   const progressPercent = Math.min(100, Math.round((userInput.length / Math.max(1, targetText.length)) * 100));
 
+  // Track session typing updates for smooth rotation animation feedback
+  const [isUpdating, setIsUpdating] = useState(false);
+  const prevProgressRef = useRef(progressPercent);
+
+  useEffect(() => {
+    if (userInput.length > 0 && prevProgressRef.current !== progressPercent) {
+      prevProgressRef.current = progressPercent;
+      setIsUpdating(true);
+      const timer = setTimeout(() => setIsUpdating(false), 650);
+      return () => clearTimeout(timer);
+    }
+  }, [progressPercent, userInput]);
+
   return (
     <div className="rounded-2xl border border-violet-500/20 bg-gradient-to-b from-violet-950/30 via-black/40 to-black/60 p-5 sm:p-6 space-y-5 shadow-xl shadow-violet-950/20">
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-white/5">
+      <div className="top-nav flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-white/5">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center text-violet-300 shadow-sm">
             <Keyboard size={16} />
@@ -306,7 +319,71 @@ export function ScriptingTypingPractice({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 self-end sm:self-auto">
+        <div className="nav-actions flex items-center gap-2 self-end sm:self-auto">
+          {/* Discreet Circular Progress Indicator for Current Practice Session */}
+          <div
+            className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border text-xs font-mono select-none transition-all ${
+              isUpdating
+                ? 'bg-amber-500/15 border-amber-400/40 shadow-[0_0_12px_rgba(245,158,11,0.25)]'
+                : 'bg-white/5 border border-white/10'
+            }`}
+            title={`현재 필사 연습 진행도: ${progressPercent}% (${userInput.length}/${targetText.length} 글자)`}
+          >
+            <div className="relative w-5 h-5 flex items-center justify-center shrink-0">
+              {/* Rotating SVG Ring Layer */}
+              <div
+                className={`absolute inset-0 w-full h-full flex items-center justify-center ${
+                  isUpdating
+                    ? 'animate-progress-update-pulse'
+                    : userInput.length > 0 && !isCompleted
+                    ? 'animate-progress-spin-smooth'
+                    : 'transition-transform duration-500'
+                }`}
+              >
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 24 24">
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="9"
+                    fill="none"
+                    stroke="rgba(255, 255, 255, 0.12)"
+                    strokeWidth="2.5"
+                  />
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="9"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeDasharray={56.54}
+                    strokeDashoffset={56.54 - (56.54 * progressPercent) / 100}
+                    strokeLinecap="round"
+                    className="text-amber-400 transition-all duration-300"
+                    style={{
+                      filter: 'drop-shadow(0 0 4px rgba(245, 158, 11, 0.75))',
+                    }}
+                  />
+                </svg>
+              </div>
+
+              {/* Upright Center Content */}
+              <div className="relative z-10 flex items-center justify-center pointer-events-none">
+                {progressPercent >= 100 ? (
+                  <Check size={9} className="text-emerald-400 stroke-[3]" />
+                ) : null}
+              </div>
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-[9px] uppercase tracking-wide text-white/40 font-sans hidden sm:inline">
+                연습
+              </span>
+              <span className={`font-bold transition-colors duration-300 ${isUpdating ? 'text-amber-200' : 'text-amber-300'}`}>
+                {progressPercent}%
+              </span>
+            </div>
+          </div>
+
           <button
             type="button"
             onClick={handleRandomSample}
@@ -458,17 +535,21 @@ export function ScriptingTypingPractice({
             <span>진행률 {progressPercent}%</span>
             <span>{userInput.length} / {targetText.length} 글자</span>
           </div>
-          <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+          <div className="h-2 rounded-full bg-black/40 border border-white/10 p-0.5 overflow-hidden relative shadow-inner">
             <motion.div
-              className={`h-full ${
+              className={`h-full rounded-full relative overflow-hidden ${
                 isCompleted
-                  ? 'bg-gradient-to-r from-emerald-400 to-teal-400'
-                  : 'bg-gradient-to-r from-violet-500 via-amber-400 to-orange-400'
+                  ? 'bg-gradient-to-r from-emerald-400 to-teal-400 shadow-[0_0_12px_rgba(52,211,153,0.7),0_0_20px_rgba(20,184,166,0.4)]'
+                  : 'bg-gradient-to-r from-violet-500 via-amber-400 to-orange-400 shadow-[0_0_12px_rgba(245,158,11,0.7),0_0_20px_rgba(249,115,22,0.35)]'
               }`}
               initial={{ width: 0 }}
               animate={{ width: `${progressPercent}%` }}
-              transition={{ duration: 0.15 }}
-            />
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            >
+              {progressPercent > 0 && progressPercent < 100 && (
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_6px_#ffffff,0_0_10px_rgba(245,158,11,0.9)]" />
+              )}
+            </motion.div>
           </div>
         </div>
 

@@ -1288,7 +1288,7 @@ export default function OrangeApp() {
             <div 
               className="relative w-11 h-11 rounded-full border border-white/10 flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.05)] group backdrop-blur-md cursor-pointer transition-transform active:scale-95 shrink-0" 
               onClick={() => toggleBinaural('orange')}
-              title={isBinauralPlaying ? "오렌지 바이노럴 비트 끄기" : "오렌지 바이노럴 비트 재생하기"}
+              title={isBinauralPlaying ? "배경 무드 사운드 피커 열기 (재생 중)" : "배경 무드 사운드 피커 (백색소음 · 빗소리 · 새소리)"}
             >
                <motion.div 
                  animate={{ rotate: 360 }} 
