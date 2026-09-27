@@ -53,7 +53,7 @@ export function EpilogueSynergySection() {
   }, []);
 
   const [chronicleData, setChronicleData] = useState<ChronicleStampData>(initialChronicle);
-  const [isSynthesized, setIsSynthesized] = useState<boolean>(true); // 기본적으로 바로 감상 가능
+  const [isSynthesized, setIsSynthesized] = useState<boolean>(false); // 버튼을 눌러야 발행되도록 변경
   const [copied, setCopied] = useState<boolean>(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState<boolean>(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
@@ -137,13 +137,14 @@ export function EpilogueSynergySection() {
     };
   }, []);
 
-  // 포커스 변경 시: 즉시 해당 포커스에 걸맞은 동적 연대기로 갱신
+  // 포커스 변경 시: 포커스 및 주파수 갱신 (이미 발행된 상태라면 연대기 데이터 동기화)
   const handleSelectFocus = (focus: CosmicFocusOption) => {
     setSelectedFocus(focus.id);
     setActiveFrequency(focus.frequency);
-    const updated = getDynamicSoulChronicle(focus.id, focus.frequency, customInsight, userProfile);
-    setChronicleData(updated);
-    setIsSynthesized(true);
+    if (isSynthesized) {
+      const updated = getDynamicSoulChronicle(focus.id, focus.frequency, customInsight, userProfile);
+      setChronicleData(updated);
+    }
   };
 
   // 영혼 연대기 스탬프 & 수면 프라이밍 합성 (충분한 25초 타임아웃 및 동적 폴백)
@@ -445,7 +446,7 @@ export function EpilogueSynergySection() {
       </div>
 
       {/* Output Display */}
-      {isSynthesized && (
+      {isSynthesized ? (
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -582,6 +583,20 @@ export function EpilogueSynergySection() {
             </div>
           )}
         </motion.div>
+      ) : (
+        /* Standby State: Before Publishing */
+        <div className="rounded-[32px] sm:rounded-[40px] border border-dashed border-white/15 bg-white/[0.02] p-8 sm:p-12 text-center flex flex-col items-center justify-center space-y-4">
+          <div className="w-16 h-16 rounded-full bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shadow-[0_0_25px_rgba(168,85,247,0.15)]">
+            <Sparkles size={28} />
+          </div>
+          <div className="space-y-1.5 max-w-md">
+            <h4 className="text-base font-bold text-white">영혼 연대기 스탬프 발행 대기</h4>
+            <p className="text-xs text-white/50 leading-relaxed font-sans">
+              상단에서 오늘 밤 집중할 영혼 진화 포커스를 선택하고 <strong>〈영혼 연대기 스탬프 &amp; 수면 프라이밍〉 즉시 발행</strong> 버튼을 누르면,
+              당신만을 위한 7대 공간 통합 황금 봉인과 수면 프라이밍이 발행됩니다.
+            </p>
+          </div>
+        </div>
       )}
 
       {/* 🌟 Achievement Share Modal */}
