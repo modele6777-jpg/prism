@@ -36,6 +36,7 @@ import {
   setBreathingHapticSetting,
   triggerBreathingHaptic
 } from '@/lib/breathingHaptics';
+import { playSuccessHaptic } from '@/lib/audioHaptics';
 import {
   MEDITATION_THEMES,
   type MeditationTheme,
@@ -250,6 +251,7 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
     if (soundEnabled) {
       meditationSound.playSingingBowlBell();
     }
+    playSuccessHaptic('milestone');
     setIsCompleted(true);
 
     const affirmationToSave = customPrescription?.completionAffirmation || activeTheme.affirmation;
@@ -498,6 +500,7 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
   const handleCopyAffirmation = (text: string, recordId?: string) => {
     if (!text) return;
     navigator.clipboard.writeText(text).then(() => {
+      playSuccessHaptic('sharp');
       if (recordId) {
         setCopiedRecordId(recordId);
         setTimeout(() => setCopiedRecordId(null), 2000);

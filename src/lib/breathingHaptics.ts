@@ -1,8 +1,10 @@
 /**
  * Breathing Studio Haptic Feedback Engine
  * Provides gentle, meditative vibration pulses for mobile devices
- * during Inhale and Exhale phases.
+ * and soothing acoustic respiratory bio-harmonics during Inhale, Hold, and Exhale phases.
  */
+
+import { playBreathingHaptic, isAudioHapticsEnabled } from './audioHaptics';
 
 const STORAGE_KEY = 'prism_breathing_haptic';
 
@@ -42,18 +44,12 @@ export function setBreathingHapticSetting(enabled: boolean): void {
 export type BreathingPhaseType = 'inhale' | 'hold' | 'exhale' | 'idle' | 'test' | 'test-inhale' | 'test-exhale';
 
 /**
- * Triggers gentle, distinct vibration pulses on mobile devices during Inhale, Exhale, or Test.
- * 
- * - Inhale: Rising 3-stage gentle swell [35ms, pause 60ms, 45ms, pause 60ms, 55ms]
- * - Exhale: Soothing 3-stage descending release [50ms, pause 70ms, 35ms, pause 80ms, 20ms]
- * - Hold: Very faint 15ms micro-tick (optional presence anchor)
- * - Test: Short double pulse confirmation
+ * Triggers gentle, distinct vibration pulses on mobile devices during Inhale, Exhale, Hold, or Test.
+ * Seamlessly paired with the unified Audio Haptic Feedback engine.
  */
 export function triggerBreathingHaptic(phase: BreathingPhaseType): boolean {
-  if (!isHapticsSupported()) return false;
-  
   // If haptic is toggled off and it's not a manual test trigger, do nothing
-  if (!phase.startsWith('test') && !getBreathingHapticSetting()) {
+  if (!phase.startsWith('test') && !getBreathingHapticSetting() && !isAudioHapticsEnabled()) {
     return false;
   }
 
@@ -61,24 +57,20 @@ export function triggerBreathingHaptic(phase: BreathingPhaseType): boolean {
     switch (phase) {
       case 'inhale':
       case 'test-inhale':
-        // Gentle swelling pulse for expanding chest/lungs: 35ms -> 45ms -> 55ms
-        navigator.vibrate?.([35, 60, 45, 60, 55]);
+        playBreathingHaptic('inhale');
         return true;
 
       case 'exhale':
       case 'test-exhale':
-        // Gentle soothing release pulse: 50ms -> 35ms -> 20ms
-        navigator.vibrate?.([50, 70, 35, 80, 20]);
+        playBreathingHaptic('exhale');
         return true;
 
       case 'hold':
-        // Ultra-soft single micro-ping
-        navigator.vibrate?.(15);
+        playBreathingHaptic('hold');
         return true;
 
       case 'test':
-        // Double pleasant acknowledgement pulse
-        navigator.vibrate?.([35, 60, 35]);
+        playBreathingHaptic('cycle');
         return true;
 
       default:

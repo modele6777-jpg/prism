@@ -19,7 +19,14 @@ import {
   setDevicePerfOverride,
   getPerfProfile,
 } from '@/lib/perfMode';
-import { playAudioHaptic, isAudioHapticsEnabled, setAudioHapticsEnabled } from '@/lib/audioHaptics';
+import {
+  playAudioHaptic,
+  playSuccessHaptic,
+  playBreathingHaptic,
+  playCardHaptic,
+  isAudioHapticsEnabled,
+  setAudioHapticsEnabled,
+} from '@/lib/audioHaptics';
 
 const SECTIONS = [
   { id: 'basic', label: '기본 정보', icon: User, color: 'oklch(0.75 0.12 50)', desc: '이름 · 생년월일 · 성별' },
@@ -703,18 +710,50 @@ export default function ProfileModal({ isOpen, onClose }: { isOpen: boolean; onC
                 </span>
               </div>
               <p className="text-[11px] text-white/50 leading-relaxed">
-                타로 카드 뽑기, 저장 완료, 탭 인터랙션 시 섬세한 음향과 기기 진동(지원 기기)으로 물리적 카드와 스위치의 촉감을 생생하게 재현합니다.
+                성공 이벤트(선명한 샤프 펄스), 호흡 수련(부드러운 리듬 팽창·이완), 명상 싱잉볼, 타로 카드 드로우 등 인터랙션 카테고리별 정밀 촉감과 Web Audio 사운드를 생생하게 재현합니다.
               </p>
+
+              {/* 카테고리별 패턴 체험 */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => playSuccessHaptic('sharp')}
+                  className="text-[10px] font-medium px-2 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 transition-all cursor-pointer flex items-center justify-center gap-1"
+                >
+                  ⚡ 샤프 펄스
+                </button>
+                <button
+                  type="button"
+                  onClick={() => playBreathingHaptic('inhale')}
+                  className="text-[10px] font-medium px-2 py-1.5 rounded-lg border border-teal-500/30 bg-teal-500/10 text-teal-300 hover:bg-teal-500/20 transition-all cursor-pointer flex items-center justify-center gap-1"
+                >
+                  🫁 호흡 리듬
+                </button>
+                <button
+                  type="button"
+                  onClick={() => playBreathingHaptic('bell')}
+                  className="text-[10px] font-medium px-2 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 transition-all cursor-pointer flex items-center justify-center gap-1"
+                >
+                  🔔 싱잉볼
+                </button>
+                <button
+                  type="button"
+                  onClick={() => playCardHaptic('draw')}
+                  className="text-[10px] font-medium px-2 py-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 transition-all cursor-pointer flex items-center justify-center gap-1"
+                >
+                  🃏 카드 드로우
+                </button>
+              </div>
+
               <div className="flex items-center justify-between pt-1 border-t border-white/5 gap-2">
                 <button
                   type="button"
                   onClick={() => {
-                    playAudioHaptic('card_draw');
-                    setTimeout(() => playAudioHaptic('save_success', { volume: 0.8 }), 220);
+                    playSuccessHaptic('save');
                   }}
                   className="text-[11px] font-medium px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 text-white/70 hover:text-white transition-all cursor-pointer"
                 >
-                  🔔 촉감 사운드 테스트
+                  ✨ 저장 확정 챠임
                 </button>
                 <button
                   type="button"
@@ -723,7 +762,7 @@ export default function ProfileModal({ isOpen, onClose }: { isOpen: boolean; onC
                     setAudioHaptics(next);
                     setAudioHapticsEnabled(next);
                     if (next) {
-                      playAudioHaptic('save_success');
+                      playSuccessHaptic('sharp');
                     }
                   }}
                   className={`text-[11px] font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
