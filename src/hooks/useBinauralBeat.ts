@@ -41,8 +41,10 @@ export function useBinauralBeat(currentAppId?: string) {
 
     if (!moodState.isPlaying) {
       void moodSoundEngine.startMood(targetMood);
+      moodSoundEngine.setPickerOpen(true);
+    } else {
+      moodSoundEngine.togglePicker();
     }
-    moodSoundEngine.setPickerOpen(true);
   }, [moodState.isPlaying, currentAppId]);
 
   const start = useCallback((targetAppId?: string) => {

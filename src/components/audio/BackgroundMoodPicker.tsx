@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Volume2,
@@ -6,11 +6,7 @@ import {
   Play,
   Pause,
   X,
-  Headphones,
   Sparkles,
-  Waves,
-  Wind,
-  Check,
 } from 'lucide-react';
 import { useMoodSound } from '@/hooks/useMoodSound';
 import { MoodSoundId } from '@/lib/moodSoundEngine';
@@ -89,349 +85,183 @@ export function BackgroundMoodPicker() {
     closePicker,
   } = useMoodSound();
 
+  const barRef = useRef<HTMLDivElement | null>(null);
+
   const atmosphere = useMemo(() => {
     return ENVIRONMENT_ATMOSPHERES[activeMood] || ENVIRONMENT_ATMOSPHERES.rain;
   }, [activeMood]);
+
+  // Click outside to collapse the horizontal bar
+  useEffect(() => {
+    if (!isPickerOpen) return;
+    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
+      if (barRef.current && !barRef.current.contains(e.target as Node)) {
+        closePicker();
+      }
+    };
+    const timer = setTimeout(() => {
+      document.addEventListener('mousedown', handleOutsideClick);
+      document.addEventListener('touchstart', handleOutsideClick, { passive: true });
+    }, 100);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('touchstart', handleOutsideClick);
+    };
+  }, [isPickerOpen, closePicker]);
 
   if (!isPickerOpen) return null;
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 isolate">
-        {/* Base Dark Dimmer */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={closePicker}
-          className="absolute inset-0 bg-black/65 backdrop-blur-md"
-        />
-
-        {/* 🌟 Animated Atmospheric Backdrop Vignette (Cross-fades smoothly on mood change) */}
-        <AnimatePresence mode="sync">
-          <motion.div
-            key={`backdrop-vignette-${activeMood}`}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background: `radial-gradient(circle at 50% 40%, ${atmosphere.vignetteColor} 0%, rgba(0, 0, 0, 0.85) 65%, #000000 100%)`,
-            }}
-          />
-        </AnimatePresence>
-
-        {/* Modal Window */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.94, y: 15 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.94, y: 15 }}
-          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-          className="relative w-full max-w-lg rounded-3xl bg-zinc-950/90 border p-5 md:p-6 shadow-2xl backdrop-blur-2xl text-white space-y-5 overflow-hidden transition-colors duration-700"
+      <motion.div
+        ref={barRef}
+        initial={{ opacity: 0, scale: 0.94, y: -4 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.94, y: -4 }}
+        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+        className="fixed top-safe-2 left-2 sm:left-4 md:top-safe-4 md:left-6 z-[350] h-11 flex items-center gap-1.5 p-1 pl-1.5 pr-2 rounded-full bg-zinc-950/94 backdrop-blur-2xl border text-white max-w-[calc(100vw-16px)] sm:max-w-fit shadow-2xl transition-colors select-none isolate"
+        style={{
+          borderColor: `${currentPreset.color}50`,
+          boxShadow: `0 8px 30px -4px rgba(0, 0, 0, 0.75), 0 0 16px ${atmosphere.vignetteColor}`,
+        }}
+      >
+        {/* Leading Play/Pause & Active Mood Glyph Button (Maintains Button Height & Visual State) */}
+        <button
+          type="button"
+          onClick={() => togglePlay()}
+          className="relative w-8 h-8 rounded-full flex items-center justify-center shrink-0 cursor-pointer active:scale-90 transition-transform group"
           style={{
-            borderColor: `${currentPreset.color}45`,
-            boxShadow: `0 25px 60px -15px ${atmosphere.vignetteColor}, 0 0 30px ${atmosphere.vignetteColor}`,
+            backgroundColor: `${currentPreset.color}25`,
+            border: `1px solid ${currentPreset.color}60`,
+            boxShadow: `0 0 12px ${atmosphere.particleGlow}`,
           }}
+          title={isPlaying ? `${currentPreset.name} 일시정지` : `${currentPreset.name} 재생`}
         >
-          {/* 🌈 Animated Environmental Background Layers inside Modal */}
-          <AnimatePresence mode="sync">
-            <motion.div
-              key={`modal-env-${activeMood}`}
-              initial={{ opacity: 0, scale: 1.05 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.96 }}
-              transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
-              className="absolute inset-0 pointer-events-none overflow-hidden rounded-3xl"
-            >
-              {/* 1. Base Gradient Atmosphere */}
-              <div
-                className="absolute inset-0"
-                style={{ background: atmosphere.gradient }}
-              />
-
-              {/* 2. Luminous Flowing Core Halo */}
-              <motion.div
-                animate={{
-                  scale: [1, 1.2, 1],
-                  opacity: [0.4, 0.65, 0.4],
-                  x: ['-5%', '5%', '-5%'],
-                }}
-                transition={{
-                  duration: 6,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
-                }}
-                className="absolute -top-20 left-1/2 -translate-x-1/2 w-[420px] h-[240px] blur-3xl rounded-full"
-                style={{ background: atmosphere.radialCore }}
-              />
-
-              {/* 3. Secondary Flowing Light Cloud */}
-              <motion.div
-                animate={{
-                  scale: [1.15, 0.9, 1.15],
-                  opacity: [0.25, 0.45, 0.25],
-                  y: ['-6%', '6%', '-6%'],
-                }}
-                transition={{
-                  duration: 7.5,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
-                }}
-                className="absolute -bottom-16 -right-10 w-80 h-64 blur-3xl rounded-full"
-                style={{ backgroundColor: atmosphere.secondaryColor }}
-              />
-
-              {/* 4. Environmental Watermark Glyph */}
-              <div className="absolute top-4 right-5 text-8xl opacity-[0.06] select-none pointer-events-none filter blur-[1px]">
-                {currentPreset.emoji}
-              </div>
-
-              {/* 5. Subtle Starlight / Droplet Texture Grid */}
-              <div className="absolute inset-0 bg-[radial-gradient(#ffffff0f_1px,transparent_1px)] [background-size:22px_22px] opacity-40 mix-blend-overlay" />
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Header */}
-          <div className="flex items-center justify-between pb-3 border-b border-white/10 relative z-10">
-            <div className="flex items-center gap-3">
-              <motion.div
-                key={`header-icon-${activeMood}`}
-                initial={{ scale: 0.8, rotate: -15 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ type: 'spring', damping: 15, stiffness: 300 }}
-                className="w-11 h-11 rounded-2xl flex items-center justify-center border shadow-lg transition-colors"
-                style={{
-                  backgroundColor: `${currentPreset.color}25`,
-                  borderColor: `${currentPreset.color}55`,
-                  color: currentPreset.color,
-                  boxShadow: `0 0 16px ${atmosphere.particleGlow}`,
-                }}
-              >
-                <Headphones size={22} className={isPlaying ? 'animate-pulse' : ''} />
-              </motion.div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-base font-bold text-white tracking-tight">배경 무드 사운드 피커</h3>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-white/70 font-semibold border border-white/10">
-                    Ambient Moods
-                  </span>
-                </div>
-                {/* Environmental Keyword Banner with Smooth Fade */}
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={`desc-banner-${activeMood}`}
-                    initial={{ opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 4 }}
-                    transition={{ duration: 0.35, ease: 'easeOut' }}
-                    className="flex items-center gap-1.5 text-xs text-white/70 mt-0.5"
-                  >
-                    <Sparkles size={11} style={{ color: currentPreset.color }} className="animate-spin shrink-0" />
-                    <span className="line-clamp-1">{atmosphere.keyword}</span>
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={closePicker}
-              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white border border-white/10 transition-colors cursor-pointer"
-              title="닫기"
-            >
-              <X size={16} />
-            </button>
-          </div>
-
-          {/* Preset Sound Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[48vh] overflow-y-auto pr-1 custom-scrollbar relative z-10">
-            {presets.map((preset) => {
-              const isSelected = activeMood === preset.id;
-              const isCurrentlyActiveAndPlaying = isSelected && isPlaying;
-              const presetAtmosphere = ENVIRONMENT_ATMOSPHERES[preset.id];
-
-              return (
-                <button
-                  key={preset.id}
-                  type="button"
-                  onClick={() => {
-                    if (isSelected) {
-                      togglePlay();
-                    } else {
-                      setMood(preset.id);
-                      if (!isPlaying) togglePlay(preset.id);
-                    }
+          {isPlaying ? (
+            <div className="flex items-end gap-[2px] h-3 px-0.5">
+              {[0.4, 1, 0.6].map((scale, i) => (
+                <motion.span
+                  key={i}
+                  animate={{ scaleY: [scale, 1, 0.3, scale] }}
+                  transition={{
+                    duration: 0.65 + i * 0.15,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
                   }}
-                  className={`group relative p-3.5 rounded-2xl border text-left transition-all duration-300 cursor-pointer overflow-hidden ${
-                    isSelected
-                      ? 'bg-white/15 border-white/40 shadow-xl scale-[1.01]'
-                      : 'bg-white/[0.04] hover:bg-white/[0.08] border-white/10 hover:border-white/20'
-                  }`}
-                  style={
-                    isSelected
-                      ? {
-                          borderColor: `${preset.color}80`,
-                          boxShadow: `0 0 20px ${presetAtmosphere?.vignetteColor || 'transparent'}`,
-                        }
-                      : {}
+                  className="w-[2px] h-3 rounded-full origin-bottom"
+                  style={{ backgroundColor: currentPreset.color }}
+                />
+              ))}
+            </div>
+          ) : (
+            <Play
+              size={13}
+              fill="currentColor"
+              className="ml-0.5 text-white/90 group-hover:scale-110 transition-transform"
+              style={{ color: currentPreset.color }}
+            />
+          )}
+        </button>
+
+        {/* Vertical Divider */}
+        <div className="h-4 w-[1px] bg-white/15 shrink-0" />
+
+        {/* Horizontal Sound Presets Strip (가로로 펼쳐지는 앰비언트 무드 칩 목록) */}
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 max-w-[calc(100vw-180px)] sm:max-w-none">
+          {presets.map((preset) => {
+            const isSelected = activeMood === preset.id;
+            const isCurrentlyActiveAndPlaying = isSelected && isPlaying;
+
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => {
+                  if (isSelected) {
+                    togglePlay();
+                  } else {
+                    setMood(preset.id);
+                    if (!isPlaying) togglePlay(preset.id);
                   }
-                >
-                  {/* Active selection glowing ambient sweep */}
-                  {isSelected && (
-                    <motion.div
-                      layoutId="active-mood-glow"
-                      transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                      className="absolute inset-0 opacity-20 pointer-events-none"
-                      style={{ backgroundColor: preset.color }}
-                    />
-                  )}
-
-                  <div className="flex items-start justify-between relative z-10">
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-2xl transition-transform group-hover:scale-110 duration-200">
-                        {preset.emoji}
-                      </span>
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-bold text-white group-hover:text-white transition-colors">
-                            {preset.name}
-                          </span>
-                        </div>
-                        <span className="text-[10px] text-white/45 block font-mono">
-                          {preset.nameEn}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                      {isCurrentlyActiveAndPlaying ? (
-                        <div className="flex items-center gap-0.5 px-2 py-1 rounded-full bg-emerald-500/25 border border-emerald-400/50 text-emerald-300 text-[10px] font-bold shadow-[0_0_10px_rgba(52,211,153,0.3)]">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping mr-0.5" />
-                          <span>재생 중</span>
-                        </div>
-                      ) : isSelected ? (
-                        <span
-                          className="px-2 py-0.5 rounded-full text-[10px] font-bold border transition-colors"
-                          style={{
-                            backgroundColor: `${preset.color}20`,
-                            borderColor: `${preset.color}50`,
-                            color: preset.color,
-                          }}
-                        >
-                          선택됨
-                        </span>
-                      ) : (
-                        <span className="text-[10px] text-white/40 px-1.5 py-0.5 rounded bg-white/5">
-                          {preset.badge}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <p className="text-[11px] text-white/60 mt-2 line-clamp-2 leading-relaxed relative z-10">
-                    {preset.description}
-                  </p>
-
-                  {/* Equalizer animation wave when playing */}
-                  {isCurrentlyActiveAndPlaying && (
-                    <div className="flex items-center gap-1 mt-2.5 pt-2 border-t border-white/10 relative z-10">
-                      {[0.3, 0.7, 0.4, 0.9, 0.6, 0.8, 0.5, 0.7].map((height, i) => (
-                        <motion.div
-                          key={i}
-                          animate={{
-                            scaleY: [0.3, 1, 0.2, 0.9, 0.4],
-                          }}
-                          transition={{
-                            duration: 0.8 + (i % 3) * 0.2,
-                            repeat: Infinity,
-                            ease: 'easeInOut',
-                            delay: i * 0.1,
-                          }}
-                          className="w-1 h-3 rounded-full origin-bottom"
-                          style={{ backgroundColor: preset.color }}
-                        />
-                      ))}
-                      <span className="text-[10px] text-white/60 ml-1.5 font-sans">
-                        실시간 앰비언트 음향 합성 중
-                      </span>
-                    </div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Master Control & Volume Slider */}
-          <div className="p-4 rounded-2xl bg-black/60 border border-white/10 space-y-3 relative z-10 backdrop-blur-xl">
-            <div className="flex items-center justify-between">
-              {/* Main Play / Pause Button */}
-              <button
-                type="button"
-                onClick={() => togglePlay()}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs transition-all shadow-md cursor-pointer ${
-                  isPlaying
-                    ? 'bg-amber-500 hover:bg-amber-400 text-black shadow-amber-500/25'
-                    : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/25'
+                }}
+                className={`h-7 px-2 sm:px-2.5 rounded-full flex items-center gap-1.5 shrink-0 text-xs transition-all duration-200 cursor-pointer select-none ${
+                  isSelected
+                    ? 'text-white font-bold shadow-md'
+                    : 'bg-white/[0.04] hover:bg-white/10 text-white/70 hover:text-white border border-transparent'
                 }`}
+                style={
+                  isSelected
+                    ? {
+                        backgroundColor: `${preset.color}35`,
+                        border: `1px solid ${preset.color}80`,
+                        boxShadow: `0 0 10px ${preset.color}45`,
+                      }
+                    : {}
+                }
+                title={`${preset.name} (${preset.nameEn}) - ${preset.description}`}
               >
-                {isPlaying ? (
-                  <>
-                    <Pause size={15} />
-                    <span>사운드 일시정지</span>
-                  </>
-                ) : (
-                  <>
-                    <Play size={15} fill="currentColor" />
-                    <span>{currentPreset.name} 재생하기</span>
-                  </>
-                )}
+                <span className="text-xs leading-none">{preset.emoji}</span>
+                <span className="text-[11px] sm:text-xs whitespace-nowrap leading-none">
+                  {preset.name}
+                </span>
+
+                {/* Micro animated indicator for active playing sound */}
+                {isCurrentlyActiveAndPlaying ? (
+                  <span
+                    className="w-1.5 h-1.5 rounded-full animate-ping ml-0.5 shrink-0"
+                    style={{ backgroundColor: preset.color }}
+                  />
+                ) : isSelected ? (
+                  <span
+                    className="w-1 h-1 rounded-full ml-0.5 shrink-0"
+                    style={{ backgroundColor: preset.color }}
+                  />
+                ) : null}
               </button>
+            );
+          })}
+        </div>
 
-              <div className="flex items-center gap-2 text-xs font-mono text-white/70">
-                <span>{currentPreset.emoji}</span>
-                <span className="font-bold text-white">{currentPreset.name}</span>
-              </div>
-            </div>
+        {/* Vertical Divider */}
+        <div className="h-4 w-[1px] bg-white/15 shrink-0" />
 
-            {/* Volume Control */}
-            <div className="flex items-center gap-3 pt-2 border-t border-white/5">
-              <button
-                type="button"
-                onClick={() => setVolume(volume > 0 ? 0 : 0.6)}
-                className="text-white/60 hover:text-white transition-colors cursor-pointer"
-                title={volume === 0 ? '음소거 해제' : '음소거'}
-              >
-                {volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
-              </button>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value={volume}
-                onChange={(e) => setVolume(parseFloat(e.target.value))}
-                className="flex-1 h-1.5 rounded-full bg-white/20 accent-emerald-400 cursor-pointer"
-              />
-              <span className="text-xs font-mono text-white/50 w-9 text-right">
-                {Math.round(volume * 100)}%
-              </span>
-            </div>
-          </div>
+        {/* Compact Volume Control */}
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            type="button"
+            onClick={() => setVolume(volume > 0 ? 0 : 0.6)}
+            className="w-7 h-7 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
+            title={volume === 0 ? '음소거 해제' : '음소거'}
+          >
+            {volume === 0 ? <VolumeX size={14} /> : <Volume2 size={14} />}
+          </button>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value={volume}
+            onChange={(e) => setVolume(parseFloat(e.target.value))}
+            className="w-12 sm:w-16 h-1 rounded-full bg-white/20 accent-emerald-400 cursor-pointer"
+            title={`볼륨: ${Math.round(volume * 100)}%`}
+          />
+        </div>
 
-          {/* Footer note */}
-          <div className="flex items-center justify-between text-[11px] text-white/40 pt-1 relative z-10">
-            <span>✨ 탭을 닫아도 배경에서 계속 재생됩니다.</span>
-            <button
-              type="button"
-              onClick={closePicker}
-              className="text-emerald-400 hover:underline font-medium cursor-pointer"
-            >
-              적용하고 닫기
-            </button>
-          </div>
-        </motion.div>
-      </div>
+        {/* Vertical Divider */}
+        <div className="h-4 w-[1px] bg-white/15 shrink-0" />
+
+        {/* Collapse / Close Button */}
+        <button
+          type="button"
+          onClick={closePicker}
+          className="w-7 h-7 rounded-full flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 active:scale-90 transition-all shrink-0 cursor-pointer"
+          title="배경음 패널 접기"
+          aria-label="배경음 패널 접기"
+        >
+          <X size={14} />
+        </button>
+      </motion.div>
     </AnimatePresence>
   );
 }
