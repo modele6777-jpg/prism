@@ -14,6 +14,7 @@ import { playTTS, playTTSInChunks, prefetchTTS, stopTTS, useTTSActive, useTTSSta
 import { LucyTarotAdviceCard } from './LucyTarotAdviceCard';
 import { TarotResultShareButton } from './TodayTarotShareModal';
 import { TarotCardZoomModal } from './TarotCardZoomModal';
+import { TarotFlippingCard } from './TarotFlippingCard';
 import {
   extractOracleConciseSummary,
   extractGivenName,
@@ -1498,7 +1499,12 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
     const currentInsight = insights[selectedCardIdx] || insights[0];
 
     const renderCardCard = (card: TarotCard, insight: CardInsight, idx: number) => (
-      <div className="p-5 sm:p-6 rounded-3xl bg-white/[0.03] border border-white/10 space-y-4 shadow-lg backdrop-blur-sm">
+      <motion.div
+        initial={{ opacity: 0, y: 22, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.55, delay: idx * 0.12, ease: [0.16, 1, 0.3, 1] }}
+        className="p-5 sm:p-6 rounded-3xl bg-white/[0.03] border border-white/10 space-y-4 shadow-lg backdrop-blur-sm"
+      >
         {/* Card Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
           <div className="flex items-center gap-3.5">
@@ -1577,7 +1583,7 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
             </div>
           )}
         </div>
-      </div>
+      </motion.div>
     );
 
     return (
@@ -2152,21 +2158,20 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
             <div className="glass p-4 sm:p-5 rounded-3xl bg-white/[0.03] border border-amber-400/25 flex flex-col md:flex-row items-center justify-between gap-4 backdrop-blur-xl">
               <div className="flex flex-wrap items-center justify-around gap-3 flex-1 w-full">
                 {drawnCards.map((card, idx) => (
-                  <div key={card.id} className="flex items-center gap-3">
-                    <div
+                  <motion.div
+                    key={card.id || idx}
+                    initial={{ opacity: 0, scale: 0.85, y: 15 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: idx * 0.12, ease: [0.16, 1, 0.3, 1] }}
+                    className="flex items-center gap-3"
+                  >
+                    <TarotFlippingCard
+                      card={card}
+                      slotName={`#${idx + 1}`}
+                      index={idx}
+                      size="sm"
                       onClick={() => setZoomedCard({ card, slotName: `#${idx + 1} ${slotPositions[idx]}` })}
-                      className="group/thumb relative w-12 h-18 sm:w-14 sm:h-20 rounded-lg overflow-hidden border border-amber-400/40 hover:border-amber-400 shadow-md hover:shadow-amber-500/20 shrink-0 cursor-zoom-in transition-all"
-                      title="클릭하여 카드 크게 보기"
-                    >
-                      <img
-                        src={getTarotCardImageUrl(card)}
-                        alt={card.nameKo}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover/thumb:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center transition-opacity">
-                        <ZoomIn className="w-3.5 h-3.5 text-amber-300 drop-shadow" />
-                      </div>
-                    </div>
+                    />
                     <div>
                       <span className="text-[10px] font-mono text-amber-400/80 block uppercase tracking-wider">
                         {slotPositions[idx]}
@@ -2174,7 +2179,7 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
                       <h4 className="text-sm sm:text-base font-bold text-white font-serif">{card.nameKo}</h4>
                       <span className="text-[11px] text-zinc-400">{card.keywords.slice(0, 2).join(' · ')}</span>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
               <div className="flex items-center justify-center w-full md:w-auto pt-2 md:pt-0 shrink-0">

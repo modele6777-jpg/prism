@@ -16,6 +16,7 @@ import {
   Moon,
   Sun,
   RefreshCw,
+  RotateCw,
   ChevronDown,
   Zap,
   Eye,
@@ -97,6 +98,7 @@ import { TodayTarotNarrationModal } from "@/components/trinity/TodayTarotNarrati
 import { LucyTarotAdviceCard } from "@/components/trinity/LucyTarotAdviceCard";
 import { TodayTarotShareButton } from "@/components/trinity/TodayTarotShareModal";
 import { TarotCardZoomModal } from "@/components/trinity/TarotCardZoomModal";
+import { TarotFlippingCard } from "@/components/trinity/TarotFlippingCard";
 import { TarotCard, TAROT_DECK, getTarotCardImageUrl } from "@/data/tarotData";
 import { shuffleCardDeck } from "@/lib/cardShuffle";
 import { playTTS, playTTSInChunks, playConversation, stopTTS, useTTSActive, useTTSState, prefetchTTS, prepareNaturalSpeechText } from "@/utils/tts";
@@ -1499,6 +1501,7 @@ function playDailyCardChimeAsync() {
   const [tarotResult, setTarotResult] = useState<string | null>(null);
   const [drawnCards, setDrawnCards] = useState<TarotCard[] | null>(null);
   const [zoomedCard, setZoomedCard] = useState<{ card: TarotCard; slotName?: string } | null>(null);
+  const [cardFlipCycle, setCardFlipCycle] = useState(0);
   const [hideTarotPopup, setHideTarotPopup] = useState(false);
   const [tarotSubMessages, setTarotSubMessages] = useState<
     { role: "user" | "model"; content: string }[]
@@ -3208,64 +3211,54 @@ function playDailyCardChimeAsync() {
                           <div className="flex-1 flex flex-col overflow-hidden relative w-full text-left">
                             <div className="flex-1 overflow-y-auto no-scrollbar space-y-5 pb-6">
                               {drawnCards && (
-                                <div className="space-y-2">
-                                  <div className="flex items-center justify-center gap-2 flex-wrap text-center">
-                                    <p className="text-[10px] text-yellow-500/80 font-bold uppercase tracking-widest">
-                                      {tarotSpreadRecommendation.name}
+                                <motion.div
+                                  initial={{ opacity: 0, y: 12 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                                  className="space-y-2.5"
+                                >
+                                  <div className="flex items-center justify-between gap-2 flex-wrap px-1 text-center">
+                                    <p className="text-[10px] text-yellow-500/80 font-bold uppercase tracking-widest flex items-center gap-1.5">
+                                      <Sparkles size={11} className="text-yellow-400 animate-pulse" />
+                                      <span>{tarotSpreadRecommendation.name} ({drawnCards.length}장 스프레드)</span>
                                     </p>
-                                    <span className="text-[10px] text-yellow-300/60 font-sans flex items-center gap-1">
-                                      <ZoomIn size={11} className="text-yellow-400" />
-                                      <span>(카드 클릭 시 크게 보기)</span>
-                                    </span>
-                                  </div>
-                                  <div className="flex gap-3 flex-wrap justify-center p-3 max-w-full">
-                                  {drawnCards.map((c, i) => {
-                                    const visual = getTarotCardVisual(c);
-                                    const positionLabel = tarotSpreadRecommendation.positions[i] || `${i + 1}번`;
-                                    return (
-                                      <div
-                                        key={i}
-                                        onClick={() => setZoomedCard({ card: c, slotName: positionLabel })}
-                                        className="w-20 min-h-[7.5rem] bg-zinc-900 border border-yellow-500/50 rounded-2xl flex flex-col items-center justify-between p-2 text-center shadow-[0_0_20px_rgba(234,179,8,0.2)] relative overflow-hidden group hover:border-yellow-400 hover:shadow-[0_0_25px_rgba(234,179,8,0.4)] transition-all duration-300 cursor-zoom-in active:scale-95"
-                                        title={`${c.nameKo} 카드 크게 보기`}
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => setCardFlipCycle((prev) => prev + 1)}
+                                        className="text-[10px] px-2.5 py-1 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 text-yellow-300 font-sans flex items-center gap-1.5 transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm"
+                                        title="카드 뒤집기 애니메이션 다시 재생"
                                       >
-                                        <img 
-                                          src={getTarotCardImageUrl(c)} 
-                                          alt={c.name}
-                                          style={{ transform: c.reversed ? "rotate(180deg)" : undefined }}
-                                          className="absolute inset-0 w-full h-full object-cover z-0 opacity-80 group-hover:opacity-100 transition-all duration-300 group-hover:scale-105" 
-                                        />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/35 to-black/60 z-10 pointer-events-none" />
-                                        
-                                        {/* Hover Zoom Icon Badge */}
-                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity z-20 pointer-events-none">
-                                          <div className="w-6 h-6 rounded-full bg-yellow-500/90 text-black flex items-center justify-center shadow-lg">
-                                            <ZoomIn size={12} />
-                                          </div>
-                                        </div>
-
-                                        <div className="flex justify-between items-center w-full z-20 shrink-0 text-[6px] font-mono text-yellow-500/60">
-                                          <span className="truncate max-w-[70%]">{positionLabel}</span>
-                                          <Sparkles size={6} className="text-yellow-400 shrink-0" />
-                                        </div>
-
-                                        <div className="w-7 h-7 rounded-full bg-black/60 border border-yellow-500/20 flex items-center justify-center text-yellow-400 z-20 transition-all duration-300 group-hover:scale-110 shadow-inner">
-                                          {React.createElement(visual.icon, { size: 14, className: visual.color })}
-                                        </div>
-
-                                        <div className="text-center z-20 flex flex-col gap-0.5 w-full bg-black/60 py-1 rounded-lg border border-yellow-500/10 backdrop-blur-[1px] select-none">
-                                          <span className="font-bold text-yellow-300 text-[9px] leading-tight truncate px-1 font-sans">
-                                            {c.nameKo}
-                                          </span>
-                                          <span className="text-[6px] text-white/50 uppercase tracking-widest leading-none truncate px-1 font-mono">
-                                            {c.reversed ? "역방향" : c.name}
-                                          </span>
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
+                                        <RotateCw size={10} className="text-yellow-400" />
+                                        <span>뒤집기 다시 보기</span>
+                                      </button>
+                                      <span className="text-[10px] text-yellow-300/70 font-sans flex items-center gap-1">
+                                        <ZoomIn size={11} className="text-yellow-400" />
+                                        <span>(카드 클릭 시 3D 확대)</span>
+                                      </span>
+                                    </div>
                                   </div>
-                                </div>
+
+                                  {/* 3D Flipping Cards Spread Container */}
+                                  <div
+                                    key={`spread-cards-cycle-${cardFlipCycle}`}
+                                    className="flex gap-3.5 flex-wrap justify-center p-3 max-w-full"
+                                    style={{ perspective: 1200 }}
+                                  >
+                                    {drawnCards.map((c, i) => {
+                                      const positionLabel = tarotSpreadRecommendation.positions[i] || `${i + 1}번`;
+                                      return (
+                                        <TarotFlippingCard
+                                          key={`${c.id}-${i}-${cardFlipCycle}`}
+                                          card={c}
+                                          index={i}
+                                          slotName={positionLabel}
+                                          onClick={() => setZoomedCard({ card: c, slotName: positionLabel })}
+                                        />
+                                      );
+                                    })}
+                                  </div>
+                                </motion.div>
                               )}
 
                               {(tarotResult || isTarotGenerating) && (

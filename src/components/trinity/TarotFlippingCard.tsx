@@ -1,0 +1,306 @@
+import React, { useState } from 'react';
+import { motion } from 'motion/react';
+import {
+  Sparkles,
+  ZoomIn,
+  Flame,
+  Coins,
+  Compass,
+  Feather,
+  Sun,
+  Moon,
+  Eye,
+  Activity,
+  RefreshCw,
+  LucideIcon,
+} from 'lucide-react';
+import { type TarotCard, getTarotCardImageUrl } from '@/data/tarotData';
+
+export function getTarotCardVisualHelper(card: TarotCard | null | undefined): {
+  icon: LucideIcon;
+  color: string;
+} {
+  if (!card) return { icon: Sparkles, color: 'text-yellow-400' };
+
+  if (card.id?.startsWith('trinity_')) {
+    const map: Record<string, { icon: LucideIcon; color: string }> = {
+      trinity_01_source: { icon: Eye, color: 'text-indigo-400' },
+      trinity_02_geometry: { icon: RefreshCw, color: 'text-cyan-400' },
+      trinity_03_ascension: { icon: Sparkles, color: 'text-yellow-400' },
+      trinity_04_mirror: { icon: Activity, color: 'text-zinc-400' },
+    };
+    if (map[card.id]) return map[card.id];
+  }
+
+  if (card.type === 'major') {
+    return { icon: Sun, color: 'text-yellow-400' };
+  }
+  if (card.type === 'wands') {
+    return { icon: Flame, color: 'text-amber-500' };
+  }
+  if (card.type === 'cups') {
+    return { icon: Moon, color: 'text-blue-400' };
+  }
+  if (card.type === 'swords') {
+    return { icon: Feather, color: 'text-cyan-400' };
+  }
+  if (card.type === 'pentacles') {
+    return { icon: Coins, color: 'text-emerald-400' };
+  }
+  return { icon: Sparkles, color: 'text-yellow-400' };
+}
+
+export interface TarotFlippingCardProps {
+  card: TarotCard;
+  slotName?: string;
+  index?: number;
+  onClick?: () => void;
+  className?: string;
+  size?: 'sm' | 'md' | 'lg' | 'wide';
+  forceFlipped?: boolean;
+}
+
+export const TarotFlippingCard: React.FC<TarotFlippingCardProps> = ({
+  card,
+  slotName,
+  index = 0,
+  onClick,
+  className = '',
+  size = 'md',
+}) => {
+  const [isClicked, setIsClicked] = useState(false);
+  const visual = getTarotCardVisualHelper(card);
+  const isReversed = !!card.reversed;
+  const imageUrl = getTarotCardImageUrl(card);
+
+  // Slight initial tilt alternating by index (-8° to +8°) for magical natural spread feel
+  const tiltDeg = index % 2 === 0 ? -7 : 7;
+  const delay = Math.min(index * 0.16 + 0.08, 1.2);
+
+  // Size variations
+  let containerDimensions = 'w-20 min-h-[7.5rem]';
+  let imageTextSize = 'text-[9px]';
+  let subTextSize = 'text-[6px]';
+  let iconCircleSize = 'w-7 h-7';
+  let iconSize = 14;
+
+  if (size === 'sm') {
+    containerDimensions = 'w-16 min-h-[6.2rem]';
+    imageTextSize = 'text-[8px]';
+    subTextSize = 'text-[5px]';
+    iconCircleSize = 'w-6 h-6';
+    iconSize = 12;
+  } else if (size === 'lg') {
+    containerDimensions = 'w-28 min-h-[10.5rem]';
+    imageTextSize = 'text-[11px]';
+    subTextSize = 'text-[7px]';
+    iconCircleSize = 'w-9 h-9';
+    iconSize = 18;
+  } else if (size === 'wide') {
+    containerDimensions = 'w-22 min-h-[8.5rem]';
+    imageTextSize = 'text-[10px]';
+    subTextSize = 'text-[6.5px]';
+    iconCircleSize = 'w-7 h-7';
+    iconSize = 14;
+  }
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsClicked(true);
+    setTimeout(() => setIsClicked(false), 450);
+    onClick?.();
+  };
+
+  return (
+    <div
+      style={{ perspective: 1200 }}
+      className={`relative inline-block ${className}`}
+    >
+      <motion.div
+        initial={{
+          rotateY: 180,
+          scale: 0.6,
+          y: 42,
+          rotateZ: tiltDeg,
+          opacity: 0,
+        }}
+        animate={{
+          rotateY: 0,
+          scale: isClicked ? 1.12 : 1,
+          y: 0,
+          rotateZ: 0,
+          opacity: 1,
+        }}
+        transition={{
+          type: 'spring',
+          stiffness: 240,
+          damping: 17,
+          delay,
+        }}
+        whileHover={{
+          scale: 1.08,
+          y: -6,
+          rotateZ: index % 2 === 0 ? -2 : 2,
+          transition: { duration: 0.2 },
+        }}
+        whileTap={{ scale: 0.94 }}
+        onClick={handleClick}
+        style={{
+          transformStyle: 'preserve-3d',
+          WebkitTransformStyle: 'preserve-3d',
+        }}
+        className={`${containerDimensions} rounded-2xl cursor-zoom-in relative select-none group transition-shadow duration-300 shadow-[0_4px_24px_rgba(0,0,0,0.5)] hover:shadow-[0_0_30px_rgba(234,179,8,0.45)]`}
+        title={`${card.nameKo} 카드 크게 보기 (상세 보기)`}
+      >
+        {/* =========================================================================
+            FRONT FACE: Revealed Tarot Card
+            Visible at rotateY: 0deg, hidden when rotated 180deg
+           ========================================================================= */}
+        <div
+          style={{
+            backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden',
+            transform: 'rotateY(0deg)',
+          }}
+          className="absolute inset-0 w-full h-full bg-zinc-950 border border-yellow-500/50 group-hover:border-yellow-300 rounded-2xl flex flex-col items-center justify-between p-2 text-center overflow-hidden transition-colors duration-300 shadow-[0_0_20px_rgba(234,179,8,0.22)]"
+        >
+          {/* Subtle magical shimmer sweep on entrance */}
+          <motion.div
+            initial={{ x: '-120%', opacity: 0.8 }}
+            animate={{ x: '220%', opacity: 0 }}
+            transition={{
+              duration: 0.9,
+              delay: delay + 0.28,
+              ease: 'easeInOut',
+            }}
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-200/40 to-transparent skew-x-12 pointer-events-none z-30"
+          />
+
+          {/* Click Scale Wave Feedback */}
+          {isClicked && (
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0.9 }}
+              animate={{ scale: 1.4, opacity: 0 }}
+              transition={{ duration: 0.45, ease: 'easeOut' }}
+              className="absolute inset-0 rounded-2xl border-2 border-yellow-300 bg-yellow-400/20 pointer-events-none z-40"
+            />
+          )}
+
+          {/* Card Artwork Image */}
+          <img
+            src={imageUrl}
+            alt={card.name}
+            style={{ transform: isReversed ? 'rotate(180deg)' : undefined }}
+            className="absolute inset-0 w-full h-full object-cover z-0 opacity-85 group-hover:opacity-100 transition-all duration-300 group-hover:scale-105"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+
+          {/* Vignette Gradients */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/65 z-10 pointer-events-none" />
+
+          {/* Hover Zoom Icon Badge */}
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity z-20 pointer-events-none">
+            <div className="w-6 h-6 rounded-full bg-yellow-500/90 text-black flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
+              <ZoomIn size={12} />
+            </div>
+          </div>
+
+          {/* Position Slot Label */}
+          <div className="flex justify-between items-center w-full z-20 shrink-0 text-[6px] font-mono text-yellow-400/90 drop-shadow-sm">
+            <span className="truncate max-w-[70%] font-semibold tracking-wider">
+              {slotName || `${index + 1}번`}
+            </span>
+            <Sparkles size={7} className="text-yellow-400 shrink-0 animate-pulse" />
+          </div>
+
+          {/* Center Arcana Symbol Emblem */}
+          <div
+            className={`${iconCircleSize} rounded-full bg-black/65 border border-yellow-500/30 flex items-center justify-center text-yellow-400 z-20 transition-all duration-300 group-hover:scale-110 shadow-inner group-hover:border-yellow-400/60`}
+          >
+            {React.createElement(visual.icon, {
+              size: iconSize,
+              className: visual.color,
+            })}
+          </div>
+
+          {/* Card Names Pill */}
+          <div className="text-center z-20 flex flex-col gap-0.5 w-full bg-black/70 py-1 px-1 rounded-lg border border-yellow-500/20 backdrop-blur-[2px]">
+            <span
+              className={`font-bold text-yellow-300 ${imageTextSize} leading-tight truncate px-0.5 font-sans`}
+            >
+              {card.nameKo}
+            </span>
+            <span
+              className={`${subTextSize} text-white/60 uppercase tracking-widest leading-none truncate px-0.5 font-mono`}
+            >
+              {isReversed ? '역방향 (REVERSED)' : card.name}
+            </span>
+          </div>
+
+          {/* Reversed Indicator Ribbon (if reversed) */}
+          {isReversed && (
+            <div className="absolute top-1.5 right-1.5 px-1 py-0.5 rounded bg-rose-950/85 border border-rose-500/60 text-rose-200 text-[6px] font-mono font-bold uppercase z-25 pointer-events-none">
+              REV
+            </div>
+          )}
+        </div>
+
+        {/* =========================================================================
+            BACK FACE: Mystical Tarot Card Back
+            Visible at rotateY: 180deg (starts facing front, then turns away)
+           ========================================================================= */}
+        <div
+          style={{
+            backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden',
+            transform: 'rotateY(180deg)',
+          }}
+          className="absolute inset-0 w-full h-full bg-gradient-to-b from-[#1b1035] via-[#0c0818] to-black border border-amber-400/60 rounded-2xl flex flex-col items-center justify-between p-1.5 overflow-hidden shadow-2xl"
+        >
+          {/* Subtle cosmic radial aura */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(234,179,8,0.22),transparent_70%)] pointer-events-none" />
+
+          {/* Outer Filigree Gold Border */}
+          <div className="absolute inset-1 border border-amber-400/40 rounded-xl pointer-events-none" />
+
+          {/* Inner Ornate Frame with Luna & Sol */}
+          <div className="absolute inset-2 border border-amber-400/25 rounded-lg bg-black/40 flex flex-col justify-between items-center p-1 pointer-events-none">
+            {/* Top Moon & Star motif */}
+            <div className="flex items-center gap-1 opacity-80 text-[6px] text-amber-200">
+              <span>☽</span>
+              <span className="text-[7px] text-yellow-300">✧</span>
+              <span>☾</span>
+            </div>
+
+            {/* Sacred Geometry: Diamond + Concentric Gold Rings + Star */}
+            <div className="relative w-8 h-8 flex items-center justify-center">
+              <div className="absolute inset-0 rotate-45 border border-amber-500/35" />
+              <div className="absolute inset-1 rounded-full border border-yellow-400/45 animate-pulse" />
+              <div className="w-5 h-5 rounded-full border border-amber-400/60 bg-gradient-to-tr from-amber-600/40 to-yellow-300/40 flex items-center justify-center shadow-[0_0_8px_rgba(234,179,8,0.4)]">
+                <svg
+                  viewBox="0 0 24 24"
+                  className="w-3 h-3 text-yellow-200"
+                  fill="currentColor"
+                >
+                  <path d="M12 2l2.4 7.2h7.6l-6.2 4.5 2.4 7.3-6.2-4.5-6.2 4.5 2.4-7.3-6.2-4.5h7.6z" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Bottom Symmetrical Moon & Star motif */}
+            <div className="flex items-center gap-1 opacity-80 text-[6px] text-amber-200 rotate-180">
+              <span>☽</span>
+              <span className="text-[7px] text-yellow-300">✧</span>
+              <span>☾</span>
+            </div>
+          </div>
+
+          {/* Shimmer on back */}
+          <div className="absolute -inset-[100%] bg-gradient-to-tr from-transparent via-yellow-300/10 to-transparent rotate-45 pointer-events-none" />
+        </div>
+      </motion.div>
+    </div>
+  );
+};

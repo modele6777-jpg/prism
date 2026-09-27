@@ -65,11 +65,43 @@ export default function BottomNav() {
                     />
                   )
                 )}
-                <Icon
-                  size={isHome ? 15 : 16}
-                  style={{ color: isActive ? color : 'oklch(0.55 0.01 270)' }}
-                  className="relative transition-colors duration-150 stroke-[1.8]"
-                />
+                <motion.div
+                  className="relative flex items-center justify-center"
+                  animate={
+                    isActive
+                      ? legacy
+                        ? { scale: [1, 1.12, 1] }
+                        : {
+                            scale: [1, 1.14, 1.03, 1.11, 1],
+                            filter: [
+                              `drop-shadow(0 0 0px ${color}00)`,
+                              `drop-shadow(0 0 4px ${color}65)`,
+                              `drop-shadow(0 0 1.5px ${color}35)`,
+                              `drop-shadow(0 0 3.5px ${color}55)`,
+                              `drop-shadow(0 0 0px ${color}00)`,
+                            ],
+                          }
+                      : { scale: 1, filter: 'drop-shadow(0 0 0px transparent)' }
+                  }
+                  transition={
+                    isActive
+                      ? legacy
+                        ? { duration: 0.3 }
+                        : {
+                            duration: 2.4,
+                            repeat: Infinity,
+                            ease: 'easeInOut',
+                            times: [0, 0.28, 0.52, 0.76, 1],
+                          }
+                      : { duration: 0.18 }
+                  }
+                >
+                  <Icon
+                    size={isHome ? 15 : 16}
+                    style={{ color: isActive ? color : 'oklch(0.55 0.01 270)' }}
+                    className="relative transition-colors duration-150 stroke-[1.8]"
+                  />
+                </motion.div>
               </div>
             </button>
           );

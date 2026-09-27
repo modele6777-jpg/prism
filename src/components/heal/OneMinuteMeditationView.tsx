@@ -25,8 +25,17 @@ import {
   ChevronRight,
   ChevronDown,
   Info,
-  Wand2
+  Wand2,
+  SlidersHorizontal,
+  Vibrate,
+  Smartphone
 } from 'lucide-react';
+import {
+  isHapticsSupported,
+  getBreathingHapticSetting,
+  setBreathingHapticSetting,
+  triggerBreathingHaptic
+} from '@/lib/breathingHaptics';
 import {
   MEDITATION_THEMES,
   type MeditationTheme,
@@ -56,7 +65,7 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
   const uid = firebaseUser?.uid || 'guest';
 
   // Navigation tabs (custom prescription default first)
-  const [activeTab, setActiveTab] = useState<'custom' | 'session' | 'history'>('custom');
+  const [activeTab, setActiveTab] = useState<'custom' | 'session' | 'settings' | 'history'>('custom');
 
   // Custom AI Prescription State
   const [conditionInput, setConditionInput] = useState<string>('');
@@ -82,9 +91,44 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
 
+  // Haptic Feedback State (Mobile vibration pulses on Inhale & Exhale)
+  const [hapticEnabled, setHapticEnabled] = useState<boolean>(() => getBreathingHapticSetting());
+  const [hapticTestPhase, setHapticTestPhase] = useState<'idle' | 'inhale' | 'exhale'>('idle');
+
   // Breathing Phase (Inhale, Hold, Exhale)
   const [breathPhase, setBreathPhase] = useState<'inhale' | 'hold' | 'exhale'>('inhale');
   const [phaseSecondsLeft, setPhaseSecondsLeft] = useState<number>(activeTheme.breathingPattern.inhale);
+
+  // Toggle Haptic Feedback
+  const handleToggleHaptic = (forceState?: boolean) => {
+    const next = typeof forceState === 'boolean' ? forceState : !hapticEnabled;
+    setHapticEnabled(next);
+    setBreathingHapticSetting(next);
+    if (next) {
+      triggerBreathingHaptic('test');
+    }
+  };
+
+  // Test vibration pulse for Inhale or Exhale
+  const handleTestHaptic = (phase: 'inhale' | 'exhale') => {
+    setHapticTestPhase(phase);
+    triggerBreathingHaptic(phase === 'inhale' ? 'test-inhale' : 'test-exhale');
+    setTimeout(() => setHapticTestPhase('idle'), 1000);
+  };
+
+  // Sync external haptic setting changes
+  useEffect(() => {
+    const handleHapticSync = (e: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (typeof detail?.enabled === 'boolean') {
+        setHapticEnabled(detail.enabled);
+      }
+    };
+    window.addEventListener('breathing-haptic-setting-changed', handleHapticSync);
+    return () => {
+      window.removeEventListener('breathing-haptic-setting-changed', handleHapticSync);
+    };
+  }, []);
 
   // History & Stats State
   const [historyList, setHistoryList] = useState<OneMinuteMeditationRecord[]>([]);
@@ -240,12 +284,15 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
             // Transition to next phase
             if (breathPhase === 'inhale') {
               setBreathPhase('hold');
+              if (hapticEnabled) triggerBreathingHaptic('hold');
               return pattern.hold;
             } else if (breathPhase === 'hold') {
               setBreathPhase('exhale');
+              if (hapticEnabled) triggerBreathingHaptic('exhale');
               return pattern.exhale;
             } else {
               setBreathPhase('inhale');
+              if (hapticEnabled) triggerBreathingHaptic('inhale');
               return pattern.inhale;
             }
           }
@@ -259,7 +306,7 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [isRunning, secondsRemaining, breathPhase, handleCompleteSession]);
+  }, [isRunning, secondsRemaining, breathPhase, hapticEnabled, handleCompleteSession]);
 
   // Start / Pause (with auto Kore voice affirmation continuous playback)
   const handleTogglePlay = (overrideAffirmation?: string) => {
@@ -276,6 +323,9 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
       if (soundEnabled) {
         meditationSound.playSingingBowlBell();
         meditationSound.playTone(activeTheme.frequency);
+      }
+      if (hapticEnabled) {
+        triggerBreathingHaptic('inhale');
       }
 
       // Auto-play voice affirmation continuously with breathing gaps
@@ -498,39 +548,51 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
       <div className="w-full flex flex-col items-center text-center space-y-3 mb-6">
         <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold tracking-wider">
           <Sparkles size={14} className="animate-spin text-emerald-400" />
-          <span>AURA 1-MINUTE MINDFULNESS</span>
+          <span>AURA BREATHING STUDIO · 1-MINUTE MINDFULNESS</span>
         </div>
         <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight">
-          AURA 1분 명상 <span className="text-emerald-400 text-lg md:text-xl font-medium font-sans">· 60s Micro Healing</span>
+          AURA 호흡 스튜디오 <span className="text-emerald-400 text-lg md:text-xl font-medium font-sans">· Breathing Studio</span>
         </h2>
         <p className="text-xs md:text-sm text-white/60 max-w-xl leading-relaxed break-keep">
-          하루 60초, 과부하된 뇌파를 알파파로 이완시키고 흩어진 생체 오라 에너지를 즉각 정렬하는 마이크로 명상입니다.
+          하루 60초, 과부하된 뇌파를 알파파로 이완시키고 흩어진 생체 오라 에너지를 즉각 정렬하는 마이크로 호흡 명상 스튜디오입니다.
         </p>
 
         {/* Top Feature Nav Tabs */}
         <div className="flex items-center gap-1 p-1 bg-white/5 border border-white/10 rounded-2xl mt-3 backdrop-blur-md">
           <button
             onClick={() => setActiveTab('custom')}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'custom'
                 ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/25'
                 : 'text-white/50 hover:text-white hover:bg-white/5'
             }`}
           >
             <Sparkles size={14} />
-            <span>맞춤 명상 처방</span>
+            <span>맞춤 처방</span>
           </button>
 
           <button
             onClick={() => setActiveTab('session')}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'session'
                 ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/25'
                 : 'text-white/50 hover:text-white hover:bg-white/5'
             }`}
           >
             <Timer size={14} />
-            <span>1분 명상 시작</span>
+            <span>1분 호흡 세션</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+              activeTab === 'settings'
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/25'
+                : 'text-white/50 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <SlidersHorizontal size={14} />
+            <span>스튜디오 설정</span>
           </button>
 
           <button
@@ -538,14 +600,14 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
               setActiveTab('history');
               refreshHistory();
             }}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'history'
                 ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/25'
                 : 'text-white/50 hover:text-white hover:bg-white/5'
             }`}
           >
             <History size={14} />
-            <span>명상 기록실 ({stats.totalSessions})</span>
+            <span>기록실 ({stats.totalSessions})</span>
           </button>
         </div>
       </div>
@@ -598,7 +660,7 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
                 </div>
               )}
 
-              {/* Sound & Mode Controls Top Bar */}
+              {/* Sound & Mode & Haptic Controls Top Bar */}
               <div className="w-full flex items-center justify-between mb-4 px-2">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
@@ -607,18 +669,48 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
                   </span>
                 </div>
 
-                <button
-                  onClick={toggleSound}
-                  title={soundEnabled ? '솔페지오 주파수 사운드 끄기' : '사운드 켜기'}
-                  className={`p-2 rounded-xl border transition-all text-xs flex items-center gap-1.5 ${
-                    soundEnabled
-                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm'
-                      : 'bg-white/5 text-white/40 border-white/10 hover:text-white'
-                  }`}
-                >
-                  {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
-                  <span className="text-[11px] font-medium">{soundEnabled ? '사운드 ON' : '사운드 OFF'}</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  {/* Haptic Feedback Quick Toggle */}
+                  <button
+                    type="button"
+                    onClick={() => handleToggleHaptic()}
+                    title={hapticEnabled ? '들숨·날숨 햅틱 진동 끄기' : '들숨·날숨 햅틱 진동 켜기'}
+                    className={`px-2.5 py-1.5 rounded-xl border transition-all text-xs flex items-center gap-1.5 cursor-pointer ${
+                      hapticEnabled
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm'
+                        : 'bg-white/5 text-white/40 border-white/10 hover:text-white'
+                    }`}
+                  >
+                    <Vibrate size={14} className={hapticEnabled && isRunning ? 'animate-pulse text-emerald-400' : ''} />
+                    <span className="text-[11px] font-medium">햅틱 {hapticEnabled ? 'ON' : 'OFF'}</span>
+                  </button>
+
+                  {/* Sound Toggle */}
+                  <button
+                    type="button"
+                    onClick={toggleSound}
+                    title={soundEnabled ? '솔페지오 주파수 사운드 끄기' : '사운드 켜기'}
+                    className={`p-2 rounded-xl border transition-all text-xs flex items-center gap-1.5 cursor-pointer ${
+                      soundEnabled
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm'
+                        : 'bg-white/5 text-white/40 border-white/10 hover:text-white'
+                    }`}
+                  >
+                    {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
+                    <span className="text-[11px] font-medium hidden sm:inline">{soundEnabled ? '사운드 ON' : '사운드 OFF'}</span>
+                  </button>
+
+                  {/* Settings tab shortcut */}
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('settings')}
+                    title="호흡 스튜디오 환경 설정"
+                    className="p-2 rounded-xl border border-white/10 bg-white/5 text-white/60 hover:text-white hover:bg-white/10 transition-all text-xs flex items-center gap-1 cursor-pointer"
+                  >
+                    <SlidersHorizontal size={14} />
+                    <span className="text-[11px] hidden sm:inline">설정</span>
+                  </button>
+                </div>
               </div>
 
               {/* Pulsing Breathing Orb Area */}
@@ -815,6 +907,218 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
                     </p>
                   </div>
                 ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {activeTab === 'settings' && (
+          <motion.div
+            key="settings-tab"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            className="w-full max-w-xl space-y-6"
+          >
+            <div className="p-6 md:p-8 rounded-[32px] bg-gradient-to-b from-zinc-900 via-zinc-950 to-black border border-emerald-500/30 shadow-2xl space-y-6">
+              <div className="flex items-center gap-3 pb-4 border-b border-white/10">
+                <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                  <SlidersHorizontal size={22} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">호흡 스튜디오 환경 설정 (Breathing Studio Settings)</h3>
+                  <p className="text-xs text-white/60">
+                    모바일 햅틱 진동 피드백, 배경 치유음, 확언 보이스 및 호흡 주기를 세밀하게 조정합니다.
+                  </p>
+                </div>
+              </div>
+
+              {/* 1. Haptic Feedback Setting Card */}
+              <div className="p-5 rounded-2xl bg-white/[0.03] border border-emerald-500/25 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2.5 rounded-xl border ${hapticEnabled ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-white/5 text-white/40 border-white/10'}`}>
+                      <Vibrate size={20} className={hapticEnabled ? 'animate-pulse' : ''} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-white">Haptic Feedback</span>
+                        <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
+                          hapticEnabled ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-white/10 text-white/40'
+                        }`}>
+                          {hapticEnabled ? '활성화됨 (ON)' : '꺼짐 (OFF)'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-white/60 mt-0.5">
+                        들숨(Inhale)과 날숨(Exhale) 구간에 부드러운 햅틱 진동 펄스 전달
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Toggle Switch */}
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={hapticEnabled}
+                    onClick={() => handleToggleHaptic()}
+                    className={`w-13 h-7 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ease-in-out shrink-0 ${
+                      hapticEnabled ? 'bg-emerald-600' : 'bg-white/20'
+                    }`}
+                  >
+                    <motion.div
+                      layout
+                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                      className={`bg-white w-5 h-5 rounded-full shadow-md ${
+                        hapticEnabled ? 'ml-auto' : 'mr-auto'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                <p className="text-xs text-white/70 leading-relaxed break-keep bg-black/30 p-3 rounded-xl border border-white/5">
+                  🌿 <strong>모바일 전용 체감 안내:</strong> 스마트폰 기기에서 화면을 보지 않고 눈을 감은 상태에서도, 들숨 시 서서히 커지는 상승 펄스와 날숨 시 차분히 가라앉는 이완 펄스를 손끝으로 느끼며 편안하게 호흡에 몰입할 수 있습니다.
+                </p>
+
+                {/* Device Status & Test Buttons */}
+                <div className="pt-2 border-t border-white/5 space-y-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-white/50 flex items-center gap-1.5">
+                      <Smartphone size={13} className="text-emerald-400" />
+                      디바이스 지원 상태:
+                    </span>
+                    <span className={`font-semibold ${isHapticsSupported() ? 'text-emerald-300' : 'text-amber-300/80'}`}>
+                      {isHapticsSupported() ? '모바일 진동 지원 확인됨 (Vibration API Ready)' : '데스크톱 / 비지원 브라우저 (모바일 기기에서 지원)'}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <span className="text-[11px] text-white/50 shrink-0">진동 감각 테스트:</span>
+                    <button
+                      type="button"
+                      onClick={() => handleTestHaptic('inhale')}
+                      className={`px-3 py-1.5 rounded-xl border text-[11px] font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+                        hapticTestPhase === 'inhale'
+                          ? 'bg-emerald-500/30 border-emerald-400 text-emerald-200 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
+                          : 'bg-white/5 hover:bg-emerald-500/20 border-white/10 hover:border-emerald-500/40 text-emerald-300'
+                      }`}
+                      title="들숨 팽창 3단계 펄스 테스트"
+                    >
+                      <Wind size={12} className={hapticTestPhase === 'inhale' ? 'animate-bounce text-emerald-300' : 'text-emerald-400'} />
+                      <span>{hapticTestPhase === 'inhale' ? '들숨 펄스 진동 중...' : '들숨(Inhale) 펄스 테스트'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleTestHaptic('exhale')}
+                      className={`px-3 py-1.5 rounded-xl border text-[11px] font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+                        hapticTestPhase === 'exhale'
+                          ? 'bg-teal-500/30 border-teal-400 text-teal-200 shadow-[0_0_10px_rgba(20,184,166,0.3)]'
+                          : 'bg-white/5 hover:bg-teal-500/20 border-white/10 hover:border-teal-500/40 text-teal-300'
+                      }`}
+                      title="날숨 이완 3단계 펄스 테스트"
+                    >
+                      <Moon size={12} className={hapticTestPhase === 'exhale' ? 'animate-bounce text-teal-300' : 'text-teal-400'} />
+                      <span>{hapticTestPhase === 'exhale' ? '날숨 펄스 진동 중...' : '날숨(Exhale) 펄스 테스트'}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Audio & Guide Setting Card */}
+              <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/10 space-y-4">
+                <h4 className="text-xs font-bold text-white/80 uppercase tracking-wider flex items-center gap-2">
+                  <Volume2 size={14} className="text-emerald-400" />
+                  <span>사운드 및 음성 가이드 설정</span>
+                </h4>
+
+                <div className="flex items-center justify-between py-2 border-b border-white/5">
+                  <div>
+                    <span className="text-xs font-semibold text-white block">솔페지오 치유 주파수 사운드</span>
+                    <span className="text-[11px] text-white/50">세션 시작 시 432Hz/528Hz 치유 톤 및 싱잉볼 차임 재생</span>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={soundEnabled}
+                    onClick={toggleSound}
+                    className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 shrink-0 ${
+                      soundEnabled ? 'bg-emerald-600' : 'bg-white/20'
+                    }`}
+                  >
+                    <motion.div
+                      layout
+                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                      className={`bg-white w-4 h-4 rounded-full shadow-md ${
+                        soundEnabled ? 'ml-auto' : 'mr-auto'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between py-2 border-b border-white/5">
+                  <div>
+                    <span className="text-xs font-semibold text-white block">Kore AI 음성 확언 연속 재생</span>
+                    <span className="text-[11px] text-white/50">호흡 간격 사이에 부드러운 한국어 음성으로 치유 확언 낭독</span>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={isAffirmationLooping}
+                    onClick={handleToggleContinuousAffirmation}
+                    className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 shrink-0 ${
+                      isAffirmationLooping ? 'bg-emerald-600' : 'bg-white/20'
+                    }`}
+                  >
+                    <motion.div
+                      layout
+                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                      className={`bg-white w-4 h-4 rounded-full shadow-md ${
+                        isAffirmationLooping ? 'ml-auto' : 'mr-auto'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+
+              {/* 3. Current Breathing Pattern & Themes */}
+              <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/10 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-white/80 uppercase tracking-wider flex items-center gap-2">
+                    <Activity size={14} className="text-emerald-400" />
+                    <span>현재 호흡 리듬 패턴</span>
+                  </h4>
+                  <span className="text-[11px] text-emerald-400 font-mono font-bold">
+                    {activeTheme.nameKo}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 text-center pt-1">
+                  <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                    <span className="text-[10px] text-emerald-300/80 block uppercase font-bold">들숨 (Inhale)</span>
+                    <span className="text-lg font-black text-white font-mono">{activeTheme.breathingPattern.inhale}초</span>
+                    <span className="text-[10px] text-emerald-400 block mt-0.5">상승 진동 펄스</span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20">
+                    <span className="text-[10px] text-cyan-300/80 block uppercase font-bold">멈춤 (Hold)</span>
+                    <span className="text-lg font-black text-white font-mono">{activeTheme.breathingPattern.hold}초</span>
+                    <span className="text-[10px] text-cyan-400 block mt-0.5">고요한 머무름</span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-teal-500/10 border border-teal-500/20">
+                    <span className="text-[10px] text-teal-300/80 block uppercase font-bold">날숨 (Exhale)</span>
+                    <span className="text-lg font-black text-white font-mono">{activeTheme.breathingPattern.exhale}초</span>
+                    <span className="text-[10px] text-teal-400 block mt-0.5">이완 진동 펄스</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('session')}
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Play size={13} fill="currentColor" />
+                    <span>이 설정으로 호흡 세션 시작하기</span>
+                  </button>
+                </div>
               </div>
             </div>
           </motion.div>

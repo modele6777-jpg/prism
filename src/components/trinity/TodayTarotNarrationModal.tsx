@@ -24,6 +24,7 @@ import {
 import { LucyTarotAdviceCard } from './LucyTarotAdviceCard';
 import { TodayTarotShareButton } from './TodayTarotShareModal';
 import { TarotCardZoomModal } from './TarotCardZoomModal';
+import { TarotFlippingCard } from './TarotFlippingCard';
 import { type TodayTarotShareData } from '@/utils/todayTarotExporter';
 
 export interface TodayTarotNarrationModalProps {
@@ -235,38 +236,19 @@ export function TodayTarotNarrationModal({
               )}
             </div>
           ) : (
-            <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-yellow-500/15 via-amber-500/10 to-purple-950/20 border border-yellow-500/30 shadow-md">
-              <div
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-yellow-500/15 via-amber-500/10 to-purple-950/20 border border-yellow-500/30 shadow-md"
+            >
+              <TarotFlippingCard
+                card={card as any}
+                slotName="COSMIC ANCHOR"
+                index={0}
+                size="wide"
                 onClick={() => setIsCardZoomOpen(true)}
-                className="w-16 h-24 sm:w-20 sm:h-32 rounded-xl overflow-hidden border border-yellow-400/40 bg-zinc-900 shadow-lg shrink-0 relative group cursor-zoom-in hover:scale-105 active:scale-95 transition-all hover:border-yellow-300 hover:shadow-[0_0_15px_rgba(234,179,8,0.3)]"
-                title="클릭하여 카드 크게 보기"
-              >
-                {card.imageUrl ? (
-                  <img
-                    src={card.imageUrl}
-                    alt={`${card.nameKo} 타로 카드`}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-zinc-800 text-yellow-400 font-bold text-xs">
-                    {card.nameKo.slice(0, 2)}
-                  </div>
-                )}
-                {card.reversed && (
-                  <div className="absolute inset-x-0 bottom-0 bg-red-950/80 text-[9px] text-red-200 text-center font-bold py-0.5 border-t border-red-500/30 z-10">
-                    역방향
-                  </div>
-                )}
-                {/* Hover zoom indicator */}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity z-20 pointer-events-none">
-                  <div className="w-6 h-6 rounded-full bg-yellow-500/90 text-black flex items-center justify-center shadow-lg">
-                    <ZoomIn size={12} />
-                  </div>
-                </div>
-              </div>
+              />
 
               <div className="space-y-1.5 text-center sm:text-left flex-1 min-w-0">
                 <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
@@ -304,7 +286,7 @@ export function TodayTarotNarrationModal({
                   </div>
                 )}
               </div>
-            </div>
+            </motion.div>
           )}
 
           {/* Integrated Narration Controller (상단 오디오 제어 바) */}
