@@ -571,7 +571,7 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
         </p>
 
         {/* Top Feature Nav Tabs */}
-        <div className="top-nav sticky top-2 z-20 flex items-center justify-between flex-wrap gap-2 p-1.5 bg-zinc-950/85 border border-white/10 rounded-2xl mt-3 backdrop-blur-xl shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5),0_2px_8px_-2px_rgba(0,0,0,0.35)]">
+        <div className="top-nav sticky top-2 z-20 flex items-center justify-between flex-wrap gap-2 p-1.5 bg-zinc-950/70 border border-white/10 rounded-2xl mt-3 backdrop-blur-2xl shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5),0_2px_8px_-2px_rgba(0,0,0,0.35)]">
           <div className="nav-actions flex items-center gap-1.5 flex-wrap">
             <button
               onClick={() => setActiveTab('custom')}
