@@ -295,7 +295,7 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
     setIsSurrenderActive(false);
   }, [currentStep]);
 
-  // Grip Hold Handling (Press & hold to let go)
+  // Grip Hold Handling (Press & hold to grip pen, wait until mouse release to drop pen)
   const handleGripMouseDown = () => {
     if (isReleasedAnimation) return;
     setIsGripHolding(true);
@@ -307,26 +307,37 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
     gripHoldIntervalRef.current = setInterval(() => {
       setGripHoldProgress((prev) => {
         if (prev >= 100) {
-          if (gripHoldIntervalRef.current) clearInterval(gripHoldIntervalRef.current);
-          handleGripReleaseTrigger();
+          // Reached full grip tension! Keep holding and WAIT until user releases mouse!
           return 100;
         }
-        return prev + 5;
+        return prev + 4;
       });
-    }, 50);
+    }, 40);
   };
 
   const handleGripMouseUp = () => {
     if (isReleasedAnimation) return;
+    if (!isGripHolding) return;
     setIsGripHolding(false);
     if (gripHoldIntervalRef.current) clearInterval(gripHoldIntervalRef.current);
 
-    if (gripHoldProgress >= 90) {
-      handleGripReleaseTrigger();
-    } else {
-      setGripHoldProgress(0);
-    }
+    // The user has released the mouse (opened their hand) -> drop the pen!
+    handleGripReleaseTrigger();
   };
+
+  // Global mouseup & touchend listener while holding to ensure release triggers anywhere
+  useEffect(() => {
+    if (!isGripHolding) return;
+    const onWindowRelease = () => {
+      handleGripMouseUp();
+    };
+    window.addEventListener('mouseup', onWindowRelease);
+    window.addEventListener('touchend', onWindowRelease);
+    return () => {
+      window.removeEventListener('mouseup', onWindowRelease);
+      window.removeEventListener('touchend', onWindowRelease);
+    };
+  }, [isGripHolding, isReleasedAnimation]);
 
   const handleGripReleaseTrigger = () => {
     setIsReleasedAnimation(true);
@@ -1124,14 +1135,18 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
 
               {/* Interactive Hold-to-Release Grip Button */}
               <div className="py-6 flex flex-col items-center justify-center space-y-4">
-                <p className="text-xs text-white/50 font-mono tracking-wider uppercase">
-                  아래 버튼을 3초간 꾹 눌렀다가(Hold) 손을 떼면서 날숨을 "후~" 내쉬세요
+                <p className="text-xs text-white/60 font-mono tracking-wider">
+                  {isGripHolding
+                    ? gripHoldProgress >= 100
+                      ? '★ 마우스(손가락)를 떼는 순간 볼펜이 바닥으로 툭 떨어집니다 (대기 중)'
+                      : '볼펜을 꽉 쥔 손의 긴장감을 느껴보세요...'
+                    : '마우스를 꾹 눌러 볼펜을 쥐고 있다가, 손을 떼면서 날숨을 "후~" 내쉬세요'}
                 </p>
 
                 <div className="relative">
                   {/* Progress Ring / Glow */}
                   <div
-                    className="w-48 h-48 sm:w-56 sm:h-56 rounded-full flex items-center justify-center transition-all select-none cursor-pointer relative overflow-hidden shadow-2xl"
+                    className="w-48 h-48 sm:w-56 sm:h-56 rounded-full flex items-center justify-center transition-all select-none cursor-pointer relative overflow-hidden shadow-2xl active:scale-95"
                     onMouseDown={handleGripMouseDown}
                     onMouseUp={handleGripMouseUp}
                     onTouchStart={handleGripMouseDown}
@@ -1140,12 +1155,16 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
                       background: isReleasedAnimation
                         ? 'radial-gradient(circle, rgba(16,185,129,0.8) 0%, rgba(5,150,105,0.2) 70%)'
                         : isGripHolding
-                        ? 'radial-gradient(circle, rgba(234,179,8,0.4) 0%, rgba(0,0,0,0.8) 70%)'
+                        ? gripHoldProgress >= 100
+                          ? 'radial-gradient(circle, rgba(234,179,8,0.5) 0%, rgba(20,20,20,0.85) 70%)'
+                          : 'radial-gradient(circle, rgba(234,179,8,0.3) 0%, rgba(0,0,0,0.8) 70%)'
                         : 'radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.9) 70%)',
                       border: isReleasedAnimation
                         ? '2px solid #10b981'
                         : isGripHolding
-                        ? '2px solid #eab308'
+                        ? gripHoldProgress >= 100
+                          ? '2px solid #facc15'
+                          : '2px solid #eab308'
                         : '1px solid rgba(255,255,255,0.15)',
                     }}
                   >
@@ -1156,18 +1175,26 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
                     />
 
                     <div className="relative z-10 flex flex-col items-center justify-center p-4 text-center">
-                      <span className="text-4xl sm:text-5xl transition-transform transform">
-                        {isReleasedAnimation ? '🕊️' : isGripHolding ? '✊' : '🖐️'}
+                      <span className={`text-4xl sm:text-5xl transition-transform transform ${isGripHolding && gripHoldProgress >= 100 ? 'scale-110 animate-bounce' : ''}`}>
+                        {isReleasedAnimation ? '🕊️' : isGripHolding ? (gripHoldProgress >= 100 ? '🖊️ ➔ 🪶' : '✊') : '🖐️'}
                       </span>
                       <span className="text-xs sm:text-sm font-bold text-white mt-2">
                         {isReleasedAnimation
                           ? '완전한 해방!'
                           : isGripHolding
-                          ? `놓아버리는 중 (${gripHoldProgress}%)`
-                          : '꾹 누르고 있기 (Hold)'}
+                          ? gripHoldProgress >= 100
+                            ? '손을 떼어 볼펜을 떨어뜨리세요!'
+                            : `볼펜을 쥐고 대기 중 (${gripHoldProgress}%)`
+                          : '클릭하여 볼펜 쥐기 (Hold)'}
                       </span>
-                      <span className="text-[10px] text-white/40 mt-0.5">
-                        {isReleasedAnimation ? '우주의 평화가 깃듭니다' : '손가락을 펴듯 놓아주세요'}
+                      <span className="text-[10px] text-white/50 mt-1 max-w-[170px] leading-tight">
+                        {isReleasedAnimation
+                          ? '우주의 평화가 깃듭니다 (방하착 완료)'
+                          : isGripHolding
+                          ? gripHoldProgress >= 100
+                            ? '마우스를 떼는 순간 볼펜이 저절로 떨어집니다'
+                            : '마우스를 누른 채 대기하세요'
+                          : '클릭 후 유지하다가 뗄 때 방하착됩니다'}
                       </span>
                     </div>
                   </div>
