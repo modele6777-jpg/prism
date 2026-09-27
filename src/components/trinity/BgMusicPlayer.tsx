@@ -31,6 +31,8 @@ import {
 } from "@/lib/dailyBgm";
 
 import { FLOW_AUDIO_TRACKS, FLOW_TRACK_GENERATORS, getTrackNormalizationGain } from "@/lib/proceduralBgmSuite";
+import { useMoodSound } from "@/hooks/useMoodSound";
+import type { MoodSoundId } from "@/lib/moodSoundEngine";
 
 type BgmTrack = {
   name: string;
@@ -213,6 +215,31 @@ export function BgMusicPlayer() {
   const [retryCount, setRetryCount] = useState(0);
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isPanelActive, setIsPanelActive] = useState(() => !!(window as any).__lucy_active_panel);
+
+  // Unified Mood Sound Integration (빗소리 · 백색소음 · 숲속소리 등)
+  const {
+    isPlaying: isMoodPlaying,
+    activeMood,
+    volume: moodVolume,
+    isPickerOpen: isMoodPickerOpen,
+    presets: moodPresets,
+    currentPreset: currentMoodPreset,
+    togglePlay: toggleMoodPlay,
+    setMood: setMoodSound,
+    setVolume: setMoodVolume,
+    closePicker: closeMoodPicker,
+  } = useMoodSound();
+
+  const [activeMediaTab, setActiveMediaTab] = useState<'bgm' | 'mood'>('bgm');
+
+  // 외부(예: 옴니워프나 명상 모듈)에서 무드 사운드 피커 열기를 요청하면 플레이어를 펼치고 무드 탭으로 전환
+  useEffect(() => {
+    if (isMoodPickerOpen) {
+      setIsCollapsed(false);
+      setShowPlaylist(true);
+      setActiveMediaTab('mood');
+    }
+  }, [isMoodPickerOpen]);
 
   // Position & Edge Docking State (Default: Edge Mode always on)
   const [bgmPos, setBgmPos] = useState<{ y: number; dockSide: "right" | "left"; isDocked: boolean }>(() => {
@@ -1867,6 +1894,21 @@ export function BgMusicPlayer() {
               >
                 {repeatMode === "one" ? <Repeat1 size={11} /> : <Repeat size={11} />}
               </button>
+              {/* Quick Mood Sound Toggle Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPlaylist(true);
+                  setActiveMediaTab('mood');
+                }}
+                className={`p-1 rounded-md text-[8.5px] flex items-center gap-1 transition-all active:scale-90 ${
+                  isMoodPlaying ? "text-emerald-300 bg-emerald-400/20 border border-emerald-400/30" : "text-white/40 hover:text-white"
+                }`}
+                title="무드 사운드 설정 (빗소리·숲속·백색소음...)"
+              >
+                <span>{currentMoodPreset.emoji}</span>
+                {isMoodPlaying && <span className="text-[7.5px] font-bold hidden xs:inline">{currentMoodPreset.name}</span>}
+              </button>
             </div>
 
             {/* Reactive Wave Equalizer */}
@@ -1921,125 +1963,264 @@ export function BgMusicPlayer() {
           <div
             className={`transition-all duration-300 flex flex-col ${
               showPlaylist
-                ? "max-h-[260px] opacity-100"
+                ? "max-h-[320px] opacity-100"
                 : "max-h-0 opacity-0 pointer-events-none"
             }`}
           >
-            {/* Playlist Header */}
-            <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-white/5 bg-white/[0.02]">
-              <span className="text-[9px] font-extrabold text-white/90 uppercase tracking-widest flex items-center gap-1.5 min-w-0">
-                <Music size={10} className="text-amber-400 animate-pulse shrink-0" />
-                <span className="truncate">
-                  {showHiddenTracks ? "숨김 곡" : "Lucy Ambient Tracks"}
-                </span>
-              </span>
-              <div className="flex items-center gap-1.5 shrink-0">
-                {hiddenTracks.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleToggleHiddenTracks}
-                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[7px] font-semibold transition-all ${
-                      showHiddenTracks
-                        ? "text-amber-300 bg-amber-400/20 border border-amber-400/30"
-                        : "text-white/45 hover:text-white border border-transparent hover:bg-white/5"
-                    }`}
-                    title={showHiddenTracks ? "재생 목록 보기" : "숨김 곡 보기"}
-                  >
-                    <EyeOff size={8} />
-                    {showHiddenTracks ? "목록" : `숨김 ${hiddenTracks.length}`}
-                  </button>
-                )}
-                <span className="text-[7.5px] font-semibold text-white/40">
-                  {showHiddenTracks ? `${hiddenTracks.length} hidden` : `${tracks.length} tracks`}
-                </span>
-              </div>
+            {/* Media Selector Tabs: BGM vs Mood Sound */}
+            <div className="flex items-center gap-1 p-1 border-b border-white/5 bg-white/[0.02]">
+              <button
+                type="button"
+                onClick={() => setActiveMediaTab('bgm')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1 rounded-lg text-[8.5px] font-bold transition-all cursor-pointer ${
+                  activeMediaTab === 'bgm'
+                    ? 'bg-amber-400/20 text-amber-200 border border-amber-400/30'
+                    : 'text-white/50 hover:text-white hover:bg-white/5 border border-transparent'
+                }`}
+              >
+                <Music size={10} className={activeMediaTab === 'bgm' ? 'text-amber-400' : 'text-white/40'} />
+                <span>BGM ({tracks.length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveMediaTab('mood')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1 rounded-lg text-[8.5px] font-bold transition-all cursor-pointer ${
+                  activeMediaTab === 'mood'
+                    ? 'bg-emerald-400/20 text-emerald-200 border border-emerald-400/30'
+                    : 'text-white/50 hover:text-white hover:bg-white/5 border border-transparent'
+                }`}
+              >
+                <Sparkles size={10} className={activeMediaTab === 'mood' ? 'text-emerald-400' : 'text-white/40'} />
+                <span>무드 사운드 {isMoodPlaying ? `· ${currentMoodPreset.name}` : '(6종)'}</span>
+                {isMoodPlaying && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />}
+              </button>
             </div>
 
-            {/* Fixed-Size Elongated Tracks List (고정 크기 스크롤 영역) */}
-            <div className="h-[190px] overflow-y-auto px-1.5 py-1 flex flex-col gap-0.5 custom-scrollbar">
-              {showHiddenTracks ? (
-                hiddenTracks.length > 0 ? (
-                  hiddenTracks.map((hidden) => (
-                    <div
-                      key={hidden.id}
-                      className="flex items-center gap-1 w-full rounded-lg border border-transparent hover:bg-white/5 transition-all duration-150 px-1 py-1"
-                    >
-                      <div className="flex flex-1 min-w-0 flex-col px-1.5 text-white/50">
-                        <span className="text-[9px] truncate">{hidden.name}</span>
-                        <span className="text-[7px] text-white/30 truncate">
-                          {hidden.artist || "숨김 처리됨"}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={(e) => handleRestoreTrack(hidden, e)}
-                        className="shrink-0 p-1 rounded-md text-white/35 hover:text-emerald-300 hover:bg-emerald-500/10 transition-all"
-                        title="목록에 다시 추가"
-                      >
-                        <RotateCcw size={10} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => void handlePermanentDeleteTrack(hidden, e)}
-                        className="shrink-0 p-1 mr-0.5 rounded-md text-white/30 hover:text-rose-400 hover:bg-rose-500/15 transition-all"
-                        title="영원히 삭제"
-                      >
-                        <Trash2 size={10} />
-                      </button>
+            {activeMediaTab === 'mood' ? (
+              <div className="h-[210px] overflow-y-auto px-2 py-2 flex flex-col gap-2 custom-scrollbar">
+                {/* Active mood sound status banner */}
+                <div
+                  className="flex items-center justify-between p-2 rounded-xl border transition-all"
+                  style={{
+                    backgroundColor: `${currentMoodPreset.color}15`,
+                    borderColor: `${currentMoodPreset.color}40`,
+                  }}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-base">{currentMoodPreset.emoji}</span>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[10px] font-bold text-white truncate">
+                        {currentMoodPreset.name}
+                        {isMoodPlaying ? ' (재생 중)' : ' (선택됨)'}
+                      </span>
+                      <span className="text-[8px] text-white/50 truncate font-sans">
+                        {currentMoodPreset.description}
+                      </span>
                     </div>
-                  ))
-                ) : (
-                  <p className="px-2 py-6 text-[8px] text-white/35 text-center">
-                    숨긴 곡이 없습니다.
-                  </p>
-                )
-              ) : (
-                tracks.map((track, idx) => {
-                  const isActive = shuffledIndices[queueIndex] === idx;
-                  const rowKey = getBgmTrackId(track);
-                  return (
-                    <div
-                      key={rowKey}
-                      className={`flex items-center gap-1 w-full rounded-lg transition-all duration-150 ${
-                        isActive
-                          ? "bg-amber-400/15 border border-amber-400/30 shadow-[0_0_8px_rgba(251,191,36,0.15)]"
-                          : "hover:bg-white/5 border border-transparent"
-                      }`}
-                    >
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => toggleMoodPlay()}
+                    className="px-2.5 py-1 rounded-lg text-[9px] font-bold flex items-center gap-1 cursor-pointer transition-all active:scale-95 shadow-md"
+                    style={{
+                      backgroundColor: isMoodPlaying ? `${currentMoodPreset.color}35` : 'rgba(255,255,255,0.1)',
+                      color: isMoodPlaying ? '#fff' : 'rgba(255,255,255,0.8)',
+                      borderColor: `${currentMoodPreset.color}50`,
+                      borderWidth: '1px',
+                    }}
+                  >
+                    {isMoodPlaying ? <Pause size={10} /> : <Play size={10} />}
+                    <span>{isMoodPlaying ? '정지' : '재생'}</span>
+                  </button>
+                </div>
+
+                {/* Mood sound volume control */}
+                <div className="flex items-center justify-between gap-2 px-1.5 py-1 rounded-lg bg-white/[0.03] border border-white/5">
+                  <div className="flex items-center gap-1 text-[8px] text-white/60 font-sans">
+                    <Volume2 size={11} className="text-emerald-400" />
+                    <span>무드 볼륨</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={moodVolume}
+                    onChange={(e) => setMoodVolume(parseFloat(e.target.value))}
+                    className="w-24 sm:w-28 h-1 accent-emerald-400 bg-white/20 rounded-lg cursor-pointer"
+                  />
+                  <span className="text-[8px] font-mono text-white/50 w-6 text-right">
+                    {Math.round(moodVolume * 100)}%
+                  </span>
+                </div>
+
+                {/* 6 Mood Sound Presets Grid */}
+                <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+                  {moodPresets.map((preset) => {
+                    const isSelected = activeMood === preset.id;
+                    return (
                       <button
+                        key={preset.id}
                         type="button"
-                        onClick={() => handleSelectTrack(idx)}
-                        className={`flex flex-1 min-w-0 items-center justify-between text-left px-2 py-1 transition-all duration-150 ${
-                          isActive ? "text-amber-200 font-semibold" : "text-white/60 hover:text-white"
+                        onClick={() => {
+                          if (isSelected) {
+                            toggleMoodPlay();
+                          } else {
+                            setMoodSound(preset.id as MoodSoundId);
+                            if (!isMoodPlaying) toggleMoodPlay(preset.id as MoodSoundId);
+                          }
+                        }}
+                        className={`flex items-center gap-1.5 p-1.5 rounded-xl border text-left transition-all cursor-pointer ${
+                          isSelected
+                            ? 'text-white font-bold shadow-md'
+                            : 'bg-white/[0.03] hover:bg-white/[0.08] text-white/70 border-white/5 hover:border-white/10'
                         }`}
+                        style={
+                          isSelected
+                            ? {
+                                backgroundColor: `${preset.color}25`,
+                                borderColor: `${preset.color}60`,
+                              }
+                            : undefined
+                        }
                       >
-                        <div className="flex flex-col min-w-0 max-w-[85%]">
-                          <span className="text-[9px] truncate flex items-center gap-1">
-                            {track.name}
-                            {isActive && isPlaying && !isBuffering && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
+                        <span className="text-sm shrink-0">{preset.emoji}</span>
+                        <div className="flex flex-col truncate min-w-0">
+                          <span className="text-[9px] truncate leading-tight flex items-center gap-1">
+                            {preset.name}
+                            {isSelected && isMoodPlaying && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                             )}
                           </span>
-                          <span className="text-[7.5px] text-white/40 truncate">{track.artist}</span>
+                          <span className="text-[7.5px] text-white/40 truncate font-sans">
+                            {preset.id}
+                          </span>
                         </div>
-                        {isActive && (
-                          <span className="text-[8px] text-amber-300 font-mono shrink-0">PLAYING</span>
-                        )}
                       </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Playlist Header */}
+                <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-white/5 bg-white/[0.02]">
+                  <span className="text-[9px] font-extrabold text-white/90 uppercase tracking-widest flex items-center gap-1.5 min-w-0">
+                    <Music size={10} className="text-amber-400 animate-pulse shrink-0" />
+                    <span className="truncate">
+                      {showHiddenTracks ? "숨김 곡" : "Lucy Ambient Tracks"}
+                    </span>
+                  </span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {hiddenTracks.length > 0 && (
                       <button
                         type="button"
-                        onClick={(e) => handleRemoveTrack(idx, e)}
-                        disabled={tracks.length <= 1}
-                        className="shrink-0 p-1 mr-0.5 rounded-md text-white/30 hover:text-rose-300 hover:bg-rose-500/10 disabled:opacity-20 disabled:pointer-events-none transition-all"
-                        title="목록에서 제거"
+                        onClick={handleToggleHiddenTracks}
+                        className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[7px] font-semibold transition-all ${
+                          showHiddenTracks
+                            ? "text-amber-300 bg-amber-400/20 border border-amber-400/30"
+                            : "text-white/45 hover:text-white border border-transparent hover:bg-white/5"
+                        }`}
+                        title={showHiddenTracks ? "재생 목록 보기" : "숨김 곡 보기"}
                       >
-                        <Trash2 size={10} />
+                        <EyeOff size={8} />
+                        {showHiddenTracks ? "목록" : `숨김 ${hiddenTracks.length}`}
                       </button>
-                    </div>
-                  );
-                })
-              )}
-            </div>
+                    )}
+                    <span className="text-[7.5px] font-semibold text-white/40">
+                      {showHiddenTracks ? `${hiddenTracks.length} hidden` : `${tracks.length} tracks`}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Fixed-Size Elongated Tracks List (고정 크기 스크롤 영역) */}
+                <div className="h-[190px] overflow-y-auto px-1.5 py-1 flex flex-col gap-0.5 custom-scrollbar">
+                  {showHiddenTracks ? (
+                    hiddenTracks.length > 0 ? (
+                      hiddenTracks.map((hidden) => (
+                        <div
+                          key={hidden.id}
+                          className="flex items-center gap-1 w-full rounded-lg border border-transparent hover:bg-white/5 transition-all duration-150 px-1 py-1"
+                        >
+                          <div className="flex flex-1 min-w-0 flex-col px-1.5 text-white/50">
+                            <span className="text-[9px] truncate">{hidden.name}</span>
+                            <span className="text-[7px] text-white/30 truncate">
+                              {hidden.artist || "숨김 처리됨"}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => handleRestoreTrack(hidden, e)}
+                            className="shrink-0 p-1 rounded-md text-white/35 hover:text-emerald-300 hover:bg-emerald-500/10 transition-all"
+                            title="목록에 다시 추가"
+                          >
+                            <RotateCcw size={10} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => void handlePermanentDeleteTrack(hidden, e)}
+                            className="shrink-0 p-1 mr-0.5 rounded-md text-white/30 hover:text-rose-400 hover:bg-rose-500/15 transition-all"
+                            title="영원히 삭제"
+                          >
+                            <Trash2 size={10} />
+                          </button>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="px-2 py-6 text-[8px] text-white/35 text-center">
+                        숨긴 곡이 없습니다.
+                      </p>
+                    )
+                  ) : (
+                    tracks.map((track, idx) => {
+                      const isActive = shuffledIndices[queueIndex] === idx;
+                      const rowKey = getBgmTrackId(track);
+                      return (
+                        <div
+                          key={rowKey}
+                          className={`flex items-center gap-1 w-full rounded-lg transition-all duration-150 ${
+                            isActive
+                              ? "bg-amber-400/15 border border-amber-400/30 shadow-[0_0_8px_rgba(251,191,36,0.15)]"
+                              : "hover:bg-white/5 border border-transparent"
+                          }`}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => handleSelectTrack(idx)}
+                            className={`flex flex-1 min-w-0 items-center justify-between text-left px-2 py-1 transition-all duration-150 ${
+                              isActive ? "text-amber-200 font-semibold" : "text-white/60 hover:text-white"
+                            }`}
+                          >
+                            <div className="flex flex-col min-w-0 max-w-[85%]">
+                              <span className="text-[9px] truncate flex items-center gap-1">
+                                {track.name}
+                                {isActive && isPlaying && !isBuffering && (
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
+                                )}
+                              </span>
+                              <span className="text-[7.5px] text-white/40 truncate">{track.artist}</span>
+                            </div>
+                            {isActive && (
+                              <span className="text-[8px] text-amber-300 font-mono shrink-0">PLAYING</span>
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => handleRemoveTrack(idx, e)}
+                            disabled={tracks.length <= 1}
+                            className="shrink-0 p-1 mr-0.5 rounded-md text-white/30 hover:text-rose-300 hover:bg-rose-500/10 disabled:opacity-20 disabled:pointer-events-none transition-all"
+                            title="목록에서 제거"
+                          >
+                            <Trash2 size={10} />
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

@@ -15,6 +15,8 @@ const NAV_ITEMS = [
   { path: '/epilogue', icon: Moon, label: 'EPILOGUE', color: 'oklch(0.65 0.25 310)' },
 ];
 
+const PROLOGUE_SUBPATHS = ['/', '/universe', '/ecpr', '/todo', '/mission', '/synergy', '/aegis'];
+
 export default function BottomNav() {
   const [location, navigate] = useLocation();
   const narrow = useNarrowPhone();
@@ -27,10 +29,9 @@ export default function BottomNav() {
     >
       <div className="flex items-center justify-around w-full max-w-md mx-auto h-[var(--nav-bar-h)] px-1">
         {NAV_ITEMS.map(({ path, icon: Icon, color, isHome }) => {
-          const isActive =
-            location === path ||
-            (path !== '/' && location.startsWith(path + '/')) ||
-            (path !== '/' && location === path);
+          const isActive = isHome
+            ? PROLOGUE_SUBPATHS.some(p => location === p || (p !== '/' && location.startsWith(p + '/')))
+            : (location === path || location.startsWith(path + '/'));
 
           return (
             <button

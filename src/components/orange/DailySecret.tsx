@@ -14,7 +14,7 @@ import { TTSButton } from '@/components/TTSButton';
 import { playTTS, stopTTS } from '@/utils/tts';
 import { ScriptingTypingPractice } from './ScriptingTypingPractice';
 import { safeLocalStorage } from '@/utils/safeStorage';
-import { generateDynamicSecretKit, getDailySecretIndex } from './dailySecretCatalog';
+import { generateDynamicSecretKit, getDailySecretIndex, transmuteWorryOrWish } from './dailySecretCatalog';
 
 const DailySecretSchema = z.object({
   affirmation: z.string().describe('Today’s Secret Affirmation: 사용자의 구체적 소원/고민 내용에 100% 밀착되어, 그 소망이 이미 눈앞에서 완벽히 실현되었음을 선언하는 생생하고 강력한 1인칭 현재완료형 확언 1문장 (기계적인 문구 "나의 소원 ...은 이루어졌으며"를 절대 쓰지 말고, 소원의 핵심 키워드와 극적 성취/해결 상황을 자연스럽고 품격 있게 녹여낼 것)'),
@@ -1036,11 +1036,13 @@ export function DailySecret() {
         '13. scriptingStarter: 마침내 기적이 일어난 오늘 하루를 감사함으로 기록하는 일기 첫 문장입니다.',
         '14. gratitudeSeeds: 소원 성취의 주파수를 여는 서로 다른 3가지의 구체적 감사 문장입니다.',
         '15. [언어 절대 준수] 모든 문장은 반드시 100% 품격 있는 한국어로만 작성해야 합니다.',
+        '16. [고민/불안의 연금술적 성취 승화] 사용자가 고민이나 불안, 결핍(예: "취업이 안 돼서 걱정돼요", "빚 때문에 힘들어요", "시험에 떨어질까봐 무서워요")을 적었더라도, 결코 고민에 머무르거나 부정적 표현을 쓰지 마십시오. 론다 번의 끌어당김의 법칙(The Secret)에 따라, 그 고민이 완벽하게 해결되고 소망이 눈부시게 성취된 상태(예: 최고의 일터에 당당히 합격함, 모든 부채가 청산되고 풍요로워짐, 시험에 고득점으로 합격함)로 100% 승화시켜 기쁨과 감사의 주파수로 작성하십시오.',
         '',
         hasWish
           ? [
-              `[사용자 맞춤소원 원문]: "${effectiveWish}"`,
-              `위 소원 "${effectiveWish}"의 구체적 정황, 인물, 목표를 깊이 분석하여, affirmation부터 gratitudeSeeds까지 9개 항목 전체가 오직 이 소원의 완벽한 성취에 100% 집중되도록 작성하세요. 앞뒤 맥락이 완벽하게 일치해야 합니다.`,
+              `[사용자 입력 원문]: "${effectiveWish}"`,
+              `[연금술적 성취 승화 소원]: "${transmuteWorryOrWish(effectiveWish)}"`,
+              `위 소원(승화된 성취 목표)의 구체적 정황, 인물, 목표를 깊이 분석하여, affirmation부터 gratitudeSeeds까지 9개 항목 전체가 오직 이 소원의 완벽한 성취에 100% 집중되도록 작성하세요. 앞뒤 맥락이 완벽하게 일치해야 합니다.`,
             ].join('\n')
           : `사용자가 별도의 소원을 적지 않았으므로, 오늘의 특별한 영적 테마 [${todayTheme}]를 중심으로 풍요, 평온, 성공, 사랑, 건강을 강력하게 끌어당기는 조화롭고 독창적인 시크릿 키트를 작성하세요.`,
         '',
@@ -1048,8 +1050,9 @@ export function DailySecret() {
         `[최근 기록/맥락: ${memory}]`,
       ].filter(Boolean).join('\n');
 
+      const transmutedTargetWish = hasWish ? transmuteWorryOrWish(effectiveWish) : '';
       const userPrompt = hasWish
-        ? `[사용자 맞춤소원 원문: "${effectiveWish}"]\n[성명/닉네임: ${name}]\n[무작위 시드: ${Date.now()}-${activeSeed}]\n\n위 맞춤소원 "${effectiveWish}"의 구체적인 목표와 대상, 정황을 100% 정확하게 반영하여, 앞뒤 맥락이 한 치의 어긋남 없이 완벽하게 연결되는 감동적인 시크릿 키트를 작성해 주세요.\n\n특히 확언(affirmation)은 사용자가 적은 "${effectiveWish}" 소망의 핵심 인물과 목표가 눈앞에서 완벽하게 이루어진 기적의 순간을 생생하게 담아내야 합니다. 앞 절의 성취 내용과 뒷 절의 벅찬 감격/평온이 물 흐르듯 자연스럽게 이어지도록 최고의 문장력으로 직조해 주십시오.`
+        ? `[사용자 입력 원문: "${effectiveWish}"]\n[연금술적 성취 승화 소원: "${transmutedTargetWish}"]\n[성명/닉네임: ${name}]\n[무작위 시드: ${Date.now()}-${activeSeed}]\n\n사용자가 고민이나 불안을 적었더라도, 결코 걱정이나 결핍의 상태를 반영하지 말고 위 승화 성취 소원("${transmutedTargetWish}")처럼 마침내 완벽히 이루어지고 해결된 눈부신 결실의 상태로 100% 반영하여 감동적인 시크릿 키트를 직조해 주세요.\n\n특히 확언(affirmation)은 핵심 인물과 목표가 눈앞에서 완벽하게 이루어진 기적의 순간을 생생하게 담아내야 합니다. 앞 절의 성취 내용과 뒷 절의 벅찬 감격/평온이 물 흐르듯 자연스럽게 이어지도록 최고의 문장력으로 직조해 주십시오.`
         : `[오늘의 영적 테마: ${todayTheme}]\n[무작위 시드: ${Date.now()}-${activeSeed}]\n${name}님을 위한 오늘만의 독창적이고 가슴 벅찬 시크릿 키트를 주세요. 이전에 자주 나온 진부하거나 똑같은 문구를 완전히 피하고, 마음속 고민을 녹이고 풍요와 평온을 여는 품격 있는 새로운 맞춤 확언과 도구들을 작성해 주세요.`;
 
       const aiPromise = invokeLLMStructured({
@@ -1333,7 +1336,7 @@ export function DailySecret() {
             <textarea
               value={wish}
               onChange={(e) => setWish(e.target.value)}
-              placeholder="위 맞춤 예시를 클릭하거나, 오늘 끌어당기고 싶은 구체적인 소원을 자유롭게 적어 보세요. (예: 원하는 시험 합격, 승진 및 연봉 인상, 소중한 사람과의 화해, 건강과 활력 회복...)"
+              placeholder="소원이나 마음에 걸리는 고민·불안을 자유롭게 적어 보세요. 고민을 적으셔도 론다 번의 끌어당김 법칙에 따라 긍정적인 성취 소원 형태로 자연스럽게 승화되어 맞춤 키트가 완성됩니다. (예: 취업이 안 돼서 불안해요 / 빚 때문에 걱정돼요 / 원하는 시험 합격...)"
               rows={2}
               className="w-full rounded-xl border border-white/15 bg-black/40 text-white placeholder:text-white/30 focus:outline-none focus:border-amber-500/50 px-4 py-3 text-sm transition-colors shadow-inner resize-none"
             />
@@ -1342,7 +1345,7 @@ export function DailySecret() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
             <div className="space-y-0.5">
               <p className="text-[11px] text-amber-200/80 font-sans">
-                ✨ 소원을 선택/입력 후 키트를 받으시면 확언, 68초 시각화, 스크립팅, 실천 과제가 100% 맞춤 생성됩니다.
+                ✨ 소원이나 고민을 적으시면 긍정적인 성취의 주파수로 승화되어 확언, 68초 시각화, 스크립팅, 실천 과제가 100% 맞춤 생성됩니다.
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
