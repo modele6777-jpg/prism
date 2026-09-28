@@ -486,11 +486,11 @@ export function LucyResponseRecommendation({
                 <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-cyan-400/20 text-cyan-300 font-bold border border-cyan-400/40 shrink-0">
                   Key 추천 기법
                 </span>
-                <span className="text-xs font-bold text-white truncate group-hover:text-cyan-200 transition-colors">
+                <span className="text-xs font-bold text-white break-keep break-words group-hover:text-cyan-200 transition-colors">
                   {recommendedFeature.shortName}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-300 truncate mt-0.5 font-normal">
+              <p className="text-[11px] text-slate-300 break-keep break-words whitespace-normal mt-0.5 font-normal">
                 {recommendedFeature.description}
               </p>
             </div>

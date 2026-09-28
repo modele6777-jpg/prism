@@ -90,7 +90,7 @@ export function UniverseInsightCard({
 
   return (
     <>
-      <div className="glass prism-xs-hub-card p-5 sm:p-7 md:p-8 rounded-[32px] border border-white/15 shadow-2xl relative overflow-hidden group bg-gradient-to-br from-white/[0.04] via-white/[0.01] to-black/40 backdrop-blur-xl">
+      <div className="glass prism-xs-hub-card p-4 sm:p-6 md:p-8 rounded-[28px] sm:rounded-[32px] border border-white/15 shadow-2xl relative overflow-hidden group bg-gradient-to-br from-white/[0.04] via-white/[0.01] to-black/40 backdrop-blur-xl">
         {/* Background Glow Overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 via-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
         
@@ -126,7 +126,7 @@ export function UniverseInsightCard({
                 <Calendar size={11} className="text-amber-400/70 shrink-0" />
                 <span className="shrink-0">{todayFormattedDate}</span>
                 <span className="text-white/20 hidden sm:inline">•</span>
-                <span className="text-white/50 hidden sm:inline truncate">매일 자정 새로운 지혜로 갱신되는 1일 1명언</span>
+                <span className="text-white/50 hidden sm:inline break-keep">매일 자정 새로운 지혜로 갱신되는 1일 1명언</span>
               </div>
             </div>
           </div>

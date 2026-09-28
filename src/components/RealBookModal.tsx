@@ -354,13 +354,13 @@ export function RealBookModal({
             {/* Top Bar (Crest Title on Left, Full Audiobook Player & Close on Right) */}
             <div className="relative z-30 flex items-center justify-between gap-1.5 sm:gap-3 px-2.5 sm:px-6 py-1.5 sm:py-3 mb-1.5 sm:mb-2 border-b border-white/10 shrink-0 bg-black/40 rounded-xl sm:rounded-2xl">
               {/* Left: Crest & Title */}
-              <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0 max-w-[120px] sm:max-w-none">
+              <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0 flex-1">
                 <span className="text-base sm:text-2xl drop-shadow-md shrink-0">{style.sealEmoji}</span>
                 <div className="min-w-0">
-                  <span className="text-[8px] sm:text-[10px] font-mono font-bold tracking-widest text-amber-400/90 uppercase block leading-none truncate">
+                  <span className="text-[8px] sm:text-[10px] font-mono font-bold tracking-widest text-amber-400/90 uppercase block leading-none break-keep break-words">
                     {style.crestLabel}
                   </span>
-                  <h2 className="text-[11px] sm:text-sm font-bold text-white tracking-tight truncate mt-0.5">
+                  <h2 className="text-[11px] sm:text-sm font-bold text-white tracking-tight break-keep break-words mt-0.5">
                     {bookTitle}
                   </h2>
                 </div>

@@ -254,7 +254,7 @@ export function EpilogueAchievementReportCard({ stats, innerRef }: Props) {
           <Sparkles size={11} className="text-amber-400" />
           TODAY'S SOUL REFLECTION &amp; WHISPER
         </div>
-        <p className="text-xs text-white/90 leading-relaxed font-medium line-clamp-3">
+        <p className="text-xs text-white/90 leading-relaxed font-medium break-keep break-words">
           "{stats.todayQuote}"
         </p>
       </div>

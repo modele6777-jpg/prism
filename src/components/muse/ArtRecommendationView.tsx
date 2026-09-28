@@ -1086,11 +1086,32 @@ export function ArtRecommendationView() {
   const { sharedState, updateSharedState, openLucyChat, sendUnifiedMessage } = useApp();
   const [loading, setLoading] = useState(false);
   const [loadingImage, setLoadingImage] = useState(false);
-  const [recommendation, setRecommendation] = useState<ArtRecommendation | null>(null);
-  const [nanobananaImage, setNanobananaImage] = useState<string | null>(null);
-  const [artworkImageSource, setArtworkImageSource] = useState<ArtworkImageSource | null>(null);
+  const [recommendation, setRecommendation] = useState<ArtRecommendation | null>(() => {
+    if (typeof window !== "undefined" && isArtCacheFresh()) {
+      return parseCachedRecommendation();
+    }
+    return null;
+  });
+  const [nanobananaImage, setNanobananaImage] = useState<string | null>(() => {
+    if (typeof window !== "undefined" && isArtCacheFresh()) {
+      const cachedImg = localStorage.getItem(ART_CACHE_KEYS.image);
+      if (cachedImg && cachedImg !== "null" && cachedImg !== "undefined") return cachedImg;
+    }
+    return null;
+  });
+  const [artworkImageSource, setArtworkImageSource] = useState<ArtworkImageSource | null>(() => {
+    if (typeof window !== "undefined" && isArtCacheFresh()) {
+      return (localStorage.getItem(ART_CACHE_KEYS.imageSource) as ArtworkImageSource) || null;
+    }
+    return null;
+  });
   const [isArtImageOpen, setIsArtImageOpen] = useState(false);
-  const [currentMoodLabel, setCurrentMoodLabel] = useState("창작의 막힘 & 슬럼프 극복");
+  const [currentMoodLabel, setCurrentMoodLabel] = useState<string>(() => {
+    if (typeof window !== "undefined" && isArtCacheFresh()) {
+      return localStorage.getItem(ART_CACHE_KEYS.mood) || "창작의 막힘 & 슬럼프 극복";
+    }
+    return "창작의 막힘 & 슬럼프 극복";
+  });
   const [loadingStep, setLoadingStep] = useState(0);
 
   // Prism Toss ecosystem state & guard ref
@@ -1710,8 +1731,9 @@ export function ArtRecommendationView() {
     if (activeTossRef.current) return () => window.removeEventListener('prism:selection_execute', handleExecute);
     if (hydrateStartedRef.current) return () => window.removeEventListener('prism:selection_execute', handleExecute);
     hydrateStartedRef.current = true;
+    restoreDailyArtFromCache();
     return () => window.removeEventListener('prism:selection_execute', handleExecute);
-  }, [handleTossedArtRecommendation]);
+  }, [handleTossedArtRecommendation, restoreDailyArtFromCache]);
 
   const toggleChallenge = (index: number) => {
     setCompletedChallenges((prev) => ({
@@ -1803,49 +1825,47 @@ export function ArtRecommendationView() {
           매일 자정 이후 새로운 명작이 자동으로 큐레이션됩니다 · {getTodayDateKey()}
         </p>
 
-        {/* 🌟 추천 결과가 있을 때만 상단 액션 바 노출 (결과가 없을 때는 아래 입력창 단일 버튼 사용) */}
-        {recommendation && !isCustomInputOpen && (
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 w-full max-w-md mx-auto">
-            <button
-              type="button"
-              onClick={() => {
-                void handleRecommendArt({ forceRefresh: true, randomOffset: Date.now(), userConcern: customConcern.trim() });
-              }}
-              disabled={loading}
-              className="prism-rainbow-btn relative w-full sm:w-auto py-3.5 px-6 sm:px-8 rounded-2xl text-xs sm:text-sm font-black uppercase tracking-[0.12em] transform active:scale-95 text-white shadow-xl flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50"
-              title="오늘의 예술 추천 새로 생성하기"
-            >
-              <Sparkles size={16} className={loading ? "animate-spin" : "text-yellow-300 animate-pulse"} />
-              <span>
-                {loading
-                  ? "🎨 예술 추천 생성 중..."
-                  : "🎨 오늘의 예술 추천 새로 생성하기"}
-              </span>
-            </button>
+        {/* 🌟 모바일 및 데스크톱 상시 100% 노출: 오늘의 예술 추천 생성 액션 바 */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3 w-full max-w-md mx-auto">
+          <button
+            type="button"
+            onClick={() => {
+              void handleRecommendArt({
+                forceRefresh: true,
+                randomOffset: Date.now(),
+                userConcern: customConcern.trim(),
+              });
+            }}
+            disabled={loading}
+            className="prism-rainbow-btn relative w-full sm:w-auto py-3.5 sm:py-4 px-6 sm:px-8 rounded-2xl text-xs sm:text-sm font-black uppercase tracking-[0.12em] transform active:scale-95 text-white shadow-xl flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50"
+            title="오늘의 예술 추천 생성하기"
+          >
+            <Sparkles size={16} className={loading ? "animate-spin" : "text-yellow-300 animate-pulse"} />
+            <span>
+              {loading
+                ? "🎨 예술 추천 생성 중..."
+                : customConcern.trim()
+                ? "🎨 나의 고민 맞춤 예술 추천 생성"
+                : recommendation
+                ? "🎨 오늘의 예술 추천 새로 생성하기"
+                : "🎨 오늘의 예술 추천 생성하기"}
+            </span>
+          </button>
 
-            <button
-              type="button"
-              onClick={() => setIsCustomInputOpen(true)}
-              disabled={loading}
-              className="w-full sm:w-auto py-3.5 px-5 rounded-2xl border border-blue-400/30 bg-blue-500/10 hover:bg-blue-500/20 text-white text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2 shadow-sm"
-              title="나의 고민 및 현재 상황 맞춤 설정"
-            >
-              <span>✍️ 나의 고민 맞춤 추천 설정</span>
-            </button>
-          </div>
-        )}
-
-        {recommendation && isCustomInputOpen && (
-          <div className="flex items-center justify-center pt-2">
-            <button
-              type="button"
-              onClick={() => setIsCustomInputOpen(false)}
-              className="py-2.5 px-5 rounded-2xl border border-blue-400/40 bg-blue-500/20 text-blue-200 text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-2 shadow-sm"
-            >
-              <span>▲ 고민 입력창 닫기</span>
-            </button>
-          </div>
-        )}
+          <button
+            type="button"
+            onClick={() => setIsCustomInputOpen((prev) => !prev)}
+            disabled={loading}
+            className={`w-full sm:w-auto py-3.5 px-5 rounded-2xl border text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2 shadow-sm ${
+              isCustomInputOpen
+                ? "border-blue-400/40 bg-blue-500/25 text-blue-200"
+                : "border-blue-400/30 bg-blue-500/10 hover:bg-blue-500/20 text-white"
+            }`}
+            title="나의 고민 및 현재 상황 맞춤 설정"
+          >
+            <span>{isCustomInputOpen ? "▲ 고민 입력창 닫기" : "✍️ 고민 직접 적고 맞춤 추천"}</span>
+          </button>
+        </div>
       </motion.div>
 
       {/* Prism Toss Pipeline Active Banner */}

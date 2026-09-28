@@ -519,10 +519,10 @@ export function RoleModelModal({ isOpen = true, onClose, isInline = false }: Rol
                           />
                         </div>
                         <div className="min-w-0">
-                          <span className="text-[10px] uppercase font-bold tracking-wider text-purple-300 block truncate">
+                          <span className="text-[10px] uppercase font-bold tracking-wider text-purple-300 block break-keep break-words">
                             {m.desc}
                           </span>
-                          <h4 className="text-base sm:text-xl font-bold text-white group-hover:text-purple-200 transition-colors truncate">
+                          <h4 className="text-base sm:text-xl font-bold text-white group-hover:text-purple-200 transition-colors break-keep break-words">
                             {m.name}
                           </h4>
                         </div>
@@ -534,7 +534,7 @@ export function RoleModelModal({ isOpen = true, onClose, isInline = false }: Rol
                     </div>
 
                     <div className="z-10 mt-3.5 border-t border-white/5 pt-3">
-                      <p className="text-xs text-white/60 group-hover:text-white/80 transition-colors line-clamp-1">
+                      <p className="text-xs text-white/60 group-hover:text-white/80 transition-colors break-keep break-words whitespace-normal">
                         {m.tagline}
                       </p>
                     </div>

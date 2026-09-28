@@ -824,7 +824,7 @@ export default function MuseApp() {
                             <span className="text-[8px] text-amber-400/80 font-serif tracking-[0.15em] uppercase block">
                               {sessionCardDrawn.keyphrase}
                             </span>
-                            <h4 className="text-xs font-bold font-sans text-white tracking-widest leading-tight block truncate max-w-full">
+                            <h4 className="text-xs font-bold font-sans text-white tracking-widest leading-tight block break-keep break-words max-w-full">
                               {sessionCardDrawn.name}
                             </h4>
                             {sessionCardDrawn.isReversed && (
@@ -1253,10 +1253,10 @@ export default function MuseApp() {
 
                     {/* Lower Typography Section */}
                     <div className="text-center space-y-0.5 z-10">
-                      <span className="text-[7px] text-amber-400/80 font-serif tracking-[0.1em] uppercase block truncate max-w-full">
+                      <span className="text-[7px] text-amber-400/80 font-serif tracking-[0.1em] uppercase block break-keep break-words max-w-full">
                         {sessionCardDrawn.keyphrase}
                       </span>
-                      <h4 className="text-[10px] font-bold font-sans text-white tracking-wider leading-tight block truncate max-w-full">
+                      <h4 className="text-[10px] font-bold font-sans text-white tracking-wider leading-tight block break-keep break-words max-w-full">
                         {sessionCardDrawn.name}
                       </h4>
                       {sessionCardDrawn.isReversed && (

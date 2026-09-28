@@ -1022,7 +1022,7 @@ export function UnifiedChat() {
                                         <FileText size={18} />
                                       </div>
                                       <div className="flex flex-col text-left overflow-hidden">
-                                        <span className="text-[12px] font-semibold text-white truncate">PDF 문서 첨부</span>
+                                        <span className="text-[12px] font-semibold text-white break-keep break-words">PDF 문서 첨부</span>
                                         <span className="text-[10px] text-red-300/80">AI 멀티모달 문서 분석</span>
                                       </div>
                                     </div>
@@ -1205,7 +1205,7 @@ export function UnifiedChat() {
                     </div>
                   )}
                   <div className="flex flex-col text-left max-w-[200px] justify-center overflow-hidden">
-                    <span className="text-[12px] font-semibold text-white/90 truncate">{attachedFile.name}</span>
+                    <span className="text-[12px] font-semibold text-white/90 break-all">{attachedFile.name}</span>
                     <span className="text-[9px] text-white/50 tracking-wide font-medium flex items-center gap-1.5 mt-0.5">
                       <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400/80" />
                       {attachedFile.isPdf ? "PDF 문서 (AI 분석 준비)" : attachedFile.dataUrl ? "이미지 파일" : "텍스트/문서 파일"}

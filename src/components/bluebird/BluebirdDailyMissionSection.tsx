@@ -382,7 +382,7 @@ export function BluebirdDailyMissionSection({
                   <span className="text-[9px] font-mono uppercase font-bold text-amber-300 block">
                     Day {milestone.day}
                   </span>
-                  <h5 className="text-xs font-bold text-white mt-0.5 line-clamp-1">
+                  <h5 className="text-xs font-bold text-white mt-0.5 break-keep break-words">
                     {milestone.title}
                   </h5>
                 </div>

@@ -444,12 +444,12 @@ export function DailyElementTrendDashboard({
                 className="w-3 h-3 rounded-full shrink-0"
                 style={{ backgroundColor: trendAnalysis.dominantElement.info.colorHex }}
               />
-              <span className="text-sm font-bold text-white truncate">
+              <span className="text-sm font-bold text-white break-keep break-words">
                 {trendAnalysis.dominantElement.info.hanja} {trendAnalysis.dominantElement.element} (
                 {trendAnalysis.dominantElement.value}%)
               </span>
             </div>
-            <p className="text-[11px] text-white/50 leading-relaxed font-sans truncate">
+            <p className="text-[11px] text-white/50 leading-relaxed font-sans break-keep break-words">
               {trendAnalysis.dominantElement.info.emotionPositive}
             </p>
           </div>
@@ -461,14 +461,14 @@ export function DailyElementTrendDashboard({
             </span>
             <div className="flex items-center gap-1.5">
               <ArrowUpRight size={15} className="text-emerald-400 shrink-0" />
-              <span className="text-sm font-bold text-white truncate">
+              <span className="text-sm font-bold text-white break-keep break-words">
                 {trendAnalysis.risingElement.info.hanja} {trendAnalysis.risingElement.element}{' '}
                 <span className="text-emerald-400 text-xs">
                   {trendAnalysis.risingElement.delta >= 0 ? `+${trendAnalysis.risingElement.delta}%` : `${trendAnalysis.risingElement.delta}%`}
                 </span>
               </span>
             </div>
-            <p className="text-[11px] text-white/50 leading-relaxed font-sans truncate">
+            <p className="text-[11px] text-white/50 leading-relaxed font-sans break-keep break-words">
               생체 활력 및 추진 파동 상승
             </p>
           </div>
@@ -480,12 +480,12 @@ export function DailyElementTrendDashboard({
             </span>
             <div className="flex items-center gap-1.5">
               <ArrowDownRight size={15} className="text-amber-400 shrink-0" />
-              <span className="text-sm font-bold text-white truncate">
+              <span className="text-sm font-bold text-white break-keep break-words">
                 {trendAnalysis.decliningElement.info.hanja} {trendAnalysis.decliningElement.element} (
                 {trendAnalysis.decliningElement.value}%)
               </span>
             </div>
-            <p className="text-[11px] text-white/50 leading-relaxed font-sans truncate">
+            <p className="text-[11px] text-white/50 leading-relaxed font-sans break-keep break-words">
               {trendAnalysis.decliningElement.info.remedyFood.split(',')[0]} 등 보충
             </p>
           </div>

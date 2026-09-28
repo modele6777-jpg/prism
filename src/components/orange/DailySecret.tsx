@@ -1414,7 +1414,7 @@ export function DailySecret() {
                       <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-300 font-mono shrink-0">
                         {item.tag}
                       </span>
-                      <span className="truncate max-w-[240px] sm:max-w-md">{item.text}</span>
+                      <span className="break-keep break-words flex-1 min-w-0 text-left">{item.text}</span>
                       <span className="text-[10px] text-amber-300/80 shrink-0 ml-auto flex items-center gap-1 font-sans font-medium">
                         <Sparkles size={11} className="text-amber-400" />
                         즉시 열기
@@ -1438,7 +1438,7 @@ export function DailySecret() {
                       title="이 소원으로 즉시 시크릿 키트를 엽니다"
                     >
                       <Sparkles size={11} className={isSelected ? 'text-amber-400 shrink-0' : 'text-amber-400/40 shrink-0'} />
-                      <span className="truncate max-w-[240px] sm:max-w-md">{ex}</span>
+                      <span className="break-keep break-words flex-1 min-w-0 text-left">{ex}</span>
                       <span className="text-[10px] text-amber-300/80 shrink-0 ml-auto flex items-center gap-1 font-sans font-medium">
                         <Sparkles size={11} className="text-amber-400" />
                         즉시 열기
@@ -1518,11 +1518,11 @@ export function DailySecret() {
                     ? '소원 맞춤 시크릿 키트 받기'
                     : '오늘의 시크릿 키트 받기'}
                 </p>
-                <p className="text-[10px] sm:text-xs text-white/40 font-sans">
+                <p className="text-[10px] sm:text-xs text-white/40 font-sans break-keep">
                   {loading
                     ? '소원의 앞뒤 맥락을 완벽히 일치시킨 기적의 확언을 준비하고 있습니다'
                     : wish.trim()
-                    ? `"${wish.trim().slice(0, 20)}${wish.trim().length > 20 ? '...' : ''}" 맞춤형 확언 + 시각화 + 감사 + 실천`
+                    ? `"${wish.trim()}" 맞춤형 확언 + 시각화 + 감사 + 실천`
                     : '확언 + 68초 시각화 + 감사 + 실천 도구'}
                 </p>
               </div>
@@ -1535,7 +1535,7 @@ export function DailySecret() {
           animate={{ opacity: 1, scale: 1 }}
           className="w-full max-w-3xl mx-auto space-y-5"
         >
-          <div className="relative overflow-hidden rounded-[32px] border border-amber-500/25 bg-gradient-to-br from-amber-950/40 via-zinc-950/80 to-orange-950/30 p-6 sm:p-10 shadow-2xl">
+          <div className="relative overflow-hidden rounded-[28px] sm:rounded-[32px] border border-amber-500/25 bg-gradient-to-br from-amber-950/40 via-zinc-950/80 to-orange-950/30 p-4 sm:p-8 md:p-10 shadow-2xl">
             <div className="absolute -top-20 -right-20 w-48 h-48 bg-amber-500/15 rounded-full blur-[80px] pointer-events-none" />
             <div className="absolute -bottom-16 -left-16 w-40 h-40 bg-orange-500/10 rounded-full blur-[60px] pointer-events-none" />
             <div className="relative z-10 space-y-6 text-center">
@@ -1546,13 +1546,13 @@ export function DailySecret() {
                   <Sparkles size={12} />
                 </div>
                 {data.appliedWish && (
-                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs mt-1">
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs mt-1 max-w-full">
                     <Sparkles size={11} className="text-amber-400 shrink-0" />
-                    <span className="font-medium truncate max-w-xs sm:max-w-md">맞춤 소원: &ldquo;{data.appliedWish}&rdquo;</span>
+                    <span className="font-medium break-keep break-words text-left">맞춤 소원: &ldquo;{data.appliedWish}&rdquo;</span>
                     <button
                       type="button"
                       onClick={handleResetToNewSecret}
-                      className="ml-1 px-2 py-0.5 rounded-md bg-white/10 hover:bg-white/20 text-amber-200 hover:text-white text-[10px] font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1"
+                      className="ml-1 px-2 py-0.5 rounded-md bg-white/10 hover:bg-white/20 text-amber-200 hover:text-white text-[10px] font-bold transition-all cursor-pointer active:scale-95 flex items-center gap-1 shrink-0"
                       title="맞춤 소원을 초기화하고 새로운 시크릿 키트를 받습니다"
                     >
                       <X size={10} />

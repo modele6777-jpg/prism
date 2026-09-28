@@ -856,8 +856,8 @@ export function EpilogueDiaryView() {
                     <Icon size={14} style={{ color: fp.color }} />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[11px] font-bold text-white truncate">{fp.title}</p>
-                    <p className="text-[9px] text-white/50 truncate font-mono">
+                    <p className="text-[11px] font-bold text-white break-keep break-words">{fp.title}</p>
+                    <p className="text-[9px] text-white/50 break-keep break-words font-mono">
                       {fp.active ? '기록 연동됨' : '여정 대기 중'}
                     </p>
                   </div>
@@ -1270,7 +1270,7 @@ export function EpilogueDiaryView() {
                             {entry.mood}
                           </span>
                         </div>
-                        <p className="text-xs text-white/50 truncate font-sans mt-0.5 font-serif">
+                        <p className="text-xs text-white/60 font-sans mt-0.5 font-serif break-keep break-words whitespace-normal leading-relaxed">
                           {diaryContent}
                         </p>
                       </div>

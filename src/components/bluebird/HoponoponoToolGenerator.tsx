@@ -144,9 +144,9 @@ export function HoponoponoToolPicker({
                   <span>{TOOL_ICONS[tool.id]}</span>
                   <span className="text-[9px] font-mono opacity-50 uppercase">{tool.category}</span>
                 </div>
-                <p className="text-xs font-bold text-white font-sans line-clamp-1">{tool.emoji} {tool.name}</p>
+                <p className="text-xs font-bold text-white font-sans break-keep break-words">{tool.emoji} {tool.name}</p>
               </div>
-              <p className="text-[10px] text-white/40 mt-1 break-keep leading-tight font-sans line-clamp-2">{tool.summary}</p>
+              <p className="text-[10px] text-white/50 mt-1 break-keep break-words leading-tight font-sans">{tool.summary}</p>
             </motion.button>
           );
         })}

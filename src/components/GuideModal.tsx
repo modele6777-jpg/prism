@@ -533,7 +533,7 @@ export function GuideModal({ isOpen, onClose }: GuideModalProps) {
                             <span className="text-[10px] font-mono text-white/20">{String(index).padStart(2, "0")}</span>
                             <span className="text-xs font-black tracking-wide">{section.name}</span>
                           </div>
-                          <p className="truncate text-[10px] text-white/30">{section.subtitle}</p>
+                          <p className="text-[10px] text-white/40 break-keep break-words">{section.subtitle}</p>
                         </div>
                       </button>
                     );

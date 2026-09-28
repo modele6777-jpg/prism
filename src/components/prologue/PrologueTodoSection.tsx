@@ -959,8 +959,8 @@ export function PrologueTodoSection() {
                     }`}
                   >
                     <div className="text-lg mb-1">{mode.icon}</div>
-                    <div className="text-xs font-bold truncate">{mode.label}</div>
-                    <div className="text-[10px] text-white/40 line-clamp-1 mt-0.5">{mode.desc}</div>
+                    <div className="text-xs font-bold break-keep break-words">{mode.label}</div>
+                    <div className="text-[10px] text-white/40 break-keep break-words whitespace-normal mt-0.5">{mode.desc}</div>
                   </button>
                 );
               })}

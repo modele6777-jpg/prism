@@ -354,7 +354,7 @@ export function MuseDocentAudio({ artwork }: MuseDocentAudioProps) {
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-bold text-white">오디오 도슨트</p>
-                    <p className="text-[10px] text-blue-300/60 truncate">국립박물관 수석 큐레이터 연속 해설 (명곡 → 명시 → 명화)</p>
+                    <p className="text-[10px] text-blue-300/60 break-keep break-words">국립박물관 수석 큐레이터 연속 해설 (명곡 → 명시 → 명화)</p>
                   </div>
                 </div>
                 <button

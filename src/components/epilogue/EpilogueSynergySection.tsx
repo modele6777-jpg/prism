@@ -566,12 +566,12 @@ export function EpilogueSynergySection() {
                       onClick={() => setChronicleData(item)}
                       className="p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-purple-400/40 transition-all cursor-pointer flex items-center justify-between gap-3 text-xs"
                     >
-                      <div className="space-y-0.5 truncate">
+                      <div className="space-y-0.5 min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-[9px] font-mono text-purple-400">{item.dateKey}</span>
-                          <span className="text-[10px] font-bold text-white truncate">{item.title}</span>
+                          <span className="text-[9px] font-mono text-purple-400 shrink-0">{item.dateKey}</span>
+                          <span className="text-[10px] font-bold text-white break-keep break-words">{item.title}</span>
                         </div>
-                        <p className="text-[10px] text-white/50 truncate font-sans">
+                        <p className="text-[10px] text-white/50 font-sans break-keep break-words">
                           {item.soulEvolutionLevel} · {item.dailyCoreTheme}
                         </p>
                       </div>

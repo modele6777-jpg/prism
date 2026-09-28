@@ -152,11 +152,11 @@ export function WishingWellSecretRecommendations({
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-400/20 text-amber-200 border border-amber-300/30">
                 {context.themeKo}
               </span>
-              <span className="text-[10px] text-white/50 font-mono truncate">
+              <span className="text-[10px] text-white/50 font-mono">
                 {context.isReceived ? '오늘의 수신된 시크릿' : '오늘의 카탈로그 시크릿'}
               </span>
             </div>
-            <p className="text-xs text-white/90 font-serif italic truncate mt-0.5 max-w-xl">
+            <p className="text-xs text-white/90 font-serif italic break-keep break-words mt-0.5 max-w-xl">
               &ldquo;{context.effectiveWish}&rdquo;
             </p>
           </div>

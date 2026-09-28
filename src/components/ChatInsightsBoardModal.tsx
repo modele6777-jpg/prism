@@ -293,7 +293,7 @@ export function ChatInsightsBoardModal({
                           {item.userQueryCount ? `${item.userQueryCount}문답` : ''}
                         </span>
                       </div>
-                      <div className="text-xs font-medium text-slate-200 line-clamp-1">
+                      <div className="text-xs font-medium text-slate-200 break-keep break-words whitespace-normal leading-relaxed">
                         {item.primaryTheme || item.coreInsight}
                       </div>
                       <div className="flex items-center gap-1 overflow-hidden mt-0.5">

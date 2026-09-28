@@ -154,7 +154,7 @@ export function EpilogueHandbookModal({
                     <span className="font-bold text-purple-300">{rec.title || rec.sourceLabel}</span>
                     <span className="text-[10px] text-white/40">{rec.type}</span>
                   </div>
-                  <p className="text-[11px] text-white/75 line-clamp-2">{rec.content}</p>
+                  <p className="text-[11px] text-white/80 leading-relaxed break-keep break-words">{rec.content}</p>
                 </div>
               ))
             ) : (

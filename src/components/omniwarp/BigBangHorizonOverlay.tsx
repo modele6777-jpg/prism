@@ -218,7 +218,7 @@ export function BigBangHorizonOverlay({
                 : 'BLACK HOLE'}
             </span>
 
-            <span className="text-xs font-bold text-white mt-0.5 line-clamp-1 px-1">
+            <span className="text-xs font-bold text-white mt-0.5 break-keep break-words px-1">
               {activeHole === 'whitehole'
                 ? whData.title
                 : activeHole === 'mirrorhole'
@@ -226,7 +226,7 @@ export function BigBangHorizonOverlay({
                 : bhData.title}
             </span>
 
-            <span className="text-[9px] text-slate-300 line-clamp-2 px-1 mt-0.5 opacity-80 leading-tight">
+            <span className="text-[9px] text-slate-300 break-keep break-words whitespace-normal px-1 mt-0.5 opacity-90 leading-tight">
               {activeHole === 'whitehole'
                 ? whData.desc
                 : activeHole === 'mirrorhole'

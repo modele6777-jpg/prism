@@ -250,7 +250,7 @@ export function TalismanAlbum({ onClose }: { onClose?: () => void }) {
                   </div>
 
                   <div className="space-y-1 min-w-0">
-                    <h6 className="text-[11px] font-black text-white truncate flex items-center justify-between gap-1">
+                    <h6 className="text-[11px] font-black text-white break-keep break-words flex items-center justify-between gap-1">
                       <span>{t.name} 신패</span>
                       <button
                         onClick={(e) => deleteTalismanFromAlbum(t.id, e)}
@@ -266,7 +266,7 @@ export function TalismanAlbum({ onClose }: { onClose?: () => void }) {
                       </span>
                       <span className="text-[7px] text-zinc-500 font-bold uppercase font-mono">{t.rarity}</span>
                     </div>
-                    <p className="text-[10px] text-zinc-500 italic truncate pt-0.5">
+                    <p className="text-[10px] text-zinc-400 italic break-keep break-words pt-0.5">
                       "{t.wishText}"
                     </p>
                   </div>
@@ -354,11 +354,11 @@ export function TalismanAlbum({ onClose }: { onClose?: () => void }) {
                       </div>
                       <div className="space-y-0.5">
                         <span className="text-white/30 text-[9px] uppercase font-bold">연성 주파 스타일</span>
-                        <p className="font-extrabold text-white truncate">{selectedTalisman.styleName.split(' (')[0]}</p>
+                        <p className="font-extrabold text-white break-keep break-words">{selectedTalisman.styleName.split(' (')[0]}</p>
                       </div>
                       <div className="space-y-0.5">
                         <span className="text-white/30 text-[9px] uppercase font-bold">소망 내용</span>
-                        <p className="font-extrabold text-yellow-300 truncate">“{selectedTalisman.wishText}”</p>
+                        <p className="font-extrabold text-yellow-300 break-keep break-words">“{selectedTalisman.wishText}”</p>
                       </div>
                     </div>
 

@@ -1404,5 +1404,89 @@ html.perf-reduced .cosmic-star-flare {
   }
 }
 
+/* ==========================================================================
+   📱 iPhone 13 mini & Compact Mobile Display & Performance Optimizations
+   (Viewport: 375px x 812px, iOS WebKit Safari, A15 Bionic GPU Acceleration)
+   ========================================================================== */
 
+/* Universal Korean & English anti-truncation: complete sentences wrap cleanly without awkward ellipsis */
+h1, h2, h3, h4, h5, h6, p, span, label, blockquote {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
 
+/* Force-full sentence visibility: ensures no sentence is ever chopped off with ellipsis */
+.sentence-full,
+.no-truncate {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  word-break: keep-all !important;
+  overflow-wrap: break-word !important;
+  display: block !important;
+  -webkit-line-clamp: unset !important;
+}
+
+/* iOS Safe Area & Compact Viewport Tuning */
+@media screen and (max-width: 414px) {
+  /* Prevent horizontal edge bleeding and accidental horizontal bounce */
+  html, body, #root {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  /* Compact padding for cards on iPhone 13 mini (375px width) */
+  .prism-xs-pad {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  /* Ensure touch targets meet Apple HIG minimum (44px) */
+  button:not(.inline-btn),
+  [role="button"]:not(.inline-btn) {
+    min-height: 40px;
+  }
+
+  /* Hardware-accelerated smooth scrolling on iOS WebKit */
+  [data-app-scroll-root] {
+    -webkit-overflow-scrolling: touch;
+    transform: translate3d(0, 0, 0);
+    will-change: scroll-position;
+  }
+
+  /* Safe area inset handling for bottom navigation and floating controls */
+  .prism-subnav-btn {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+
+  /* Compact glass card padding to maximize readable text area */
+  .rounded-\[32px\],
+  .rounded-\[36px\],
+  .rounded-\[40px\],
+  .rounded-\[44px\],
+  .rounded-\[48px\] {
+    border-radius: 1.25rem;
+  }
+}
+
+/* Specific optimization for 375px width (iPhone 13 mini / SE / compact iOS) */
+@media screen and (max-width: 380px) {
+  .glass {
+    padding-left: 0.875rem !important;
+    padding-right: 0.875rem !important;
+  }
+  
+  /* Optimize font rendering and spacing on compact screens */
+  p, span, div {
+    letter-spacing: -0.015em;
+  }
+}
+
+/* High-DPI Retina optimization for crisp text and zero GPU jitter on A15 */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}

@@ -192,10 +192,10 @@ export const GlobalHandbookAudioWidget: React.FC = () => {
                 title="클릭하여 핸드북 본문 화면으로 이동"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-black text-white group-hover:text-amber-300 transition truncate">
+                  <p className="text-xs font-black text-white group-hover:text-amber-300 transition break-keep break-words">
                     {audioState.activeSegment.label}
                   </p>
-                  <p className="text-[11px] text-white/60 line-clamp-1 mt-0.5">
+                  <p className="text-[11px] text-white/70 break-keep break-words whitespace-normal mt-0.5 leading-relaxed">
                     {audioState.activeSegment.text}
                   </p>
                 </div>

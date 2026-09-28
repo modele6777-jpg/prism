@@ -159,8 +159,8 @@ function OrangeHistoryModal({ isOpen, onClose, entries, onSelect }: { isOpen: bo
                   </span>
                   <span className="text-[9px] text-white/20 font-mono ">{entry.date}</span>
                 </div>
-                <h5 className="text-[11px] font-bold text-white/60 truncate tracking-wide mb-1">{entry.summary}</h5>
-                <p className="text-[10px] text-white/40 font-sans line-clamp-2 ">{entry.content}</p>
+                <h5 className="text-[11px] font-bold text-white/80 tracking-wide mb-1 break-keep break-words">{entry.summary}</h5>
+                <p className="text-[10px] text-white/50 font-sans leading-relaxed break-keep break-words">{entry.content}</p>
               </div>
             ))
           )}

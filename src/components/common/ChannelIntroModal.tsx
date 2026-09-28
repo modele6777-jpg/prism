@@ -453,7 +453,7 @@ export function ChannelIntroModal() {
             <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/[0.02] border border-white/5 text-xs text-white/70">
               <span className="text-base">{channel.runeSymbol}</span>
               <span className="font-semibold text-white/85">고대 룬 비의:</span>
-              <span className="text-white/60 truncate">{channel.runeMeaning}</span>
+              <span className="text-white/70 break-keep break-words whitespace-normal">{channel.runeMeaning}</span>
             </div>
 
             {/* Highlights (3 Key Features) */}

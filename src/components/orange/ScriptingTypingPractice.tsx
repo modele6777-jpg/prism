@@ -432,14 +432,14 @@ export function ScriptingTypingPractice({
                 key={s.id}
                 type="button"
                 onClick={() => handleSelectSample(s)}
-                className={`shrink-0 max-w-[200px] sm:max-w-[260px] truncate text-left px-3 py-1.5 rounded-xl text-xs transition-all cursor-pointer border flex items-center gap-1.5 ${
+                className={`shrink-0 max-w-xs sm:max-w-md text-left px-3 py-1.5 rounded-xl text-xs transition-all cursor-pointer border flex items-center gap-1.5 ${
                   isCurrent
                     ? 'bg-violet-500/20 border-violet-400/50 text-white font-medium shadow-sm'
                     : 'bg-black/30 border-white/5 text-white/50 hover:text-white/80 hover:border-white/15'
                 }`}
               >
                 <Sparkles size={11} className={isCurrent ? 'text-amber-400 shrink-0' : 'text-white/20 shrink-0'} />
-                <span className="truncate">{s.text}</span>
+                <span className="break-keep break-words">{s.text}</span>
               </button>
             );
           })}

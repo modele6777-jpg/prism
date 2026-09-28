@@ -2959,7 +2959,7 @@ function playDailyCardChimeAsync() {
                                         배경 에너지 활성화
                                       </span>
                                     </div>
-                                    <p className="text-xs text-white/90 font-medium truncate mt-0.5">
+                                    <p className="text-xs text-white/90 font-medium break-keep break-words mt-0.5">
                                       ✨ {dailyResult.drawnCard.nameKo} ({dailyResult.drawnCard.name}) {dailyResult.drawnCard.reversed ? "· 역방향" : "· 정방향"}
                                     </p>
                                   </div>

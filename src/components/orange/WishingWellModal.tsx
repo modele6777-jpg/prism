@@ -497,8 +497,8 @@ export function WishingWellModal({
                           )}
                           <span className="text-2xl drop-shadow-sm shrink-0">{cat.emoji}</span>
                           <div className="min-w-0">
-                            <div className="text-xs font-bold tracking-tight truncate">{cat.label}</div>
-                            <div className="text-[10px] text-white/50 truncate font-sans mt-0.5">
+                            <div className="text-xs font-bold tracking-tight break-keep break-words">{cat.label}</div>
+                            <div className="text-[10px] text-white/50 break-keep break-words font-sans mt-0.5">
                               {cat.id === 'self_love'
                                 ? '자존감 & 셀프러브'
                                 : cat.id === 'inner_peace'

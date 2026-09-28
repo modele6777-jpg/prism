@@ -649,7 +649,7 @@ export function GoalProgressRingDashboard() {
                         </span>
                       </div>
 
-                      <h4 className={`text-sm font-bold truncate transition-colors ${isDone ? 'text-emerald-300' : 'text-white'}`}>
+                      <h4 className={`text-sm font-bold break-keep break-words whitespace-normal transition-colors ${isDone ? 'text-emerald-300' : 'text-white'}`}>
                         {goal.title}
                       </h4>
 

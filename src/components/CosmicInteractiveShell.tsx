@@ -403,7 +403,7 @@ export function CosmicInteractiveShell({ record }: CosmicInteractiveShellProps) 
               <p className="text-[10px] text-white/40 font-cute leading-relaxed">
                 성찰록에 소개된 선율을 깊은 주파수 안정을 위해 YouTube에서 즉시 감상하실 수 있습니다.
               </p>
-              <p className="text-[9px] text-sky-400/80 font-mono select-all truncate max-w-[200px] sm:max-w-xs">
+              <p className="text-[9px] text-sky-400/80 font-mono select-all break-all">
                 {detectedMusic.url}
               </p>
             </div>

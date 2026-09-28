@@ -713,7 +713,7 @@ export function SecretMessage({ isOpen, onClose, isModal }: SecretMessageProps =
                             <span>{liveRecommendation.moodObj.label}</span>
                           </span>
                         </div>
-                        <p className="text-[10px] text-sky-200/75 leading-relaxed truncate max-w-md">
+                        <p className="text-[10px] text-sky-200/85 leading-relaxed break-keep break-words">
                           {liveRecommendation.reason}
                         </p>
                       </div>

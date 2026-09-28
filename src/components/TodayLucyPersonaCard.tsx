@@ -250,7 +250,7 @@ export function TodayLucyPersonaCard({
                     {todayTarotResult.drawnCard.reversed ? '역방향' : '정방향'}
                   </span>
                 </div>
-                <p className="text-xs text-stone-200 font-medium truncate mt-0.5">
+                <p className="text-xs text-stone-200 font-medium break-keep break-words mt-0.5">
                   ✨ {todayTarotResult.drawnCard.nameKo} <span className="text-[10px] text-white/50">({todayTarotResult.drawnCard.name})</span>
                 </p>
               </div>
