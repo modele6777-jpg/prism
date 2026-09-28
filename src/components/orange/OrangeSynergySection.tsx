@@ -966,7 +966,7 @@ export function OrangeSynergySection() {
                 }`}
               >
                 {isTTSActive ? <VolumeX size={14} className="text-amber-300" /> : <Volume2 size={14} className="text-orange-300" />}
-                <span>{isTTSActive ? '낭독 중단' : '오감 스크립트 음성 낭독'}</span>
+                <span>{isTTSActive ? '낭독 중단' : '오감 스크립트 & 주파수 확언 낭독'}</span>
               </button>
 
               <button
@@ -992,6 +992,42 @@ export function OrangeSynergySection() {
             </div>
             <p className="text-base sm:text-lg font-bold text-white leading-relaxed tracking-tight break-keep">
               "{catalystData.sensoryScript}"
+            </p>
+          </div>
+
+          {/* Vibrational Anchor Affirmation Card - 주파수 고정 진동 확언 */}
+          <div className="p-5 sm:p-7 rounded-3xl bg-gradient-to-r from-amber-500/15 via-orange-500/20 to-yellow-500/15 border border-amber-400/40 relative shadow-xl space-y-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <span className="text-[11px] font-mono text-amber-300 uppercase tracking-widest font-bold flex items-center gap-1.5">
+                <span className="text-amber-400 font-bold">⚡</span>
+                <span>주파수 고정 진동 확언 (Vibrational Anchor Affirmation)</span>
+              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-amber-200 font-mono bg-amber-400/20 border border-amber-400/30 px-2 py-0.5 rounded-full font-bold">
+                  {catalystData.manifestationFrequency}Hz 주파수 고정
+                </span>
+                <button
+                  type="button"
+                  onClick={handleSpeakAffirmation}
+                  className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-amber-400/20 text-amber-300/90 hover:text-amber-200 border border-amber-400/20 text-[10px] font-medium flex items-center gap-1 transition-all cursor-pointer"
+                  title="확언 음성 듣기"
+                >
+                  <Volume2 size={12} />
+                  <span>확언 낭독</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCopyAffirmation}
+                  className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-amber-400/20 text-amber-300/90 hover:text-amber-200 border border-amber-400/20 text-[10px] font-medium flex items-center gap-1 transition-all cursor-pointer"
+                  title="확언 복사"
+                >
+                  {copiedAffirmation ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                  <span>{copiedAffirmation ? '복사됨' : '확언 복사'}</span>
+                </button>
+              </div>
+            </div>
+            <p className="text-base sm:text-lg font-black text-amber-100 leading-relaxed tracking-tight break-keep font-serif">
+              "{catalystData.vibrationalAnchorAffirmation}"
             </p>
           </div>
 

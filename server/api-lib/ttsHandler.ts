@@ -136,10 +136,12 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
 
       const tempPath = path.join(os.tmpdir(), `tts-${Date.now()}-${Math.random().toString(36).substring(7)}.mp3`);
 
+      const edgeTimeoutMs = Math.max(7000, Math.min(16000, safeText.length * 40));
+
       try {
         await Promise.race([
           tts.ttsPromise(safeText, tempPath),
-          new Promise((_, reject) => setTimeout(() => reject(new Error("EdgeTTS timeout (4500ms)")), 4500)),
+          new Promise((_, reject) => setTimeout(() => reject(new Error(`EdgeTTS timeout (${edgeTimeoutMs}ms)`)), edgeTimeoutMs)),
         ]);
 
         const buf = await fsPromises.readFile(tempPath);
@@ -159,7 +161,7 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
       } catch (attemptErr) {
         console.warn(`[TTS] EdgeTTS attempt ${attempt}/2 warning:`, attemptErr);
         if (attempt < 2) {
-          await new Promise((r) => setTimeout(r, 150));
+          await new Promise((r) => setTimeout(r, 100));
         }
       }
     }

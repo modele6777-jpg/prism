@@ -44,9 +44,18 @@ export function playNativeBrowserSpeech(
     return Promise.resolve();
   }
 
+  // Ensure speech synthesis engine is active and not paused by browser
+  try {
+    if (window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+    }
+  } catch (_) {}
+
   // Cancel any existing speech only if not in a sequence chunk
   if (!isSequenceChunk) {
-    window.speechSynthesis.cancel();
+    try {
+      window.speechSynthesis.cancel();
+    } catch (_) {}
   }
 
   const isKorean = /[가-힣]/.test(cleanText);
@@ -388,8 +397,9 @@ export const playTTS = async (
     }
 
     if (!data) {
+      const chunkTimeout = isSequenceChunk ? 12000 : (cleanText.length > 250 ? 25000 : 15000);
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 25000);
+      const timeoutId = setTimeout(() => controller.abort(), chunkTimeout);
       const response = await fetch('/api/ai/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -482,14 +492,13 @@ export const playTTS = async (
     if (sessionToVerify && ttsState.activeSessionId !== sessionToVerify) return;
 
     if (sequenceSessionId) {
-      // In sequence streaming mode, retry up to 3 times with fresh requests to avoid skipping chunks and avoid voice switching
-      for (let retryCount = 1; retryCount <= 3; retryCount++) {
+      // In sequence streaming mode, attempt 1 quick retry (4s) before immediately falling back to native browser speech
+      for (let retryCount = 1; retryCount <= 1; retryCount++) {
         if (sessionToVerify && ttsState.activeSessionId !== sessionToVerify) return;
         try {
-          console.warn(`[TTS] Sequence chunk API call attempt ${retryCount}/3 failed, retrying in ${retryCount * 500}ms...`, error);
-          await new Promise((r) => setTimeout(r, retryCount * 500));
+          await new Promise((r) => setTimeout(r, 200));
           const retryController = new AbortController();
-          const retryTimeoutId = setTimeout(() => retryController.abort(), 20000);
+          const retryTimeoutId = setTimeout(() => retryController.abort(), 4000);
           const retryRes = await fetch('/api/ai/tts', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -514,14 +523,11 @@ export const playTTS = async (
             }
           }
         } catch (retryErr) {
-          console.warn(`[TTS] Sequence chunk retry ${retryCount} error:`, retryErr);
+          console.warn(`[TTS] Sequence chunk quick retry error:`, retryErr);
         }
       }
-      // Fall back to native browser speech synthesis to ensure the reading never abruptly cuts off
-      console.warn('[TTS] Sequence chunk API generation failed after retries, falling back to Native Browser Speech to avoid cutoff');
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        try { window.speechSynthesis.cancel(); } catch (_) {}
-      }
+      // Fall back directly to native browser speech synthesis to prevent long silent freezes
+      console.warn('[TTS] Sequence chunk API failed, falling back to Native Browser Speech to maintain continuous speech flow');
       return playNativeBrowserSpeech(cleanText, wait, sessionToVerify, isSequenceChunk, voice);
     }
 
@@ -531,26 +537,12 @@ export const playTTS = async (
 };
 
 /**
- * Splits any long reading (e.g. Tarot 78-cards reading, horoscope, meditation)
- * into optimal, sentence-safe chunks and streams them with active prefetching.
- * This guarantees zero cutoffs, zero network gaps, and rock-solid mobile audio continuity.
+ * Splits text into optimal, sentence-safe chunks for sequential TTS streaming.
  */
-export const playTTSInChunks = async (
-  text: string,
-  voice?: string,
-  maxChunkLength = 150,
-  emotion?: string,
-): Promise<void> => {
-  // If already speaking or loading this exact sequence, click again stops playback
-  if (ttsState.isSpeaking || ttsState.isLoading) {
-    stopTTS();
-    return;
-  }
-
+export function splitSpeechIntoChunks(text: string, maxChunkLength = 110): string[] {
   const cleanText = prepareNaturalSpeechText(text);
-  if (!cleanText) return;
+  if (!cleanText) return [];
 
-  // Split into natural sentence tokens at punctuation or newline
   const rawSentences = cleanText.match(/[^.!?。！？\n]+[.!?。！？\n]?/g) || [cleanText];
   const chunks: string[] = [];
   let currentChunk = '';
@@ -559,14 +551,12 @@ export const playTTSInChunks = async (
     const s = sentence.trim();
     if (!s) continue;
 
-    // Merge short punctuation or solitary numbers into surrounding text
     const hasMeaningfulText = /[가-힣a-zA-Z0-9]/.test(s);
     if (!hasMeaningfulText) {
       currentChunk = currentChunk ? `${currentChunk} ${s}` : s;
       continue;
     }
 
-    // If an individual sentence exceeds maxChunkLength, split by commas or clause markers
     if (s.length > maxChunkLength) {
       if (currentChunk.trim()) {
         chunks.push(currentChunk.trim());
@@ -598,7 +588,58 @@ export const playTTSInChunks = async (
   if (currentChunk.trim()) {
     chunks.push(currentChunk.trim());
   }
+  return chunks;
+}
 
+/**
+ * Proactively prefetch the first few chunks of a speech text
+ */
+export function prefetchTTSChunks(
+  text: string,
+  voice?: string,
+  maxChunkLength = 110,
+  emotion?: string,
+): void {
+  try {
+    const chunks = splitSpeechIntoChunks(text, maxChunkLength);
+    if (chunks.length > 0) {
+      prefetchTTS(chunks[0], voice, emotion).catch(() => {});
+      if (chunks.length > 1) {
+        prefetchTTS(chunks[1], voice, emotion).catch(() => {});
+      }
+    }
+  } catch (_) {}
+}
+
+/**
+ * Splits any long reading (e.g. Tarot 78-cards reading, horoscope, meditation)
+ * into optimal, sentence-safe chunks and streams them with active prefetching.
+ * This guarantees zero cutoffs, zero network gaps, and rock-solid mobile audio continuity.
+ */
+export const playTTSInChunks = async (
+  text: string,
+  voice?: string,
+  maxChunkLength = 110,
+  emotion?: string,
+): Promise<void> => {
+  const cleanText = prepareNaturalSpeechText(text);
+  if (!cleanText) return;
+
+  // If already speaking or loading this exact sequence, click again toggles/stops playback
+  if (
+    (ttsState.isSpeaking || ttsState.isLoading) &&
+    (ttsState.activeFullText === cleanText || ttsState.activeText === cleanText)
+  ) {
+    stopTTS();
+    return;
+  }
+
+  // If previous different audio is still playing or loading, clean it up before starting this new sequence
+  if (ttsState.isSpeaking || ttsState.isLoading) {
+    stopTTS();
+  }
+
+  const chunks = splitSpeechIntoChunks(cleanText, maxChunkLength);
   if (chunks.length === 0) return;
 
   // Start sequence session

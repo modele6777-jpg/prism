@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   Sparkles, KeyRound, Copy, Check, RefreshCw, Heart, Eye, PenLine,
   ListChecks, Moon, Timer, Plus, X, BookOpen, Keyboard, Shuffle,
+  Volume2, VolumeX, Loader2,
 } from 'lucide-react';
 import { z } from 'zod';
 import { useApp } from '@/contexts/AppContext';
@@ -11,7 +12,8 @@ import { getTodayDateKey } from '@/lib/sharedStateSync';
 import { recordPrismFeature } from '@/lib/prismOmniSync';
 import { sendDailySecretToLucy } from '@/lib/oracleDeepInsight';
 import { TTSButton } from '@/components/TTSButton';
-import { playTTS, stopTTS } from '@/utils/tts';
+import { playTTS, playTTSInChunks, stopTTS, prefetchTTS, useTTSActive, useTTSState, prefetchTTSChunks } from '@/utils/tts';
+import { unlockAudioPlayback } from '@/lib/audio';
 import { ScriptingTypingPractice } from './ScriptingTypingPractice';
 import { safeLocalStorage } from '@/utils/safeStorage';
 import { generateDynamicSecretKit, getDailySecretIndex, transmuteWorryOrWish } from './dailySecretCatalog';
@@ -329,12 +331,35 @@ function VisualizationTimer({ guide, onComplete }: { guide: string; onComplete?:
   const [running, setRunning] = useState(false);
   const [done, setDone] = useState(false);
   const [completionNotice, setCompletionNotice] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
   const onCompleteRef = useRef(onComplete);
+  const ttsState = useTTSState();
+
+  // 1. Proactively prefetch the first few chunks of the guide text in advance so audio begins with 0ms latency
+  useEffect(() => {
+    if (!guide) return;
+    prefetchTTSChunks(guide, 'Kore', 110, '치유');
+  }, [guide]);
 
   useEffect(() => {
     onCompleteRef.current = onComplete;
   }, [onComplete]);
 
+  // 2. Safely play TTS using chunked streaming and user-gesture audio unlocking
+  const playVoice = useCallback(async () => {
+    if (!guide) return;
+    try {
+      unlockAudioPlayback();
+    } catch (_) {}
+    try {
+      stopTTS();
+      await playTTSInChunks(guide, 'Kore', 110, '치유');
+    } catch (err) {
+      console.warn('[VisualizationTimer] playTTSInChunks error:', err);
+    }
+  }, [guide]);
+
+  // 3. Countdown timer effect
   useEffect(() => {
     if (!running) return;
 
@@ -342,6 +367,7 @@ function VisualizationTimer({ guide, onComplete }: { guide: string; onComplete?:
       setRunning(false);
       setDone(true);
       setCompletionNotice(true);
+      stopTTS();
       playVisualizationAlarm();
       if (onCompleteRef.current) {
         onCompleteRef.current();
@@ -363,12 +389,16 @@ function VisualizationTimer({ guide, onComplete }: { guide: string; onComplete?:
   }, []);
 
   const start = () => {
+    try {
+      unlockAudioPlayback();
+    } catch (_) {}
     setSecondsLeft(68);
     setDone(false);
     setCompletionNotice(false);
     setRunning(true);
-    // Automatically play TTS audio guidance
-    playTTS(guide, 'Kore');
+    if (voiceEnabled) {
+      playVoice();
+    }
   };
 
   const reset = () => {
@@ -379,7 +409,20 @@ function VisualizationTimer({ guide, onComplete }: { guide: string; onComplete?:
     setSecondsLeft(68);
   };
 
+  const toggleVoice = () => {
+    if (voiceEnabled) {
+      stopTTS();
+      setVoiceEnabled(false);
+    } else {
+      setVoiceEnabled(true);
+      if (running) {
+        playVoice();
+      }
+    }
+  };
+
   const progress = ((68 - secondsLeft) / 68) * 100;
+  const isAudioActive = ttsState.isSpeaking || ttsState.isLoading;
 
   return (
     <div className="rounded-2xl border border-amber-500/20 bg-amber-500/[0.04] p-5 space-y-4 shadow-lg shadow-amber-950/20">
@@ -391,44 +434,110 @@ function VisualizationTimer({ guide, onComplete }: { guide: string; onComplete?:
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-amber-300/70 font-sans hidden sm:inline">
-            약 1분 오감 몰입 낭독
-          </span>
+          {/* 음성 안내 On/Off 토글 버튼 */}
+          <button
+            type="button"
+            onClick={toggleVoice}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-sans font-medium transition-all cursor-pointer ${
+              voiceEnabled
+                ? 'bg-amber-500/15 border-amber-500/35 text-amber-200 hover:bg-amber-500/25'
+                : 'bg-white/5 border-white/10 text-white/40 hover:text-white/70'
+            }`}
+            title={voiceEnabled ? '음성 코칭 끄기' : '음성 코칭 켜기'}
+          >
+            {voiceEnabled ? (
+              <>
+                <Volume2 size={13} className="text-amber-400 shrink-0" />
+                <span className="hidden sm:inline">음성 코칭 ON</span>
+                <span className="sm:hidden">음성 ON</span>
+              </>
+            ) : (
+              <>
+                <VolumeX size={13} className="text-white/40 shrink-0" />
+                <span className="hidden sm:inline">음성 안내 OFF</span>
+                <span className="sm:hidden">음성 OFF</span>
+              </>
+            )}
+          </button>
+
           <span className="text-[11px] font-mono font-bold text-amber-300/90 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/25">
             {running || done ? `${secondsLeft}초` : '68초'}
           </span>
         </div>
       </div>
-      <p className="text-sm text-white/85 leading-relaxed break-keep font-sans bg-black/30 p-4 rounded-xl border border-white/5">{guide}</p>
+
+      <p className="text-sm text-white/85 leading-relaxed break-keep font-sans bg-black/30 p-4 rounded-xl border border-white/5">
+        {guide}
+      </p>
+
       <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
         <div
           className="h-full bg-gradient-to-r from-amber-500 to-orange-400 transition-all duration-1000"
           style={{ width: `${progress}%` }}
         />
       </div>
+
       {completionNotice && (
         <div role="status" aria-live="polite" className="flex items-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm font-bold text-emerald-100 shadow-lg shadow-emerald-950/20">
           <Check size={16} className="shrink-0 text-emerald-300" />
           68초 시각화가 완료되었습니다. 따뜻한 알림음과 함께 오늘의 마음을 잘 간직해 보세요.
         </div>
       )}
+
       <div className="flex flex-wrap items-center gap-2 pt-1">
         {!running && !done && (
-          <button
-            type="button"
-            onClick={start}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500/30 to-orange-500/30 hover:from-amber-500/40 hover:to-orange-500/40 border border-amber-500/40 text-amber-100 text-xs font-bold uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-lg shadow-amber-950/30 active:scale-95 transition-all"
-          >
-            <Timer size={14} className="text-amber-300 animate-pulse" />
-            <span>시각화 시작</span>
-          </button>
+          <div className="flex items-center gap-3 flex-wrap">
+            <button
+              type="button"
+              onClick={start}
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500/30 to-orange-500/30 hover:from-amber-500/40 hover:to-orange-500/40 border border-amber-500/40 text-amber-100 text-xs font-bold uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-lg shadow-amber-950/30 active:scale-95 transition-all"
+            >
+              <Timer size={14} className="text-amber-300 animate-pulse" />
+              <span>시각화 시작 {voiceEnabled ? '(음성 가이드)' : ''}</span>
+            </button>
+            <span className="text-[11px] text-amber-300/70 font-sans hidden sm:inline">
+              {voiceEnabled ? '🎧 이어폰 권장 · 오감 몰입 음성 코칭' : '무음 집중 모드'}
+            </span>
+          </div>
         )}
+
         {running && (
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="px-4 py-2 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-200 text-xs font-mono flex items-center gap-2 animate-pulse">
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-              눈을 감고 이미 이루어진 장면을 생생히 느껴 보세요...
-            </span>
+            {/* 음성 상태 안내 배지 */}
+            {voiceEnabled && (
+              <>
+                {ttsState.isLoading && (
+                  <span className="px-3.5 py-2 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs font-sans flex items-center gap-2">
+                    <Loader2 size={13} className="animate-spin text-amber-400" />
+                    <span>음성 연결 중...</span>
+                  </span>
+                )}
+                {ttsState.isSpeaking && (
+                  <span className="px-3.5 py-2 rounded-xl border border-amber-500/30 bg-amber-500/15 text-amber-200 text-xs font-sans flex items-center gap-2 animate-pulse">
+                    <Volume2 size={14} className="text-amber-300 animate-bounce" />
+                    <span>오감 몰입 명상 음성 낭독 중...</span>
+                  </span>
+                )}
+                {!isAudioActive && (
+                  <button
+                    type="button"
+                    onClick={playVoice}
+                    className="px-3 py-2 rounded-xl border border-amber-500/40 bg-amber-500/20 hover:bg-amber-500/30 text-amber-100 text-xs font-sans flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all shadow-sm"
+                  >
+                    <Volume2 size={13} className="text-amber-300" />
+                    <span>음성 다시 듣기</span>
+                  </button>
+                )}
+              </>
+            )}
+
+            {!voiceEnabled && (
+              <span className="px-3.5 py-2 rounded-xl border border-white/10 bg-white/5 text-white/70 text-xs font-mono flex items-center gap-2 animate-pulse">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                눈을 감고 이미 이루어진 장면을 생생히 느껴 보세요...
+              </span>
+            )}
+
             <button
               type="button"
               onClick={reset}
@@ -438,6 +547,7 @@ function VisualizationTimer({ guide, onComplete }: { guide: string; onComplete?:
             </button>
           </div>
         )}
+
         {done && (
           <div className="flex items-center gap-2 flex-wrap">
             <span className="px-4 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/15 text-emerald-200 text-xs font-bold flex items-center gap-1.5">
@@ -450,6 +560,14 @@ function VisualizationTimer({ guide, onComplete }: { guide: string; onComplete?:
               className="px-3.5 py-2 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs cursor-pointer active:scale-95 transition-all"
             >
               다시 하기
+            </button>
+            <button
+              type="button"
+              onClick={playVoice}
+              className="px-3 py-2 rounded-xl border border-amber-500/30 bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 text-xs font-sans flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+            >
+              <Volume2 size={13} className="text-amber-300" />
+              <span>가이드 다시 듣기</span>
             </button>
           </div>
         )}

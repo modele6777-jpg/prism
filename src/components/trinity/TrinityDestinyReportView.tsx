@@ -640,7 +640,7 @@ ${saju.systemPromptSummary}
                   </div>
                 </div>
 
-                {/* 핵심 3대 처방 (컬러, 보약 음식, 힐링 리추얼) */}
+                {/* 핵심 4대 맞춤 처방 (컬러, 보약 음식, 힐링 티, 개운 리추얼) */}
                 <div className="space-y-2 text-xs text-zinc-300">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-zinc-400 shrink-0">행운 컬러:</span>
@@ -654,8 +654,19 @@ ${saju.systemPromptSummary}
                       <span>추천 보약 음식:</span>
                       <span className="text-[10px] text-zinc-500">약선 식단</span>
                     </div>
-                    <p className="font-medium text-white text-[11px] leading-snug bg-white/[0.03] p-1.5 rounded-lg border border-white/5">
+                    <p className="font-medium text-white text-[11px] leading-snug bg-white/[0.03] p-2 rounded-lg border border-white/5 break-keep">
                       🍲 {todayReport.remedy.luckyFood}
+                    </p>
+                  </div>
+
+                  {/* 추천 힐링 티 - 내용 전체가 잘림 없이 온전히 보이도록 구성 */}
+                  <div className="space-y-0.5">
+                    <div className="flex items-center justify-between text-zinc-400 text-[11px]">
+                      <span>추천 힐링 티:</span>
+                      <span className="text-[10px] text-emerald-400/80 font-mono">HEALING TEA</span>
+                    </div>
+                    <p className="font-medium text-emerald-200 text-[11px] leading-snug bg-emerald-500/10 p-2 rounded-lg border border-emerald-500/20 break-keep">
+                      🍵 {todayReport.remedy.luckyTea}
                     </p>
                   </div>
 
@@ -664,23 +675,19 @@ ${saju.systemPromptSummary}
                       <span>개운 실천 팁:</span>
                       <span className="text-[10px] text-amber-400/80 font-mono">RITUAL</span>
                     </div>
-                    <p className="font-medium text-amber-200 text-[11px] leading-snug bg-amber-500/10 p-1.5 rounded-lg border border-amber-500/20">
+                    <p className="font-medium text-amber-200 text-[11px] leading-snug bg-amber-500/10 p-2 rounded-lg border border-amber-500/20 break-keep">
                       ✨ {todayReport.remedy.actionTip}
                     </p>
                   </div>
 
-                  {/* 추가 힐링 정보: 추천 차(Tea) & 길한 시간(Golden Hour) */}
-                  <div className="pt-0.5 grid grid-cols-2 gap-1.5 text-[10px]">
-                    <div className="p-1.5 rounded-lg bg-white/[0.02] border border-white/5">
-                      <span className="text-zinc-500 block">🍵 힐링 티</span>
-                      <span className="text-zinc-300 font-medium truncate block" title={todayReport.remedy.luckyTea}>
-                        {todayReport.remedy.luckyTea.split('(')[0]}
+                  {/* 길한 시간 (Golden Hour) */}
+                  <div className="pt-0.5">
+                    <div className="p-2 rounded-lg bg-white/[0.03] border border-white/5 flex items-center justify-between gap-2 text-[11px]">
+                      <span className="text-zinc-400 flex items-center gap-1.5 shrink-0">
+                        <span>⏰</span> <span>길한 시간:</span>
                       </span>
-                    </div>
-                    <div className="p-1.5 rounded-lg bg-white/[0.02] border border-white/5">
-                      <span className="text-zinc-500 block">⏰ 길한 시간</span>
-                      <span className="text-zinc-300 font-medium truncate block" title={todayReport.remedy.luckyTime}>
-                        {todayReport.remedy.luckyTime.split('(')[0]}
+                      <span className="text-zinc-200 font-medium text-right text-[10.5px] break-keep">
+                        {todayReport.remedy.luckyTime}
                       </span>
                     </div>
                   </div>
@@ -701,6 +708,9 @@ ${saju.systemPromptSummary}
                           </div>
                           <p className="text-[10px] text-zinc-300 leading-relaxed">
                             {todayReport.remedy.prescriptionReason}
+                          </p>
+                          <p className="text-[10px] text-emerald-300/80 leading-relaxed border-t border-emerald-500/20 pt-1">
+                            🍵 <strong>힐링 티 처방:</strong> {todayReport.remedy.luckyTea}
                           </p>
                           {todayReport.remedy.luckyColorDetail && (
                             <p className="text-[10px] text-emerald-300/80 leading-relaxed border-t border-emerald-500/20 pt-1">
