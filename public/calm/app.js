@@ -625,32 +625,146 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // 8. Balloon Breathing (유기적 5초 호흡)
+  // 8. Balloon Breathing (유기적 5초 풍선 호흡 & 싱잉볼 오디오 알림 시스템)
   const breathingBalloon = document.getElementById('breathing-balloon');
   const balloonPhase = document.getElementById('balloon-phase');
   const balloonTimer = document.getElementById('balloon-timer');
   const btnBreathingToggle = document.getElementById('btn-breathing-toggle');
+  const btnBreathingFinish = document.getElementById('btn-breathing-finish');
   const cycleCountText = document.getElementById('cycle-count');
+  const targetCycleDisplay = document.getElementById('target-cycle-display');
+  const goalButtons = document.querySelectorAll('.btn-breathing-goal');
+
+  // 오디오 알림 컨트롤
+  const btnBreathingAudioToggle = document.getElementById('btn-breathing-audio-toggle');
+  const btnBreathingAudioPreview = document.getElementById('btn-breathing-audio-preview');
+  const breathingAudioIcon = document.getElementById('breathing-audio-icon');
+  const breathingAudioLabel = document.getElementById('breathing-audio-label');
+  const audioBellStatus = document.getElementById('audio-bell-status');
+
+  // 완주 축하 카드 & 재시작 버튼
+  const celebrationCard = document.getElementById('breathing-celebration-card');
+  const celebrationTitle = document.getElementById('celebration-title');
+  const celebrationDesc = document.getElementById('celebration-desc');
+  const btnBreathingRestart = document.getElementById('btn-breathing-restart');
 
   let cycleCount = 0;
+  let targetCycles = 5;
   let currentPhase = 'inhale'; // inhale, hold, exhale
   let countdown = 5;
+  let breathingAudioEnabled = true;
+
+  // 오디오 알림 설정 로드 (localStorage)
+  try {
+    const savedAudio = localStorage.getItem('calm_breathing_audio_bell');
+    if (savedAudio !== null) {
+      breathingAudioEnabled = savedAudio === 'true';
+    }
+  } catch (_) {}
+
+  function updateAudioBellUI() {
+    if (!btnBreathingAudioToggle) return;
+    if (breathingAudioEnabled) {
+      btnBreathingAudioToggle.classList.add('active');
+      if (breathingAudioIcon) breathingAudioIcon.textContent = '🔔';
+      if (breathingAudioLabel) breathingAudioLabel.textContent = '세션 완료 종소리(싱잉볼) 알림: 켜짐';
+      if (audioBellStatus) {
+        audioBellStatus.textContent = '싱잉볼 소리 활성';
+        audioBellStatus.style.background = 'rgba(90, 114, 93, 0.12)';
+        audioBellStatus.style.color = 'var(--forest-accent)';
+      }
+    } else {
+      btnBreathingAudioToggle.classList.remove('active');
+      if (breathingAudioIcon) breathingAudioIcon.textContent = '🔕';
+      if (breathingAudioLabel) breathingAudioLabel.textContent = '세션 완료 종소리 알림: 꺼짐';
+      if (audioBellStatus) {
+        audioBellStatus.textContent = '알림 음소거';
+        audioBellStatus.style.background = 'rgba(160, 160, 160, 0.15)';
+        audioBellStatus.style.color = 'var(--text-muted)';
+      }
+    }
+  }
+  updateAudioBellUI();
+
+  if (btnBreathingAudioToggle) {
+    btnBreathingAudioToggle.addEventListener('click', () => {
+      breathingAudioEnabled = !breathingAudioEnabled;
+      try {
+        localStorage.setItem('calm_breathing_audio_bell', String(breathingAudioEnabled));
+      } catch (_) {}
+      updateAudioBellUI();
+      // 알림 켤 때 부드러운 짧은 피드백 타종
+      if (breathingAudioEnabled && window.soundscapeEngine) {
+        if (typeof window.soundscapeEngine.playSingingBowlChime === 'function') {
+          window.soundscapeEngine.playSingingBowlChime({ freq: 528, volume: 0.5, duration: 3.5 });
+        }
+      }
+    });
+  }
+
+  if (btnBreathingAudioPreview) {
+    btnBreathingAudioPreview.addEventListener('click', () => {
+      if (window.soundscapeEngine) {
+        if (typeof window.soundscapeEngine.playSingingBowlChime === 'function') {
+          window.soundscapeEngine.playSingingBowlChime({ freq: 528, volume: 0.7, duration: 6.8 });
+        } else if (typeof window.soundscapeEngine.playChime === 'function') {
+          window.soundscapeEngine.playChime();
+        }
+      }
+    });
+  }
+
+  // 목표 사이클 선택 이벤트
+  if (goalButtons) {
+    goalButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const val = parseInt(btn.getAttribute('data-cycles') || '5', 10);
+        targetCycles = val;
+        goalButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        if (targetCycleDisplay) targetCycleDisplay.textContent = targetCycles;
+      });
+    });
+  }
 
   if (btnBreathingToggle) {
     btnBreathingToggle.addEventListener('click', () => {
       if (isBreathingActive) {
-        stopBreathing();
+        pauseBreathing();
       } else {
         startBreathing();
       }
     });
   }
 
+  if (btnBreathingFinish) {
+    btnBreathingFinish.addEventListener('click', () => {
+      stopBreathing(true);
+    });
+  }
+
+  if (btnBreathingRestart) {
+    btnBreathingRestart.addEventListener('click', () => {
+      if (celebrationCard) celebrationCard.style.display = 'none';
+      startBreathing();
+    });
+  }
+
   function startBreathing() {
+    // 사용자 클릭 시 오디오 엔진 깨우기 (Web Audio API 정책 완벽 대응)
+    if (window.soundscapeEngine && typeof window.soundscapeEngine.init === 'function') {
+      window.soundscapeEngine.init();
+    }
+
+    if (celebrationCard) celebrationCard.style.display = 'none';
+    if (breathingBalloon) breathingBalloon.classList.remove('chime-ringing');
+
     isBreathingActive = true;
     btnBreathingToggle.innerHTML = '<span>호흡 일시정지</span>';
     btnBreathingToggle.classList.add('btn-sage');
     btnBreathingToggle.classList.remove('btn-copper');
+    if (btnBreathingFinish) btnBreathingFinish.style.display = 'inline-block';
+
     currentPhase = 'inhale';
     countdown = 5;
     updateBalloonVisual();
@@ -675,8 +789,8 @@ document.addEventListener('DOMContentLoaded', () => {
           cycleCount++;
           if (cycleCountText) cycleCountText.textContent = cycleCount;
 
-          // 5회 호흡 (약 1분) 목표 달성 시 자동 세션 완료
-          if (cycleCount >= 5) {
+          // 목표 사이클 달성 시 자동 세션 완료 및 부드러운 싱잉볼 종소리 알림
+          if (cycleCount >= targetCycles) {
             stopBreathing(true);
             return;
           }
@@ -688,6 +802,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 1000);
   }
 
+  function pauseBreathing() {
+    isBreathingActive = false;
+    if (breathingInterval) {
+      clearInterval(breathingInterval);
+      breathingInterval = null;
+    }
+    btnBreathingToggle.innerHTML = '<span>호흡 계속하기</span>';
+    btnBreathingToggle.classList.add('btn-copper');
+    btnBreathingToggle.classList.remove('btn-sage');
+    if (balloonPhase) balloonPhase.textContent = '일시 정지됨 (준비되면 계속하세요)';
+  }
+
   function stopBreathing(isFinished = false) {
     isBreathingActive = false;
     if (breathingInterval) {
@@ -697,17 +823,51 @@ document.addEventListener('DOMContentLoaded', () => {
     btnBreathingToggle.innerHTML = '<span>호흡 시작하기</span>';
     btnBreathingToggle.classList.add('btn-copper');
     btnBreathingToggle.classList.remove('btn-sage');
+    if (btnBreathingFinish) btnBreathingFinish.style.display = 'none';
     if (breathingBalloon) breathingBalloon.style.transform = 'scale(1)';
 
     if (isFinished) {
-      if (balloonPhase) balloonPhase.innerHTML = '🎉 <span style="color:var(--forest-accent); font-weight:700;">5회 호흡 완주! 온몸의 긴장이 부드럽게 이완되었습니다.</span>';
-      if (balloonTimer) balloonTimer.textContent = '완료';
-      if (window.soundscapeEngine && typeof window.soundscapeEngine.playChime === 'function') {
-        window.soundscapeEngine.playChime();
+      const finalCount = cycleCount || targetCycles;
+      if (balloonPhase) {
+        balloonPhase.innerHTML = `🎉 <span style="color:var(--forest-accent); font-weight:700;">${finalCount}회 완주! 온몸의 긴장이 부드럽게 이완되었습니다.</span>`;
       }
+      if (balloonTimer) balloonTimer.textContent = '완료';
+
+      // 싱잉볼 사운드웨이브 펄스 링 시각 효과
+      if (breathingBalloon) {
+        breathingBalloon.classList.add('chime-ringing');
+        setTimeout(() => {
+          if (breathingBalloon) breathingBalloon.classList.remove('chime-ringing');
+        }, 5000);
+      }
+
+      // 오디오 알림 재생: 부드러운 티베트 싱잉볼 종소리 (528Hz Solfeggio)
+      if (breathingAudioEnabled && window.soundscapeEngine) {
+        if (typeof window.soundscapeEngine.playSingingBowlChime === 'function') {
+          window.soundscapeEngine.playSingingBowlChime({ freq: 528, volume: 0.75, duration: 7.0 });
+        } else if (typeof window.soundscapeEngine.playChime === 'function') {
+          window.soundscapeEngine.playChime();
+        }
+      }
+
+      // 완주 축하 카드 노출
+      if (celebrationCard) {
+        if (celebrationTitle) celebrationTitle.textContent = `${finalCount}회 풍선 호흡 완주!`;
+        if (celebrationDesc) {
+          celebrationDesc.innerHTML = breathingAudioEnabled
+            ? `부드러운 싱잉볼 종소리(528Hz)와 함께 미주신경이 활성화되어 온몸의 긴장이 풀렸습니다.`
+            : `호흡을 깊게 비워내고 몸과 마음에 평온한 중심을 되찾았습니다.`;
+        }
+        celebrationCard.style.display = 'block';
+      }
+
+      // 사이클 초기화
+      cycleCount = 0;
+      if (cycleCountText) cycleCountText.textContent = '0';
     } else {
       if (balloonPhase) balloonPhase.textContent = '준비';
       if (balloonTimer) balloonTimer.textContent = '5';
+      if (celebrationCard) celebrationCard.style.display = 'none';
     }
   }
 

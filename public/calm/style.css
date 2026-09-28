@@ -1642,6 +1642,230 @@ button, a, input, textarea, select {
   font-weight: 800;
 }
 
+/* Breathing Studio Goals & Audio Notification Panel */
+.breathing-goals-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 12px 0 6px;
+  flex-wrap: wrap;
+}
+
+.breathing-goals-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.btn-breathing-goal {
+  background: var(--bg-card);
+  border: 1px solid var(--border-linen);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  color: var(--text-sub);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-breathing-goal:hover {
+  border-color: var(--copper-primary);
+  color: var(--copper-primary);
+}
+
+.btn-breathing-goal.active {
+  background: linear-gradient(135deg, rgba(162, 89, 59, 0.12), rgba(162, 89, 59, 0.04));
+  border-color: var(--copper-primary);
+  color: var(--copper-primary);
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(162, 89, 59, 0.15);
+}
+
+.breathing-controls-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-outline-sage {
+  background: transparent;
+  border: 1.5px solid var(--sage-primary);
+  color: var(--sage-primary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-outline-sage:hover {
+  background: var(--sage-primary);
+  color: #ffffff;
+}
+
+.cycle-count-badge {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  background: var(--bg-linen);
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border-linen);
+}
+
+/* 🔔 싱잉볼 오디오 알림 패널 */
+.breathing-audio-panel {
+  width: 100%;
+  max-width: 520px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-linen);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  margin-top: 24px;
+  text-align: left;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+}
+
+.breathing-audio-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.audio-panel-tag {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-title);
+  letter-spacing: -0.01em;
+}
+
+.audio-bell-status {
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(90, 114, 93, 0.12);
+  color: var(--forest-accent);
+}
+
+.breathing-audio-toggle-wrap {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.btn-audio-bell-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 24px;
+  border: 1.5px solid var(--border-linen);
+  background: #ffffff;
+  color: var(--text-sub);
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.btn-audio-bell-toggle:hover {
+  border-color: var(--copper-primary);
+  transform: translateY(-1px);
+}
+
+.btn-audio-bell-toggle.active {
+  border-color: var(--sage-primary);
+  background: linear-gradient(135deg, rgba(90, 114, 93, 0.12), rgba(90, 114, 93, 0.03));
+  color: var(--forest-accent);
+  box-shadow: 0 2px 10px rgba(90, 114, 93, 0.15);
+}
+
+.btn-audio-preview {
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 16px;
+  border-radius: 24px;
+  border: 1px solid var(--border-linen);
+  background: var(--bg-linen);
+  color: var(--copper-primary);
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-audio-preview:hover {
+  background: var(--copper-primary);
+  color: #ffffff;
+  border-color: var(--copper-primary);
+  transform: translateY(-1px);
+}
+
+.breathing-audio-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin: 10px 0 0;
+}
+
+/* 싱잉볼 종소리 방출 펄스 링 애니메이션 */
+.organic-balloon.chime-ringing {
+  animation: singingBowlPulse 2s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+}
+
+@keyframes singingBowlPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(224, 169, 109, 0.8), 0 12px 35px rgba(162, 89, 59, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 28px rgba(224, 169, 109, 0), 0 12px 45px rgba(162, 89, 59, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(224, 169, 109, 0), 0 12px 35px rgba(162, 89, 59, 0.35);
+  }
+}
+
+/* 완주 축하 카드 */
+.breathing-celebration-card {
+  width: 100%;
+  max-width: 520px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(246, 241, 233, 0.95));
+  border: 1.5px solid var(--sage-primary);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-top: 18px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(90, 114, 93, 0.12);
+  animation: fadeIn 0.4s ease;
+}
+
+.breathing-celebration-card .celebration-icon {
+  font-size: 1.8rem;
+  margin-bottom: 6px;
+}
+
+.breathing-celebration-card h4 {
+  font-size: 1.15rem;
+  color: var(--forest-accent);
+  margin: 0 0 6px;
+  font-weight: 700;
+}
+
+.breathing-celebration-card p {
+  font-size: 0.9rem;
+  color: var(--text-sub);
+  margin: 0;
+  line-height: 1.5;
+}
+
 /* Modals (Practice Studio & Journal) */
 .modal-overlay {
   position: fixed;
@@ -3745,6 +3969,21 @@ button, a, input, textarea, select {
     width: 100%;
     min-height: 48px;
     font-size: 0.95rem;
+  }
+
+  #btn-breathing-finish {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .breathing-controls-row {
+    width: 100%;
+  }
+
+  .btn-audio-bell-toggle,
+  .btn-audio-preview {
+    width: 100%;
+    justify-content: center;
   }
 
   /* 10. iOS Bottom Sheet Style for Modals */

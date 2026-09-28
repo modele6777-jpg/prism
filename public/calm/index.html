@@ -359,6 +359,14 @@
           풍선이 부풀어 오를 때 코로 숨을 깊게 들이쉬고, 줄어들 때 입으로 천천히 내쉬어 보세요. 부교감 신경을 즉각 자극하여 몸의 긴장을 풉니다.
         </p>
 
+        <!-- 세션 목표 사이클 선택 바 -->
+        <div class="breathing-goals-row" id="breathing-goals-row">
+          <span class="breathing-goals-label">세션 목표:</span>
+          <button type="button" class="btn-breathing-goal" data-cycles="3">3회 (약 35초)</button>
+          <button type="button" class="btn-breathing-goal active" data-cycles="5">5회 (약 1분)</button>
+          <button type="button" class="btn-breathing-goal" data-cycles="10">10회 (약 2분)</button>
+        </div>
+
         <div class="balloon-stage-area">
           <div id="breathing-balloon" class="organic-balloon">
             <div id="balloon-phase" class="b-phase">준비</div>
@@ -366,11 +374,46 @@
           </div>
         </div>
 
-        <div style="display: flex; gap: 12px; align-items: center; margin-top: 10px;">
+        <div class="breathing-controls-row">
           <button id="btn-breathing-toggle" class="btn-copper" style="padding: 12px 28px; font-size: 1rem;">
             <span>호흡 시작하기</span>
           </button>
-          <span style="font-size: 0.88rem; color: var(--text-muted);">완료한 사이클: <strong id="cycle-count" style="color: var(--copper-primary);">0</strong>회</span>
+          <button id="btn-breathing-finish" class="btn-outline-sage" style="display: none; padding: 12px 20px; font-size: 0.92rem;">
+            <span>세션 완료하기 ✨</span>
+          </button>
+          <span class="cycle-count-badge">
+            완료한 사이클: <strong id="cycle-count" style="color: var(--copper-primary);">0</strong> / <span id="target-cycle-display">5</span>회
+          </span>
+        </div>
+
+        <!-- 🔔 오디오 알림 기능 패널 (싱잉볼 종소리) -->
+        <div class="breathing-audio-panel" id="breathing-audio-panel">
+          <div class="breathing-audio-header">
+            <span class="audio-panel-tag">🔔 오디오 알림 설정</span>
+            <span class="audio-bell-status" id="audio-bell-status">싱잉볼 소리 활성</span>
+          </div>
+          <div class="breathing-audio-toggle-wrap">
+            <button type="button" id="btn-breathing-audio-toggle" class="btn-audio-bell-toggle active" title="세션 종료 시 부드러운 종소리(싱잉볼) 재생 알림 켜기/끄기">
+              <span id="breathing-audio-icon" class="audio-bell-icon">🔔</span>
+              <span id="breathing-audio-label" class="audio-bell-label">세션 완료 종소리(싱잉볼) 알림: 켜짐</span>
+            </button>
+            <button type="button" id="btn-breathing-audio-preview" class="btn-audio-preview" title="부드러운 티베트 싱잉볼 종소리 미리 듣기">
+              <span>소리 미리듣기 🎵</span>
+            </button>
+          </div>
+          <p class="breathing-audio-hint">
+            세션 완주 시 528Hz 솔페지오 치유 배음의 부드러운 싱잉볼 종소리가 울려 깊은 이완과 고요한 평온을 선사합니다.
+          </p>
+        </div>
+
+        <!-- 완주 축하 & 이완 안내 배너 (초기 숨김) -->
+        <div id="breathing-celebration-card" class="breathing-celebration-card" style="display: none;">
+          <div class="celebration-icon">🎉 🔔</div>
+          <h4 id="celebration-title">풍선 호흡 세션 완주!</h4>
+          <p id="celebration-desc">부드러운 싱잉볼 종소리와 함께 온몸의 긴장이 풀리고 평온이 깃들었습니다.</p>
+          <button type="button" id="btn-breathing-restart" class="btn-copper" style="padding: 10px 22px; font-size: 0.9rem; margin-top: 10px;">
+            <span>다시 호흡하기 ↻</span>
+          </button>
         </div>
       </div>
     </section>

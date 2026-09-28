@@ -797,32 +797,94 @@ class SoundscapeEngine {
     } catch (e) {}
   }
 
-  // 싱글 차임 (기존 차임 유지)
-  playChime() {
+  /**
+   * 🔔 부드러운 티베트 싱잉볼 종소리 (Tibetan Singing Bowl Bell Strike)
+   * 5초 풍선 호흡 세션 완료 시 심신을 깊고 편안하게 진정시키는 치유 배음 타종
+   */
+  playSingingBowlChime(options = {}) {
     this.init();
     if (!this.ctx) return;
     try {
-      const osc1 = this.ctx.createOscillator();
-      const osc2 = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
+      if (this.ctx.state === 'suspended') {
+        this.ctx.resume();
+      }
 
-      osc1.frequency.setValueAtTime(216, this.ctx.currentTime);
-      osc2.frequency.setValueAtTime(434, this.ctx.currentTime);
+      const now = this.ctx.currentTime;
+      const baseFreq = options.freq || 528; // 528Hz Solfeggio / 432Hz 치유 주파수
+      const masterVol = options.volume !== undefined ? options.volume : 0.7;
+      const duration = options.duration || 6.8;
 
-      gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 5.0);
+      const chimeMaster = this.ctx.createGain();
+      chimeMaster.gain.setValueAtTime(masterVol, now);
+      if (this.masterGain) {
+        chimeMaster.connect(this.masterGain);
+      } else {
+        chimeMaster.connect(this.ctx.destination);
+      }
 
-      osc1.connect(gain);
-      osc2.connect(gain);
-      gain.connect(this.masterGain);
+      // 1. 부드러운 펠트 말렛 접촉음 (Soft felt-mallet transient strike)
+      try {
+        const malletNoise = this.ctx.createBufferSource();
+        malletNoise.buffer = this.generatePinkNoiseBuffer(1);
+        const malletFilter = this.ctx.createBiquadFilter();
+        malletFilter.type = 'bandpass';
+        malletFilter.frequency.setValueAtTime(baseFreq * 0.85, now);
+        malletFilter.Q.setValueAtTime(3.5, now);
 
-      osc1.start();
-      osc2.start();
-      osc1.stop(this.ctx.currentTime + 5.0);
-      osc2.stop(this.ctx.currentTime + 5.0);
+        const malletGain = this.ctx.createGain();
+        malletGain.gain.setValueAtTime(0.0001, now);
+        malletGain.gain.linearRampToValueAtTime(0.065, now + 0.015);
+        malletGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+
+        malletNoise.connect(malletFilter);
+        malletFilter.connect(malletGain);
+        malletGain.connect(chimeMaster);
+        malletNoise.start(now);
+        malletNoise.stop(now + 0.25);
+      } catch (_) {}
+
+      // 2. 티베트 싱잉볼 고유 배음 파셜 (Sub-base + Fundamental + Beating + Rich Harmonics)
+      const partials = [
+        { f: baseFreq * 0.5, gain: 0.32, decay: duration * 0.98 },      // 온기 있는 서브 베이스 (264Hz)
+        { f: baseFreq, gain: 0.48, decay: duration },                    // 맑고 청아한 기본음 (528Hz)
+        { f: baseFreq + 1.25, gain: 0.36, decay: duration * 0.96 },     // 맥놀이 진동 코러스 (+1.25Hz)
+        { f: baseFreq * 2.01, gain: 0.20, decay: duration * 0.75 },     // 1차 고조파 (1061Hz)
+        { f: baseFreq * 3.015, gain: 0.11, decay: duration * 0.55 },    // 2차 고조파 (1591Hz)
+        { f: baseFreq * 4.76, gain: 0.05, decay: duration * 0.38 },     // 상위 메탈릭 공명 (2513Hz)
+      ];
+
+      partials.forEach(p => {
+        const osc = this.ctx.createOscillator();
+        const pGain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(p.f, now);
+
+        // 부드러운 페이드인(클릭 팝 방지) 및 우아한 감쇠
+        pGain.gain.setValueAtTime(0.0001, now);
+        pGain.gain.linearRampToValueAtTime(p.gain, now + 0.025);
+        pGain.gain.exponentialRampToValueAtTime(0.0001, now + p.decay);
+
+        osc.connect(pGain);
+        pGain.connect(chimeMaster);
+
+        osc.start(now);
+        osc.stop(now + p.decay + 0.1);
+      });
+
+      // 3. 브라우저 햅틱 진동 피드백 (모바일 지원 기기)
+      if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+        try {
+          navigator.vibrate([25, 45, 30]);
+        } catch (_) {}
+      }
     } catch (e) {
-      console.warn('Audio chime error:', e);
+      console.warn('Singing bowl chime error:', e);
     }
+  }
+
+  // 싱글 차임 (기존 호환성 유지 및 싱잉볼 타종으로 고음질화)
+  playChime(options) {
+    return this.playSingingBowlChime(options);
   }
 }
 
