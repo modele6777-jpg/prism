@@ -17,7 +17,9 @@ import {
   Maximize2,
   Download,
   Volume2,
+  ArrowUp,
 } from "lucide-react";
+import { resetAppScroll } from "@/utils/scrollToTop";
 import { ImageOutputActions, downloadImage } from "@/components/ImageOutputActions";
 import { auth, db, collection, addDoc, serverTimestamp, query, orderBy, limit, getDocs } from "@/lib/firebase";
 import { getTodayDateKey, getDateSeed, isSameDayString, pickDailySeededItem } from "@/lib/dailyCache";
@@ -1802,22 +1804,22 @@ export function ArtRecommendationView() {
   }, [recommendation, nanobananaImage, generateNanobananaImage]);
 
   return (
-    <div className="w-full max-w-3xl mx-auto space-y-8 px-4 py-6 md:py-12 text-white">
+    <div className="w-full max-w-3xl mx-auto space-y-6 sm:space-y-8 px-3 sm:px-4 py-2 sm:py-6 md:py-12 text-white">
       {/* Intro Header */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="text-center space-y-4"
+        className="text-center space-y-3 sm:space-y-4"
       >
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300 font-bold uppercase tracking-widest shadow-lg animate-pulse">
-          <Palette size={14} className="text-blue-400" />
+        <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-[11px] sm:text-xs text-blue-300 font-bold uppercase tracking-widest shadow-lg animate-pulse">
+          <Palette size={13} className="text-blue-400" />
           MUSE SPECIAL FEATURE
         </div>
-        <h2 className="text-3xl md:text-5xl font-sans font-bold tracking-tight text-white leading-tight">
+        <h2 className="text-2xl sm:text-3xl md:text-5xl font-sans font-bold tracking-tight text-white leading-tight">
           Daily <span className="text-blue-400">ART</span>
         </h2>
-        <p className="text-sm text-white/50 max-w-xl mx-auto leading-relaxed font-sans">
+        <p className="text-xs sm:text-sm text-white/50 max-w-xl mx-auto leading-relaxed font-sans px-2">
           당신의 마음에 잠재된 영적 에너지를 깨우기 위해 뮤즈가 큐레이션하는 고전을 만나보세요. 
           오늘의 명곡·명시·명화가 매일 자동으로 추천됩니다.
         </p>
@@ -1825,8 +1827,8 @@ export function ArtRecommendationView() {
           매일 자정 이후 새로운 명작이 자동으로 큐레이션됩니다 · {getTodayDateKey()}
         </p>
 
-        {/* 🌟 모바일 및 데스크톱 상시 100% 노출: 오늘의 예술 추천 생성 액션 바 */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3 w-full max-w-md mx-auto">
+        {/* 🌟 모바일 및 데스크톱 상시 100% 노출: Daily ART 생성 액션 바 */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-3 pt-1 sm:pt-3 w-full max-w-md mx-auto">
           <button
             type="button"
             onClick={() => {
@@ -1838,17 +1840,17 @@ export function ArtRecommendationView() {
             }}
             disabled={loading}
             className="prism-rainbow-btn relative w-full sm:w-auto py-3.5 sm:py-4 px-6 sm:px-8 rounded-2xl text-xs sm:text-sm font-black uppercase tracking-[0.12em] transform active:scale-95 text-white shadow-xl flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50"
-            title="오늘의 예술 추천 생성하기"
+            title="Daily ART 생성하기"
           >
             <Sparkles size={16} className={loading ? "animate-spin" : "text-yellow-300 animate-pulse"} />
             <span>
               {loading
-                ? "🎨 예술 추천 생성 중..."
+                ? "🎨 Daily ART 생성 중..."
                 : customConcern.trim()
-                ? "🎨 나의 고민 맞춤 예술 추천 생성"
+                ? "🎨 고민 맞춤 Daily ART 생성"
                 : recommendation
-                ? "🎨 오늘의 예술 추천 새로 생성하기"
-                : "🎨 오늘의 예술 추천 생성하기"}
+                ? "✨ Daily ART 새로 생성하기"
+                : "✨ Daily ART 즉시 생성하기"}
             </span>
           </button>
 
@@ -1856,7 +1858,7 @@ export function ArtRecommendationView() {
             type="button"
             onClick={() => setIsCustomInputOpen((prev) => !prev)}
             disabled={loading}
-            className={`w-full sm:w-auto py-3.5 px-5 rounded-2xl border text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2 shadow-sm ${
+            className={`w-full sm:w-auto py-3 sm:py-3.5 px-5 rounded-2xl border text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2 shadow-sm ${
               isCustomInputOpen
                 ? "border-blue-400/40 bg-blue-500/25 text-blue-200"
                 : "border-blue-400/30 bg-blue-500/10 hover:bg-blue-500/20 text-white"
@@ -1953,9 +1955,10 @@ export function ArtRecommendationView() {
       {/* Pre-Listening Concern & Mood Input Panel */}
       {(!recommendation || isCustomInputOpen) && !loading && (
         <motion.div
+          id="dailyart-concern-panel"
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/[0.03] border border-white/10 p-6 sm:p-10 rounded-[32px] space-y-6 shadow-2xl backdrop-blur-xl relative"
+          className="bg-white/[0.03] border border-white/10 p-5 sm:p-10 rounded-[32px] space-y-5 sm:space-y-6 shadow-2xl backdrop-blur-xl relative"
         >
           {recommendation && (
             <div className="flex justify-end -mt-2 sm:-mt-4">
@@ -2031,10 +2034,10 @@ export function ArtRecommendationView() {
             <button
               onClick={() => void handleRecommendArt({ forceRefresh: true, userConcern: customConcern.trim() })}
               disabled={loading}
-              className="prism-rainbow-btn relative w-full sm:w-auto py-4 px-8 sm:px-10 rounded-2xl text-xs md:text-sm font-black uppercase tracking-[0.15em] transform active:scale-95 text-white shadow-2xl flex items-center justify-center gap-3 disabled:opacity-50 cursor-pointer"
+              className="prism-rainbow-btn relative w-full sm:w-auto py-3.5 sm:py-4 px-6 sm:px-10 rounded-2xl text-xs md:text-sm font-black uppercase tracking-[0.15em] transform active:scale-95 text-white shadow-2xl flex items-center justify-center gap-2.5 sm:gap-3 disabled:opacity-50 cursor-pointer"
             >
               <Sparkles size={16} className={loading ? "animate-spin" : "animate-pulse"} />
-              <span>{customConcern.trim() ? "🎨 나의 고민 맞춤 예술 추천 생성하기" : "🎨 오늘의 맞춤 예술 추천 생성하기"}</span>
+              <span>{loading ? "🎨 Daily ART 생성 중..." : customConcern.trim() ? "🎨 고민 맞춤 Daily ART 생성하기" : "✨ Daily ART 즉시 생성하기"}</span>
             </button>
             {isArtCacheFresh() && !recommendation && (
               <button
@@ -2688,7 +2691,7 @@ export function ArtRecommendationView() {
                 type="button"
                 onClick={() => {
                   void handleRecommendArt({ forceRefresh: true, randomOffset: Date.now(), userConcern: customConcern.trim() });
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  resetAppScroll("smooth");
                 }}
                 disabled={loading}
                 className="prism-rainbow-btn w-full sm:w-auto py-3.5 px-6 sm:px-8 rounded-2xl text-xs sm:text-sm font-black uppercase tracking-wider text-white flex items-center justify-center gap-2.5 shadow-xl active:scale-95 cursor-pointer disabled:opacity-50"
@@ -2696,8 +2699,8 @@ export function ArtRecommendationView() {
                 <Sparkles size={15} className={loading ? "animate-spin" : "text-yellow-300 animate-pulse"} />
                 <span>
                   {loading
-                    ? "🎨 예술 추천 생성 중..."
-                    : "🎨 오늘의 예술 추천 새로 생성하기"}
+                    ? "🎨 Daily ART 생성 중..."
+                    : "✨ Daily ART 새로 생성하기"}
                 </span>
               </button>
               <button
@@ -2707,7 +2710,12 @@ export function ArtRecommendationView() {
                     handleExitTossMode();
                   }
                   setIsCustomInputOpen(true);
-                  window.scrollTo({ top: 120, behavior: 'smooth' });
+                  const el = document.getElementById("dailyart-concern-panel");
+                  if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  } else {
+                    resetAppScroll("smooth");
+                  }
                 }}
                 className="w-full sm:w-auto px-5 sm:px-6 py-3.5 rounded-2xl border border-blue-400/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-200 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 shadow-lg shadow-blue-950/20"
               >
@@ -2722,6 +2730,61 @@ export function ArtRecommendationView() {
         )}
       </AnimatePresence>
 
+      {/* 🌟 모바일 전용 상시 플로팅 액션 바 (스크롤 위치와 무관하게 100% 상시 접근 및 생성 보장) */}
+      <aside
+        aria-label="Daily ART 모바일 빠른 생성 컨트롤"
+        className="fixed bottom-safe-fab left-1/2 -translate-x-1/2 z-40 sm:hidden flex items-center gap-1.5 p-1.5 rounded-full bg-zinc-950/95 border border-blue-400/50 backdrop-blur-2xl shadow-[0_10px_35px_rgba(0,0,0,0.85)] max-w-[95vw] w-max pointer-events-auto"
+      >
+        <button
+          type="button"
+          onClick={() => {
+            if (activeTossRef.current) {
+              handleExitTossMode();
+            }
+            void handleRecommendArt({
+              forceRefresh: true,
+              randomOffset: Date.now(),
+              userConcern: customConcern.trim(),
+            });
+            resetAppScroll("smooth");
+          }}
+          disabled={loading}
+          className="prism-rainbow-btn py-2 px-3.5 rounded-full text-xs font-black uppercase tracking-wider text-white flex items-center gap-1.5 shadow-lg active:scale-95 cursor-pointer disabled:opacity-50"
+          title="Daily ART 생성하기"
+        >
+          <Sparkles size={13} className={loading ? "animate-spin" : "text-yellow-300 animate-pulse"} />
+          <span className="whitespace-nowrap font-sans font-bold">
+            {loading ? "생성 중..." : recommendation ? "Daily ART 새로 생성" : "Daily ART 생성"}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setIsCustomInputOpen((prev) => !prev);
+            const el = document.getElementById("dailyart-concern-panel");
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+              resetAppScroll("smooth");
+            }
+          }}
+          disabled={loading}
+          className="py-2 px-2.5 rounded-full border border-blue-400/30 bg-blue-500/15 active:bg-blue-500/30 text-blue-200 text-xs font-bold flex items-center gap-1 cursor-pointer active:scale-95 whitespace-nowrap"
+          title="고민 맞춤 생성"
+        >
+          <span>✍️ 고민 맞춤</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => resetAppScroll("smooth")}
+          className="p-2 rounded-full border border-white/10 bg-white/5 active:bg-white/15 text-white/70 text-xs flex items-center justify-center cursor-pointer active:scale-95"
+          title="맨 위로 이동"
+        >
+          <ArrowUp size={13} />
+        </button>
+      </aside>
     </div>
   );
 }

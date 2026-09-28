@@ -2224,7 +2224,11 @@ ${concernContext ? `사용자가 들려준 현재 고민과 상황에 100% 공�
             <button
               key={item.id}
               onClick={() => {
-                setActiveMode(item.id as any);
+                if (isActive && item.id === 'artRecommendation') {
+                  resetAppScroll("smooth");
+                } else {
+                  setActiveMode(item.id as any);
+                }
               }}
               className={`prism-subnav-btn flex shrink-0 whitespace-nowrap items-center gap-2 md:gap-3 px-4 md:px-6 py-2.5 md:py-3 rounded-2xl transition-all duration-300 group ${isActive ? "bg-blue-600 text-white shadow-lg shadow-blue-500/20" : "text-white/40 hover:text-white hover:bg-white/5"}`}
             >
@@ -3093,7 +3097,7 @@ ${concernContext ? `사용자가 들려준 현재 고민과 상황에 100% 공�
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                className="w-full max-w-3xl mx-auto flex-1 flex flex-col justify-start pt-2 sm:pt-4 pb-20 md:pb-24"
+                className="w-full max-w-3xl mx-auto flex-1 flex flex-col justify-start pt-1 sm:pt-4 pb-24 md:pb-28"
               >
                 <ArtRecommendationView />
               </motion.div>
