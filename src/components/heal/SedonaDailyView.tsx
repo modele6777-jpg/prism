@@ -44,6 +44,7 @@ import {
 import { SEDONA_CORE_CANON } from '@/lib/sedonaWisdom';
 import { getTodayDateKey } from '@/lib/dailyCache';
 import { getKoreanParticle, attachKoreanParticle, extractCleanConcernNoun } from '@/utils/koreanGrammar';
+import { meditationSound } from '@/lib/oneMinuteMeditation';
 
 // Web Audio API Solfeggio Sound Generator
 function playSolfeggioTone(freq: number, durationMs = 3000) {
@@ -239,7 +240,11 @@ export function SedonaDailyView({ firebaseUser, onDailyComplete }: SedonaDailyVi
           if (prev <= 1) {
             setIsGapTimerActive(false);
             setHasCompletedGap(true);
-            playSolfeggioTone(528, 3000);
+            try {
+              meditationSound.playSingingBowlBell();
+            } catch (_) {
+              playSolfeggioTone(528, 3000);
+            }
             return 0;
           }
           return prev - 1;

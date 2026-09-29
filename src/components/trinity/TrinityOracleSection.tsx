@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { TAROT_DECK, TarotCard, getTarotCardImageUrl } from '@/data/tarotData';
 import { TarotSpread, SelectedTarotCardEntry } from './TarotSpread';
+import { Streamdown } from '@/components/Streamdown';
 import { invokeLLM } from '@/lib/ai';
 import { playTTS, playTTSInChunks, prefetchTTS, stopTTS, useTTSActive, useTTSState, prepareNaturalSpeechText } from '@/utils/tts';
 import { LucyTarotAdviceCard } from './LucyTarotAdviceCard';
@@ -295,6 +296,8 @@ export function TrinityOracleSection() {
   const [zoomedCard, setZoomedCard] = useState<{ card: TarotCard; slotName?: string } | null>(null);
 
   // Track whether the user has explicitly selected a mode or needs to choose
+  // 🌟 사용자 요청: "오라클타로 모드직접선택 화면을 오라클타로 초기화면으로 수정"
+  // 기본적으로 진입 시 모드 직접 선택 화면(isModeChosen = false)을 초기화면으로 표시
   const [isModeChosen, setIsModeChosen] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -303,15 +306,21 @@ export function TrinityOracleSection() {
         if (urlMode === 'healing' || urlMode === 'growth') return true;
         const sessionMode = sessionStorage.getItem('prism_oracle_target_mode');
         if (sessionMode === 'healing' || sessionMode === 'growth') return true;
-        const savedMode = localStorage.getItem(STORAGE_ORACLE_MODE);
-        const isExplicitlyChosen = localStorage.getItem(STORAGE_ORACLE_MODE_SELECTED) === 'true';
-        if (savedMode && isExplicitlyChosen) {
-          return true;
-        }
       } catch (_) {}
     }
     return false;
   });
+
+  const handleResetToModeSelection = useCallback(() => {
+    setIsModeChosen(false);
+    setStage('spread');
+    setDrawnCards([]);
+    setHealingResult(null);
+    setGrowthResult(null);
+    setIsHealingCompleted(false);
+    setSelectedCardIdx(0);
+    stopTTS();
+  }, []);
 
   // 질문자 명칭 추출 (기본: 박주형)
   const recipientName = useMemo(() => {
@@ -331,7 +340,7 @@ export function TrinityOracleSection() {
   const [isSummaryCopied, setIsSummaryCopied] = useState<boolean>(false);
 
   // 2. Card Draw Stage State ('intro' | 'spread' | 'result')
-  const [stage, setStage] = useState<'intro' | 'spread' | 'result'>('intro');
+  const [stage, setStage] = useState<'intro' | 'spread' | 'result'>('spread');
   const [drawnCards, setDrawnCards] = useState<TarotCard[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -445,6 +454,14 @@ export function TrinityOracleSection() {
     };
   }, [oracleMode, healingResult, growthResult, inquiryText, drawnCards, slotPositions, saju, oracleSummaryBullets]);
 
+  const displayFullReadingText = useMemo(() => {
+    if (oracleMode === 'healing') {
+      return healingResult?.message || '';
+    } else {
+      return growthResult?.message || growthResult?.macro_focus || '';
+    }
+  }, [oracleMode, healingResult?.message, growthResult?.message, growthResult?.macro_focus]);
+
   // Handle mode switch with persistent saving
   const handleModeSwitch = (mode: 'healing' | 'growth') => {
     setOracleMode(mode);
@@ -453,7 +470,7 @@ export function TrinityOracleSection() {
       localStorage.setItem(STORAGE_ORACLE_MODE, mode);
       localStorage.setItem(STORAGE_ORACLE_MODE_SELECTED, 'true');
     } catch (_) {}
-    setStage('intro');
+    setStage('spread');
     setDrawnCards([]);
     setHealingResult(null);
     setGrowthResult(null);
@@ -1648,45 +1665,58 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
             </p>
           </div>
 
-          {/* Dual Mode Switcher */}
-          <div className="flex items-center p-1 rounded-2xl bg-black/50 border border-white/10 shadow-inner shrink-0">
-            <button
-              onClick={() => handleModeSwitch('healing')}
-              className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all duration-300 cursor-pointer ${
-                isModeChosen && oracleMode === 'healing'
-                  ? 'text-yellow-200 font-bold shadow-lg'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              {isModeChosen && oracleMode === 'healing' && (
-                <motion.div
-                  layoutId="oracle-mode-pill"
-                  className="absolute inset-0 rounded-xl bg-gradient-to-r from-amber-600/50 via-yellow-600/40 to-indigo-600/40 border border-yellow-400/40"
-                  transition={{ type: 'spring', stiffness: 350, damping: 28 }}
-                />
-              )}
-              <Heart size={14} className="relative z-10 text-rose-300" />
-              <span className="relative z-10">힐링 (78장 풀덱)</span>
-            </button>
+          {/* Dual Mode Switcher & Mode Change Button */}
+          <div className="flex items-center gap-2 flex-wrap justify-center md:justify-end">
+            {isModeChosen && (
+              <button
+                type="button"
+                onClick={handleResetToModeSelection}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-xs font-bold text-amber-300 hover:text-white transition-all cursor-pointer shadow-sm active:scale-95"
+                title="모드 직접 선택 초기화면으로 이동"
+              >
+                <Layers size={13} className="text-amber-400" />
+                <span>모드 선택</span>
+              </button>
+            )}
+            <div className="flex items-center p-1 rounded-2xl bg-black/50 border border-white/10 shadow-inner shrink-0">
+              <button
+                onClick={() => handleModeSwitch('healing')}
+                className={`relative flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all duration-300 cursor-pointer ${
+                  isModeChosen && oracleMode === 'healing'
+                    ? 'text-yellow-200 font-bold shadow-lg'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                {isModeChosen && oracleMode === 'healing' && (
+                  <motion.div
+                    layoutId="oracle-mode-pill"
+                    className="absolute inset-0 rounded-xl bg-gradient-to-r from-amber-600/50 via-yellow-600/40 to-indigo-600/40 border border-yellow-400/40"
+                    transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+                  />
+                )}
+                <Heart size={14} className="relative z-10 text-rose-300" />
+                <span className="relative z-10">힐링 (78장)</span>
+              </button>
 
-            <button
-              onClick={() => handleModeSwitch('growth')}
-              className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all duration-300 cursor-pointer ${
-                isModeChosen && oracleMode === 'growth'
-                  ? 'text-yellow-200 font-bold shadow-lg'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              {isModeChosen && oracleMode === 'growth' && (
-                <motion.div
-                  layoutId="oracle-mode-pill"
-                  className="absolute inset-0 rounded-xl bg-gradient-to-r from-amber-600/50 via-yellow-600/40 to-indigo-600/40 border border-yellow-400/40"
-                  transition={{ type: 'spring', stiffness: 350, damping: 28 }}
-                />
-              )}
-              <Zap size={14} className="relative z-10 text-amber-400" />
-              <span className="relative z-10">자기계발 (78장 풀덱)</span>
-            </button>
+              <button
+                onClick={() => handleModeSwitch('growth')}
+                className={`relative flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all duration-300 cursor-pointer ${
+                  isModeChosen && oracleMode === 'growth'
+                    ? 'text-yellow-200 font-bold shadow-lg'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                {isModeChosen && oracleMode === 'growth' && (
+                  <motion.div
+                    layoutId="oracle-mode-pill"
+                    className="absolute inset-0 rounded-xl bg-gradient-to-r from-amber-600/50 via-yellow-600/40 to-indigo-600/40 border border-yellow-400/40"
+                    transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+                  />
+                )}
+                <Zap size={14} className="relative z-10 text-amber-400" />
+                <span className="relative z-10">자기계발 (78장)</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1759,7 +1789,7 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
             <div className="flex items-center gap-2">
               <button
                 onClick={() => {
-                  setStage('intro');
+                  setStage('spread');
                   setDrawnCards([]);
                   setHealingResult(null);
                   setGrowthResult(null);
@@ -1777,279 +1807,189 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
 
       {/* 2. Main Stage Area */}
       <AnimatePresence mode="wait">
-        {stage === 'intro' ? (
-          /* INTRO / PREPARATION VIEW */
+        {!isModeChosen ? (
+          /* 🌟 사용자 요청: "오라클타로 모드직접선택 화면을 오라클타로 초기화면으로 수정"
+             진입 시 항상 모드 직접 선택 화면이 초기화면으로 표시됨 */
           <motion.div
-            key="oracle-intro-stage"
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -15 }}
-            className="w-full relative space-y-6"
-          >
-            <div className="glass p-6 sm:p-8 md:p-10 rounded-3xl bg-gradient-to-br from-amber-950/20 via-zinc-950/80 to-purple-950/20 border border-amber-400/30 shadow-2xl relative overflow-hidden backdrop-blur-xl">
-              <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-              <div className="absolute bottom-0 left-0 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
-
-              <div className="relative z-10 max-w-2xl mx-auto text-center space-y-6">
-                {/* Badge */}
-                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/15 border border-amber-400/40 text-xs font-mono text-amber-300">
-                  <Sparkles size={13} className="text-amber-400 animate-pulse" />
-                  <span>수신자: <strong>{recipientName}</strong> 님 맞춤 사주 ✕ 타로 오라클</span>
-                </div>
-
-                {/* Main Heading */}
-                <div className="space-y-2">
-                  <h3 className="text-2xl sm:text-3xl font-serif font-black text-white tracking-tight">
-                    {oracleMode === 'healing'
-                      ? '사주 명리 ✕ 정통 타로 콜라보 힐링 오라클'
-                      : '잠재력을 일깨우는 4원소 마인드셋 오라클'}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-zinc-300 font-sans leading-relaxed">
-                    {oracleMode === 'healing'
-                      ? `${recipientName} 님의 사주 일간 본원과 78장 타로 카드의 상징을 교차 융합하여, 과거의 뿌리부터 현재의 마음, 미래의 치유와 해결의 열쇠를 도출합니다.`
-                      : `${recipientName} 님의 사주 실행력과 78장의 타로 4원소를 결합하여, 오늘 실천할 명쾌한 자기계발 해법을 제시합니다.`}
-                  </p>
-                </div>
-
-                {/* 3 Spread Slot Explanations */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-left pt-2">
-                  <div className="p-4 rounded-2xl bg-white/[0.03] border border-amber-400/20 space-y-1 backdrop-blur-sm">
-                    <span className="text-[10px] font-mono text-amber-400 block font-bold">1번 카드</span>
-                    <h4 className="text-sm font-bold text-white font-serif">{slotPositions[0]}</h4>
-                    <p className="text-[11px] text-zinc-400 leading-snug">
-                      {oracleMode === 'healing' ? '남모르게 혼자 삭여온 무의식과 과거의 근본 원인' : '오늘 마주할 핵심 마인드셋 원형'}
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-white/[0.03] border border-amber-400/20 space-y-1 backdrop-blur-sm">
-                    <span className="text-[10px] font-mono text-amber-400 block font-bold">2번 카드</span>
-                    <h4 className="text-sm font-bold text-white font-serif">{slotPositions[1]}</h4>
-                    <p className="text-[11px] text-zinc-400 leading-snug">
-                      {oracleMode === 'healing' ? '당면한 현실 상황과 마음속 에너지의 흐름' : '돌파해야 할 4원소 실행 역량'}
-                    </p>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-white/[0.03] border border-amber-400/20 space-y-1 backdrop-blur-sm">
-                    <span className="text-[10px] font-mono text-amber-400 block font-bold">3번 카드</span>
-                    <h4 className="text-sm font-bold text-white font-serif">{slotPositions[2]}</h4>
-                    <p className="text-[11px] text-zinc-400 leading-snug">
-                      {oracleMode === 'healing' ? '용신 보약과 결합된 미래의 해결 열쇠와 실천 조언' : '오늘 즉시 행동할 1분 마이크로 실천'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Optional Inquiry Input */}
-                <div className="text-left space-y-1.5 pt-2">
-                  <label className="text-xs text-amber-300/90 font-medium flex items-center justify-between">
-                    <span>털어놓고 싶은 마음의 짐이나 고민 (선택 입력)</span>
-                    <span className="text-[10px] text-zinc-400">자유롭게 입력하거나 비워두셔도 됩니다</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={inquiryText}
-                    onChange={(e) => setInquiryText(e.target.value)}
-                    placeholder="예: 요즘 성과에 대한 압박감이 심해요, 사람들과의 관계가 너무 지쳐요..."
-                    className="w-full px-4 py-3 rounded-xl bg-black/40 border border-amber-400/25 focus:border-amber-400 text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-400/50 transition-all"
-                  />
-                </div>
-
-                {/* Big Glowing Start Button */}
-                <div className="pt-4 flex flex-col items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDrawnCards([]);
-                      setHealingResult(null);
-                      setGrowthResult(null);
-                      setIsModeChosen(true);
-                      setStage('spread');
-                    }}
-                    className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-sm sm:text-base flex items-center justify-center gap-2.5 shadow-[0_0_25px_rgba(251,191,36,0.35)] hover:shadow-[0_0_35px_rgba(251,191,36,0.5)] transition-all cursor-pointer active:scale-98"
-                  >
-                    <Sparkles size={18} className="text-black" />
-                    <span>3장 카드 뽑기 시작하기</span>
-                    <ArrowRight size={16} className="text-black" />
-                  </button>
-                  <span className="text-[11px] text-zinc-400">
-                    원하는 카드를 천천히 3장 골라주시면 {recipientName} 님을 위한 사주 ✕ 타로 콜라보 리딩이 완성됩니다.
-                  </span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        ) : stage === 'spread' ? (
-          /* SPREAD CARD DRAW INTERACTION OR MODE SELECTION GATE */
-          <motion.div
-            key={`oracle-${isModeChosen ? 'draw' : 'mode-gate'}-stage`}
+            key="oracle-mode-gate-stage"
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
             className="w-full relative"
           >
-            {!isModeChosen ? (
-              /* MODE SELECTION GATE: Choose between Healing (22 Major) vs Growth (78 Full Deck) */
-              <div className="glass p-5 sm:p-8 rounded-3xl bg-zinc-950/80 border border-amber-400/25 shadow-2xl relative overflow-hidden text-center">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-400/30 text-[11px] font-mono text-amber-300 mb-3 uppercase tracking-widest">
-                  <Sparkles size={12} className="text-amber-400" />
-                  ORACLE TAROT MODE SELECTION
+            {/* MODE SELECTION GATE: Choose between Healing (22 Major) vs Growth (78 Full Deck) */}
+            <div className="glass p-5 sm:p-8 rounded-3xl bg-zinc-950/80 border border-amber-400/25 shadow-2xl relative overflow-hidden text-center">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-400/30 text-[11px] font-mono text-amber-300 mb-3 uppercase tracking-widest">
+                <Sparkles size={12} className="text-amber-400" />
+                ORACLE TAROT MODE SELECTION
+              </div>
+              <h3 className="text-xl sm:text-2xl font-serif font-black text-white">
+                오라클 타로 모드를 선택해 주세요
+              </h3>
+              <p className="text-xs sm:text-sm text-zinc-400 mt-2 max-w-lg mx-auto leading-relaxed">
+                사주 원국과 공명하는 2가지 특화 타로 모드 중 원하시는 방식을 선택하세요.<br className="hidden sm:inline" />
+                선택하신 모드는 자동으로 저장되어 다음번에도 그대로 유지됩니다.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mt-6 max-w-2xl mx-auto text-left">
+                {/* 🌿 Healing Mode Option Card */}
+                <button
+                  type="button"
+                  onClick={() => handleModeSwitch('healing')}
+                  className={`group relative p-5 sm:p-6 rounded-2xl border transition-all duration-300 flex flex-col justify-between cursor-pointer active:scale-[0.98] ${
+                    oracleMode === 'healing'
+                      ? 'bg-gradient-to-b from-rose-950/40 via-zinc-900/80 to-black border-rose-400/60 shadow-[0_0_25px_rgba(244,63,94,0.2)]'
+                      : 'bg-zinc-900/60 hover:bg-zinc-900/90 border-white/10 hover:border-rose-400/40'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <div className="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-400/40 flex items-center justify-center">
+                        <Heart size={20} className="text-rose-400 group-hover:scale-110 transition-transform" />
+                      </div>
+                      <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-400/30">
+                        78장 풀덱 (메이저 & 마이너)
+                      </span>
+                    </div>
+
+                    <h4 className="text-base sm:text-lg font-bold text-white group-hover:text-rose-200 transition-colors flex items-center gap-1.5">
+                      <span>🌿 힐링 타로</span>
+                      <span className="text-xs font-normal text-rose-300/80">(사주 ✕ 타로 콜라보)</span>
+                    </h4>
+                    <p className="text-xs text-zinc-300/90 mt-2 leading-relaxed">
+                      사주 원국과 78장 타로의 깊은 조화와 치유.<br />
+                      과거·현재·미래 3카드 심층 총평과 실천 조언.
+                    </p>
+
+                    <div className="mt-4 pt-3 border-t border-white/10 flex items-center gap-2 text-[11px] text-zinc-400">
+                      <ShieldCheck size={13} className="text-rose-400" />
+                      <span>정서적 안정 · 번아웃 해소 · 무조건적 수용</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 w-full py-2.5 rounded-xl bg-rose-500/20 group-hover:bg-rose-500/30 border border-rose-400/40 text-rose-200 text-xs font-bold text-center transition-colors">
+                    🌿 78장 힐링 타로 덱 펼치기
+                  </div>
+                </button>
+
+                {/* ⚡ Growth Mode Option Card */}
+                <button
+                  type="button"
+                  onClick={() => handleModeSwitch('growth')}
+                  className={`group relative p-5 sm:p-6 rounded-2xl border transition-all duration-300 flex flex-col justify-between cursor-pointer active:scale-[0.98] ${
+                    oracleMode === 'growth'
+                      ? 'bg-gradient-to-b from-amber-950/40 via-zinc-900/80 to-black border-amber-400/60 shadow-[0_0_25px_rgba(245,158,11,0.2)]'
+                      : 'bg-zinc-900/60 hover:bg-zinc-900/90 border-white/10 hover:border-amber-400/40'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center">
+                        <Zap size={20} className="text-amber-400 group-hover:scale-110 transition-transform" />
+                      </div>
+                      <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30">
+                        78장 풀덱 (4원소)
+                      </span>
+                    </div>
+
+                    <h4 className="text-base sm:text-lg font-bold text-white group-hover:text-amber-200 transition-colors flex items-center gap-1.5">
+                      <span>⚡ 자기계발 타로</span>
+                      <span className="text-xs font-normal text-amber-300/80">(마인드셋 & 실행)</span>
+                    </h4>
+                    <p className="text-xs text-zinc-300/90 mt-2 leading-relaxed">
+                      현실적 문제 돌파구와 추진력을 깨우는 전략적 통찰.<br />
+                      루시의 실행 매트릭스 분석과 1줄 마이크로 미션.
+                    </p>
+
+                    <div className="mt-4 pt-3 border-t border-white/10 flex items-center gap-2 text-[11px] text-zinc-400">
+                      <Flame size={13} className="text-amber-400" />
+                      <span>역량 레벨업 · 행동 전환 · 데일리 루틴</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 w-full py-2.5 rounded-xl bg-amber-500/20 group-hover:bg-amber-500/30 border border-amber-400/40 text-amber-200 text-xs font-bold text-center transition-colors">
+                    ⚡ 자기계발 타로 덱 펼치기
+                  </div>
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        ) : stage === 'spread' || stage === 'intro' ? (
+          /* SPREAD CARD DRAW INTERACTION */
+          <motion.div
+            key={`oracle-draw-stage-${oracleMode}`}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            className="w-full relative"
+          >
+            <div className="glass p-4 sm:p-6 rounded-3xl bg-zinc-950/70 border border-amber-400/20 shadow-2xl relative overflow-hidden">
+              <div className="text-center mb-2">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <span className="text-[10px] sm:text-xs font-mono uppercase tracking-widest text-amber-400/80">
+                    {oracleMode === 'healing' ? 'Inner Child Oracle • 78 Full Deck' : 'Mindset Toolkit • 78 Full Deck'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleResetToModeSelection}
+                    className="text-[10px] text-zinc-400 hover:text-amber-300 underline underline-offset-2 ml-1 cursor-pointer"
+                  >
+                    모드 변경
+                  </button>
                 </div>
-                <h3 className="text-xl sm:text-2xl font-serif font-black text-white">
-                  오라클 타로 모드를 선택해 주세요
+                <h3 className="text-lg sm:text-xl font-bold font-serif text-white mt-0.5">
+                  {oracleMode === 'healing' ? '내면의 숨결을 마주할 3장의 카드' : '오늘의 마인드셋을 이끌 3장의 카드'}
                 </h3>
-                <p className="text-xs sm:text-sm text-zinc-400 mt-2 max-w-lg mx-auto leading-relaxed">
-                  사주 원국과 공명하는 2가지 특화 타로 모드 중 원하시는 방식을 선택하세요.<br className="hidden sm:inline" />
-                  선택하신 모드는 자동으로 저장되어 다음번에도 그대로 유지됩니다.
+                <p className="text-xs text-zinc-400 mt-1 max-w-md mx-auto">
+                  {oracleMode === 'healing'
+                    ? '카드를 손가락이나 마우스로 굴려 마음이 이끄는 3장을 천천히 선택해 보세요.'
+                    : '4원소(불·물·공기·흙)의 현실 실행력을 깨울 3장의 도구를 선택해 주세요.'}
                 </p>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mt-6 max-w-2xl mx-auto text-left">
-                  {/* 🌿 Healing Mode Option Card */}
-                  <button
-                    type="button"
-                    onClick={() => handleModeSwitch('healing')}
-                    className={`group relative p-5 sm:p-6 rounded-2xl border transition-all duration-300 flex flex-col justify-between cursor-pointer active:scale-[0.98] ${
-                      oracleMode === 'healing'
-                        ? 'bg-gradient-to-b from-rose-950/40 via-zinc-900/80 to-black border-rose-400/60 shadow-[0_0_25px_rgba(244,63,94,0.2)]'
-                        : 'bg-zinc-900/60 hover:bg-zinc-900/90 border-white/10 hover:border-rose-400/40'
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-center justify-between gap-2 mb-3">
-                        <div className="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-400/40 flex items-center justify-center">
-                          <Heart size={20} className="text-rose-400 group-hover:scale-110 transition-transform" />
-                        </div>
-                        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-400/30">
-                          78장 풀덱 (메이저 & 마이너)
-                        </span>
-                      </div>
-
-                      <h4 className="text-base sm:text-lg font-bold text-white group-hover:text-rose-200 transition-colors flex items-center gap-1.5">
-                        <span>🌿 힐링 타로</span>
-                        <span className="text-xs font-normal text-rose-300/80">(사주 ✕ 타로 콜라보)</span>
-                      </h4>
-                      <p className="text-xs text-zinc-300/90 mt-2 leading-relaxed">
-                        사주 원국과 78장 타로의 깊은 조화와 치유.<br />
-                        과거·현재·미래 3카드 심층 총평과 실천 조언.
-                      </p>
-
-                      <div className="mt-4 pt-3 border-t border-white/10 flex items-center gap-2 text-[11px] text-zinc-400">
-                        <ShieldCheck size={13} className="text-rose-400" />
-                        <span>정서적 안정 · 번아웃 해소 · 무조건적 수용</span>
-                      </div>
-                    </div>
-
-                    <div className="mt-5 w-full py-2.5 rounded-xl bg-rose-500/20 group-hover:bg-rose-500/30 border border-rose-400/40 text-rose-200 text-xs font-bold text-center transition-colors">
-                      🌿 78장 힐링 타로 덱 펼치기
-                    </div>
-                  </button>
-
-                  {/* ⚡ Growth Mode Option Card */}
-                  <button
-                    type="button"
-                    onClick={() => handleModeSwitch('growth')}
-                    className={`group relative p-5 sm:p-6 rounded-2xl border transition-all duration-300 flex flex-col justify-between cursor-pointer active:scale-[0.98] ${
-                      oracleMode === 'growth'
-                        ? 'bg-gradient-to-b from-amber-950/40 via-zinc-900/80 to-black border-amber-400/60 shadow-[0_0_25px_rgba(245,158,11,0.2)]'
-                        : 'bg-zinc-900/60 hover:bg-zinc-900/90 border-white/10 hover:border-amber-400/40'
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-center justify-between gap-2 mb-3">
-                        <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center">
-                          <Zap size={20} className="text-amber-400 group-hover:scale-110 transition-transform" />
-                        </div>
-                        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30">
-                          78장 풀덱 (4원소)
-                        </span>
-                      </div>
-
-                      <h4 className="text-base sm:text-lg font-bold text-white group-hover:text-amber-200 transition-colors flex items-center gap-1.5">
-                        <span>⚡ 자기계발 타로</span>
-                        <span className="text-xs font-normal text-amber-300/80">(마인드셋 & 실행)</span>
-                      </h4>
-                      <p className="text-xs text-zinc-300/90 mt-2 leading-relaxed">
-                        현실적 문제 돌파구와 추진력을 깨우는 전략적 통찰.<br />
-                        루시의 실행 매트릭스 분석과 1줄 마이크로 미션.
-                      </p>
-
-                      <div className="mt-4 pt-3 border-t border-white/10 flex items-center gap-2 text-[11px] text-zinc-400">
-                        <Flame size={13} className="text-amber-400" />
-                        <span>역량 레벨업 · 행동 전환 · 데일리 루틴</span>
-                      </div>
-                    </div>
-
-                    <div className="mt-5 w-full py-2.5 rounded-xl bg-amber-500/20 group-hover:bg-amber-500/30 border border-amber-400/40 text-amber-200 text-xs font-bold text-center transition-colors">
-                      ⚡ 자기계발 타로 덱 펼치기
-                    </div>
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="glass p-4 sm:p-6 rounded-3xl bg-zinc-950/70 border border-amber-400/20 shadow-2xl relative overflow-hidden">
-                <div className="text-center mb-2">
-                  <div className="flex items-center justify-center gap-2 mb-1">
-                    <span className="text-[10px] sm:text-xs font-mono uppercase tracking-widest text-amber-400/80">
-                      {oracleMode === 'healing' ? 'Inner Child Oracle • 78 Full Deck' : 'Mindset Toolkit • 78 Full Deck'}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setIsModeChosen(false)}
-                      className="text-[10px] text-zinc-400 hover:text-amber-300 underline underline-offset-2 ml-1 cursor-pointer"
-                    >
-                      모드 변경
-                    </button>
-                  </div>
-                  <h3 className="text-lg sm:text-xl font-bold font-serif text-white mt-0.5">
-                    {oracleMode === 'healing' ? '내면의 숨결을 마주할 3장의 카드' : '오늘의 마인드셋을 이끌 3장의 카드'}
-                  </h3>
-                  <p className="text-xs text-zinc-400 mt-1 max-w-md mx-auto">
-                    {oracleMode === 'healing'
-                      ? '카드를 손가락이나 마우스로 굴려 마음이 이끄는 3장을 천천히 선택해 보세요.'
-                      : '4원소(불·물·공기·흙)의 현실 실행력을 깨울 3장의 도구를 선택해 주세요.'}
-                  </p>
-
-                  {/* Inquiry Display / Quick Edit in Spread Stage */}
-                  <div className="max-w-md mx-auto mt-3">
-                    <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-black/40 border border-amber-400/25 focus-within:border-amber-400/60 transition-all">
-                      <Sparkles size={14} className="text-amber-400 shrink-0" />
-                      <input
-                        type="text"
-                        value={inquiryText}
-                        onChange={(e) => setInquiryText(e.target.value)}
-                        placeholder={
-                          oracleMode === 'healing'
-                            ? "마음속 고민을 입력하면 치유 편지에 깊이 반영됩니다..."
-                            : "돌파하고 싶은 성장 고민을 입력하면 실행 편지에 깊이 반영됩니다..."
-                        }
-                        className="w-full bg-transparent text-xs text-white placeholder-zinc-500 focus:outline-none"
-                      />
-                      {inquiryText && (
-                        <button
-                          type="button"
-                          onClick={() => setInquiryText('')}
-                          className="text-[11px] text-zinc-500 hover:text-zinc-300 shrink-0 cursor-pointer"
-                          title="지우기"
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
+                {/* Inquiry Display / Quick Edit in Spread Stage */}
+                <div className="max-w-md mx-auto mt-3">
+                  <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-black/40 border border-amber-400/25 focus-within:border-amber-400/60 transition-all">
+                    <Sparkles size={14} className="text-amber-400 shrink-0" />
+                    <input
+                      type="text"
+                      value={inquiryText}
+                      onChange={(e) => setInquiryText(e.target.value)}
+                      placeholder={
+                        oracleMode === 'healing'
+                          ? "마음속 고민을 입력하면 치유 편지에 깊이 반영됩니다..."
+                          : "돌파하고 싶은 성장 고민을 입력하면 실행 편지에 깊이 반영됩니다..."
+                      }
+                      className="w-full bg-transparent text-xs text-white placeholder-zinc-500 focus:outline-none"
+                    />
+                    {inquiryText && (
+                      <button
+                        type="button"
+                        onClick={() => setInquiryText('')}
+                        className="text-[11px] text-zinc-500 hover:text-zinc-300 shrink-0 cursor-pointer"
+                        title="지우기"
+                      >
+                        ✕
+                      </button>
+                    )}
                   </div>
                 </div>
-
-                {/* Native TarotSpread Component Integration with Oracle Card Back */}
-                <div className="w-full min-h-[440px] md:min-h-[480px] relative">
-                  <TarotSpread
-                    key={`oracle-spread-${oracleMode}`}
-                    maxCards={3}
-                    positions={slotPositions}
-                    deckSource={activeDeckSource}
-                    cardBackVariant="oracle"
-                    allowReversed={false}
-                    spreadName={oracleMode === 'healing' ? '내면아이 쉼 스프레드' : '4원소 마인드셋 스프레드'}
-                    onComplete={handleCardsComplete}
-                    onCancel={() => {}}
-                  />
-                </div>
               </div>
-            )}
+
+              {/* Native TarotSpread Component Integration with Oracle Card Back */}
+              <div className="w-full min-h-[440px] md:min-h-[480px] relative">
+                <TarotSpread
+                  key={`oracle-spread-${oracleMode}`}
+                  maxCards={3}
+                  positions={slotPositions}
+                  deckSource={activeDeckSource}
+                  cardBackVariant="oracle"
+                  allowReversed={false}
+                  spreadName={oracleMode === 'healing' ? '내면아이 쉼 스프레드' : '4원소 마인드셋 스프레드'}
+                  onComplete={handleCardsComplete}
+                  onCancel={() => {}}
+                />
+              </div>
+            </div>
           </motion.div>
         ) : (
           /* RESULT PRESENTATION AREA */
@@ -2073,40 +2013,36 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
               </div>
             )}
 
-            {/* 3 Drawn Cards Mini Banner */}
-            <div className="glass p-4 sm:p-5 rounded-3xl bg-white/[0.03] border border-amber-400/25 flex flex-col md:flex-row items-center justify-between gap-4 backdrop-blur-xl">
-              <div className="flex flex-wrap items-center justify-around gap-3 flex-1 w-full">
-                {drawnCards.map((card, idx) => (
-                  <motion.div
-                    key={card.id || idx}
-                    initial={{ opacity: 0, scale: 0.85, y: 15 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: idx * 0.12, ease: [0.16, 1, 0.3, 1] }}
-                    className="flex items-center gap-3"
-                  >
-                    <TarotFlippingCard
-                      card={card}
-                      slotName={`#${idx + 1}`}
-                      index={idx}
-                      size="sm"
-                      onClick={() => setZoomedCard({ card, slotName: `#${idx + 1} ${slotPositions[idx]}` })}
-                    />
-                    <div>
-                      <span className="text-[10px] font-mono text-amber-400/80 block uppercase tracking-wider">
-                        {slotPositions[idx]}
-                      </span>
-                      <h4 className="text-sm sm:text-base font-bold text-white font-serif">{card.nameKo}</h4>
-                      <span className="text-[11px] text-zinc-400">{card.keywords.slice(0, 2).join(' · ')}</span>
-                    </div>
-                  </motion.div>
-                ))}
+            {/* 1. 3D Flipping Cards Spread Row (일반타로와 100% 동일한 상단 카드 펼침) */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2 flex-wrap px-1 text-center">
+                <p className="text-[10px] text-yellow-500/80 font-bold uppercase tracking-widest flex items-center gap-1.5">
+                  <Sparkles size={11} className="text-yellow-400 animate-pulse" />
+                  <span>{oracleMode === 'healing' ? '사주 ✕ 타로 3카드 힐링 스프레드' : '4원소 마인드셋 3카드 스프레드'}</span>
+                </p>
+                <span className="text-[10px] text-yellow-300/70 font-sans flex items-center gap-1">
+                  <ZoomIn size={11} className="text-yellow-400" />
+                  <span>(카드 클릭 시 확대 보기)</span>
+                </span>
               </div>
-              <div className="flex items-center justify-center w-full md:w-auto pt-2 md:pt-0 shrink-0">
-                <TarotResultShareButton
-                  data={oracleShareData}
-                  variant="primary"
-                  label="결과 카드 소장 & 공유"
-                />
+
+              <div
+                className="flex gap-2.5 sm:gap-4 flex-wrap justify-center p-2 sm:p-3 max-w-full"
+                style={{ perspective: 1200 }}
+              >
+                {drawnCards.map((card, idx) => {
+                  const positionLabel = slotPositions[idx] || `${idx + 1}번`;
+                  return (
+                    <TarotFlippingCard
+                      key={`${card.id}-${idx}`}
+                      card={card}
+                      slotName={positionLabel}
+                      index={idx}
+                      size="md"
+                      onClick={() => setZoomedCard({ card, slotName: `#${idx + 1} ${positionLabel}` })}
+                    />
+                  );
+                })}
               </div>
             </div>
 
@@ -2116,85 +2052,117 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
                 <div className="w-12 h-12 mx-auto rounded-full border-2 border-amber-400/30 border-t-amber-400 animate-spin" />
                 <p className="text-sm font-serif text-amber-200 animate-pulse">
                   {oracleMode === 'healing'
-                    ? '3장의 마음 조각을 다정하게 엮어 제제의 치유 편지를 작성 중입니다...'
-                    : '4원소 마인드셋과 질문자의 과제를 융합하여 루시의 실행 편지를 작성 중입니다...'}
+                    ? '사주 원국과 78장 타로를 융합하여 심층 오라클 리딩을 작성 중입니다...'
+                    : '4원소 마인드셋과 질문자의 과제를 융합하여 실행 편지를 작성 중입니다...'}
                 </p>
               </div>
-            ) : oracleMode === 'healing' && healingResult ? (
-              /* [HEALING RESULT VIEW: STANDARD TAROT COLLABORATION READING] */
-              <div className="w-full space-y-6">
-                {/* 🌟 78장 오라클 핵심 3줄 요약 카드 */}
-                {renderOracleSummaryCard()}
+            ) : (healingResult || growthResult) ? (
+              /* 2. Unified Glass Reading Card (일반타로와 100% 동일한 구성) */
+              <div className="glass p-4 sm:p-6 md:p-7 rounded-2xl sm:rounded-3xl border border-yellow-500/30 shadow-2xl flex flex-col relative overflow-hidden backdrop-blur-xl space-y-4">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 blur-[80px] pointer-events-none rounded-full" />
 
-                {/* 🎴 3장의 카드별 심층 분석 (과거 · 현재 · 미래 & 사주 공명) */}
-                {renderCardInsightsSection(healingResult.card_insights)}
-
-                {/* ☯️ 사주 ✕ 타로 종합 마스터 리포트 (본원 공명, 2026 세운, 오행 용신, 최종 계시) */}
-                {renderExecutiveSummaryCard()}
-
-                {/* 📜 사주 ✕ 타로 콜라보 심층 총평 */}
-                {renderCollaborativeReadingSection(healingResult.message)}
-
-                {/* 🌟 오라클 타로 맨 하단 맞춤 조언 (TTS 가능) */}
-                <LucyTarotAdviceCard
-                  cards={drawnCards}
-                  tarotConcern={inquiryText || '사주 명리 및 78장 타로 융합 운명 성찰'}
-                  readingText={healingResult.message}
-                  mode="oracle"
-                  oracleMode="healing"
-                  saju={saju}
-                  className="mt-4"
-                />
-
-                {/* ⚠️ 타로 성찰 주의사항 (맹목적 믿음 지양 상시 표시) */}
-                <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-500/[0.08] border border-amber-500/30 space-y-1.5 text-xs text-white/85 shadow-sm">
-                  <div className="flex items-center gap-1.5 font-bold text-amber-300 text-xs">
-                    <AlertCircle size={14} className="text-amber-400 shrink-0" />
-                    <span>타로 성찰 주의사항 (맹목적 믿음 지양)</span>
+                {/* Header: Title + 전체 낭독 TTS Button */}
+                <div className="flex justify-between items-center pb-3 border-b border-white/10 shrink-0 relative z-10 w-full font-sans">
+                  <div className="flex items-center gap-2 text-yellow-400">
+                    <Sparkles size={16} className="text-yellow-400 animate-pulse" />
+                    <h4 className="text-xs sm:text-sm font-bold tracking-widest uppercase text-white font-serif">
+                      {oracleMode === 'healing'
+                        ? 'Oracle Trinity’s Saju × Tarot Insight'
+                        : 'Oracle Lucy’s Self-Growth Insight'}
+                    </h4>
                   </div>
-                  <p className="leading-relaxed text-white/70 break-keep text-[11px] sm:text-xs">
-                    타로는 미래를 결정짓는 절대적 예언이 아니라, 자신의 내면을 성찰하고 더 나은 선택을 돕는 지혜의 나침반입니다. 맹목적인 믿음을 지양하고, 모든 운명의 결정권과 최종 열쇠는 언제나 당신 자신의 주체적인 의지와 지혜에 있습니다.
-                  </p>
+                  <div className="flex items-center gap-2">
+                    {oracleLetterSpeechText && (
+                      <button
+                        type="button"
+                        onClick={handleToggleOracleLetterTTS}
+                        className={`px-3 py-1.5 rounded-full text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-95 ${
+                          isOracleLetterTTSActive
+                            ? "bg-yellow-500/25 text-yellow-300 border border-yellow-400/40 animate-pulse"
+                            : "bg-white/10 hover:bg-white/20 text-white/90 border border-white/15"
+                        }`}
+                        title={isOracleLetterTTSActive ? "낭독 중지하기" : "전체 리딩 음성으로 듣기"}
+                      >
+                        {isOracleLetterTTSActive ? <VolumeX size={13} className="text-rose-300" /> : <Volume2 size={13} className="text-yellow-400" />}
+                        <span>{isOracleLetterTTSActive ? "중지" : "전체 낭독"}</span>
+                        {isOracleLetterTTSActive && (
+                          <span className="flex gap-0.5 ml-0.5">
+                            <span className="w-1 h-2 bg-yellow-300 rounded-full animate-bounce" />
+                            <span className="w-1 h-3 bg-yellow-200 rounded-full animate-bounce [animation-delay:0.15s]" />
+                            <span className="w-1 h-2 bg-yellow-400 rounded-full animate-bounce [animation-delay:0.3s]" />
+                          </span>
+                        )}
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ) : oracleMode === 'growth' && growthResult ? (
-              /* [GROWTH RESULT VIEW: STANDARD TAROT ACTION COLLABORATION READING] */
-              <div className="w-full space-y-6">
-                {/* 🌟 78장 오라클 핵심 3줄 요약 카드 */}
-                {renderOracleSummaryCard()}
 
-                {/* 🎴 3장의 카드별 심층 분석 */}
-                {renderCardInsightsSection(growthResult.card_insights)}
+                <div className="text-white/85 text-xs sm:text-sm leading-relaxed relative z-10 w-full font-sans space-y-4" style={{ wordBreak: 'keep-all' }}>
+                  {/* ✨ 핵심 3줄 요약 카드 (상황 진단, 방향성, 실천 처방 & 원클릭 TTS) */}
+                  {renderOracleSummaryCard()}
 
-                {/* ⚡ 사주 ✕ 타로 자기계발 종합 마스터 리포트 */}
-                {renderExecutiveSummaryCard()}
-
-                {/* 📜 사주 ✕ 타로 실행 총평 */}
-                {renderCollaborativeReadingSection(growthResult.message || growthResult.macro_focus)}
-
-                {/* 🌙 저녁 성찰 질문 */}
-                {renderEveningReflectionSection(growthResult.evening_reflection)}
-
-                {/* 🌟 오라클 타로 맨 하단 루시의 맞춤 성장 조언 (TTS 가능) */}
-                <LucyTarotAdviceCard
-                  cards={drawnCards}
-                  tarotConcern={inquiryText || '현실적인 도전과 자기계발 성장 돌파'}
-                  readingText={growthResult.message || growthResult.macro_focus}
-                  mode="oracle"
-                  oracleMode="growth"
-                  saju={saju}
-                  className="mt-4"
-                />
-
-                {/* ⚠️ 타로 성찰 주의사항 (맹목적 믿음 지양 상시 표시) */}
-                <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-500/[0.08] border border-amber-500/30 space-y-1.5 text-xs text-white/85 shadow-sm">
-                  <div className="flex items-center gap-1.5 font-bold text-amber-300 text-xs">
-                    <AlertCircle size={14} className="text-amber-400 shrink-0" />
-                    <span>타로 성찰 주의사항 (맹목적 믿음 지양)</span>
+                  {/* 📜 Streamdown 기반 정통 마크다운 본문 리딩 */}
+                  <div className="text-white/90 leading-relaxed font-sans text-xs sm:text-sm pt-2">
+                    <Streamdown immediate>{displayFullReadingText}</Streamdown>
                   </div>
-                  <p className="leading-relaxed text-white/70 break-keep text-[11px] sm:text-xs">
-                    타로는 미래를 결정짓는 절대적 예언이 아니라, 자신의 내면을 성찰하고 더 나은 선택을 돕는 지혜의 나침반입니다. 맹목적인 믿음을 지양하고, 모든 운명의 결정권과 최종 열쇠는 언제나 당신 자신의 주체적인 의지와 지혜에 있습니다.
-                  </p>
+
+                  {/* 🌟 그에 맞는 루시의 조언 (TTS 가능) */}
+                  <div className="pt-2">
+                    <LucyTarotAdviceCard
+                      cards={drawnCards}
+                      tarotConcern={inquiryText || (oracleMode === 'healing' ? '사주 명리 및 78장 타로 융합 운명 성찰' : '현실적인 도전과 자기계발 성장 돌파')}
+                      readingText={displayFullReadingText}
+                      mode="oracle"
+                      oracleMode={oracleMode}
+                      saju={saju}
+                      className="mt-2"
+                    />
+                  </div>
+
+                  {/* ⚠️ 타로 성찰 주의사항 (맹목적 믿음 지양 상시 표시) */}
+                  <div className="mt-3 p-3.5 sm:p-4 rounded-2xl bg-amber-500/[0.08] border border-amber-500/30 space-y-1.5 text-xs text-white/85 shadow-sm">
+                    <div className="flex items-center gap-1.5 font-bold text-amber-300 text-xs">
+                      <AlertCircle size={14} className="text-amber-400 shrink-0" />
+                      <span>타로 성찰 주의사항 (맹목적 믿음 지양)</span>
+                    </div>
+                    <p className="leading-relaxed text-white/70 break-keep text-[11px] sm:text-xs">
+                      타로는 미래를 결정짓는 절대적 예언이 아니라, 자신의 내면을 성찰하고 더 나은 선택을 돕는 지혜의 나침반입니다. 맹목적인 믿음을 지양하고, 모든 운명의 결정권과 최종 열쇠는 언제나 당신 자신의 주체적인 의지와 지혜에 있습니다.
+                    </p>
+                  </div>
+                </div>
+
+                {/* 3. Bottom Actions: Redraw, Mode Switch, Share */}
+                <div className="pt-3 border-t border-white/10 flex flex-wrap items-center justify-center sm:justify-between gap-2.5 relative z-10 w-full shrink-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStage('spread');
+                        setDrawnCards([]);
+                        setHealingResult(null);
+                        setGrowthResult(null);
+                        stopTTS();
+                      }}
+                      className="text-yellow-400/90 hover:text-yellow-300 hover:bg-yellow-500/10 transition-all text-[11px] font-bold flex items-center gap-1.5 py-2 px-4 rounded-full bg-yellow-500/5 border border-yellow-500/20 hover:border-yellow-500/40 cursor-pointer active:scale-95"
+                    >
+                      <RotateCcw size={12} />
+                      <span>다시 카드 뽑기 (Redraw)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleResetToModeSelection}
+                      className="text-white/80 hover:text-white hover:bg-white/10 transition-all text-[11px] font-medium flex items-center gap-1.5 py-2 px-4 rounded-full bg-white/5 border border-white/15 cursor-pointer active:scale-95"
+                    >
+                      <Layers size={12} />
+                      <span>오라클 모드 변경</span>
+                    </button>
+                  </div>
+
+                  <TarotResultShareButton
+                    data={oracleShareData}
+                    variant="secondary"
+                    label="결과 카드 소장 & 공유"
+                  />
                 </div>
               </div>
             ) : null}

@@ -832,11 +832,12 @@ export async function playTTSAudio(
   try {
     const audioCtx = getSharedAudioContext();
     if (audioCtx.state === 'suspended') {
-      await audioCtx.resume();
+      audioCtx.resume().catch(() => {});
     }
   } catch (_) {}
 
-  // Increment playback ID to supersede any older speech
+  // 1. Immediately stop any currently playing speech to prevent overlap
+  stopRawPCM();
   ttsPlaybackId++;
   const activePlaybackId = ttsPlaybackId;
   revokeTTSBlobUrl();
@@ -849,10 +850,6 @@ export async function playTTSAudio(
   // Acquire screen wake lock during playback to prevent screen sleep
   acquireScreenWakeLock().catch(() => {});
 
-  // On iOS devices (iPhone/iPad), Web Audio decodeAudioData is 100% immune to
-  // HTMLAudioElement blob autoplay locks that occur after async fetch.
-  const isIOS = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
-
   const bytes = base64ToBytes(base64);
   const detectedFormat = detectAudioFormat(bytes);
   const isCompressed = detectedFormat !== 'pcm' || encoding === 'mp3';
@@ -860,27 +857,9 @@ export async function playTTSAudio(
   ttsShouldBePlaying = true;
   startTTSKeepAlive();
 
-  // Web Audio decodeAudioData is 100% immune to HTMLAudioElement blob autoplay locks,
-  // URL revoke race conditions, and premature ended events across all devices (Desktop, iOS, Android).
-  try {
-    if (!isCompressed && encoding === 'pcm') {
-      await playRawPCM(base64, sampleRate);
-    } else {
-      // For compressed cloud TTS (EdgeTTS / Google), pitch is already synthesized cleanly.
-      // Set detune to 0 to prevent unnatural pitch shifts and voice distortion between chunks.
-      await playCompressedAudio(base64, profile.playbackRate || 1.0);
-    }
-    if (activePlaybackId === ttsPlaybackId && !isSequenceChunk) {
-      ttsShouldBePlaying = false;
-      stopTTSKeepAlive();
-      releaseScreenWakeLock().catch(() => {});
-    }
-    return;
-  } catch (webAudioErr) {
-    console.warn('[Audio] Direct WebAudio playback failed, falling back to HTMLAudio:', webAudioErr);
-  }
-
-  // Fallback playback engine: HTML5 Audio element
+  // Primary playback engine: HTML5 Audio element.
+  // HTMLAudioElement is standard-compliant, handles MP3 natively, and supports
+  // full background audio playback when screen is locked or tab is switched (iOS & Android).
   let mimeType = 'audio/mpeg';
   if (detectedFormat === 'wav') {
     mimeType = 'audio/wav';
@@ -899,28 +878,23 @@ export async function playTTSAudio(
   ttsBlobUrl = URL.createObjectURL(blob);
 
   const audio = getTTSAudioElement();
+  try {
+    audio.pause();
+  } catch (_) {}
   audio.loop = false;
   audio.volume = 1;
   audio.src = ttsBlobUrl;
 
   try {
-    audio.playbackRate = 1.0;
-    audio.defaultPlaybackRate = 1.0;
+    const targetRate = profile.playbackRate || 1.0;
+    audio.playbackRate = targetRate;
+    audio.defaultPlaybackRate = targetRate;
     if ('preservesPitch' in audio) {
       (audio as any).preservesPitch = true;
-    }
-    if ('mozPreservesPitch' in audio) {
-      (audio as any).mozPreservesPitch = true;
-    }
-    if ('webkitPreservesPitch' in audio) {
-      (audio as any).webkitPreservesPitch = true;
     }
   } catch (err) {
     console.warn('[Audio] Failed to set playback rate on audio element:', err);
   }
-
-  ttsShouldBePlaying = true;
-  startTTSKeepAlive();
 
   try {
     await new Promise<void>((resolve, reject) => {
@@ -933,13 +907,13 @@ export async function playTTSAudio(
       const finish = () => {
         if (isSettled) return;
         isSettled = true;
+        cleanup();
         if (activePlaybackId !== ttsPlaybackId) return;
         if (!isSequenceChunk) {
           ttsShouldBePlaying = false;
           stopTTSKeepAlive();
           releaseScreenWakeLock().catch(() => {});
         }
-        cleanup();
         resolve();
       };
 
@@ -948,13 +922,8 @@ export async function playTTSAudio(
       const onError = (e?: any) => {
         if (isSettled) return;
         isSettled = true;
-        if (activePlaybackId !== ttsPlaybackId) return;
-        if (!isSequenceChunk) {
-          ttsShouldBePlaying = false;
-          stopTTSKeepAlive();
-          releaseScreenWakeLock().catch(() => {});
-        }
         cleanup();
+        if (activePlaybackId !== ttsPlaybackId) return;
         reject(e || new Error('[AudioPlayer] HTMLAudioElement playback failed'));
       };
 
@@ -968,18 +937,22 @@ export async function playTTSAudio(
         });
       }
     });
+    return;
   } catch (htmlErr) {
-    console.warn('[AudioPlayer] HTML5 Audio fallback to WebAudio:', htmlErr);
+    console.warn('[AudioPlayer] HTMLAudioElement playback issue, falling back to WebAudio:', htmlErr);
     if (activePlaybackId !== ttsPlaybackId) return;
 
+    // Fallback: WebAudio decodeAudioData
     try {
       if (!isCompressed && encoding === 'pcm') {
         await playRawPCM(base64, sampleRate);
       } else {
-        await playCompressedAudio(base64, 1.0);
+        await playCompressedAudio(base64, profile.playbackRate || 1.0);
       }
     } finally {
       if (activePlaybackId === ttsPlaybackId && !isSequenceChunk) {
+        ttsShouldBePlaying = false;
+        stopTTSKeepAlive();
         releaseScreenWakeLock().catch(() => {});
       }
     }

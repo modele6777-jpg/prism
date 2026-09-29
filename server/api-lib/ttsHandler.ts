@@ -136,7 +136,7 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
 
       const tempPath = path.join(os.tmpdir(), `tts-${Date.now()}-${Math.random().toString(36).substring(7)}.mp3`);
 
-      const edgeTimeoutMs = Math.max(7000, Math.min(16000, safeText.length * 40));
+      const edgeTimeoutMs = Math.max(3200, Math.min(5500, safeText.length * 22));
 
       try {
         await Promise.race([
@@ -154,16 +154,10 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
     };
 
     let finalBuffer: Buffer | null = null;
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      try {
-        finalBuffer = await generateWithEdgeTTS(cleanText);
-        if (finalBuffer && finalBuffer.length > 0) break;
-      } catch (attemptErr) {
-        console.warn(`[TTS] EdgeTTS attempt ${attempt}/2 warning:`, attemptErr);
-        if (attempt < 2) {
-          await new Promise((r) => setTimeout(r, 100));
-        }
-      }
+    try {
+      finalBuffer = await generateWithEdgeTTS(cleanText);
+    } catch (attemptErr) {
+      console.warn(`[TTS] EdgeTTS fast failover:`, attemptErr);
     }
 
     if (finalBuffer && finalBuffer.length > 0) {

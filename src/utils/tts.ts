@@ -54,6 +54,7 @@ export function playNativeBrowserSpeech(
   // Cancel any existing speech only if not in a sequence chunk
   if (!isSequenceChunk) {
     try {
+      stopTTSPlayback();
       window.speechSynthesis.cancel();
     } catch (_) {}
   }
@@ -345,8 +346,8 @@ export const playTTS = async (
   const cleanText = normalizeTextForSpeech(text);
   if (!cleanText) return;
 
-  // If we are calling playTTS standalone (without wait / without sequence) and something is already loading/speaking for this exact text, second click stops it
-  if (!wait && !sequenceSessionId && (ttsState.isSpeaking || ttsState.isLoading) && (ttsState.activeText === cleanText || ttsState.activeFullText === cleanText)) {
+  // If we are calling playTTS standalone (without sequence) and something is already loading/speaking for this exact text, second click stops it
+  if (!sequenceSessionId && (ttsState.isSpeaking || ttsState.isLoading) && (ttsState.activeText === cleanText || ttsState.activeFullText === cleanText)) {
     stopTTS();
     return;
   }
@@ -355,17 +356,14 @@ export const playTTS = async (
   let mySessionId = sequenceSessionId;
   if (!mySessionId) {
     mySessionId = Math.random().toString();
-    if (!wait) {
-      stopTTS();
-      updateTTSState({ isLoading: true, isSpeaking: false, activeText: cleanText, activeFullText: fullTextReference || cleanText, activeSessionId: mySessionId });
-    } else {
-      if (!ttsState.activeSessionId) {
-        updateTTSState({ isLoading: true, isSpeaking: false, activeText: cleanText, activeFullText: fullTextReference || cleanText, activeSessionId: mySessionId });
-      }
-    }
+    stopTTS();
+    try {
+      primeTTSAudioElement();
+      unlockAudioPlayback();
+    } catch (_) {}
+    updateTTSState({ isLoading: true, isSpeaking: false, activeText: cleanText, activeFullText: fullTextReference || cleanText, activeSessionId: mySessionId });
   } else {
-    // External caller (e.g. EFT cycle) provided a sequenceSessionId directly.
-    // If no session is active yet, register it so abort-checks (activeSessionId !== sessionToVerify) don't fire immediately.
+    // External caller provided a sequenceSessionId directly.
     if (!ttsState.activeSessionId) {
       updateTTSState({ isLoading: true, isSpeaking: false, activeText: cleanText, activeFullText: fullTextReference || cleanText, activeSessionId: mySessionId });
     }
