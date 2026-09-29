@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Play, Pause, Disc, SkipForward, Volume2, VolumeX, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Music, Headphones, Shuffle, Repeat, Repeat1, RefreshCw, Trash2, EyeOff, RotateCcw, GripVertical, Sparkles } from "lucide-react";
+import { Play, Pause, Disc, SkipForward, Volume2, VolumeX, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Music, Headphones, Shuffle, Repeat, Repeat1, RefreshCw, Trash2, EyeOff, RotateCcw, GripVertical, Sparkles, Maximize2 } from "lucide-react";
+import { AudioReactive3DVisualizer } from "./AudioReactive3DVisualizer";
 import {
   getSharedAudioContext,
   getAmbientAudioBus,
@@ -26,6 +27,7 @@ import {
   permanentlyDeleteBgmTrack,
   restoreBgmTrackAvailability,
   unhideBgmTrack,
+  purgeAllLegacyBgmTracks,
   type HiddenBgmTrack,
   type PersistedBgmTrack,
 } from "@/lib/dailyBgm";
@@ -78,15 +80,10 @@ function buildNextShuffleOrder(trackCount: number, avoidIndex: number): number[]
 }
 
 function buildInitialTrackLibrary(): BgmTrack[] {
+  // 사용자의 요청: 기존 음악은 전부 삭제하고 어플에 맞춘 30곡으로 깨끗이 구성
+  purgeAllLegacyBgmTracks();
   FLOW_AUDIO_TRACKS.forEach((track) => restoreBgmTrackAvailability(track.url));
-  const extra = loadPersistedExtraBgmTracks().filter((track) => !isBgmTrackHidden(track));
-  const merged = FLOW_AUDIO_TRACKS.filter((track) => !isBgmTrackHidden(track));
-  extra.forEach((track) => {
-    if (!merged.some((item) => item.trackKey && item.trackKey === track.trackKey)) {
-      merged.push(track);
-    }
-  });
-  return merged.length > 0 ? merged : [...FLOW_AUDIO_TRACKS];
+  return [...FLOW_AUDIO_TRACKS];
 }
 
 interface LPRecordDiscProps {
@@ -209,12 +206,14 @@ export function BgMusicPlayer() {
   const [repeatMode, setRepeatMode] = useState<RepeatMode>("all");
   const [isShuffle, setIsShuffle] = useState(true);
   const [showPlaylist, setShowPlaylist] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [showHiddenTracks, setShowHiddenTracks] = useState(false);
   const [hiddenTracks, setHiddenTracks] = useState<HiddenBgmTrack[]>(() => loadHiddenBgmTracks());
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isPanelActive, setIsPanelActive] = useState(() => !!(window as any).__lucy_active_panel);
+  const [show3DVisualizerStage, setShow3DVisualizerStage] = useState(false);
 
   // Unified Mood Sound Integration (빗소리 · 백색소음 · 숲속소리 등)
   const {
@@ -1233,6 +1232,25 @@ export function BgMusicPlayer() {
     });
   };
 
+  const handleResetToCurated30Tracks = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    purgeAllLegacyBgmTracks();
+    FLOW_AUDIO_TRACKS.forEach((track) => restoreBgmTrackAvailability(track.url));
+    const freshTracks = [...FLOW_AUDIO_TRACKS];
+    tracksRef.current = freshTracks;
+    const newShuffled = shuffleTrackIndices(freshTracks.length);
+    shuffledIndicesRef.current = newShuffled;
+    setTracks(freshTracks);
+    setShuffledIndices(newShuffled);
+    setHiddenTracks([]);
+    setShowHiddenTracks(false);
+    setSelectedCategory("all");
+    setQueueIndex(0);
+    if (isPlayingRef.current) {
+      playTrackDirectly(newShuffled[0]);
+    }
+  };
+
   const handlePermanentDeleteTrack = async (hidden: HiddenBgmTrack, e: React.MouseEvent) => {
     e.stopPropagation();
     const confirmed = window.confirm(
@@ -1797,8 +1815,17 @@ export function BgMusicPlayer() {
           }`}
           onClick={(e) => e.stopPropagation()}
         >
+          {/* Audio-Reactive 3D Particle Visualizer embedded in card background */}
+          <AudioReactive3DVisualizer
+            mode="card-bg"
+            isPlaying={isPlaying && !isBuffering}
+            trackCategory={currentTrack.category}
+            trackName={currentTrack.name}
+            trackArtist={currentTrack.artist}
+          />
+
           {/* Top Control Bar Header */}
-          <div className="flex items-center gap-1.5 p-1.5 pl-2 pr-1.5 border-b border-white/10 bg-white/[0.03]">
+          <div className="relative z-10 flex items-center gap-1.5 p-1.5 pl-2 pr-1.5 border-b border-white/10 bg-white/[0.03]">
             {/* Drag Handle */}
             <div
               onPointerDown={handlePointerDown}
@@ -1830,8 +1857,11 @@ export function BgMusicPlayer() {
                   {currentTrack.name}
                   {isBuffering && <RefreshCw size={8} className="animate-spin text-amber-300 shrink-0" />}
                 </span>
-                <span className="text-[8px] text-white/40 truncate tracking-wider leading-none mt-0.5">
-                  {currentTrack.artist}
+                <span className="text-[8px] text-white/40 truncate tracking-wider leading-none mt-0.5 flex items-center gap-1">
+                  {currentTrack.category && (
+                    <span className="text-amber-300/80 font-semibold shrink-0">[{currentTrack.category}]</span>
+                  )}
+                  <span className="truncate">{currentTrack.artist}</span>
                 </span>
               </div>
               <ChevronDown
@@ -1841,6 +1871,17 @@ export function BgMusicPlayer() {
                 }`}
               />
             </div>
+
+            {/* 3D Visualizer Fullscreen Stage Button */}
+            <button
+              type="button"
+              onClick={() => setShow3DVisualizerStage(true)}
+              className="p-1.5 rounded-lg text-amber-300/80 hover:text-amber-200 hover:bg-amber-400/20 active:scale-95 transition-all shrink-0 cursor-pointer flex items-center justify-center border border-amber-400/25 shadow-sm"
+              title="3D 오디오 시각화 무대 열기"
+              aria-label="3D 오디오 시각화 무대 열기"
+            >
+              <Maximize2 size={11} />
+            </button>
 
             {/* LP Record Vinyl - on right corner */}
             <button
@@ -1859,7 +1900,7 @@ export function BgMusicPlayer() {
           </div>
 
           {/* Quick Media Controls & Volume Strip */}
-          <div className="flex items-center justify-between gap-1 px-2.5 py-1.5 bg-black/40 border-b border-white/5 text-white/70">
+          <div className="relative z-10 flex items-center justify-between gap-1 px-2.5 py-1.5 bg-black/60 backdrop-blur-md border-b border-white/5 text-white/70">
             {/* Playback Buttons */}
             <div className="flex items-center gap-0.5">
               <button
@@ -1911,27 +1952,40 @@ export function BgMusicPlayer() {
               </button>
             </div>
 
-            {/* Reactive Wave Equalizer */}
-            <div className="flex items-end gap-[2px] h-3 px-1 shrink-0">
-              {[1, 2, 3, 4].map((idx) => {
-                let animDur = "0.6s";
-                if (idx === 2) animDur = "0.4s";
-                if (idx === 3) animDur = "0.8s";
-                if (idx === 4) animDur = "0.5s";
-                return (
-                  <span
-                    key={idx}
-                    style={{
-                      animationDuration: animDur,
-                      animationIterationCount: "infinite",
-                      animationTimingFunction: "ease-in-out",
-                    }}
-                    className={`w-[2px] rounded-full bg-gradient-to-t from-amber-400/50 to-white transition-all duration-300 ${
-                      isPlaying && !isBuffering ? "animate-bounce" : "h-[2px] opacity-30"
-                    }`}
-                  />
-                );
-              })}
+            {/* Reactive Wave Equalizer & 3D Stage Trigger */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              <div className="flex items-end gap-[2px] h-3 px-1 shrink-0">
+                {[1, 2, 3, 4].map((idx) => {
+                  let animDur = "0.6s";
+                  if (idx === 2) animDur = "0.4s";
+                  if (idx === 3) animDur = "0.8s";
+                  if (idx === 4) animDur = "0.5s";
+                  return (
+                    <span
+                      key={idx}
+                      style={{
+                        animationDuration: animDur,
+                        animationIterationCount: "infinite",
+                        animationTimingFunction: "ease-in-out",
+                      }}
+                      className={`w-[2px] rounded-full bg-gradient-to-t from-amber-400/50 to-white transition-all duration-300 ${
+                        isPlaying && !isBuffering ? "animate-bounce" : "h-[2px] opacity-30"
+                      }`}
+                    />
+                  );
+                })}
+              </div>
+
+              {/* 3D Visualizer Quick Badge */}
+              <button
+                type="button"
+                onClick={() => setShow3DVisualizerStage(true)}
+                className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[7px] font-bold text-amber-300 bg-amber-400/15 hover:bg-amber-400/25 border border-amber-400/30 transition-all cursor-pointer active:scale-95 shadow-sm"
+                title="주파수 반응형 3D 파티클 시각화 무대 열기"
+              >
+                <Sparkles size={8} className="animate-pulse text-amber-300" />
+                <span>3D</span>
+              </button>
             </div>
 
             {/* Integrated Volume Control */}
@@ -1961,7 +2015,7 @@ export function BgMusicPlayer() {
 
           {/* Elongated Continuous Playlist Section (길게 이어진 고정 크기 플레이리스트) */}
           <div
-            className={`transition-all duration-300 flex flex-col ${
+            className={`relative z-10 bg-black/60 backdrop-blur-md transition-all duration-300 flex flex-col ${
               showPlaylist
                 ? "max-h-[320px] opacity-100"
                 : "max-h-0 opacity-0 pointer-events-none"
@@ -2107,12 +2161,21 @@ export function BgMusicPlayer() {
                 {/* Playlist Header */}
                 <div className="flex items-center justify-between px-2.5 py-1.5 border-b border-white/5 bg-white/[0.02]">
                   <span className="text-[9px] font-extrabold text-white/90 uppercase tracking-widest flex items-center gap-1.5 min-w-0">
-                    <Music size={10} className="text-amber-400 animate-pulse shrink-0" />
+                    <Sparkles size={10} className="text-amber-400 animate-pulse shrink-0" />
                     <span className="truncate">
-                      {showHiddenTracks ? "숨김 곡" : "Lucy Ambient Tracks"}
+                      {showHiddenTracks ? "숨김 곡" : "PRISM 힐링 사운드스케이프 (30곡)"}
                     </span>
                   </span>
-                  <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={handleResetToCurated30Tracks}
+                      className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[7px] font-semibold text-white/45 hover:text-amber-300 hover:bg-amber-400/10 border border-transparent hover:border-amber-400/30 transition-all"
+                      title="기존 음원 전부 삭제 및 어플 맞춤 30곡 클린 복원"
+                    >
+                      <RotateCcw size={7.5} />
+                      <span>30곡 복원</span>
+                    </button>
                     {hiddenTracks.length > 0 && (
                       <button
                         type="button"
@@ -2133,6 +2196,37 @@ export function BgMusicPlayer() {
                     </span>
                   </div>
                 </div>
+
+                {/* Category Filter Pills (전체 및 테마별 30곡 필터링) */}
+                {!showHiddenTracks && (
+                  <div className="flex items-center gap-1 px-2 py-1 overflow-x-auto no-scrollbar border-b border-white/5 bg-black/20">
+                    {[
+                      { id: "all", label: "전체", count: tracks.length },
+                      { id: "사주·오행", label: "사주·오행", count: tracks.filter((t) => t.category === "사주·오행").length },
+                      { id: "오라클 타로", label: "오라클 타로", count: tracks.filter((t) => t.category === "오라클 타로").length },
+                      { id: "솔페지오", label: "솔페지오", count: tracks.filter((t) => t.category === "솔페지오").length },
+                      { id: "세도나 방하착", label: "세도나 방하착", count: tracks.filter((t) => t.category === "세도나 방하착").length },
+                      { id: "호오포노포노", label: "호오포노포노", count: tracks.filter((t) => t.category === "호오포노포노").length },
+                      { id: "양자·뮤즈", label: "양자·뮤즈", count: tracks.filter((t) => t.category === "양자·뮤즈").length },
+                    ].map((cat) => {
+                      const isCatActive = selectedCategory === cat.id;
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => setSelectedCategory(cat.id)}
+                          className={`px-1.5 py-0.5 rounded-full text-[7px] font-semibold whitespace-nowrap transition-all shrink-0 ${
+                            isCatActive
+                              ? "bg-amber-400/25 text-amber-300 border border-amber-400/40 shadow-[0_0_6px_rgba(251,191,36,0.2)]"
+                              : "text-white/45 hover:text-white/80 hover:bg-white/5 border border-transparent"
+                          }`}
+                        >
+                          {cat.label} ({cat.count})
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {/* Fixed-Size Elongated Tracks List (고정 크기 스크롤 영역) */}
                 <div className="h-[190px] overflow-y-auto px-1.5 py-1 flex flex-col gap-0.5 custom-scrollbar">
@@ -2173,56 +2267,78 @@ export function BgMusicPlayer() {
                       </p>
                     )
                   ) : (
-                    tracks.map((track, idx) => {
-                      const isActive = shuffledIndices[queueIndex] === idx;
-                      const rowKey = getBgmTrackId(track);
-                      return (
-                        <div
-                          key={rowKey}
-                          className={`flex items-center gap-1 w-full rounded-lg transition-all duration-150 ${
-                            isActive
-                              ? "bg-amber-400/15 border border-amber-400/30 shadow-[0_0_8px_rgba(251,191,36,0.15)]"
-                              : "hover:bg-white/5 border border-transparent"
-                          }`}
-                        >
-                          <button
-                            type="button"
-                            onClick={() => handleSelectTrack(idx)}
-                            className={`flex flex-1 min-w-0 items-center justify-between text-left px-2 py-1 transition-all duration-150 ${
-                              isActive ? "text-amber-200 font-semibold" : "text-white/60 hover:text-white"
+                    tracks
+                      .map((track, idx) => ({ track, idx }))
+                      .filter(({ track }) => selectedCategory === "all" || track.category === selectedCategory)
+                      .map(({ track, idx }) => {
+                        const isActive = shuffledIndices[queueIndex] === idx;
+                        const rowKey = getBgmTrackId(track);
+                        return (
+                          <div
+                            key={rowKey}
+                            className={`flex items-center gap-1 w-full rounded-lg transition-all duration-150 ${
+                              isActive
+                                ? "bg-amber-400/15 border border-amber-400/30 shadow-[0_0_8px_rgba(251,191,36,0.15)]"
+                                : "hover:bg-white/5 border border-transparent"
                             }`}
                           >
-                            <div className="flex flex-col min-w-0 max-w-[85%]">
-                              <span className="text-[9px] truncate flex items-center gap-1">
-                                {track.name}
-                                {isActive && isPlaying && !isBuffering && (
-                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
-                                )}
-                              </span>
-                              <span className="text-[7.5px] text-white/40 truncate">{track.artist}</span>
-                            </div>
-                            {isActive && (
-                              <span className="text-[8px] text-amber-300 font-mono shrink-0">PLAYING</span>
-                            )}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => handleRemoveTrack(idx, e)}
-                            disabled={tracks.length <= 1}
-                            className="shrink-0 p-1 mr-0.5 rounded-md text-white/30 hover:text-rose-300 hover:bg-rose-500/10 disabled:opacity-20 disabled:pointer-events-none transition-all"
-                            title="목록에서 제거"
-                          >
-                            <Trash2 size={10} />
-                          </button>
-                        </div>
-                      );
-                    })
+                            <button
+                              type="button"
+                              onClick={() => handleSelectTrack(idx)}
+                              className={`flex flex-1 min-w-0 items-center justify-between text-left px-2 py-1 transition-all duration-150 ${
+                                isActive ? "text-amber-200 font-semibold" : "text-white/60 hover:text-white"
+                              }`}
+                            >
+                              <div className="flex flex-col min-w-0 max-w-[85%]">
+                                <span className="text-[9px] truncate flex items-center gap-1">
+                                  {track.name}
+                                  {isActive && isPlaying && !isBuffering && (
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
+                                  )}
+                                </span>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                  {track.category && (
+                                    <span className="px-1 py-0.2 rounded text-[6.5px] font-semibold bg-amber-400/10 text-amber-300 border border-amber-400/20 shrink-0">
+                                      {track.category}
+                                    </span>
+                                  )}
+                                  <span className="text-[7.5px] text-white/40 truncate">{track.artist}</span>
+                                </div>
+                              </div>
+                              {isActive && (
+                                <span className="text-[8px] text-amber-300 font-mono shrink-0">PLAYING</span>
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => handleRemoveTrack(idx, e)}
+                              disabled={tracks.length <= 1}
+                              className="shrink-0 p-1 mr-0.5 rounded-md text-white/30 hover:text-rose-300 hover:bg-rose-500/10 disabled:opacity-20 disabled:pointer-events-none transition-all"
+                              title="목록에서 숨기기"
+                            >
+                              <Trash2 size={10} />
+                            </button>
+                          </div>
+                        );
+                      })
                   )}
                 </div>
               </>
             )}
           </div>
         </div>
+      )}
+
+      {/* Fullscreen Immersive 3D Audio Visualizer Stage */}
+      {show3DVisualizerStage && (
+        <AudioReactive3DVisualizer
+          mode="stage"
+          isPlaying={isPlaying && !isBuffering}
+          trackCategory={currentTrack.category}
+          trackName={currentTrack.name}
+          trackArtist={currentTrack.artist}
+          onCloseStage={() => setShow3DVisualizerStage(false)}
+        />
       )}
     </div>
   );

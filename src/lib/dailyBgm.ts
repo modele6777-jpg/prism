@@ -45,6 +45,21 @@ export const BGM_EXTRA_TRACKS_STORAGE_KEY = 'prism_bgm_extra_tracks_v1';
 export const BGM_HIDDEN_TRACKS_STORAGE_KEY = 'prism_bgm_hidden_tracks_v1';
 export const BGM_PURGED_TRACKS_STORAGE_KEY = 'prism_bgm_purged_tracks_v1';
 
+export const BGM_V3_CLEAN_SLATE_KEY = 'prism_bgm_v3_clean_slate_30';
+
+export function purgeAllLegacyBgmTracks(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(BGM_EXTRA_TRACKS_STORAGE_KEY);
+    localStorage.removeItem(BGM_HIDDEN_TRACKS_STORAGE_KEY);
+    localStorage.removeItem(BGM_PURGED_TRACKS_STORAGE_KEY);
+    localStorage.removeItem('prism_bgm_extra_tracks');
+    localStorage.setItem(BGM_V3_CLEAN_SLATE_KEY, 'true');
+  } catch {
+    // ignore
+  }
+}
+
 export type HiddenBgmTrack = {
   id: string;
   name: string;
@@ -86,6 +101,10 @@ function normalizeHiddenBgmTrack(entry: unknown): HiddenBgmTrack | null {
 export function loadHiddenBgmTracks(): HiddenBgmTrack[] {
   if (typeof window === 'undefined') return [];
   try {
+    if (localStorage.getItem(BGM_V3_CLEAN_SLATE_KEY) !== 'true') {
+      purgeAllLegacyBgmTracks();
+      return [];
+    }
     const raw = localStorage.getItem(BGM_HIDDEN_TRACKS_STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
@@ -459,6 +478,10 @@ export type PersistedBgmTrack = {
 export function loadPersistedExtraBgmTracks(): PersistedBgmTrack[] {
   if (typeof window === 'undefined') return [];
   try {
+    if (localStorage.getItem(BGM_V3_CLEAN_SLATE_KEY) !== 'true') {
+      purgeAllLegacyBgmTracks();
+      return [];
+    }
     const raw = localStorage.getItem(BGM_EXTRA_TRACKS_STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);

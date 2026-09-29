@@ -60,6 +60,7 @@ const AMBIENT_BUS_IDLE_GAIN = 1.0;
 let ambientNormalizerCompressor: DynamicsCompressorNode | null = null;
 let ambientNormalizerMakeup: GainNode | null = null;
 let ambientNormalizerLimiter: DynamicsCompressorNode | null = null;
+let ambientAnalyserNode: AnalyserNode | null = null;
 
 function ensureAmbientChain(ctx: AudioContext) {
   ensureMasterChain(ctx);
@@ -67,6 +68,16 @@ function ensureAmbientChain(ctx: AudioContext) {
 
   ambientBusInput = ctx.createGain();
   ambientBusInput.gain.setValueAtTime(AMBIENT_BUS_IDLE_GAIN, ctx.currentTime);
+
+  // Analyser node tapped directly into the ambient bus (captures all 30 BGM tracks)
+  try {
+    ambientAnalyserNode = ctx.createAnalyser();
+    ambientAnalyserNode.fftSize = 256;
+    ambientAnalyserNode.smoothingTimeConstant = 0.82;
+    ambientBusInput.connect(ambientAnalyserNode);
+  } catch (err) {
+    console.warn("[Audio] Could not create ambientAnalyserNode:", err);
+  }
 
   // Stage 1: Transparent Dynamic Range Leveler / RMS Compressor (EBU R128 ambient leveling)
   ambientNormalizerCompressor = ctx.createDynamicsCompressor();
@@ -105,6 +116,28 @@ export function getAmbientAudioBus(): GainNode {
   const ctx = getSharedAudioContext();
   ensureAmbientChain(ctx);
   return ambientBusInput!;
+}
+
+/**
+ * Returns the shared AnalyserNode for background music frequency analysis.
+ * Tapped into ambientBusInput so it captures all 30 procedural tracks and HTML audio.
+ */
+export function getAmbientAnalyserNode(): AnalyserNode | null {
+  try {
+    if (typeof window === 'undefined') return null;
+    const ctx = getSharedAudioContext();
+    ensureAmbientChain(ctx);
+    if (!ambientAnalyserNode || ambientAnalyserNode.context !== ctx) {
+      ambientAnalyserNode = ctx.createAnalyser();
+      ambientAnalyserNode.fftSize = 256;
+      ambientAnalyserNode.smoothingTimeConstant = 0.82;
+      ambientBusInput?.connect(ambientAnalyserNode);
+    }
+    return ambientAnalyserNode;
+  } catch (err) {
+    console.warn("[Audio] Failed to get ambient AnalyserNode:", err);
+    return null;
+  }
 }
 
 let isAmbientDucked = false;
