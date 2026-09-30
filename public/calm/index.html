@@ -97,7 +97,305 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Nanum+Myeongjo:wght@400;700;800&family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   
-  <link rel="stylesheet" href="./style.css?v=31.1">
+  <link rel="stylesheet" href="./style.css?v=34.0">
+  <style id="organic-balloon-breathing-css">
+    /* Fluid Organic Balloon Breathing Sequence */
+    .balloon-stage-area {
+      position: relative;
+      height: 290px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 28px 0;
+      overflow: visible;
+      perspective: 1000px;
+    }
+
+    .balloon-aura-wrapper {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 150px;
+      height: 150px;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .balloon-aura-ring {
+      position: absolute;
+      inset: -16px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(224, 169, 109, 0.45);
+      background: radial-gradient(circle, rgba(224, 169, 109, 0.12) 0%, rgba(162, 89, 59, 0.03) 70%, transparent 100%);
+      opacity: 0.25;
+      transform: scale(0.9);
+      transition: opacity 1.2s ease, transform 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+      filter: blur(0.5px);
+    }
+
+    .balloon-aura-ring.ring-2 {
+      inset: -36px;
+      border-color: rgba(224, 169, 109, 0.28);
+      border-width: 1px;
+      opacity: 0.15;
+    }
+
+    .balloon-aura-ring.ring-3 {
+      inset: -62px;
+      border-color: rgba(217, 119, 6, 0.18);
+      border-width: 1px;
+      border-style: dashed;
+      opacity: 0.1;
+    }
+
+    .organic-balloon {
+      position: relative;
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 32% 28%, #f6cf9c 0%, #e0a96d 35%, #b86b43 72%, #7e3a20 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow: 0 14px 40px rgba(162, 89, 59, 0.38), 0 0 25px rgba(224, 169, 109, 0.22);
+      z-index: 2;
+      cursor: pointer;
+      user-select: none;
+      touch-action: manipulation;
+      will-change: transform, border-radius, box-shadow;
+      transform-origin: center center;
+      transform: scale(1);
+      transition: box-shadow 0.6s ease;
+    }
+
+    .organic-balloon::before {
+      content: "";
+      position: absolute;
+      top: 10%;
+      left: 15%;
+      width: 45%;
+      height: 30%;
+      border-radius: 50% 50% 40% 40%;
+      background: radial-gradient(ellipse at 40% 30%, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0) 75%);
+      pointer-events: none;
+      filter: blur(2px);
+      transform: rotate(-15deg);
+      transition: opacity 1.5s ease;
+    }
+
+    .organic-balloon::after {
+      content: "";
+      position: absolute;
+      inset: 2px;
+      border-radius: inherit;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      box-shadow: inset 0 2px 12px rgba(255, 255, 255, 0.4), inset 0 -6px 16px rgba(0, 0, 0, 0.25);
+      pointer-events: none;
+    }
+
+    .balloon-glow-core {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(circle at 35% 30%, rgba(255, 235, 200, 0.4) 0%, rgba(245, 158, 11, 0.15) 45%, transparent 70%);
+      pointer-events: none;
+      opacity: 0.7;
+      transition: opacity 2s ease;
+    }
+
+    .organic-balloon .b-phase {
+      position: relative;
+      z-index: 3;
+      font-size: 0.92rem;
+      letter-spacing: 0.04em;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+      padding: 0 12px;
+      transition: all 0.4s ease;
+    }
+
+    .organic-balloon .b-timer {
+      position: relative;
+      z-index: 3;
+      font-size: 1.75rem;
+      font-weight: 800;
+      font-family: 'Cinzel', serif, sans-serif;
+      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+      line-height: 1.1;
+      margin-top: 2px;
+    }
+
+    /* 1. INHALE PHASE: 5s Fluid Organic Inflation */
+    .organic-balloon.phase-inhale {
+      animation: organicBalloonInflate 5s cubic-bezier(0.28, 0.05, 0.22, 1) forwards;
+    }
+    .balloon-stage-area.phase-inhale .balloon-aura-ring.ring-1 {
+      animation: auraInflate1 5s cubic-bezier(0.28, 0.05, 0.22, 1) forwards;
+    }
+    .balloon-stage-area.phase-inhale .balloon-aura-ring.ring-2 {
+      animation: auraInflate2 5s cubic-bezier(0.28, 0.05, 0.22, 1) forwards;
+    }
+    .balloon-stage-area.phase-inhale .balloon-aura-ring.ring-3 {
+      animation: auraInflate3 5s cubic-bezier(0.28, 0.05, 0.22, 1) forwards;
+    }
+
+    @keyframes organicBalloonInflate {
+      0% {
+        transform: scale(0.85) translateY(4px);
+        border-radius: 50% 50% 50% 50%;
+        box-shadow: 0 8px 24px rgba(162, 89, 59, 0.25), 0 0 12px rgba(224, 169, 109, 0.15);
+        background: radial-gradient(circle at 35% 35%, #e0a96d 0%, #b86b43 60%, #7e3a20 100%);
+      }
+      20% {
+        transform: scale(1.02) translateY(1px);
+        border-radius: 53% 47% 55% 45% / 46% 54% 46% 54%;
+      }
+      45% {
+        transform: scale(1.24) translateY(-3px);
+        border-radius: 47% 53% 45% 55% / 54% 46% 54% 46%;
+        box-shadow: 0 16px 45px rgba(162, 89, 59, 0.42), 0 0 35px rgba(245, 158, 11, 0.3);
+      }
+      75% {
+        transform: scale(1.44) translateY(-7px);
+        border-radius: 52% 48% 54% 46% / 48% 52% 48% 52%;
+      }
+      92% {
+        transform: scale(1.54) translateY(-8px);
+        border-radius: 50% 50% 50% 50%;
+      }
+      100% {
+        transform: scale(1.52) translateY(-8px);
+        border-radius: 51% 49% 51% 49% / 49% 51% 49% 51%;
+        box-shadow: 0 22px 65px rgba(162, 89, 59, 0.48), 0 0 55px rgba(245, 158, 11, 0.4);
+        background: radial-gradient(circle at 30% 25%, #fbe3c1 0%, #e0a96d 38%, #b86b43 75%, #7e3a20 100%);
+      }
+    }
+
+    @keyframes auraInflate1 {
+      0% { transform: scale(0.85); opacity: 0.2; }
+      100% { transform: scale(1.65); opacity: 0.65; }
+    }
+    @keyframes auraInflate2 {
+      0% { transform: scale(0.9); opacity: 0.1; }
+      100% { transform: scale(1.85); opacity: 0.45; }
+    }
+    @keyframes auraInflate3 {
+      0% { transform: scale(0.95); opacity: 0.05; }
+      100% { transform: scale(2.05); opacity: 0.3; }
+    }
+
+    /* 2. HOLD PHASE: 2s Suspended Weightless Float */
+    .organic-balloon.phase-hold {
+      animation: organicBalloonHold 2s ease-in-out infinite alternate;
+    }
+    .balloon-stage-area.phase-hold .balloon-aura-ring.ring-1 {
+      transform: scale(1.65);
+      opacity: 0.65;
+      animation: auraHoldPulse 2s ease-in-out infinite alternate;
+    }
+    .balloon-stage-area.phase-hold .balloon-aura-ring.ring-2 {
+      transform: scale(1.85);
+      opacity: 0.45;
+    }
+    .balloon-stage-area.phase-hold .balloon-aura-ring.ring-3 {
+      transform: scale(2.05);
+      opacity: 0.3;
+    }
+
+    @keyframes organicBalloonHold {
+      0% {
+        transform: scale(1.52) translateY(-8px);
+        border-radius: 51% 49% 51% 49% / 49% 51% 49% 51%;
+        box-shadow: 0 22px 65px rgba(162, 89, 59, 0.48), 0 0 55px rgba(245, 158, 11, 0.4);
+      }
+      100% {
+        transform: scale(1.55) translateY(-11px);
+        border-radius: 49% 51% 49% 51% / 51% 49% 51% 49%;
+        box-shadow: 0 26px 75px rgba(162, 89, 59, 0.55), 0 0 65px rgba(245, 158, 11, 0.5);
+      }
+    }
+
+    @keyframes auraHoldPulse {
+      0% { transform: scale(1.65); opacity: 0.65; }
+      100% { transform: scale(1.72); opacity: 0.8; }
+    }
+
+    /* 3. EXHALE PHASE: 5s Fluid Organic Deflation & Tension Release */
+    .organic-balloon.phase-exhale {
+      animation: organicBalloonDeflate 5s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+    }
+    .balloon-stage-area.phase-exhale .balloon-aura-ring.ring-1 {
+      animation: auraDeflate1 5s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+    }
+    .balloon-stage-area.phase-exhale .balloon-aura-ring.ring-2 {
+      animation: auraDeflate2 5s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+    }
+    .balloon-stage-area.phase-exhale .balloon-aura-ring.ring-3 {
+      animation: auraDeflate3 5s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+    }
+
+    @keyframes organicBalloonDeflate {
+      0% {
+        transform: scale(1.52) translateY(-8px);
+        border-radius: 51% 49% 51% 49% / 49% 51% 49% 51%;
+        box-shadow: 0 22px 65px rgba(162, 89, 59, 0.48), 0 0 55px rgba(245, 158, 11, 0.4);
+        background: radial-gradient(circle at 30% 25%, #fbe3c1 0%, #e0a96d 38%, #b86b43 75%, #7e3a20 100%);
+      }
+      25% {
+        transform: scale(1.34) translateY(-5px);
+        border-radius: 48% 52% 47% 53% / 52% 48% 52% 48%;
+      }
+      55% {
+        transform: scale(1.12) translateY(-1px);
+        border-radius: 52% 48% 53% 47% / 48% 52% 48% 52%;
+        box-shadow: 0 14px 40px rgba(162, 89, 59, 0.35), 0 0 25px rgba(224, 169, 109, 0.2);
+      }
+      80% {
+        transform: scale(0.93) translateY(3px);
+        border-radius: 49% 51% 50% 50% / 51% 49% 50% 50%;
+      }
+      100% {
+        transform: scale(0.85) translateY(4px);
+        border-radius: 50% 50% 50% 50%;
+        box-shadow: 0 8px 24px rgba(162, 89, 59, 0.25), 0 0 12px rgba(224, 169, 109, 0.15);
+        background: radial-gradient(circle at 35% 35%, #e0a96d 0%, #b86b43 60%, #7e3a20 100%);
+      }
+    }
+
+    @keyframes auraDeflate1 {
+      0% { transform: scale(1.65); opacity: 0.65; }
+      100% { transform: scale(0.85); opacity: 0.2; }
+    }
+    @keyframes auraDeflate2 {
+      0% { transform: scale(1.85); opacity: 0.45; }
+      100% { transform: scale(0.9); opacity: 0.1; }
+    }
+    @keyframes auraDeflate3 {
+      0% { transform: scale(2.05); opacity: 0.3; }
+      100% { transform: scale(0.95); opacity: 0.05; }
+    }
+
+    /* 4. IDLE / PAUSED PHASE */
+    .organic-balloon.phase-idle {
+      transform: scale(1) translateY(0);
+      transition: transform 1.2s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 1.2s ease, border-radius 1.2s ease;
+      animation: gentleIdleSway 4s ease-in-out infinite alternate;
+    }
+
+    @keyframes gentleIdleSway {
+      0% {
+        transform: scale(1) translateY(0);
+        border-radius: 50% 50% 50% 50%;
+      }
+      100% {
+        transform: scale(1.03) translateY(-4px);
+        border-radius: 52% 48% 51% 49% / 49% 51% 49% 51%;
+      }
+    }
+  </style>
 </head>
 <body>
   <!-- Canvas Watermark -->
@@ -367,8 +665,16 @@
           <button type="button" class="btn-breathing-goal" data-cycles="10">10회 (약 2분)</button>
         </div>
 
-        <div class="balloon-stage-area">
-          <div id="breathing-balloon" class="organic-balloon">
+        <div class="balloon-stage-area phase-idle">
+          <!-- Multi-layered fluid breathing aura rings -->
+          <div class="balloon-aura-wrapper" aria-hidden="true">
+            <div class="balloon-aura-ring ring-1"></div>
+            <div class="balloon-aura-ring ring-2"></div>
+            <div class="balloon-aura-ring ring-3"></div>
+          </div>
+
+          <div id="breathing-balloon" class="organic-balloon phase-idle" role="button" tabindex="0" title="클릭하여 호흡 시작/일시정지" aria-label="5초 유기적 풍선 호흡">
+            <div class="balloon-glow-core" aria-hidden="true"></div>
             <div id="balloon-phase" class="b-phase">준비</div>
             <div id="balloon-timer" class="b-timer">5</div>
           </div>
@@ -862,9 +1168,9 @@
   </div>
 
   <!-- Scripts -->
-  <script src="./practice-data.js?v=33.0"></script>
-  <script src="./teachings-data.js?v=33.0"></script>
-  <script src="./audio-synth.js?v=33.0"></script>
-  <script src="./app.js?v=33.0"></script>
+  <script src="./practice-data.js?v=34.0"></script>
+  <script src="./teachings-data.js?v=34.0"></script>
+  <script src="./audio-synth.js?v=34.0"></script>
+  <script src="./app.js?v=34.0"></script>
 </body>
 </html>

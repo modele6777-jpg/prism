@@ -627,6 +627,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 8. Balloon Breathing (유기적 5초 풍선 호흡 & 싱잉볼 오디오 알림 시스템)
   const breathingBalloon = document.getElementById('breathing-balloon');
+  const balloonStageArea = document.querySelector('.balloon-stage-area');
   const balloonPhase = document.getElementById('balloon-phase');
   const balloonTimer = document.getElementById('balloon-timer');
   const btnBreathingToggle = document.getElementById('btn-breathing-toggle');
@@ -737,6 +738,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  if (breathingBalloon) {
+    breathingBalloon.addEventListener('click', () => {
+      if (isBreathingActive) {
+        pauseBreathing();
+      } else {
+        startBreathing();
+      }
+    });
+  }
+
   if (btnBreathingFinish) {
     btnBreathingFinish.addEventListener('click', () => {
       stopBreathing(true);
@@ -812,6 +823,15 @@ document.addEventListener('DOMContentLoaded', () => {
     btnBreathingToggle.classList.add('btn-copper');
     btnBreathingToggle.classList.remove('btn-sage');
     if (balloonPhase) balloonPhase.textContent = '일시 정지됨 (준비되면 계속하세요)';
+    if (breathingBalloon) {
+      breathingBalloon.style.transform = '';
+      breathingBalloon.classList.remove('phase-inhale', 'phase-hold', 'phase-exhale');
+      breathingBalloon.classList.add('phase-idle');
+    }
+    if (balloonStageArea) {
+      balloonStageArea.classList.remove('phase-inhale', 'phase-hold', 'phase-exhale');
+      balloonStageArea.classList.add('phase-idle');
+    }
   }
 
   function stopBreathing(isFinished = false) {
@@ -824,7 +844,15 @@ document.addEventListener('DOMContentLoaded', () => {
     btnBreathingToggle.classList.add('btn-copper');
     btnBreathingToggle.classList.remove('btn-sage');
     if (btnBreathingFinish) btnBreathingFinish.style.display = 'none';
-    if (breathingBalloon) breathingBalloon.style.transform = 'scale(1)';
+    if (breathingBalloon) {
+      breathingBalloon.style.transform = '';
+      breathingBalloon.classList.remove('phase-inhale', 'phase-hold', 'phase-exhale');
+      breathingBalloon.classList.add('phase-idle');
+    }
+    if (balloonStageArea) {
+      balloonStageArea.classList.remove('phase-inhale', 'phase-hold', 'phase-exhale');
+      balloonStageArea.classList.add('phase-idle');
+    }
 
     if (isFinished) {
       const finalCount = cycleCount || targetCycles;
@@ -873,18 +901,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateBalloonVisual() {
     if (!breathingBalloon) return;
+    breathingBalloon.style.transform = '';
     if (currentPhase === 'inhale') {
       balloonPhase.textContent = '들이쉬기 (숨을 가득 채우세요)';
       balloonTimer.textContent = countdown;
-      breathingBalloon.style.transform = 'scale(1.55)';
+      breathingBalloon.className = 'organic-balloon phase-inhale';
+      if (balloonStageArea) balloonStageArea.className = 'balloon-stage-area phase-inhale';
     } else if (currentPhase === 'hold') {
       balloonPhase.textContent = '잠시 멈춤 (평온 유지)';
       balloonTimer.textContent = countdown;
-      breathingBalloon.style.transform = 'scale(1.55)';
+      breathingBalloon.className = 'organic-balloon phase-hold';
+      if (balloonStageArea) balloonStageArea.className = 'balloon-stage-area phase-hold';
     } else {
       balloonPhase.textContent = '내쉬기 (긴장을 입으로 배출)';
       balloonTimer.textContent = countdown;
-      breathingBalloon.style.transform = 'scale(0.85)';
+      breathingBalloon.className = 'organic-balloon phase-exhale';
+      if (balloonStageArea) balloonStageArea.className = 'balloon-stage-area phase-exhale';
     }
   }
 
