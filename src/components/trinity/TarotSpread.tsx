@@ -3,10 +3,14 @@ import { motion } from 'framer-motion';
 import {
   Sparkles, Eye, RefreshCw, Sun, Compass, Activity,
   Flame, Heart, Wind, Coins, ShieldCheck, BookOpen, Zap, Star, Moon,
-  ChevronLeft, ChevronRight, Shuffle, ZoomIn,
+  ChevronLeft, ChevronRight, Shuffle, ZoomIn, Palette,
 } from 'lucide-react';
 import { TAROT_DECK, TarotCard, getTarotCardImageUrl, rollTarotReversed } from '../../data/tarotData';
 import { TarotCardZoomModal } from './TarotCardZoomModal';
+import { TarotCardBackFace } from './TarotCardBackFace';
+import { TarotCardBackCustomizerModal } from './TarotCardBackCustomizerModal';
+import { PhysicalTarotInputModal } from './PhysicalTarotInputModal';
+import { useTarotCardBack } from '@/hooks/useTarotCardBack';
 import { playAudioHaptic } from '@/lib/audioHaptics';
 
 export interface SelectedTarotCardEntry extends TarotCard {
@@ -92,6 +96,7 @@ type DeckWheelCardProps = {
   totalCards: number;
   isPicked?: boolean;
   isHovered?: boolean;
+  cardBackId?: string;
 };
 
 // Ultra-lightweight card memoization with physical drawing lift effect & celestial oracle back design
@@ -105,6 +110,7 @@ const DeckWheelCard = React.memo(
     totalCards,
     isPicked = false,
     isHovered = false,
+    cardBackId,
   }: DeckWheelCardProps) {
     // Distribute cards evenly along the full 360 degree wheel
     const step = (2 * Math.PI) / totalCards;
@@ -122,8 +128,8 @@ const DeckWheelCard = React.memo(
           isPicked
             ? 'opacity-0 scale-75 pointer-events-none'
             : isHovered
-            ? 'pointer-events-auto border-2 border-amber-300 ring-1 ring-yellow-400/60 shadow-lg shadow-amber-500/25 z-[300] scale-[1.04] bg-gradient-to-b from-indigo-950 via-zinc-950 to-black'
-            : 'pointer-events-auto border border-amber-500/40 shadow-md bg-gradient-to-b from-indigo-950 via-zinc-950 to-black'
+            ? 'pointer-events-auto border-2 border-amber-300 ring-1 ring-yellow-400/60 shadow-lg shadow-amber-500/25 z-[300] scale-[1.04] bg-zinc-950'
+            : 'pointer-events-auto border border-amber-500/40 shadow-md bg-zinc-950'
         }`}
         style={{
           transform: `translate3d(-50%, -50%, 0) translate3d(${x}px, ${y}px, 0) rotate(${cardRotate}deg) ${isHovered ? 'translateY(-5px)' : ''}`,
@@ -135,57 +141,11 @@ const DeckWheelCard = React.memo(
         }}
       >
         {!isPicked && (
-          <>
-            {/* 1. Subtle cosmic shimmer texture */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(99,102,241,0.15),transparent_70%)] pointer-events-none" />
-
-            {/* 2. Outer filigree gold border */}
-            <div className={`absolute inset-1 sm:inset-1.5 border rounded-md sm:rounded-lg md:rounded-xl pointer-events-none transition-colors ${isHovered ? 'border-yellow-400/80' : 'border-amber-400/30'}`} />
-
-            {/* 3. Inner filigree frame with corner stars */}
-            <div className={`absolute inset-2 sm:inset-2.5 border rounded-sm sm:rounded-md pointer-events-none transition-colors flex flex-col justify-between items-center p-1 sm:p-1.5 ${isHovered ? 'border-yellow-300/60 bg-yellow-500/10' : 'border-amber-400/20 bg-black/40'}`}>
-              {/* Top Moon & Star motif */}
-              <div className="flex items-center gap-1 opacity-70 text-[6px] sm:text-[8px] md:text-[9px] text-amber-200">
-                <span>☽</span>
-                <span className="text-[8px] sm:text-[10px] md:text-[11px] text-yellow-300">✧</span>
-                <span>☾</span>
-              </div>
-
-              {/* Sacred Geometry / Metatron Cross & Concentric Rings */}
-              <div className="relative w-7 h-7 sm:w-10 sm:h-10 md:w-14 md:h-14 flex items-center justify-center">
-                {/* Diamond rotated frame */}
-                <div className={`absolute inset-0 rotate-45 border transition-all ${isHovered ? 'border-yellow-400/60 scale-105' : 'border-amber-500/25'}`} />
-                {/* Circular ring */}
-                <div className={`absolute inset-1 rounded-full border transition-all ${isHovered ? 'border-yellow-300/80' : 'border-amber-500/35'}`} />
-                {/* Center core */}
-                <div className={`w-5 h-5 sm:w-7 sm:h-7 md:w-9 md:h-9 rounded-full border flex items-center justify-center relative z-10 transition-all ${
-                  isHovered
-                    ? 'border-yellow-300 bg-gradient-to-tr from-amber-500/40 to-yellow-300/40 scale-110 shadow-[0_0_10px_rgba(250,204,21,0.5)]'
-                    : 'border-amber-400/40 bg-zinc-950/90 shadow-inner'
-                }`}>
-                  {/* Ultra-lightweight inline star SVG to eliminate 78 Lucide component overhead */}
-                  <svg
-                    viewBox="0 0 24 24"
-                    className={`transition-colors ${isHovered ? 'text-yellow-100' : 'text-amber-400'}`}
-                    style={{ width: isMobile ? 10 : 14, height: isMobile ? 10 : 14 }}
-                    fill="currentColor"
-                  >
-                    <path d="M12 2l2.4 7.2h7.6l-6.2 4.5 2.4 7.3-6.2-4.5-6.2 4.5 2.4-7.3-6.2-4.5h7.6z" />
-                  </svg>
-                </div>
-              </div>
-
-              {/* Bottom Symmetry Moon & Star motif */}
-              <div className="flex items-center gap-1 opacity-70 text-[6px] sm:text-[8px] md:text-[9px] text-amber-200 rotate-180">
-                <span>☽</span>
-                <span className="text-[8px] sm:text-[10px] md:text-[11px] text-yellow-300">✧</span>
-                <span>☾</span>
-              </div>
-            </div>
-
-            {/* 4. Diagonal light-glimmer sweep */}
-            <div className={`absolute -inset-[100%] bg-gradient-to-tr from-transparent via-white/10 to-transparent rotate-45 pointer-events-none transition-opacity duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'}`} />
-          </>
+          <TarotCardBackFace
+            cardBackId={cardBackId}
+            size={isMobile ? 'sm' : 'wheel'}
+            isHovered={isHovered}
+          />
         )}
       </div>
     );
@@ -193,6 +153,7 @@ const DeckWheelCard = React.memo(
   (prev, next) => {
     return (
       prev.card.id === next.card.id &&
+      prev.cardBackId === next.cardBackId &&
       prev.positionIdx === next.positionIdx &&
       prev.radius === next.radius &&
       prev.isMobile === next.isMobile &&
@@ -214,6 +175,7 @@ interface TarotSpreadProps {
   deckSource?: TarotCard[];
   cardBackVariant?: 'classic' | 'oracle';
   allowReversed?: boolean;
+  cardBackId?: string;
 }
 
 export const TarotSpread: React.FC<TarotSpreadProps> = ({
@@ -227,6 +189,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
   deckSource,
   cardBackVariant = 'oracle',
   allowReversed = true,
+  cardBackId,
 }) => {
   const concernText = concern.trim();
   const hasConcern = concernText.length > 0;
@@ -258,6 +221,11 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
       })),
     [],
   );
+
+  const { cardBackId: globalCardBackId } = useTarotCardBack();
+  const effectiveCardBackId = cardBackId || globalCardBackId;
+  const [showCardBackModal, setShowCardBackModal] = useState(false);
+  const [showPhysicalInputModal, setShowPhysicalInputModal] = useState(false);
 
   const [selectedEntries, setSelectedEntries] = useState<Array<{ card: TarotCard; reversed: boolean }>>([]);
   const [isFinishing, setIsFinishing] = useState(false);
@@ -778,6 +746,35 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
         paddingRight: 'env(safe-area-inset-right, 0px)',
       }}
     >
+      {/* Top Floating Action Buttons (Card Back & Physical Input) */}
+      <div
+        className="absolute z-[320] flex items-center gap-2 pointer-events-auto"
+        style={{
+          top: 'calc(env(safe-area-inset-top, 0px) + 14px)',
+          left: 'calc(env(safe-area-inset-left, 0px) + 16px)',
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => setShowCardBackModal(true)}
+          className="px-3.5 py-2 min-h-[44px] rounded-full border border-yellow-500/40 bg-zinc-900/95 text-xs font-bold text-yellow-300 hover:text-yellow-200 hover:border-yellow-400/70 shadow-[0_4px_24px_rgba(0,0,0,0.8)] backdrop-blur-md active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
+          title="Quin 스타일 20종 타로 카드 뒷면 변경"
+        >
+          <Palette size={14} />
+          <span className="hidden sm:inline">덱 뒷면 변경</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setShowPhysicalInputModal(true)}
+          className="px-3.5 py-2 min-h-[44px] rounded-full border border-amber-500/40 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-xs font-bold text-amber-200 hover:text-yellow-100 hover:border-amber-400 shadow-[0_4px_24px_rgba(0,0,0,0.8)] backdrop-blur-md active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
+          title="소장하신 실물 카드로 직접 입력하여 AI 리딩 받기"
+        >
+          <BookOpen size={14} />
+          <span className="hidden sm:inline">실물 카드 직접 입력</span>
+        </button>
+      </div>
+
       {/* Top Floating Close Button */}
       <button
         type="button"
@@ -851,6 +848,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
               totalCards={deck.length}
               isPicked={selectedIds.includes(card.id)}
               isHovered={hoveredCardId === card.id}
+              cardBackId={effectiveCardBackId}
             />
           ))}
         </div>
@@ -1061,6 +1059,25 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
         onClose={() => setZoomedCard(null)}
         card={zoomedCard?.card ?? null}
         slotName={zoomedCard?.slotName}
+      />
+
+      {/* Customizable Tarot Card Back Modal (Quin Style 20 Decks) */}
+      <TarotCardBackCustomizerModal
+        isOpen={showCardBackModal}
+        onClose={() => setShowCardBackModal(false)}
+      />
+
+      {/* Physical Tarot Card Manual Input Modal */}
+      <PhysicalTarotInputModal
+        isOpen={showPhysicalInputModal}
+        onClose={() => setShowPhysicalInputModal(false)}
+        initialSpreadName={spreadName}
+        initialPositions={positions}
+        initialConcern={concern}
+        onComplete={(cards) => {
+          setShowPhysicalInputModal(false);
+          onComplete(cards);
+        }}
       />
     </div>
   );

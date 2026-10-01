@@ -15,6 +15,8 @@ import {
   LucideIcon,
 } from 'lucide-react';
 import { type TarotCard, getTarotCardImageUrl } from '@/data/tarotData';
+import { TarotCardBackFace } from './TarotCardBackFace';
+import { useTarotCardBack } from '@/hooks/useTarotCardBack';
 
 export function getTarotCardVisualHelper(card: TarotCard | null | undefined): {
   icon: LucideIcon;
@@ -58,6 +60,7 @@ export interface TarotFlippingCardProps {
   className?: string;
   size?: 'sm' | 'md' | 'lg' | 'wide';
   forceFlipped?: boolean;
+  cardBackId?: string;
 }
 
 export const TarotFlippingCard: React.FC<TarotFlippingCardProps> = ({
@@ -67,7 +70,10 @@ export const TarotFlippingCard: React.FC<TarotFlippingCardProps> = ({
   onClick,
   className = '',
   size = 'md',
+  cardBackId,
 }) => {
+  const { cardBackId: globalCardBackId } = useTarotCardBack();
+  const effectiveCardBackId = cardBackId || globalCardBackId;
   const [isClicked, setIsClicked] = useState(false);
   const visual = getTarotCardVisualHelper(card);
   const isReversed = !!card.reversed;
@@ -248,7 +254,7 @@ export const TarotFlippingCard: React.FC<TarotFlippingCardProps> = ({
         </div>
 
         {/* =========================================================================
-            BACK FACE: Mystical Tarot Card Back
+            BACK FACE: Mystical Tarot Card Back (Dynamic Quin 20-Deck Theme)
             Visible at rotateY: 180deg (starts facing front, then turns away)
            ========================================================================= */}
         <div
@@ -257,48 +263,13 @@ export const TarotFlippingCard: React.FC<TarotFlippingCardProps> = ({
             WebkitBackfaceVisibility: 'hidden',
             transform: 'rotateY(180deg)',
           }}
-          className="absolute inset-0 w-full h-full bg-gradient-to-b from-[#1b1035] via-[#0c0818] to-black border border-amber-400/60 rounded-2xl flex flex-col items-center justify-between p-1.5 overflow-hidden shadow-2xl"
+          className="absolute inset-0 w-full h-full rounded-2xl overflow-hidden shadow-2xl"
         >
-          {/* Subtle cosmic radial aura */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(234,179,8,0.22),transparent_70%)] pointer-events-none" />
-
-          {/* Outer Filigree Gold Border */}
-          <div className="absolute inset-1 border border-amber-400/40 rounded-xl pointer-events-none" />
-
-          {/* Inner Ornate Frame with Luna & Sol */}
-          <div className="absolute inset-2 border border-amber-400/25 rounded-lg bg-black/40 flex flex-col justify-between items-center p-1 pointer-events-none">
-            {/* Top Moon & Star motif */}
-            <div className="flex items-center gap-1 opacity-80 text-[6px] text-amber-200">
-              <span>☽</span>
-              <span className="text-[7px] text-yellow-300">✧</span>
-              <span>☾</span>
-            </div>
-
-            {/* Sacred Geometry: Diamond + Concentric Gold Rings + Star */}
-            <div className="relative w-8 h-8 flex items-center justify-center">
-              <div className="absolute inset-0 rotate-45 border border-amber-500/35" />
-              <div className="absolute inset-1 rounded-full border border-yellow-400/45 animate-pulse" />
-              <div className="w-5 h-5 rounded-full border border-amber-400/60 bg-gradient-to-tr from-amber-600/40 to-yellow-300/40 flex items-center justify-center shadow-[0_0_8px_rgba(234,179,8,0.4)]">
-                <svg
-                  viewBox="0 0 24 24"
-                  className="w-3 h-3 text-yellow-200"
-                  fill="currentColor"
-                >
-                  <path d="M12 2l2.4 7.2h7.6l-6.2 4.5 2.4 7.3-6.2-4.5-6.2 4.5 2.4-7.3-6.2-4.5h7.6z" />
-                </svg>
-              </div>
-            </div>
-
-            {/* Bottom Symmetrical Moon & Star motif */}
-            <div className="flex items-center gap-1 opacity-80 text-[6px] text-amber-200 rotate-180">
-              <span>☽</span>
-              <span className="text-[7px] text-yellow-300">✧</span>
-              <span>☾</span>
-            </div>
-          </div>
-
-          {/* Shimmer on back */}
-          <div className="absolute -inset-[100%] bg-gradient-to-tr from-transparent via-yellow-300/10 to-transparent rotate-45 pointer-events-none" />
+          <TarotCardBackFace
+            cardBackId={effectiveCardBackId}
+            size={size}
+            isHovered={isClicked}
+          />
         </div>
       </motion.div>
     </div>

@@ -95,6 +95,9 @@ import { AcimHandbookModal } from "@/components/trinity/AcimHandbookModal";
 import { useBinauralBeat } from "@/hooks/useBinauralBeat";
 import { TarotSpread } from "@/components/trinity/TarotSpread";
 import { TarotSpreadSelectionModal } from "@/components/trinity/TarotSpreadSelectionModal";
+import { TarotCardBackCustomizerModal } from "@/components/trinity/TarotCardBackCustomizerModal";
+import { PhysicalTarotInputModal } from "@/components/trinity/PhysicalTarotInputModal";
+import { useTarotCardBack } from "@/hooks/useTarotCardBack";
 import { playAudioHaptic } from "@/lib/audioHaptics";
 import { TodayTarotNarrationModal } from "@/components/trinity/TodayTarotNarrationModal";
 import { LucyTarotAdviceCard } from "@/components/trinity/LucyTarotAdviceCard";
@@ -1521,6 +1524,9 @@ function playDailyCardChimeAsync() {
   });
   const [customSpread, setCustomSpread] = useState<TarotSpreadRecommendation | null>(null);
   const [isSpreadModalOpen, setIsSpreadModalOpen] = useState(false);
+  const [showTarotCardBackModal, setShowTarotCardBackModal] = useState(false);
+  const [showPhysicalTarotModal, setShowPhysicalTarotModal] = useState(false);
+  const { theme: tarotBackTheme } = useTarotCardBack();
   const tarotConcernAnalysis: TarotConcernAnalysis = useMemo(() => {
     const base = analyzeTarotConcern(tarotConcern);
     if (customSpread) {
@@ -2918,6 +2924,19 @@ function playDailyCardChimeAsync() {
                         </p>
                       </div>
                     </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowTarotCardBackModal(true)}
+                        className="px-3 py-1.5 rounded-xl border border-yellow-500/30 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-300 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
+                        title="Quin 스타일 20종 타로 카드 뒷면 덱 커스텀"
+                      >
+                        <Palette size={13} />
+                        <span className="hidden sm:inline">덱 뒷면 ({tarotBackTheme.nameKo})</span>
+                        <span className="sm:hidden">덱 뒷면</span>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="relative w-full">
@@ -3185,22 +3204,40 @@ function playDailyCardChimeAsync() {
                                   </button>
                                 </div>
                               ) : (
-                                <button
-                                  onClick={() => handleUnifiedReading("tarot")}
-                                  disabled={isTarotGenerating || !tarotConcern.trim()}
-                                  className="w-full py-3.5 rounded-2xl bg-yellow-600 hover:bg-yellow-500 text-white font-bold tracking-widest flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:hover:bg-yellow-600 shadow-[0_0_30px_rgba(234,179,8,0.3)] cursor-pointer text-xs uppercase"
-                                >
-                                  {isTarotGenerating ? (
-                                    <RefreshCw className="animate-spin" size={18} />
-                                  ) : (
-                                    <>
-                                      <TarotCardIcon size={18} />
-                                      {tarotSpreadRecommendation.cardCount === 1
-                                        ? "오늘의 타로 1장 뽑기 (DRAW 1 CARD)"
-                                        : `78장 타로 휠 펼치기 (DRAW ${tarotSpreadRecommendation.cardCount} CARDS)`}
-                                    </>
-                                  )}
-                                </button>
+                                <div className="flex flex-col sm:flex-row items-stretch gap-2.5 w-full">
+                                  {/* In-App Interactive Wheel Draw */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUnifiedReading("tarot")}
+                                    disabled={isTarotGenerating || !tarotConcern.trim()}
+                                    className="flex-1 py-3.5 px-4 rounded-2xl bg-gradient-to-r from-yellow-600 via-amber-600 to-yellow-500 hover:from-yellow-500 hover:to-amber-500 text-white font-bold tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_25px_rgba(234,179,8,0.3)] cursor-pointer text-xs uppercase active:scale-[0.98]"
+                                  >
+                                    {isTarotGenerating ? (
+                                      <RefreshCw className="animate-spin" size={18} />
+                                    ) : (
+                                      <>
+                                        <TarotCardIcon size={18} />
+                                        <span>
+                                          {tarotSpreadRecommendation.cardCount === 1
+                                            ? "78장 타로 휠 1장 뽑기"
+                                            : `78장 타로 휠 펼치기 (${tarotSpreadRecommendation.cardCount}장 뽑기)`}
+                                        </span>
+                                      </>
+                                    )}
+                                  </button>
+
+                                  {/* Quin Style Physical / Manual Input Mode */}
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowPhysicalTarotModal(true)}
+                                    disabled={isTarotGenerating}
+                                    className="py-3.5 px-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-yellow-500/30 hover:border-yellow-400/60 text-yellow-200 font-bold tracking-wider flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer text-xs active:scale-[0.98]"
+                                    title="소장하신 실물 카드로 직접 뽑았거나 원하는 카드를 지정하여 AI 심층 리딩 받기"
+                                  >
+                                    <BookOpen size={17} className="text-yellow-400" />
+                                    <span>실물 카드 직접 입력</span>
+                                  </button>
+                                </div>
                               )}
                             </div>
                           </div>
@@ -4025,6 +4062,30 @@ function playDailyCardChimeAsync() {
         onClose={() => setZoomedCard(null)}
         card={zoomedCard?.card ?? null}
         slotName={zoomedCard?.slotName}
+      />
+
+      {/* Quin Style: 20-Deck Customizable Tarot Card Back Modal */}
+      <TarotCardBackCustomizerModal
+        isOpen={showTarotCardBackModal}
+        onClose={() => setShowTarotCardBackModal(false)}
+      />
+
+      {/* Quin Style: Physical / Manual Tarot Card Input Modal */}
+      <PhysicalTarotInputModal
+        isOpen={showPhysicalTarotModal}
+        onClose={() => setShowPhysicalTarotModal(false)}
+        initialSpreadName={tarotSpreadRecommendation.name}
+        initialPositions={tarotSpreadRecommendation.positions}
+        initialConcern={tarotConcern}
+        onComplete={(cards, manualConcern) => {
+          setShowPhysicalTarotModal(false);
+          if (manualConcern && manualConcern.trim()) {
+            setTarotConcern(manualConcern.trim());
+          }
+          setDrawnCards(cards);
+          setHideTarotPopup(false);
+          handleUnifiedReading("tarot", { selectedCards: cards });
+        }}
       />
     </div>
   );

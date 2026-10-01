@@ -2244,6 +2244,20 @@ ${concernContext ? `사용자가 들려준 현재 고민과 상황에 100% 공�
             </button>
           );
         })}
+
+        {activeMode === 'artRecommendation' && (
+          <button
+            type="button"
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent('prism:request_daily_art_refresh'));
+            }}
+            className="prism-subnav-btn flex shrink-0 whitespace-nowrap items-center gap-1.5 px-3 md:px-4 py-2 md:py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-[10px] md:text-xs font-black shadow-lg shadow-blue-500/30 transition-all active:scale-95 border border-blue-400/40 cursor-pointer ml-1"
+            title="오늘의 Daily ART 새로 생성하기"
+          >
+            <Sparkles size={13} className="text-yellow-300 animate-pulse" />
+            <span>생성</span>
+          </button>
+        )}
       </nav>
 
 

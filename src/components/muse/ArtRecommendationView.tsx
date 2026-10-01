@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Sparkles, 
@@ -1628,6 +1629,25 @@ export function ArtRecommendationView() {
     };
   }, [restoreDailyArtFromCache, sharedState?.dailyArts]);
 
+  // Global event listener to trigger Daily ART generation from subnav or floating controls
+  useEffect(() => {
+    const handleRefreshRequest = () => {
+      if (activeTossRef.current) {
+        handleExitTossMode();
+      }
+      void handleRecommendArt({
+        forceRefresh: true,
+        randomOffset: Date.now(),
+        userConcern: customConcern.trim(),
+      });
+      resetAppScroll("smooth");
+    };
+    window.addEventListener("prism:request_daily_art_refresh", handleRefreshRequest);
+    return () => {
+      window.removeEventListener("prism:request_daily_art_refresh", handleRefreshRequest);
+    };
+  }, [customConcern, handleExitTossMode, handleRecommendArt]);
+
   // Cycling reassuring logs during API generation
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -1856,16 +1876,15 @@ export function ArtRecommendationView() {
 
           <button
             type="button"
-            onClick={() => setIsCustomInputOpen((prev) => !prev)}
+            onClick={() => setIsCustomInputOpen(true)}
             disabled={loading}
-            className={`w-full sm:w-auto py-3 sm:py-3.5 px-5 rounded-2xl border text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2 shadow-sm ${
-              isCustomInputOpen
-                ? "border-blue-400/40 bg-blue-500/25 text-blue-200"
-                : "border-blue-400/30 bg-blue-500/10 hover:bg-blue-500/20 text-white"
-            }`}
+            className="w-full sm:w-auto py-3 sm:py-3.5 px-5 rounded-2xl border border-blue-400/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-200 text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2 shadow-sm"
             title="나의 고민 및 현재 상황 맞춤 설정"
           >
-            <span>{isCustomInputOpen ? "▲ 고민 입력창 닫기" : "✍️ 고민 직접 적고 맞춤 추천"}</span>
+            <span>✍️ 고민 맞춤 설정</span>
+            {customConcern.trim() && (
+              <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+            )}
           </button>
         </div>
       </motion.div>
@@ -1952,105 +1971,197 @@ export function ArtRecommendationView() {
         </motion.div>
       )}
 
-      {/* Pre-Listening Concern & Mood Input Panel */}
-      {(!recommendation || isCustomInputOpen) && !loading && (
+      {/* 🌟 Welcome & Instant Generate Hero Card (Clean art-focused hero when no recommendation yet) */}
+      {!recommendation && !loading && (
         <motion.div
-          id="dailyart-concern-panel"
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/[0.03] border border-white/10 p-5 sm:p-10 rounded-[32px] space-y-5 sm:space-y-6 shadow-2xl backdrop-blur-xl relative"
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="rounded-[32px] p-6 sm:p-10 border border-blue-500/30 bg-gradient-to-br from-blue-950/40 via-zinc-900/90 to-purple-950/30 shadow-2xl backdrop-blur-xl text-center space-y-6 relative overflow-hidden"
         >
-          {recommendation && (
-            <div className="flex justify-end -mt-2 sm:-mt-4">
-              <button
-                type="button"
-                onClick={() => setIsCustomInputOpen(false)}
-                className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors border border-white/10"
-              >
-                ✕ 입력창 닫기
-              </button>
-            </div>
-          )}
+          <div className="absolute top-0 right-1/2 translate-x-1/2 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
-          <div className="text-center space-y-2 max-w-xl mx-auto">
-            <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[11px] font-bold text-blue-300 font-mono">
-              <Sparkles size={13} className="text-blue-400" />
-              MUSE PRE-LISTENING · 마음 경청
+          <div className="relative z-10 flex items-center justify-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-blue-500/20 border border-blue-400/40 flex items-center justify-center text-blue-300 shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+              <Sparkles size={24} className="text-blue-400 animate-pulse" />
             </div>
-            <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight font-sans">
-              오늘 당신의 마음에 머무는 <span className="text-blue-400">이야기</span>를 들려주세요
+            <div className="w-12 h-12 rounded-2xl bg-rose-500/20 border border-rose-400/40 flex items-center justify-center text-rose-300 shadow-[0_0_20px_rgba(244,63,94,0.3)]">
+              <Music size={24} className="text-rose-400" />
+            </div>
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300 shadow-[0_0_20px_rgba(245,158,11,0.3)]">
+              <BookOpen size={24} className="text-amber-400" />
+            </div>
+          </div>
+
+          <div className="relative z-10 space-y-2 max-w-md mx-auto">
+            <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+              오늘의 <span className="text-blue-400">Daily ART</span>가 준비되었습니다
             </h3>
             <p className="text-xs sm:text-sm text-white/60 leading-relaxed font-sans">
-              오늘 겪고 있는 고민, 풀리지 않는 감정, 혹은 회복하고 싶은 마음에 대해 편안하게 적어주시면,
-              그에 딱 맞춘 세계 거장의 명화와 마음을 울리는 명시·명곡을 큐레이션해 드립니다.
+              마음의 고요와 창조적 영감을 깨우는 세계 거장의 명화, 명곡, 명시를 만나보세요.
             </p>
           </div>
 
-          {/* Quick Concern Selection Chips */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-white/80 flex items-center gap-1.5">
-              <span>💡 빠른 고민 선택</span>
-              <span className="text-[10px] text-white/40 font-normal">(클릭하면 아래 입력창에 적용됩니다)</span>
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {CONCERN_SUGGESTIONS.map((suggestion) => {
-                const clean = suggestion.replace(/^[^\s]+\s/, '');
-                const isSelected = customConcern === clean;
-                return (
-                  <button
-                    key={suggestion}
-                    type="button"
-                    onClick={() => setCustomConcern(clean)}
-                    className={`text-xs px-3.5 py-2 rounded-2xl border transition-all cursor-pointer text-left ${
-                      isSelected
-                        ? "bg-blue-500/20 border-blue-400 text-blue-200 font-bold shadow-lg scale-[1.02]"
-                        : "bg-white/[0.03] border-white/10 text-white/70 hover:bg-white/[0.08] hover:text-white"
-                    }`}
-                  >
-                    {suggestion}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Text Area for Custom Concern */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-white/80 flex items-center justify-between">
-              <span>✍️ 나의 고민 & 현재 상황 직접 적기</span>
-              <span className="text-[10px] text-white/40">생략 시 오늘의 내면 주파수로 자동 분석</span>
-            </label>
-            <textarea
-              rows={3}
-              value={customConcern}
-              onChange={(e) => setCustomConcern(e.target.value)}
-              placeholder="예: 요즘 회사 업무와 사람 관계에 지쳐서 마음의 고요와 쉼이 절실해요... / 새로운 프로젝트를 시작하려는데 아이디어가 막히고 불안해요..."
-              className="w-full p-4 rounded-2xl border border-white/10 bg-black/40 text-white placeholder:text-white/30 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 leading-relaxed resize-none shadow-inner"
-            />
-          </div>
-
-          {/* Action Trigger Button */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 w-full max-w-md mx-auto">
+          <div className="relative z-10 flex flex-col sm:flex-row items-center justify-center gap-3 pt-1 max-w-md mx-auto w-full">
             <button
-              onClick={() => void handleRecommendArt({ forceRefresh: true, userConcern: customConcern.trim() })}
-              disabled={loading}
-              className="prism-rainbow-btn relative w-full sm:w-auto py-3.5 sm:py-4 px-6 sm:px-10 rounded-2xl text-xs md:text-sm font-black uppercase tracking-[0.15em] transform active:scale-95 text-white shadow-2xl flex items-center justify-center gap-2.5 sm:gap-3 disabled:opacity-50 cursor-pointer"
+              type="button"
+              onClick={() => {
+                void handleRecommendArt({
+                  forceRefresh: true,
+                  randomOffset: Date.now(),
+                  userConcern: customConcern.trim(),
+                });
+              }}
+              className="prism-rainbow-btn w-full sm:w-auto py-4 px-8 rounded-2xl text-xs sm:text-sm font-black uppercase tracking-wider text-white shadow-2xl flex items-center justify-center gap-2.5 cursor-pointer active:scale-95 transition-transform"
             >
-              <Sparkles size={16} className={loading ? "animate-spin" : "animate-pulse"} />
-              <span>{loading ? "🎨 Daily ART 생성 중..." : customConcern.trim() ? "🎨 고민 맞춤 Daily ART 생성하기" : "✨ Daily ART 즉시 생성하기"}</span>
+              <Sparkles size={16} className="text-yellow-300 animate-pulse" />
+              <span>🎨 오늘의 Daily ART 즉시 생성하기</span>
             </button>
-            {isArtCacheFresh() && !recommendation && (
+
+            {isArtCacheFresh() && (
               <button
                 type="button"
                 onClick={() => restoreDailyArtFromCache()}
-                className="w-full sm:w-auto py-3.5 px-6 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2"
+                className="w-full sm:w-auto py-3.5 px-5 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2"
               >
                 <Palette size={14} className="text-blue-400" />
                 <span>오늘 저장된 추천 결과 보기</span>
               </button>
             )}
+
+            <button
+              type="button"
+              onClick={() => setIsCustomInputOpen(true)}
+              className="w-full sm:w-auto py-3.5 px-5 rounded-2xl border border-blue-400/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-200 text-xs font-bold transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2"
+            >
+              <span>✍️ 고민 맞춤 설정 (선택사항)</span>
+            </button>
           </div>
         </motion.div>
+      )}
+
+      {/* 🌟 Pre-Listening Concern & Mood Input MODAL (Rendered as a clean modal overlay, NEVER cluttering the middle of the Daily Art screen) */}
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {isCustomInputOpen && !loading && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-[500] flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md pointer-events-auto"
+              onClick={() => setIsCustomInputOpen(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.92, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.92, y: 20 }}
+                transition={{ type: "spring", damping: 26, stiffness: 260 }}
+                className="w-full max-w-xl bg-zinc-950/95 border border-blue-400/50 p-5 sm:p-8 rounded-[32px] space-y-5 sm:space-y-6 shadow-2xl backdrop-blur-2xl relative max-h-[88vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex justify-between items-center pb-2 border-b border-white/10">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/15 border border-blue-500/30 text-[11px] font-bold text-blue-300 font-mono">
+                    <Sparkles size={13} className="text-blue-400" />
+                    MUSE PRE-LISTENING · 맞춤 고민 설정
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsCustomInputOpen(false)}
+                    className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white/80 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors border border-white/10 cursor-pointer active:scale-95"
+                  >
+                    ✕ 닫기
+                  </button>
+                </div>
+
+                <div className="text-center space-y-2 max-w-lg mx-auto">
+                  <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight font-sans">
+                    오늘 당신의 마음에 머무는 <span className="text-blue-400">이야기</span>를 들려주세요
+                  </h3>
+                  <p className="text-xs sm:text-sm text-white/60 leading-relaxed font-sans">
+                    오늘 겪고 있는 고민, 풀리지 않는 감정, 혹은 회복하고 싶은 마음에 대해 편안하게 적어주시면,
+                    그에 딱 맞춘 세계 거장의 명화와 마음을 울리는 명시·명곡을 큐레이션해 드립니다.
+                  </p>
+                </div>
+
+                {/* Quick Concern Selection Chips */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-white/80 flex items-center justify-between">
+                    <span>💡 빠른 고민 선택</span>
+                    <span className="text-[10px] text-white/40">(클릭하면 아래에 자동 입력)</span>
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {CONCERN_SUGGESTIONS.map((suggestion) => {
+                      const clean = suggestion.replace(/^[^\s]+\s/, '');
+                      const isSelected = customConcern === clean;
+                      return (
+                        <button
+                          key={suggestion}
+                          type="button"
+                          onClick={() => setCustomConcern(clean)}
+                          className={`text-xs px-3.5 py-2 rounded-2xl border transition-all cursor-pointer text-left ${
+                            isSelected
+                              ? "bg-blue-500/20 border-blue-400 text-blue-200 font-bold shadow-lg scale-[1.02]"
+                              : "bg-white/[0.03] border-white/10 text-white/70 hover:bg-white/[0.08] hover:text-white"
+                          }`}
+                        >
+                          {suggestion}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Text Area for Custom Concern */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-white/80 flex items-center justify-between">
+                    <span>✍️ 나의 고민 & 현재 상황 직접 적기</span>
+                    {customConcern.trim() && (
+                      <button
+                        type="button"
+                        onClick={() => setCustomConcern("")}
+                        className="text-[10px] text-blue-400 hover:text-blue-300 cursor-pointer underline"
+                      >
+                        내용 지우기
+                      </button>
+                    )}
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={customConcern}
+                    onChange={(e) => setCustomConcern(e.target.value)}
+                    placeholder="예: 요즘 회사 업무와 사람 관계에 지쳐서 마음의 고요와 쉼이 절실해요... / 새로운 프로젝트를 시작하려는데 아이디어가 막히고 불안해요..."
+                    className="w-full p-4 rounded-2xl border border-white/10 bg-black/40 text-white placeholder:text-white/30 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 leading-relaxed resize-none shadow-inner"
+                  />
+                </div>
+
+                {/* Action Buttons inside modal */}
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 w-full max-w-md mx-auto">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomInputOpen(false);
+                      void handleRecommendArt({ forceRefresh: true, userConcern: customConcern.trim() });
+                    }}
+                    disabled={loading}
+                    className="prism-rainbow-btn relative w-full sm:w-auto py-3.5 sm:py-4 px-6 sm:px-10 rounded-2xl text-xs md:text-sm font-black uppercase tracking-[0.15em] transform active:scale-95 text-white shadow-2xl flex items-center justify-center gap-2.5 sm:gap-3 disabled:opacity-50 cursor-pointer"
+                  >
+                    <Sparkles size={16} className={loading ? "animate-spin" : "animate-pulse"} />
+                    <span>{loading ? "🎨 Daily ART 생성 중..." : customConcern.trim() ? "🎨 고민 맞춤 Daily ART 생성하기" : "✨ Daily ART 즉시 생성하기"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsCustomInputOpen(false)}
+                    className="w-full sm:w-auto py-3 px-5 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white text-xs font-bold transition-all cursor-pointer active:scale-95"
+                  >
+                    취소
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
       )}
 
       {/* Loading Canvas */}
@@ -2142,12 +2253,35 @@ export function ArtRecommendationView() {
                 initial={{ opacity: 0, scale: 0.96, y: 12 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 transition={{ duration: 0.55, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
-                className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-200 flex items-start gap-2.5 shadow-sm"
+                className="p-3.5 sm:p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-200 flex items-center justify-between gap-3 shadow-sm"
               >
-                <span className="text-base">🕊️</span>
-                <div className="space-y-0.5">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-blue-300 font-mono">나누어 주신 오늘의 마음 & 고민</span>
-                  <p className="font-medium text-white/90">"{savedCustomConcern}"</p>
+                <div className="flex items-center gap-2.5 truncate">
+                  <span className="text-base shrink-0">🕊️</span>
+                  <div className="space-y-0.5 truncate">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-blue-300 font-mono block">반영된 맞춤 고민</span>
+                    <p className="font-medium text-white/90 truncate">"{savedCustomConcern}"</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setIsCustomInputOpen(true)}
+                    className="text-[11px] text-blue-300 hover:text-white px-2.5 py-1 rounded-xl bg-blue-500/20 hover:bg-blue-500/30 transition-colors border border-blue-400/30 cursor-pointer active:scale-95 font-medium"
+                  >
+                    수정
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSavedCustomConcern("");
+                      setCustomConcern("");
+                      localStorage.removeItem(ART_CACHE_KEYS.userConcern);
+                    }}
+                    className="text-[11px] text-white/40 hover:text-white px-2 py-1 rounded-xl hover:bg-white/10 transition-colors cursor-pointer"
+                    title="고민 설정 해제"
+                  >
+                    ✕
+                  </button>
                 </div>
               </motion.div>
             )}
@@ -2710,12 +2844,6 @@ export function ArtRecommendationView() {
                     handleExitTossMode();
                   }
                   setIsCustomInputOpen(true);
-                  const el = document.getElementById("dailyart-concern-panel");
-                  if (el) {
-                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  } else {
-                    resetAppScroll("smooth");
-                  }
                 }}
                 className="w-full sm:w-auto px-5 sm:px-6 py-3.5 rounded-2xl border border-blue-400/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-200 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 shadow-lg shadow-blue-950/20"
               >
@@ -2730,61 +2858,56 @@ export function ArtRecommendationView() {
         )}
       </AnimatePresence>
 
-      {/* 🌟 모바일 전용 상시 플로팅 액션 바 (스크롤 위치와 무관하게 100% 상시 접근 및 생성 보장) */}
-      <aside
-        aria-label="Daily ART 모바일 빠른 생성 컨트롤"
-        className="fixed bottom-safe-fab left-1/2 -translate-x-1/2 z-40 sm:hidden flex items-center gap-1.5 p-1.5 rounded-full bg-zinc-950/95 border border-blue-400/50 backdrop-blur-2xl shadow-[0_10px_35px_rgba(0,0,0,0.85)] max-w-[95vw] w-max pointer-events-auto"
-      >
-        <button
-          type="button"
-          onClick={() => {
-            if (activeTossRef.current) {
-              handleExitTossMode();
-            }
-            void handleRecommendArt({
-              forceRefresh: true,
-              randomOffset: Date.now(),
-              userConcern: customConcern.trim(),
-            });
-            resetAppScroll("smooth");
-          }}
-          disabled={loading}
-          className="prism-rainbow-btn py-2 px-3.5 rounded-full text-xs font-black uppercase tracking-wider text-white flex items-center gap-1.5 shadow-lg active:scale-95 cursor-pointer disabled:opacity-50"
-          title="Daily ART 생성하기"
+      {/* 🌟 모바일 전용 상시 플로팅 액션 바 (createPortal로 렌더링하여 containing block 탈출, BigBangButton(z-350)보다 상위인 z-[400] 확보) */}
+      {typeof document !== 'undefined' && createPortal(
+        <aside
+          aria-label="Daily ART 모바일 빠른 생성 컨트롤"
+          className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+6.2rem)] left-1/2 -translate-x-1/2 z-[400] sm:hidden flex items-center gap-2 p-1.5 rounded-full bg-zinc-950/95 border-2 border-blue-400/90 backdrop-blur-2xl shadow-[0_10px_35px_rgba(0,0,0,0.95),0_0_30px_rgba(59,130,246,0.7)] max-w-[95vw] w-max pointer-events-auto ring-1 ring-blue-500/50"
         >
-          <Sparkles size={13} className={loading ? "animate-spin" : "text-yellow-300 animate-pulse"} />
-          <span className="whitespace-nowrap font-sans font-bold">
-            {loading ? "생성 중..." : recommendation ? "Daily ART 새로 생성" : "Daily ART 생성"}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            setIsCustomInputOpen((prev) => !prev);
-            const el = document.getElementById("dailyart-concern-panel");
-            if (el) {
-              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            } else {
+          <button
+            type="button"
+            onClick={() => {
+              if (activeTossRef.current) {
+                handleExitTossMode();
+              }
+              void handleRecommendArt({
+                forceRefresh: true,
+                randomOffset: Date.now(),
+                userConcern: customConcern.trim(),
+              });
               resetAppScroll("smooth");
-            }
-          }}
-          disabled={loading}
-          className="py-2 px-2.5 rounded-full border border-blue-400/30 bg-blue-500/15 active:bg-blue-500/30 text-blue-200 text-xs font-bold flex items-center gap-1 cursor-pointer active:scale-95 whitespace-nowrap"
-          title="고민 맞춤 생성"
-        >
-          <span>✍️ 고민 맞춤</span>
-        </button>
+            }}
+            disabled={loading}
+            className="prism-rainbow-btn py-2.5 px-4 rounded-full text-xs font-black uppercase tracking-wider text-white flex items-center gap-1.5 shadow-lg active:scale-95 cursor-pointer disabled:opacity-50 ring-1 ring-white/30"
+            title="Daily ART 생성하기"
+          >
+            <Sparkles size={14} className={loading ? "animate-spin" : "text-yellow-300 animate-pulse"} />
+            <span className="whitespace-nowrap font-sans font-bold text-xs">
+              {loading ? "생성 중..." : recommendation ? "Daily ART 새로 생성" : "🎨 Daily ART 생성"}
+            </span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => resetAppScroll("smooth")}
-          className="p-2 rounded-full border border-white/10 bg-white/5 active:bg-white/15 text-white/70 text-xs flex items-center justify-center cursor-pointer active:scale-95"
-          title="맨 위로 이동"
-        >
-          <ArrowUp size={13} />
-        </button>
-      </aside>
+          <button
+            type="button"
+            onClick={() => setIsCustomInputOpen(true)}
+            disabled={loading}
+            className="py-2.5 px-3 rounded-full border border-blue-400/40 bg-blue-900/50 active:bg-blue-800 text-blue-100 text-xs font-bold flex items-center gap-1 cursor-pointer active:scale-95 whitespace-nowrap shadow-sm"
+            title="고민 맞춤 생성"
+          >
+            <span>✍️ 고민 맞춤</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => resetAppScroll("smooth")}
+            className="p-2.5 rounded-full border border-white/20 bg-white/10 active:bg-white/20 text-white text-xs flex items-center justify-center cursor-pointer active:scale-95 shadow-sm"
+            title="맨 위로 이동"
+          >
+            <ArrowUp size={14} />
+          </button>
+        </aside>,
+        document.body
+      )}
     </div>
   );
 }
