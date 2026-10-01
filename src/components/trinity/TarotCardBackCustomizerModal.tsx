@@ -236,18 +236,23 @@ export const TarotCardBackCustomizerModal: React.FC<TarotCardBackCustomizerModal
 
             {/* Decks Grid (20 Designs) */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
-              {filteredDecks.map((deck) => {
+              {filteredDecks.map((deck, idx) => {
                 const isCurrentActive = deck.id === activeId;
                 const isCurrentPreview = deck.id === previewTheme.id;
 
                 return (
-                  <div
+                  <motion.div
                     key={deck.id}
+                    initial={{ opacity: 0, scale: 0.92, y: 14 }}
+                    animate={{ opacity: 1, scale: isCurrentActive ? 1.02 : 1, y: 0 }}
+                    transition={{ duration: 0.28, delay: (idx % 15) * 0.035 }}
+                    whileHover={{ scale: isCurrentActive ? 1.03 : 1.04, y: -2 }}
+                    whileTap={{ scale: 0.97 }}
                     onMouseEnter={() => setPreviewHoverId(deck.id)}
                     onClick={() => handleSelectDeck(deck)}
-                    className={`relative rounded-2xl border p-2 flex flex-col items-center gap-2 transition-all cursor-pointer group ${
+                    className={`relative rounded-2xl border p-2 flex flex-col items-center gap-2 transition-colors cursor-pointer group ${
                       isCurrentActive
-                        ? 'bg-yellow-500/15 border-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.35)] scale-[1.02]'
+                        ? 'bg-yellow-500/15 border-yellow-400 shadow-[0_0_20px_rgba(234,179,8,0.35)]'
                         : isCurrentPreview
                         ? 'bg-white/10 border-white/40'
                         : 'bg-white/[0.03] border-white/10 hover:border-yellow-500/50 hover:bg-white/[0.07]'
@@ -295,7 +300,7 @@ export const TarotCardBackCustomizerModal: React.FC<TarotCardBackCustomizerModal
                     >
                       {isCurrentActive ? '선택됨' : '적용'}
                     </button>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>

@@ -1,12 +1,11 @@
 {
   "name": "luckey",
-  "version": "1.4.139",
-  "summary": "데일리아트(Daily ART) 모바일 전용 뷰포트 플로팅 생성 버튼(createPortal) 완벽 표출 및 서브내비/화면 중앙 고민 입력부 완전 제거",
-  "builtAt": "2026-10-01T13:32:45.000Z",
+  "version": "1.4.141",
+  "summary": "트리니티(Trinity) 타로 카드 그리드에 framer-motion 기반 섬세한 호버 스케일 및 순차적(Staggered) 등장 애니메이션 적용",
+  "builtAt": "2026-10-01T22:23:00.000Z",
   "items": [
-    "데일리아트 메뉴(서브내비)에 불필요한 생성 버튼이 노출되지 않도록 깔끔한 3대 탭(Daily ART, MATE, MASTERCLASS) 메뉴로 온전히 유지",
-    "화면 중앙의 고민 입력창/서랍/텍스트영역을 완전히 제거하여 순수한 명작·명곡·명시 예술 큐레이션 화면으로 정돈",
-    "모바일 환경에서 CSS transform(motion.div)의 영향을 받지 않도록 createPortal을 적용하여 우측 하단(bottom-safe-fab right-3 sm:right-6)에 상시 100% 노출되는 Daily ART 전용 플로팅 생성 버튼 구현",
-    "빅뱅 버튼(중앙)과의 간섭 및 바텀내비 겹침 없이 모바일 엄지 영역에서 언제든 스크롤 위치와 무관하게 한 번의 터치로 Daily ART를 즉시 생성 및 새로고침 가능"
+    "트리니티 타로 스프레드 그리드 컨테이너에 framer-motion staggered entrance variants(staggerChildren: 0.1, delayChildren: 0.05)를 탑재하여 카드가 순차적으로 유려하게 등장하도록 구현",
+    "TarotFlippingCard에 subtle hover scale 효과(whileHover: scale 1.05, y -4, spring stiffness 350) 및 인덱스 기반 스프링 엔트런스 모션 정밀 튜닝",
+    "트리니티 오라클(TrinityOracleSection), 실물 타로 입력(PhysicalTarotInputModal), 덱 커스텀(TarotCardBackCustomizerModal) 및 스프레드 슬롯 전반에 일관된 subtle hover scale 및 staggered 모션 동기화"
   ]
 }

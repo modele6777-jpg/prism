@@ -745,9 +745,9 @@ export default function HubHome() {
                   return (
                     <motion.button
                       key={app.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.1 }}
+                      initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      transition={{ duration: 0.45, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }}
                       onClick={() => {
                         navigate(app.path);
                         window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: app.path } }));

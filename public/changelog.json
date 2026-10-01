@@ -1,5 +1,25 @@
 [
   {
+    "version": "1.4.141",
+    "summary": "트리니티(Trinity) 타로 카드 그리드에 framer-motion 기반 섬세한 호버 스케일 및 순차적(Staggered) 등장 애니메이션 적용",
+    "builtAt": "2026-10-01T22:23:00.000Z",
+    "items": [
+      "트리니티 타로 스프레드 그리드 컨테이너에 framer-motion staggered entrance variants(staggerChildren: 0.1, delayChildren: 0.05)를 탑재하여 카드가 순차적으로 유려하게 등장하도록 구현",
+      "TarotFlippingCard에 subtle hover scale 효과(whileHover: scale 1.05, y -4, spring stiffness 350) 및 인덱스 기반 스프링 엔트런스 모션 정밀 튜닝",
+      "트리니티 오라클(TrinityOracleSection), 실물 타로 입력(PhysicalTarotInputModal), 덱 커스텀(TarotCardBackCustomizerModal) 및 스프레드 슬롯 전반에 일관된 subtle hover scale 및 staggered 모션 동기화"
+    ]
+  },
+  {
+    "version": "1.4.140",
+    "summary": "메인 갤러리 및 채널 카드에 부드러운 페이드인 및 스케일 모션(fade-in & scale animation) 적용",
+    "builtAt": "2026-10-01T22:06:00.000Z",
+    "items": [
+      "허브 홈의 메인 채널 갤러리 카드 그리드에 motion/react를 활용한 섬세한 페이드인 및 스케일(initial: opacity 0, scale 0.95, y 15 -> animate: opacity 1, scale 1, y 0) 렌더링 애니메이션 적용",
+      "staggered 딜레이와 큐빅 베지어 완화 곡선([0.16, 1, 0.3, 1])을 통해 컴포넌트 렌더링 시 더욱 유려하고 자연스러운 카드 등장 효과 구현",
+      "데일리아트 메인 갤러리 패널의 도슨트, 명곡, 명시, 명화 및 액션 카드 전반에 일관된 subtle scale-up & fade-in 트랜지션 조율"
+    ]
+  },
+  {
     "version": "1.4.139",
     "summary": "데일리아트(Daily ART) 모바일 전용 뷰포트 플로팅 생성 버튼(createPortal) 완벽 표출 및 서브내비/화면 중앙 고민 입력부 완전 제거",
     "builtAt": "2026-10-01T13:32:45.000Z",

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import {
   Sparkles,
   ZoomIn,
@@ -80,8 +80,8 @@ export const TarotFlippingCard: React.FC<TarotFlippingCardProps> = ({
   const imageUrl = getTarotCardImageUrl(card);
 
   // Slight initial tilt alternating by index (-8° to +8°) for magical natural spread feel
-  const tiltDeg = index % 2 === 0 ? -7 : 7;
-  const delay = Math.min(index * 0.16 + 0.08, 1.2);
+  const tiltDeg = index % 2 === 0 ? -6 : 6;
+  const delay = Math.min(index * 0.12 + 0.06, 1.2);
 
   // Size variations
   let containerDimensions = 'w-20 min-h-[7.5rem]';
@@ -125,31 +125,31 @@ export const TarotFlippingCard: React.FC<TarotFlippingCardProps> = ({
       <motion.div
         initial={{
           rotateY: 180,
-          scale: 0.6,
-          y: 42,
+          scale: 0.72,
+          y: 32,
           rotateZ: tiltDeg,
           opacity: 0,
         }}
         animate={{
           rotateY: 0,
-          scale: isClicked ? 1.12 : 1,
+          scale: isClicked ? 1.08 : 1,
           y: 0,
           rotateZ: 0,
           opacity: 1,
         }}
         transition={{
           type: 'spring',
-          stiffness: 240,
-          damping: 17,
+          stiffness: 250,
+          damping: 18,
           delay,
         }}
         whileHover={{
-          scale: 1.08,
-          y: -6,
-          rotateZ: index % 2 === 0 ? -2 : 2,
-          transition: { duration: 0.2 },
+          scale: 1.05,
+          y: -4,
+          rotateZ: index % 2 === 0 ? -1.5 : 1.5,
+          transition: { type: 'spring', stiffness: 350, damping: 25 },
         }}
-        whileTap={{ scale: 0.94 }}
+        whileTap={{ scale: 0.96 }}
         onClick={handleClick}
         style={{
           transformStyle: 'preserve-3d',

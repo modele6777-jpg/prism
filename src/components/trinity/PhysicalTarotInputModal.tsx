@@ -599,16 +599,21 @@ export const PhysicalTarotInputModal: React.FC<PhysicalTarotInputModalProps> = (
 
               {/* Cards Grid */}
               <div className="flex-1 overflow-y-auto no-scrollbar p-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                {filteredDeck.map((card) => {
+                {filteredDeck.map((card, idx) => {
                   const alreadyUsedIndex = slots.findIndex((s) => s.card?.id === card.id);
                   const isCurrentSlot = alreadyUsedIndex === activePickerSlotIndex;
 
                   return (
-                    <button
+                    <motion.button
                       key={card.id}
                       type="button"
+                      initial={{ opacity: 0, scale: 0.92, y: 12 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      transition={{ duration: 0.28, delay: Math.min((idx % 18) * 0.03, 0.45) }}
+                      whileHover={{ scale: 1.04, y: -2 }}
+                      whileTap={{ scale: 0.96 }}
                       onClick={() => handleSelectCardForSlot(card)}
-                      className={`relative rounded-xl border p-1.5 flex flex-col items-center gap-1.5 transition-all cursor-pointer group text-left ${
+                      className={`relative rounded-xl border p-1.5 flex flex-col items-center gap-1.5 transition-colors cursor-pointer group text-left ${
                         isCurrentSlot
                           ? 'bg-yellow-500/20 border-yellow-400 shadow-lg'
                           : alreadyUsedIndex !== -1
@@ -646,7 +651,7 @@ export const PhysicalTarotInputModal: React.FC<PhysicalTarotInputModalProps> = (
                           {alreadyUsedIndex + 1}번 슬롯 지정됨
                         </span>
                       )}
-                    </button>
+                    </motion.button>
                   );
                 })}
               </div>

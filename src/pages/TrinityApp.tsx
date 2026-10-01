@@ -3265,8 +3265,20 @@ function playDailyCardChimeAsync() {
                                   </div>
 
                                   {/* 3D Flipping Cards Spread Container */}
-                                  <div
+                                  <motion.div
                                     key={`spread-cards-cycle-${cardFlipCycle}`}
+                                    initial="hidden"
+                                    animate="visible"
+                                    variants={{
+                                      hidden: { opacity: 0 },
+                                      visible: {
+                                        opacity: 1,
+                                        transition: {
+                                          staggerChildren: 0.1,
+                                          delayChildren: 0.05,
+                                        },
+                                      },
+                                    }}
                                     className="flex gap-3.5 flex-wrap justify-center p-3 max-w-full"
                                     style={{ perspective: 1200 }}
                                   >
@@ -3282,7 +3294,7 @@ function playDailyCardChimeAsync() {
                                         />
                                       );
                                     })}
-                                  </div>
+                                  </motion.div>
                                 </motion.div>
                               )}
 

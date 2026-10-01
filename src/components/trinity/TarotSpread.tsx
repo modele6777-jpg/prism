@@ -934,7 +934,8 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
                     <motion.div
                       initial={{ scale: 0.25, y: 70, opacity: 0, rotateZ: i % 2 === 0 ? -8 : 8 }}
                       animate={{ scale: 1, y: 0, opacity: 1, rotateZ: 0 }}
-                      transition={{ type: 'spring', stiffness: 320, damping: 24 }}
+                      transition={{ type: 'spring', stiffness: 320, damping: 24, delay: i * 0.08 }}
+                      whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
                       onClick={() => setZoomedCard({ card: { ...drawnCard!, reversed: entry.reversed }, slotName: positionLabel })}
                       className="absolute inset-0 border-2 border-yellow-400 rounded-xl md:rounded-2xl flex flex-col justify-between p-1.5 sm:p-2 md:p-3 text-center shadow-lg shadow-yellow-500/20 overflow-hidden cursor-zoom-in group hover:border-yellow-300 hover:shadow-yellow-500/40 transition-all active:scale-95"
                       title={`${drawnCard!.nameKo} 카드 크게 보기`}

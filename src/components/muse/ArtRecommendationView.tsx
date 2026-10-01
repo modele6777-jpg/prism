@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
-import { useSpecialFeatureChromeHidden, SPECIAL_FEATURE_CHROME_HIDDEN_CLASS } from "@/components/SpecialFeaturePanel";
 import { 
   Sparkles, 
   Palette, 
@@ -1129,14 +1128,9 @@ export function ArtRecommendationView() {
     activeTossRef.current = activeToss;
   }, [activeToss]);
 
-  const isChromeHidden = useSpecialFeatureChromeHidden();
-  
-  // Custom theme & concern state
+  // Daily ART theme state
   const [selectedThemeId, setSelectedThemeId] = useState<string>("creative_spark");
   const [customConcern, setCustomConcern] = useState<string>("");
-  const [savedCustomConcern, setSavedCustomConcern] = useState<string>("");
-  const [isSelectingNewTheme, setIsSelectingNewTheme] = useState<boolean>(false);
-  const [isCustomInputOpen, setIsCustomInputOpen] = useState<boolean>(false);
 
   // 🔮 오라클 결과 토스 유입 여부 판별
   const isOracleTossed = Boolean(
@@ -1850,31 +1844,31 @@ export function ArtRecommendationView() {
           매일 자정 이후 새로운 명작이 자동으로 큐레이션됩니다 · {getTodayDateKey()}
         </p>
 
-        {/* 🌟 추천 결과 표시 시 상단 빠른 재큐레이션 액션 바 */}
-        {recommendation && (
-          <div className="flex items-center justify-center pt-2 sm:pt-4 w-full max-w-md mx-auto px-1">
-            <button
-              type="button"
-              onClick={() => {
-                void handleRecommendArt({
-                  forceRefresh: true,
-                  randomOffset: Date.now(),
-                });
-                resetAppScroll("smooth");
-              }}
-              disabled={loading}
-              className="prism-rainbow-btn relative w-full py-3.5 sm:py-4 px-6 sm:px-10 rounded-2xl text-sm sm:text-base font-black uppercase tracking-wider transform active:scale-95 text-white shadow-[0_4px_25px_rgba(59,130,246,0.5)] flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50 ring-2 ring-white/30 border border-blue-300/40"
-              title="Daily ART 새로 생성하기"
-            >
-              <Sparkles size={18} className={loading ? "animate-spin" : "text-yellow-300 animate-pulse"} />
-              <span>
-                {loading
-                  ? "🎨 새로운 Daily ART 큐레이션 중..."
-                  : "✨ Daily ART 새로 생성하기"}
-              </span>
-            </button>
-          </div>
-        )}
+        {/* 🌟 상단 100% 상시 표출 데일리아트 생성/재생성 액션 바 (모바일 및 데스크톱 최초 진입 시 즉각 노출) */}
+        <div className="flex items-center justify-center pt-2 sm:pt-4 w-full max-w-md mx-auto px-1">
+          <button
+            type="button"
+            onClick={() => {
+              void handleRecommendArt({
+                forceRefresh: true,
+                randomOffset: Date.now(),
+              });
+              resetAppScroll("smooth");
+            }}
+            disabled={loading}
+            className="prism-rainbow-btn relative w-full py-3.5 sm:py-4 px-6 sm:px-10 rounded-2xl text-sm sm:text-base font-black uppercase tracking-wider transform active:scale-95 text-white shadow-[0_4px_25px_rgba(59,130,246,0.5)] flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50 ring-2 ring-white/30 border border-blue-300/40"
+            title={recommendation ? "Daily ART 새로 생성하기" : "오늘의 Daily ART 즉시 생성하기"}
+          >
+            <Sparkles size={18} className={loading ? "animate-spin" : "text-yellow-300 animate-pulse"} />
+            <span>
+              {loading
+                ? "🎨 새로운 Daily ART 큐레이션 중..."
+                : recommendation
+                ? "✨ Daily ART 새로 생성하기"
+                : "🎨 오늘의 Daily ART 즉시 생성하기"}
+            </span>
+          </button>
+        </div>
       </motion.div>
 
       {/* Prism Toss Pipeline Active Banner */}
@@ -2632,8 +2626,8 @@ export function ArtRecommendationView() {
 
             {/* Unlimited Re-generation Action Button */}
             <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, scale: 0.96, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
               className="flex items-center justify-center pt-6 text-center w-full max-w-md mx-auto px-2"
             >
@@ -2661,13 +2655,11 @@ export function ArtRecommendationView() {
         )}
       </AnimatePresence>
 
-      {/* 🌟 뷰포트 고정 플로팅 생성 버튼: createPortal로 document.body에 마운트하여 모바일 transform 탈출 및 우측 하단 상시 100% 표출 */}
+      {/* 🌟 뷰포트 고정 플로팅 생성 버튼: createPortal로 document.body에 마운트하여 모바일 transform 탈출 및 모바일/데스크톱 상시 100% 가시성 확보 */}
       {typeof document !== "undefined" &&
         createPortal(
           <div
-            className={`fixed bottom-safe-fab right-3 sm:right-6 z-[360] flex items-center pointer-events-auto transition-all duration-300 ${
-              isChromeHidden ? SPECIAL_FEATURE_CHROME_HIDDEN_CLASS : "opacity-100"
-            }`}
+            className="fixed bottom-[calc(var(--sab,0px)+4.75rem)] sm:bottom-safe-fab right-3 sm:right-6 z-[360] flex items-center pointer-events-auto transition-all duration-300 opacity-100"
           >
             <button
               type="button"

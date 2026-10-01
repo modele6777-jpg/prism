@@ -2026,7 +2026,19 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
                 </span>
               </div>
 
-              <div
+              <motion.div
+                initial="hidden"
+                animate="visible"
+                variants={{
+                  hidden: { opacity: 0 },
+                  visible: {
+                    opacity: 1,
+                    transition: {
+                      staggerChildren: 0.1,
+                      delayChildren: 0.05,
+                    },
+                  },
+                }}
                 className="flex gap-2.5 sm:gap-4 flex-wrap justify-center p-2 sm:p-3 max-w-full"
                 style={{ perspective: 1200 }}
               >
@@ -2043,7 +2055,7 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
                     />
                   );
                 })}
-              </div>
+              </motion.div>
             </div>
 
             {/* Loading Indicator */}
