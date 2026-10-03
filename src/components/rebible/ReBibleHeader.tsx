@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { 
   BookOpen, 
   Search, 
@@ -41,7 +42,10 @@ export const ReBibleHeader: React.FC<ReBibleHeaderProps> = ({
   onToggleSpeakAll
 }) => {
   return (
-    <header 
+    <motion.header 
+      initial={{ y: -8, opacity: 0.88 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
       style={{ paddingTop: 'max(12px, calc(env(safe-area-inset-top, 0px) + 8px))' }}
       className="sticky top-0 z-40 backdrop-blur-xl border-b border-[#E3D6BF] bg-[#FAF6EE]/95 text-stone-900 shadow-xs"
     >
@@ -215,6 +219,6 @@ export const ReBibleHeader: React.FC<ReBibleHeaderProps> = ({
           </div>
         </div>
       </div>
-    </header>
+    </motion.header>
   );
 };

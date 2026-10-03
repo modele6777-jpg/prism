@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Library as LibraryIcon, Book, History, Search, Filter, 
   Sparkles, Heart, Brain, Wind, ArrowLeft, ChevronRight,
@@ -265,7 +265,12 @@ export default function LibraryPage() {
     <div className="min-h-screen bg-[#070708] text-white/90 selection:bg-white/10 p-4 md:p-12 font-soft">
       <div className="max-w-7xl mx-auto space-y-12">
         {/* Header */}
-        <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+        <motion.header 
+          initial={{ y: -12, opacity: 0.88 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          className="flex flex-col lg:flex-row lg:items-center justify-between gap-8"
+        >
           <div className="space-y-4">
             <button 
               onClick={() => navigate('/')}
@@ -314,7 +319,7 @@ export default function LibraryPage() {
               </button>
             )}
           </div>
-        </header>
+        </motion.header>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
           {/* Sidebar Left: Stats & Charts */}

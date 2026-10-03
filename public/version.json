@@ -1,11 +1,13 @@
 {
   "name": "luckey",
-  "version": "1.4.141",
-  "summary": "트리니티(Trinity) 타로 카드 그리드에 framer-motion 기반 섬세한 호버 스케일 및 순차적(Staggered) 등장 애니메이션 적용",
-  "builtAt": "2026-10-01T22:23:00.000Z",
+  "version": "1.4.145",
+  "summary": "모바일 터치 제스처 기반 탭 좌우 스와이프 전환 및 애니메이션 인디케이터 구현",
+  "builtAt": "2026-10-03T07:09:15.000Z",
   "items": [
-    "트리니티 타로 스프레드 그리드 컨테이너에 framer-motion staggered entrance variants(staggerChildren: 0.1, delayChildren: 0.05)를 탑재하여 카드가 순차적으로 유려하게 등장하도록 구현",
-    "TarotFlippingCard에 subtle hover scale 효과(whileHover: scale 1.05, y -4, spring stiffness 350) 및 인덱스 기반 스프링 엔트런스 모션 정밀 튜닝",
-    "트리니티 오라클(TrinityOracleSection), 실물 타로 입력(PhysicalTarotInputModal), 덱 커스텀(TarotCardBackCustomizerModal) 및 스프레드 슬롯 전반에 일관된 subtle hover scale 및 staggered 모션 동기화"
+    "재사용 가능한 터치 제스처 훅 useSwipeableTabs 개발 (수직 스크롤 간섭 방지, 대각선 및 입력필드 터치 제외 필터링, 햅틱 피드백 연동)",
+    "아우라(AURA/Heal) 채널에 좌우 스와이프 탭 전환 적용 (Letting Go Method ↔ 1-MIN ↔ SANCTUARY)",
+    "스와이프 방향(1 / -1)에 맞춘 방향성 슬라이드(x: 40px) 및 페이드 애니메이션 적용",
+    "상단 서브내비게이션에 layoutId 기반의 유려한 액티브 필(Pill) 슬라이딩 애니메이션 적용",
+    "모바일 전용 탭 위치 인디케이터(Pill Dots) 및 스와이프 가이드 UI 추가"
   ]
 }

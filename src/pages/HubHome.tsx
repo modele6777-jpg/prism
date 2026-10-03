@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'wouter';
 import { Sparkles, Music, TreeDeciduous, Bird, Activity, Zap, Moon, Sun, ChevronDown, ChevronUp, Brain, ChevronRight, Play, Pause, Hexagon, Triangle, X, Compass, HeartPulse, Shield, ListTodo } from 'lucide-react';
 import { PrologueECPRView } from '@/components/prologue/PrologueECPRView';
@@ -445,7 +445,12 @@ export default function HubHome() {
   return (
     <div className="h-app-full w-full flex flex-col relative font-sans bg-transparent">
       {/* Header Info Bar - Always Fixed Outside Scroll Root */}
-      <div className="prism-hub-header fixed top-safe-2 left-2 sm:left-4 md:top-safe-4 md:left-6 pointer-events-auto z-[110] transition-all duration-300 isolate">
+      <motion.div
+        initial={{ y: -8, opacity: 0.88 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+        className="prism-hub-header fixed top-safe-2 left-2 sm:left-4 md:top-safe-4 md:left-6 pointer-events-auto z-[110] transition-all duration-300 isolate"
+      >
         <div className="flex items-center gap-2.5 sm:gap-3">
           <div 
             className="relative w-11 h-11 rounded-full border border-white/10 flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.05)] group backdrop-blur-md cursor-pointer transition-transform active:scale-95 shrink-0"
@@ -470,11 +475,16 @@ export default function HubHome() {
             </p>
           </div>
         </div>
-      </div>
+      </motion.div>
 
 
       {/* Navigation Subnav Menu (Universe, eCPR & ToDo Sections) */}
-      <nav className="prism-xs-subnav fixed top-safe-nav md:top-safe-nav-md left-1/2 -translate-x-1/2 z-[100] flex items-center gap-1 p-1 rounded-3xl bg-white/5 backdrop-blur-2xl border border-white/10 shadow-2xl max-w-[95vw] overflow-x-auto no-scrollbar md:max-w-fit md:overflow-visible transition-all duration-300">
+      <motion.nav
+        initial={{ y: -10, x: '-50%', opacity: 0.88 }}
+        animate={{ y: 0, x: '-50%', opacity: 1 }}
+        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        className="prism-xs-subnav fixed top-safe-nav md:top-safe-nav-md left-1/2 z-[100] flex items-center gap-1 p-1 rounded-3xl bg-white/5 backdrop-blur-2xl border border-white/10 shadow-2xl max-w-[95vw] overflow-x-auto no-scrollbar md:max-w-fit md:overflow-visible transition-all duration-300"
+      >
         {[
           { id: 'universe', icon: Compass, label: 'Universe' },
           { id: 'ecpr', icon: HeartPulse, label: 'eCPR' },
@@ -511,7 +521,7 @@ export default function HubHome() {
             </button>
           );
         })}
-      </nav>
+      </motion.nav>
 
       <div data-app-scroll-root className="flex-1 w-full overflow-x-hidden overflow-y-auto flex flex-col no-scrollbar z-10 pb-28 sm:pb-32">
         {!legacy && <FloatingParticles count={narrow ? 4 : 20} />}

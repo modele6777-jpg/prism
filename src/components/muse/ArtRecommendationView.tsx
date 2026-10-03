@@ -1270,7 +1270,7 @@ export function ArtRecommendationView() {
     setCurrentMoodLabel(dailyMood.label);
     localStorage.setItem(ART_CACHE_KEYS.mood, dailyMood.label);
     if (concernText) {
-      setSavedCustomConcern(concernText);
+      setCustomConcern(concernText);
       localStorage.setItem(ART_CACHE_KEYS.userConcern, concernText);
     }
 
@@ -1518,9 +1518,9 @@ export function ArtRecommendationView() {
       setRecommendation(sanitizedArt);
       setCurrentMoodLabel(`오라클 토스: ${cardNames || "영혼의 처방"}`);
       if (toss.contextMessage && toss.sourceApp !== 'oracle') {
-        setSavedCustomConcern(toss.contextMessage);
+        setCustomConcern(toss.contextMessage);
       } else {
-        setSavedCustomConcern("");
+        setCustomConcern("");
       }
 
       // Trigger artwork visualization
@@ -1550,7 +1550,7 @@ export function ArtRecommendationView() {
           setNanobananaImage(backup.image || null);
           setArtworkImageSource(backup.imageSource || null);
           setCurrentMoodLabel(backup.moodLabel || "창작의 막힘 & 슬럼프 극복");
-          setSavedCustomConcern(backup.concern || "");
+          setCustomConcern(backup.concern || "");
           localStorage.removeItem("prism_toss_daily_backup");
           return;
         }

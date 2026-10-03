@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useLocation } from 'wouter';
 import { 
   Sparkles, 
   MessageCircle, 
@@ -50,6 +51,7 @@ export function TodayLucyPersonaCard({
   globalInsight,
   className = "",
 }: TodayLucyPersonaCardProps) {
+  const [, navigate] = useLocation();
   const { sharedState, openLucyChat } = useApp();
   const [data, setData] = useState<TodayLucyPersonaData>(() => getCachedTodayLucyPersona());
   const [isRefreshing, setIsRefreshing] = useState(false);

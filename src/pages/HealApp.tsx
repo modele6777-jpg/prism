@@ -1,6 +1,6 @@
 import { playConversation, stopTTS, useTTSActive } from '@/utils/tts'; import { Volume2, VolumeX } from 'lucide-react';
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Activity, Send, RefreshCw, Star,
   Heart, Plus, Check, X, Watch, Wind, Timer, Leaf, Brain, MessageCircle, Home, Sparkles, Layout, User, BookOpen, Library, Radio, Calendar, ChevronRight, Lock,
@@ -21,6 +21,7 @@ import { SedonaDailyView } from '@/components/heal/SedonaDailyView';
 import { recordPrismFeature, recordDailyOracleResult } from '@/lib/prismOmniSync';
 import { OneMinuteMeditationView } from '@/components/heal/OneMinuteMeditationView';
 import { AuraSynergySection } from '@/components/heal/AuraSynergySection';
+import { useSwipeableTabs } from '@/hooks/useSwipeableTabs';
 import { openChannelIntro } from '@/components/common/ChannelIntroModal';
 import { useBinauralBeat } from '@/hooks/useBinauralBeat';
 import { playAudioHaptic } from '@/lib/audioHaptics';
@@ -907,6 +908,24 @@ function DailyOracleSection({
   );
 }
 
+const HEAL_SWIPE_TABS = ['meditation', 'oneMinute', 'synergy'] as const;
+type HealSwipeTab = typeof HEAL_SWIPE_TABS[number];
+
+const tabSlideVariants = {
+  enter: (dir: number) => ({
+    x: dir > 0 ? 40 : -40,
+    opacity: 0,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+  },
+  exit: (dir: number) => ({
+    x: dir > 0 ? -40 : 40,
+    opacity: 0,
+  }),
+};
+
 export default function HealApp() {
   const [, navigate] = useLocation();
   const isTTSActive = useTTSActive();
@@ -938,6 +957,30 @@ export default function HealApp() {
     return 'meditation';
   });
   useScrollToTopOnChange([activeMode]);
+
+  const currentSwipeTab: HealSwipeTab =
+    activeMode === 'oneMinute' || activeMode === 'mission'
+      ? 'oneMinute'
+      : activeMode === 'synergy'
+      ? 'synergy'
+      : 'meditation';
+
+  const {
+    direction,
+    changeTabWithDirection,
+    swipeHandlers,
+  } = useSwipeableTabs<HealSwipeTab>({
+    tabs: HEAL_SWIPE_TABS,
+    activeTab: currentSwipeTab,
+    enabled: true,
+    enableHaptics: true,
+    onTabChange: (newTab) => {
+      setActiveMode(newTab);
+      setShowHealingMissionModal(false);
+      setIsChatOpen(false);
+      resetAppScroll();
+    },
+  });
 
   useEffect(() => {
     const applyTargetTab = (tab: string | null | undefined) => {
@@ -1605,7 +1648,12 @@ export default function HealApp() {
     <div className="h-app-full w-full flex flex-col relative overflow-hidden font-sans bg-transparent">
 
       {/* Top Left Branding */}
-      <div className={`fixed top-safe-2 left-2 sm:left-4 md:top-safe-4 md:left-6 pointer-events-auto z-[110] transition-all duration-300 ${isSpecialFeatureChromeHidden ? SPECIAL_FEATURE_CHROME_HIDDEN_CLASS : 'opacity-100'}`}>
+      <motion.div
+        initial={{ y: -8, opacity: 0.88 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+        className={`fixed top-safe-2 left-2 sm:left-4 md:top-safe-4 md:left-6 pointer-events-auto z-[110] transition-opacity duration-300 ${isSpecialFeatureChromeHidden ? SPECIAL_FEATURE_CHROME_HIDDEN_CLASS : 'opacity-100'}`}
+      >
          <div className="flex items-center gap-2.5 sm:gap-3">
             <div 
               className="relative w-11 h-11 rounded-full border border-white/10 flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.05)] group backdrop-blur-md cursor-pointer transition-transform active:scale-95 shrink-0" 
@@ -1626,51 +1674,125 @@ export default function HealApp() {
                <p className="text-[8px] md:text-[9px] text-white/40 uppercase tracking-widest font-bold font-sans leading-none mt-0.5">AURA • WELLNESS COACH</p>
             </div>
          </div>
-      </div>
+      </motion.div>
 
       {/* Top Navigation */}
-      <nav className={`prism-xs-subnav fixed top-safe-nav md:top-safe-nav-md left-1/2 -translate-x-1/2 z-[100] flex items-center gap-1 p-1 rounded-3xl bg-white/5 backdrop-blur-2xl border border-white/10 shadow-2xl max-w-[95vw] overflow-x-auto no-scrollbar md:max-w-fit md:overflow-visible transition-all duration-300 ${isSpecialFeatureChromeHidden ? SPECIAL_FEATURE_CHROME_HIDDEN_CLASS : 'opacity-100'}`}>
+      <motion.nav
+        initial={{ y: -10, x: '-50%', opacity: 0.88 }}
+        animate={{ y: 0, x: '-50%', opacity: 1 }}
+        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        className={`prism-xs-subnav fixed top-safe-nav md:top-safe-nav-md left-1/2 z-[100] flex items-center gap-1 p-1 rounded-3xl bg-white/5 backdrop-blur-2xl border border-white/10 shadow-2xl max-w-[95vw] overflow-x-auto no-scrollbar md:max-w-fit md:overflow-visible transition-opacity duration-300 ${isSpecialFeatureChromeHidden ? SPECIAL_FEATURE_CHROME_HIDDEN_CLASS : 'opacity-100'}`}
+      >
          {[
-           { id: 'meditation', icon: Leaf, label: 'Letting Go Method' },
-           { id: 'oneMinute', icon: Timer, label: '1-MIN' },
-           { id: 'synergy', icon: Sparkles, label: 'SANCTUARY' },
+           { id: 'meditation' as const, icon: Leaf, label: 'Letting Go Method' },
+           { id: 'oneMinute' as const, icon: Timer, label: '1-MIN' },
+           { id: 'synergy' as const, icon: Sparkles, label: 'SANCTUARY' },
          ].map(item => {
-           const isActive = activeMode === item.id || (item.id === 'oneMinute' && activeMode === 'mission');
+           const isActive = currentSwipeTab === item.id;
            return (
              <button
                key={item.id}
                onClick={() => { 
-                 setActiveMode(item.id as any);
+                 changeTabWithDirection(item.id);
                  setShowHealingMissionModal(false);
                  setIsChatOpen(false);
                }}
-               className={`prism-subnav-btn flex shrink-0 whitespace-nowrap items-center gap-2 md:gap-3 px-4 md:px-6 py-2.5 md:py-3 rounded-2xl transition-all duration-300 group ${isActive ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
+               className={`prism-subnav-btn relative flex shrink-0 whitespace-nowrap items-center gap-2 md:gap-3 px-4 md:px-6 py-2.5 md:py-3 rounded-2xl transition-all duration-300 group cursor-pointer ${isActive ? 'text-white' : 'text-white/40 hover:text-white hover:bg-white/5'}`}
              >
-               <item.icon size={16} className={isActive ? 'animate-pulse' : ''} />
-               <span className={`text-[10px] font-black uppercase tracking-widest ${isActive ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden group-hover:opacity-100 group-hover:w-auto transition-all'}`}>
-                 {item.label}
+               {isActive && (
+                 <motion.div
+                   layoutId="heal-active-subnav-pill"
+                   className="absolute inset-0 bg-emerald-600 rounded-2xl shadow-lg shadow-emerald-500/25 -z-0"
+                   transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                 />
+               )}
+               <span className="relative z-10 flex items-center gap-2 md:gap-3">
+                 <item.icon size={16} className={isActive ? 'animate-pulse' : ''} />
+                 <span className={`text-[10px] font-black uppercase tracking-widest ${isActive ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden group-hover:opacity-100 group-hover:w-auto transition-all'}`}>
+                   {item.label}
+                 </span>
                </span>
              </button>
            );
          })}
-      </nav>
+      </motion.nav>
 
-      <main data-app-scroll-root className="flex-1 w-full pt-page pb-page md:pt-page-md md:pb-page-md flex flex-col relative z-10 overflow-y-auto no-scrollbar scroll-smooth text-white">
+      <main
+        data-app-scroll-root
+        {...swipeHandlers}
+        className="flex-1 w-full pt-page pb-page md:pt-page-md md:pb-page-md flex flex-col relative z-10 overflow-y-auto no-scrollbar scroll-smooth text-white touch-pan-y"
+      >
         <div className="max-w-5xl w-full mx-auto px-3 sm:px-6 prism-xs-pad flex-1 flex flex-col">
-          <AnimatePresence mode="wait">
+          {/* Mobile Swipe Guidance & Tab Dots Indicator */}
+          <div className="md:hidden flex items-center justify-between px-2 pt-1 pb-3 select-none">
+            <span className="text-[10px] text-white/35 font-medium tracking-wide flex items-center gap-1">
+              <span>↔ 좌우 스와이프로 탭 전환</span>
+            </span>
+            <div className="flex items-center gap-1.5">
+              {HEAL_SWIPE_TABS.map((tabId, idx) => {
+                const isSelected = currentSwipeTab === tabId;
+                return (
+                  <button
+                    key={tabId}
+                    onClick={() => changeTabWithDirection(tabId)}
+                    className="p-1 focus:outline-none cursor-pointer"
+                    aria-label={`탭 ${idx + 1} 이동`}
+                  >
+                    <motion.div
+                      animate={{
+                        width: isSelected ? 18 : 6,
+                        backgroundColor: isSelected ? 'rgba(52, 211, 153, 0.95)' : 'rgba(255, 255, 255, 0.2)',
+                      }}
+                      transition={{ duration: 0.2 }}
+                      className="h-1.5 rounded-full"
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <AnimatePresence mode="wait" custom={direction}>
             {activeMode === 'synergy' ? (
-              <motion.div key="aura-synergy" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 pb-8 sm:pb-12 flex flex-col items-center w-full">
+              <motion.div
+                key="aura-synergy"
+                custom={direction}
+                variants={tabSlideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                className="space-y-8 pb-8 sm:pb-12 flex flex-col items-center w-full"
+              >
                 <AuraSynergySection />
               </motion.div>
             ) : activeMode === 'meditation' ? (
-              <motion.div key="meditation" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 pb-8 sm:pb-12 flex flex-col items-center w-full">
+              <motion.div
+                key="meditation"
+                custom={direction}
+                variants={tabSlideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                className="space-y-8 pb-8 sm:pb-12 flex flex-col items-center w-full"
+              >
                  <SedonaDailyView
                    firebaseUser={firebaseUser}
                    onDailyComplete={() => updateSharedState({ lastHealDailySync: Date.now() }, 'HEAL')}
                  />
               </motion.div>
             ) : activeMode === 'oneMinute' || activeMode === 'mission' ? (
-              <motion.div key="one-minute-top" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 pb-8 sm:pb-12 w-full">
+              <motion.div
+                key="one-minute-top"
+                custom={direction}
+                variants={tabSlideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                className="space-y-8 pb-8 sm:pb-12 w-full"
+              >
                 <OneMinuteMeditationView isModal={false} />
               </motion.div>
             ) : activeMode === 'simple' ? (

@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { Sun, Sparkles, Music, TreeDeciduous, Bird, Activity, Moon } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, useAnimation } from 'framer-motion';
 import { useNarrowPhone } from '@/hooks/useNarrowPhone';
 import { isLegacyMobile } from '@/lib/perfMode';
 
@@ -21,11 +21,24 @@ export default function BottomNav() {
   const [location, navigate] = useLocation();
   const narrow = useNarrowPhone();
   const legacy = isLegacyMobile();
+  const controls = useAnimation();
+  const rootPath = location ? location.split('?')[0].split('#')[0] : '/';
+
+  useEffect(() => {
+    // Subtle slide-in animation when navigating between different pages
+    controls.start({
+      y: [8, 0],
+      opacity: [0.9, 1],
+      transition: { duration: 0.28, ease: [0.16, 1, 0.3, 1] },
+    });
+  }, [rootPath, controls]);
 
   return (
-    <nav
+    <motion.nav
       aria-label="앱 네비게이션"
       className="prism-bottom-nav z-50 px-safe"
+      initial={{ y: 8, opacity: 0.9 }}
+      animate={controls}
     >
       <div className="flex items-center justify-around w-full max-w-md mx-auto h-[var(--nav-bar-h)] px-1">
         {NAV_ITEMS.map(({ path, icon: Icon, color, isHome }) => {
@@ -108,6 +121,6 @@ export default function BottomNav() {
           );
         })}
       </div>
-    </nav>
+    </motion.nav>
   );
 }
