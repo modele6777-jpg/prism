@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.4.146",
+    "summary": "CalmApp(Key 마음약방) 5초 유기적 풍선 호흡의 들이쉬기/내쉬기 정점(Peak) 진동 햅틱 피드백 구현",
+    "builtAt": "2026-10-03T23:47:30.000Z",
+    "items": [
+      "CalmApp 5초 유기적 풍선 호흡(Balloon Breathing)에 들숨 정점(Inhale Peak: [35, 30, 45]ms 이중 펄스) 및 날숨 정점(Exhale Peak: [50, 40, 25]ms 삼중 하강 펄스) 진동 햅틱 피드백 추가",
+      "상위 CalmApp(React)과 Iframe 간 postMessage 브릿지(BALLOON_BREATHING_HAPTIC)를 연동하여 모바일 브라우저 최상위 하드웨어 진동 및 음향 바이오 하모닉스 동시 지원",
+      "풍선 호흡 스튜디오 내 정점 햅틱 켜기/끄기 토글 버튼(localStorage calm_breathing_haptic_feedback) 및 정점 도달 시 시각적 앰비언트 글로우 펄스 애니메이션 추가",
+      "Iframe 캐시 버스팅 파라미터(v=35.0) 갱신으로 모바일 기기 즉각 반영 보장"
+    ]
+  },
+  {
     "version": "1.4.145",
     "summary": "모바일 터치 제스처 기반 탭 좌우 스와이프 전환 및 애니메이션 인디케이터 구현",
     "builtAt": "2026-10-03T07:09:15.000Z",

@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { KeyCosmicLoader } from "@/components/KeyCosmicLoader";
 import { savePendingSelection, clearPendingSelection } from "@/lib/selectionBridge";
 import { getPendingPrismToss, clearPrismToss } from "@/lib/prismToss";
+import { playAudioHaptic } from "@/lib/audioHaptics";
 
 export default function CalmApp() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -27,6 +28,26 @@ export default function CalmApp() {
       if (e.data.type === "CALM_FRAME_READY" || e.data.type === "CALM_READY") {
         setIframeLoaded(true);
         setIsLoading(false);
+        return;
+      }
+
+      // 1.5. Handle Balloon Breathing Haptic vibration from iframe
+      if (e.data.type === "BALLOON_BREATHING_HAPTIC") {
+        const phase = e.data.phase; // 'inhale-peak' | 'exhale-peak'
+        if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+          try {
+            if (phase === "inhale-peak") {
+              // Inhale peak: double expansion vibration pulse
+              navigator.vibrate([35, 30, 45]);
+            } else {
+              // Exhale peak: calming grounding release vibration pulse
+              navigator.vibrate([50, 40, 25]);
+            }
+          } catch (_) {}
+        }
+        try {
+          playAudioHaptic(phase === "inhale-peak" ? "breathe_inhale" : "breathe_exhale");
+        } catch (_) {}
         return;
       }
 
@@ -125,7 +146,7 @@ export default function CalmApp() {
   }, [iframeLoaded]);
 
   const searchParams = typeof window !== 'undefined' ? window.location.search : '';
-  const iframeSrc = `/calm/index.html${searchParams ? searchParams + '&v=34.0' : '?v=34.0'}`;
+  const iframeSrc = `/calm/index.html${searchParams ? searchParams + '&v=35.0' : '?v=35.0'}`;
 
   return (
     <div className="fixed inset-0 w-full h-[100dvh] bg-[#fcf9f5] z-40 overflow-hidden flex flex-col">

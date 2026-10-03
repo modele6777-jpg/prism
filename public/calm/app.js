@@ -643,6 +643,92 @@ document.addEventListener('DOMContentLoaded', () => {
   const breathingAudioLabel = document.getElementById('breathing-audio-label');
   const audioBellStatus = document.getElementById('audio-bell-status');
 
+  // 📳 진동 햅틱 피드백 컨트롤
+  const btnBreathingHapticToggle = document.getElementById('btn-breathing-haptic-toggle');
+  const breathingHapticIcon = document.getElementById('breathing-haptic-icon');
+  const breathingHapticLabel = document.getElementById('breathing-haptic-label');
+  let breathingHapticEnabled = true;
+
+  try {
+    const savedHaptic = localStorage.getItem('calm_breathing_haptic_feedback');
+    if (savedHaptic !== null) {
+      breathingHapticEnabled = savedHaptic === 'true';
+    }
+  } catch (_) {}
+
+  function updateHapticUI() {
+    if (!btnBreathingHapticToggle) return;
+    if (breathingHapticEnabled) {
+      btnBreathingHapticToggle.classList.add('active');
+      if (breathingHapticIcon) breathingHapticIcon.textContent = '📳';
+      if (breathingHapticLabel) breathingHapticLabel.textContent = '정점 햅틱: 켜짐';
+    } else {
+      btnBreathingHapticToggle.classList.remove('active');
+      if (breathingHapticIcon) breathingHapticIcon.textContent = '🔇';
+      if (breathingHapticLabel) breathingHapticLabel.textContent = '정점 햅틱: 꺼짐';
+    }
+  }
+  updateHapticUI();
+
+  if (btnBreathingHapticToggle) {
+    btnBreathingHapticToggle.addEventListener('click', () => {
+      breathingHapticEnabled = !breathingHapticEnabled;
+      try {
+        localStorage.setItem('calm_breathing_haptic_feedback', String(breathingHapticEnabled));
+      } catch (_) {}
+      updateHapticUI();
+      if (breathingHapticEnabled) {
+        triggerBalloonHaptic('inhale-peak');
+      }
+    });
+  }
+
+  /**
+   * 들이쉬기 및 내쉬기 정점(Peak) 도달 시 진동 햅틱 피드백 발동
+   * @param {'inhale-peak' | 'exhale-peak'} phase
+   */
+  function triggerBalloonHaptic(phase) {
+    if (!breathingHapticEnabled) return;
+
+    // 1. 모바일 기기 하드웨어 진동 (Vibration API)
+    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+      try {
+        if (phase === 'inhale-peak') {
+          // 들숨 정점: 폐가 가득 찼을 때의 상쾌한 이중 펄스 진동
+          navigator.vibrate([35, 30, 45]);
+        } else if (phase === 'exhale-peak') {
+          // 날숨 정점: 숨을 완전히 비워냈을 때의 안정된 삼중 하강 진동
+          navigator.vibrate([50, 40, 25]);
+        } else {
+          navigator.vibrate(40);
+        }
+      } catch (_) {}
+    }
+
+    // 2. 상위 React 앱(CalmApp)으로 포워딩 (Iframe 제약 우회 및 부교감 음향 바이오 하모닉스 동기화)
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+          type: 'BALLOON_BREATHING_HAPTIC',
+          phase: phase,
+        }, '*');
+      }
+    } catch (_) {}
+
+    // 3. 풍선 시각적 펄스 링 연동
+    if (breathingBalloon) {
+      const pulseClass = phase === 'inhale-peak' ? 'haptic-peak-inhale' : 'haptic-peak-exhale';
+      breathingBalloon.classList.remove('haptic-peak-inhale', 'haptic-peak-exhale');
+      void breathingBalloon.offsetWidth;
+      breathingBalloon.classList.add(pulseClass);
+      setTimeout(() => {
+        if (breathingBalloon) {
+          breathingBalloon.classList.remove(pulseClass);
+        }
+      }, 550);
+    }
+  }
+
   // 완주 축하 카드 & 재시작 버튼
   const celebrationCard = document.getElementById('breathing-celebration-card');
   const celebrationTitle = document.getElementById('celebration-title');
@@ -789,12 +875,16 @@ document.addEventListener('DOMContentLoaded', () => {
       countdown--;
       if (countdown <= 0) {
         if (currentPhase === 'inhale') {
+          // 들이쉬기 정점(Inhale Peak) 도달: 5초 팽창 완결 시 진동 햅틱 발동
+          triggerBalloonHaptic('inhale-peak');
           currentPhase = 'hold';
           countdown = 2;
         } else if (currentPhase === 'hold') {
           currentPhase = 'exhale';
           countdown = 5;
         } else {
+          // 내쉬기 정점(Exhale Peak) 도달: 5초 배출 완결 시 진동 햅틱 발동
+          triggerBalloonHaptic('exhale-peak');
           currentPhase = 'inhale';
           countdown = 5;
           cycleCount++;
