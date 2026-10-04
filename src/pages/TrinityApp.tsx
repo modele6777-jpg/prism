@@ -18,6 +18,7 @@ import {
   Sun,
   RefreshCw,
   RotateCw,
+  RotateCcw,
   ChevronDown,
   Zap,
   Eye,
@@ -231,6 +232,8 @@ import {
   drawCards,
   LUCKY_EXAMPLES,
   analyzeTarotConcern,
+  getTarotThemeMeta,
+  getTarotRecommendationReason,
   isDailyTarotConcern,
   buildSpreadForTheme,
   buildLocalTarotReading,
@@ -1536,10 +1539,14 @@ function playDailyCardChimeAsync() {
           : customSpread.theme === 'yes_no'
             ? 'yes_no'
             : base.kind;
+      const meta = getTarotThemeMeta(customSpread.theme);
       return {
         ...base,
         kind,
         theme: customSpread.theme,
+        themeLabel: meta.label,
+        themeEmoji: meta.emoji,
+        recommendationReason: customSpread.reason || base.recommendationReason,
         spread: customSpread,
       };
     }
@@ -3135,12 +3142,66 @@ ${concernAnalysis.kind === "yes_no"
                                 })}
                               </div>
 
-                              <textarea
-                                value={tarotConcern}
-                                onChange={(e) => setTarotConcern(e.target.value)}
-                                placeholder="타로에게 물어보고 싶은 고민을 상세히 적어주세요..."
-                                className="w-full h-36 bg-black/30 border border-white/10 rounded-2xl p-5 text-white font-sans focus:outline-none focus:border-yellow-500/50 transition-all resize-none placeholder:text-white/20 leading-relaxed text-sm"
-                              />
+                              <div className="relative">
+                                <textarea
+                                  value={tarotConcern}
+                                  onChange={(e) => {
+                                    setTarotConcern(e.target.value);
+                                    if (customSpread) {
+                                      setCustomSpread(null);
+                                    }
+                                  }}
+                                  placeholder="타로에게 물어보고 싶은 고민을 상세히 적어주세요 (예: 이직할까 말까, 그 사람 속마음, 올해 재물운, 시험 합격 여부 등)..."
+                                  className="w-full h-36 bg-black/30 border border-white/10 rounded-2xl p-5 text-white font-sans focus:outline-none focus:border-yellow-500/50 transition-all resize-none placeholder:text-white/20 leading-relaxed text-sm pr-10"
+                                />
+                                {tarotConcern.trim().length > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setTarotConcern('');
+                                      setCustomSpread(null);
+                                    }}
+                                    className="absolute right-3.5 top-3.5 p-1.5 rounded-xl bg-white/5 hover:bg-white/15 text-white/50 hover:text-white transition-all text-xs cursor-pointer"
+                                    title="고민 내용 지우기"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                )}
+                              </div>
+
+                              {/* Live Real-time AI Spread Recommendation Indicator */}
+                              {tarotConcern.trim().length > 0 && (
+                                <div className="px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-yellow-500/15 via-amber-500/10 to-yellow-500/5 border border-yellow-500/35 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-sm text-left">
+                                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                                    <span className="w-2 h-2 rounded-full bg-yellow-400 animate-ping shrink-0" />
+                                    <span className="px-2 py-0.5 rounded-md bg-yellow-500/20 text-yellow-300 font-bold text-[11px] shrink-0 border border-yellow-500/40">
+                                      {tarotConcernAnalysis.themeEmoji} {tarotConcernAnalysis.themeLabel}
+                                    </span>
+                                    <span className="text-white/90 text-xs truncate">
+                                      고민 감지 ➔ <strong className="text-yellow-300 font-bold">{tarotSpreadRecommendation.name}</strong> ({tarotSpreadRecommendation.cardCount}장)
+                                    </span>
+                                  </div>
+
+                                  <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
+                                    {isAutoRecommended ? (
+                                      <span className="text-[10px] font-mono text-yellow-400 bg-yellow-500/15 px-2.5 py-1 rounded-full border border-yellow-500/30 font-bold flex items-center gap-1">
+                                        <Sparkles size={11} className="text-yellow-400 animate-pulse" />
+                                        AI 맞춤 추천 적용됨
+                                      </span>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={() => setCustomSpread(null)}
+                                        className="text-[10px] font-bold text-yellow-300 hover:text-yellow-100 bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/40 px-3 py-1 rounded-full transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-sm"
+                                        title="현재 작성한 고민에 맞춘 AI 자동 추천 배열법으로 전환"
+                                      >
+                                        <RotateCcw size={11} />
+                                        <span>AI 맞춤 추천으로 복원</span>
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
 
                               {/* Clickable Tarot Spread Recommendation / Custom Spread Card */}
                               <div
@@ -3151,8 +3212,12 @@ ${concernAnalysis.kind === "yes_no"
                                 <div className="flex items-center justify-between gap-2 mb-1.5">
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     <span className="text-[10px] font-bold uppercase tracking-widest text-yellow-400 font-mono flex items-center gap-1">
-                                      <Sparkles size={11} className="text-yellow-400" />
-                                      <span>{isAutoRecommended ? 'AI 자동 추천 배열법' : '직접 선택한 배열법'}</span>
+                                      <Sparkles size={11} className="text-yellow-400 animate-pulse" />
+                                      <span>
+                                        {isAutoRecommended
+                                          ? `AI 맞춤 추천: ${tarotConcernAnalysis.themeEmoji} ${tarotConcernAnalysis.themeLabel}`
+                                          : '직접 선택한 배열법'}
+                                      </span>
                                     </span>
                                     <span className="text-[10px] px-2 py-0.2 rounded-full bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 font-bold font-mono">
                                       {tarotSpreadRecommendation.cardCount}장
@@ -3164,12 +3229,17 @@ ${concernAnalysis.kind === "yes_no"
                                     <ChevronDown size={14} className="group-hover:translate-y-0.5 transition-transform" />
                                   </div>
                                 </div>
-                                <p className="text-sm text-white font-bold group-hover:text-yellow-200 transition-colors">
-                                  {tarotSpreadRecommendation.name}
+                                <p className="text-sm text-white font-bold group-hover:text-yellow-200 transition-colors flex items-center gap-1.5">
+                                  <span>{tarotSpreadRecommendation.name}</span>
                                 </p>
-                                <p className="text-[11px] text-white/60 mt-1 leading-relaxed break-keep">
-                                  {tarotSpreadRecommendation.reason}
+                                <p className="text-[11px] text-yellow-200/95 mt-1 leading-relaxed break-keep font-medium">
+                                  💡 {tarotConcernAnalysis.recommendationReason}
                                 </p>
+                                {tarotSpreadRecommendation.reason && tarotSpreadRecommendation.reason !== tarotConcernAnalysis.recommendationReason && (
+                                  <p className="text-[10px] text-white/50 mt-0.5 leading-relaxed break-keep">
+                                    {tarotSpreadRecommendation.reason}
+                                  </p>
+                                )}
                                 <div className="flex flex-wrap items-center gap-1 mt-2.5">
                                   {tarotSpreadRecommendation.positions.map((pos, pIdx) => (
                                     <span

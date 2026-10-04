@@ -178,6 +178,7 @@ export type TarotConcernTheme =
   | 'money'
   | 'timing'
   | 'obstacle'
+  | 'celtic_cross'
   | 'general';
 
 export type TarotSpreadRecommendation = {
@@ -192,10 +193,102 @@ export type TarotSpreadRecommendation = {
 export type TarotConcernAnalysis = {
   kind: TarotConcernKind;
   theme: TarotConcernTheme;
+  themeLabel: string;
+  themeEmoji: string;
+  recommendationReason: string;
   optionA?: string;
   optionB?: string;
   spread: TarotSpreadRecommendation;
 };
+
+/** 각 타로 주제별 사용자 친화적 라벨, 이모지, 요약 설명 반환 */
+export function getTarotThemeMeta(theme: TarotConcernTheme): {
+  label: string;
+  emoji: string;
+  shortDesc: string;
+} {
+  switch (theme) {
+    case 'love':
+      return { label: '연애·관계', emoji: '💖', shortDesc: '상대방의 속마음과 관계의 현실 및 미래 조언' };
+    case 'career':
+      return { label: '진로·취업·시험', emoji: '💼', shortDesc: '목표 달성을 위한 단계별 성장과 조력' };
+    case 'money':
+      return { label: '재물·투자·금전', emoji: '💰', shortDesc: '재정 흐름과 막힘 해소 및 유입 기회' };
+    case 'binary_choice':
+      return { label: '양자택일 비교', emoji: '⚖️', shortDesc: '두 가지 선택지의 실질적 결과 비교 판별' };
+    case 'yes_no':
+      return { label: '예/아니오 결단', emoji: '🎯', shortDesc: '명쾌한 YES/NO 판정과 핵심 변수 진단' };
+    case 'timing':
+      return { label: '시기·타이밍', emoji: '⏳', shortDesc: '움직여야 할 최적의 시점과 과거·현재 흐름' };
+    case 'obstacle':
+      return { label: '장애물 돌파·해결', emoji: '🧱', shortDesc: '막힌 원인과 돌파구를 여는 명쾌한 해법' };
+    case 'celtic_cross':
+      return { label: '셀틱 크로스 (10장)', emoji: '✨', shortDesc: '무의식과 외부 환경까지 10장 심층 입체 분석' };
+    case 'super_money':
+      return { label: '슈퍼타로 재물자석', emoji: '💎', shortDesc: '황금빛 부의 주파수와 자석 같은 현금 흐름' };
+    case 'lucky':
+    case 'fortune_boost':
+      return { label: '럭키 대길 개운', emoji: '🍀', shortDesc: '탁기 정화 및 기하급수적 행운 증폭' };
+    case 'angel':
+      return { label: '수호천사 영적 성장', emoji: '👼', shortDesc: '천사의 빛과 에고 정화 및 영혼의 인도' };
+    case 'healing':
+      return { label: '마음 & 영혼 치유', emoji: '🌿', shortDesc: '지친 마음과 내면 아이 치유 및 평화 회복' };
+    case 'saju':
+      return { label: '사주 4주 융합', emoji: '🔮', shortDesc: '명리 4기둥(년·월·일·시)과 타로 상징 융합' };
+    case 'new_year':
+      return { label: '신년 4계절 대운', emoji: '🌸', shortDesc: '신년 사계절 분기별 흐름과 대운 나침반' };
+    case 'daily':
+      return { label: '오늘의 타로 (원카드)', emoji: '☀️', shortDesc: '오늘 하루의 우주적 기운과 일일 계시' };
+    case 'general':
+    default:
+      return { label: '3카드 시간 배열', emoji: '🌌', shortDesc: '과거 원인·현재 상황·미래 결과의 명확한 흐름' };
+  }
+}
+
+/** 고민 주제 및 배열법에 따른 맞춤 추천 이유 생성 */
+export function getTarotRecommendationReason(
+  theme: TarotConcernTheme,
+  spreadName: string,
+  cardCount: number,
+  analysis?: { optionA?: string; optionB?: string }
+): string {
+  switch (theme) {
+    case 'love':
+      return `상대방의 속마음, 관계의 현실과 장애물, 미래 조언을 입체적으로 투영하는 [${spreadName} (${cardCount}장)]이 맞춤 추천되었습니다.`;
+    case 'career':
+      return `목표 달성을 위한 현 위치, 단계별 과정, 조력자와 최종 성취를 짚어주는 [${spreadName} (${cardCount}장)]이 맞춤 추천되었습니다.`;
+    case 'money':
+      return `자금 흐름의 정체 원인과 유입 기회, 구체적 실천 조언을 밝히는 [${spreadName} (${cardCount}장)]이 맞춤 추천되었습니다.`;
+    case 'binary_choice':
+      return `${analysis?.optionA && analysis?.optionB ? `선택지 [${analysis.optionA}] vs [${analysis.optionB}]의` : '두 선택지의'} 결과와 장단점을 비교 판별하는 [${spreadName} (${cardCount}장)]이 맞춤 추천되었습니다.`;
+    case 'yes_no':
+      return `명확한 YES/NO 결단과 숨겨진 변수, 최종 판정을 신속히 확인하는 [${spreadName} (${cardCount}장)]이 맞춤 추천되었습니다.`;
+    case 'timing':
+      return `움직여야 할 최적의 시점과 과거의 영향, 결과 타이밍을 점검하는 [${spreadName} (${cardCount}장)]이 맞춤 추천되었습니다.`;
+    case 'obstacle':
+      return `현재 막힌 상황의 근본 원인과 돌파구를 명쾌하게 제시하는 [${spreadName} (${cardCount}장)]이 맞춤 추천되었습니다.`;
+    case 'celtic_cross':
+      return `복합적이고 심층적인 고민의 무의식과 외부 환경, 최종 결과까지 10장으로 정밀 분석하는 정통 [${spreadName} (${cardCount}장)]이 맞춤 추천되었습니다.`;
+    case 'super_money':
+      return `결핍의 무의식을 지우고 황금빛 부의 주파수를 당기는 [${spreadName} (${cardCount}장)]이 맞춤 추천되었습니다.`;
+    case 'lucky':
+    case 'fortune_boost':
+      return `탁기를 정화하고 대길 행운의 문을 활짝 여는 [${spreadName} (${cardCount}장)]이 맞춤 추천되었습니다.`;
+    case 'angel':
+      return `수호천사의 고차원적 빛과 영혼의 성장을 이끄는 [${spreadName} (${cardCount}장)]이 맞춤 추천되었습니다.`;
+    case 'healing':
+      return `지친 내면의 상처를 보듬고 온전한 평화를 되찾는 [${spreadName} (${cardCount}장)]이 맞춤 추천되었습니다.`;
+    case 'saju':
+      return `사주 4기둥(년·월·일·시)과 타로 상징을 융합 해독하는 [${spreadName} (${cardCount}장)]이 맞춤 추천되었습니다.`;
+    case 'new_year':
+      return `신년 4계절(분기별) 흐름과 1년 전체를 관통하는 [${spreadName} (${cardCount}장)]이 맞춤 추천되었습니다.`;
+    case 'daily':
+      return `오늘 하루 당신을 감싸는 우주적 파동과 일일 계시를 밝히는 [${spreadName} (${cardCount}장)]이 맞춤 추천되었습니다.`;
+    case 'general':
+    default:
+      return `고민의 과거 원인, 현재 상황, 미래의 흐름을 균형 있게 파악하는 [${spreadName} (${cardCount}장)]이 맞춤 추천되었습니다.`;
+  }
+}
 
 export function isDailyTarotConcern(text: string): boolean {
   const t = text.trim().replace(/\s+/g, ' ');
@@ -242,19 +335,22 @@ function detectTarotTheme(
   if (/(?:사주|사주팔자|선천\s*운|명리|오행|사주\s*기운|타고난\s*운|내\s*운명|팔자|세운|용신|사주\s*타로|년주|월주|일주|시주|4기둥|사주\s*4주)/.test(text)) {
     return 'saju';
   }
-  if (/(?:사랑|연애|썸|고백|헤어|이별|재회|남친|여친|남자친구|여자친구|짝사랑|결혼|인연|상대|그\s*사람|애인|배우자|속마음|호감|좋아하|연인|재결합|이성운|연애운|만날\s*수|남편|아내)/.test(text)) {
+  if (/(?:셀틱\s*크로스|셀틱|10장|열\s*장|열장|십카드|ten\s*cards?|celtic\s*cross)/i.test(text)) {
+    return 'celtic_cross';
+  }
+  if (/(?:사랑|연애|썸|고백|헤어|이별|재회|남친|여친|남자친구|여자친구|짝사랑|결혼|인연|상대|그\s*사람|애인|배우자|속마음|호감|좋아하|연인|재결합|이성운|연애운|만날\s*수|남편|아내|짝남|짝녀|소개팅|미팅|권태기|전남친|전여친|전애인|바람|양다리|외도|궁합|이혼|파혼|연락\s*올까|연락운|호감도|짝사랑중|썸남|썸녀|속마음이|마음이\s*어떨까)/.test(text)) {
     return 'love';
   }
-  if (/(?:이직|퇴사|취업|진로|승진|사업|창업|직장|회사|커리어|면접|프로젝트|팀장|부장|합격|시험|직업|일자리|업무|전직|계약|취직|공부|성적|취포|스카우트)/.test(text)) {
+  if (/(?:이직|퇴사|취업|진로|승진|사업|창업|직장|회사|커리어|면접|프로젝트|팀장|부장|합격|시험|직업|일자리|업무|전직|계약|취직|공부|성적|취포|스카우트|자격증|고시|공시|임용|공무원|수능|입시|대학|학업|가게|폐업|사업운|취업운|승진운|면접운|합격운|직장운|발령|부서이동|동업|계약운)/.test(text)) {
     return 'career';
   }
-  if (/(?:돈|재물|금전|투자|수입|빚|로또|재정|월급|적자|흑자|대출|부동산|주식|코인|매매|수익|매출|통장|자산|가난)/.test(text)) {
+  if (/(?:돈|재물|금전|투자|수입|빚|로또|재정|월급|적자|흑자|대출|부동산|주식|코인|매매|수익|매출|통장|자산|가난|금전운|재물운|목돈|코인운|주식운|연봉|보너스|비트코인|청약|부동산운|보증금|사업자금|용돈|환율|상속|증여)/.test(text)) {
     return 'money';
   }
-  if (/(?:언제|시기|타이밍|때가|며칠|몇\s*월|몇\s*주|기간|곧|얼마나\s*걸릴|시점|언제쯤|때를|기다려야)/.test(text)) {
+  if (/(?:언제|시기|타이밍|때가|며칠|몇\s*월|몇\s*주|기간|곧|얼마나\s*걸릴|시점|언제쯤|때를|기다려야|언제쯤이면|몇월|올해\s*안에|이번\s*달|조만간|시기가\s*맞을까|언제가\s*좋을까|언제\s*해야|언제\s*움직여야)/.test(text)) {
     return 'timing';
   }
-  if (/(?:막힌|장애|왜\s*안|해결|돌파|극복|막혀|정체|꼬여|안\s*풀리|문제|답답|위기|괴롭|갈등|벽에\s*부딪)/.test(text)) {
+  if (/(?:막힌|장애|왜\s*안|해결|돌파|극복|막혀|정체|꼬여|안\s*풀리|문제|답답|위기|괴롭|갈등|벽에\s*부딪|어떻게\s*해야|어떡하지|방법이\s*없을까|탈출구|원인|왜\s*이럴까|답답해|막막|해결책|난관|딜레마)/.test(text)) {
     return 'obstacle';
   }
   if (kind === 'yes_no') return 'obstacle';
@@ -426,6 +522,7 @@ export function buildSpreadForTheme(
       positions: ['현재 상황', '핵심 장애물', '돌파 조언'],
       theme: 'obstacle',
     },
+    celtic_cross: CELTIC_CROSS_SPREAD,
     general: {
       id: 'past_present_future',
       name: '3카드 시간 배열',
@@ -515,7 +612,7 @@ export const CELTIC_CROSS_SPREAD: TarotSpreadRecommendation = {
     '현재 상황', '도전/장애', '무의식 기반', '과거 영향', '최근 영향',
     '가까운 미래', '본인 태도', '외부 영향', '희망/두려움', '최종 결과',
   ],
-  theme: 'general',
+  theme: 'celtic_cross',
 };
 
 /** 전체 타로 배열법 목록 반환 */
@@ -535,12 +632,11 @@ export function getAllTarotSpreads(optionA = 'A', optionB = 'B'): TarotSpreadRec
     'timing',
     'obstacle',
     'yes_no',
+    'celtic_cross',
     'general',
   ];
 
-  const list = allThemes.map((theme) => buildSpreadForTheme(theme, { kind: 'open', optionA, optionB }));
-  list.push(CELTIC_CROSS_SPREAD);
-  return list;
+  return allThemes.map((theme) => buildSpreadForTheme(theme, { kind: 'open', optionA, optionB }));
 }
 
 function shouldUseCelticCross(
@@ -548,10 +644,13 @@ function shouldUseCelticCross(
   theme: TarotConcernTheme,
   kind: TarotConcernKind,
 ): boolean {
-  if (kind !== 'open' || theme !== 'general') return false;
+  if (/(?:셀틱\s*크로스|셀틱|10장|열\s*장|열장|십카드|ten\s*cards?|celtic\s*cross|종합\s*타로|인생\s*전체|전체적인\s*운명)/i.test(text)) {
+    return true;
+  }
+  if (kind !== 'open') return false;
   return (
-    text.length >= 45 ||
-    /(?:종합|심층|전체|깊이|셀틱|상세|자세히|복합|다각도)/.test(text)
+    text.length >= 45 &&
+    /(?:종합|심층|전체|깊이|상세|자세히|복합|다각도|포괄)/.test(text)
   );
 }
 
@@ -565,12 +664,28 @@ export function analyzeTarotConcern(concern: string): TarotConcernAnalysis {
   const text = concern.trim().replace(/\s+/g, ' ');
   if (!text) {
     const spread = buildSpreadForTheme('general', { kind: 'open' });
-    return { kind: 'open', theme: 'general', spread };
+    const meta = getTarotThemeMeta('general');
+    return {
+      kind: 'open',
+      theme: 'general',
+      themeLabel: meta.label,
+      themeEmoji: meta.emoji,
+      recommendationReason: getTarotRecommendationReason('general', spread.name, spread.cardCount),
+      spread,
+    };
   }
 
   if (isDailyTarotConcern(text)) {
     const spread = buildSpreadForTheme('daily', { kind: 'open' });
-    return { kind: 'open', theme: 'daily', spread };
+    const meta = getTarotThemeMeta('daily');
+    return {
+      kind: 'open',
+      theme: 'daily',
+      themeLabel: meta.label,
+      themeEmoji: meta.emoji,
+      recommendationReason: getTarotRecommendationReason('daily', spread.name, spread.cardCount),
+      spread,
+    };
   }
 
   let kind: TarotConcernKind = 'open';
@@ -666,6 +781,7 @@ export function analyzeTarotConcern(concern: string): TarotConcernAnalysis {
       detectedThemeCandidate === 'healing' ||
       detectedThemeCandidate === 'new_year' ||
       detectedThemeCandidate === 'saju' ||
+      detectedThemeCandidate === 'celtic_cross' ||
       detectedThemeCandidate === 'daily')
   ) {
     // revert to open when the text clearly describes a themed reading
@@ -674,14 +790,33 @@ export function analyzeTarotConcern(concern: string): TarotConcernAnalysis {
     optionB = undefined;
   }
 
-  const theme: TarotConcernTheme =
+  let theme: TarotConcernTheme =
     kind === 'binary_choice' ? 'binary_choice' : kind === 'yes_no' ? 'yes_no' : detectedThemeCandidate;
   let spread = buildSpreadForTheme(theme, { kind, optionA, optionB });
+
   if (theme !== 'daily' && shouldUseCelticCross(text, theme, kind)) {
+    theme = 'celtic_cross';
     spread = CELTIC_CROSS_SPREAD;
   }
 
-  return { kind, theme, optionA, optionB, spread };
+  const meta = getTarotThemeMeta(theme);
+  const recommendationReason = getTarotRecommendationReason(
+    theme,
+    spread.name,
+    spread.cardCount,
+    { optionA, optionB }
+  );
+
+  return {
+    kind,
+    theme,
+    themeLabel: meta.label,
+    themeEmoji: meta.emoji,
+    recommendationReason,
+    optionA,
+    optionB,
+    spread,
+  };
 }
 
 type TarotCardContext = {
@@ -840,6 +975,8 @@ export function buildTarotSpreadPromptAddon(
     themeSpecificDirective = `\n\n[🌸 '신년 4계절 대운 배열' 특별 신년 운세 지침]\n1. 신년 한 해를 관통하는 사계절(1~4분기)의 리듬과 기운의 전환점을 한 편의 대하드라마처럼 입체적으로 해독하십시오.\n2. 1분기(봄)에서는 시작과 기회, 2분기(여름)에서는 확장과 성장, 3분기(가을)에서는 결실과 수확, 4분기(겨울)에서는 안정과 도약을 명확히 짚어주십시오.\n3. 5번(올 한 해의 핵심 대운 조언)에서는 내담자가 올해를 최고의 한 해로 만들기 위해 가슴에 품어야 할 '운명의 열쇠'를 마스터의 깊은 혜안으로 선사하십시오.`;
   } else if (spread.id === 'saju_four_pillars' || spread.theme === 'saju') {
     themeSpecificDirective = `\n\n[🔮 '사주 4주 융합 배열' 명리 & 타로 종합 해독 지침]\n1. 사주의 4기둥(년주-근본, 월주-사회/직업, 일주-본인내면, 시주-미래결실)에 투영된 타로 카드의 상징을 명리의 깊이와 함께 융합 해석하십시오.\n2. 선천적으로 타고난 기운과 후천적 환경의 조화를 짚어주고, 내담자가 본래 지닌 잠재력을 극대화할 수 있는 방향을 명쾌하게 밝혀주십시오.`;
+  } else if (spread.id === 'celtic_cross' || spread.theme === 'celtic_cross') {
+    themeSpecificDirective = `\n\n[✨ '셀틱 크로스 (심층 10장 배열)' 정통 심층 해독 지침]\n1. 총 10장의 카드가 유기적으로 연결된 정통 셀틱 크로스의 상징성을 극대화하여, 내담자의 표면적 현실뿐만 아니라 무의식의 심연과 외부 환경적 변수, 최종 귀결까지 한 편의 웅장한 운명 교향곡처럼 심층 해독하십시오.\n2. 1번(현재 상황)과 2번(도전/장애)의 교차 에너지를 집중 분석하여 문제의 핵심 긴장을 밝히십시오.\n3. 3번(무의식)과 4번(과거), 5번(최근), 6번(가까운 미래)의 시간축을 따라 의식하지 못했던 심리적 원인을 통찰하십시오.\n4. 7번(내담자 태도), 8번(외부 영향), 9번(희망과 두려움)을 입체적으로 엮어 최종 10번(결과 및 조언)으로 명쾌하게 수렴되도록 마스터의 통찰을 선사하십시오.`;
   }
 
   return `
