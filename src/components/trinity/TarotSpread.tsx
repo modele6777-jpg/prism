@@ -128,7 +128,7 @@ const DeckWheelCard = React.memo(
           isPicked
             ? 'opacity-0 scale-75 pointer-events-none'
             : isHovered
-            ? 'pointer-events-auto border-2 border-amber-300 ring-1 ring-yellow-400/60 shadow-lg shadow-amber-500/25 z-[300] scale-[1.04] bg-zinc-950'
+            ? 'pointer-events-auto border-2 border-amber-300 ring-1 ring-yellow-400/60 shadow-lg shadow-amber-500/25 z-[300] scale-[1.04] bg-zinc-950 tarot-card-border-flicker'
             : 'pointer-events-auto border border-amber-500/40 shadow-md bg-zinc-950'
         }`}
         style={{
@@ -140,6 +140,9 @@ const DeckWheelCard = React.memo(
           willChange: isHovered ? 'transform' : 'auto',
         }}
       >
+        {isHovered && !isPicked && (
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-200/30 to-transparent skew-x-12 pointer-events-none z-30 tarot-card-shimmer-sweep" />
+        )}
         {!isPicked && (
           <TarotCardBackFace
             cardBackId={cardBackId}
@@ -931,61 +934,86 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
                       <span className="font-bold tracking-wide leading-tight break-keep">{positionLabel}</span>
                     </div>
                   ) : (
-                    <motion.div
-                      initial={{ scale: 0.25, y: 70, opacity: 0, rotateZ: i % 2 === 0 ? -8 : 8 }}
-                      animate={{ scale: 1, y: 0, opacity: 1, rotateZ: 0 }}
-                      transition={{ type: 'spring', stiffness: 320, damping: 24, delay: i * 0.08 }}
-                      whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
-                      onClick={() => setZoomedCard({ card: { ...drawnCard!, reversed: entry.reversed }, slotName: positionLabel })}
-                      className="absolute inset-0 border-2 border-yellow-400 rounded-xl md:rounded-2xl flex flex-col justify-between p-1.5 sm:p-2 md:p-3 text-center shadow-lg shadow-yellow-500/20 overflow-hidden cursor-zoom-in group hover:border-yellow-300 hover:shadow-yellow-500/40 transition-all active:scale-95"
-                      title={`${drawnCard!.nameKo} 카드 크게 보기`}
-                      style={{ contain: 'layout style paint' }}
-                    >
-                      {/* Hover Zoom Icon Badge */}
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity z-30 pointer-events-none">
-                        <div className="w-6 h-6 rounded-full bg-yellow-500/90 text-black flex items-center justify-center shadow-lg">
-                          <ZoomIn size={12} />
-                        </div>
-                      </div>
-                      <img
-                        src={getTarotCardImageUrl(drawnCard!)}
-                        alt={drawnCard!.name}
-                        loading="eager"
-                        decoding="async"
-                        style={{ transform: entry.reversed ? 'rotate(180deg)' : undefined, transformOrigin: 'center center' }}
-                        className="absolute inset-0 w-full h-full object-cover z-0 rounded-xl md:rounded-2xl opacity-90 transition-opacity duration-200 group-hover:opacity-100"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
+                    <>
+                      {/* Subtle Mystical Outer Candlelight / Aura Flicker while drawn */}
+                      <div
+                        className="absolute -inset-1 sm:-inset-1.5 rounded-xl md:rounded-2xl bg-gradient-to-tr from-amber-400/25 via-yellow-300/35 to-amber-500/25 blur-[6px] pointer-events-none tarot-card-drawing-flicker opacity-80"
+                        style={{ zIndex: 1 }}
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/70 z-10 pointer-events-none rounded-xl md:rounded-2xl" />
-                      <div className="absolute inset-0.5 border border-yellow-500/20 rounded-lg md:rounded-xl pointer-events-none z-20" />
+                      <motion.div
+                        initial={{ scale: 0.25, y: 70, opacity: 0, rotateZ: i % 2 === 0 ? -8 : 8 }}
+                        animate={{ scale: 1, y: 0, opacity: 1, rotateZ: 0 }}
+                        transition={{ type: 'spring', stiffness: 320, damping: 24, delay: i * 0.08 }}
+                        whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
+                        onClick={() => setZoomedCard({ card: { ...drawnCard!, reversed: entry.reversed }, slotName: positionLabel })}
+                        className="absolute inset-0 border-2 border-yellow-400 rounded-xl md:rounded-2xl flex flex-col justify-between p-1.5 sm:p-2 md:p-3 text-center shadow-lg shadow-yellow-500/20 overflow-hidden cursor-zoom-in group hover:border-yellow-300 hover:shadow-yellow-500/40 transition-all active:scale-95 tarot-card-border-flicker"
+                        title={`${drawnCard!.nameKo} 카드 크게 보기`}
+                        style={{ contain: 'layout style paint', zIndex: 2 }}
+                      >
+                        {/* Radiant Shimmer Sweep on card draw */}
+                        <motion.div
+                          initial={{ x: '-150%', opacity: 0.9 }}
+                          animate={{ x: '240%', opacity: 0 }}
+                          transition={{
+                            duration: 1.1,
+                            delay: 0.12 + i * 0.08,
+                            ease: 'easeInOut',
+                          }}
+                          className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-200/50 via-yellow-100/75 to-transparent skew-x-12 pointer-events-none z-30"
+                        />
 
-                      <div className="flex justify-between items-center text-[6px] md:text-[7px] font-mono text-yellow-500/80 z-20 shrink-0">
-                        <span>{entry.reversed ? 'REVERSED' : 'TRINITY'}</span>
-                        <Sparkles size={6} className="text-yellow-400/80" />
-                      </div>
+                        {/* Continuous Ambient Mystical Shimmer Layer */}
+                        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-yellow-300/10 to-transparent pointer-events-none z-25 tarot-ambient-shimmer-layer" />
 
-                      <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-9 md:h-9 mx-auto rounded-full bg-black/60 border border-yellow-500/30 flex items-center justify-center text-yellow-400 drop-shadow-[0_0_8px_rgba(234,179,8,0.4)] z-20 shrink-0">
-                        {React.createElement(getTarotCardVisual(drawnCard!).icon, {
-                          size: isMobile ? 12 : 20,
-                          className: getTarotCardVisual(drawnCard!).color,
-                        })}
-                      </div>
+                        {/* Periodic Subtle Shimmer Beam */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-200/25 to-transparent skew-x-12 pointer-events-none z-25 opacity-0 group-hover:opacity-100 tarot-card-shimmer-sweep transition-opacity" />
 
-                      <div className="text-center z-20 flex flex-col gap-0.5 shrink-0 bg-black/80 py-0.5 sm:py-1 rounded-lg border border-yellow-500/20">
-                        <span className="text-[8px] sm:text-[9px] md:text-[11px] font-bold text-yellow-300 block leading-tight">
-                          {drawnCard!.nameKo}
+                        {/* Hover Zoom Icon Badge */}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity z-30 pointer-events-none">
+                          <div className="w-6 h-6 rounded-full bg-yellow-500/90 text-black flex items-center justify-center shadow-lg">
+                            <ZoomIn size={12} />
+                          </div>
+                        </div>
+                        <img
+                          src={getTarotCardImageUrl(drawnCard!)}
+                          alt={drawnCard!.name}
+                          loading="eager"
+                          decoding="async"
+                          style={{ transform: entry.reversed ? 'rotate(180deg)' : undefined, transformOrigin: 'center center' }}
+                          className="absolute inset-0 w-full h-full object-cover z-0 rounded-xl md:rounded-2xl opacity-90 transition-opacity duration-200 group-hover:opacity-100"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/70 z-10 pointer-events-none rounded-xl md:rounded-2xl" />
+                        <div className="absolute inset-0.5 border border-yellow-500/20 rounded-lg md:rounded-xl pointer-events-none z-20" />
+
+                        <div className="flex justify-between items-center text-[6px] md:text-[7px] font-mono text-yellow-500/80 z-20 shrink-0">
+                          <span>{entry.reversed ? 'REVERSED' : 'TRINITY'}</span>
+                          <Sparkles size={6} className="text-yellow-400/80" />
+                        </div>
+
+                        <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-9 md:h-9 mx-auto rounded-full bg-black/60 border border-yellow-500/30 flex items-center justify-center text-yellow-400 drop-shadow-[0_0_8px_rgba(234,179,8,0.4)] z-20 shrink-0">
+                          {React.createElement(getTarotCardVisual(drawnCard!).icon, {
+                            size: isMobile ? 12 : 20,
+                            className: getTarotCardVisual(drawnCard!).color,
+                          })}
+                        </div>
+
+                        <div className="text-center z-20 flex flex-col gap-0.5 shrink-0 bg-black/80 py-0.5 sm:py-1 rounded-lg border border-yellow-500/20">
+                          <span className="text-[8px] sm:text-[9px] md:text-[11px] font-bold text-yellow-300 block leading-tight">
+                            {drawnCard!.nameKo}
+                          </span>
+                          <span className="text-[5px] sm:text-[6px] md:text-[7px] font-mono text-white/50 uppercase tracking-widest block">
+                            {entry.reversed ? '역방향' : drawnCard!.name}
+                          </span>
+                        </div>
+
+                        <span className="text-[5px] sm:text-[6px] md:text-[7px] font-mono text-yellow-500/60 uppercase tracking-widest block z-20 shrink-0">
+                          {drawnCard!.type}
                         </span>
-                        <span className="text-[5px] sm:text-[6px] md:text-[7px] font-mono text-white/50 uppercase tracking-widest block">
-                          {entry.reversed ? '역방향' : drawnCard!.name}
-                        </span>
-                      </div>
-
-                      <span className="text-[5px] sm:text-[6px] md:text-[7px] font-mono text-yellow-500/60 uppercase tracking-widest block z-20 shrink-0">
-                        {drawnCard!.type}
-                      </span>
-                    </motion.div>
+                      </motion.div>
+                    </>
                   )}
                 </div>
               );

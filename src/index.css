@@ -1490,3 +1490,109 @@ h1, h2, h3, h4, h5, h6, p, span, label, blockquote {
     -moz-osx-font-smoothing: grayscale;
   }
 }
+
+/* =========================================================================
+   Mystical Tarot Card Draw: Flicker & Shimmer Aesthetics
+   ========================================================================= */
+
+@keyframes tarot-mystic-flicker {
+  0%, 100% {
+    opacity: 0.82;
+    filter: drop-shadow(0 0 6px rgba(234, 179, 8, 0.3)) drop-shadow(0 0 14px rgba(245, 158, 11, 0.18));
+  }
+  16% {
+    opacity: 0.98;
+    filter: drop-shadow(0 0 16px rgba(250, 204, 21, 0.6)) drop-shadow(0 0 24px rgba(234, 179, 8, 0.35));
+  }
+  32% {
+    opacity: 0.74;
+    filter: drop-shadow(0 0 5px rgba(234, 179, 8, 0.22)) drop-shadow(0 0 10px rgba(245, 158, 11, 0.12));
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 20px rgba(254, 240, 138, 0.65)) drop-shadow(0 0 30px rgba(234, 179, 8, 0.4));
+  }
+  68% {
+    opacity: 0.79;
+    filter: drop-shadow(0 0 8px rgba(234, 179, 8, 0.28)) drop-shadow(0 0 16px rgba(245, 158, 11, 0.18));
+  }
+  84% {
+    opacity: 0.94;
+    filter: drop-shadow(0 0 14px rgba(250, 204, 21, 0.5)) drop-shadow(0 0 22px rgba(234, 179, 8, 0.3));
+  }
+}
+
+@keyframes tarot-border-flicker {
+  0%, 100% {
+    border-color: rgba(234, 179, 8, 0.45);
+    box-shadow: 0 0 10px rgba(234, 179, 8, 0.18), inset 0 0 6px rgba(234, 179, 8, 0.12);
+  }
+  24% {
+    border-color: rgba(254, 240, 138, 0.85);
+    box-shadow: 0 0 18px rgba(250, 204, 21, 0.48), inset 0 0 12px rgba(250, 204, 21, 0.28);
+  }
+  44% {
+    border-color: rgba(234, 179, 8, 0.35);
+    box-shadow: 0 0 7px rgba(234, 179, 8, 0.12), inset 0 0 5px rgba(234, 179, 8, 0.08);
+  }
+  70% {
+    border-color: rgba(253, 224, 71, 0.9);
+    box-shadow: 0 0 22px rgba(234, 179, 8, 0.52), inset 0 0 15px rgba(234, 179, 8, 0.32);
+  }
+  86% {
+    border-color: rgba(234, 179, 8, 0.5);
+    box-shadow: 0 0 12px rgba(234, 179, 8, 0.22), inset 0 0 8px rgba(234, 179, 8, 0.18);
+  }
+}
+
+@keyframes tarot-draw-shimmer-sweep {
+  0% {
+    transform: translateX(-160%) skewX(-20deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 0.95;
+  }
+  85% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateX(260%) skewX(-20deg);
+    opacity: 0;
+  }
+}
+
+@keyframes tarot-ambient-shimmer {
+  0%, 100% {
+    opacity: 0.25;
+    transform: scale(0.99) rotate(0deg);
+  }
+  50% {
+    opacity: 0.65;
+    transform: scale(1.01) rotate(0.8deg);
+  }
+}
+
+.tarot-card-drawing-flicker {
+  animation: tarot-mystic-flicker 2.6s ease-in-out infinite;
+}
+
+.tarot-card-border-flicker {
+  animation: tarot-border-flicker 2.3s ease-in-out infinite;
+}
+
+.tarot-card-shimmer-sweep {
+  animation: tarot-draw-shimmer-sweep 2.2s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+}
+
+.tarot-card-shimmer-sweep-once {
+  animation: tarot-draw-shimmer-sweep 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.tarot-ambient-shimmer-layer {
+  animation: tarot-ambient-shimmer 3.4s ease-in-out infinite;
+}
+

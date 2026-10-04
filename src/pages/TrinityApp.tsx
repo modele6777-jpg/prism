@@ -1241,7 +1241,8 @@ function playDailyCardChimeAsync() {
     return (
       <>
         <div className="absolute inset-1 border border-yellow-500/10 rounded-xl pointer-events-none" />
-        <div className="absolute inset-1 border border-yellow-500/20 rounded-xl flex flex-col items-center justify-center bg-yellow-500/5 group-hover/card:bg-yellow-500/15 transition-all shadow-inner">
+        <div className="absolute inset-1 border border-yellow-500/20 rounded-xl flex flex-col items-center justify-center bg-yellow-500/5 group-hover/card:bg-yellow-500/15 transition-all shadow-inner tarot-card-border-flicker overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-200/25 to-transparent skew-x-12 opacity-0 group-hover/card:opacity-100 transition-opacity tarot-card-shimmer-sweep pointer-events-none" />
           <div className={`${iconWrap} rounded-full border border-yellow-500/20 flex items-center justify-center bg-black/40 shadow-md group-hover/card:border-yellow-400/40 transition-all`}>
             <Sparkles size={iconSize} className="text-yellow-400 group-hover/card:scale-115 group-hover/card:text-yellow-200 transition-all shadow-[0_0_10px_rgba(234,179,8,0.8)] animate-pulse" />
           </div>
@@ -3425,9 +3426,11 @@ ${concernAnalysis.kind === "yes_no"
                                         },
                                       },
                                     }}
-                                    className="flex gap-3.5 flex-wrap justify-center p-3 max-w-full"
+                                    className="flex gap-3.5 flex-wrap justify-center p-3 max-w-full relative"
                                     style={{ perspective: 1200 }}
                                   >
+                                    {/* Cosmic Starlight Altar Ambient Shimmer Glow */}
+                                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(234,179,8,0.07)_0%,transparent_75%)] pointer-events-none tarot-ambient-shimmer-layer -z-10" />
                                     {drawnCards.map((c, i) => {
                                       const positionLabel = tarotSpreadRecommendation.positions[i] || `${i + 1}번`;
                                       const isRev = Boolean(

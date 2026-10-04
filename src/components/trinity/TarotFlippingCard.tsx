@@ -136,6 +136,12 @@ export const TarotFlippingCard: React.FC<TarotFlippingCardProps> = ({
       style={{ perspective: 1200 }}
       className={`relative inline-block ${className}`}
     >
+      {/* Subtle Mystical Candlelight / Celestial Aura Flicker while being drawn */}
+      <div
+        className="absolute -inset-1 sm:-inset-1.5 rounded-2xl bg-gradient-to-tr from-amber-400/20 via-yellow-300/30 to-amber-500/20 blur-[6px] pointer-events-none tarot-card-drawing-flicker opacity-75 group-hover:opacity-100 transition-opacity"
+        style={{ zIndex: 0 }}
+      />
+
       <motion.div
         initial={{
           rotateY: 180,
@@ -182,19 +188,25 @@ export const TarotFlippingCard: React.FC<TarotFlippingCardProps> = ({
             WebkitBackfaceVisibility: 'hidden',
             transform: 'rotateY(0deg)',
           }}
-          className="absolute inset-0 w-full h-full bg-zinc-950 border border-yellow-500/50 group-hover:border-yellow-300 rounded-2xl flex flex-col items-center justify-between p-2 text-center overflow-hidden transition-colors duration-300 shadow-[0_0_20px_rgba(234,179,8,0.22)]"
+          className="absolute inset-0 w-full h-full bg-zinc-950 border border-yellow-500/50 group-hover:border-yellow-300 rounded-2xl flex flex-col items-center justify-between p-2 text-center overflow-hidden transition-colors duration-300 shadow-[0_0_20px_rgba(234,179,8,0.22)] tarot-card-border-flicker"
         >
           {/* Subtle magical shimmer sweep on entrance */}
           <motion.div
-            initial={{ x: '-120%', opacity: 0.8 }}
-            animate={{ x: '220%', opacity: 0 }}
+            initial={{ x: '-150%', opacity: 0.9 }}
+            animate={{ x: '240%', opacity: 0 }}
             transition={{
-              duration: 0.9,
-              delay: delay + 0.28,
+              duration: 1.1,
+              delay: delay + 0.22,
               ease: 'easeInOut',
             }}
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-200/40 to-transparent skew-x-12 pointer-events-none z-30"
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-200/50 via-yellow-100/75 to-transparent skew-x-12 pointer-events-none z-30"
           />
+
+          {/* Continuous Ambient Mystical Shimmer Wave */}
+          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-yellow-300/10 to-transparent pointer-events-none z-25 tarot-ambient-shimmer-layer" />
+
+          {/* Periodic Subtle Shimmer Beam across artwork */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-200/25 to-transparent skew-x-12 pointer-events-none z-25 opacity-0 group-hover:opacity-100 tarot-card-shimmer-sweep transition-opacity" />
 
           {/* Click Scale Wave Feedback */}
           {isClicked && (
@@ -280,8 +292,10 @@ export const TarotFlippingCard: React.FC<TarotFlippingCardProps> = ({
             WebkitBackfaceVisibility: 'hidden',
             transform: 'rotateY(180deg)',
           }}
-          className="absolute inset-0 w-full h-full rounded-2xl overflow-hidden shadow-2xl"
+          className="absolute inset-0 w-full h-full rounded-2xl overflow-hidden shadow-2xl border border-yellow-500/40 tarot-card-border-flicker"
         >
+          {/* Subtle back shimmer sweep as card is drawn from deck */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-200/20 to-transparent skew-x-12 pointer-events-none z-20 tarot-card-shimmer-sweep" />
           <TarotCardBackFace
             cardBackId={effectiveCardBackId}
             size={size}
