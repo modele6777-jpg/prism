@@ -3296,13 +3296,23 @@ function playDailyCardChimeAsync() {
                                   >
                                     {drawnCards.map((c, i) => {
                                       const positionLabel = tarotSpreadRecommendation.positions[i] || `${i + 1}번`;
+                                      const isRev = Boolean(
+                                        c.reversed === true ||
+                                        c.reversed === ('true' as any) ||
+                                        (c as any)?.isReversed === true ||
+                                        (c as any)?.isReversed === 'true' ||
+                                        (c as any)?.orientation === 'reversed' ||
+                                        (c.nameKo && (c.nameKo.includes('(역)') || c.nameKo.includes('(역방향)'))) ||
+                                        (c.name && (c.name.includes('(Rev)') || c.name.includes('(Reversed)')))
+                                      );
+                                      const cardWithRev = { ...c, reversed: isRev };
                                       return (
                                         <TarotFlippingCard
                                           key={`${c.id}-${i}-${cardFlipCycle}`}
-                                          card={c}
+                                          card={cardWithRev}
                                           index={i}
                                           slotName={positionLabel}
-                                          onClick={() => setZoomedCard({ card: c, slotName: positionLabel })}
+                                          onClick={() => setZoomedCard({ card: cardWithRev, slotName: positionLabel })}
                                         />
                                       );
                                     })}

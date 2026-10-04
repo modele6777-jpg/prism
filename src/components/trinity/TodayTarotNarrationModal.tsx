@@ -553,7 +553,7 @@ export function TodayTarotNarrationModal({
           <TarotCardZoomModal
             isOpen={isCardZoomOpen}
             onClose={() => setIsCardZoomOpen(false)}
-            card={card}
+            card={card ? { ...card, reversed: Boolean(card.reversed === true || card.reversed === ('true' as any) || (card as any)?.isReversed) } : null}
             slotName="오늘의 데일리 타로 · COSMIC ANCHOR"
           />
         </motion.div>

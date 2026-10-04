@@ -1547,7 +1547,18 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
     const currentCard = drawnCards[selectedCardIdx] || drawnCards[0];
     const currentInsight = insights[selectedCardIdx] || insights[0];
 
-    const renderCardCard = (card: TarotCard, insight: CardInsight, idx: number) => (
+    const renderCardCard = (card: TarotCard, insight: CardInsight, idx: number) => {
+      const isCardRev = Boolean(
+        card.reversed === true ||
+        card.reversed === ('true' as any) ||
+        (card as any)?.isReversed === true ||
+        (card as any)?.isReversed === 'true' ||
+        (card as any)?.orientation === 'reversed' ||
+        (card.nameKo && (card.nameKo.includes('(역)') || card.nameKo.includes('(역방향)'))) ||
+        (card.name && (card.name.includes('(Rev)') || card.name.includes('(Reversed)')))
+      );
+      const cardWithRev = { ...card, reversed: isCardRev };
+      return (
       <motion.div
         initial={{ opacity: 0, y: 22, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -1558,20 +1569,20 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
           <div className="flex items-center gap-3.5">
             <div
-              onClick={() => setZoomedCard({ card, slotName: `#${idx + 1} ${slotPositions[idx]}` })}
+              onClick={() => setZoomedCard({ card: cardWithRev, slotName: `#${idx + 1} ${slotPositions[idx]}` })}
               className="group/cardthumb relative w-14 h-20 rounded-xl overflow-hidden border border-amber-400/40 hover:border-amber-400 shadow-md hover:shadow-amber-500/20 shrink-0 cursor-zoom-in transition-all"
               title="클릭하여 카드 크게 보기"
             >
               <img
                 src={getTarotCardImageUrl(card)}
                 alt={card.nameKo}
-                style={{ transform: card.reversed ? 'rotate(180deg)' : undefined }}
-                className={`w-full h-full object-cover transition-transform duration-300 group-hover/cardthumb:scale-105 ${card.reversed ? 'rotate-180' : ''}`}
+                style={{ transform: isCardRev ? 'rotate(180deg)' : undefined, transformOrigin: 'center center' }}
+                className={`w-full h-full object-cover transition-transform duration-300 group-hover/cardthumb:scale-105 ${isCardRev ? 'rotate-180' : ''}`}
               />
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/cardthumb:opacity-100 flex items-center justify-center transition-opacity">
                 <ZoomIn className="w-4 h-4 text-amber-300 drop-shadow" />
               </div>
-              {card.reversed && (
+              {isCardRev && (
                 <div className="absolute bottom-1 right-1 px-1 py-0.5 rounded bg-rose-950/90 border border-rose-500/70 text-rose-200 text-[7px] font-bold font-mono leading-none pointer-events-none">
                   REV
                 </div>
@@ -1649,6 +1660,7 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
         </div>
       </motion.div>
     );
+  };
 
     return (
       <div className="glass p-5 sm:p-7 rounded-3xl bg-white/[0.02] border border-amber-400/25 shadow-xl space-y-4 backdrop-blur-xl">
@@ -2240,15 +2252,25 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
               >
                 {drawnCards.map((card, idx) => {
                   const positionLabel = slotPositions[idx] || `${idx + 1}번`;
+                  const isRev = Boolean(
+                    card.reversed === true ||
+                    card.reversed === ('true' as any) ||
+                    (card as any)?.isReversed === true ||
+                    (card as any)?.isReversed === 'true' ||
+                    (card as any)?.orientation === 'reversed' ||
+                    (card.nameKo && (card.nameKo.includes('(역)') || card.nameKo.includes('(역방향)'))) ||
+                    (card.name && (card.name.includes('(Rev)') || card.name.includes('(Reversed)')))
+                  );
+                  const cardWithRev = { ...card, reversed: isRev };
                   return (
                     <TarotFlippingCard
                       key={`${card.id}-${idx}-${cardBackId}`}
-                      card={card}
+                      card={cardWithRev}
                       slotName={positionLabel}
                       index={idx}
                       size="md"
                       cardBackId={cardBackId}
-                      onClick={() => setZoomedCard({ card, slotName: `#${idx + 1} ${positionLabel}` })}
+                      onClick={() => setZoomedCard({ card: cardWithRev, slotName: `#${idx + 1} ${positionLabel}` })}
                     />
                   );
                 })}

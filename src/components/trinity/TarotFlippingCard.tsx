@@ -76,7 +76,21 @@ export const TarotFlippingCard: React.FC<TarotFlippingCardProps> = ({
   const effectiveCardBackId = cardBackId || globalCardBackId;
   const [isClicked, setIsClicked] = useState(false);
   const visual = getTarotCardVisualHelper(card);
-  const isReversed = !!card.reversed;
+  const isReversed = Boolean(
+    card.reversed === true ||
+    card.reversed === ('true' as any) ||
+    (card as any)?.isReversed === true ||
+    (card as any)?.isReversed === 'true' ||
+    (card as any)?.is_reversed === true ||
+    (card as any)?.is_reversed === 'true' ||
+    (card as any)?.orientation === 'reversed' ||
+    (card as any)?.orientation === '역방향' ||
+    (card as any)?.direction === 'reversed' ||
+    (card as any)?.direction === '역방향' ||
+    Boolean(card.nameKo && (card.nameKo.includes('(역)') || card.nameKo.includes('(역방향)') || card.nameKo.includes('· 역방향') || card.nameKo.includes('[역방향]'))) ||
+    Boolean(card.name && (card.name.includes('(Rev)') || card.name.includes('(Reversed)') || card.name.includes('[Reversed]') || card.name.includes('[역방향]'))) ||
+    Boolean(slotName && (slotName.includes('역방향') || slotName.includes('(역)')))
+  );
   const imageUrl = getTarotCardImageUrl(card);
 
   // Slight initial tilt alternating by index (-8° to +8°) for magical natural spread feel
@@ -196,7 +210,10 @@ export const TarotFlippingCard: React.FC<TarotFlippingCardProps> = ({
           <img
             src={imageUrl}
             alt={card.name}
-            style={{ transform: isReversed ? 'rotate(180deg)' : undefined }}
+            style={{
+              transform: isReversed ? 'rotate(180deg)' : undefined,
+              transformOrigin: 'center center',
+            }}
             className={`absolute inset-0 w-full h-full object-cover z-0 opacity-85 group-hover:opacity-100 transition-all duration-300 group-hover:scale-105 ${
               isReversed ? 'rotate-180' : ''
             }`}

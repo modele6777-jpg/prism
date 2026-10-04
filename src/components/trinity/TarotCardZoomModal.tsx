@@ -7,7 +7,6 @@ import {
   ZoomOut,
   Tag,
   Compass,
-  RotateCcw,
 } from 'lucide-react';
 import { type TarotCard, getTarotCardImageUrl } from '@/data/tarotData';
 
@@ -68,28 +67,25 @@ export function TarotCardZoomModal({
         : '')
     : '';
 
-  // Determine if card is drawn reversed
+  const effectiveSlotName = slotName || (card as TarotCardZoomData | null)?.slotName;
+
+  // Determine if card is drawn reversed (robust multi-pattern checking)
   const isCardReversed = Boolean(
-    card?.reversed ??
-    (card as any)?.isReversed ??
-    (card as any)?.orientation === 'reversed' ??
-    false
+    card?.reversed === true ||
+    card?.reversed === ('true' as any) ||
+    (card as any)?.isReversed === true ||
+    (card as any)?.isReversed === 'true' ||
+    (card as any)?.is_reversed === true ||
+    (card as any)?.is_reversed === 'true' ||
+    (card as any)?.orientation === 'reversed' ||
+    (card as any)?.orientation === '역방향' ||
+    (card as any)?.direction === 'reversed' ||
+    (card as any)?.direction === '역방향' ||
+    Boolean(card?.nameKo && (card.nameKo.includes('(역)') || card.nameKo.includes('(역방향)') || card.nameKo.includes('· 역방향') || card.nameKo.includes('[역방향]'))) ||
+    Boolean(card?.name && (card.name.includes('(Rev)') || card.name.includes('(Reversed)') || card.name.includes('[Reversed]') || card.name.includes('[역방향]'))) ||
+    Boolean(effectiveSlotName && (effectiveSlotName.includes('역방향') || effectiveSlotName.includes('(역)')))
   );
 
-  // User manual flip toggle inside modal to inspect both orientations
-  const [userFlipped, setUserFlipped] = useState(false);
-
-  // Reset zoom state and orientation override whenever modal opens or card changes
-  useEffect(() => {
-    if (isOpen) {
-      setIsEnlarged(false);
-      setUserFlipped(false);
-    }
-  }, [isOpen, card]);
-
-  const isReversedView = userFlipped ? !isCardReversed : isCardReversed;
-
-  const effectiveSlotName = slotName || (card as TarotCardZoomData | null)?.slotName;
   const nameKo = card?.nameKo || '타로 카드';
   const nameEn = card?.name || '';
   const keywords = card?.keywords && card.keywords.length > 0 ? card.keywords : [];
@@ -197,15 +193,9 @@ export function TarotCardZoomModal({
               )}
 
               {isCardReversed ? (
-                <button
-                  type="button"
-                  onClick={() => setUserFlipped((prev) => !prev)}
-                  className="px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold border flex items-center gap-1.5 transition-all cursor-pointer bg-rose-500/25 text-rose-200 border-rose-500/50 hover:bg-rose-500/35 shadow-[0_0_10px_rgba(244,63,94,0.3)] active:scale-95"
-                  title="클릭하여 180° 상하 반전 전환"
-                >
-                  <RotateCcw size={10} className={`transition-transform duration-300 ${isReversedView ? "rotate-180" : ""}`} />
-                  <span>{isReversedView ? '역방향 (180° 거꾸로 표시 중)' : '정방향으로 회전하여 보기'}</span>
-                </button>
+                <span className="px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold border flex items-center gap-1.5 bg-rose-500/25 text-rose-200 border-rose-500/50 shadow-[0_0_10px_rgba(244,63,94,0.3)]">
+                  <span>역방향 (Reversed · 180° 거꾸로 뒤집힘)</span>
+                </span>
               ) : (
                 <span className="px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold border flex items-center gap-1 bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.25)]">
                   <span>정방향 (Upright)</span>
@@ -246,10 +236,11 @@ export function TarotCardZoomModal({
                   {cardImageUrl ? (
                     <div
                       className={`w-full h-full flex items-center justify-center transition-transform duration-500 ease-out ${
-                        isReversedView ? 'rotate-180' : ''
+                        isCardReversed ? 'rotate-180' : ''
                       }`}
                       style={{
-                        transform: isReversedView ? 'rotate(180deg)' : 'none',
+                        transform: isCardReversed ? 'rotate(180deg)' : 'none',
+                        transformOrigin: 'center center',
                       }}
                     >
                       <img
@@ -273,9 +264,9 @@ export function TarotCardZoomModal({
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none" />
 
                   {/* Orientation Ribbon Over Card */}
-                  {isReversedView && (
-                    <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-rose-950/90 border border-rose-500/60 text-rose-200 text-[9px] font-bold uppercase tracking-wider backdrop-blur-md pointer-events-none shadow-md z-30 flex items-center gap-1">
-                      <span>⟲ REVERSED (역방향 180° 거꾸로 표시)</span>
+                  {isCardReversed && (
+                    <div className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-lg bg-rose-950/90 border border-rose-500/60 text-rose-200 text-[10px] font-bold uppercase tracking-wider backdrop-blur-md pointer-events-none shadow-lg z-30 flex items-center gap-1.5">
+                      <span>⟲ REVERSED (역방향 180° 회전)</span>
                     </div>
                   )}
                 </div>
