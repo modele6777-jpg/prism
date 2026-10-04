@@ -1084,7 +1084,11 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
     }
   };
 
-  // 🎙️ 사주·타로 콜라보 심층 총평 전용 TTS Speech Text (힐링: 사주·타로 마스터 / 자기계발: 루시)
+  // ⚠️ 오라클 타로 성찰 주의사항 낭독 문구 (맹목적 믿음 지양 및 주체적 지혜 권고)
+  const ORACLE_CAUTION_SPEECH =
+    '주의사항을 전해드립니다. 타로는 정해진 미래를 맹목적으로 따르기 위한 것이 아니며, 현재의 마음을 비추고 현명한 선택을 돕는 내면의 성찰 도구입니다. 맹목적인 믿음을 지양하고, 모든 운명의 결정권과 최종 열쇠는 언제나 당신 자신의 주체적인 지혜와 용기에 있음을 기억하세요.';
+
+  // 🎙️ 사주·타로 콜라보 심층 총평 전용 TTS Speech Text (힐링: 사주·타로 마스터 / 자기계발: 루시 + 끝에 주의사항 낭독)
   const oracleLetterSpeechText = useMemo(() => {
     const message = oracleMode === 'healing' ? healingResult?.message : (growthResult?.message || growthResult?.macro_focus);
     if (!message) return '';
@@ -1092,7 +1096,7 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
     const intro = oracleMode === 'healing'
       ? `${recipient} 님을 위한 사주와 타로 콜라보 심층 마스터 리딩입니다.`
       : `루시가 ${recipient} 님에게 보내는 명쾌한 자기계발 실행 편지입니다.`;
-    return prepareNaturalSpeechText(`${intro} ${message}`);
+    return prepareNaturalSpeechText(`${intro}\n\n${message}\n\n${ORACLE_CAUTION_SPEECH}`);
   }, [oracleMode, healingResult?.message, growthResult?.message, growthResult?.macro_focus, recipientName]);
 
   const isOracleLetterTTSActive = useMemo(() => {
@@ -1117,7 +1121,7 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
   const isHealingLetterTTSActive = isOracleLetterTTSActive;
   const handleToggleHealingLetterTTS = handleToggleOracleLetterTTS;
 
-  // 🎙️ 오라클 핵심 3줄 요약 TTS 음성 텍스트 및 토글 핸들러
+  // 🎙️ 오라클 핵심 3줄 요약 TTS 음성 텍스트 및 토글 핸들러 (+ 끝에 주의사항 낭독)
   const oracleSummarySpeechText = useMemo(() => {
     if (!oracleSummaryBullets || oracleSummaryBullets.length === 0) return '';
     const intro = oracleMode === 'healing'
@@ -1126,7 +1130,7 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
     const lines = oracleSummaryBullets.map((b) => {
       return b.replace(/^\[([^\]]+)\]\s*/, '$1. ');
     }).join(' ');
-    return prepareNaturalSpeechText(`${intro} ${lines}`);
+    return prepareNaturalSpeechText(`${intro}\n\n${lines}\n\n${ORACLE_CAUTION_SPEECH}`);
   }, [oracleMode, oracleSummaryBullets, recipientName]);
 
   const isOracleSummaryTTSActive = useMemo(() => {
