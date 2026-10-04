@@ -214,9 +214,7 @@ export const TarotFlippingCard: React.FC<TarotFlippingCardProps> = ({
               transform: isReversed ? 'rotate(180deg)' : undefined,
               transformOrigin: 'center center',
             }}
-            className={`absolute inset-0 w-full h-full object-cover z-0 opacity-85 group-hover:opacity-100 transition-all duration-300 group-hover:scale-105 ${
-              isReversed ? 'rotate-180' : ''
-            }`}
+            className="absolute inset-0 w-full h-full object-cover z-0 opacity-85 group-hover:opacity-100 transition-all duration-300 group-hover:scale-105"
             onError={(e) => {
               e.currentTarget.style.display = 'none';
             }}

@@ -1668,7 +1668,7 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
                 src={getTarotCardImageUrl(card)}
                 alt={card.nameKo}
                 style={{ transform: isCardRev ? 'rotate(180deg)' : undefined, transformOrigin: 'center center' }}
-                className={`w-full h-full object-cover transition-transform duration-300 group-hover/cardthumb:scale-105 ${isCardRev ? 'rotate-180' : ''}`}
+                className="w-full h-full object-cover transition-transform duration-300 group-hover/cardthumb:scale-105"
               />
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/cardthumb:opacity-100 flex items-center justify-center transition-opacity">
                 <ZoomIn className="w-4 h-4 text-amber-300 drop-shadow" />
@@ -1687,7 +1687,7 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
                 <span className="text-[9px] font-mono text-zinc-400 uppercase">
                   {card.type === 'major' ? 'MAJOR ARCANA' : card.type.toUpperCase()}
                 </span>
-                {card.reversed ? (
+                {isCardRev ? (
                   <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-400/40 font-bold flex items-center gap-0.5">
                     <span>⟲ 역방향</span>
                   </span>

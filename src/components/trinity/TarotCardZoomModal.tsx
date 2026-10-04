@@ -235,9 +235,7 @@ export function TarotCardZoomModal({
                 <div className="relative aspect-[9/15] max-h-[52vh] rounded-xl sm:rounded-2xl overflow-hidden bg-zinc-950 border border-yellow-400/40 flex items-center justify-center shadow-inner group">
                   {cardImageUrl ? (
                     <div
-                      className={`w-full h-full flex items-center justify-center transition-transform duration-500 ease-out ${
-                        isCardReversed ? 'rotate-180' : ''
-                      }`}
+                      className="w-full h-full flex items-center justify-center transition-transform duration-500 ease-out"
                       style={{
                         transform: isCardReversed ? 'rotate(180deg)' : 'none',
                         transformOrigin: 'center center',
@@ -253,7 +251,13 @@ export function TarotCardZoomModal({
                       />
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center p-4 text-center text-yellow-400/60 gap-1.5">
+                    <div
+                      className="flex flex-col items-center justify-center p-4 text-center text-yellow-400/60 gap-1.5 transition-transform duration-500 ease-out"
+                      style={{
+                        transform: isCardReversed ? 'rotate(180deg)' : 'none',
+                        transformOrigin: 'center center',
+                      }}
+                    >
                       <Sparkles size={28} />
                       <span className="font-bold text-base text-white">{nameKo}</span>
                       <span className="text-[11px] text-white/40">{nameEn}</span>
