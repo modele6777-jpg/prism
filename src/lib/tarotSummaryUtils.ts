@@ -3,17 +3,12 @@
  */
 
 /**
- * 🔮 트리니티 마스터 직관적 결단 섹션 및 리딩에서 YES / NO 제거 및 품격 있는 실행 선언으로 정제
+ * 🔮 트리니티 마스터 직관적 결단 섹션 및 리딩에서 YES / NO 보존 (예·아니오 타로의 핵심 지표)
  */
 export function sanitizeTarotDecisionYesNo(text: string): string {
   if (!text) return "";
-  return text
-    .replace(/\[\s*(?:확실한\s*)?YES\s*\]/gi, '[적극적인 실행과 도약 권장]')
-    .replace(/\[\s*결단이\s*필요한\s*YES\s*\]/gi, '[준비를 마친 후 적극 실행 권장]')
-    .replace(/\[\s*(?:단호한\s*)?NO\s*\]/gi, '[신중한 호흡 조율 및 내실 다지기]')
-    .replace(/\[\s*신중한\s*타이밍\s*조율\s*\]/gi, '[신중한 검토와 페이스 조절 필요]')
-    .replace(/\bYES\b/gi, '적극 실행')
-    .replace(/\bNO\b/gi, '신중 검토');
+  // 예·아니오 타로 및 직관적 결단 리딩 시 YES / NO 판정을 있는 그대로 명확하게 보존합니다.
+  return text;
 }
 
 export function stripSummaryFromTarotText(text: string): string {
@@ -78,7 +73,7 @@ export function extractConciseSummary(text: string, cardContext?: any): string[]
 
   const formatSummaryLine = (tag: '현재 에너지' | '방향과 결단' | '실천 처방', content: string): string => {
     let cleaned = stripGreetingFromText(content);
-    cleaned = cleaned.replace(/^\[[^\]]+\]\s*(:|-|—)?\s*/, '');
+    cleaned = cleaned.replace(/^\[(?!YES\b|NO\b|조건부\s*YES)[^\]]+\]\s*(:|-|—)?\s*/i, '');
     cleaned = cleaned.replace(/^(?:현재\s*에너지|방향과\s*결단|실천\s*처방|개운\s*처방|행동\s*처방|실천\s*가이드|개운\s*가이드)\s*[:—\-]\s*/, '');
     cleaned = cleanSentence(cleaned);
 
@@ -191,7 +186,7 @@ export function extractConciseSummary(text: string, cardContext?: any): string[]
         .filter((s) => s.length >= 6 && !isGreetingOrMeta(s));
 
       const verdictLine = rawLines.find((s) =>
-        /최종\s*(판정|선택)|확실한\s*YES|단호한\s*NO|결단이\s*필요한|신중한\s*전환|마스터의\s*핵심\s*선언|확실한\s*추진|신중한\s*내실/.test(
+        /최종\s*(판정|선택)|(?:확실한\s*|조건부\s*)?YES|(?:단호한\s*)?NO|마스터의\s*핵심\s*선언|결단이\s*필요한|신중한\s*전환|확실한\s*추진|신중한\s*내실/i.test(
           s
         )
       );
