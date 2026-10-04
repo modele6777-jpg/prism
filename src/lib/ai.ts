@@ -264,7 +264,8 @@ export async function poeQuickInsight(input: string, history: Message[]) {
   }));
 }
 
-export async function invokeLLM(params: { messages: Message[], responseFormat?: { type: "json_object" | "text" } }) {
+export async function invokeLLM(params: { messages: Message[], responseFormat?: { type: "json_object" | "text" }, timeoutMs?: number }) {
+  const timeoutMs = params.timeoutMs || 25000;
   const mappedMessages = withKoreanOnlyOutput(params.messages.map(m => {
     const role = m.role === "model" ? "assistant" : m.role;
     return {
@@ -280,7 +281,7 @@ export async function invokeLLM(params: { messages: Message[], responseFormat?: 
 
   if (useOpenAI && openai) {
     try {
-      const createTimeoutPromise = (ms = 9000) =>
+      const createTimeoutPromise = (ms = timeoutMs) =>
         new Promise((_, reject) => setTimeout(() => reject(new Error("AI Request Timeout")), ms));
 
       let response;
@@ -292,7 +293,7 @@ export async function invokeLLM(params: { messages: Message[], responseFormat?: 
             response_format: params.responseFormat?.type === "json_object" ? { type: "json_object" } : undefined,
             temperature: 0.7,
           }),
-          createTimeoutPromise(9000)
+          createTimeoutPromise(timeoutMs)
         ]) as any;
       } catch (firstErr) {
         console.warn("[invokeLLM] Direct client attempt timed out or failed, falling back to server proxy / Gemini:", firstErr);
@@ -326,7 +327,7 @@ export async function invokeLLM(params: { messages: Message[], responseFormat?: 
     for (const currentModel of modelsToTry) {
       try {
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error("Gemini API Timeout")), 9000)
+          setTimeout(() => reject(new Error("Gemini API Timeout")), timeoutMs)
         );
 
         const response = await Promise.race([
@@ -363,7 +364,7 @@ export async function invokeLLM(params: { messages: Message[], responseFormat?: 
   try {
     const url = `${getApiBaseUrl()}/api/openai/v1/chat/completions`;
     const controller = new AbortController();
-    const timer = window.setTimeout(() => controller.abort(), 10000);
+    const timer = window.setTimeout(() => controller.abort(), Math.max(timeoutMs, 15000));
     const proxyResponse = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

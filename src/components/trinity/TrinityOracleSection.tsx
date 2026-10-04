@@ -30,8 +30,11 @@ import { getTarotCardDetails } from '@/lib/dailyTarotOracle';
 import { sendPrismToss } from '@/lib/prismToss';
 import { MUSE_ART_CATALOG } from '@/lib/museDailyArt';
 import { useApp, getPersistentUserProfile, setPersistentUserProfile } from '@/contexts/AppContext';
+import { getTodayDateKey } from '@/lib/dailyCache';
 import {
   calculateDetailedSaju,
+  generateDailySajuReport,
+  type DailySajuReport,
   ELEMENT_DETAILS,
   type SajuAnalysisResult,
   type FiveElement
@@ -247,6 +250,50 @@ export function TrinityOracleSection() {
       },
     });
   }, [userProfile]);
+
+  // 🌌 오늘의 천문 날짜 키 & 당일 사주 일진 리포트 (천간/지지, 십신, 오행 조화, 보약 처방)
+  const todayDateKey = useMemo(() => getTodayDateKey(), []);
+
+  const dailySaju: DailySajuReport | null = useMemo(() => {
+    if (!saju) return null;
+    try {
+      return generateDailySajuReport(saju, new Date());
+    } catch (e) {
+      console.error('[TrinityOracleSection] daily saju error:', e);
+      return null;
+    }
+  }, [saju]);
+
+  // 🔮 오늘의 타로 지배 카드 (Cosmic Anchor) - 오늘 직접 뽑은 일일 타로가 있으면 우선 연동, 미추첨 시 당일 천문 시드 기반 결정
+  const todayDailyTarot: TarotCard = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('trinity_daily_result_') && key.endsWith(todayDateKey)) {
+            const raw = localStorage.getItem(key);
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              const cardData = parsed?.drawnCard || parsed?.card;
+              if (cardData) {
+                const found = TAROT_DECK.find(c => c.id === cardData.id || c.name === cardData.name || c.nameKo === cardData.nameKo);
+                if (found) return found;
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[TrinityOracleSection] daily tarot lookup error:', e);
+      }
+    }
+    const seed = todayDateKey.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const majorCards = TAROT_DECK.filter(c => c.type === 'major');
+    return majorCards[seed % majorCards.length] || TAROT_DECK[0];
+  }, [todayDateKey]);
+
+  const todayDailyTarotDetails = useMemo(() => {
+    return getTarotCardDetails(todayDailyTarot);
+  }, [todayDailyTarot]);
 
   // 사주 정보 빠른 수정 모달 상태
   const [showSajuModal, setShowSajuModal] = useState<boolean>(false);
@@ -475,9 +522,11 @@ export function TrinityOracleSection() {
       diagnosis: letterMsg,
       conciseSummaryBullets: oracleSummaryBullets.length > 0 ? oracleSummaryBullets : undefined,
       adviceHeadline: activeResult?.card_insights?.[2]?.personal_interpretation?.slice(0, 80) || undefined,
-      frequency: saju?.yongsin?.name ? `사주 용신: ${saju.yongsin.name}` : undefined,
+      subtitle: `오늘의 지배 타로 [${todayDailyTarot.nameKo}] · 사주 일진 [${dailySaju?.dayPillar.full || '조화'}] (${dailySaju?.tenGodGan.name || '상생'})`,
+      luckyColor: dailySaju?.remedy?.luckyColor || undefined,
+      frequency: saju?.yongsin?.name ? `사주 용신: ${saju.yongsin.name} · 지배 카드: ${todayDailyTarot.nameKo}` : `지배 카드: ${todayDailyTarot.nameKo}`,
     };
-  }, [oracleMode, healingResult, growthResult, inquiryText, drawnCards, slotPositions, saju, oracleSummaryBullets]);
+  }, [oracleMode, healingResult, growthResult, inquiryText, drawnCards, slotPositions, saju, oracleSummaryBullets, todayDailyTarot, dailySaju]);
 
   const displayFullReadingText = useMemo(() => {
     if (oracleMode === 'healing') {
@@ -1360,8 +1409,8 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
         </div>
 
         <div className="mt-4 p-6 sm:p-8 rounded-2xl bg-black/50 border border-amber-400/20 relative z-10 space-y-5 shadow-inner">
-          <div className="text-sm sm:text-base text-zinc-100 font-serif leading-loose whitespace-pre-line">
-            {message}
+          <div className="text-sm sm:text-base text-zinc-100 leading-relaxed oracle-markdown-body font-serif">
+            <Streamdown immediate>{message}</Streamdown>
           </div>
 
           {/* 리딩 하단 액션 툴바 */}
@@ -2072,7 +2121,32 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
                       }
                       className="w-full bg-transparent text-xs text-white placeholder-zinc-500 focus:outline-none"
                     />
-                    {inquiryText && (
+
+        {/* 🌌 오늘의 천문 일진 & 오늘의 지배 타로 카드 (Cosmic Anchor) 연동 뱃지 */}
+        <div className="mb-4 p-3 rounded-2xl bg-amber-500/10 border border-amber-400/30 flex flex-wrap items-center justify-between gap-2.5 relative z-10 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+            <span className="font-mono text-[10px] text-amber-300 font-bold uppercase tracking-wider">COSMIC ANCHOR</span>
+            <span className="text-zinc-300">
+              오늘의 지배 타로: <strong className="text-amber-200">{todayDailyTarot.nameKo}</strong>
+              <span className="text-[10px] text-amber-400/80 ml-1">({todayDailyTarot.name})</span>
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-zinc-300">
+            <span className="text-amber-400/80">✦</span>
+            <span>
+              오늘 일진(日辰): <strong className="text-white">{dailySaju?.dayPillar.full || '당일 운기'}</strong>
+              {dailySaju?.tenGodGan.name && <span className="text-amber-300 text-[11px] ml-1">[{dailySaju.tenGodGan.name}]</span>}
+            </span>
+            {dailySaju?.remedy.luckyColor && (
+              <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-zinc-400 ml-1">
+                (개운 컬러: <span className="text-amber-200 font-medium">{dailySaju.remedy.luckyColor}</span>)
+              </span>
+            )}
+          </div>
+        </div>
+
+        {inquiryText && (
                       <button
                         type="button"
                         onClick={() => setInquiryText('')}
