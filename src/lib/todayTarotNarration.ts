@@ -1,5 +1,5 @@
 import { getTodayDateKey } from '@/lib/dailyCache';
-import { getTarotCardImageUrl, type TarotCard } from '@/data/tarotData';
+import { getTarotCardImageUrl, TAROT_DECK, type TarotCard } from '@/data/tarotData';
 import { prepareNaturalSpeechText } from '@/utils/speechText';
 import { extractConciseSummary, stripSummaryFromTarotText } from '@/lib/tarotSummaryUtils';
 import { ensureCompleteTarotReading } from '@/lib/trinity/utils';
@@ -69,6 +69,26 @@ export function getTodayTrinityDailyResult(uid?: string): any | null {
     } catch (_) {}
   }
   return null;
+}
+
+/**
+ * 🌟 오늘 전체 운기를 관통하는 데일리 지배 타로 카드 조회
+ * 저장된 데일리 카드가 있으면 우선 반환하고, 미선택 시 오늘 날짜 기반의 결정론적 앵커 카드를 반환
+ */
+export function getTodayAnchorTarotCard(uid?: string): TarotCard {
+  const daily = getTodayTrinityDailyResult(uid);
+  if (daily?.drawnCard) {
+    return daily.drawnCard;
+  }
+  const todayKey = getTodayDateKey();
+  let hash = 0;
+  for (let i = 0; i < todayKey.length; i++) {
+    hash = (hash << 5) - hash + todayKey.charCodeAt(i);
+    hash |= 0;
+  }
+  const majorDeck = TAROT_DECK.filter((c) => c.type === 'major');
+  const index = Math.abs(hash) % majorDeck.length;
+  return majorDeck[index];
 }
 
 /**

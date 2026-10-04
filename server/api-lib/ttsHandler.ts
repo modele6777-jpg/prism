@@ -84,7 +84,7 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
       voiceName = "ko-KR-HyunsuNeural";
     } else if (voice === "InJoon" || voice === "injoon" || voice === "Puck" || voice === "puck") {
       voiceName = "ko-KR-InJoonNeural";
-    } else if (voice === "SunHi" || voice === "sunhi" || voice === "Kore" || voice === "kore") {
+    } else if (voice === "SunHi" || voice === "sunhi" || voice === "Kore" || voice === "kore" || voice === "Lucy" || voice === "lucy") {
       voiceName = "ko-KR-SunHiNeural";
     } else if (isMaleVoice) {
       voiceName = "ko-KR-InJoonNeural";
@@ -136,7 +136,8 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
 
       const tempPath = path.join(os.tmpdir(), `tts-${Date.now()}-${Math.random().toString(36).substring(7)}.mp3`);
 
-      const edgeTimeoutMs = Math.max(3200, Math.min(5500, safeText.length * 22));
+      // Generous timeout to avoid mid-sequence engine switches that cause voice changes
+      const edgeTimeoutMs = Math.max(10000, Math.min(24000, safeText.length * 45));
 
       try {
         await Promise.race([
@@ -157,7 +158,13 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
     try {
       finalBuffer = await generateWithEdgeTTS(cleanText);
     } catch (attemptErr) {
-      console.warn(`[TTS] EdgeTTS fast failover:`, attemptErr);
+      console.warn(`[TTS] EdgeTTS attempt 1 notice, retrying EdgeTTS once to preserve voice consistency:`, attemptErr);
+      try {
+        await new Promise((r) => setTimeout(r, 200));
+        finalBuffer = await generateWithEdgeTTS(cleanText);
+      } catch (retryErr) {
+        console.warn(`[TTS] EdgeTTS retry also failed, falling back:`, retryErr);
+      }
     }
 
     if (finalBuffer && finalBuffer.length > 0) {

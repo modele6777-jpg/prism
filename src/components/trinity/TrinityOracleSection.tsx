@@ -16,6 +16,9 @@ import { LucyTarotAdviceCard } from './LucyTarotAdviceCard';
 import { TarotResultShareButton } from './TodayTarotShareModal';
 import { TarotCardZoomModal } from './TarotCardZoomModal';
 import { TarotFlippingCard } from './TarotFlippingCard';
+import { TarotCardBackCustomizerModal } from './TarotCardBackCustomizerModal';
+import { useTarotCardBack } from '@/hooks/useTarotCardBack';
+import { getTodayAnchorTarotCard } from '@/lib/todayTarotNarration';
 import {
   extractOracleConciseSummary,
   extractGivenName,
@@ -226,7 +229,7 @@ export function resolvePrescribedArtForCards(
 
 export function TrinityOracleSection() {
   const [, setLocation] = useLocation();
-  const { sharedState } = useApp();
+  const { sharedState, firebaseUser } = useApp();
   const userProfile = sharedState?.userProfile || getPersistentUserProfile();
 
   // 사주 명리 정밀 계산 (기본값 내장으로 미입력 시에도 완벽한 명식 및 오행 분석 보장)
@@ -355,6 +358,13 @@ export function TrinityOracleSection() {
   const [showTreasureModal, setShowTreasureModal] = useState<boolean>(false);
   const [streakCount, setStreakCount] = useState<number>(1);
 
+  // 🎴 20종 타로 덱 뒷면 커스텀 상태
+  const { theme: tarotBackTheme, cardBackId } = useTarotCardBack();
+  const [showCardBackModal, setShowCardBackModal] = useState<boolean>(false);
+
+  // 🌟 오늘 전체 운기를 관통하는 데일리 지배 타로 카드
+  const todayAnchorCard = useMemo(() => getTodayAnchorTarotCard(firebaseUser?.uid), [firebaseUser?.uid]);
+
   // Card tab view state
   const [selectedCardIdx, setSelectedCardIdx] = useState<number>(0);
   const [showAllCardsTogether, setShowAllCardsTogether] = useState<boolean>(true);
@@ -396,34 +406,49 @@ export function TrinityOracleSection() {
     return ['자기계발 마인드셋', '4원소 역량 영역', '1줄 마이크로 실행'];
   }, [oracleMode]);
 
-  // 🌟 오라클 핵심 3줄 요약 추출 (치유 모드 vs 성장 모드 맞춤)
+  // 🌟 오라클 핵심 3줄 요약 추출 (사주 원국 ✕ 타로 3카드 융합 정밀 분석)
   const oracleSummaryBullets = useMemo(() => {
+    let rawBullets: string[] = [];
+
     if (oracleMode === 'healing') {
       if (!healingResult) return [];
       if (healingResult.concise_summary && healingResult.concise_summary.length === 3) {
-        return healingResult.concise_summary;
+        rawBullets = healingResult.concise_summary;
+      } else {
+        rawBullets = extractOracleConciseSummary({
+          message: healingResult.message,
+          oracleMode: 'healing',
+          cards: drawnCards,
+          saju,
+          todayCard: todayAnchorCard,
+          microAction: healingResult.micro_action || healingResult.reward_item,
+        });
       }
-      return extractOracleConciseSummary({
-        message: healingResult.message,
-        oracleMode: 'healing',
-        cards: drawnCards,
-        saju,
-        microAction: healingResult.micro_action || healingResult.reward_item,
-      });
     } else {
       if (!growthResult) return [];
       if (growthResult.concise_summary && growthResult.concise_summary.length === 3) {
-        return growthResult.concise_summary;
+        rawBullets = growthResult.concise_summary;
+      } else {
+        rawBullets = extractOracleConciseSummary({
+          message: growthResult.message || growthResult.macro_focus,
+          oracleMode: 'growth',
+          cards: drawnCards,
+          saju,
+          todayCard: todayAnchorCard,
+          macroFocus: growthResult.macro_focus,
+          microMission: growthResult.micro_mission,
+        });
       }
-      return extractOracleConciseSummary({
-        message: growthResult.message || growthResult.macro_focus,
-        oracleMode: 'growth',
-        cards: drawnCards,
-        saju,
-        macroFocus: growthResult.macro_focus,
-        microMission: growthResult.micro_mission,
-      });
     }
+
+    if (!rawBullets || rawBullets.length === 0) return [];
+    const expectedTags = ['현재 에너지', '방향과 결단', '실천 처방'];
+    return rawBullets.slice(0, 3).map((bullet, idx) => {
+      const match = bullet.match(/^\[([^\]]+)\]\s*(.*)$/);
+      const content = match ? match[2].trim() : bullet.trim();
+      const tag = expectedTags[idx] || '실천 처방';
+      return `[${tag}] ${content}`;
+    });
   }, [oracleMode, healingResult, growthResult, drawnCards, saju]);
 
   // 🔮 78장 오라클 결과 공유 & 이미지 카드 익스포트 데이터
@@ -542,14 +567,13 @@ export function TrinityOracleSection() {
     return () => window.removeEventListener('prism:selection_execute', handleExecute);
   }, []);
 
-  // Run AI analysis after 3 cards are drawn (All upright in Oracle section)
+  // Run AI analysis after 3 cards are drawn (Preserve reversed orientation for both reading and zoom modal)
   const handleCardsComplete = async (cards: SelectedTarotCardEntry[], queryInquiry?: string) => {
     const effectiveInquiry = queryInquiry !== undefined ? queryInquiry : inquiryText;
     if (effectiveInquiry && effectiveInquiry !== inquiryText) {
       setInquiryText(effectiveInquiry);
     }
-    const uprightCards = cards.map((c) => ({ ...c, reversed: false }));
-    setDrawnCards(uprightCards);
+    setDrawnCards(cards);
     setStage('result');
     setIsLoading(true);
     stopTTS();
@@ -557,15 +581,16 @@ export function TrinityOracleSection() {
     const cardDescriptions = cards
       .map((c, i) => {
         const d = getTarotCardDetails(c);
+        const orientStr = c.reversed ? ' [역방향 (Reversed)]' : ' [정방향 (Upright)]';
         const detailStr = d
-          ? ` | 도상 상징: [${d.symbolWord}], 영적 원형: [${d.archetype}], 본래 뜻: [${d.uprightCore}]`
+          ? ` | 도상 상징: [${d.symbolWord}], 영적 원형: [${d.archetype}], 본래 뜻: [${c.reversed ? d.reversedCore : d.uprightCore}]`
           : '';
-        return `${i + 1}번 슬롯 [${slotPositions[i]}]: ${c.nameKo} (${c.name}) - 유형: ${c.type}, 핵심 키워드: [${c.keywords.join(', ')}]${detailStr}`;
+        return `${i + 1}번 슬롯 [${slotPositions[i]}]: ${c.nameKo} (${c.name})${orientStr} - 유형: ${c.type}, 핵심 키워드: [${c.keywords.join(', ')}]${detailStr}`;
       })
       .join('\n');
 
     // Dynamically determine candidate masterpiece matching these specific 3 cards from MUSE_ART_CATALOG
-    const dynamicPrescribedArt = resolvePrescribedArtForCards(uprightCards, saju, oracleMode);
+    const dynamicPrescribedArt = resolvePrescribedArtForCards(cards, saju, oracleMode);
 
     const sajuContextPrompt = saju
       ? `
@@ -580,6 +605,13 @@ export function TrinityOracleSection() {
 - 최강 우세 오행: ${saju.elements.dominant.name} (${saju.elements.dominant.advice})
 - 결핍 오행 및 용신 보약: ${saju.elements.lacking.name} (용신: ${saju.yongsin.name} - ${saju.yongsin.actionTip})
 - 2026 병오년(丙午年) 세운 흐름: ${saju.annual2026.theme} (${saju.annual2026.keyOpportunity})
+
+# [★ 2026 오늘의 일일 지배 타로 카드 (Today's Anchor Tarot)]:
+- 오늘의 지배 카드: [${todayAnchorCard.nameKo}] (${todayAnchorCard.name}${todayAnchorCard.reversed ? ' • 역방향' : ' • 정방향'})
+- 지배 카드의 핵심 키워드: [${todayAnchorCard.keywords.join(', ')}]
+- 기저 운기 작용: 오늘의 하루를 관통하는 배경 에너지이자 삶의 무대를 조율하는 핵심 기준점.
+★ 핵심 지침:
+오늘의 지배 타로 카드인 [${todayAnchorCard.nameKo}]의 파동과 상징을 리딩 서두부터 기저 에너지로 명시하고, 이 카드가 오늘 뽑힌 3장의 오라클 카드(1번: ${cards[0]?.nameKo}, 2번: ${cards[1]?.nameKo}, 3번: ${cards[2]?.nameKo}) 및 사주 본원 기운(${saju.dayMaster.symbolName})과 어떻게 맞물려 운명과 현실의 흐름을 빚어내는지 반드시 깊이 있게 융합하여 서술하십시오.
 `
       : '';
 
@@ -589,7 +621,7 @@ export function TrinityOracleSection() {
         const systemPrompt = `당신은 동양의 '사주명리학(四柱命理)'과 서양의 '정통 78장 타로(Tarot)'를 완벽하게 교차 융합하는 '정통 사주 ✕ 타로 오라클 마스터(Saju & Tarot Oracle Master)'입니다.
 
 # 핵심 사명 (Core Oracle Mission):
-질문자가 마주한 상황과 고민에 대해, 동양 명리학의 일간(본원 기운), 오행(목화토금수)의 균형 및 용신, 2026 병오년 세운과 서양 타로의 3장 스프레드(1번: 과거/무의식의 뿌리, 2번: 현재/상황과 마음의 흐름, 3번: 미래/조언과 해결의 열쇠) 도상 상징을 정교하게 【콜라보레이션(융합 분석)】하여, 높은 통찰력과 현실적이고 따뜻한 해법을 담은 정통 타로 리딩을 제공하는 것입니다.
+질문자가 마주한 상황과 고민에 대해, 동양 명리학의 일간(본원 기운), 오행(목화토금수)의 균형 및 용신, 2026 병오년 세운, 오늘의 일일 지배 타로 카드([${todayAnchorCard.nameKo}])의 배경 파동, 그리고 서양 타로의 3장 스프레드(1번: 과거/무의식의 뿌리, 2번: 현재/상황과 마음의 흐름, 3번: 미래/조언과 해결의 열쇠) 도상 상징을 정교하게 【콜라보레이션(융합 분석)】하여, 높은 통찰력과 현실적이고 따뜻한 해법을 담은 정통 타로 리딩을 제공하는 것입니다.
 - 유치한 반말, 편지 형식의 사적인 독백("안녕... 네 작은 친구 제제야" 등)을 일절 배제합니다.
 - 성과 경쟁 채찍질이 아닌, 질문자의 타고난 기질과 카드의 흐름을 존중하는 깊이 있는 통찰과 심리적 해원(解冤), 명쾌한 방향성을 선물해야 합니다.
 - '화이트홀', '블랙홀', '웜홀', '손끝 물리량', '파동 측정' 등의 인위적/공상과학/기술적 용어는 절대 사용하지 마십시오.
@@ -598,35 +630,45 @@ export function TrinityOracleSection() {
 - 품격 있고 신뢰감 넘치며, 따뜻하고 깊이 있는 정통 경어체("~님", "~입니다", "~을 암시합니다", "~의 흐름을 보이고 있습니다", "~을 권해드립니다")를 일관되게 사용합니다.
 - 내담자를 부를 때는 정중하게 "${recipientName} 님"으로 호칭합니다.
 
-# 사주(四柱) ✕ 타로(Tarot) 콜라보레이션 리딩 원칙:
-질문자의 사주 일간 본원(${saju?.dayMaster.symbolName || '본원 기운'})과 오행 분포(${saju?.elements.dominant.name || '우세'} 과다, ${saju?.elements.lacking.name || '결핍'} 부족), 용신(${saju?.yongsin.name || '용신'}) 에너지가 뽑힌 3장의 타로 카드와 어떻게 맞물리고 상호작용하는지 입체적으로 융합 분석하세요.
+# 사주(四柱) ✕ 타로(Tarot) ✕ 오늘의 지배 타로 콜라보레이션 리딩 원칙:
+질문자의 사주 일간 본원(${saju?.dayMaster.symbolName || '본원 기운'})과 오행 분포(${saju?.elements.dominant.name || '우세'} 과다, ${saju?.elements.lacking.name || '결핍'} 부족), 용신(${saju?.yongsin.name || '용신'}) 에너지, 그리고 오늘의 지배 타로 [${todayAnchorCard.nameKo}]가 뽑힌 3장의 타로 카드와 어떻게 맞물리고 상호작용하는지 입체적으로 융합 분석하세요.
 
 1. saju_tarot_synergy (사주 ✕ 타로 융합 종합 매트릭스):
-- day_master_resonance: 질문자의 사주 본원(${saju?.dayMaster.hanja || ''} ${saju?.dayMaster.symbolName || ''})의 타고난 성향과 타로 3장의 원소/도상이 만나 빚어내는 에너지 공명 분석 (3~4문장).
+- day_master_resonance: 질문자의 사주 본원(${saju?.dayMaster.hanja || ''} ${saju?.dayMaster.symbolName || ''})의 타고난 성향과 오늘의 지배 카드 [${todayAnchorCard.nameKo}] 및 타로 3장의 원소/도상이 만나 빚어내는 에너지 공명 분석 (3~4문장).
 - elemental_balance:
   * dominant_harmony: 사주의 강한 ${saju?.elements.dominant.name || '우세'} 오행 에너지를 타로 카드가 어떻게 조율하고 승화시키는지에 대한 분석 (2~3문장).
   * lacking_remedy: 사주에서 결핍된 ${saju?.elements.lacking.name || '부족'} 오행과 용신(${saju?.yongsin.name || '용신'})을 3번 타로 카드가 어떻게 보완하고 처방하는지 설명 (2~3문장).
-- destiny_flow_synthesis: 2026 병오년(丙午年)의 거대한 세운 흐름 속에서, 질문자가 최적의 타이밍을 잡고 흐름을 타는 지혜 (2~3문장).
+- destiny_flow_synthesis: 오늘의 지배 카드 [${todayAnchorCard.nameKo}]와 2026 병오년(丙午年)의 거대한 세운 흐름 속에서, 질문자가 최적의 타이밍을 잡고 흐름을 타는 지혜 (2~3문장).
 - saju_oracle_verdict: 사주와 타로가 한목소리로 내담자의 앞길에 전하는 결정적 오라클 계시 (1~2문장).
 
 2. card_insights (3장의 카드별 정밀 해설):
 - core_meaning: 이 카드가 정통 타로 도상학에서 품은 본질적 상징과 원형적 뜻 (2~3문장).
-- saju_resonance: 질문자의 사주 일간(${saju?.dayMaster.hanja || ''}) 본원 및 오행과 결합하여 나타나는 상호작용 및 기운의 조율 (2~3문장).
+- saju_resonance: 질문자의 사주 일간(${saju?.dayMaster.hanja || ''}) 본원 및 오행, 오늘의 지배 타로 기운과 결합하여 나타나는 상호작용 및 기운의 조율 (2~3문장).
 - personal_interpretation: 질문자의 구체적인 고민 상황에 비추어, 이 카드가 전하는 정통 타로 관점의 심층 해석과 메시지 (3~4문장).
 - action_guide: 질문자가 지금 현실에서 상황을 조화롭게 이끌기 위해 즉시 실천할 수 있는 구체적 행동 팁 (1~2문장).
 
-3. message (사주 ✕ 타로 콜라보 심층 총평):
-질문자의 사주 일간 본원(${saju?.dayMaster.symbolName}) 기운과 3장의 타로 카드(1번: ${cards[0]?.nameKo}, 2번: ${cards[1]?.nameKo}, 3번: ${cards[2]?.nameKo})의 서사를 완벽히 융합하여, 과거의 무의식적 원인, 현재의 갈등과 상황, 미래의 해결 열쇠와 실천 조언을 정중하고 깊이 있는 경어체로 전개하는 정통 마스터 총평 본문 (800~1200자 내외).
+3. message (사주 ✕ 타로 콜라보 심층 총평 대서사 — 분량 1500~2500자 내외):
+일반 타로의 5단계 마스터 리딩 못지않게 매우 풍부하고 깊이 있는 대서사 구조로 작성하십시오. 중간에 축약하거나 말을 줄이지 말고, 5개의 소제목(### 마크다운 헤더)을 갖추어 1500~2500자 이상의 압도적 완성도로 전개하십시오:
+- ### 1. 2026 오늘의 지배 타로 [${todayAnchorCard.nameKo}]와 사주 원국의 거대한 공명
+  : 내담자(${recipientName} 님)를 부르며, 오늘의 일일 지배 카드 [${todayAnchorCard.nameKo}]의 기저 에너지와 질문자의 사주 일간(${saju?.dayMaster.symbolName}), 오행 균형이 만나 오늘 삶의 무대에 펼쳐낸 전체 운명의 큰 그림과 심리적 기저를 웅장하고 깊이 있게 해설 (350~450자)
+- ### 2. 무의식의 뿌리와 과거의 씨앗 [1번 카드: ${cards[0]?.nameKo}]
+  : 1번 카드의 도상과 사주 본원 성향이 오늘의 지배 타로와 엮여, 내담자의 고민이 시작된 과거의 무의식적 원인과 에너지 정체를 날카롭게 규명 (350~450자)
+- ### 3. 현실의 갈등과 마음의 소용돌이 [2번 카드: ${cards[1]?.nameKo}]
+  : 2번 카드의 도상과 사주 우세 오행의 작용, 현재 직면한 현실적 긴장과 마음의 흐름, 내면의 역학 관계를 입체적으로 정밀 진단 (350~450자)
+- ### 4. 오라클의 전환점과 미래 해결의 열쇠 [3번 카드: ${cards[2]?.nameKo}]
+  : 3번 조언 카드의 도상과 사주 결핍 오행/용신(${saju?.yongsin.name || '용신'})의 조화를 융합하여, 문제의 매듭을 풀고 나아갈 결정적 전환점과 돌파 나침반 제시 (400~500자)
+- ### 5. 일상 개운 처방과 마스터의 영혼 축복
+  : 카드가 주는 구체적 실천 지침과 사주 오행 개운법(생활 습관, 호흡, 태도)을 구체적으로 제시하고, 내담자가 주체적으로 삶을 개척하도록 용기와 지혜를 북돋우는 따뜻하고 감동적인 영혼의 축복 전언 (300~400자)
 
 반드시 마크다운 코드블록 없이 순수 JSON 형식으로만 응답해야 합니다:
 {
   "saju_tarot_synergy": {
-    "day_master_resonance": "사주 일간 본원과 타로 카드의 에너지 공명 분석 (3~4문장)",
+    "day_master_resonance": "사주 일간 본원과 오늘의 지배 카드, 타로 카드의 에너지 공명 분석 (3~4문장)",
     "elemental_balance": {
       "dominant_harmony": "사주 우세 오행을 조화롭게 다스리는 타로 원소 해설 (2~3문장)",
       "lacking_remedy": "결핍 오행/용신을 보완하는 타로의 처방 해설 (2~3문장)"
     },
-    "destiny_flow_synthesis": "2026 병오년 세운 흐름과 질문자의 운명적 타이밍 (2~3문장)",
+    "destiny_flow_synthesis": "오늘의 지배 카드와 2026 병오년 세운 흐름 속 질문자의 운명적 타이밍 (2~3문장)",
     "saju_oracle_verdict": "사주와 타로가 전하는 결정적 오라클 계시 (1~2문장)"
   },
   "card_insights": [
@@ -655,7 +697,12 @@ export function TrinityOracleSection() {
       "action_guide": "원하는 미래를 열어갈 핵심 실천 가이드 (1~2문장)"
     }
   ],
-  "message": "질문자(${recipientName} 님)를 정중히 부르며 시작하여, 사주 일간 본원과 3장의 카드를 정교하게 교차 해설하고 구체적 고민 해결책과 방향성을 제시하는 완성도 높은 사주 ✕ 타로 콜라보 심층 총평 (800~1200자 내외)",
+  "concise_summary": [
+    "[현재 에너지] 오늘의 지배 타로 [${todayAnchorCard.nameKo}]와 사주 일간(${saju?.dayMaster.symbolName || '본원'}), 1·2번 카드(${cards[0]?.nameKo}, ${cards[1]?.nameKo})의 도상 상징을 깊이 있게 결합하여 질문자의 현재 상황과 내면 에너지의 흐름을 날카롭고 디테일하게 진단한 1줄 (100~135자 내외)",
+    "[방향과 결단] 사주 용신(${saju?.yongsin.name || '용신'})의 기운과 3번 조언 카드(${cards[2]?.nameKo})의 핵심 상징을 결합하여, 망설임 없이 나아가야 할 명확한 방향성과 단호한 결단의 지침을 제시한 1줄 (100~135자 내외)",
+    "[실천 처방] 3번 카드의 구체적 상징 조언과 사주 오행 개운법을 융합하여, 오늘 일상에서 즉시 실천할 수 있는 가장 디테일하고 명확한 1줄 행동 처방 (100~135자 내외)"
+  ],
+  "message": "질문자(${recipientName} 님)를 정중히 부르며 시작하여, 5개의 소제목(### 1~5단계)을 갖추고 오늘의 지배 타로 [${todayAnchorCard.nameKo}]와 사주 일간 본원, 3장의 카드를 유기적으로 교차 해설한 1500~2500자 내외의 완성도 높은 사주 ✕ 타로 콜라보 심층 총평 대서사",
   "prescribed_art": {
     "artwork_title": "${dynamicPrescribedArt.artwork_title}",
     "art_quote": "${dynamicPrescribedArt.art_quote}"
@@ -719,6 +766,11 @@ export function TrinityOracleSection() {
 
 반드시 순수 JSON 형식으로 응답하세요:
 {
+  "concise_summary": [
+    "[현재 에너지] 사주 일간(${saju?.dayMaster.symbolName || '본원'})의 기질과 1·2번 마인드셋·역량 카드(${cards[0]?.nameKo}, ${cards[1]?.nameKo})의 상징을 결합하여, 실행 정체의 원인과 현재 직면한 현실 과제를 명확하고 날카롭게 진단한 1줄 (100~135자 내외)",
+    "[방향과 결단] 사주 용신(${saju?.yongsin.name || '용신'})의 추진력과 3번 조언 카드(${cards[2]?.nameKo})의 도상이 결합하여 제시하는 명쾌하고 단호한 성장 전략과 결단 지침을 담은 1줄 (100~135자 내외)",
+    "[실천 처방] 3번 카드의 마이크로 미션과 사주 개운 실행력을 결합하여, 오늘 당장 망설임 없이 완수할 수 있는 가장 구체적이고 디테일한 1줄 행동 처방 (100~135자 내외)"
+  ],
   "message": "질문자의 고민을 중심에 두고 사주 본원 기질과 3장의 타로 카드를 결합하여, 단순 요약을 배제하고 명쾌하고 구체적인 행동 솔루션을 제시하는 루시의 1:1 자기계발 실행 편지 (800~1200자 내외)",
   "macro_focus": "질문자의 고민 해결과 성장을 이끌어낼 핵심 마인드셋 브리핑 (2~3문장)",
   "dominant_element": {
@@ -757,6 +809,11 @@ export function TrinityOracleSection() {
 
       if (oracleMode === 'healing') {
         setHealingResult({
+          concise_summary: [
+            `[현재 에너지] 사주 본원인 ${dayMasterStr}의 기운이 ${domElStr}의 흐름 속에서 ${cards[0]?.nameKo || '과거 카드'}의 뿌리와 맞물려, 현재 ${cards[1]?.nameKo || '현재 카드'} 카드가 비추듯 상황의 무게를 홀로 짊어지며 심리적 피로와 에너지 분산이 누적된 전환점의 상태입니다.`,
+            `[방향과 결단] 사주에서 결핍된 ${lackElStr}을 보완하는 용신(${yongsinStr})의 생기를 깨우고, 3번 조언 카드인 ${cards[2]?.nameKo || '조언 카드'}의 도상 지혜를 받아들여, 스스로를 채근하던 낡은 틀을 내려놓고 온전한 자아 회복의 길을 선택해야 합니다.`,
+            `[실천 처방] ${cards[2]?.nameKo || '조언 카드'} 카드의 치유 처방과 사주 ${yongsinStr} 개운법을 융합하여, 오늘 따뜻한 차 한 잔과 3번의 깊은 복식호흡으로 마음의 긴장을 즉시 비워내고 나 자신에게 온전한 쉼을 선물하기.`
+          ],
           saju_tarot_synergy: {
             day_master_resonance: `${sajuNameStr} 님의 타고난 사주 본원인 ${dayMasterStr}의 기운과 오늘 뽑힌 [${cards.map(c => c.nameKo).join(', ')}] 타로 카드가 만나, 삶의 긴장을 완화하고 본연의 균형과 지혜를 회복하는 깊은 조화의 공명을 일으킵니다.`,
             elemental_balance: {
@@ -796,8 +853,12 @@ ${recipientName} 님, 사주 원국의 잠재력과 타로 3장이 비추는 지
         });
       } else {
         setGrowthResult({
+          concise_summary: [
+            `[현재 에너지] 사주 본원인 ${dayMasterStr}의 잠재 역량이 ${cards[0]?.nameKo || '1번 카드'}의 마인드셋과 만나, 현재 ${cards[1]?.nameKo || '2번 카드'} 카드가 지적하듯 생각의 과부하와 ${domElStr}의 조급함으로 인해 현실적 추진력이 일시적으로 정체된 상태입니다.`,
+            `[방향과 결단] 사주 용신(${yongsinStr})의 날카로운 돌파 에너지를 가동하고, 3번 조언 카드인 ${cards[2]?.nameKo || '3번 카드'}의 전략을 채택하여, 분산된 목표를 단 하나로 압축하고 망설임 없이 결단하여 우선순위 1번에 모든 자원을 집중해야 합니다.`,
+            `[실천 처방] ${cards[2]?.nameKo || '3번 카드'} 카드의 강력한 실행력과 사주 ${yongsinStr} 추진력을 결합하여, 오늘 10분 안에 끝낼 수 있는 가장 작은 현실 행동 과제 1가지를 망설임 없이 지금 즉시 완수하기.`
+          ],
           message: `${recipientName} 님, 안녕하세요. 당신의 숨겨진 잠재력을 일깨우는 멘토 루시입니다.
-
 ` + (effectiveInquiry ? `지금 마주하고 계신 "${effectiveInquiry}" 과제로 인해 많은 고민과 망설임이 있으셨으리라 생각합니다. 하지만 사주와 타로의 에너지는 당신이 이미 이 문제를 정면 돌파할 충분한 실력과 에너지를 갖추고 있음을 분명하게 증명하고 있습니다.
 ` : `더 높은 곳으로 도약하고자 하는 당신의 열망 속에서, 때로는 막연한 두려움이나 미루기가 발목을 잡았을지도 모릅니다. 하지만 지금은 그 벽을 깨부수고 실행에 나설 완벽한 타이밍입니다.
 `) +
@@ -907,7 +968,7 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
     }
     if (oracleLetterSpeechText) {
       const tone = oracleMode === 'healing' ? '따뜻함' : '자신감';
-      await playTTSInChunks(oracleLetterSpeechText, 'Kore', 250, tone);
+      await playTTSInChunks(oracleLetterSpeechText, 'Kore', 110, tone);
     }
   };
 
@@ -941,7 +1002,7 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
     }
     if (oracleSummarySpeechText) {
       const tone = oracleMode === 'healing' ? '따뜻함' : '자신감';
-      await playTTSInChunks(oracleSummarySpeechText, 'Kore', 250, tone);
+      await playTTSInChunks(oracleSummarySpeechText, 'Kore', 110, tone);
     }
   };
 
@@ -984,7 +1045,7 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
       return;
     }
     setActiveCardTTSKey(key);
-    await playTTSInChunks(speechText, 'Kore', 250, '신비');
+    await playTTSInChunks(speechText, 'Kore', 110, '신비');
   };
 
   // Auto-prefetch TTS for Jeje's healing letter
@@ -1135,6 +1196,9 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
           <div className="flex items-center gap-1.5 text-yellow-300 font-bold text-xs">
             <Sparkles size={13} className="text-yellow-400 animate-pulse" />
             <span>✨ 핵심 3줄 요약 (Quick Summary)</span>
+            <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-500/20 text-amber-200 border border-amber-400/30">
+              사주 원국 ✕ 타로 3카드 융합
+            </span>
           </div>
           <div className="flex items-center gap-2">
             {oracleSummarySpeechText && (
@@ -1452,20 +1516,35 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
               <img
                 src={getTarotCardImageUrl(card)}
                 alt={card.nameKo}
-                className="w-full h-full object-cover transition-transform duration-300 group-hover/cardthumb:scale-105"
+                style={{ transform: card.reversed ? 'rotate(180deg)' : undefined }}
+                className={`w-full h-full object-cover transition-transform duration-300 group-hover/cardthumb:scale-105 ${card.reversed ? 'rotate-180' : ''}`}
               />
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/cardthumb:opacity-100 flex items-center justify-center transition-opacity">
                 <ZoomIn className="w-4 h-4 text-amber-300 drop-shadow" />
               </div>
+              {card.reversed && (
+                <div className="absolute bottom-1 right-1 px-1 py-0.5 rounded bg-rose-950/90 border border-rose-500/70 text-rose-200 text-[7px] font-bold font-mono leading-none pointer-events-none">
+                  REV
+                </div>
+              )}
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-bold border border-amber-400/30">
                   #{idx + 1} {slotPositions[idx]}
                 </span>
                 <span className="text-[9px] font-mono text-zinc-400 uppercase">
                   {card.type === 'major' ? 'MAJOR ARCANA' : card.type.toUpperCase()}
                 </span>
+                {card.reversed ? (
+                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-400/40 font-bold flex items-center gap-0.5">
+                    <span>⟲ 역방향</span>
+                  </span>
+                ) : (
+                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 font-semibold">
+                    정방향
+                  </span>
+                )}
               </div>
               <h4 className="text-base sm:text-lg font-bold text-white font-serif mt-1">
                 {card.nameKo} <span className="text-xs text-zinc-400 font-sans font-normal italic">({card.name})</span>
@@ -1752,7 +1831,7 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
         </div>
 
         {/* Quick Toolbar */}
-        <div className="relative z-10 mt-3 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-zinc-300">
+        <div className="relative z-10 mt-3 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-zinc-300 flex-wrap gap-2">
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             <button
               type="button"
@@ -1769,10 +1848,20 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
               <span>모드 직접 선택</span>
             </button>
 
+            <button
+              type="button"
+              onClick={() => setShowCardBackModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 text-yellow-300 font-bold transition-all cursor-pointer shadow-sm active:scale-95"
+              title="Quin 스타일 20종 타로 카드 뒷면 덱 커스텀"
+            >
+              <Palette size={13} className="text-yellow-400" />
+              <span>덱 뒷면 ({tarotBackTheme.nameKo})</span>
+            </button>
+
             {oracleMode === 'healing' ? (
               <button
                 onClick={() => setShowTreasureModal(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-amber-300 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-amber-300 transition-colors cursor-pointer"
               >
                 <Sparkles size={13} className="text-amber-400" />
                 <span>오라클 보물상자 ({treasures.length})</span>
@@ -1830,6 +1919,19 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
                 사주 원국과 공명하는 2가지 특화 타로 모드 중 원하시는 방식을 선택하세요.<br className="hidden sm:inline" />
                 선택하신 모드는 자동으로 저장되어 다음번에도 그대로 유지됩니다.
               </p>
+
+              {/* 🎴 오라클 덱 뒷면 선택 버튼 */}
+              <div className="mt-4 flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCardBackModal(true)}
+                  className="px-3.5 py-1.5 rounded-full border border-yellow-500/40 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-300 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-95"
+                  title="Quin 스타일 20종 타로 카드 뒷면 덱 커스텀"
+                >
+                  <Palette size={13} className="text-yellow-400" />
+                  <span>오라클 덱 뒷면: <strong className="text-white underline underline-offset-2">{tarotBackTheme.nameKo}</strong> (클릭하여 변경)</span>
+                </button>
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mt-6 max-w-2xl mx-auto text-left">
                 {/* 🌿 Healing Mode Option Card */}
@@ -1925,10 +2027,19 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
           >
             <div className="glass p-4 sm:p-6 rounded-3xl bg-zinc-950/70 border border-amber-400/20 shadow-2xl relative overflow-hidden">
               <div className="text-center mb-2">
-                <div className="flex items-center justify-center gap-2 mb-1">
+                <div className="flex items-center justify-center gap-2 mb-1 flex-wrap">
                   <span className="text-[10px] sm:text-xs font-mono uppercase tracking-widest text-amber-400/80">
                     {oracleMode === 'healing' ? 'Inner Child Oracle • 78 Full Deck' : 'Mindset Toolkit • 78 Full Deck'}
                   </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowCardBackModal(true)}
+                    className="px-2.5 py-1 rounded-xl border border-yellow-500/30 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-300 text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
+                    title="Quin 스타일 20종 타로 카드 뒷면 덱 커스텀"
+                  >
+                    <Palette size={12} />
+                    <span>덱 뒷면 ({tarotBackTheme.nameKo})</span>
+                  </button>
                   <button
                     type="button"
                     onClick={handleResetToModeSelection}
@@ -1975,15 +2086,15 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
                 </div>
               </div>
 
-              {/* Native TarotSpread Component Integration with Oracle Card Back */}
+              {/* Native TarotSpread Component Integration with Customizable Card Back */}
               <div className="w-full min-h-[440px] md:min-h-[480px] relative">
                 <TarotSpread
-                  key={`oracle-spread-${oracleMode}`}
+                  key={`oracle-spread-${oracleMode}-${cardBackId}`}
                   maxCards={3}
                   positions={slotPositions}
                   deckSource={activeDeckSource}
-                  cardBackVariant="oracle"
-                  allowReversed={false}
+                  cardBackId={cardBackId}
+                  allowReversed={true}
                   spreadName={oracleMode === 'healing' ? '내면아이 쉼 스프레드' : '4원소 마인드셋 스프레드'}
                   onComplete={handleCardsComplete}
                   onCancel={() => {}}
@@ -2020,10 +2131,21 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
                   <Sparkles size={11} className="text-yellow-400 animate-pulse" />
                   <span>{oracleMode === 'healing' ? '사주 ✕ 타로 3카드 힐링 스프레드' : '4원소 마인드셋 3카드 스프레드'}</span>
                 </p>
-                <span className="text-[10px] text-yellow-300/70 font-sans flex items-center gap-1">
-                  <ZoomIn size={11} className="text-yellow-400" />
-                  <span>(카드 클릭 시 확대 보기)</span>
-                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowCardBackModal(true)}
+                    className="px-2.5 py-1 rounded-xl border border-yellow-500/30 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-300 text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer shadow-sm active:scale-95"
+                    title="20종 타로 카드 뒷면 덱 커스텀"
+                  >
+                    <Palette size={11} />
+                    <span>덱 뒷면 ({tarotBackTheme.nameKo})</span>
+                  </button>
+                  <span className="text-[10px] text-yellow-300/70 font-sans flex items-center gap-1">
+                    <ZoomIn size={11} className="text-yellow-400" />
+                    <span>(카드 클릭 시 확대 보기)</span>
+                  </span>
+                </div>
               </div>
 
               <motion.div
@@ -2046,11 +2168,12 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
                   const positionLabel = slotPositions[idx] || `${idx + 1}번`;
                   return (
                     <TarotFlippingCard
-                      key={`${card.id}-${idx}`}
+                      key={`${card.id}-${idx}-${cardBackId}`}
                       card={card}
                       slotName={positionLabel}
                       index={idx}
                       size="md"
+                      cardBackId={cardBackId}
                       onClick={() => setZoomedCard({ card, slotName: `#${idx + 1} ${positionLabel}` })}
                     />
                   );
@@ -2339,6 +2462,12 @@ ${recipientName} 님, 당신은 망설임을 딛고 한 단계 도약할 충분�
         onClose={() => setZoomedCard(null)}
         card={zoomedCard?.card ?? null}
         slotName={zoomedCard?.slotName}
+      />
+
+      {/* 20종 타로 덱 뒷면 커스텀 모달 */}
+      <TarotCardBackCustomizerModal
+        isOpen={showCardBackModal}
+        onClose={() => setShowCardBackModal(false)}
       />
     </div>
   );

@@ -1745,48 +1745,56 @@ button, a, input, textarea, select {
    Phases: Inhale (5s), Hold (2s), Exhale (5s), Idle
    ========================================================================== */
 
-/* 1. INHALE PHASE: 5s Fluid Organic Inflation */
+/* 1. INHALE PHASE: 5s Fluid Organic Morphing & Diaphragmatic Blob Expansion */
 .organic-balloon.phase-inhale {
-  animation: organicBalloonInflate 5s cubic-bezier(0.28, 0.05, 0.22, 1) forwards;
+  animation: organicBalloonInflate 5s cubic-bezier(0.33, 0, 0.18, 1) forwards;
 }
 
 .balloon-stage-area.phase-inhale .balloon-aura-ring.ring-1 {
-  animation: auraInflate1 5s cubic-bezier(0.28, 0.05, 0.22, 1) forwards;
+  animation: auraInflate1 5s cubic-bezier(0.33, 0, 0.18, 1) forwards;
 }
 .balloon-stage-area.phase-inhale .balloon-aura-ring.ring-2 {
-  animation: auraInflate2 5s cubic-bezier(0.28, 0.05, 0.22, 1) forwards;
+  animation: auraInflate2 5s cubic-bezier(0.33, 0, 0.18, 1) forwards;
 }
 .balloon-stage-area.phase-inhale .balloon-aura-ring.ring-3 {
-  animation: auraInflate3 5s cubic-bezier(0.28, 0.05, 0.22, 1) forwards;
+  animation: auraInflate3 5s cubic-bezier(0.33, 0, 0.18, 1) forwards;
 }
 
 @keyframes organicBalloonInflate {
   0% {
-    transform: scale(0.85) translateY(4px);
-    border-radius: 50% 50% 50% 50%;
+    transform: scale(0.85) translateY(4px) rotate(0deg);
+    border-radius: 48% 52% 49% 51% / 52% 48% 52% 48%;
     box-shadow: 0 8px 24px rgba(162, 89, 59, 0.25), 0 0 12px rgba(224, 169, 109, 0.15);
     background: radial-gradient(circle at 35% 35%, #e0a96d 0%, #b86b43 60%, #7e3a20 100%);
   }
-  20% {
-    transform: scale(1.02) translateY(1px);
-    border-radius: 53% 47% 55% 45% / 46% 54% 46% 54%;
+  15% {
+    transform: scale(0.97) translateY(2px) rotate(0.8deg);
+    border-radius: 54% 46% 58% 42% / 46% 55% 45% 54%;
+    box-shadow: 0 10px 28px rgba(162, 89, 59, 0.28), 0 0 16px rgba(224, 169, 109, 0.18);
   }
-  45% {
-    transform: scale(1.24) translateY(-3px);
-    border-radius: 47% 53% 45% 55% / 54% 46% 54% 46%;
-    box-shadow: 0 16px 45px rgba(162, 89, 59, 0.42), 0 0 35px rgba(245, 158, 11, 0.3);
+  32% {
+    transform: scale(1.14) translateY(-1px) rotate(-1.2deg);
+    border-radius: 44% 56% 41% 59% / 58% 43% 57% 42%;
+    box-shadow: 0 13px 36px rgba(162, 89, 59, 0.35), 0 0 24px rgba(245, 158, 11, 0.24);
   }
-  75% {
-    transform: scale(1.44) translateY(-7px);
-    border-radius: 52% 48% 54% 46% / 48% 52% 48% 52%;
+  50% {
+    transform: scale(1.29) translateY(-3.5px) rotate(1.4deg);
+    border-radius: 59% 41% 55% 45% / 42% 59% 41% 58%;
+    box-shadow: 0 17px 46px rgba(162, 89, 59, 0.42), 0 0 36px rgba(245, 158, 11, 0.32);
   }
-  92% {
-    transform: scale(1.54) translateY(-8px);
-    border-radius: 50% 50% 50% 50%;
+  68% {
+    transform: scale(1.42) translateY(-6px) rotate(-0.9deg);
+    border-radius: 46% 54% 61% 39% / 56% 45% 55% 44%;
+    box-shadow: 0 20px 55px rgba(162, 89, 59, 0.45), 0 0 46px rgba(245, 158, 11, 0.36);
+  }
+  84% {
+    transform: scale(1.50) translateY(-7.5px) rotate(0.6deg);
+    border-radius: 55% 45% 47% 53% / 47% 54% 46% 53%;
+    box-shadow: 0 22px 62px rgba(162, 89, 59, 0.48), 0 0 52px rgba(245, 158, 11, 0.39);
   }
   100% {
-    transform: scale(1.52) translateY(-8px);
-    border-radius: 51% 49% 51% 49% / 49% 51% 49% 51%;
+    transform: scale(1.52) translateY(-8px) rotate(0deg);
+    border-radius: 52% 48% 53% 47% / 49% 52% 48% 51%;
     box-shadow: 0 22px 65px rgba(162, 89, 59, 0.48), 0 0 55px rgba(245, 158, 11, 0.4);
     background: radial-gradient(circle at 30% 25%, #fbe3c1 0%, #e0a96d 38%, #b86b43 75%, #7e3a20 100%);
   }
@@ -1826,13 +1834,13 @@ button, a, input, textarea, select {
 
 @keyframes organicBalloonHold {
   0% {
-    transform: scale(1.52) translateY(-8px);
-    border-radius: 51% 49% 51% 49% / 49% 51% 49% 51%;
+    transform: scale(1.52) translateY(-8px) rotate(0deg);
+    border-radius: 52% 48% 53% 47% / 49% 52% 48% 51%;
     box-shadow: 0 22px 65px rgba(162, 89, 59, 0.48), 0 0 55px rgba(245, 158, 11, 0.4);
   }
   100% {
-    transform: scale(1.55) translateY(-11px);
-    border-radius: 49% 51% 49% 51% / 51% 49% 51% 49%;
+    transform: scale(1.55) translateY(-11px) rotate(1deg);
+    border-radius: 48% 52% 47% 53% / 53% 48% 52% 47%;
     box-shadow: 0 26px 75px rgba(162, 89, 59, 0.55), 0 0 65px rgba(245, 158, 11, 0.5);
   }
 }
@@ -1844,42 +1852,43 @@ button, a, input, textarea, select {
 
 /* 3. EXHALE PHASE: 5s Fluid Organic Deflation & Tension Release */
 .organic-balloon.phase-exhale {
-  animation: organicBalloonDeflate 5s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+  animation: organicBalloonDeflate 5s cubic-bezier(0.28, 0.05, 0.22, 1) forwards;
 }
 
 .balloon-stage-area.phase-exhale .balloon-aura-ring.ring-1 {
-  animation: auraDeflate1 5s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+  animation: auraDeflate1 5s cubic-bezier(0.28, 0.05, 0.22, 1) forwards;
 }
 .balloon-stage-area.phase-exhale .balloon-aura-ring.ring-2 {
-  animation: auraDeflate2 5s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+  animation: auraDeflate2 5s cubic-bezier(0.28, 0.05, 0.22, 1) forwards;
 }
 .balloon-stage-area.phase-exhale .balloon-aura-ring.ring-3 {
-  animation: auraDeflate3 5s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+  animation: auraDeflate3 5s cubic-bezier(0.28, 0.05, 0.22, 1) forwards;
 }
 
 @keyframes organicBalloonDeflate {
   0% {
-    transform: scale(1.52) translateY(-8px);
-    border-radius: 51% 49% 51% 49% / 49% 51% 49% 51%;
+    transform: scale(1.52) translateY(-8px) rotate(0deg);
+    border-radius: 52% 48% 53% 47% / 49% 52% 48% 51%;
     box-shadow: 0 22px 65px rgba(162, 89, 59, 0.48), 0 0 55px rgba(245, 158, 11, 0.4);
     background: radial-gradient(circle at 30% 25%, #fbe3c1 0%, #e0a96d 38%, #b86b43 75%, #7e3a20 100%);
   }
-  25% {
-    transform: scale(1.34) translateY(-5px);
-    border-radius: 48% 52% 47% 53% / 52% 48% 52% 48%;
+  20% {
+    transform: scale(1.39) translateY(-6px) rotate(-0.7deg);
+    border-radius: 47% 53% 44% 56% / 54% 46% 54% 46%;
   }
-  55% {
-    transform: scale(1.12) translateY(-1px);
-    border-radius: 52% 48% 53% 47% / 48% 52% 48% 52%;
-    box-shadow: 0 14px 40px rgba(162, 89, 59, 0.35), 0 0 25px rgba(224, 169, 109, 0.2);
+  45% {
+    transform: scale(1.21) translateY(-3px) rotate(1deg);
+    border-radius: 56% 44% 57% 43% / 44% 57% 43% 56%;
+    box-shadow: 0 16px 45px rgba(162, 89, 59, 0.38), 0 0 32px rgba(245, 158, 11, 0.28);
   }
-  80% {
-    transform: scale(0.93) translateY(3px);
-    border-radius: 49% 51% 50% 50% / 51% 49% 50% 50%;
+  70% {
+    transform: scale(1.04) translateY(0px) rotate(-0.5deg);
+    border-radius: 45% 55% 43% 57% / 55% 45% 55% 45%;
+    box-shadow: 0 12px 32px rgba(162, 89, 59, 0.3), 0 0 20px rgba(224, 169, 109, 0.2);
   }
   100% {
-    transform: scale(0.85) translateY(4px);
-    border-radius: 50% 50% 50% 50%;
+    transform: scale(0.85) translateY(4px) rotate(0deg);
+    border-radius: 48% 52% 49% 51% / 52% 48% 52% 48%;
     box-shadow: 0 8px 24px rgba(162, 89, 59, 0.25), 0 0 12px rgba(224, 169, 109, 0.15);
     background: radial-gradient(circle at 35% 35%, #e0a96d 0%, #b86b43 60%, #7e3a20 100%);
   }

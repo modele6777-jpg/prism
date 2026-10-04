@@ -106,7 +106,7 @@ import { TarotCardZoomModal } from "@/components/trinity/TarotCardZoomModal";
 import { TarotFlippingCard } from "@/components/trinity/TarotFlippingCard";
 import { TarotCard, TAROT_DECK, getTarotCardImageUrl } from "@/data/tarotData";
 import { shuffleCardDeck } from "@/lib/cardShuffle";
-import { playTTS, playTTSInChunks, playConversation, stopTTS, useTTSActive, useTTSState, prefetchTTS, prepareNaturalSpeechText } from "@/utils/tts";
+import { playTTS, playTTSInChunks, splitSpeechIntoChunks, playConversation, stopTTS, useTTSActive, useTTSState, prefetchTTS, prepareNaturalSpeechText } from "@/utils/tts";
 import { z } from "zod";
 import {
   getTodayDateKey,
@@ -1601,7 +1601,9 @@ function playDailyCardChimeAsync() {
   // Auto-prefetch TTS for reading & summary when generated
   useEffect(() => {
     if (tarotSpeechReadingText && !isTarotGenerating && tarotSpeechReadingText.trim().length >= 80) {
-      prefetchTTS(tarotSpeechReadingText.slice(0, 400), 'Kore', '신비');
+      const chunks = splitSpeechIntoChunks(tarotSpeechReadingText, 110);
+      if (chunks[0]) prefetchTTS(chunks[0], 'Kore', '신비').catch(() => {});
+      if (chunks[1]) prefetchTTS(chunks[1], 'Kore', '신비').catch(() => {});
     }
   }, [tarotSpeechReadingText, isTarotGenerating]);
   const [chatInput, setChatInput] = useState("");
@@ -3325,7 +3327,7 @@ function playDailyCardChimeAsync() {
                                           if (isFullReadingTTSActive) {
                                             stopTTS();
                                           } else if (tarotSpeechReadingText) {
-                                            await playTTSInChunks(tarotSpeechReadingText, 'Kore', 420, '신비');
+                                            await playTTSInChunks(tarotSpeechReadingText, 'Kore', 110, '신비');
                                           }
                                         }}
                                         className={`px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
@@ -3373,7 +3375,7 @@ function playDailyCardChimeAsync() {
                                                     if (isSummaryTTSActive) {
                                                       stopTTS();
                                                     } else if (summarySpeechText) {
-                                                      await playTTSInChunks(summarySpeechText, 'Kore', 200, '신비');
+                                                      await playTTSInChunks(summarySpeechText, 'Kore', 110, '신비');
                                                     }
                                                   }}
                                                   className={`px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer ${

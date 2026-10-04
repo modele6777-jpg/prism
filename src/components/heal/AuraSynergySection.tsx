@@ -185,6 +185,26 @@ export function AuraSynergySection() {
     }
   }, [chamberTimer, isChamberActive, isTtsGuideEnabled, sanctuaryData]);
 
+  // 🌟 60초 챔버 완료 시 저항 0% 완전 해방 선언문 자동 낭독
+  useEffect(() => {
+    if (isChamberCompleted && isTtsGuideEnabled && sanctuaryData?.zeroResistanceDeclaration) {
+      const declText = `저항 0% 완전 해방 선언문입니다. ${sanctuaryData.zeroResistanceDeclaration}`;
+      const timer = setTimeout(() => {
+        playTTS(declText, 'Kore', false, '평온');
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+  }, [isChamberCompleted, isTtsGuideEnabled, sanctuaryData]);
+
+  const handleToggleDeclarationTTS = () => {
+    if (isTTSActive) {
+      stopTTS();
+    } else if (sanctuaryData?.zeroResistanceDeclaration) {
+      const declText = `저항 0% 완전 해방 선언문입니다. ${sanctuaryData.zeroResistanceDeclaration}`;
+      playTTS(declText, 'Kore', false, '평온');
+    }
+  };
+
   const handleStartChamber = () => {
     if (isChamberActive || isChamberCompleted) {
       setIsChamberActive(false);
@@ -205,6 +225,12 @@ export function AuraSynergySection() {
       FIXED_SANCTUARY_SPEECHES.forEach((speech) => {
         prefetchTTS(speech, 'Kore', '치유').catch(() => {});
       });
+
+      // Pre-warm declaration script
+      if (sanctuaryData?.zeroResistanceDeclaration) {
+        const declText = `저항 0% 완전 해방 선언문입니다. ${sanctuaryData.zeroResistanceDeclaration}`;
+        prefetchTTS(declText, 'Kore', '평온').catch(() => {});
+      }
 
       // Immediately start 1st phase speech with sequence session ID
       if (isTtsGuideEnabled) {
@@ -572,9 +598,25 @@ export function AuraSynergySection() {
                 )}
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Immediate Declaration TTS Button */}
+                <button
+                  type="button"
+                  onClick={handleToggleDeclarationTTS}
+                  className={`text-xs font-bold px-3 py-1.5 rounded-full border transition-all cursor-pointer flex items-center gap-1.5 shadow-sm active:scale-95 ${
+                    isTTSActive
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-400/40 animate-pulse'
+                      : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border-emerald-400/30'
+                  }`}
+                  title="저항 0% 완전 해방 선언문 즉시 낭독 듣기 / 중단"
+                >
+                  {isTTSActive ? <VolumeX size={13} className="text-amber-300" /> : <Volume2 size={13} />}
+                  <span>{isTTSActive ? '낭독 중단' : '선언문 낭독'}</span>
+                </button>
+
                 {/* TTS Guide Toggle */}
                 <button
+                  type="button"
                   onClick={() => {
                     if (isTtsGuideEnabled) {
                       stopTTS();
@@ -589,13 +631,14 @@ export function AuraSynergySection() {
                   title="60초 단계별 실시간 음성 가이드 낭독 토글"
                 >
                   {isTtsGuideEnabled ? <Volume2 size={13} className="text-emerald-400" /> : <VolumeX size={13} />}
-                  <span>{isTtsGuideEnabled ? '실시간 TTS 낭독 ON' : 'TTS 낭독 OFF'}</span>
+                  <span>{isTtsGuideEnabled ? '실시간 안내 ON' : '안내 OFF'}</span>
                 </button>
 
                 {/* Chamber Start/Stop Button */}
                 <button
+                  type="button"
                   onClick={handleStartChamber}
-                  className={`text-xs font-bold px-4 py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1.5 ${
+                  className={`text-xs font-bold px-4 py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1.5 shadow-sm active:scale-95 ${
                     isChamberActive
                       ? 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40'
                       : isChamberCompleted && isTTSActive
@@ -670,6 +713,29 @@ export function AuraSynergySection() {
                       : '모든 무거운 저항과 긴장이 허공으로 증발했습니다. 타이머 완료와 함께 확언이 자동 종료되었으니, 가벼워진 영혼으로 온전한 평화를 누리세요.'}
                   </p>
                 </div>
+
+                <div className="flex items-center gap-2 pt-2 flex-wrap justify-center">
+                  <button
+                    type="button"
+                    onClick={handleToggleDeclarationTTS}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95 border ${
+                      isTTSActive
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-400/40 animate-pulse'
+                        : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/40'
+                    }`}
+                  >
+                    {isTTSActive ? <VolumeX size={14} className="text-amber-300" /> : <Volume2 size={14} />}
+                    <span>{isTTSActive ? '선언문 낭독 중단' : '선언문 다시 듣기'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleStartChamber}
+                    className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white/80 hover:text-white border border-white/15 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+                  >
+                    <RefreshCw size={13} />
+                    <span>60초 방하착 다시 시작</span>
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="py-3 text-xs text-white/50 max-w-md font-sans">
@@ -729,14 +795,17 @@ export function AuraSynergySection() {
                 저항 0% 완전 해방 선언문 (Zero-Resistance Declaration)
               </span>
               <button
-                onClick={() => {
-                  playTTS(sanctuaryData.zeroResistanceDeclaration, 'Kore', false, '평온');
-                }}
-                className="text-[11px] font-bold text-emerald-300 hover:text-emerald-200 flex items-center gap-1 bg-white/5 hover:bg-white/10 px-2.5 py-1 rounded-full border border-emerald-400/20 transition-all cursor-pointer"
-                title="선언문 음성 낭독 듣기"
+                type="button"
+                onClick={handleToggleDeclarationTTS}
+                className={`text-[11px] font-bold flex items-center gap-1 px-3 py-1 rounded-full border transition-all cursor-pointer shadow-sm active:scale-95 ${
+                  isTTSActive
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-400/40 animate-pulse'
+                    : 'bg-white/5 hover:bg-white/10 text-emerald-300 hover:text-emerald-200 border-emerald-400/20'
+                }`}
+                title="선언문 음성 낭독 듣기 / 중단"
               >
-                <Volume2 size={12} />
-                선언문 듣기
+                {isTTSActive ? <VolumeX size={12} className="text-amber-300" /> : <Volume2 size={12} />}
+                <span>{isTTSActive ? '낭독 중단' : '선언문 듣기'}</span>
               </button>
             </div>
             <p className="text-base sm:text-lg font-bold text-white leading-relaxed tracking-tight break-keep">

@@ -209,7 +209,8 @@ export function OrangeSynergySection() {
     };
   });
 
-  const [isSynthesized, setIsSynthesized] = useState<boolean>(true);
+  const [isSynthesized, setIsSynthesized] = useState<boolean>(false);
+  const resultRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState<boolean>(false);
   const [copiedAffirmation, setCopiedAffirmation] = useState<boolean>(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState<boolean>(false);
@@ -592,6 +593,9 @@ export function OrangeSynergySection() {
       const result = await Promise.race([runAI(), safetyTimeout]);
       setCatalystData(result);
       setIsSynthesized(true);
+      setTimeout(() => {
+        resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 150);
       recordPrismFeature({
         app: 'orange',
         featureName: 'Orange Quantum Catalyst Synergy',
@@ -915,81 +919,6 @@ export function OrangeSynergySection() {
           </div>
         </div>
 
-        {/* ⚡ Live Tuning Vibrational Anchor Affirmation Card - 실시간 주파수 고정 진동 확언 카드 */}
-        <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-amber-500/20 via-orange-500/15 to-yellow-500/15 border-2 border-amber-400/60 relative shadow-xl space-y-3">
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <span className="text-xs sm:text-[13px] font-mono text-amber-300 uppercase tracking-wider font-extrabold flex items-center gap-1.5">
-              <span className="text-amber-400 font-bold text-base animate-pulse">⚡</span>
-              <span>주파수 고정 진동 확언 (Vibrational Anchor Affirmation)</span>
-            </span>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[10px] sm:text-[11px] text-amber-200 font-mono bg-amber-400/30 border border-amber-400/50 px-2.5 py-0.5 rounded-full font-bold shadow-sm shrink-0">
-                {dialValue}Hz 고정
-              </span>
-              <span className="text-[10px] text-orange-200/90 font-mono bg-orange-500/20 border border-orange-400/30 px-2 py-0.5 rounded-full shrink-0">
-                {selectedVibe}
-              </span>
-            </div>
-          </div>
-
-          <div className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-black/60 border border-amber-400/30 shadow-inner">
-            <p className="text-sm sm:text-base md:text-lg font-black text-amber-100 leading-relaxed tracking-tight break-keep break-words font-serif whitespace-normal">
-              "{catalystData.vibrationalAnchorAffirmation}"
-            </p>
-          </div>
-
-          {/* Quick Affirmation Action Controls */}
-          <div className="flex items-center justify-between gap-2 pt-0.5 flex-wrap">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <button
-                type="button"
-                onClick={handleSpeakAffirmation}
-                disabled={isTTSActive}
-                className="px-2.5 py-1.5 rounded-xl bg-amber-400/20 hover:bg-amber-400/30 text-amber-200 border border-amber-400/40 text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95 disabled:opacity-50"
-                title="확언 음성 낭독 듣기"
-              >
-                <Volume2 size={13} className={isAffirmationSpeaking ? "animate-bounce text-yellow-300" : ""} />
-                <span>{isAffirmationSpeaking ? '낭독 중...' : '확언 낭독'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleCopyAffirmation}
-                className="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/80 hover:text-white border border-white/15 text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
-                title="확언 텍스트 복사"
-              >
-                {copiedAffirmation ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
-                <span>{copiedAffirmation ? '복사 완료' : '확언 복사'}</span>
-              </button>
-            </div>
-
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <button
-                type="button"
-                onClick={() => cycleNextAffirmation(1)}
-                disabled={isAffirmationGenerating}
-                className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-orange-500/20 to-amber-500/20 hover:from-orange-500/30 hover:to-amber-500/30 text-amber-300 border border-orange-400/40 text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 disabled:opacity-50"
-                title="다른 진동 확언으로 순환 조율"
-              >
-                <RefreshCw size={12} className={isAffirmationGenerating ? "animate-spin text-orange-400" : ""} />
-                <span>{isAffirmationGenerating ? '확언 조율 중...' : '다른 확언 조율'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={toggle528Hz}
-                className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 border ${
-                  isAudioPlaying
-                    ? 'bg-amber-400 text-black border-amber-300 shadow-md'
-                    : 'bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border-white/15'
-                }`}
-                title="주파수 톤 청음"
-              >
-                <Headphones size={13} />
-                <span>{isAudioPlaying ? `${dialValue}Hz 정지` : `${dialValue}Hz 청음`}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
         <button
           onClick={handleAccelerateManifestation}
           disabled={isLoading}
@@ -1012,8 +941,10 @@ export function OrangeSynergySection() {
       {/* Synthesized Output Display */}
       {isSynthesized && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
+          ref={resultRef}
+          initial={{ opacity: 0, scale: 0.98, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           className="rounded-[24px] sm:rounded-[32px] lg:rounded-[40px] bg-gradient-to-b from-zinc-900/95 via-zinc-950/95 to-black/95 border border-orange-500/30 p-3.5 sm:p-6 lg:p-8 space-y-5 sm:space-y-7 shadow-2xl relative overflow-hidden backdrop-blur-2xl"
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-white/10 pb-4 sm:pb-5">
@@ -1059,36 +990,75 @@ export function OrangeSynergySection() {
           <div className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-amber-500/20 via-orange-500/25 to-yellow-500/20 border-2 border-amber-400/60 relative shadow-2xl space-y-3">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <span className="text-[11px] sm:text-xs font-mono text-amber-300 uppercase tracking-widest font-black flex items-center gap-1.5">
-                <span className="text-amber-400 font-bold text-sm">⚡</span>
+                <span className="text-amber-400 font-bold text-sm animate-pulse">⚡</span>
                 <span>주파수 고정 진동 확언 (Vibrational Anchor Affirmation)</span>
               </span>
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[10px] text-amber-200 font-mono bg-amber-400/25 border border-amber-400/40 px-2 py-0.5 rounded-full font-bold shrink-0">
-                  {catalystData.manifestationFrequency}Hz 주파수 고정
+                <span className="text-[10px] sm:text-[11px] text-amber-200 font-mono bg-amber-400/30 border border-amber-400/50 px-2.5 py-0.5 rounded-full font-bold shadow-sm shrink-0">
+                  {catalystData.manifestationFrequency}Hz 고정
                 </span>
+                <span className="text-[10px] text-orange-200/90 font-mono bg-orange-500/20 border border-orange-400/30 px-2 py-0.5 rounded-full shrink-0">
+                  {selectedVibe}
+                </span>
+              </div>
+            </div>
+
+            <div className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-black/60 border border-amber-400/30 shadow-inner">
+              <p className="text-base sm:text-lg md:text-xl font-black text-amber-100 leading-relaxed tracking-tight break-keep break-words font-serif whitespace-normal">
+                "{catalystData.vibrationalAnchorAffirmation}"
+              </p>
+            </div>
+
+            {/* Quick Affirmation Action Controls */}
+            <div className="flex items-center justify-between gap-2 pt-0.5 flex-wrap">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <button
                   type="button"
                   onClick={handleSpeakAffirmation}
-                  className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-amber-400/20 text-amber-300/90 hover:text-amber-200 border border-amber-400/20 text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer shrink-0 active:scale-95"
-                  title="확언 음성 듣기"
+                  disabled={isTTSActive}
+                  className="px-2.5 py-1.5 rounded-xl bg-amber-400/20 hover:bg-amber-400/30 text-amber-200 border border-amber-400/40 text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95 disabled:opacity-50"
+                  title="확언 음성 낭독 듣기"
                 >
-                  <Volume2 size={12} />
-                  <span>확언 낭독</span>
+                  <Volume2 size={13} className={isAffirmationSpeaking ? "animate-bounce text-yellow-300" : ""} />
+                  <span>{isAffirmationSpeaking ? '낭독 중...' : '확언 낭독'}</span>
                 </button>
                 <button
                   type="button"
                   onClick={handleCopyAffirmation}
-                  className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-amber-400/20 text-amber-300/90 hover:text-amber-200 border border-amber-400/20 text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer shrink-0 active:scale-95"
-                  title="확언 복사"
+                  className="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/80 hover:text-white border border-white/15 text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+                  title="확언 텍스트 복사"
                 >
-                  {copiedAffirmation ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-                  <span>{copiedAffirmation ? '복사됨' : '확언 복사'}</span>
+                  {copiedAffirmation ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                  <span>{copiedAffirmation ? '복사 완료' : '확언 복사'}</span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => cycleNextAffirmation(1)}
+                  disabled={isAffirmationGenerating}
+                  className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-orange-500/20 to-amber-500/20 hover:from-orange-500/30 hover:to-amber-500/30 text-amber-300 border border-orange-400/40 text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+                  title="다른 진동 확언으로 순환 조율"
+                >
+                  <RefreshCw size={12} className={isAffirmationGenerating ? "animate-spin text-orange-400" : ""} />
+                  <span>{isAffirmationGenerating ? '확언 조율 중...' : '다른 확언 조율'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={toggle528Hz}
+                  className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 border ${
+                    isAudioPlaying
+                      ? 'bg-amber-400 text-black border-amber-300 shadow-md'
+                      : 'bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border-white/15'
+                  }`}
+                  title="주파수 톤 청음"
+                >
+                  <Headphones size={13} />
+                  <span>{isAudioPlaying ? `${dialValue}Hz 정지` : `${dialValue}Hz 청음`}</span>
                 </button>
               </div>
             </div>
-            <p className="text-base sm:text-lg md:text-xl font-black text-amber-100 leading-relaxed tracking-tight break-keep break-words font-serif whitespace-normal">
-              "{catalystData.vibrationalAnchorAffirmation}"
-            </p>
           </div>
 
           {/* Sensory Script Card - Prominently Displayed Centerpiece */}

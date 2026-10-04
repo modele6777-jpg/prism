@@ -953,7 +953,9 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
                         loading="eager"
                         decoding="async"
                         style={{ transform: entry.reversed ? 'rotate(180deg)' : undefined }}
-                        className="absolute inset-0 w-full h-full object-cover z-0 rounded-xl md:rounded-2xl opacity-90 transition-opacity duration-200 group-hover:opacity-100"
+                        className={`absolute inset-0 w-full h-full object-cover z-0 rounded-xl md:rounded-2xl opacity-90 transition-opacity duration-200 group-hover:opacity-100 ${
+                          entry.reversed ? 'rotate-180' : ''
+                        }`}
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
                         }}

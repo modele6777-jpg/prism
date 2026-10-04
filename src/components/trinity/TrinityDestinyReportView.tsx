@@ -115,7 +115,7 @@ export function TrinityDestinyReportView({ onConsult }: TrinityDestinyReportView
     stopTTS();
     setActiveConsultTtsIdx(idx);
     try {
-      await playTTSInChunks(answerText, 'Kore', 320, '따뜻함');
+      await playTTSInChunks(answerText, 'Kore', 110, '따뜻함');
     } finally {
       setActiveConsultTtsIdx((prev) => (prev === idx ? null : prev));
     }
@@ -208,7 +208,7 @@ export function TrinityDestinyReportView({ onConsult }: TrinityDestinyReportView
     if (!report?.speechText) return;
 
     // 자연스럽고 끊김 없는 청크 스트리밍 재생 (음성 클릭 시 즉시 중지 가능)
-    await playTTSInChunks(report.speechText, 'Kore', 350, '따뜻함');
+    await playTTSInChunks(report.speechText, 'Kore', 110, '따뜻함');
   };
 
   // AI 명리 1:1 상담 질문 전송

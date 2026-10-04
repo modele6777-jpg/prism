@@ -95,7 +95,7 @@ export function TodayTarotNarrationModal({
 
     setActiveSpeechType('full');
     const voiceName = selectedVoice === 'Lucy' ? 'Lucy' : 'Kore';
-    await playTTSInChunks(narrationData.fullSpeech, voiceName, 320, '신비');
+    await playTTSInChunks(narrationData.fullSpeech, voiceName, 110, '신비');
   }, [isTTSActive, activeSpeechType, narrationData.fullSpeech, selectedVoice]);
 
   // Summary TTS Playback
@@ -109,7 +109,7 @@ export function TodayTarotNarrationModal({
 
     setActiveSpeechType('summary');
     const voiceName = selectedVoice === 'Lucy' ? 'Lucy' : 'Kore';
-    await playTTSInChunks(narrationData.summarySpeechText, voiceName, 220, '신비');
+    await playTTSInChunks(narrationData.summarySpeechText, voiceName, 110, '신비');
   }, [isTTSActive, activeSpeechType, narrationData.summarySpeechText, selectedVoice]);
 
   const handleCopyText = useCallback(() => {

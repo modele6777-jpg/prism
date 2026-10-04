@@ -1,5 +1,82 @@
 [
   {
+    "version": "1.4.153",
+    "summary": "오라클 타로 20종 덱 뒷면 커스텀 선택 및 타로 확대 모달 역방향(180° 거꾸로) 렌더링 구현",
+    "builtAt": "2026-10-04T02:08:10.000Z",
+    "items": [
+      "오라클 타로(TrinityOracleSection) 카드 스프레드(휠 셔플) 및 결과 카드 화면에서 20종 덱 뒷면 커스텀 모달 선택 기능 연동",
+      "타로 카드 확대 모달(TarotCardZoomModal)에서 역방향(Reversed) 카드 선택 시 180° 거꾸로(Upside-Down) 정밀 렌더링 및 클릭형 회전 토글 버튼 지원",
+      "오라클 타로 스프레드 휠 및 결과 3D 플리핑 카드에서 선택한 덱 뒷면 테마 실시간 동기화"
+    ]
+  },
+  {
+    "version": "1.4.152",
+    "summary": "오라클 타로 핵심 3줄 요약 카드 사주 원국 ✕ 타로 도상 융합 및 고해상도 상세화 구현",
+    "builtAt": "2026-10-04T02:02:15.000Z",
+    "items": [
+      "일반 타로 결과와 동일한 표준 규격 태그([현재 에너지], [방향과 결단], [실천 처방]) 및 황금빛 카드 UI, 원클릭 TTS 요약 낭독 연동",
+      "일반 타로보다 훨씬 더 디테일하고 명확하게 사주 일간(본원 기운), 오행 분포, 용신 보약과 3장의 타로 카드 도상 상징을 정교하게 결합한 3줄 요약 도출",
+      "Healing Mode 및 Growth Mode LLM 시스템 프롬프트 JSON 스키마에 사주 ✕ 타로 융합 concise_summary 생성 지침 명시",
+      "동적 폴백 및 추출 엔진(extractOracleConciseSummary)을 카드 이름·키워드와 사주 본원·오행·용신이 실질적으로 맞물리는 고품질 종합 구조로 전면 업그레이드"
+    ]
+  },
+  {
+    "version": "1.4.151",
+    "summary": "타로 결과 음성 낭독 시 중간 음색 변조(목소리 바뀜) 현상 원천 해결",
+    "builtAt": "2026-10-04T01:57:05.000Z",
+    "items": [
+      "타로 리딩 낭독 청크 길이(maxChunkLength)가 420글자로 과도하게 길어 EdgeTTS 5.5초 타임아웃을 초과하며 로봇 음성으로 폴백되던 현상을 최적 110자로 슬라이싱하여 원천 방지",
+      "서버 TTS 핸들러(ttsHandler.ts)의 EdgeTTS 타임아웃을 10~24초로 상향하고 일시적 네트워크 재연결을 위한 EdgeTTS 1회 자동 재시도 로직 도입",
+      "클라이언트(tts.ts) 연속 스트리밍 시 재시도 타임아웃(8.5초) 및 2회 재시도 보강으로 브라우저 로컬 OS 로봇 음성으로의 조기 추락 방지",
+      "타로 결과 생성 직후 시작부 2개 청크를 사전에 분할 프리페치(prefetchTTS)하여 첫 문장부터 지연 없이 고품질 동일 음색(Kore/SunHi)으로 재생되도록 개선"
+    ]
+  },
+  {
+    "version": "1.4.150",
+    "summary": "CalmApp 5초 유기적 풍선 호흡 들이쉬기(Inhale) 구간 부드러운 블롭(Blob) 형태 변형 CSS 애니메이션 구현",
+    "builtAt": "2026-10-04T01:51:30.000Z",
+    "items": [
+      "들숨(Inhale) 5초 팽창 구간 동안 풍선이 단순한 원형이 아닌 살아 숨쉬는 생체 유기체(Organic Blob)처럼 부드럽게 형태를 바꾸는 8축 border-radius 모핑 키프레임 구현",
+      "폐의 팽창 곡선과 미주신경 이완에 최적화된 cubic-bezier(0.33, 0, 0.18, 1) 이징 적용으로 실크처럼 매끄러운 팽창 질감 완성",
+      "잠시 멈춤(Hold) 및 내쉬기(Exhale) 구간 키프레임과 연속적인 유기적 곡률을 일치시켜 위화감 없는 자연스러운 호흡 순환 연결",
+      "public/calm/index.html 및 public/calm/style.css 동기화 및 iframe 캐시 버스팅(v=37.0) 갱신"
+    ]
+  },
+  {
+    "version": "1.4.149",
+    "summary": "CalmApp 풍선 호흡 들숨/날숨 정점 도달 시 window.parent.postMessage 연동 강화",
+    "builtAt": "2026-10-04T01:47:10.000Z",
+    "items": [
+      "CalmApp iframe 내 5초 유기적 풍선 호흡 운동에서 들숨 정점(peak of inhale) 도달 시 window.parent.postMessage({ type: 'BALLOON_BREATHING_HAPTIC', phase: 'inhale-peak' }, '*') 직접 호출 연동",
+      "날숨 정점(peak of exhale) 도달 시 window.parent.postMessage({ type: 'BALLOON_BREATHING_HAPTIC', phase: 'exhale-peak' }, '*') 직접 호출 연동",
+      "triggerBalloonHaptic 함수 최상단에 window.parent.postMessage 호출을 배치하여 햅틱 토글 상태와 관계없이 상위 창으로의 이벤트 디스패치를 항상 보장",
+      "CalmApp iframe 캐시 버스팅 파라미터(v=36.0) 갱신"
+    ]
+  },
+  {
+    "version": "1.4.148",
+    "summary": "아우라 60초 무저항 방하착 챔버 가동 시 완전 해방 선언문 TTS 음성 낭독 연동 및 제어 개선",
+    "builtAt": "2026-10-04T01:35:30.000Z",
+    "items": [
+      "60초 무저항 방하착 챔버 타이머 완료(isChamberCompleted) 시 저항 0% 완전 해방 선언문(zeroResistanceDeclaration)이 자동으로 재생되지 않던 누락 로직 연결",
+      "챔버 가동 시작 시 4단계 음성과 함께 선언문 스크립트 오디오 사전 프리페치(prefetchTTS)를 수행하여 타이머 완료 시 지연 없는 즉시 재생 보장",
+      "챔버 가동 상단 컨트롤 바에 '선언문 낭독 / 낭독 중단' 원터치 음성 토글 버튼 추가",
+      "챔버 완료 상태 카드에 '선언문 다시 듣기' 및 '60초 방하착 다시 시작' 액션 버튼 추가",
+      "하단 '저항 0% 완전 해방 선언문' 카드의 음성 듣기 버튼 상태(isTTSActive) 및 낭독 토글 연동 정상화"
+    ]
+  },
+  {
+    "version": "1.4.147",
+    "summary": "오렌지 카탈리스트(양자 현실화 가속기) 결과 조기 노출 방지 및 주파수 고정 진동 확언 중복 렌더링 수정",
+    "builtAt": "2026-10-04T01:26:30.000Z",
+    "items": [
+      "카탈리스트(OrangeSynergySection) 진입 시 〈양자 현실화 가속기 & 오감 스크립트〉 즉시 가동 버튼을 누르기 전 합성 결과(isSynthesized)가 조기 노출되던 버그 수정 (기본값 false로 정상화)",
+      "입력 조율 폼과 가속기 결과 창 양쪽에 중복으로 나타나던 '주파수 고정 진동 확언' 카드 단일화",
+      "가속기 결과 증서 내 주파수 고정 진동 확언 카드에 확언 낭독, 복사, 순환 조율, 주파수 톤 청음 기능을 온전히 통합",
+      "가속기 즉시 가동 버튼 클릭 시 결과 증서 카드로 부드러운 스크롤(scrollIntoView) 자동 연동"
+    ]
+  },
+  {
     "version": "1.4.146",
     "summary": "CalmApp(Key 마음약방) 5초 유기적 풍선 호흡의 들이쉬기/내쉬기 정점(Peak) 진동 햅틱 피드백 구현",
     "builtAt": "2026-10-03T23:47:30.000Z",

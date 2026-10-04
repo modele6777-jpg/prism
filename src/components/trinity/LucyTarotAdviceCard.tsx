@@ -108,7 +108,7 @@ export function LucyTarotAdviceCard({
 
     if (!advice.speechText) return;
     setIsPlayingMyTTS(true);
-    await playTTSInChunks(advice.speechText, 'Lucy', 200, '신비');
+    await playTTSInChunks(advice.speechText, 'Lucy', 110, '신비');
   }, [isPlayingMyTTS, isGlobalTTSActive, advice.speechText]);
 
   // Copy advice to clipboard

@@ -289,18 +289,19 @@ export interface OracleConciseSummaryParams {
   oracleMode: 'healing' | 'growth';
   cards?: any[];
   saju?: any;
+  todayCard?: any;
   microAction?: any;
   macroFocus?: string;
   microMission?: any;
 }
 
 /**
- * 🔮 78장 오라클 전용 핵심 3줄 요약 추출기 (치유 모드 vs 성장 모드 맞춤 태그)
- * Healing Mode: [마음 진단] · [치유의 빛] · [안식 처방]
- * Growth Mode:  [현실 진단] · [전략 방향] · [즉각 실행]
+ * 🔮 78장 오라클 전용 핵심 3줄 요약 추출기 (사주 원국 ✕ 타로 도상 상징 융합 정밀 분석)
+ * 일반 타로보다 훨씬 더 디테일하고 명확하게 카드의 뜻과 사주상 오늘의 기운을 결합하여 도출
+ * 표준 태그: [현재 에너지] · [방향과 결단] · [실천 처방]
  */
 export function extractOracleConciseSummary(params: OracleConciseSummaryParams): string[] {
-  const { message = '', oracleMode, cards = [], microAction, macroFocus, microMission } = params;
+  const { message = '', oracleMode, cards = [], saju, todayCard, microAction, macroFocus, microMission } = params;
   const isHealing = oracleMode === 'healing';
 
   const clean = (s: string) => {
@@ -314,120 +315,90 @@ export function extractOracleConciseSummary(params: OracleConciseSummaryParams):
   const fmt = (tag: string, content: string) => {
     let t = clean(content);
     t = t.replace(/^(?:친애하는|안녕하세요|반갑습니다|안녕|어서\s*오세요)[^,.]*[,.]\s*/i, '');
-    if (t.length > 130) {
-      const idx = t.lastIndexOf('.', 125);
-      if (idx > 50) t = t.slice(0, idx + 1);
-      else t = t.slice(0, 125) + '...';
+    if (t.length > 145) {
+      const idx = t.lastIndexOf('.', 140);
+      if (idx > 60) t = t.slice(0, idx + 1);
+      else t = t.slice(0, 140) + '...';
     }
     if (!/[.!?]$/.test(t)) t += '.';
     return `[${tag}] ${t}`;
   };
 
-  const paragraphs = message
-    .split(/\n\n+/)
-    .map((p) => p.trim())
-    .filter((p) => p.length > 15 && !p.startsWith('http'));
-
-  if (isHealing) {
-    // 1. [마음 진단]
-    let diag = '';
-    if (paragraphs.length > 0) {
-      const p1 = paragraphs[0];
-      const sentences = p1.split(/(?<=[.!?])\s+/).filter((s) => s.length >= 8);
-      diag = clean(sentences.find((s) => /마음|고민|상처|피로|짐|홀로|지친|불안/.test(s)) || sentences[0] || p1);
+  // 1. Check if the message contains an explicit [핵심 3줄 요약] block
+  const summaryBlockMatch = message.match(
+    /(?:\[핵심\s*(?:3줄\s*|세줄\s*)?요약\]|###\s*.*핵심\s*(?:3줄\s*|세줄\s*)?요약|###\s*.*핵심\s*요약|\[핵심\s*요약\]|Quick\s*Summary)([\s\S]*?)(?:$|###)/i
+  );
+  if (summaryBlockMatch) {
+    const rawLines = summaryBlockMatch[1]
+      .split('\n')
+      .map(clean)
+      .filter((l) => l.length > 10 && !l.startsWith('http'));
+    if (rawLines.length >= 3) {
+      return [
+        fmt('현재 에너지', rawLines[0]),
+        fmt('방향과 결단', rawLines[1]),
+        fmt('실천 처방', rawLines[2]),
+      ];
     }
-    if (!diag && cards[0]) {
-      diag = `${cards[0].nameKo} 카드가 비추듯, 홀로 마음의 짐을 감내하며 지쳐있던 내면의 피로를 먼저 알아차려 주세요.`;
-    } else if (!diag) {
-      diag = '스스로를 채근하던 무거운 짐을 내려놓고, 지친 마음의 상태를 있는 그대로 가만히 인정해 줍니다.';
-    }
-
-    // 2. [치유의 빛]
-    let light = '';
-    if (paragraphs.length > 1) {
-      const p2 = paragraphs[1];
-      const sentences = p2.split(/(?<=[.!?])\s+/).filter((s) => s.length >= 8);
-      light = clean(sentences.find((s) => /온기|치유|빛|안아|포근|자비|평온|선물|사랑/.test(s)) || sentences[0] || p2);
-    }
-    if (!light && cards[1]) {
-      light = `${cards[1].nameKo} 카드의 부드러운 온기가 상처받은 감정을 따스하게 감싸며 온전한 회복을 돕습니다.`;
-    } else if (!light) {
-      light = '당신은 이미 존재 자체로 충분히 아름답고 온전하며, 깊은 평온의 숨을 누릴 자격이 있습니다.';
-    }
-
-    // 3. [안식 처방]
-    let action = '';
-    if (typeof microAction === 'string' && microAction.trim().length > 5) {
-      action = microAction.trim();
-    } else if (microAction?.description) {
-      action = `${microAction.name ? `${microAction.name}: ` : ''}${microAction.description}`;
-    } else if (paragraphs.length > 2) {
-      const pLast = paragraphs[paragraphs.length - 1];
-      const sentences = pLast.split(/(?<=[.!?])\s+/).filter((s) => s.length >= 8);
-      action = clean(sentences.find((s) => /쉬|호흡|선물|내려놓|차|물|따뜻/.test(s)) || sentences[0] || pLast);
-    }
-    if (!action && cards[2]) {
-      action = `${cards[2].nameKo} 카드가 주는 치유의 씨앗처럼, 따뜻한 차 한 잔과 깊은 호흡으로 1분간 온전히 쉬어가기.`;
-    } else if (!action) {
-      action = '따뜻한 차 한 잔과 편안한 호흡으로 오늘 나 자신에게 다정한 안식을 선물하기.';
-    }
-
-    return [
-      fmt('현재 에너지', diag),
-      fmt('방향과 결단', light),
-      fmt('실천 처방', action),
-    ];
-  } else {
-    // Growth Mode
-    // 1. [현재 에너지] (현실 진단)
-    let diag = '';
-    if (paragraphs.length > 0) {
-      const p1 = paragraphs[0];
-      const sentences = p1.split(/(?<=[.!?])\s+/).filter((s) => s.length >= 8);
-      diag = clean(sentences.find((s) => /돌파|과제|정체|미루|나태|원인|마인드|현실|고민/.test(s)) || sentences[0] || p1);
-    }
-    if (!diag && cards[0]) {
-      diag = `${cards[0].nameKo} 카드가 짚어내듯, 막연한 고민과 미루기를 멈추고 실행을 가로막던 마인드셋을 전환할 때입니다.`;
-    } else if (!diag) {
-      diag = '막연한 불안과 미루기를 멈추고, 지금 직면한 성장의 본질적 과제를 정면으로 마주하세요.';
-    }
-
-    // 2. [방향과 결단] (전략 방향)
-    let strategy = '';
-    if (macroFocus && macroFocus.trim().length > 5) {
-      strategy = macroFocus.trim();
-    } else if (paragraphs.length > 1) {
-      const p2 = paragraphs[1];
-      const sentences = p2.split(/(?<=[.!?])\s+/).filter((s) => s.length >= 8);
-      strategy = clean(sentences.find((s) => /역량|원소|방향|전략|성장|추진|목표|원칙/.test(s)) || sentences[0] || p2);
-    }
-    if (!strategy && cards[1]) {
-      strategy = `${cards[1].nameKo} 카드의 4원소 역량을 목표에 정렬하여 현실적인 실행 로드맵을 확립하세요.`;
-    } else if (!strategy) {
-      strategy = '우선순위를 단 하나로 압축하고 분산된 에너지를 명확한 실행 나침반에 집중하세요.';
-    }
-
-    // 3. [실천 처방] (즉각 실행)
-    let mission = '';
-    if (microMission?.title) {
-      mission = `${microMission.title}${microMission.action_tip ? ` — ${microMission.action_tip}` : ''}`;
-    } else if (paragraphs.length > 2) {
-      const pLast = paragraphs[paragraphs.length - 1];
-      const sentences = pLast.split(/(?<=[.!?])\s+/).filter((s) => s.length >= 8);
-      mission = clean(sentences.find((s) => /오늘|즉시|실행|행동|과제|5분|10분|완수/.test(s)) || sentences[0] || pLast);
-    }
-    if (!mission && cards[2]) {
-      mission = `${cards[2].nameKo} 카드의 추진력을 담아, 오늘 10분 안에 끝낼 수 있는 가장 작은 행동을 지금 완수하기.`;
-    } else if (!mission) {
-      mission = '오늘 10분 안에 완수할 수 있는 가장 구체적인 첫 번째 행동을 망설임 없이 즉각 실행하기.';
-    }
-
-    return [
-      fmt('현재 에너지', diag),
-      fmt('방향과 결단', strategy),
-      fmt('실천 처방', mission),
-    ];
   }
+
+  // 2. Extract Card details and Saju elements for high-detail, rich fusion synthesis
+  const c1 = cards[0];
+  const c2 = cards[1];
+  const c3 = cards[2];
+
+  const dayMaster = saju?.dayMaster?.symbolName || saju?.dayMaster?.name || '본원 기질';
+  const dominantEl = saju?.elements?.dominant?.name || '우세 오행';
+  const lackingEl = saju?.elements?.lacking?.name || '결핍 오행';
+  const yongsin = saju?.yongsin?.name || '용신 기운';
+
+  const c1Name = c1 ? `${c1.nameKo || c1.name}${c1.reversed ? '(역방향)' : ''}` : '과거 카드';
+  const c2Name = c2 ? `${c2.nameKo || c2.name}${c2.reversed ? '(역방향)' : ''}` : '현재 카드';
+  const c3Name = c3 ? `${c3.nameKo || c3.name}${c3.reversed ? '(역방향)' : ''}` : '조언 카드';
+
+  const c1Keyword = c1?.keywords?.[0] || '내면의 뿌리';
+  const c2Keyword = c2?.keywords?.[0] || '상황의 전개';
+  const c3Keyword = c3?.keywords?.[0] || '해결의 열쇠';
+
+  const todayCardName = todayCard ? `${todayCard.nameKo || todayCard.name}${todayCard.reversed ? '(역방향)' : ''}` : '';
+  const todayCardKeyword = todayCard?.keywords?.[0] || '일일 운기';
+  const todayPrefix = todayCardName ? `오늘의 지배 타로인 [${todayCardName}]('${todayCardKeyword}')의 파동 속에서 ` : '';
+
+  // 1. [현재 에너지] (오늘의 지배 타로 + Card 1 & 2 도상 상징 + 사주 일간 본원 & 우세 오행 흐름 결합)
+  let line1 = '';
+  if (isHealing) {
+    line1 = `${todayPrefix}사주 본원인 ${dayMaster}의 기운이 ${dominantEl}의 과열된 파동 속에서 ${c1Name}의 '${c1Keyword}' 뿌리와 맞물려, 현재 ${c2Name} 카드가 가리키듯 상황의 무게를 홀로 감내하며 심리적 긴장과 에너지 분산이 누적된 전환점의 상태입니다.`;
+  } else {
+    line1 = `${todayPrefix}사주 본원인 ${dayMaster}의 고유한 역량이 ${c1Name}의 '${c1Keyword}' 마인드셋과 만나, 현재 ${c2Name} 카드가 지적하듯 실행을 가로막는 생각의 과부하와 ${dominantEl}의 조급함으로 인해 현실적 추진력이 일시적으로 정체된 상태입니다.`;
+  }
+
+  // 2. [방향과 결단] (Card 3 해결 열쇠 도상 + 사주 용신 보약 에너지 결합)
+  let line2 = '';
+  if (isHealing) {
+    line2 = `사주에서 결핍된 ${lackingEl}을 보완하는 용신(${yongsin})의 생기를 깨우고, 3번 조언 카드인 ${c3Name}의 '${c3Keyword}' 지혜를 받아들여, 스스로를 채근하던 낡은 틀을 과감히 내려놓고 온전한 자아 회복의 길을 선택해야 합니다.`;
+  } else {
+    line2 = `사주 용신(${yongsin})의 날카로운 돌파 에너지를 가동하고, 3번 조언 카드인 ${c3Name}의 '${c3Keyword}' 전략을 채택하여, 분산된 목표를 단 하나로 압축하고 망설임 없이 결단하여 우선순위 1번에 모든 자원을 집중해야 합니다.`;
+  }
+
+  // 3. [실천 처방] (Card 3 구체적 행동 팁 + 사주 오행 일상 개운법 결합)
+  let line3 = '';
+  const actionText = typeof microAction === 'string' && microAction.length > 5
+    ? microAction
+    : (microAction?.description || microMission?.title || '');
+
+  if (actionText && actionText.length > 8) {
+    line3 = `${c3Name} 카드의 구체적 상징과 사주 ${yongsin} 개운법을 융합하여, 오늘 일상에서 "${clean(actionText)}"을(를) 10분 안에 즉각 실행함으로써 운명의 선순환 물꼬를 트세요.`;
+  } else if (isHealing) {
+    line3 = `${c3Name} 카드의 치유 처방과 사주 ${yongsin} 보약 에너지를 담아, 오늘 따뜻한 차 한 잔과 3번의 깊은 복식호흡으로 마음의 긴장을 즉시 비워내고 나 자신에게 온전한 쉼을 선물하기.`;
+  } else {
+    line3 = `${c3Name} 카드의 강력한 실행력과 사주 ${yongsin} 추진력을 결합하여, 오늘 10분 안에 끝낼 수 있는 가장 작은 현실 행동 과제 1가지를 망설임 없이 지금 즉시 완수하기.`;
+  }
+
+  return [
+    fmt('현재 에너지', line1),
+    fmt('방향과 결단', line2),
+    fmt('실천 처방', line3),
+  ];
 }
 
 /**

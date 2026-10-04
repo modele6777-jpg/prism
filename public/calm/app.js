@@ -688,9 +688,19 @@ document.addEventListener('DOMContentLoaded', () => {
    * @param {'inhale-peak' | 'exhale-peak'} phase
    */
   function triggerBalloonHaptic(phase) {
+    // 1. 상위 React 앱(CalmApp)으로 postMessage 무조건 즉시 발송
+    try {
+      if (typeof window !== 'undefined' && window.parent) {
+        window.parent.postMessage({
+          type: 'BALLOON_BREATHING_HAPTIC',
+          phase: phase, // 'inhale-peak' | 'exhale-peak'
+        }, '*');
+      }
+    } catch (_) {}
+
     if (!breathingHapticEnabled) return;
 
-    // 1. 모바일 기기 하드웨어 진동 (Vibration API)
+    // 2. 모바일 기기 직접 하드웨어 진동 (Vibration API)
     if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
       try {
         if (phase === 'inhale-peak') {
@@ -704,16 +714,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       } catch (_) {}
     }
-
-    // 2. 상위 React 앱(CalmApp)으로 포워딩 (Iframe 제약 우회 및 부교감 음향 바이오 하모닉스 동기화)
-    try {
-      if (window.parent && window.parent !== window) {
-        window.parent.postMessage({
-          type: 'BALLOON_BREATHING_HAPTIC',
-          phase: phase,
-        }, '*');
-      }
-    } catch (_) {}
 
     // 3. 풍선 시각적 펄스 링 연동
     if (breathingBalloon) {
@@ -875,7 +875,10 @@ document.addEventListener('DOMContentLoaded', () => {
       countdown--;
       if (countdown <= 0) {
         if (currentPhase === 'inhale') {
-          // 들이쉬기 정점(Inhale Peak) 도달: 5초 팽창 완결 시 진동 햅틱 발동
+          // 들이쉬기 정점(Inhale Peak) 도달: 5초 팽창 완결 시 부모 프레임 통지 및 진동 햅틱 발동
+          try {
+            window.parent.postMessage({ type: 'BALLOON_BREATHING_HAPTIC', phase: 'inhale-peak' }, '*');
+          } catch (_) {}
           triggerBalloonHaptic('inhale-peak');
           currentPhase = 'hold';
           countdown = 2;
@@ -883,7 +886,10 @@ document.addEventListener('DOMContentLoaded', () => {
           currentPhase = 'exhale';
           countdown = 5;
         } else {
-          // 내쉬기 정점(Exhale Peak) 도달: 5초 배출 완결 시 진동 햅틱 발동
+          // 내쉬기 정점(Exhale Peak) 도달: 5초 배출 완결 시 부모 프레임 통지 및 진동 햅틱 발동
+          try {
+            window.parent.postMessage({ type: 'BALLOON_BREATHING_HAPTIC', phase: 'exhale-peak' }, '*');
+          } catch (_) {}
           triggerBalloonHaptic('exhale-peak');
           currentPhase = 'inhale';
           countdown = 5;

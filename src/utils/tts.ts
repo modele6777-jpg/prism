@@ -490,13 +490,13 @@ export const playTTS = async (
     if (sessionToVerify && ttsState.activeSessionId !== sessionToVerify) return;
 
     if (sequenceSessionId) {
-      // In sequence streaming mode, attempt 1 quick retry (4s) before immediately falling back to native browser speech
-      for (let retryCount = 1; retryCount <= 1; retryCount++) {
+      // In sequence streaming mode, attempt 2 quick retries (8s) before falling back to browser speech to prevent voice hopping
+      for (let retryCount = 1; retryCount <= 2; retryCount++) {
         if (sessionToVerify && ttsState.activeSessionId !== sessionToVerify) return;
         try {
-          await new Promise((r) => setTimeout(r, 200));
+          await new Promise((r) => setTimeout(r, 200 * retryCount));
           const retryController = new AbortController();
-          const retryTimeoutId = setTimeout(() => retryController.abort(), 4000);
+          const retryTimeoutId = setTimeout(() => retryController.abort(), 8500);
           const retryRes = await fetch('/api/ai/tts', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -521,7 +521,7 @@ export const playTTS = async (
             }
           }
         } catch (retryErr) {
-          console.warn(`[TTS] Sequence chunk quick retry error:`, retryErr);
+          console.warn(`[TTS] Sequence chunk quick retry ${retryCount} error:`, retryErr);
         }
       }
       // Fall back directly to native browser speech synthesis to prevent long silent freezes
