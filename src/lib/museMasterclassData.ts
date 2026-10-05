@@ -1,7 +1,30 @@
 import { getDateSeed } from './dailyCache';
 import type { UserProfile } from './sharedState';
+import { MUSE_ART_CATALOG } from './museDailyArt';
 
 export type MasterpieceCategory = 'painting' | 'music' | 'poem' | 'quote';
+
+export interface MasterArtwork {
+  id: string;
+  piece: string;
+  pieceOriginal?: string;
+  medium: string;
+  imageUrl?: string;
+  originalMuseum?: string;
+  masterpieceInsight: string;
+  masterDirectAdvice: string;
+  creativeSparkTechnique: string;
+  colorPalette: string[];
+  inspirationAffirmation?: string;
+  // Category specific payloads
+  musicVideoId?: string;
+  musicArtist?: string;
+  musicListeningGuide?: string;
+  poemText?: string;
+  poet?: string;
+  quoteText?: string;
+  quoteSource?: string;
+}
 
 export interface MasterItem {
   id: string;
@@ -25,6 +48,7 @@ export interface MasterItem {
   creativeSparkTechnique: string;
   colorPalette: string[];
   inspirationAffirmation: string;
+  artworks: MasterArtwork[];
 }
 
 export interface MasterpieceDialogueData {
@@ -51,7 +75,7 @@ export interface MasterpieceDialogueData {
 }
 
 export const MASTERS_CATALOG: MasterItem[] = [
-  // 1. 명화 (Paintings)
+  // 1. 빈센트 반 고흐 (Vincent van Gogh)
   {
     id: 'vangogh',
     name: '빈센트 반 고흐 (Vincent van Gogh)',
@@ -67,7 +91,95 @@ export const MASTERS_CATALOG: MasterItem[] = [
     creativeSparkTechnique: '임파스토(Impasto) 직관 돌파: 생각을 거치지 않고 가장 두텁고 솔직한 질감으로 지금 느껴지는 감정을 캔버스나 노트에 거침없이 쏟아붓기',
     colorPalette: ['#1E3A8A (심연의 딥 울트라마린)', '#F59E0B (소용돌이치는 황금빛 별)', '#065F46 (영원의 사이프러스 딥 그린)'],
     inspirationAffirmation: '나는 내 안의 모든 고뇌와 어둠을 눈부신 창조적 영감의 별빛으로 승화시킨다.',
+    artworks: [
+      {
+        id: 'vg_starry_night',
+        piece: '별이 빛나는 밤 (The Starry Night, 1889)',
+        medium: '유화 (Oil on Canvas) · 뉴욕 현대미술관(MoMA) 소장',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ea/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/1280px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg',
+        originalMuseum: '뉴욕 현대미술관 (The Museum of Modern Art, MoMA)',
+        masterpieceInsight: '생 레미 정신병원 창살 너머로 바라본 밤하늘의 소용돌이는 고통을 찬란한 우주적 생명력으로 승화시킨 불멸의 걸작입니다.',
+        masterDirectAdvice: '마음속의 폭풍을 억누르지 마십시오. 당신의 고뇌는 가장 눈부신 별빛을 잉태하고 있는 거룩한 소용돌이입니다.',
+        creativeSparkTechnique: '임파스토(Impasto) 직관 돌파: 감정을 거침없이 두텁고 솔직하게 쏟아붓기',
+        colorPalette: ['#1E3A8A (딥 울트라마린)', '#F59E0B (황금빛 별)', '#065F46 (사이프러스 그린)'],
+        inspirationAffirmation: '나는 내 안의 모든 어둠을 눈부신 창조적 별빛으로 승화시킨다.',
+      },
+      {
+        id: 'vg_sunflowers',
+        piece: '해바라기 (Sunflowers / Tournesols, 1888)',
+        medium: '유화 (Oil on Canvas) · 런던 내셔널 갤러리 소장',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Vincent_Willem_van_Gogh_127.jpg/1024px-Vincent_Willem_van_Gogh_127.jpg',
+        originalMuseum: '런던 내셔널 갤러리 (The National Gallery, London)',
+        masterpieceInsight: '12송이의 해바라기가 뿜어내는 크롬 옐로는 고독과 가난을 뚫고 타오르는 태양 같은 순수한 생명력의 찬가입니다.',
+        masterDirectAdvice: '벗이여, 시들거나 꺾인 순간조차 있는 그대로 사랑하십시오. 그대의 생명력은 누구의 인정을 기다릴 필요 없는 찬란한 태양입니다.',
+        creativeSparkTechnique: '크롬 옐로 레이어링: 회색빛 걱정 위에 가장 따뜻하고 선명한 노란빛 에너지와 온기를 덧칠하기',
+        colorPalette: ['#FBBF24 (크롬 옐로)', '#D97706 (오커 앰버)', '#78350F (생명의 대지 브라운)'],
+        inspirationAffirmation: '나는 내 안의 가장 뜨거운 태양빛 열정으로 온 세상을 비춘다.',
+      },
+      {
+        id: 'vg_cafe_terrace',
+        piece: '밤의 카페 테라스 (Café Terrace at Night, 1888)',
+        medium: '유화 (Oil on Canvas) · 네덜란드 크뢸러 뮐러 미술관 소장',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/21/Vincent_Willem_van_Gogh_-_Caf%C3%A9_Terrace_at_Night_%28Yorck%29.jpg/1024px-Vincent_Willem_van_Gogh_-_Caf%C3%A9_Terrace_at_Night_%28Yorck%29.jpg',
+        originalMuseum: '네덜란드 크뢸러 뮐러 미술관 (Kröller-Müller Museum)',
+        masterpieceInsight: '단 한 방울의 검은 물감도 쓰지 않고 코발트 블루와 유황색 황금빛만으로 밤을 찬란한 축제로 바꾸어 놓았습니다.',
+        masterDirectAdvice: '밤의 적막과 막막함에 움츠러들지 마십시오. 어둠 속에서도 불을 밝힌 작은 테라스처럼 그대 내면의 따스한 등불을 켜두세요.',
+        creativeSparkTechnique: '보색 대비 축제: 불안한 감정과 대립되는 가장 따뜻한 보색을 동시에 배치해 생동감 찾기',
+        colorPalette: ['#1D4ED8 (코발트 블루 밤)', '#FBBF24 (테라스 황금빛)', '#F8FAFC (별빛 페일 화이트)'],
+        inspirationAffirmation: '어둠이 깊을수록 내 안의 온화한 등불은 더욱 찬란하게 빛난다.',
+      },
+      {
+        id: 'vg_bedroom',
+        piece: '아를의 침실 (The Bedroom in Arles, 1888)',
+        medium: '유화 (Oil on Canvas) · 암스테르담 반 고흐 미술관 소장',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Vincent_van_Gogh_-_De_slaapkamer_-_Google_Art_Project.jpg/1280px-Vincent_van_Gogh_-_De_slaapkamer_-_Google_Art_Project.jpg',
+        originalMuseum: '네덜란드 암스테르담 반 고흐 미술관 (Van Gogh Museum)',
+        masterpieceInsight: '소박한 나무 침대와 두 개의 의자, 라일락 벽면이 절대적인 안식과 평화를 갈망하는 화가의 영혼을 순수하게 담아냅니다.',
+        masterDirectAdvice: '서두르지 말고 그대의 일상과 작은 방을 먼저 포근히 안아주십시오. 진정한 예술은 영혼의 고요한 안식에서 싹틉니다.',
+        creativeSparkTechnique: '공간의 성역화: 내가 머무는 책상과 공간을 온전히 내면의 쉼과 창조의 신전으로 정돈하기',
+        colorPalette: ['#93C5FD (라일락 블루)', '#FDE047 (나무 침대 옐로)', '#86EFAC (창문 페일 그린)'],
+        inspirationAffirmation: '나는 소박한 일상의 쉼터 속에서 가장 깊은 평화와 창조의 힘을 얻는다.',
+      },
+      {
+        id: 'vg_rhone',
+        piece: '론강의 별이 빛나는 밤 (Starry Night Over the Rhône, 1888)',
+        medium: '유화 (Oil on Canvas) · 파리 오르세 미술관 소장',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/Starry_Night_Over_the_Rhone.jpg/1280px-Starry_Night_Over_the_Rhone.jpg',
+        originalMuseum: '파리 오르세 미술관 (Musée d\'Orsay)',
+        masterpieceInsight: '밤하늘의 북두칠성과 론강 물결에 길게 부서져 내리는 아를 거리의 가스등 빛이 신비로운 공명을 이룹니다.',
+        masterDirectAdvice: '마음의 호수가 파도칠지라도 괜찮습니다. 흔들리는 물결이야말로 별빛을 더 길고 아름답게 세상에 퍼뜨리는 붓질입니다.',
+        creativeSparkTechnique: '리플렉션 하모니: 불안한 감정의 파동을 억누르지 않고 수면의 반사광처럼 유연하게 관찰하기',
+        colorPalette: ['#172554 (심야 론강 네이비)', '#FACC15 (가스등 리플렉션 골드)', '#38BDF8 (북두칠성 아쿠아)'],
+        inspirationAffirmation: '흔들리는 내 마음의 물결 위로 영원한 별빛이 찬란하게 쏟아져 내린다.',
+      },
+      {
+        id: 'vg_almond',
+        piece: '꽃 피는 아몬드 나무 (Almond Blossom, 1890)',
+        medium: '유화 (Oil on Canvas) · 암스테르담 반 고흐 미술관 소장',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Vincent_van_Gogh_-_Almond_blossom_-_Google_Art_Project.jpg/1280px-Vincent_van_Gogh_-_Almond_blossom_-_Google_Art_Project.jpg',
+        originalMuseum: '네덜란드 암스테르담 반 고흐 미술관 (Van Gogh Museum)',
+        masterpieceInsight: '가장 혹독한 겨울의 끝, 조카의 탄생을 축하하며 터키석 푸른 하늘을 향해 터뜨린 순백의 꽃망울입니다.',
+        masterDirectAdvice: '그대에게도 새로운 봄의 꽃망울이 맺히고 있습니다. 지나간 추위에 매몰되지 마십시오. 순결한 용기로 새 계절을 맞이하세요.',
+        creativeSparkTechnique: '봄의 가지 뻗기: 낡은 틀을 깨고 맑은 하늘을 향해 거침없이 새로운 가지를 뻗어 나가듯 새로운 시도를 시작하기',
+        colorPalette: ['#06B6D4 (터키석 청록 하늘)', '#FFFFFF (순백의 꽃잎 화이트)', '#78350F (생명의 나뭇가지 세피아)'],
+        inspirationAffirmation: '어떤 추위도 나의 봄을 막을 수 없으며, 나는 눈부신 새 생명으로 꽃핀다.',
+      },
+      {
+        id: 'vg_irises',
+        piece: '아이리스 (Irises, 1889)',
+        medium: '유화 (Oil on Canvas) · J. 폴 게티 미술관 소장',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Irises-Vincent_van_Gogh.jpg/1280px-Irises-Vincent_van_Gogh.jpg',
+        originalMuseum: '로스앤젤레스 J. 폴 게티 미술관 (J. Paul Getty Museum)',
+        masterpieceInsight: '푸른 붓꽃들 사이에 당당히 피어난 단 한 송이의 하얀 붓꽃은 고독 속에서도 스스로의 존엄을 지켜내는 영혼의 표상입니다.',
+        masterDirectAdvice: '남들과 다르다고 해서 불안해하지 마십시오. 무리 속에서 홀로 피어난 하얀 붓꽃처럼, 그대의 고유한 다름이 곧 걸작의 중심입니다.',
+        creativeSparkTechnique: '솔리터리 하이라이트: 남들과 다른 나의 별난 개성 하나를 찾아 최고의 장점으로 승화시키기',
+        colorPalette: ['#4338CA (기품 있는 인디고 퍼플)', '#22C55E (생명의 에메랄드 리프)', '#F8FAFC (홀로 선 순백)'],
+        inspirationAffirmation: '나는 나만의 고유한 빛깔로 피어나는 세상에 단 하나뿐인 꽃이다.',
+      }
+    ]
   },
+
+  // 2. 클로드 모네 (Claude Monet)
   {
     id: 'monet',
     name: '클로드 모네 (Claude Monet)',
@@ -83,7 +195,71 @@ export const MASTERS_CATALOG: MasterItem[] = [
     creativeSparkTechnique: '연작(Series)의 시선: 하나의 대상을 시간의 흐름(새벽, 정오, 황혼)에 따라 가볍게 연속해서 스케치하며 집착을 해체하기',
     colorPalette: ['#38BDF8 (빛을 머금은 수면 스카이블루)', '#A855F7 (오후의 라벤더 바이올렛)', '#10B981 (생명의 부유 수련 에메랄드)'],
     inspirationAffirmation: '나는 흐르는 시간의 찰나 속에서 무한한 빛과 평화를 자유롭게 직조한다.',
+    artworks: [
+      {
+        id: 'monet_water_lilies',
+        piece: '수련 연작 (Water Lilies / Nymphéas, 1914–1926)',
+        medium: '인상주의 유화 · 파리 오랑주리 미술관 / 메트로폴리탄 미술관 소장',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Claude_Monet_-_Water_Lilies_-_Google_Art_Project.jpg/1280px-Claude_Monet_-_Water_Lilies_-_Google_Art_Project.jpg',
+        originalMuseum: '파리 오랑주리 미술관 (Musée de l\'Orangerie)',
+        masterpieceInsight: '지평선도 경계도 없는 수면 위에 하늘과 구름, 버드나무와 수련이 끝없이 겹쳐지며 시공간의 무한한 평화를 선물합니다.',
+        masterDirectAdvice: '완벽한 결과를 통제하려는 긴장을 내려놓으십시오. 흔들리는 물결처럼 모든 상태를 허용할 때 영원은 지금 이 순간에 깃듭니다.',
+        creativeSparkTechnique: '연작(Series)의 시선: 집착을 버리고 시간의 흐름에 따라 변화하는 감각의 결을 부드럽게 관찰하기',
+        colorPalette: ['#38BDF8 (스카이블루)', '#A855F7 (라벤더 바이올렛)', '#10B981 (에메랄드)'],
+        inspirationAffirmation: '나는 흐르는 시간의 찰나 속에서 무한한 빛과 평화를 자유롭게 직조한다.',
+      },
+      {
+        id: 'monet_sunrise',
+        piece: '인상, 해돋이 (Impression, Sunrise / Impression, soleil levant, 1872)',
+        medium: '인상주의 유화 · 파리 마르모탕 모네 미술관 소장',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/Monet_-_Impression%2C_Sunrise.jpg/1280px-Monet_-_Impression%2C_Sunrise.jpg',
+        originalMuseum: '파리 마르모탕 모네 미술관 (Musée Marmottan Monet)',
+        masterpieceInsight: '안개 낀 항구 위로 솟아오르는 붉은 태양이 미술사의 새로운 장을 열었습니다. 정형화된 형태 대신 찰나의 강렬한 인상을 포착했습니다.',
+        masterDirectAdvice: '세상의 고루한 비평에 얽매이지 마십시오. 그대 눈에 비친 찰나의 떨림과 인상이 곧 당신만의 위대한 오리지널리티입니다.',
+        creativeSparkTechnique: '알라 프리마(Alla Prima): 생각을 비우고 첫인상이 주는 원초적 감각을 캔버스나 노트에 빠르게 스케치하기',
+        colorPalette: ['#EA580C (떠오르는 붉은 태양 오렌지)', '#64748B (항구의 새벽 안개 그레이)', '#0369A1 (바다의 심연 딥 블루)'],
+        inspirationAffirmation: '나는 기존의 틀을 깨고 매 순간 세상을 새롭게 탄생시키는 아침 해다.',
+      },
+      {
+        id: 'monet_woman_parasol',
+        piece: '양산을 쓴 여인 (Woman with a Parasol - Madame Monet and Her Son, 1875)',
+        medium: '유화 (Oil on Canvas) · 워싱턴 국립미술관 소장',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Claude_Monet_-_Woman_with_a_Parasol_-_Madame_Monet_and_Her_Son_-_Google_Art_Project.jpg/1024px-Claude_Monet_-_Woman_with_a_Parasol_-_Madame_Monet_and_Her_Son_-_Google_Art_Project.jpg',
+        originalMuseum: '워싱턴 국립미술관 (National Gallery of Art, Washington D.C.)',
+        masterpieceInsight: '언덕 위에서 부드러운 여름 바람을 맞으며 뒤돌아보는 카미유의 베일과 드레스가 보이지 않는 바람의 결을 가시화합니다.',
+        masterDirectAdvice: '그대를 스쳐 가는 보이지 않는 바람의 감촉에 집중하십시오. 영혼을 간지럽히는 바람의 흐름에 몸을 맡길 때 가장 자유로운 표현이 터져 나옵니다.',
+        creativeSparkTechnique: '바람의 붓질: 정지된 상태 대신 흐름과 운동감이 느껴지는 사선과 곡선의 역동성을 살리기',
+        colorPalette: ['#93C5FD (눈부신 여름 하늘)', '#FEF08A (양산의 햇살 크림)', '#4ADE80 (바람에 춤추는 풀잎 초록)'],
+        inspirationAffirmation: '나는 나를 스쳐 가는 모든 순간의 바람과 빛을 자유롭게 온몸으로 호흡한다.',
+      },
+      {
+        id: 'monet_poppy_field',
+        piece: '아르장퇴유의 양귀비 꽃밭 (Poppy Field, 1873)',
+        medium: '유화 (Oil on Canvas) · 파리 오르세 미술관 소장',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/29/Claude_Monet_-_Coquelicots.jpg/1280px-Claude_Monet_-_Coquelicots.jpg',
+        originalMuseum: '파리 오르세 미술관 (Musée d\'Orsay)',
+        masterpieceInsight: '완만한 언덕을 따라 붉은 반점으로 흐드러지게 피어난 양귀비 꽃밭이 전원의 평화로움과 빛의 향연을 노래합니다.',
+        masterDirectAdvice: '사소한 디테일에 갇히지 말고 전체적인 색채의 리듬을 타십시오. 빨간 꽃잎처럼 가슴을 뛰게 하는 즐거운 요소들을 삶의 들판에 흩뿌리세요.',
+        creativeSparkTechnique: '색채 점묘의 율동: 세밀한 묘사 대신 순수한 원색의 경쾌한 리듬으로 기쁨을 빠르게 배치하기',
+        colorPalette: ['#DC2626 (선명한 양귀비 레드)', '#84CC16 (화사한 잔디 라임)', '#BAE6FD (맑은 전원 스카이블루)'],
+        inspirationAffirmation: '내 삶의 들판은 매 순간 찬란한 환희와 평화로운 기쁨으로 만발한다.',
+      },
+      {
+        id: 'monet_saint_lazare',
+        piece: '생라자르 기차역 (Gare Saint-Lazare, 1877)',
+        medium: '유화 (Oil on Canvas) · 파리 오르세 미술관 소장',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Claude_Monet_-_The_Saint-Lazare_Station_-_Google_Art_Project.jpg/1280px-Claude_Monet_-_The_Saint-Lazare_Station_-_Google_Art_Project.jpg',
+        originalMuseum: '파리 오르세 미술관 (Musée d\'Orsay)',
+        masterpieceInsight: '증기 기관차가 뿜어내는 푸른 연기와 유리 지붕을 뚫고 쏟아지는 햇살이 산업혁명 도시의 역동성을 신비로운 빛의 성전으로 바꿉니다.',
+        masterDirectAdvice: '분주한 일상 속에서도 얼마든지 찬란한 미학적 빛을 발견할 수 있습니다. 잿빛 연기마저 빛을 머금으면 푸른 보석이 됩니다.',
+        creativeSparkTechnique: '증기광 효과: 흐릿한 잡념과 복잡한 상황을 빛의 프리즘으로 투과시켜 영감의 배경으로 변환하기',
+        colorPalette: ['#0284C7 (증기 연기의 시안 블루)', '#475569 (철골 구조물 슬레이트)', '#FEF08A (천창 햇살 골드)'],
+        inspirationAffirmation: '나는 번잡하고 분주한 세상 속에서도 영롱한 빛의 성전을 창조한다.',
+      }
+    ]
   },
+
+  // 3. 구스타프 클림트 (Gustav Klimt)
   {
     id: 'klimt',
     name: '구스타프 클림트 (Gustav Klimt)',
@@ -99,7 +275,59 @@ export const MASTERS_CATALOG: MasterItem[] = [
     creativeSparkTechnique: '골든 리프(Gold Leaf) 콘트라스트: 거친 일상의 소재 위에 가장 눈부신 찬란한 디테일(금빛, 빛나는 단어)을 입혀 비범한 상징으로 탈바꿈하기',
     colorPalette: ['#FBBF24 (초월적 오스트리아 임페리얼 골드)', '#E11D48 (생명의 붉은 꽃 루비)', '#312E81 (심연의 미드나이트 인디고)'],
     inspirationAffirmation: '나는 나 자신의 가장 깊은 열정과 생명력을 눈부신 황금빛 걸작으로 빚어낸다.',
+    artworks: [
+      {
+        id: 'klimt_kiss',
+        piece: '키스 (The Kiss / Der Kuss, 1907–1908)',
+        medium: '금박 유화 (Oil & Gold Leaf) · 오스트리아 벨베데레 궁전 미술관 소장',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/The_Kiss_-_Gustav_Klimt_-_Google_Cultural_Institute.jpg/1280px-The_Kiss_-_Gustav_Klimt_-_Google_Cultural_Institute.jpg',
+        originalMuseum: '오스트리아 비엔나 벨베데레 궁전 미술관 (Österreichische Galerie Belvedere)',
+        masterpieceInsight: '꽃이 만발한 벼랑 끝에서도 두 연인은 순수한 황금빛 아우라로 감싸여 영원한 일체감을 누립니다.',
+        masterDirectAdvice: '평범한 한계를 거부하십시오. 두려움을 화려한 황금빛 장식과 대담한 색채로 감싸 안아 독보적인 아우라를 만드세요.',
+        creativeSparkTechnique: '골든 리프 콘트라스트: 일상의 소재 위에 가장 눈부신 찬란한 디테일을 입혀 비범한 상징으로 탈바꿈하기',
+        colorPalette: ['#FBBF24 (임페리얼 골드)', '#E11D48 (루비 레드)', '#312E81 (미드나이트 인디고)'],
+        inspirationAffirmation: '나는 내 안의 가장 깊은 열정과 생명력을 눈부신 황금빛 걸작으로 빚어낸다.',
+      },
+      {
+        id: 'klimt_adele',
+        piece: '아델레 블로흐-바우어의 초상 I (Portrait of Adele Bloch-Bauer I, 1907)',
+        medium: '유화와 금은박 · 뉴욕 노이에 갈러리 소장',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Gustav_Klimt_046.jpg/1024px-Gustav_Klimt_046.jpg',
+        originalMuseum: '뉴욕 노이에 갈러리 (Neue Galerie New York)',
+        masterpieceInsight: '황금빛 비잔틴 모자이크와 신비로운 눈동자 문양이 어우러진 인물을 신화적이고 영원불멸한 성역으로 끌어올렸습니다.',
+        masterDirectAdvice: '자신을 평범한 기준에 가두지 마십시오. 정교한 디테일과 당당한 미적 확신으로 당신만의 독보적인 왕국을 세우십시오.',
+        creativeSparkTechnique: '오너먼트 일루전: 일상의 사물과 생각에 정교하고 화려한 상징 문양을 부여하여 신화적 품격 입히기',
+        colorPalette: ['#F59E0B (황금 모자이크 골드)', '#18181B (옵시디언 블랙)', '#FDE68A (영롱한 진주빛 크림)'],
+        inspirationAffirmation: '나는 그 누구도 대체할 수 없는 고귀하고 찬란한 빛의 존재다.',
+      },
+      {
+        id: 'klimt_tree_of_life',
+        piece: '생명의 나무 (The Tree of Life - Stoclet Frieze, 1905–1909)',
+        medium: '템페라 및 금박 스케치 · 비엔나 응용미술관(MAK) 소장',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/Gustav_Klimt_-_The_Tree_of_Life_-_Google_Art_Project.jpg/1280px-Gustav_Klimt_-_The_Tree_of_Life_-_Google_Art_Project.jpg',
+        originalMuseum: '오스트리아 비엔나 응용미술관 (MAK - Museum of Applied Arts)',
+        masterpieceInsight: '나선형으로 굽이치며 뻗어나가는 황금 나뭇가지가 생명의 끝없는 순환과 지혜, 기다림과 포옹을 상징합니다.',
+        masterDirectAdvice: '서두르지 말고 뿌리를 깊이 내리십시오. 나선형 가지가 천천히 맴돌며 자라나듯 그대의 배움과 방황은 모두 성장의 여정입니다.',
+        creativeSparkTechnique: '나선형 성장: 일직선의 성취 대신 돌아가고 휘어지는 나선형 흐름을 긍정하며 축적하기',
+        colorPalette: ['#D97706 (나선형 황금 가지)', '#78350F (대지 참나무 브라운)', '#FEF3C7 (신성한 여백 크림)'],
+        inspirationAffirmation: '내 삶의 모든 굽이침은 더 풍성한 생명의 열매를 맺기 위한 거룩한 여정이다.',
+      },
+      {
+        id: 'klimt_judith',
+        piece: '유디트 I (Judith and the Head of Holofernes, 1901)',
+        medium: '유화 및 금박 · 비엔나 벨베데레 미술관 소장',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Gustav_Klimt_039.jpg/1024px-Gustav_Klimt_039.jpg',
+        originalMuseum: '오스트리아 비엔나 벨베데레 궁전 미술관 (Österreichische Galerie Belvedere)',
+        masterpieceInsight: '몽환적이고 당당한 시선으로 관람자를 응시하는 여인의 관능과 승리의 순간입니다. 운명을 스스로 쟁취하는 주체적 에너지를 담았습니다.',
+        masterDirectAdvice: '주저하지 말고 당신의 당당한 힘을 표현하십시오. 세상의 시선에 위축되지 않고 주체성을 선언할 때 카리스마 넘치는 창조가 일어납니다.',
+        creativeSparkTechnique: '당당한 시선 교환: 두려운 대상이나 문제를 피하지 않고 정면으로 똑바로 응시하며 주도권 되찾기',
+        colorPalette: ['#B45309 (금박 초커 앤틱 골드)', '#881337 (위풍당당 버건디)', '#0F172A (신비로운 배경 딥 나이트)'],
+        inspirationAffirmation: '나는 내 운명의 완전한 주인이자 세상을 매혹하는 당당한 창조자다.',
+      }
+    ]
   },
+
+  // 4. 요하네스 페르메이르 (Johannes Vermeer)
   {
     id: 'vermeer',
     name: '요하네스 페르메이르 (Johannes Vermeer)',
@@ -115,9 +343,59 @@ export const MASTERS_CATALOG: MasterItem[] = [
     creativeSparkTechnique: '카메라 옵스큐라(Camera Obscura) 미니멀리즘: 불필요한 배경 요소를 모두 지우고 단 하나의 영롱한 하이라이트 지점에만 시선을 모으기',
     colorPalette: ['#0284C7 (청금석 울트라마린 라피스라줄리)', '#FEF08A (영롱한 진주빛 크림 아이보리)', '#09090B (정적의 옵시디언 블랙)'],
     inspirationAffirmation: '나는 내면의 고요한 침묵 속에서 가장 맑고 순수한 영혼의 빛을 길어 올린다.',
+    artworks: [
+      {
+        id: 'vermeer_pearl_earring',
+        piece: '진주 귀걸이를 한 소녀 (Girl with a Pearl Earring, c. 1665)',
+        medium: '유화 (Oil on Canvas) · 마우리츠하위스 미술관 소장',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/1665_Girl_with_a_Pearl_Earring.jpg/1024px-1665_Girl_with_a_Pearl_Earring.jpg',
+        originalMuseum: '네덜란드 헤이그 마우리츠하위스 미술관 (Mauritshuis)',
+        masterpieceInsight: '터키석 블루 터번과 한 방울의 영롱한 진주가 온 우주의 빛을 응축하여 정적 속 순수한 신비를 증명합니다.',
+        masterDirectAdvice: '군더더기를 과감히 걷어내고 오직 단 하나의 본질적인 시선과 정적에 온전히 집중하십시오.',
+        creativeSparkTechnique: '카메라 옵스큐라 미니멀리즘: 불필요한 요소를 지우고 단 하나의 영롱한 하이라이트에만 시선 모으기',
+        colorPalette: ['#0284C7 (라피스라줄리 블루)', '#FEF08A (진주빛 크림)', '#09090B (옵시디언 블랙)'],
+        inspirationAffirmation: '나는 내면의 고요한 침묵 속에서 가장 순수한 영혼의 빛을 길어 올린다.',
+      },
+      {
+        id: 'vermeer_milkmaid',
+        piece: '우유를 따르는 여인 (The Milkmaid, c. 1658)',
+        medium: '유화 (Oil on Canvas) · 암스테르담 국립미술관 소장',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/20/Johannes_Vermeer_-_Het_melkmeisje_-_Google_Art_Project.jpg/1024px-Johannes_Vermeer_-_Het_melkmeisje_-_Google_Art_Project.jpg',
+        originalMuseum: '네덜란드 암스테르담 국립미술관 (Rijksmuseum)',
+        masterpieceInsight: '소박한 부엌 한구석, 질그릇 주전자에서 떨어지는 우유 한 줄기 위에 정적의 성스러움이 깃듭니다.',
+        masterDirectAdvice: '지금 하고 있는 단순한 행위에 온전히 몰입하십시오. 잡념을 내려놓고 우유를 따르는 여인처럼 집중할 때 일상이 영원이 됩니다.',
+        creativeSparkTechnique: '마인드풀 푸어링: 일상의 작은 행위 하나에 온 신경과 정성을 다해 3분간 몰입하기',
+        colorPalette: ['#1D4ED8 (델프트 울트라마린 블루)', '#EAB308 (앞치마 옐로 오커)', '#78350F (질그릇 테라코타)'],
+        inspirationAffirmation: '나는 일상의 소박한 순간 속에 깃든 거룩한 평온과 아름다움을 발견한다.',
+      },
+      {
+        id: 'vermeer_view_of_delft',
+        piece: '델프트 풍경 (View of Delft, c. 1660)',
+        medium: '유화 (Oil on Canvas) · 마우리츠하위스 미술관 소장',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Vermeer-view-of-delft.jpg/1280px-Vermeer-view-of-delft.jpg',
+        originalMuseum: '네덜란드 헤이그 마우리츠하위스 미술관 (Mauritshuis)',
+        masterpieceInsight: '구름 사이로 쏟아지는 햇살이 강 건너 붉은 벽돌 지붕과 교회의 첨탑을 환하게 비추며 영혼을 정화합니다.',
+        masterDirectAdvice: '한 걸음 뒤로 물러서서 당신 삶의 전체 풍경을 고요히 조망하십시오. 어둠 속에서도 햇빛을 받는 성벽처럼 당신에게도 빛이 내립니다.',
+        creativeSparkTechnique: '롱샷 조망법: 좁은 문제에 매몰되지 않고 도시 전체를 조망하듯 삶의 큰 파노라마를 시각화하기',
+        colorPalette: ['#38BDF8 (맑은 수면 반영 스카이)', '#B91C1C (델프트 붉은 벽돌)', '#64748B (비구름 슬레이트)'],
+        inspirationAffirmation: '나는 넓은 시야로 내 삶의 아름다운 풍경 전체를 조망하며 평온을 유지한다.',
+      },
+      {
+        id: 'vermeer_lacemaker',
+        piece: '레이스를 뜨는 여인 (The Lacemaker, c. 1669)',
+        medium: '캔버스에 유화 (목판 배접) · 파리 루브르 박물관 소장',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Johannes_Vermeer_-_The_Lacemaker_-_WGA24674.jpg/1024px-Johannes_Vermeer_-_The_Lacemaker_-_WGA24674.jpg',
+        originalMuseum: '파리 루브르 박물관 (Musée du Louvre)',
+        masterpieceInsight: '얇은 실을 엮는 소녀의 미간과 손끝에 세상의 모든 소음이 차단된 밀도 높은 정적이 머뭅니다.',
+        masterDirectAdvice: '산만해진 시선을 좁히고 가장 작은 디테일에 정성을 다하십시오. 거대한 목표에 압도당하지 말고 한 올의 실을 꿰어가듯 나아가세요.',
+        creativeSparkTechnique: '마이크로 포커스: 전체 결과에 대한 부담을 내려놓고 오늘 완성할 손바닥만 한 세부 작업에만 집중하기',
+        colorPalette: ['#FACC15 (산뜻한 레몬 옐로 옷)', '#DC2626 (선명한 붉은 실)', '#334155 (정적의 딥 차콜)'],
+        inspirationAffirmation: '나는 한 올 한 올 정성을 다해 내 삶의 아름다운 무늬를 직조한다.',
+      }
+    ]
   },
 
-  // 2. 명곡 (Music)
+  // 5. 클로드 드뷔시 (Claude Debussy)
   {
     id: 'debussy',
     name: '클로드 드뷔시 (Claude Debussy)',
@@ -135,7 +413,53 @@ export const MASTERS_CATALOG: MasterItem[] = [
     creativeSparkTechnique: '네거티브 스페이스(Negative Space) 침묵의 휴지: 말이나 작업 사이에 의도적인 3초의 쉼표를 두어 여운과 잔향의 깊이 증폭시키기',
     colorPalette: ['#E0F2FE (부서지는 달빛 펄 블루)', '#6366F1 (몽환의 인디고 트와일라잇)', '#F1F5F9 (은빛 안개 실버)'],
     inspirationAffirmation: '나는 세상의 정형화된 틀을 벗어나 자유로운 영혼의 선율로 세상을 물들인다.',
+    artworks: [
+      {
+        id: 'debussy_clair_de_lune',
+        piece: '달빛 (Clair de Lune - 베르가마스크 모음곡 3악장)',
+        medium: '인상주의 피아노 명곡 (Piano Solo & Impressionist Nocturne)',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Henri_Le_Sidaner_-_Clair_de_lune.jpg/1280px-Henri_Le_Sidaner_-_Clair_de_lune.jpg',
+        musicVideoId: 'WNcsUNKlAKw',
+        musicArtist: '클로드 드뷔시 (Claude Debussy)',
+        musicListeningGuide: '달빛이 잔잔한 수면에 부서져 내리는 순간의 파동과 침묵의 여백에 귀를 기울여보세요.',
+        masterpieceInsight: '화성학의 규칙을 허물고 온음계와 잔향의 여백으로 빚어낸 밤의 시입니다.',
+        masterDirectAdvice: '틀에 갇히지 말고 그대 귓가에 맴도는 은은한 감각의 속삭임에 귀를 기울이십시오.',
+        creativeSparkTechnique: '네거티브 스페이스 침묵의 휴지: 의도적인 3초의 쉼표로 여운의 깊이 증폭시키기',
+        colorPalette: ['#E0F2FE (달빛 펄 블루)', '#6366F1 (인디고 트와일라잇)', '#F1F5F9 (은빛 안개 실버)'],
+        inspirationAffirmation: '나는 정형화된 틀을 벗어나 자유로운 영혼의 선율로 세상을 물들인다.',
+      },
+      {
+        id: 'debussy_arabesque',
+        piece: '아라베스크 1번 (Deux Arabesques No. 1, L. 66)',
+        medium: '유려한 아르페지오 건반 명작 (Andantino con moto)',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Claude_Debussy_atelier_Nadar.jpg/800px-Claude_Debussy_atelier_Nadar.jpg',
+        musicVideoId: '28WUJbW457Q',
+        musicArtist: '클로드 드뷔시 (Claude Debussy)',
+        musicListeningGuide: '식물 덩굴처럼 유려하게 뻗어나가는 우아한 아르페지오의 곡선과 멜로디의 춤을 느껴보세요.',
+        masterpieceInsight: '직선과 각진 규칙을 벗어나 자연의 부드러운 곡선미를 소리로 옮겨낸 인상주의 음악의 정수입니다.',
+        masterDirectAdvice: '삶의 경직된 규칙을 풀고 부드러운 아라베스크 곡선처럼 유연하게 흐르십시오. 물결은 저절로 바다로 흐릅니다.',
+        creativeSparkTechnique: '유려한 곡선의 흐름: 직선적 압박 대신 상황에 따라 유연하게 굽이치며 나아가는 우아함 유지하기',
+        colorPalette: ['#A7F3D0 (싱그러운 덩굴 민트)', '#38BDF8 (맑은 시냇물 블루)', '#FEF08A (오후의 햇살 샴페인)'],
+        inspirationAffirmation: '나는 경직된 긴장을 내려놓고 자연의 순리처럼 유연하고 우아하게 흐른다.',
+      },
+      {
+        id: 'debussy_faune',
+        piece: '목신의 오후 전주곡 (Prélude à l\'après-midi d\'un faune)',
+        medium: '인상주의 관현악 명작 (Orchestral Poem)',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/L%27apr%C3%A8s-midi_d%27un_faune_%28Nijinsky%29.jpg/1024px-L%27apr%C3%A8s-midi_d%27un_faune_%28Nijinsky%29.jpg',
+        musicVideoId: 'bYyK922PsUw',
+        musicArtist: '클로드 드뷔시 (Claude Debussy)',
+        musicListeningGuide: '나른한 여름날 숲속 플루트의 몽환적인 첫 독주 선율을 타고 꿈과 현실의 경계가 부드럽게 지워집니다.',
+        masterpieceInsight: '조성을 해체하고 오케스트라 관악기들이 빚어내는 신비로운 색채로 현대 음악의 문을 열었습니다.',
+        masterDirectAdvice: '명확한 정답을 강요하지 마십시오. 모호함과 몽환적인 상상력이야말로 창조성이 가장 자유롭게 유영하는 신성한 숲입니다.',
+        creativeSparkTechnique: '몽환적 데이드리밍: 눈을 감고 5분간 목적 없는 자유로운 공상의 나래를 펼쳐보며 직관 일깨우기',
+        colorPalette: ['#FDE68A (나른한 황금빛 숲)', '#86EFAC (숲속 요정의 페일 그린)', '#93C5FD (아지랑이 스카이)'],
+        inspirationAffirmation: '나는 상상력의 경계를 지우고 무한한 영감의 숲을 자유롭게 유영한다.',
+      }
+    ]
   },
+
+  // 6. 요한 제바스티안 바흐 (J.S. Bach)
   {
     id: 'bach',
     name: '요한 제바스티안 바흐 (J.S. Bach)',
@@ -153,7 +477,53 @@ export const MASTERS_CATALOG: MasterItem[] = [
     creativeSparkTechnique: '모티프 변주(Motif Variation): 하나의 작은 생각이나 습관을 3가지 다른 각도(느리게, 대담하게, 뒤집어서)로 변주해보기',
     colorPalette: ['#D97706 (장엄한 파이프오르간 앤틱 골드)', '#78350F (대지의 참나무 딥 브라운)', '#FEF3C7 (천상의 하모니 크림)'],
     inspirationAffirmation: '나는 일상의 소박한 박자 속에서 우주의 신성한 질서와 무한한 조화를 빚어낸다.',
+    artworks: [
+      {
+        id: 'bach_goldberg',
+        piece: '골드베르크 변주곡 (Goldberg Variations, BWV 988 - Aria)',
+        medium: '대위법 건반 명작 (Sacred Counterpoint & Universal Harmony)',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Johann_Sebastian_Bach.jpg/800px-Johann_Sebastian_Bach.jpg',
+        musicVideoId: 'Ah392lnFHxM',
+        musicArtist: '요한 제바스티안 바흐 (J.S. Bach)',
+        musicListeningGuide: '32마디 베이스 저음 선율 위에 피어나는 30개의 정교한 우주적 변주를 느껴보세요.',
+        masterpieceInsight: '단 하나의 소박한 아리아 저음 선율이 30개의 완전한 우주로 피어납니다.',
+        masterDirectAdvice: '작은 일상의 루틴을 가볍게 여기지 마십시오. 위대한 걸작은 매일 반복되는 기본의 충실함 위에 세워집니다.',
+        creativeSparkTechnique: '모티프 변주: 하나의 작은 생각이나 습관을 3가지 다른 각도로 변주해보기',
+        colorPalette: ['#D97706 (오르간 골드)', '#78350F (참나무 브라운)', '#FEF3C7 (하모니 크림)'],
+        inspirationAffirmation: '나는 일상의 소박한 박자 속에서 우주의 신성한 질서와 조화를 빚어낸다.',
+      },
+      {
+        id: 'bach_air',
+        piece: 'G선상의 아리아 (Air on the G String - 관현악 모음곡 제3번 BWV 1068)',
+        medium: '현악 합주 명곡 (Air for Strings)',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Bach-Haus_Eisenach.jpg/1024px-Bach-Haus_Eisenach.jpg',
+        musicVideoId: 'GMkmQlfOJD8',
+        musicArtist: '요한 제바스티안 바흐 (J.S. Bach)',
+        musicListeningGuide: '단 하나의 가장 낮은 G현 위에서 펼쳐지는 숭고한 선율이 지친 가슴을 깊은 평화로 감싸 안습니다.',
+        masterpieceInsight: '화려한 기교 대신 가장 소박한 현 하나로 영혼의 심연을 울리는 거룩한 기도이자 치유의 찬가입니다.',
+        masterDirectAdvice: '많은 무기를 쥐려 하지 마십시오. 단 하나의 진실한 선율, 단 하나의 깊은 호흡만으로도 충분히 세상을 감동시킬 수 있습니다.',
+        creativeSparkTechnique: '단일 현의 순수성: 가장 단순하고 진솔한 단 하나의 표현으로 본질에 도달하기',
+        colorPalette: ['#475569 (고결한 첼로 슬레이트)', '#F59E0B (따뜻한 송진 골드)', '#F8FAFC (천상의 안식 화이트)'],
+        inspirationAffirmation: '나는 가장 단순하고 진실한 마음으로 내 영혼의 가장 깊은 울림을 전한다.',
+      },
+      {
+        id: 'bach_cello_suite',
+        piece: '무반주 첼로 모음곡 1번 프렐류드 (Cello Suite No. 1, BWV 1007)',
+        medium: '독주 첼로 명작 (Solo Cello Prélude)',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Johann_Sebastian_Bach.jpg/800px-Johann_Sebastian_Bach.jpg',
+        musicVideoId: '1prweT95OD4',
+        musicArtist: '요한 제바스티안 바흐 (J.S. Bach)',
+        musicListeningGuide: '반주 없이 홀로 울려 퍼지는 첼로의 묵직한 호흡과 대위법적 울림이 우주의 기초 질서를 세웁니다.',
+        masterpieceInsight: '하나의 악기가 스스로 저음과 고음을 넘나들며 홀로 완전한 화음을 이루는 영적 자립의 걸작입니다.',
+        masterDirectAdvice: '타인의 반주나 박수를 기다리지 마십시오. 홀로 서 있는 바로 지금 이 순간, 당신의 영혼은 이미 온전한 우주입니다.',
+        creativeSparkTechnique: '독주자의 자립: 외부의 의존 없이 내면의 중심축을 확고히 세우고 묵묵히 나의 길을 걷기',
+        colorPalette: ['#9A3412 (고풍스러운 첼로 마호가니)', '#D97706 (영혼의 울림 호박석)', '#1E293B (정적의 배경 딥 블루)'],
+        inspirationAffirmation: '나는 홀로 서서 나 자신의 완전한 우주와 성스러운 질서를 노래한다.',
+      }
+    ]
   },
+
+  // 7. 루트비히 판 베토벤 (Ludwig van Beethoven)
   {
     id: 'beethoven',
     name: '루트비히 판 베토벤 (Ludwig van Beethoven)',
@@ -171,7 +541,67 @@ export const MASTERS_CATALOG: MasterItem[] = [
     creativeSparkTechnique: '아다지오 소스테누토(Sostenuto): 감정이 격해질 때 템포를 늦추고 깊은 복식호흡으로 심연의 묵직한 힘을 모으기',
     colorPalette: ['#1E1B4B (심야의 루체른 호수 미드나이트)', '#64748B (고독한 달빛 슬레이트)', '#F8FAFC (순백의 영혼 화이트)'],
     inspirationAffirmation: '나는 어떤 운명의 시련 속에서도 굴복하지 않고 내 영혼의 승리를 창조한다.',
+    artworks: [
+      {
+        id: 'beethoven_moonlight',
+        piece: '피아노 소나타 제14번 \'월광\' 1악장 (Moonlight Sonata, Op.27 No.2)',
+        medium: '낭만주의 피아노 소나타 (Adagio Sostenuto)',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Beethoven.jpg/800px-Beethoven.jpg',
+        musicVideoId: '4Tr0otuiQuU',
+        musicArtist: '루트비히 판 베토벤 (L.v. Beethoven)',
+        musicListeningGuide: '깊은 밤 잔잔한 호수 위에 부서지는 달빛의 고요한 슬픔과 불굴의 영혼 의지를 감상하세요.',
+        masterpieceInsight: '청력을 잃어가는 절망의 벼랑 끝에서 귀가 아닌 영혼의 안쪽으로 울리는 천상의 울림을 기록했습니다.',
+        masterDirectAdvice: '시련과 고통 앞에서 무릎 꿇지 마십시오. 그대의 절망은 당신 안의 거인을 깨우는 거룩한 천둥소리입니다.',
+        creativeSparkTechnique: '아다지오 소스테누토: 템포를 늦추고 깊은 복식호흡으로 심연의 묵직한 힘을 모으기',
+        colorPalette: ['#1E1B4B (루체른 호수 미드나이트)', '#64748B (달빛 슬레이트)', '#F8FAFC (영혼 화이트)'],
+        inspirationAffirmation: '나는 어떤 운명의 시련 속에서도 굴복하지 않고 내 영혼의 승리를 창조한다.',
+      },
+      {
+        id: 'beethoven_fate',
+        piece: '교향곡 제5번 \'운명\' 1악장 (Symphony No. 5 \'Fate\', Op. 67)',
+        medium: '고전·낭만 교향곡 명작 (Allegro con brio)',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Beethoven.jpg/800px-Beethoven.jpg',
+        musicVideoId: 'jv2WJMVPQi8',
+        musicArtist: '루트비히 판 베토벤 (L.v. Beethoven)',
+        musicListeningGuide: '"운명은 이처럼 문을 두드린다"는 4개의 강렬한 동기가 거침없이 전개되며 불굴의 투쟁을 선언합니다.',
+        masterpieceInsight: '비극적 운명의 타격에 굴복하지 않고, 단 4개의 음표로 운명과 맞서 싸워 승리하는 영웅적 투쟁의 드라마입니다.',
+        masterDirectAdvice: '시련의 문 두드림을 피하지 마십시오! 운명의 목덜미를 부여잡고 당당히 맞서십시오. 당신은 고난보다 훨씬 강대합니다.',
+        creativeSparkTechnique: '동기(Motive)의 불꽃: 가장 짧고 강력한 결단의 문장 하나를 가슴에 품고 흔들림 없이 정면 돌파하기',
+        colorPalette: ['#991B1B (불굴의 투쟁 크림슨)', '#D97706 (승리의 나팔 골드)', '#0F172A (어두운 운명 네이비)'],
+        inspirationAffirmation: '나는 내 운명의 문을 스스로 열어젖히며 당당히 승리한다.',
+      },
+      {
+        id: 'beethoven_pathetique',
+        piece: '피아노 소나타 제8번 \'비창\' 2악장 (Pathétique Sonata - Adagio cantabile)',
+        medium: '낭만주의 피아노 명곡 (Adagio cantabile)',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Beethoven.jpg/800px-Beethoven.jpg',
+        musicVideoId: 'vGq3gO3hFLo',
+        musicArtist: '루트비히 판 베토벤 (L.v. Beethoven)',
+        musicListeningGuide: '폭풍 같은 비장미를 지나 따뜻하고 자비롭게 흐르는 아다지오 선율이 지친 영혼을 다정하게 위로합니다.',
+        masterpieceInsight: '슬픔과 비탄의 심연 속에서도 인간 존엄과 사랑을 노래하는 가장 거룩하고 순수한 안식처입니다.',
+        masterDirectAdvice: '슬픔을 억누르지 마십시오. 눈물 속에 깃든 다정함이 당신을 가장 깊은 예술가로 빚어내는 보약입니다.',
+        creativeSparkTechnique: '비창의 자비(Cantabile): 상처 입은 나 자신에게 가장 따뜻한 노래를 불러주듯 다정하게 위로 건네기',
+        colorPalette: ['#BE185D (온화한 온기 로즈)', '#4338CA (슬픔의 벨벳 인디고)', '#FEF3C7 (자비로운 촛불 크림)'],
+        inspirationAffirmation: '나의 모든 눈물은 영혼의 성숙을 위한 가장 거룩하고 따뜻한 위로로 변모한다.',
+      },
+      {
+        id: 'beethoven_ode_to_joy',
+        piece: '교향곡 제9번 \'합창\' - 환희의 송가 (Symphony No. 9 \'Ode to Joy\', Op. 125)',
+        medium: '인류 화합의 대교향곡 (Ode to Joy)',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Beethoven.jpg/800px-Beethoven.jpg',
+        musicVideoId: 'Wod-MudLNmg',
+        musicArtist: '루트비히 판 베토벤 (L.v. Beethoven)',
+        musicListeningGuide: '인류애와 자유를 노래하는 합창의 웅장한 물결이 모든 경계를 허물고 전 우주적인 환희로 솟구칩니다.',
+        masterpieceInsight: '완전한 청각 상실의 암흑 속에서 베토벤이 영혼으로 작곡한, 모든 인류가 형제가 되는 궁극의 승리입니다.',
+        masterDirectAdvice: '그 어떤 한계도 당신의 영혼을 가둘 수 없습니다. 당신 내면의 깊은 환희를 세상과 담대히 나누십시오!',
+        creativeSparkTechnique: '환희의 포옹: 갈등과 한계를 뛰어넘어 모든 이들을 품어 안는 거대한 사랑의 시선 갖기',
+        colorPalette: ['#F59E0B (천상의 환희 엠페러 골드)', '#2563EB (우주적 자유 로열 블루)', '#FFFFFF (순수한 연대 화이트)'],
+        inspirationAffirmation: '나는 모든 장벽을 뛰어넘어 온 우주와 함께 환희의 노래를 부른다.',
+      }
+    ]
   },
+
+  // 8. 프레데리크 쇼팽 (Frédéric Chopin)
   {
     id: 'chopin',
     name: '프레데리크 쇼팽 (Frédéric Chopin)',
@@ -189,9 +619,67 @@ export const MASTERS_CATALOG: MasterItem[] = [
     creativeSparkTechnique: '템포 루바토(Tempo Rubato): 엄격한 시간에 얽매이지 않고 감정의 물결을 따라 완급을 조절하며 자연스러운 리듬 회복하기',
     colorPalette: ['#F43F5E (가슴 뭉클한 로즈 핑크)', '#8B5CF6 (황혼의 바이올렛 벨벳)', '#FFF1F2 (부드러운 실크 크림)'],
     inspirationAffirmation: '나는 내 안의 가장 여린 감수성을 온 세상을 적시는 따뜻한 예술로 꽃피운다.',
+    artworks: [
+      {
+        id: 'chopin_nocturne',
+        piece: '야상곡 제2번 E플랫 장조 (Nocturne Op.9 No.2)',
+        medium: '서정적 낭만주의 피아노 명작 (Bel Canto Piano Nocturne)',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Frederic_Chopin_photo.jpeg/800px-Frederic_Chopin_photo.jpeg',
+        musicVideoId: '9E6b3swbnWg',
+        musicArtist: '프레데리크 쇼팽 (Frédéric Chopin)',
+        musicListeningGuide: '섬세하게 노래하는 벨칸토 선율과 부드러운 아르페지오를 타고 마음의 상처가 벨벳처럼 감싸 안깁니다.',
+        masterpieceInsight: '부드러움과 서정성은 나약함이 아니라 세상을 치유하는 가장 강력한 영적 무기입니다.',
+        masterDirectAdvice: '억지로 강한 척하지 마세요. 그대의 섬세한 감수성이야말로 누구도 흉내 낼 수 없는 고유한 마법입니다.',
+        creativeSparkTechnique: '템포 루바토: 엄격한 시간에 얽매이지 않고 감정의 물결을 따라 완급을 조절하기',
+        colorPalette: ['#F43F5E (로즈 핑크)', '#8B5CF6 (바이올렛 벨벳)', '#FFF1F2 (실크 크림)'],
+        inspirationAffirmation: '나는 내 안의 가장 여린 감수성을 온 세상을 적시는 따뜻한 예술로 꽃피운다.',
+      },
+      {
+        id: 'chopin_raindrop',
+        piece: '빗방울 전주곡 (Raindrop Prelude, Op.28 No.15)',
+        medium: '낭만주의 전주곡 명작 (Sostenuto)',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Frederic_Chopin_photo.jpeg/800px-Frederic_Chopin_photo.jpeg',
+        musicVideoId: '6OFHXmizp38',
+        musicArtist: '프레데리크 쇼팽 (Frédéric Chopin)',
+        musicListeningGuide: '수도원 처마 끝에서 일정하게 떨어지는 A플랫 빗방울 소리 위에 처연하고 아름다운 멜로디가 젖어듭니다.',
+        masterpieceInsight: '죽음의 공포와 폐병의 고통 속에서 단조로운 빗방울의 반복을 천상의 묵시록적 시로 승화시켰습니다.',
+        masterDirectAdvice: '마음속에 비가 내릴 때 억지로 멈추려 하지 마세요. 빗소리에 귀를 기울이면 그 속에 담긴 가장 맑은 노래가 들립니다.',
+        creativeSparkTechnique: '빗방울 관조(Raindrop Contemplation): 마음의 슬픔을 한 방울의 빗방울처럼 담담히 바라보며 영감으로 전환하기',
+        colorPalette: ['#0284C7 (처마 끝의 빗물 시안)', '#64748B (수도원의 비구름 그레이)', '#FEF08A (빗속의 희미한 촛불)'],
+        inspirationAffirmation: '내 마음에 내리는 비는 메마른 영혼을 적시고 새싹을 틔우는 축복의 단비다.',
+      },
+      {
+        id: 'chopin_tristesse',
+        piece: '연습곡 Op.10 No.3 \'이별의 곡\' (Etude Op.10 No.3 \'Tristesse\')',
+        medium: '서정적 에튀드 명작 (Lento ma non troppo)',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Frederic_Chopin_photo.jpeg/800px-Frederic_Chopin_photo.jpeg',
+        musicVideoId: '9G_0uHhXJxE',
+        musicArtist: '프레데리크 쇼팽 (Frédéric Chopin)',
+        musicListeningGuide: '쇼팽 스스로 "내 평생 이토록 아름다운 선율을 써본 적이 없다"고 고백한 조국을 향한 애절한 향수입니다.',
+        masterpieceInsight: '상실의 아픔과 이별의 눈물을 가장 고귀한 서정적 보석으로 연마해 낸 피아노의 절창입니다.',
+        masterDirectAdvice: '무언가를 떠나보내야 하는 상실의 순간에도 품위를 잃지 마십시오. 이별의 눈물은 새로운 시작의 거름입니다.',
+        creativeSparkTechnique: '애도의 미학화: 슬픈 상실의 기억을 가장 아름다운 시 한 편으로 기록해 영원한 보석으로 남기기',
+        colorPalette: ['#9F1239 (애절한 노스탤지어 와인)', '#C084FC (황혼의 페일 바이올렛)', '#FEF2F2 (순결한 눈물빛 핑크)'],
+        inspirationAffirmation: '나는 모든 이별과 상실을 더 성숙하고 숭고한 사랑의 노래로 승화시킨다.',
+      },
+      {
+        id: 'chopin_heroic_polonaise',
+        piece: '영웅 폴로네이즈 (Heroic Polonaise, Op.53)',
+        medium: '장엄한 폴란드 춤곡 명작 (Maestoso)',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Frederic_Chopin_photo.jpeg/800px-Frederic_Chopin_photo.jpeg',
+        musicVideoId: 'KCSEhaOXUAA',
+        musicArtist: '프레데리크 쇼팽 (Frédéric Chopin)',
+        musicListeningGuide: '조국의 불굴의 기상을 노래하는 당당한 옥타브 연타와 영웅적인 행진곡 풍의 멜로디가 가슴을 뜨겁게 달굽니다.',
+        masterpieceInsight: '병약한 육신의 한계를 뛰어넘어 조국의 자유와 긍지를 포효하듯 건반 위에 새겨 넣은 영혼의 승전가입니다.',
+        masterDirectAdvice: '주저앉지 마십시오! 당신 안에는 세상을 울릴 영웅의 심장이 뛰고 있습니다. 당당하게 행진하십시오!',
+        creativeSparkTechnique: '영웅적 옥타브 도약: 위축되는 순간 가슴을 활짝 펴고 당당한 승리의 선율을 상상하며 기운 북돋우기',
+        colorPalette: ['#B91C1C (불굴의 영웅 레드)', '#F59E0B (당당한 승리의 골드)', '#1E1B4B (깊은 긍지의 미드나이트)'],
+        inspirationAffirmation: '내 안에는 어떤 역경도 단숨에 돌파할 수 있는 영웅의 긍지와 힘이 살아 숨 쉰다.',
+      }
+    ]
   },
 
-  // 3. 명시 (Poem)
+  // 9. 라이너 마리아 릴케 (Rainer Maria Rilke)
   {
     id: 'rilke',
     name: '라이너 마리아 릴케 (Rainer Maria Rilke)',
@@ -221,7 +709,76 @@ export const MASTERS_CATALOG: MasterItem[] = [
     creativeSparkTechnique: '말테의 일기 관조법: 오늘 하루 마주친 평범한 사물 하나를 5분 동안 아무 판단 없이 가만히 바라보며 존재의 무게 느끼기',
     colorPalette: ['#B45309 (무르익은 가을 앰버)', '#78350F (떨어지는 낙엽 세피아)', '#FEF3C7 (희미한 햇살 베이지)'],
     inspirationAffirmation: '나는 고독의 품 안에서 내 영혼의 가장 깊고 영롱한 진실을 발견한다.',
+    artworks: [
+      {
+        id: 'rilke_herbsttag',
+        piece: '가을날 (Herbsttag)',
+        medium: '상징주의 명시 (Symbolist Masterpiece Poem)',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Rainer_Maria_Rilke_1900.jpg/800px-Rainer_Maria_Rilke_1900.jpg',
+        poet: '라이너 마리아 릴케 (Rainer Maria Rilke)',
+        poemText: `주여, 때가 왔습니다. 여름은 참으로 위대했습니다.
+해시계 위에 당신의 그림자를 얹으시고
+들판에 바람을 풀어놓으십시오.
+
+마지막 과일들이 무르익도록 명하시고
+이틀만 더 남국의 햇빛을 베푸시어
+과일들이 차오르도록 재촉하시고
+독한 포도주 속에 마지막 단맛을 채워주십시오.
+
+지금 집이 없는 사람은 이제 집을 짓지 않습니다.
+지금 혼자인 사람은 오래도록 혼자로 남아
+잠 못 이루고, 책을 읽고, 긴 편지를 쓸 것이며
+낙엽이 뒹구는 날이면 불안스레
+가로수 길을 이리저리 헤맬 것입니다.`,
+        masterpieceInsight: '잎사귀가 질 때 비로소 드러나는 나무의 뼈대처럼, 고독 속에서만 영혼의 참된 본질이 서늘하게 빛납니다.',
+        masterDirectAdvice: '혼자 남겨진 이 시간이 그대의 내면 서랍을 정리하고 깊은 통찰을 건져 올리는 축복의 계절입니다.',
+        creativeSparkTechnique: '말테의 일기 관조법: 평범한 사물 하나를 5분간 아무 판단 없이 응시하며 존재의 무게 느끼기',
+        colorPalette: ['#B45309 (가을 앰버)', '#78350F (낙엽 세피아)', '#FEF3C7 (햇살 베이지)'],
+        inspirationAffirmation: '나는 고독의 품 안에서 내 영혼의 가장 깊고 영롱한 진실을 발견한다.',
+      },
+      {
+        id: 'rilke_letters_to_a_young_poet',
+        piece: '젊은 시인에게 보내는 편지 (Letters to a Young Poet)',
+        medium: '영혼의 서간 에세이 명작',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Rainer_Maria_Rilke_1900.jpg/800px-Rainer_Maria_Rilke_1900.jpg',
+        poet: '라이너 마리아 릴케 (Rainer Maria Rilke)',
+        poemText: `마음속의 풀리지 않는 문제들에 대해 인내심을 가지십시오.
+문제 자체를 굳게 닫힌 방이나 낯선 언어로 쓰인 책처럼 사랑하십시오.
+지금 당장 답을 얻으려 하지 마십시오.
+당신은 아직 그것을 살아낼 수 없기 때문입니다.
+
+모든 것을 그냥 살아내십시오.
+그러다 보면 어느 날 당신도 모르게
+답 속에 살고 있는 자신을 발견하게 될 것입니다.`,
+        masterpieceInsight: '불확실성과 질문 자체를 사랑하며 시간을 견뎌내는 태도야말로 영혼의 성숙을 이끄는 참된 지혜입니다.',
+        masterDirectAdvice: '조급하게 결론을 내리려 하지 마십시오. 지금 마주한 고민과 질문 자체를 온몸으로 살아내십시오.',
+        creativeSparkTechnique: '질문 살아내기: 당장 답을 내지 않고 오늘 하루를 그 질문을 품은 채 충실히 살아보기',
+        colorPalette: ['#047857 (인내의 딥 에메랄드)', '#D97706 (지혜의 앤틱 골드)', '#F8FAFC (순수한 양피지 화이트)'],
+        inspirationAffirmation: '나는 내 안의 모든 질문을 사랑하며, 마침내 아름다운 답 속으로 걸어 들어간다.',
+      },
+      {
+        id: 'rilke_inner_rose',
+        piece: '장미의 내면 (The Inner Rose / Das Rosen-Innere)',
+        medium: '신비주의 명시 (Mystic Lyric)',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Rainer_Maria_Rilke_1900.jpg/800px-Rainer_Maria_Rilke_1900.jpg',
+        poet: '라이너 마리아 릴케 (Rainer Maria Rilke)',
+        poemText: `어디에서 이 내면을 향한 외면이 오는가?
+어떤 상처 위에 이런 부드러운 천이 덮이는가?
+장미는 너무나 충만하여 스스로를 넘어 넘쳐흐르누나.
+
+내면의 공간을 수많은 꽃잎으로 감싸 안으며,
+세계 전체를 제 안으로 끌어당겨
+침묵의 향기로 가득 채우는 꽃이여.`,
+        masterpieceInsight: '수많은 겹의 꽃잎으로 내면을 감싸 안으면서도 온 세상에 은은한 향기를 퍼뜨리는 장미의 신비입니다.',
+        masterDirectAdvice: '내면의 깊이를 단단히 가꾸십시오. 안쪽이 향기로 가득 차면 억지로 애쓰지 않아도 저절로 향기가 넘쳐납니다.',
+        creativeSparkTechnique: '장미의 내면화: 외부의 시선보다 내면의 순수한 만족과 충만감을 가꾸는 데 집중하기',
+        colorPalette: ['#BE185D (장미의 심연 마젠타)', '#FB7185 (부드러운 꽃잎 페일 핑크)', '#065F46 (보호하는 잎사귀 딥 그린)'],
+        inspirationAffirmation: '내 영혼은 안으로부터 넘쳐흐르는 순수한 향기로 세상을 물들인다.',
+      }
+    ]
   },
+
+  // 10. 윤동주 (Yoon Dong-ju)
   {
     id: 'yoondongju',
     name: '윤동주 (Yoon Dong-ju)',
@@ -249,17 +806,83 @@ export const MASTERS_CATALOG: MasterItem[] = [
 별 하나에 쓸쓸함과
 별 하나에 동경과
 별 하나에 시와
-별 하나에 어머니, 어머니,
-
-어머님, 나는 별 하나에 아름다운 말 한 마디씩 불러 봅니다.`,
+별 하나에 어머니, 어머니...`,
     masterpieceInsight: '암흑의 시대 속에서도 한 점 부끄럼 없기를 소망하며 밤하늘의 별을 헤던 청년 시인의 고결한 영혼입니다. 어둠이 짙을수록 순결한 양심과 소망의 별빛은 시대를 넘어 영원히 꺼지지 않는 등대가 됩니다.',
     masterDirectAdvice: '세상이 거칠고 메말라 보일지라도, 그대 가슴속에 품은 순수한 이상과 다정함을 결코 잃지 마십시오. 남들이 알아주지 않아도 별 하나에 사랑과 시를 새기는 그대의 순결한 태도가 당신의 삶을 거룩하게 지켜줄 것입니다.',
     creativeSparkTechnique: '별빛 네이밍(Star Naming): 지금 나를 괴롭히는 감정이나 감사한 인연에게 가장 아름다운 이름을 붙여 가만히 불러보기',
     colorPalette: ['#1E3A8A (가을밤 깊은 청색)', '#FDE047 (순결한 소망의 별빛 옐로)', '#F1F5F9 (순백의 청춘 화이트)'],
     inspirationAffirmation: '나는 밤하늘의 별처럼 맑고 순결한 마음으로 나의 길을 묵묵히 걸어간다.',
+    artworks: [
+      {
+        id: 'ydj_starry_night',
+        piece: '별 헤는 밤 (Counting the Stars at Night, 1941)',
+        medium: '한국 근대 서정 명시 (Korean Pure Lyric Masterpiece)',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Yun_Dong-ju.jpg/800px-Yun_Dong-ju.jpg',
+        poet: '윤동주 (Yoon Dong-ju)',
+        poemText: `계절이 지나가는 하늘에는 가을로 가득 차 있습니다.
+나는 아무 걱정도 없이 가을 속의 별들을 다 헤일 듯합니다.
+
+가슴 속에 하나 둘 새겨지는 별을 이제 다 못 헤는 것은
+쉬이 아침이 오는 까닭이요, 내일 밤이 남은 까닭이요,
+아직 나의 청춘이 다하지 않은 까닭입니다.
+
+별 하나에 추억과 별 하나에 사랑과
+별 하나에 쓸쓸함과 별 하나에 동경과
+별 하나에 시와 별 하나에 어머니, 어머니...`,
+        masterpieceInsight: '어둠이 짙을수록 순결한 양심과 소망의 별빛은 시대를 넘어 영원히 꺼지지 않는 등대가 됩니다.',
+        masterDirectAdvice: '세상이 거칠지라도 순수한 이상과 다정함을 잃지 마십시오. 별 하나에 시를 새기는 태도가 당신을 지켜줍니다.',
+        creativeSparkTechnique: '별빛 네이밍: 감사한 인연과 소중한 가치에 아름다운 이름을 붙여 가만히 불러보기',
+        colorPalette: ['#1E3A8A (가을밤 깊은 청색)', '#FDE047 (소망의 별빛 옐로)', '#F1F5F9 (순백의 청춘 화이트)'],
+        inspirationAffirmation: '나는 밤하늘의 별처럼 맑고 순결한 마음으로 나의 길을 묵묵히 걸어간다.',
+      },
+      {
+        id: 'ydj_prologue',
+        piece: '서시 (Prologue / Foreword, 1941)',
+        medium: '한국 최고의 불멸 명시',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Yun_Dong-ju.jpg/800px-Yun_Dong-ju.jpg',
+        poet: '윤동주 (Yoon Dong-ju)',
+        poemText: `죽는 날까지 하늘을 우러러
+한 점 부끄럼이 없기를,
+잎새에 이는 바람에도
+나는 괴로워했다.
+
+별을 노래하는 마음으로
+모든 죽어가는 것을 사랑해야지
+그리고 나한테 주어진 길을
+걸어가야겠다.
+
+오늘 밤에도 별이 바람에 스치운다.`,
+        masterpieceInsight: '잎새에 이는 미세한 바람에도 흔들리며 순결한 양심을 지키고자 했던 지고지순한 청년 시인의 기도입니다.',
+        masterDirectAdvice: '작은 흔들림에 자책하지 마십시오. 그 부끄러움과 떨림이야말로 당신이 살아있다는 가장 순결한 증거입니다.',
+        creativeSparkTechnique: '주어진 길 묵묵히 걷기: 남과의 비교를 멈추고 오직 나에게 주어진 길을 맑은 눈으로 한 걸음 내딛기',
+        colorPalette: ['#0F172A (새벽 하늘 미드나이트)', '#38BDF8 (바람에 스치는 별빛)', '#E2E8F0 (순백의 양심 실버)'],
+        inspirationAffirmation: '별을 노래하는 마음으로 나에게 주어진 길을 사랑하며 묵묵히 걸어간다.',
+      },
+      {
+        id: 'ydj_self_portrait',
+        piece: '자화상 (Self-Portrait, 1939)',
+        medium: '내면 성찰 명시',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Yun_Dong-ju.jpg/800px-Yun_Dong-ju.jpg',
+        poet: '윤동주 (Yoon Dong-ju)',
+        poemText: `산모퉁이를 돌아 논가 외딴 우물을 홀로 찾아가선
+가만히 들여다봅니다.
+
+우물 속에는 달이 밝고 구름이 흐르고 하늘이 펼치고
+파아란 바람이 불고 가을이 있습니다.
+
+그리고 한 사나이가 있습니다.
+어쩐지 그 사나이가 미워져 돌아갑니다.
+돌아가다 생각하니 그 사나이가 가엾어집니다...`,
+        masterpieceInsight: '우물 속에 비친 미움과 연민, 그리움의 갈등을 거쳐 마침내 자기 자신을 온전히 화해하고 끌어안습니다.',
+        masterDirectAdvice: '자신을 너무 다그치거나 미워하지 마세요. 방황하는 당신 자신을 가만히 연민의 눈으로 바라보고 꼭 안아주십시오.',
+        creativeSparkTechnique: '우물 들여다보기: 비판과 자책 없이 내 마음의 우물을 가만히 들여다보며 자아와 화해하기',
+        colorPalette: ['#0284C7 (우물 속 파아란 가을 하늘)', '#334155 (사나이의 고뇌 슬레이트)', '#FEF08A (화해의 달빛 골드)'],
+        inspirationAffirmation: '나는 방황하는 나 자신을 있는 그대로 따뜻하게 품어 안고 사랑한다.',
+      }
+    ]
   },
 
-  // 4. 명언 & 철학 (Quote & Philosophy)
+  // 11. 헤르만 헤세 (Hermann Hesse)
   {
     id: 'hesse',
     name: '헤르만 헤세 (Hermann Hesse)',
@@ -279,7 +902,59 @@ export const MASTERS_CATALOG: MasterItem[] = [
     creativeSparkTechnique: '알 깨기 브레이크스루: 내가 안전하다고 믿어온 고정관념 1가지를 적고, 그것의 정반대 관점을 3문장으로 수용해보기',
     colorPalette: ['#D97706 (알을 깨고 나오는 황금 독수리)', '#475569 (부서지는 세계의 회색 껍질)', '#0284C7 (신성한 아프락사스의 창공)'],
     inspirationAffirmation: '나는 낡은 껍질을 깨뜨리고 내 안의 진정한 자아를 향해 거침없이 비상한다.',
+    artworks: [
+      {
+        id: 'hesse_demian',
+        piece: '데미안 (Demian - 아프락사스의 날개, 1919)',
+        medium: '철학 소설 & 자아 발견의 여정 (Self-Discovery Masterwork)',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Hermann_Hesse_1927.jpg/800px-Hermann_Hesse_1927.jpg',
+        quoteSource: '헤르만 헤세, 〈데미안 (Demian)〉 제5장 중에서',
+        quoteText: `새는 알에서 나오려고 투쟁한다. 알은 세계이다.
+태어나려는 자는 하나의 세계를 깨뜨려야 한다.
+새는 신을 향해 날아간다.
+그 신의 이름은 아프락사스다.`,
+        masterpieceInsight: '안전한 껍질을 깨뜨리지 않고는 비상할 수 없습니다. 자신의 모든 그림자까지 온전히 통합할 때 참된 성장이 완성됩니다.',
+        masterDirectAdvice: '지금의 답답함은 껍질을 깨뜨리고 있다는 증거입니다. 파열음을 기쁘게 맞이하고 날개를 펼치십시오.',
+        creativeSparkTechnique: '알 깨기 브레이크스루: 안전하다고 믿어온 고정관념의 반대 관점을 온전히 수용해보기',
+        colorPalette: ['#D97706 (황금 독수리)', '#475569 (세계의 회색 껍질)', '#0284C7 (아프락사스의 창공)'],
+        inspirationAffirmation: '나는 낡은 껍질을 깨뜨리고 내 안의 진정한 자아를 향해 거침없이 비상한다.',
+      },
+      {
+        id: 'hesse_siddhartha',
+        piece: '싯다르타 (Siddhartha - 강의 소리, 1922)',
+        medium: '영적 각성의 소설 명작',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Hermann_Hesse_1927.jpg/800px-Hermann_Hesse_1927.jpg',
+        quoteSource: '헤르만 헤세, 〈싯다르타 (Siddhartha)〉 중에서',
+        quoteText: `강은 모든 곳에 동시에 존재한다.
+발원지에서도, 폭포에서도, 바다에서도 강은 항상 지금 이 순간에 존재한다.
+강에게는 과거도 없고 미래도 없으며 오직 현재만이 있을 뿐이다.
+싯다르타는 강의 물결에서 세상의 모든 목소리가 하나로 어우러져
+거룩한 '옴(Om)'이라는 완전한 하모니를 이루는 것을 들었다.`,
+        masterpieceInsight: '모든 분별과 시간의 집착을 내려놓고 흐르는 강물처럼 온 존재를 있는 그대로 수용할 때 깨달음이 찾아옵니다.',
+        masterDirectAdvice: '과거나 미래의 불안에 매몰되지 마십시오. 흐르는 강물처럼 지금 이 순간의 숨결에 온전히 머무십시오.',
+        creativeSparkTechnique: '강물의 수용: 마음에 떠오르는 번뇌를 막아서지 않고 강물처럼 부드럽게 흘려보내기',
+        colorPalette: ['#0284C7 (흐르는 지혜의 강물 블루)', '#10B981 (보리수의 깨달음 그린)', '#FEF3C7 (완전한 옴 골드)'],
+        inspirationAffirmation: '나는 과거와 미래의 집착을 내려놓고 흐르는 강물처럼 지금 이 순간에 온전히 현존한다.',
+      },
+      {
+        id: 'hesse_wheel',
+        piece: '수레바퀴 아래서 (Beneath the Wheel, 1906)',
+        medium: '청춘의 성장과 자유의 소설',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Hermann_Hesse_1927.jpg/800px-Hermann_Hesse_1927.jpg',
+        quoteSource: '헤르만 헤세, 〈수레바퀴 아래서〉 중에서',
+        quoteText: `수레바퀴 밑에 깔려 부서지지 않으려면
+우리는 타인의 기대와 세속의 잣대 대신
+자기 영혼의 진정한 목소리를 지켜내야 한다.`,
+        masterpieceInsight: '사회의 억압적인 규율과 과도한 경쟁의 수레바퀴 밑에서 상처 입는 여린 영혼들에 바치는 절절한 위로입니다.',
+        masterDirectAdvice: '남들이 강요하는 수레바퀴를 억지로 짊어지지 마십시오. 당신의 삶은 누구를 증명하기 위한 시험장이 아닙니다.',
+        creativeSparkTechnique: '영혼의 목소리 경청: 세상의 요구를 잠시 차단하고 내 가슴이 진정으로 원하는 것에 귀 기울이기',
+        colorPalette: ['#64748B (억압의 수레바퀴 슬레이트)', '#22C55E (숲속 자유의 풀잎 그린)', '#F8FAFC (해방의 화이트)'],
+        inspirationAffirmation: '나는 세상의 부당한 수레바퀴를 벗어나 나만의 온전한 자유와 존엄을 누린다.',
+      }
+    ]
   },
+
+  // 12. 프리드리히 니체 (Friedrich Nietzsche)
   {
     id: 'nietzsche',
     name: '프리드리히 니체 (Friedrich Nietzsche)',
@@ -299,60 +974,187 @@ export const MASTERS_CATALOG: MasterItem[] = [
     creativeSparkTechnique: '아모르 파티(Amor Fati) 역발상: 오늘 나를 가장 귀찮게 한 사건을 "나를 더 강하게 만들 우주의 선물"로 다시 명명하기',
     colorPalette: ['#EF4444 (타오르는 불꽃의 열정 레드)', '#F59E0B (춤추는 초신성의 골드)', '#0F172A (혼돈의 심연 딥 네이비)'],
     inspirationAffirmation: '나는 내 안의 모든 혼돈을 사랑하며 눈부시게 춤추는 별을 탄생시킨다.',
-  },
+    artworks: [
+      {
+        id: 'nietzsche_zarathustra',
+        piece: '차라투스트라는 이렇게 말했다 (Also sprach Zarathustra, 1883)',
+        medium: '실존 철학 명작 & 초인(Übermensch)',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Nietzsche187a.jpg/800px-Nietzsche187a.jpg',
+        quoteSource: '프리드리히 니체, 〈차라투스트라는 이렇게 말했다〉 머리말 중에서',
+        quoteText: `사람은 자기 안에 혼돈(Chaos)을 지니고 있어야만,
+춤추는 별 하나를 탄생시킬 수 있다.
+나는 너희에게 말하노니,
+너희 안에는 여전히 카오스가 살아 숨 쉬고 있다!`,
+        masterpieceInsight: '혼돈을 결함으로 보지 않고, 춤추는 별을 잉태한 거대한 에너지로 긍정할 때 인간은 초인이 됩니다.',
+        masterDirectAdvice: '머릿속이 복잡하다고 자책하지 마십시오! 그 혼돈이야말로 새로운 별이 태어나기 직전의 성스러운 자궁입니다.',
+        creativeSparkTechnique: '혼돈의 별 춤추기: 복잡한 생각들을 억누르지 않고 창작의 역동적인 연료로 긍정하기',
+        colorPalette: ['#EF4444 (열정 레드)', '#F59E0B (초신성 골드)', '#0F172A (혼돈 딥 네이비)'],
+        inspirationAffirmation: '나는 내 안의 모든 혼돈을 사랑하며 눈부시게 춤추는 별을 탄생시킨다.',
+      },
+      {
+        id: 'nietzsche_amor_fati',
+        piece: '즐거운 학문 (The Gay Science - 아모르 파티, 1882)',
+        medium: '운명애(Amor Fati)의 철학',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Nietzsche187a.jpg/800px-Nietzsche187a.jpg',
+        quoteSource: '프리드리히 니체, 〈즐거운 학문〉 제4서 276절 중에서',
+        quoteText: `운명애(Amor Fati), 이것이 나의 가장 내밀한 본성이다.
+나는 필연적인 것을 단지 견뎌내는 것에 그치지 않고 그것을 사랑하고자 한다.
+네 삶을 다시 한번, 그리고 무수히 반복해서 살아도 좋다고 외칠 수 있는가?
+그렇다면 지금 이 순간을 열렬히 긍정하라!`,
+        masterpieceInsight: '겪어야 할 모든 고난과 우연, 상처까지도 내 삶의 필연적인 일부로 뜨겁게 껴안는 영혼의 궁극적 긍정입니다.',
+        masterDirectAdvice: '후회와 한탄을 집어던지십시오! 지금 겪는 모든 고난조차 당신을 더 단단하게 만드는 운명의 선물로 포용하십시오.',
+        creativeSparkTechnique: '아모르 파티 역발상: 오늘 나를 힘들게 한 사건을 "나를 더 단단하게 벼릴 우주의 선물"로 재정의하기',
+        colorPalette: ['#DC2626 (타오르는 운명애 레드)', '#F59E0B (태양의 긍정 옐로)', '#18181B (굳건한 바위 흑연)'],
+        inspirationAffirmation: '나는 내 운명의 모든 순간을 열렬히 사랑하며 당당하게 살아낸다.',
+      },
+      {
+        id: 'nietzsche_tragedy',
+        piece: '비극의 탄생 (The Birth of Tragedy, 1872)',
+        medium: '예술 철학 명작 (Apollonian & Dionysian)',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Nietzsche187a.jpg/800px-Nietzsche187a.jpg',
+        quoteSource: '프리드리히 니체, 〈비극의 탄생〉 중에서',
+        quoteText: `질서와 조화의 아폴론적 명석함과,
+도취와 생명력의 디오니소스적 광기가 충돌하고 화해할 때
+가장 위대한 비극 예술이 꽃핀다.
+오직 예술을 통해서만 삶은 정당화된다!`,
+        masterpieceInsight: '삶의 혼돈과 고통을 외면하지 않고 예술적 도취로 승화시키는 그리스 비극의 근원적 에너지입니다.',
+        masterDirectAdvice: '마음속의 거친 혼돈을 억누르지 마세요. 도취와 열정의 디오니소스 에너지를 당신의 정돈된 기술과 결합하십시오.',
+        creativeSparkTechnique: '디오니소스 도취와 아폴론 정돈의 결합: 먼저 열정적으로 감정을 쏟아붓고 나중에 차분히 다듬기',
+        colorPalette: ['#7C3AED (도취의 디오니소스 퍼플)', '#FACC15 (명석한 아폴론 태양광)', '#0369A1 (지중해의 파도 블루)'],
+        inspirationAffirmation: '나는 내 안의 거대한 열정과 정교한 기술을 결합하여 독보적인 걸작을 창조한다.',
+      }
+    ]
+  }
 ];
 
 /**
- * 날짜 시드와 사용자 고민, 프로필을 결합하여 매일매일 새로운 거장별 맞춤 조언 및 통찰 산출
+ * 거장의 모든 대표 예술작품 목록 반환 (카탈로그 연동 포함)
+ */
+export function getMasterAllArtworks(master: MasterItem): MasterArtwork[] {
+  const baseArtworks = master.artworks && master.artworks.length > 0
+    ? [...master.artworks]
+    : [{
+        id: `${master.id}_primary`,
+        piece: master.piece,
+        medium: master.medium,
+        imageUrl: master.imageUrl,
+        originalMuseum: master.originalMuseum,
+        masterpieceInsight: master.masterpieceInsight,
+        masterDirectAdvice: master.masterDirectAdvice,
+        creativeSparkTechnique: master.creativeSparkTechnique,
+        colorPalette: master.colorPalette,
+        inspirationAffirmation: master.inspirationAffirmation,
+        musicVideoId: master.musicVideoId,
+        musicArtist: master.musicArtist,
+        musicListeningGuide: master.musicListeningGuide,
+        poemText: master.poemText,
+        poet: master.poet,
+        quoteText: master.quoteText,
+        quoteSource: master.quoteSource,
+      }];
+
+  if (master.category !== 'painting') {
+    return baseArtworks;
+  }
+
+  // 회화 거장의 경우 MUSE_ART_CATALOG에서 추가 작품들을 매칭하여 전체 수록!
+  const creatorKeywords: Record<string, string[]> = {
+    vangogh: ['반 고흐', 'gogh'],
+    monet: ['모네', 'monet'],
+    klimt: ['클림트', 'klimt'],
+    vermeer: ['페르메이르', 'vermeer'],
+  };
+
+  const keywords = creatorKeywords[master.id] || [master.name.split('(')[0].trim().toLowerCase()];
+  const existingTitles = new Set(baseArtworks.map((a) => a.piece.toLowerCase().replace(/[^a-z0-9가-힣]/g, '')));
+
+  try {
+    for (const entry of MUSE_ART_CATALOG) {
+      const creatorLower = (entry.creator || '').toLowerCase();
+      const matchesCreator = keywords.some((kw) => creatorLower.includes(kw.toLowerCase()));
+      if (matchesCreator) {
+        const titleKey = entry.title.toLowerCase().replace(/[^a-z0-9가-힣]/g, '');
+        if (!existingTitles.has(titleKey)) {
+          existingTitles.add(titleKey);
+          baseArtworks.push({
+            id: entry.id || `catalog_${titleKey}`,
+            piece: `${entry.title} (${entry.titleOriginal || entry.title})`,
+            medium: `${entry.artworkType || '유화'} · ${entry.era || '명작'}`,
+            imageUrl: entry.imageUrl,
+            originalMuseum: entry.era || '세계 미술관 소장',
+            masterpieceInsight: entry.description || entry.quote || master.masterpieceInsight,
+            masterDirectAdvice: entry.quote
+              ? `"${entry.quote}" 이 작품에 깃든 깊은 미학적 울림을 마음에 품고, 당신만의 진솔한 예술 세계를 거침없이 펼치십시오.`
+              : master.masterDirectAdvice,
+            creativeSparkTechnique: entry.defaultChallenges?.[0] || master.creativeSparkTechnique,
+            colorPalette: entry.aestheticTone
+              ? [entry.aestheticTone, ...master.colorPalette.slice(1)]
+              : master.colorPalette,
+            inspirationAffirmation: entry.quote || master.inspirationAffirmation,
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[getMasterAllArtworks] Catalog cross-reference error:', err);
+  }
+
+  return baseArtworks;
+}
+
+/**
+ * 날짜 시드와 사용자 고민, 프로필, 선택된 작품을 결합하여 거장별 맞춤 조언 및 통찰 산출
  */
 export function getMasterpieceDynamicDialogue(
   master: MasterItem,
   userDilemma?: string,
   userProfile?: UserProfile | null,
-  dateSeedKey?: string
+  dateSeedKey?: string,
+  selectedArtwork?: MasterArtwork
 ): MasterpieceDialogueData {
-  const seed = getDateSeed(dateSeedKey || `muse_master_${master.id}_${new Date().toISOString().slice(0, 10)}`);
+  const art = selectedArtwork || master.artworks?.[0] || master;
+  const seed = getDateSeed(dateSeedKey || `muse_master_${master.id}_${art.piece}_${new Date().toISOString().slice(0, 10)}`);
   const nickname = userProfile?.basic?.nickname || userProfile?.basic?.name || '소중한 벗';
   const dilemmaText = (userDilemma || '').trim();
 
   // 날짜별 변화하는 다이내믹 변주 문구
   const dateMod = seed % 3;
 
-  let customizedAdvice = master.masterDirectAdvice;
-  let customizedInsight = master.masterpieceInsight;
-  let customizedAffirmation = master.inspirationAffirmation;
+  let customizedAdvice = art.masterDirectAdvice || master.masterDirectAdvice;
+  const customizedInsight = art.masterpieceInsight || master.masterpieceInsight;
+  let customizedAffirmation = art.inspirationAffirmation || master.inspirationAffirmation;
 
   if (dilemmaText) {
-    customizedAdvice = `${nickname}님, 나누어 주신 이야기("${dilemmaText}")를 깊이 경청했습니다. ${master.masterDirectAdvice}`;
+    customizedAdvice = `${nickname}님, 나누어 주신 이야기("${dilemmaText}")를 깊이 경청했습니다. ${customizedAdvice}`;
   } else {
-    customizedAdvice = `${nickname}님, ${master.masterDirectAdvice}`;
+    customizedAdvice = `${nickname}님, ${customizedAdvice}`;
   }
 
   if (dateMod === 1) {
-    customizedAffirmation = `오늘 나는 ${master.name}의 거룩한 정신과 호흡을 맞추며, ${master.inspirationAffirmation}`;
+    customizedAffirmation = `오늘 나는 ${master.name}의 거룩한 정신과 호흡을 맞추며, ${customizedAffirmation}`;
   } else if (dateMod === 2) {
-    customizedAffirmation = `지금 이 순간, ${master.inspirationAffirmation}`;
+    customizedAffirmation = `지금 이 순간, ${customizedAffirmation}`;
   }
 
   return {
-    title: `〈${master.name}〉 ${master.piece} 예술 영감 마스터클래스`,
+    title: `〈${master.name.split('(')[0].trim()}〉 ${art.piece.split('(')[0].trim()} 예술 영감 마스터클래스`,
     masterName: master.name,
     masterTitle: master.title,
-    masterpieceName: master.piece,
-    masterpieceMedium: master.medium,
+    masterpieceName: art.piece,
+    masterpieceMedium: art.medium,
     category: master.category,
     masterpieceInsight: customizedInsight,
     masterDirectAdvice: customizedAdvice,
-    creativeSparkTechnique: master.creativeSparkTechnique,
-    colorPalette: master.colorPalette,
+    creativeSparkTechnique: art.creativeSparkTechnique || master.creativeSparkTechnique,
+    colorPalette: art.colorPalette || master.colorPalette,
     inspirationAffirmation: customizedAffirmation,
-    musicVideoId: master.musicVideoId,
-    musicArtist: master.musicArtist,
-    musicListeningGuide: master.musicListeningGuide,
-    poemText: master.poemText,
-    poet: master.poet,
-    quoteText: master.quoteText,
-    quoteSource: master.quoteSource,
-    originalMuseum: master.originalMuseum,
+    musicVideoId: art.musicVideoId || master.musicVideoId,
+    musicArtist: art.musicArtist || master.musicArtist,
+    musicListeningGuide: art.musicListeningGuide || master.musicListeningGuide,
+    poemText: art.poemText || master.poemText,
+    poet: art.poet || master.poet,
+    quoteText: art.quoteText || master.quoteText,
+    quoteSource: art.quoteSource || master.quoteSource,
+    originalMuseum: art.originalMuseum || master.originalMuseum,
   };
 }

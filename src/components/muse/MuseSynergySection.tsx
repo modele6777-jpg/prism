@@ -20,8 +20,10 @@ import { MuseSongYouTubePlayer } from '@/components/muse/MuseSongYouTubePlayer';
 import {
   MASTERS_CATALOG,
   type MasterItem,
+  type MasterArtwork,
   type MasterpieceDialogueData,
   type MasterpieceCategory,
+  getMasterAllArtworks,
   getMasterpieceDynamicDialogue
 } from '@/lib/museMasterclassData';
 
@@ -31,12 +33,23 @@ export function MuseSynergySection() {
   
   // 1. 거장 선택 상태
   const [selectedMaster, setSelectedMaster] = useState<MasterItem>(MASTERS_CATALOG[0]);
+  const availableArtworks = useMemo(() => {
+    return getMasterAllArtworks(selectedMaster);
+  }, [selectedMaster]);
+
+  // 1-1. 거장의 세부 예술작품 선택 상태 (모든 작품 지원)
+  const [selectedArtwork, setSelectedArtwork] = useState<MasterArtwork>(() => {
+    const initialList = getMasterAllArtworks(MASTERS_CATALOG[0]);
+    return initialList[0] || (MASTERS_CATALOG[0] as unknown as MasterArtwork);
+  });
+
   const [userCreativeDilemma, setUserCreativeDilemma] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // 2. 동적 마스터클래스 대화 데이터 (초기값도 거장별/날짜별 동적 계산)
+  // 2. 동적 마스터클래스 대화 데이터 (초기값도 거장별/작품별/날짜별 동적 계산)
   const initialDialogue = useMemo(() => {
-    return getMasterpieceDynamicDialogue(MASTERS_CATALOG[0], '', userProfile);
+    const list = getMasterAllArtworks(MASTERS_CATALOG[0]);
+    return getMasterpieceDynamicDialogue(MASTERS_CATALOG[0], '', userProfile, undefined, list[0]);
   }, []);
 
   const [dialogueData, setDialogueData] = useState<MasterpieceDialogueData>(initialDialogue);
@@ -53,12 +66,12 @@ export function MuseSynergySection() {
   const [customArtworkUrl, setCustomArtworkUrl] = useState<string>('');
   const [isAiGenerated, setIsAiGenerated] = useState<boolean>(false);
 
-  // 거장 또는 대화 내용이 바뀔 때 이미지 로딩 및 상태 초기화
+  // 거장, 선택 작품 또는 대화 내용이 바뀔 때 이미지 로딩 및 상태 초기화
   useEffect(() => {
     setImageFallbackIndex(0);
     setArtworkLoadError(false);
     setLoadingArtwork(true);
-  }, [selectedMaster.id, dialogueData.masterpieceName, customArtworkUrl]);
+  }, [selectedMaster.id, selectedArtwork?.id, dialogueData.masterpieceName, customArtworkUrl]);
 
   // ★ 원작 최우선 구성: 미술관 공식 소장본 원작 스캔을 최우선으로 배치하고, 실패/저작권 차단 시에만 AI 재현
   const fallbackUrls = useMemo(() => {
@@ -69,10 +82,11 @@ export function MuseSynergySection() {
       list.push(customArtworkUrl);
     }
 
-    // 2. [★ 최우선 대원칙] 거장의 공식 미술관 소장 원작 스캔본 (프록시 + 원본 직링)
-    if (selectedMaster.imageUrl && !isAiArtworkUrl(selectedMaster.imageUrl)) {
-      list.push(getSafeArtworkUrl(selectedMaster.imageUrl));
-      list.push(encodeURI(selectedMaster.imageUrl));
+    // 2. [★ 최우선 대원칙] 거장의 공식 미술관 소장 원작 스캔본 (선택 작품의 이미지 또는 거장 기본 이미지)
+    const targetArtworkImg = selectedArtwork?.imageUrl || selectedMaster.imageUrl;
+    if (targetArtworkImg && !isAiArtworkUrl(targetArtworkImg)) {
+      list.push(getSafeArtworkUrl(targetArtworkImg));
+      list.push(encodeURI(targetArtworkImg));
     }
 
     // 3. 고화질 미학 AI 재현 URL (원작 로드 실패 또는 저작권 보호 시 자동 폴백)
@@ -80,8 +94,8 @@ export function MuseSynergySection() {
       {
         title: dialogueData.masterpieceName,
         creator: dialogueData.masterName,
-        artworkType: dialogueData.masterpieceMedium || '명화 회화',
-        era: selectedMaster.title || '고전 명작',
+        artworkType: dialogueData.masterpieceMedium || selectedArtwork?.medium || '명화 회화',
+        era: selectedArtwork?.originalMuseum || selectedMaster.title || '고전 명작',
         description: dialogueData.masterpieceInsight || 'Masterpiece artwork',
         aestheticTone: dialogueData.colorPalette?.join(', ') || 'classical museum fine art',
       },
@@ -97,7 +111,7 @@ export function MuseSynergySection() {
     list.push(`https://image.pollinations.ai/prompt/${simplePrompt}?width=1024&height=768&nologo=true&seed=42`);
 
     return [...new Set(list.filter(Boolean))];
-  }, [customArtworkUrl, selectedMaster, dialogueData]);
+  }, [customArtworkUrl, selectedMaster, selectedArtwork, dialogueData]);
 
   const effectiveArtworkImage = fallbackUrls[imageFallbackIndex] || fallbackUrls[0] || '';
   const artworkFilename = `masterpiece-${dialogueData.masterpieceName.replace(/[^a-zA-Z0-9가-힣]/g, '_')}-${dialogueData.masterName.replace(/[^a-zA-Z0-9가-힣]/g, '_')}`;
@@ -182,42 +196,60 @@ export function MuseSynergySection() {
     }
   };
 
-  // 거장 선택 시: 거장별 고유 대화 데이터로 즉시 전환
+  // 거장 선택 시: 거장의 첫 번째 예술작품 및 고유 대화 데이터로 즉시 전환
   const handleSelectMaster = (master: MasterItem) => {
     setSelectedMaster(master);
+    const artworks = getMasterAllArtworks(master);
+    const firstArt = artworks[0] || (master as unknown as MasterArtwork);
+    setSelectedArtwork(firstArt);
     setCustomArtworkUrl('');
     setIsAiGenerated(false);
     setImageFallbackIndex(0);
     setArtworkLoadError(false);
     setLoadingArtwork(true);
 
-    const freshDialogue = getMasterpieceDynamicDialogue(master, userCreativeDilemma, userProfile);
+    const freshDialogue = getMasterpieceDynamicDialogue(master, userCreativeDilemma, userProfile, undefined, firstArt);
     setDialogueData(freshDialogue);
     // 거장을 새로 선택했을 때도 생성 버튼을 눌러야 결과가 생성되도록 초기화
     setIsSynthesized(false);
   };
 
-  // 거장의 1:1 심층 마스터클래스 AI 생성 시작 (충분한 25초 타임아웃 및 정밀 프롬프트)
+  // 세부 예술작품 선택 시: 해당 작품의 원작 이미지, 통찰, 조언으로 즉시 연동
+  const handleSelectArtwork = (art: MasterArtwork) => {
+    setSelectedArtwork(art);
+    setCustomArtworkUrl('');
+    setIsAiGenerated(false);
+    setImageFallbackIndex(0);
+    setArtworkLoadError(false);
+    setLoadingArtwork(true);
+
+    const freshDialogue = getMasterpieceDynamicDialogue(selectedMaster, userCreativeDilemma, userProfile, undefined, art);
+    setDialogueData(freshDialogue);
+  };
+
+  // 거장의 1:1 심층 마스터클래스 AI 생성 시작 (선택된 세부 작품 반영)
   const handleStartMasterclass = async () => {
     setIsLoading(true);
 
     const nickname = userProfile?.basic?.nickname || userProfile?.basic?.name || '예술가';
     const mbti = (userProfile as any)?.psychology?.mbti || 'INFP';
     const dilemma = userCreativeDilemma.trim() || '영감의 고갈과 방향성에 대한 깊은 고민';
+    const targetPieceName = selectedArtwork?.piece || selectedMaster.piece;
+    const targetMedium = selectedArtwork?.medium || selectedMaster.medium;
 
     const systemPrompt = `당신은 PRISM 뮤즈의 예술 거장 마스터클래스 멘토입니다.
 역사적 거장인 "${selectedMaster.name}"(${selectedMaster.title})로서 1인칭으로 빙의하여, 사용자의 창작/인생 정체기를 단번에 돌파시키는 거룩하고 따뜻하며 구체적인 1:1 마스터클래스 조언을 생성하세요.
 
 [필수 대원칙]
 1. 절대로 뻔하거나 상투적인 템플릿 문구를 반복하지 마세요.
-2. 사용자가 제시한 고민("${dilemma}")과 닉네임("${nickname}"), 성향("${mbti}")을 깊이 경청하고, 거장의 대표작("${selectedMaster.piece}")에 담긴 창작 비화와 철학을 결합하여 가슴을 울리는 1:1 맞춤 조언을 건네세요.
+2. 사용자가 제시한 고민("${dilemma}")과 닉네임("${nickname}"), 성향("${mbti}")을 깊이 경청하고, 거장의 이번 마스터클래스 선정작("${targetPieceName}")에 담긴 창작 비화와 철학을 결합하여 가슴을 울리는 1:1 맞춤 조언을 건네세요.
 3. 거장이 화가, 음악가, 시인, 철학자 중 어떤 분야인지("${selectedMaster.category}")에 걸맞은 전문 어휘와 감각(붓질, 선율, 여백, 문장, 호흡)을 자연스럽게 구사하세요.
 4. 반드시 유효한 JSON 형식으로만 응답하세요.`;
 
     const userPrompt = `[거장 정보]
 이름: ${selectedMaster.name} (${selectedMaster.title})
-대표작: ${selectedMaster.piece}
-분야/매체: ${selectedMaster.medium} (카테고리: ${selectedMaster.category})
+선정 대표작: ${targetPieceName}
+분야/매체: ${targetMedium} (카테고리: ${selectedMaster.category})
 [사용자 고민]: "${dilemma}"
 [사용자 닉네임]: "${nickname}"
 
@@ -226,8 +258,8 @@ export function MuseSynergySection() {
   "title": "마스터클래스 고유 명칭 (예: ${selectedMaster.name}의 영혼 돌파 마스터클래스)",
   "masterName": "${selectedMaster.name}",
   "masterTitle": "${selectedMaster.title}",
-  "masterpieceName": "${selectedMaster.piece}",
-  "masterpieceMedium": "${selectedMaster.medium}",
+  "masterpieceName": "${targetPieceName}",
+  "masterpieceMedium": "${targetMedium}",
   "masterpieceInsight": "이 작품에 깃든 심오한 창조적 비밀과 철학적 통찰 (3~4문장으로 깊이 있게 서술)",
   "masterDirectAdvice": "거장이 1인칭으로 ${nickname}님에게 직접 건네는 따뜻하고 가슴 벅찬 1:1 예술적 돌파 조언 (4~5문장)",
   "creativeSparkTechnique": "오늘 당장 작업이나 일상에 적용할 수 있는 거장 고유의 창작/마인드셋 기법 1가지",
@@ -242,7 +274,7 @@ export function MuseSynergySection() {
     // 25초 안전 타임아웃
     const safetyTimeout = new Promise<MasterpieceDialogueData>((resolve) => {
       setTimeout(() => {
-        resolve(getMasterpieceDynamicDialogue(selectedMaster, dilemma, userProfile));
+        resolve(getMasterpieceDynamicDialogue(selectedMaster, dilemma, userProfile, undefined, selectedArtwork));
       }, 25000);
     });
 
@@ -260,20 +292,20 @@ export function MuseSynergySection() {
           return {
             ...parsed,
             category: selectedMaster.category,
-            musicVideoId: selectedMaster.musicVideoId,
-            musicArtist: selectedMaster.musicArtist,
-            musicListeningGuide: selectedMaster.musicListeningGuide,
-            poemText: selectedMaster.poemText,
-            poet: selectedMaster.poet,
-            quoteText: selectedMaster.quoteText,
-            quoteSource: selectedMaster.quoteSource,
-            originalMuseum: selectedMaster.originalMuseum,
+            musicVideoId: selectedArtwork?.musicVideoId || selectedMaster.musicVideoId,
+            musicArtist: selectedArtwork?.musicArtist || selectedMaster.musicArtist,
+            musicListeningGuide: selectedArtwork?.musicListeningGuide || selectedMaster.musicListeningGuide,
+            poemText: selectedArtwork?.poemText || selectedMaster.poemText,
+            poet: selectedArtwork?.poet || selectedMaster.poet,
+            quoteText: selectedArtwork?.quoteText || selectedMaster.quoteText,
+            quoteSource: selectedArtwork?.quoteSource || selectedMaster.quoteSource,
+            originalMuseum: selectedArtwork?.originalMuseum || selectedMaster.originalMuseum,
           };
         }
       } catch (e) {
         console.warn('[MuseSynergy] invokeLLM error, using dynamic fallback:', e);
       }
-      return getMasterpieceDynamicDialogue(selectedMaster, dilemma, userProfile);
+      return getMasterpieceDynamicDialogue(selectedMaster, dilemma, userProfile, undefined, selectedArtwork);
     };
 
     try {
@@ -295,7 +327,7 @@ export function MuseSynergySection() {
       updateSharedState({}, 'MUSE');
     } catch (e) {
       console.warn('Muse fallback error:', e);
-      const fallback = getMasterpieceDynamicDialogue(selectedMaster, dilemma, userProfile);
+      const fallback = getMasterpieceDynamicDialogue(selectedMaster, dilemma, userProfile, undefined, selectedArtwork);
       setDialogueData(fallback);
       setIsSynthesized(true);
     } finally {
@@ -414,6 +446,74 @@ export function MuseSynergySection() {
           })}
         </div>
 
+        {/* 2. 거장의 전체 예술작품 컬렉션 전체 보기 및 선택 */}
+        <div className="space-y-3 pt-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <label className="text-xs font-bold text-amber-300 flex items-center gap-2 font-mono uppercase tracking-wider">
+              <Sparkles size={15} className="text-amber-400" />
+              <span>2. 〈{selectedMaster.name.split('(')[0].trim()}〉의 전체 예술작품 컬렉션 ({availableArtworks.length}작품 수록)</span>
+            </label>
+            <span className="text-[10px] text-white/50 font-sans">
+              마스터클래스를 진행할 작품을 선택하세요
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+            {availableArtworks.map((art, idx) => {
+              const isArtSelected = selectedArtwork.id === art.id || selectedArtwork.piece === art.piece;
+              return (
+                <button
+                  key={art.id || `${art.piece}_${idx}`}
+                  type="button"
+                  onClick={() => handleSelectArtwork(art)}
+                  className={`relative overflow-hidden p-3 rounded-2xl border text-left flex items-center gap-3 transition-all cursor-pointer group ${
+                    isArtSelected
+                      ? 'bg-amber-500/20 border-amber-400 text-white shadow-[0_0_20px_rgba(245,158,11,0.25)] scale-[1.01]'
+                      : 'bg-white/[0.03] border-white/10 text-white/70 hover:bg-white/[0.07] hover:text-white hover:border-white/20'
+                  }`}
+                >
+                  {art.imageUrl ? (
+                    <div className="w-12 h-12 rounded-xl overflow-hidden bg-black/40 border border-white/10 shrink-0 relative">
+                      <img
+                        src={getSafeArtworkUrl(art.imageUrl)}
+                        alt={art.piece}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        loading="lazy"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 shrink-0 flex items-center justify-center text-lg text-white/80">
+                      {selectedMaster.category === 'music' ? '🎵' : selectedMaster.category === 'poem' ? '📜' : selectedMaster.category === 'quote' ? '💬' : '🎨'}
+                    </div>
+                  )}
+
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/10 text-amber-300 font-bold truncate">
+                        {selectedMaster.category === 'music' ? '명곡' : selectedMaster.category === 'poem' ? '명시' : selectedMaster.category === 'quote' ? '명언' : '명화'} #{idx + 1}
+                      </span>
+                      {isArtSelected && (
+                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-400 text-zinc-950 font-bold font-mono shrink-0 shadow-sm">
+                          선택됨 ✓
+                        </span>
+                      )}
+                    </div>
+                    <h5 className="text-xs font-bold text-white truncate leading-snug">
+                      {art.piece.split('(')[0].trim()}
+                    </h5>
+                    <p className="text-[10px] text-white/50 truncate font-serif">
+                      {art.medium}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <div>
           <label className="block text-[11px] text-white/50 mb-2 font-medium">
             거장에게 조언받고 싶은 현재의 창작 고민이나 인생의 막막함을 적어주세요 (선택):
@@ -435,12 +535,12 @@ export function MuseSynergySection() {
           {isLoading ? (
             <>
               <RefreshCw size={18} className="animate-spin text-white" />
-              <span>거장의 1:1 맞춤 영감 마스터클래스 생성 중...</span>
+              <span>〈{selectedArtwork?.piece?.split('(')[0]?.trim() || selectedMaster.name.split('(')[0]}〉 1:1 맞춤 영감 마스터클래스 생성 중...</span>
             </>
           ) : (
             <>
               <Sparkles size={18} className="text-yellow-300" />
-              <span>〈{selectedMaster.name.split('(')[0]}의 1:1 맞춤 영감 마스터클래스 대화〉 시작하기</span>
+              <span>〈{selectedMaster.name.split('(')[0].trim()} × '{selectedArtwork?.piece?.split('(')[0]?.trim() || selectedMaster.piece.split('(')[0]}' 1:1 맞춤 영감 마스터클래스 대화〉 시작하기</span>
             </>
           )}
         </button>
@@ -487,6 +587,54 @@ export function MuseSynergySection() {
                 {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
                 <span>{copied ? '복사 완료' : '전체 복사'}</span>
               </button>
+            </div>
+          </div>
+
+          {/* 거장의 전체 작품 빠른 둘러보기 & 실시간 전환 바 */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-white/[0.03] border border-white/10 space-y-2.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                <Sparkles size={12} className="text-amber-400" />
+                〈{selectedMaster.name.split('(')[0].trim()}〉의 전체 작품 둘러보기 & 빠른 전환 ({availableArtworks.length}작품)
+              </span>
+              <span className="text-[10px] text-white/40 font-sans">
+                클릭 시 해당 작품의 원작/플레이어/통찰로 즉시 전환
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+              {availableArtworks.map((art, idx) => {
+                const isCurrentArt = selectedArtwork.id === art.id || selectedArtwork.piece === art.piece;
+                return (
+                  <button
+                    key={`quick_${art.id || idx}`}
+                    type="button"
+                    onClick={() => handleSelectArtwork(art)}
+                    className={`shrink-0 px-3.5 py-2 rounded-xl border text-xs font-medium flex items-center gap-2 transition-all cursor-pointer ${
+                      isCurrentArt
+                        ? 'bg-amber-500/25 border-amber-400 text-white shadow-[0_0_15px_rgba(245,158,11,0.3)] font-bold scale-[1.02]'
+                        : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white'
+                    }`}
+                  >
+                    {art.imageUrl ? (
+                      <img
+                        src={getSafeArtworkUrl(art.imageUrl)}
+                        alt=""
+                        className="w-5 h-5 rounded-md object-cover"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <span className="text-sm">
+                        {selectedMaster.category === 'music' ? '🎵' : selectedMaster.category === 'poem' ? '📜' : selectedMaster.category === 'quote' ? '💬' : '🎨'}
+                      </span>
+                    )}
+                    <span className="truncate max-w-[150px]">{art.piece.split('(')[0].trim()}</span>
+                    {isCurrentArt && <span className="text-amber-300 text-[10px] font-bold">✓</span>}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -717,7 +865,7 @@ export function MuseSynergySection() {
                     />
                     {(() => {
                       const badge = getArtworkImageBadgeInfo(
-                        isAiGenerated ? 'pollinations' : (selectedMaster.imageUrl ? 'wikimedia' : 'pollinations'),
+                        isAiGenerated ? 'pollinations' : ((selectedArtwork?.imageUrl || selectedMaster.imageUrl) ? 'wikimedia' : 'pollinations'),
                         effectiveArtworkImage,
                         imageFallbackIndex
                       );
@@ -746,7 +894,7 @@ export function MuseSynergySection() {
                       {dialogueData.masterpieceName}
                     </h4>
                     <p className="text-xs text-amber-200/70 font-medium mb-4">
-                      {dialogueData.masterName} · {dialogueData.originalMuseum || dialogueData.masterpieceMedium}
+                      {dialogueData.masterName} · {dialogueData.originalMuseum || selectedArtwork?.originalMuseum || dialogueData.masterpieceMedium}
                     </p>
                     <div className="flex items-center gap-2">
                       <button
@@ -895,7 +1043,7 @@ export function MuseSynergySection() {
           <div className="space-y-1.5 max-w-md">
             <h4 className="text-base font-bold text-white">마스터클래스 1:1 대화 대기</h4>
             <p className="text-xs text-white/50 leading-relaxed font-sans">
-              마스터클래스를 진행할 거장을 선택하고 필요시 창작 고민을 입력한 후, 상단의 <strong>〈{selectedMaster.name.split('(')[0]}의 1:1 맞춤 영감 마스터클래스 대화〉 시작하기</strong> 버튼을 누르면 1:1 조언과 명작 통찰이 펼쳐집니다.
+              마스터클래스를 진행할 거장과 원하는 대표작(총 {availableArtworks.length}작품 수록)을 선택하고 필요시 창작 고민을 입력한 후, 상단의 <strong>〈{selectedMaster.name.split('(')[0].trim()} × '{selectedArtwork?.piece?.split('(')[0]?.trim() || selectedMaster.piece.split('(')[0]}' 1:1 맞춤 영감 마스터클래스 대화〉 시작하기</strong> 버튼을 누르면 1:1 조언과 명작 통찰이 펼쳐집니다.
             </p>
           </div>
         </div>
