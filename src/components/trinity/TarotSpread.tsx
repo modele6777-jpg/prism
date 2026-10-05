@@ -118,75 +118,44 @@ const DeckWheelCard = React.memo(
     // 78 cards distributed continuously along the full 360 degree wheel
     const step = (2 * Math.PI) / totalCards;
     const localAngle = positionIdx * step + offset.angleOffset;
-    const liftAmount = isHovered ? (isMobile ? 8 : 14) : 0;
+    const isSeamCard = positionIdx === 0;
+    // Seam card (card 0) gets a subtle 5px radial lift so its crest and borders remain gracefully visible without being smothered
+    const liftAmount = isHovered ? (isMobile ? 10 : 16) : (isSeamCard ? (isMobile ? 3 : 5) : 0);
     const finalRadius = radius + offset.radOffset + liftAmount;
     const cardRotate = (localAngle * 180) / Math.PI + 90;
     const x = Math.round(finalRadius * Math.cos(localAngle) * 10) / 10;
     const y = Math.round(finalRadius * Math.sin(localAngle) * 10) / 10;
 
     return (
-      <>
-        {/* Base card element (uniform shingle layering 30 + positionIdx) */}
-        <div
-          data-card-id={card.id}
-          className={`absolute left-1/2 top-1/2 w-16 h-26 sm:w-20 sm:h-32 md:w-28 md:h-44 rounded-lg sm:rounded-xl md:rounded-2xl flex items-center justify-center select-none transition-[transform,opacity] duration-150 ease-out overflow-hidden cursor-pointer ${
-            isPicked
-              ? 'opacity-0 scale-75 pointer-events-none'
-              : isHovered
-              ? 'pointer-events-auto border-2 border-amber-300 ring-1 ring-yellow-400/60 shadow-lg shadow-amber-500/25 z-[400] scale-[1.06] bg-zinc-950 tarot-card-border-flicker'
-              : 'pointer-events-auto border border-amber-500/40 shadow-md bg-zinc-950'
-          }`}
-          style={{
-            transform: `translate3d(-50%, -50%, 0) translate3d(${x}px, ${y}px, 0) rotate(${cardRotate}deg) ${isHovered ? 'translateY(-6px)' : ''}`,
-            transformOrigin: 'center center',
-            zIndex: isHovered ? 400 : 30 + positionIdx,
-            backfaceVisibility: 'hidden',
-            contain: 'layout style paint',
-            willChange: isHovered ? 'transform' : 'auto',
-          }}
-        >
-          {isHovered && !isPicked && (
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-200/30 to-transparent skew-x-12 pointer-events-none z-30 tarot-card-shimmer-sweep" />
-          )}
-          {!isPicked && (
-            <TarotCardBackFace
-              cardBackId={cardBackId}
-              size={isMobile ? 'sm' : 'wheel'}
-              isHovered={isHovered}
-            />
-          )}
-        </div>
-
-        {/* 🌟 Head-card (card 0) seam overlap: lifts left edge above tail card (card 77) to eliminate the double-covered sandwich while maintaining a 100% continuous unbroken circle */}
-        {positionIdx === 0 && !isPicked && (
-          <div
-            data-card-id={card.id}
-            className={`absolute left-1/2 top-1/2 w-16 h-26 sm:w-20 sm:h-32 md:w-28 md:h-44 rounded-lg sm:rounded-xl md:rounded-2xl flex items-center justify-center select-none transition-[transform,opacity] duration-150 ease-out overflow-hidden cursor-pointer pointer-events-auto ${
-              isHovered
-                ? 'border-2 border-amber-300 ring-1 ring-yellow-400/60 shadow-lg shadow-amber-500/25 z-[400] scale-[1.06] bg-zinc-950 tarot-card-border-flicker'
-                : 'border-l border-t border-b border-amber-500/40 shadow-md bg-zinc-950'
-            }`}
-            style={{
-              transform: `translate3d(-50%, -50%, 0) translate3d(${x}px, ${y}px, 0) rotate(${cardRotate}deg) ${isHovered ? 'translateY(-6px)' : ''}`,
-              transformOrigin: 'center center',
-              zIndex: isHovered ? 400 : 30 + totalCards + 5,
-              clipPath: 'polygon(0 0, 52% 0, 52% 100%, 0 100%)',
-              backfaceVisibility: 'hidden',
-              contain: 'layout style paint',
-              willChange: isHovered ? 'transform' : 'auto',
-            }}
-          >
-            {isHovered && (
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-200/30 to-transparent skew-x-12 pointer-events-none z-30 tarot-card-shimmer-sweep" />
-            )}
-            <TarotCardBackFace
-              cardBackId={cardBackId}
-              size={isMobile ? 'sm' : 'wheel'}
-              isHovered={isHovered}
-            />
-          </div>
+      <div
+        data-card-id={card.id}
+        className={`absolute left-1/2 top-1/2 w-14 h-24 sm:w-16 sm:h-28 md:w-20 md:h-34 rounded-lg sm:rounded-xl md:rounded-2xl flex items-center justify-center select-none transition-[transform,opacity] duration-150 ease-out overflow-hidden cursor-pointer ${
+          isPicked
+            ? 'opacity-0 scale-75 pointer-events-none'
+            : isHovered
+            ? 'pointer-events-auto border-2 border-amber-300 ring-1 ring-yellow-400/60 shadow-lg shadow-amber-500/25 z-[400] scale-[1.08] bg-zinc-950 tarot-card-border-flicker'
+            : 'pointer-events-auto border border-amber-500/40 shadow-md bg-zinc-950'
+        }`}
+        style={{
+          transform: `translate3d(-50%, -50%, 0) translate3d(${x}px, ${y}px, 0) rotate(${cardRotate}deg) ${isHovered ? 'translateY(-6px)' : ''}`,
+          transformOrigin: 'center center',
+          zIndex: isHovered ? 400 : (isSeamCard ? 30 + totalCards + 1 : 30 + positionIdx),
+          backfaceVisibility: 'hidden',
+          contain: 'layout style paint',
+          willChange: isHovered ? 'transform' : 'auto',
+        }}
+      >
+        {isHovered && !isPicked && (
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-200/30 to-transparent skew-x-12 pointer-events-none z-30 tarot-card-shimmer-sweep" />
         )}
-      </>
+        {!isPicked && (
+          <TarotCardBackFace
+            cardBackId={cardBackId}
+            size={isMobile ? 'sm' : 'wheel'}
+            isHovered={isHovered}
+          />
+        )}
+      </div>
     );
   },
   (prev, next) => {
@@ -367,16 +336,16 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
       const w = window.innerWidth;
       const h = window.innerHeight;
       if (w < 480) {
-        setRadius(Math.max(300, Math.min(380, h * 0.48)));
-        setYOffset(Math.max(380, Math.min(460, h * 0.58)));
+        setRadius(Math.max(340, Math.min(420, h * 0.52)));
+        setYOffset(Math.max(400, Math.min(480, h * 0.60)));
         setIsMobile(true);
       } else if (w < 768) {
-        setRadius(440);
-        setYOffset(520);
+        setRadius(480);
+        setYOffset(560);
         setIsMobile(true);
       } else {
-        setRadius(580);
-        setYOffset(680);
+        setRadius(640);
+        setYOffset(740);
         setIsMobile(false);
       }
     };

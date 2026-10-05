@@ -321,25 +321,13 @@ export function extractOracleConciseSummary(params: OracleConciseSummaryParams):
   const fmt = (tag: string, content: string) => {
     let t = clean(content);
     t = t.replace(/^(?:친애하는|안녕하세요|반갑습니다|안녕|어서\s*오세요)[^,.]*[,.]\s*/i, '');
-    // 기존 말줄임표 제거
+    // 기존 말줄임표 및 불필요한 기호 제거
     t = t.replace(/[\s.…·,-]+$/, '');
-    // 간결한 요약 원칙: 너무 긴 문장은 35~45자 내외에서 온전한 문장으로 단정하게 마무리
-    if (t.length > 46) {
-      const firstDot = t.indexOf('.');
-      if (firstDot >= 18 && firstDot <= 45) {
-        t = t.slice(0, firstDot + 1);
-      } else {
-        const firstComma = t.indexOf(',');
-        if (firstComma >= 18 && firstComma <= 40) {
-          t = t.slice(0, firstComma) + ' 상태입니다.';
-        } else {
-          const lastSpace = t.lastIndexOf(' ', 42);
-          if (lastSpace > 18) {
-            t = t.slice(0, lastSpace).trim();
-          } else {
-            t = t.slice(0, 40).trim();
-          }
-        }
+    // 문장이 지나치게 장문(120자 이상)인 경우에만 온전한 마침표 단위로만 정돈 (절대 쉼표 중간 절단이나 '상태입니다' 왜곡 금지)
+    if (t.length > 125) {
+      const dotIdx = t.lastIndexOf('.', 115);
+      if (dotIdx > 45) {
+        t = t.slice(0, dotIdx + 1);
       }
     }
     t = t.replace(/[\s.…·,-]+$/, '');
@@ -379,34 +367,34 @@ export function extractOracleConciseSummary(params: OracleConciseSummaryParams):
   const c2Name = c2 ? `${c2.nameKo || c2.name}${c2.reversed ? '(역)' : ''}` : '2번 카드';
   const c3Name = c3 ? `${c3.nameKo || c3.name}${c3.reversed ? '(역)' : ''}` : '3번 카드';
 
-  // 1. [현재 에너지] (핵심 40~55자)
+  // 1. [현재 에너지] (자기계발 오라클과 동등한 깊이와 분량의 60~85자 심층 진단)
   let line1 = '';
   if (isHealing) {
-    line1 = `사주 [${dayMaster}]과 [${c1Name}] 카드가 만나 생각의 과부하와 전환기 피로가 누적된 상태입니다.`;
+    line1 = `사주 본원 [${dayMaster}]과 [${c1Name}], [${c2Name}] 카드가 만나 지나온 시간의 무게와 내면의 깊은 피로가 공명하며 전환기를 맞이했습니다.`;
   } else {
-    line1 = `사주 [${dayMaster}]의 추진력이 [${c1Name}] 카드와 만나 일시적인 실행 정체에 머물러 있습니다.`;
+    line1 = `사주 [${dayMaster}]의 추진력이 [${c1Name}] 카드와 만나 일시적인 실행 정체에 머물러 있으나 돌파의 잠재력은 충분합니다.`;
   }
 
-  // 2. [방향과 결단] (핵심 40~55자)
+  // 2. [방향과 결단] (사주 용신과 타로의 전환점 지혜 60~85자)
   let line2 = '';
   if (isHealing) {
-    line2 = `용신 [${yongsin}]과 [${c3Name}] 카드를 따라 무거운 부담을 내려놓고 회복을 선택하세요.`;
+    line2 = `용신 [${yongsin}]과 [${c3Name}] 카드의 조화로운 안내를 따라 불필요한 집착과 부담을 비워내고 온전한 마음의 회복을 선택할 때입니다.`;
   } else {
-    line2 = `용신 [${yongsin}]과 [${c3Name}] 카드를 따라 잔가지를 쳐내고 우선순위 1번에 집중하세요.`;
+    line2 = `용신 [${yongsin}]과 [${c3Name}] 카드를 따라 잔가지를 쳐내고 우선순위 1번에 집중하여 당당하게 실행을 완수하세요.`;
   }
 
-  // 3. [실천 처방] (핵심 35~50자)
+  // 3. [실천 처방] (구체적 행동 지침 55~80자)
   let line3 = '';
   const actionText = typeof microAction === 'string' && microAction.length > 5
     ? clean(microAction)
     : (microAction?.description || microMission?.title || '');
 
-  if (actionText && actionText.length >= 6 && actionText.length <= 35) {
-    line3 = `오늘 일상에서 "${actionText}"을(를) 즉시 실천하며 기운 순환하기.`;
+  if (actionText && actionText.length >= 6 && actionText.length <= 45) {
+    line3 = `오늘 일상에서 "${actionText}"을(를) 정성껏 실천하며 내면의 에너지를 순환시키고 충전하기.`;
   } else if (isHealing) {
-    line3 = `따뜻한 차 한 잔과 3번의 깊은 심호흡으로 마음의 긴장을 즉시 비워내기.`;
+    line3 = `따뜻한 차 한 잔과 3번의 깊은 복식호흡으로 마음의 긴장을 즉시 비워내고 스스로를 다정하게 안아주기.`;
   } else {
-    line3 = `오늘 10분 안에 끝낼 수 있는 가장 작은 행동 과제 1가지를 즉시 완수하기.`;
+    line3 = `오늘 10분 안에 끝낼 수 있는 가장 작은 행동 과제 1가지를 정해 지금 즉시 행동으로 전환하기.`;
   }
 
   return [

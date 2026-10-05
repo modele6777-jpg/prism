@@ -666,23 +666,11 @@ export function TrinityOracleSection() {
       let content = match ? match[2].trim() : bullet.trim();
       // 기존 말줄임표나 불필요한 기호 선제거
       content = content.replace(/[\s.…·,-]+$/, '');
-      // 3줄 요약 간결성 보장: 핵심만 35~45자 내외로 압축
-      if (content.length > 46) {
-        const dotIdx = content.indexOf('.');
-        if (dotIdx >= 18 && dotIdx <= 45) {
+      // 문장이 지나치게 길어지는 경우(125자 초과)에만 온전한 마침표 단위로 정리 (절대 쉼표 중간 절단이나 '상태입니다' 왜곡 금지)
+      if (content.length > 125) {
+        const dotIdx = content.lastIndexOf('.', 115);
+        if (dotIdx > 45) {
           content = content.slice(0, dotIdx + 1);
-        } else {
-          const commaIdx = content.indexOf(',');
-          if (commaIdx >= 18 && commaIdx <= 40) {
-            content = content.slice(0, commaIdx) + ' 상태입니다.';
-          } else {
-            const lastSpace = content.lastIndexOf(' ', 42);
-            if (lastSpace > 18) {
-              content = content.slice(0, lastSpace).trim();
-            } else {
-              content = content.slice(0, 40).trim();
-            }
-          }
         }
       }
       // 온전한 마침표로 정돈 (절대 ... 말줄임표로 끝나지 않도록 보장)
@@ -920,8 +908,9 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
 - 품격 있고 신뢰감 넘치며, 따뜻하고 깊이 있는 정통 경어체("~님", "~입니다", "~을 암시합니다", "~의 흐름을 보이고 있습니다", "~을 권해드립니다")를 일관되게 사용합니다.
 - 내담자를 부를 때는 정중하게 "${recipientName} 님"으로 호칭합니다.
 
-# 3줄 요약 원칙 (매우 중요):
-3줄 요약은 길게 늘어놓지 말고, 각 줄마다 핵심만 35~50자 내외로 매우 압축하여 명쾌하게 작성하십시오.
+# 3줄 요약 원칙 (풍성하고 깊이 있는 요약 — 자기계발 오라클과 동등한 분량):
+3줄 요약은 지나치게 짧은 단문이나 축약으로 끝내지 말고, 사주 원국과 카드의 상징을 긴밀히 교차 융합하여 자기계발 오라클과 동등하게 풍성하고 깊이 있는 통찰(각 항목당 60~85자 내외의 완성된 문장)로 온전하게 작성하십시오.
+- 어설픈 쉼표 중간 끊기나 줄임말 없이, 주어와 서술어가 갖추어진 완성도 높은 정통 경어체 문맥으로 작성하십시오.
 
 # message (사주 ✕ 타로 콜라보 심층 총평 본문 — 5단계 구조):
 반드시 다음 5개의 소제목(### 마크다운 헤더)을 갖추어 질문자의 구체적 고민과 사주 ✕ 타로 콜라보 통찰을 풍성하게 전개하십시오:
@@ -935,9 +924,9 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
 {
   "message": "질문자(${recipientName} 님)를 정중히 부르며 시작하여, 5개의 소제목(### 1~5단계)을 빠짐없이 갖추고 오늘의 일일 타로 [${todayAnchorCard.nameKo}]와 사주 일간 본원, 3장의 카드를 유기적으로 교차 해설한 5단계 심층 총평 대서사 본문 (마크다운 포맷)",
   "concise_summary": [
-    "[현재 에너지] 사주 일간과 1·2번 카드가 만난 현재 내면/상황의 핵심 요약 (35~45자 이내)",
-    "[방향과 결단] 사주 용신과 3번 조언 카드가 가리키는 명쾌한 선택과 결단 (35~45자 이내)",
-    "[실천 처방] 오늘 일상에서 즉시 실천할 가장 구체적인 행동 처방 (30~40자 이내)"
+    "[현재 에너지] 사주 일간(${saju?.dayMaster.symbolName})과 1·2번 카드가 마주한 질문자 내면의 무의식적 피로와 현실 에너지 흐름을 섬세하게 진단한 깊이 있는 1~2문장 (60~85자 내외)",
+    "[방향과 결단] 사주 용신(${saju?.yongsin?.name || '조화'})과 3번 조언 카드가 제시하는 지혜로운 마음가짐과 영혼의 전환점 결단 (60~85자 내외)",
+    "[실천 처방] 오늘 일상에서 지친 심신을 회복하고 운명의 기운을 상생으로 순환시킬 구체적이고 따뜻한 힐링 실천법 (55~80자 내외)"
   ],
   "micro_action": "3번 미래/조언 카드가 제안하는 일상 행동 1가지 (30자 내외)",
   "reward_item": {
@@ -983,7 +972,7 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
           ? `\n\n# [최우선 필수 집중 주제] 내담자가 질문한 구체적인 고민:\n"${effectiveInquiry}"\n★ 절대 지침: 사주 ✕ 타로 리딩은 질문자의 구체적인 고민("${effectiveInquiry}")을 서두부터 중심에 두고 전개되어야 합니다. 일반론적 설명을 배제하고, 내담자가 호소한 고민 상황을 명확히 짚어내며, 사주 본원 기운(${saju?.dayMaster.symbolName})이 왜 이 고민 앞에서 특정 패턴을 겪게 되었는지, 그리고 뽑힌 3장의 카드가 이 고민을 어떻게 해결의 길로 인도하는지 사주와 타로의 콜라보레이션으로 명쾌하게 작성해 주세요.\n`
           : `\n\n# 질문자의 상황:\n사주 원국의 일간(${saju?.dayMaster.symbolName})과 오행 분포(${saju?.elements.dominant.name} 우세, ${saju?.elements.lacking.name} 결핍)를 바탕으로 현재 삶의 흐름과 고민을 입체적으로 조명하고, 3장의 타로 카드가 전하는 명쾌한 방향성을 전해 주세요.\n`;
 
-        const prompt = `${sajuContextPrompt}${inquiryPromptAddon}\n\n사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 질문자(${recipientName} 님)의 사주 명리학 원국과 뽑힌 3장의 타로 카드가 지닌 본질적 도상 상징과 뜻을 긴밀하게 '교차 융합(Collaboration)'하여, 질문자의 고민을 중심에 두고 높은 통찰과 현실적 해법을 담은 정통 타로 리딩 결과를 JSON으로 생성해 주십시오.\n\n★ [작성 지침]:\n1. 호칭: 정중하게 '${recipientName} 님'으로 부르며, 신뢰도 높은 정통 경어체(~입니다, ~을 나타냅니다, ~의 조언을 전합니다)로 작성하십시오.\n2. 'message' 필드는 본문 리딩의 핵심이므로 반드시 5개의 소제목(### 1~5단계)을 빠짐없이 갖추어 완전하고 깊이 있는 마크다운 본문으로 작성해 주십시오. (절대 빈 문자열이나 누락 금지)\n3. 3줄 요약('concise_summary')은 각 항목당 35~50자 내외로 핵심만 명료하게 단문으로 작성하십시오.`;
+        const prompt = `${sajuContextPrompt}${inquiryPromptAddon}\n\n사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 질문자(${recipientName} 님)의 사주 명리학 원국과 뽑힌 3장의 타로 카드가 지닌 본질적 도상 상징과 뜻을 긴밀하게 '교차 융합(Collaboration)'하여, 질문자의 고민을 중심에 두고 높은 통찰과 현실적 해법을 담은 정통 타로 리딩 결과를 JSON으로 생성해 주십시오.\n\n★ [작성 지침]:\n1. 호칭: 정중하게 '${recipientName} 님'으로 부르며, 신뢰도 높은 정통 경어체(~입니다, ~을 나타냅니다, ~의 조언을 전합니다)로 작성하십시오.\n2. 'message' 필드는 본문 리딩의 핵심이므로 반드시 5개의 소제목(### 1~5단계)을 빠짐없이 갖추어 완전하고 깊이 있는 마크다운 본문으로 작성해 주십시오. (절대 빈 문자열이나 누락 금지)\n3. 3줄 요약('concise_summary')은 각 항목당 60~85자 내외로 사주 원국과 카드의 의미를 융합하여 자기계발 오라클만큼 풍성하고 깊이 있는 완성형 문맥으로 작성하십시오.`;
         const res = await invokeLLM({
           messages: [
             { role: 'system', content: systemPrompt },
@@ -1035,7 +1024,7 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
           );
         }
 
-        // 🌟 3줄 요약 간결성 보장: 45자 내외 초간결 정돈
+        // 🌟 3줄 요약: 자기계발 오라클과 동등한 깊이와 분량(60~85자) 보장
         let conciseBullets: string[] = [];
         if (Array.isArray(parsed?.concise_summary) && parsed.concise_summary.length >= 3) {
           conciseBullets = parsed.concise_summary.slice(0, 3);

@@ -1409,6 +1409,47 @@ ${content}
     }
   });
 
+  // 🔌 MCP (Model Context Protocol) Endpoints (Spark, Claude, Cursor 등 외부 커스텀 앱 연동)
+  app.get(["/api/mcp/sse", "/api/mcp", "/sse", "/mcp/sse", "/mcp"], async (req, res) => {
+    const { handleMCPSseStream } = await import("./server/api-lib/mcpHandler");
+    return handleMCPSseStream(req, res);
+  });
+
+  app.post(["/api/mcp/messages", "/messages", "/mcp/messages"], async (req, res) => {
+    const { handleMCPPostMessage } = await import("./server/api-lib/mcpHandler");
+    return handleMCPPostMessage(req, res);
+  });
+
+  app.post(["/api/mcp", "/mcp", "/sse", "/api/mcp/sse", "/mcp/sse"], async (req, res) => {
+    const { handleMCPDirectPost } = await import("./server/api-lib/mcpHandler");
+    return handleMCPDirectPost(req, res);
+  });
+
+  // Support root URL (https://luckey.ai.studio/) when accessed by an MCP client (SSE, JSON discovery, or direct JSON-RPC POST)
+  app.get("/", async (req, res, next) => {
+    const accept = req.headers.accept || "";
+    if (accept.includes("text/event-stream") || accept.includes("application/json") || req.query.mcp !== undefined || req.query.format === "json") {
+      const { handleMCPSseStream } = await import("./server/api-lib/mcpHandler");
+      return handleMCPSseStream(req, res);
+    }
+    return next();
+  });
+
+  app.post("/", async (req, res, next) => {
+    if (req.body?.jsonrpc === "2.0" || req.body?.method === "initialize" || req.is("application/json")) {
+      const { handleMCPDirectPost } = await import("./server/api-lib/mcpHandler");
+      return handleMCPDirectPost(req, res);
+    }
+    return next();
+  });
+
+  app.options(["*", "/", "/api/mcp", "/api/mcp/*", "/sse", "/mcp", "/mcp/*", "/messages"], (req, res) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Headers", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    return res.status(200).end();
+  });
+
 
 
   app.post("/api/openai/v1/chat/completions", async (req, res) => {
