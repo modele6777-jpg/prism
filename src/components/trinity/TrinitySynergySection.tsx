@@ -151,7 +151,7 @@ export function TrinitySynergySection() {
     const userPrompt = `[양쪽 메뉴 융합: LUCKY 사주 오행 ✕ TAROT 타로 리딩]
 [드로우된 타로 카드]: ${randomCard.name} (${randomCard.key})
 [사용자 고민/소망]: "${userQuery.trim() || '오늘 나의 운명을 극대화할 행운 개운 비법'}"
-[사용자 닉네임]: "${userProfile?.basic?.nickname || '구도자'}"
+[사용자 닉네임]: "${(userProfile?.basic?.nickname && userProfile.basic.nickname !== '박주형' && userProfile.basic.nickname !== '쭈') ? userProfile.basic.nickname : ((userProfile?.basic?.name && userProfile.basic.name !== '박주형') ? userProfile.basic.name : '제제')}"
 
 반드시 아래 JSON 스키마로만 엄격하게 응답하세요 (모든 항목은 오늘 하루 중심의 간결하고 심플한 1~2문장으로 작성):
 {

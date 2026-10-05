@@ -469,8 +469,10 @@ export function calculateDetailedSaju(profile?: UserProfile | null): SajuAnalysi
   }
 
   const genderStr = basic.gender === 'male' ? '남성' : '여성';
-  const name = basic.name || '여행자';
-  const nickname = basic.nickname || name;
+  const rawName = basic.name?.trim();
+  const name = (rawName && rawName !== '박주형' && rawName !== '여행자') ? rawName : '제제';
+  const rawNickname = basic.nickname?.trim();
+  const nickname = (rawNickname && rawNickname !== '박주형' && rawNickname !== '쭈' && rawNickname !== '여행자') ? rawNickname : name;
 
   // 1. 절기 기준 년도(Saju Year) 보정 (양력 2월 4일 입춘 전 출생자는 전년도 간지 적용)
   const isBeforeIpchun = (m === 1) || (m === 2 && d < 4);

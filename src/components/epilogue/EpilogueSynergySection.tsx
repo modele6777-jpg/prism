@@ -75,9 +75,11 @@ export function EpilogueSynergySection() {
     if ((!entries || entries.length === 0) && Array.isArray(sharedState?.epilogueHistory)) {
       entries = sharedState.epilogueHistory;
     }
+    const rawNick = userProfile?.basic?.nickname?.trim() || userProfile?.basic?.name?.trim();
+    const nickname = (rawNick && rawNick !== '박주형' && rawNick !== '쭈' && rawNick !== '여행자') ? rawNick : '제제';
     return calculateEpilogueAchievementStats(
       entries,
-      userProfile?.basic?.nickname || userProfile?.basic?.name || '빛나는 여행자',
+      nickname,
       chronicleData.soulEvolutionLevel
     );
   }, [sharedState?.epilogueHistory, userProfile, chronicleData.soulEvolutionLevel]);
@@ -154,7 +156,8 @@ export function EpilogueSynergySection() {
 
     const focusObj = COSMIC_FOCUS_OPTIONS.find((f) => f.id === selectedFocus) || COSMIC_FOCUS_OPTIONS[0];
     const mbti = (userProfile as any)?.psychology?.mbti || 'INFJ';
-    const nickname = userProfile?.basic?.nickname || userProfile?.basic?.name || '빛의 마스터';
+    const rawNick = userProfile?.basic?.nickname?.trim() || userProfile?.basic?.name?.trim();
+    const nickname = (rawNick && rawNick !== '박주형' && rawNick !== '쭈' && rawNick !== '여행자') ? rawNick : '제제';
     const insightText = customInsight.trim() || '온 우주와 내가 하나임을 자각하는 깊은 현존';
 
     const systemPrompt = `당신은 PRISM 7대 우주 공간을 총괄하는 〈영혼 연대기 & 마스터 아카이브〉 대마스터입니다.

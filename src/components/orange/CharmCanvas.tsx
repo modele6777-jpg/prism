@@ -135,7 +135,8 @@ export const CharmCanvas: React.FC<CharmCanvasProps> = ({ onSuggestText, onChang
 
   // Profile calculations from sa-ju state helper
   const profileDetails = useMemo(() => {
-    const bName = sharedState?.userProfile?.basic?.name || sharedState?.userProfile?.basic?.nickname || '귀하';
+    const rawName = sharedState?.userProfile?.basic?.nickname?.trim() || sharedState?.userProfile?.basic?.name?.trim();
+    const bName = (rawName && rawName !== '박주형' && rawName !== '쭈' && rawName !== '귀하' && rawName !== '여행자') ? rawName : '제제';
     const birth = sharedState?.userProfile?.basic?.birthdate || '1996-05-15';
     const [y, m, d] = birth.split('-').map(Number);
     const validY = y || 1996;

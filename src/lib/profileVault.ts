@@ -64,6 +64,15 @@ export function loadProfileFromAllVaults(): UserProfile | undefined {
     Object.keys(merged.art || {}).length > 0
   );
 
+  if (isPopulated && merged?.basic) {
+    if (merged.basic.name === '박주형') {
+      merged.basic.name = '제제';
+    }
+    if (merged.basic.nickname === '박주형' || merged.basic.nickname === '쭈') {
+      merged.basic.nickname = '제제';
+    }
+  }
+
   return isPopulated ? merged : undefined;
 }
 

@@ -62,7 +62,8 @@ export function TodayLucyPersonaCard({
   // Zaya-style: User's selected emotion reaction
   const [selectedReaction, setSelectedReaction] = useState<QuickEmpathyReaction | null>(null);
 
-  const nickname = sharedState?.userProfile?.basic?.nickname || '여행자';
+  const rawNick = sharedState?.userProfile?.basic?.nickname?.trim() || sharedState?.userProfile?.basic?.name?.trim();
+  const nickname = (rawNick && rawNick !== '박주형' && rawNick !== '쭈' && rawNick !== '여행자') ? rawNick : '제제';
   const vibe = sharedState?.currentVibe || '평온함';
 
   // Calculate astronomical & Saju transits for today

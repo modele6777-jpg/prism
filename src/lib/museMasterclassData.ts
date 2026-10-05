@@ -1114,7 +1114,8 @@ export function getMasterpieceDynamicDialogue(
 ): MasterpieceDialogueData {
   const art = selectedArtwork || master.artworks?.[0] || master;
   const seed = getDateSeed(dateSeedKey || `muse_master_${master.id}_${art.piece}_${new Date().toISOString().slice(0, 10)}`);
-  const nickname = userProfile?.basic?.nickname || userProfile?.basic?.name || '소중한 벗';
+  const rawNick = userProfile?.basic?.nickname?.trim() || userProfile?.basic?.name?.trim();
+  const nickname = (rawNick && rawNick !== '박주형' && rawNick !== '쭈' && rawNick !== '여행자') ? rawNick : '제제';
   const dilemmaText = (userDilemma || '').trim();
 
   // 날짜별 변화하는 다이내믹 변주 문구

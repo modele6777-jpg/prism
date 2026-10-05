@@ -225,11 +225,12 @@ export function ZezeKakaoChat({
         .join('\n\n');
 
       const rawUserName = saju?.name?.trim() || '';
-      const givenName = extractGivenName(rawUserName);
+      const extracted = extractGivenName(rawUserName);
+      const givenName = (extracted && extracted !== '박주형' && extracted !== '주형' && extracted !== '여행자') ? extracted : '제제';
 
       const sajuPromptSection = saju ? `
 # 내담자 사주 명식(四柱) & 타로 융합 정보:
-- 성명: ${givenName ? `${givenName} (본명: ${saju.name})` : saju.name}
+- 성명: ${givenName}
 - 사주 일간(본원): ${saju.dayMaster.hanja} (${saju.dayMaster.korean}, ${saju.dayMaster.symbolName})
 - 오행 분포: 목(${saju.elements.counts.목}), 화(${saju.elements.counts.화}), 토(${saju.elements.counts.토}), 금(${saju.elements.counts.금}), 수(${saju.elements.counts.수})
 - 용신(보약): ${saju.yongsin.name}

@@ -414,6 +414,7 @@ export function hasKoreanJongseong(word: string): boolean {
 export function extractGivenName(fullName: string): string {
   if (!fullName) return '';
   const trimmed = fullName.trim();
+  if (trimmed === '박주형' || trimmed === '주형' || trimmed === '제제') return '제제';
   if (trimmed.length <= 1 || trimmed === '여행자') return trimmed;
 
   // 공백으로 성과 이름이 구분된 경우 (예: "박 주형" -> "주형")
@@ -442,6 +443,7 @@ export function extractGivenName(fullName: string): string {
 
   // 한글 2글자 성명 (단성 + 외자 이름, 예: 김철 -> 철, 이진 -> 진)
   if (trimmed.length === 2 && /^[가-힣]{2}$/.test(trimmed)) {
+    if (trimmed === '제제') return '제제';
     const commonSurnames = /^[김이박최정강조윤장임한오서신권황안송류홍전고문손양배백허유남심노하곽성차주우구라민진지엄채원천방공현함변염여추도소석선설마길연위표명기반왕금옥육인맹제모탁국어은편]/;
     if (commonSurnames.test(trimmed)) {
       return trimmed.slice(1);

@@ -540,12 +540,15 @@ export default function LucyStandalonePage() {
   }, []);
 
 
-  // Determine User Nickname ('쭈' prioritized)
+  // Determine User Nickname ('제제' prioritized)
   const rawNickname = sharedState?.userProfile?.basic?.nickname?.trim();
   const rawDisplayName = firebaseUser?.displayName?.trim();
-  const userDisplayName = (rawNickname && rawNickname !== '여행자' && rawNickname !== '사용자')
+  const rawName = sharedState?.userProfile?.basic?.name?.trim();
+  const userDisplayName = (rawNickname && rawNickname !== '여행자' && rawNickname !== '사용자' && rawNickname !== '박주형' && rawNickname !== '쭈')
     ? rawNickname
-    : (rawDisplayName === '박주형' ? '쭈' : (rawDisplayName || '쭈'));
+    : ((rawName && rawName !== '여행자' && rawName !== '박주형')
+      ? rawName
+      : (rawDisplayName && rawDisplayName !== '박주형' && rawDisplayName !== '쭈' ? rawDisplayName : '제제'));
 
   // Detailed Saju Info for Soul Profile View
   const sajuInfo = useMemo(() => calculateDetailedSaju(sharedState?.userProfile), [sharedState?.userProfile]);
@@ -1787,7 +1790,7 @@ export default function LucyStandalonePage() {
         </div>
       </footer>
 
-      {/*  쭈 님의 소울 프로필 퀵뷰 모달 */}
+      {/*  제제 님의 소울 프로필 퀵뷰 모달 */}
       <AnimatePresence>
         {isProfileModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">

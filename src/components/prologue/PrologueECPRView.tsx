@@ -279,7 +279,8 @@ const GROUNDING_STEPS = [
 
 export function PrologueECPRView() {
   const { sharedState, openLucyChat } = useApp();
-  const userName = sharedState?.userProfile?.basic?.nickname || sharedState?.userProfile?.basic?.name || '여행자';
+  const rawUser = sharedState?.userProfile?.basic?.nickname?.trim() || sharedState?.userProfile?.basic?.name?.trim();
+  const userName = (rawUser && rawUser !== '박주형' && rawUser !== '쭈' && rawUser !== '여행자') ? rawUser : '제제';
 
   // Selected Emergency Protocol
   const [selectedProtocolId, setSelectedProtocolId] = useState<'panic' | 'anger' | 'grief' | 'burnout'>('panic');

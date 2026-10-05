@@ -113,9 +113,14 @@ export default function ProfileModal({ isOpen, onClose }: { isOpen: boolean; onC
 
   const initialProfile = sharedState?.userProfile || getPersistentUserProfile();
 
+  const rawInitName = initialProfile?.basic?.name || '';
+  const initName = (rawInitName && rawInitName !== '박주형' && rawInitName !== '여행자') ? rawInitName : (rawInitName === '박주형' ? '제제' : '');
+  const rawInitNick = initialProfile?.basic?.nickname || '';
+  const initNick = (rawInitNick && rawInitNick !== '박주형' && rawInitNick !== '쭈' && rawInitNick !== '여행자') ? rawInitNick : ((rawInitNick === '박주형' || rawInitNick === '쭈') ? '제제' : '');
+
   const [basic, setBasic] = useState({
-    name: initialProfile?.basic?.name || '',
-    nickname: initialProfile?.basic?.nickname || '',
+    name: initName,
+    nickname: initNick,
     birthdate: initialProfile?.basic?.birthdate || '',
     birthtime: initialProfile?.basic?.birthtime || '',
     gender: (initialProfile?.basic?.gender || '') as '' | 'male' | 'female' | 'other',
@@ -154,7 +159,12 @@ export default function ProfileModal({ isOpen, onClose }: { isOpen: boolean; onC
       const detailProfile = (e as CustomEvent)?.detail?.userProfile || (e as CustomEvent)?.detail;
       const profile = detailProfile || sharedState?.userProfile || loadProfileFromAllVaults() || getPersistentUserProfile();
       if (!profile) return;
-      if (profile.basic) setBasic((b) => ({ ...b, ...profile.basic }));
+      if (profile.basic) {
+        const cleanBasic = { ...profile.basic };
+        if (cleanBasic.name === '박주형') cleanBasic.name = '제제';
+        if (cleanBasic.nickname === '박주형' || cleanBasic.nickname === '쭈') cleanBasic.nickname = '제제';
+        setBasic((b) => ({ ...b, ...cleanBasic }));
+      }
       if (profile.fate) setFate((f) => ({ ...f, ...profile.fate }));
       if (profile.music) setMusic((m) => ({ ...m, ...profile.music }));
       if (profile.psych) setPsych((p) => ({ ...p, ...profile.psych }));
@@ -236,8 +246,8 @@ export default function ProfileModal({ isOpen, onClose }: { isOpen: boolean; onC
       case 0:
         return (
           <div className="space-y-4">
-            <InputField label="실명 *" value={basic.name} onChange={v => setBasic(b => ({ ...b, name: v }))} placeholder="예: 박소연" />
-            <InputField label="닉네임" value={basic.nickname} onChange={v => setBasic(b => ({ ...b, nickname: v }))} placeholder="예: 루키" />
+            <InputField label="실명 *" value={basic.name} onChange={v => setBasic(b => ({ ...b, name: v }))} placeholder="예: 제제" />
+            <InputField label="닉네임" value={basic.nickname} onChange={v => setBasic(b => ({ ...b, nickname: v }))} placeholder="예: 제제" />
             
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="sm:col-span-2">

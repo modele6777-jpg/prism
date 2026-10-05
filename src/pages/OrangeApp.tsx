@@ -1147,6 +1147,12 @@ export default function OrangeApp() {
         ? `오늘의 Daily 진단: ${dailyResult.diagnosis} (상징: ${dailyResult.symbol}, 주파수: ${dailyResult.frequency})`
         : "오늘의 Daily 진단 데이터가 없습니다.";
 
+      const rawNick = sharedState?.userProfile?.basic?.nickname;
+      const rawName = sharedState?.userProfile?.basic?.name;
+      const orangeUserName = (rawNick && rawNick !== '박주형' && rawNick !== '쭈' && rawNick !== '여행자')
+        ? rawNick
+        : ((rawName && rawName !== '박주형' && rawName !== '여행자') ? rawName : '제제');
+
       const data = await invokeLLMStructured({
         messages: [
           { 
@@ -1155,7 +1161,7 @@ export default function OrangeApp() {
           },
           { 
             role: 'user', 
-            content: `사용자: ${sharedState?.userProfile?.basic?.nickname || '연금술사'}\n\n${dailyContext}\n\n${historyContext}\n\n${consultationContext}\n\n이 모든 데이터를 바탕으로 나의 'The Idea Decree'를 분석해줘.` 
+            content: `사용자: ${orangeUserName}\n\n${dailyContext}\n\n${historyContext}\n\n${consultationContext}\n\n이 모든 데이터를 바탕으로 나의 'The Idea Decree'를 분석해줘.` 
           }
         ],
         schema: EnergyAnalysisSchema

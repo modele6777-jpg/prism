@@ -322,7 +322,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // Single Unified Chat Timeline across all personas & portals
   const [unifiedMessages, setUnifiedMessages] = useState<UnifiedMessage[]>(() => {
     const loaded = loadSavedUnifiedMessages();
-    const result = processDailyChatArchival(loaded, '쭈');
+    const result = processDailyChatArchival(loaded, '제제');
     if (result.wasArchived) {
       saveUnifiedMessagesSafely(result.messages);
     }
@@ -464,7 +464,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (isAnyGenerating) return;
 
       try {
-        const nick = sharedStateRef.current?.userProfile?.basic?.nickname || '쭈';
+        const rawNick = sharedStateRef.current?.userProfile?.basic?.nickname || sharedStateRef.current?.userProfile?.basic?.name;
+        const nick = (rawNick && rawNick !== '박주형' && rawNick !== '쭈' && rawNick !== '여행자') ? rawNick : '제제';
         const currentStored = loadSavedUnifiedMessages();
         const archivalResult = processDailyChatArchival(currentStored, nick);
         if (archivalResult.wasArchived) {
@@ -576,7 +577,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           }
 
           if (remoteList.length > 0) {
-            const nick = sharedStateRef.current?.userProfile?.basic?.nickname || '쭈';
+            const rawNick = sharedStateRef.current?.userProfile?.basic?.nickname || sharedStateRef.current?.userProfile?.basic?.name;
+            const nick = (rawNick && rawNick !== '박주형' && rawNick !== '쭈' && rawNick !== '여행자') ? rawNick : '제제';
             const archivalResult = processDailyChatArchival(remoteList, nick);
             if (archivalResult.wasArchived) {
               saveUnifiedMessagesSafely(archivalResult.messages);
@@ -1337,7 +1339,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const clearPersonaMessages = useCallback((persona?: PersonaType) => {
     const target = persona || 'lucy';
-    const nick = sharedStateRef.current?.userProfile?.basic?.nickname || '쭈';
+    const rawNick = sharedStateRef.current?.userProfile?.basic?.nickname || sharedStateRef.current?.userProfile?.basic?.name;
+    const nick = (rawNick && rawNick !== '박주형' && rawNick !== '쭈' && rawNick !== '여행자') ? rawNick : '제제';
     const initialGreet = archiveAndResetChat(unifiedMessages, nick, target);
 
     if (pushChatThreadsTimerRef.current) {

@@ -546,7 +546,8 @@ export function PrologueTodoSection() {
     setIsGeneratingAi(true);
     try {
       const selectedModeObj = AI_PRESET_MODES.find(m => m.id === aiPreset);
-      const userName = userProfile?.basic?.nickname || userProfile?.basic?.name || '사용자';
+      const rawNick = userProfile?.basic?.nickname?.trim() || userProfile?.basic?.name?.trim();
+      const userName = (rawNick && rawNick !== '박주형' && rawNick !== '쭈' && rawNick !== '여행자' && rawNick !== '사용자') ? rawNick : '제제';
 
       const prompt = `당신은 사용자의 웰니스, 마음챙김, 생산성, 영혼 성장을 돕는 라이프 퀘스트 마스터 AI입니다.
 아래 조건에 따라 오늘 하루 실천할 수 있는 현실적이고 매력적인 데일리 미션 3개를 JSON 형식으로 생성하세요.
@@ -631,7 +632,8 @@ export function PrologueTodoSection() {
       return;
     }
 
-    const userName = userProfile?.basic?.nickname || userProfile?.basic?.name || '당신';
+    const rawNick = userProfile?.basic?.nickname?.trim() || userProfile?.basic?.name?.trim();
+    const userName = (rawNick && rawNick !== '박주형' && rawNick !== '쭈' && rawNick !== '여행자' && rawNick !== '당신') ? rawNick : '제제';
     const pendingCount = totalCount - completedCount;
 
     let briefingText = `안녕하세요, ${userName}님. 오늘 ${todayFormatted}의 데일리 미션 오디오 브리핑입니다. ` +

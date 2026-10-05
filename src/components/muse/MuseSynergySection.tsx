@@ -231,7 +231,8 @@ export function MuseSynergySection() {
   const handleStartMasterclass = async () => {
     setIsLoading(true);
 
-    const nickname = userProfile?.basic?.nickname || userProfile?.basic?.name || '예술가';
+    const rawNick = userProfile?.basic?.nickname?.trim() || userProfile?.basic?.name?.trim();
+    const nickname = (rawNick && rawNick !== '박주형' && rawNick !== '쭈' && rawNick !== '여행자') ? rawNick : '제제';
     const mbti = (userProfile as any)?.psychology?.mbti || 'INFP';
     const dilemma = userCreativeDilemma.trim() || '영감의 고갈과 방향성에 대한 깊은 고민';
     const targetPieceName = selectedArtwork?.piece || selectedMaster.piece;

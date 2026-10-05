@@ -655,7 +655,8 @@ export function DailySecret() {
 
   const smartProfileWishes = useMemo(() => {
     const profile = sharedState?.userProfile;
-    const name = profile?.basic?.nickname || profile?.basic?.name || '나';
+    const rawName = profile?.basic?.nickname || profile?.basic?.name;
+    const name = (rawName && rawName !== '박주형' && rawName !== '쭈' && rawName !== '여행자') ? rawName : '제제';
     const list: { text: string; tag: string }[] = [];
 
     if (profile?.fate?.lifeGoal) {
@@ -737,7 +738,9 @@ export function DailySecret() {
 
   const cleanEveningPrompt = useMemo(() => {
     if (!data?.eveningPrompt || !/[가-힣]/.test(data.eveningPrompt)) {
-      const fallback = generateTailoredSecretFallback(wish, sharedState?.userProfile?.basic?.nickname || '여행자');
+      const rawNick = sharedState?.userProfile?.basic?.nickname || sharedState?.userProfile?.basic?.name;
+      const nick = (rawNick && rawNick !== '박주형' && rawNick !== '쭈' && rawNick !== '여행자') ? rawNick : '제제';
+      const fallback = generateTailoredSecretFallback(wish, nick);
       return fallback.eveningPrompt;
     }
     return data.eveningPrompt;
@@ -828,7 +831,8 @@ export function DailySecret() {
         return;
       }
 
-      const name = sharedState?.userProfile?.basic?.nickname || sharedState?.userProfile?.basic?.name || '여행자';
+      const rawName = sharedState?.userProfile?.basic?.nickname || sharedState?.userProfile?.basic?.name;
+      const name = (rawName && rawName !== '박주형' && rawName !== '쭈' && rawName !== '여행자') ? rawName : '제제';
       const full = ensureFullKit(actualSecretData as Partial<DailySecretData>, wish, name);
       if (full) {
         setData(full);
@@ -1011,10 +1015,10 @@ export function DailySecret() {
       ? JSON.stringify(sharedState.userProfile)
       : '프로필 없음';
     const memory = sharedState?.orangeMemory || sharedState?.globalMemory || '최근 기록 없음';
-    const name =
+    const rawName =
       sharedState?.userProfile?.basic?.nickname ||
-      sharedState?.userProfile?.basic?.name ||
-      '여행자';
+      sharedState?.userProfile?.basic?.name;
+    const name = (rawName && rawName !== '박주형' && rawName !== '쭈' && rawName !== '여행자') ? rawName : '제제';
     return { userProfileStr, memory, name };
   }, [sharedState]);
 

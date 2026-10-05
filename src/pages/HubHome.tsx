@@ -303,7 +303,8 @@ export default function HubHome() {
     setIsSyncingGlobal(true);
 
     try {
-      const nickname = sharedState?.userProfile?.basic?.nickname || '여행자';
+      const rawNick = sharedState?.userProfile?.basic?.nickname?.trim() || sharedState?.userProfile?.basic?.name?.trim();
+      const nickname = (rawNick && rawNick !== '박주형' && rawNick !== '쭈' && rawNick !== '여행자') ? rawNick : '제제';
       
       // Aggregate activities from all apps
       const activities: string[] = [];

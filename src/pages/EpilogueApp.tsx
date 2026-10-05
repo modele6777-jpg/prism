@@ -322,9 +322,14 @@ export default function EpilogueApp() {
 
   const initialProfile = sharedState?.userProfile || loadProfileFromAllVaults() || getPersistentUserProfile();
 
+  const rawInitName = initialProfile?.basic?.name || '';
+  const initName = (rawInitName && rawInitName !== '박주형' && rawInitName !== '여행자') ? rawInitName : (rawInitName === '박주형' ? '제제' : '');
+  const rawInitNick = initialProfile?.basic?.nickname || '';
+  const initNick = (rawInitNick && rawInitNick !== '박주형' && rawInitNick !== '쭈' && rawInitNick !== '여행자') ? rawInitNick : ((rawInitNick === '박주형' || rawInitNick === '쭈') ? '제제' : '');
+
   const [basic, setBasic] = useState({
-    name: initialProfile?.basic?.name || '',
-    nickname: initialProfile?.basic?.nickname || '',
+    name: initName,
+    nickname: initNick,
     birthdate: initialProfile?.basic?.birthdate || '',
     birthtime: initialProfile?.basic?.birthtime || '',
     gender: (initialProfile?.basic?.gender || '') as '' | 'male' | 'female' | 'other',
@@ -359,7 +364,12 @@ export default function EpilogueApp() {
     const handleProfileUpdate = () => {
       const profile = sharedState?.userProfile || loadProfileFromAllVaults() || getPersistentUserProfile();
       if (!profile) return;
-      if (profile.basic) setBasic((b) => ({ ...b, ...profile.basic }));
+      if (profile.basic) {
+        const cleanBasic = { ...profile.basic };
+        if (cleanBasic.name === '박주형') cleanBasic.name = '제제';
+        if (cleanBasic.nickname === '박주형' || cleanBasic.nickname === '쭈') cleanBasic.nickname = '제제';
+        setBasic((b) => ({ ...b, ...cleanBasic }));
+      }
       if (profile.fate) setFate((f) => ({ ...f, ...profile.fate }));
       if (profile.music) setMusic((m) => ({ ...m, ...profile.music }));
       if (profile.psych) setPsych((p) => ({ ...p, ...profile.psych }));
@@ -444,13 +454,13 @@ export default function EpilogueApp() {
               label="실명 *"
               value={basic.name}
               onChange={(v) => setBasic((b) => ({ ...b, name: v }))}
-              placeholder="예: 박소연"
+              placeholder="예: 제제"
             />
             <InputField
               label="닉네임 (루시 AI가 부를 호칭)"
               value={basic.nickname}
               onChange={(v) => setBasic((b) => ({ ...b, nickname: v }))}
-              placeholder="예: 쭈, 루키"
+              placeholder="예: 제제"
             />
             <InputField
               label="생년월일"

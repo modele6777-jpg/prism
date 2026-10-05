@@ -111,7 +111,7 @@ export function saveDailyMemoryToArchive(newEntry: DailyMemoryEntry): void {
  */
 export function processDailyChatArchival(
   currentMessages: UnifiedMessage[],
-  userName: string = '쭈'
+  userName: string = '제제'
 ): {
   messages: UnifiedMessage[];
   wasArchived: boolean;
@@ -230,7 +230,7 @@ ${formattedList}
  */
 export function archiveAndResetChat(
   messages: UnifiedMessage[],
-  nickname: string = '쭈',
+  nickname: string = '제제',
   targetPersona: PersonaType = 'lucy'
 ): UnifiedMessage[] {
   try {

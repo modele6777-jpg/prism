@@ -519,7 +519,7 @@ export function OrangeSynergySection() {
 
     const userPrompt = `[현실화 소망]: "${targetWish}"
 [핵심 영역]: ${categoryName}
-[사용자 호칭]: "${userProfile?.basic?.nickname || '나'}"
+[사용자 호칭]: "${(userProfile?.basic?.nickname && userProfile.basic.nickname !== '박주형' && userProfile.basic.nickname !== '쭈') ? userProfile.basic.nickname : ((userProfile?.basic?.name && userProfile.basic.name !== '박주형') ? userProfile.basic.name : '제제')}"
 [현재 진동 무드]: "${selectedVibe}"
 [해소할 내면 고민]: "${vibeContext.counselingTopic}"
 

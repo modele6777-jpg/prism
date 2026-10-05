@@ -323,7 +323,10 @@ export function UnifiedChat() {
   const [summaryDone, setSummaryDone] = useState(false);
 
   const rawNickname = sharedState?.userProfile?.basic?.nickname?.trim();
-  const userDisplayName = rawNickname && rawNickname !== '여행자' && rawNickname !== '사용자' ? rawNickname : '쭈';
+  const rawName = sharedState?.userProfile?.basic?.name?.trim();
+  const userDisplayName = (rawNickname && rawNickname !== '여행자' && rawNickname !== '사용자' && rawNickname !== '박주형' && rawNickname !== '쭈')
+    ? rawNickname
+    : ((rawName && rawName !== '여행자' && rawName !== '박주형') ? rawName : '제제');
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);

@@ -247,7 +247,8 @@ export function BluebirdSynergySection() {
     const currentLetter = confessionText.trim();
     setIsLoading(true);
 
-    const nickname = userProfile?.basic?.nickname || '순수한 영혼';
+    const rawNick = userProfile?.basic?.nickname?.trim() || userProfile?.basic?.name?.trim();
+    const nickname = (rawNick && rawNick !== '박주형' && rawNick !== '쭈' && rawNick !== '여행자') ? rawNick : '제제';
 
     const systemPrompt = `당신은 블루버드의 '호오포노포노 4대 주문 & 감정 소각 연금술 마스터'입니다.
 좌측 메뉴 [Ho'oponopono]의 4대 정화 언어(미안합니다, 용서하세요, 고맙습니다, 사랑합니다)와 사용자가 작성한 [소각할 마음의 비밀 편지]를 유기적으로 완벽히 융합하여, 마음에 맺힌 무거운 상처와 자책을 푸른 불꽃으로 소각하고 완전한 0(Zero State, 순수 백지)으로 승화시키는 정화의 계시와 융합 매트릭스를 생성하세요.

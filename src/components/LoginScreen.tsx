@@ -202,7 +202,7 @@ export function LoginScreen() {
         </div>
 
         <p className="text-xs text-white/25 text-center flex items-center justify-center gap-1">
-          PRISM에 오신 것을 환영합니다, 쭈 <Triangle size={11} className="inline-block align-middle ml-1 -translate-y-[1px]" />
+          PRISM에 오신 것을 환영합니다, 제제 <Triangle size={11} className="inline-block align-middle ml-1 -translate-y-[1px]" />
         </p>
       </motion.div>
     </div>

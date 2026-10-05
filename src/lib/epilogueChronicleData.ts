@@ -143,7 +143,8 @@ export function getDynamicSoulChronicle(
   const focus = COSMIC_FOCUS_OPTIONS.find((f) => f.id === focusId) || COSMIC_FOCUS_OPTIONS[0];
   const dateStr = dateSeedKey || new Date().toISOString().slice(0, 10);
   const seed = getDateSeed(`epilogue_chronicle_${focus.id}_${dateStr}`);
-  const nickname = userProfile?.basic?.nickname || userProfile?.basic?.name || '빛의 마스터';
+  const rawNick = userProfile?.basic?.nickname?.trim() || userProfile?.basic?.name?.trim();
+  const nickname = (rawNick && rawNick !== '박주형' && rawNick !== '쭈' && rawNick !== '여행자') ? rawNick : '제제';
   const mbti = (userProfile as any)?.psychology?.mbti || 'INFJ';
   const userText = (customInsight || '').trim();
 
