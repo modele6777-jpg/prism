@@ -115,7 +115,7 @@ const DeckWheelCard = React.memo(
     isHovered = false,
     cardBackId,
   }: DeckWheelCardProps) {
-    // 78 cards distributed continuously along the full 360 degree wheel
+    // Cards distributed continuously along the full 360 degree wheel
     const step = (2 * Math.PI) / totalCards;
     const localAngle = positionIdx * step + offset.angleOffset;
     const isSeamCard = positionIdx === 0;
@@ -129,7 +129,7 @@ const DeckWheelCard = React.memo(
     return (
       <div
         data-card-id={card.id}
-        className={`absolute left-1/2 top-1/2 w-14 h-24 sm:w-16 sm:h-28 md:w-20 md:h-34 rounded-lg sm:rounded-xl md:rounded-2xl flex items-center justify-center select-none transition-[transform,opacity] duration-150 ease-out overflow-hidden cursor-pointer ${
+        className={`absolute left-1/2 top-1/2 w-14 h-24 sm:w-16 sm:h-28 md:w-20 md:h-34 rounded-lg sm:rounded-xl md:rounded-2xl flex items-center justify-center select-none transition-[transform,opacity] duration-200 ease-out overflow-hidden cursor-pointer ${
           isPicked
             ? 'opacity-0 scale-75 pointer-events-none'
             : isHovered
@@ -243,6 +243,12 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
   const selectedIds = useMemo(
     () => selectedEntries.map((entry) => entry.card.id),
     [selectedEntries],
+  );
+
+  // 🌟 Active unpicked wheel deck: 뽑힌 카드는 즉시 휠에서 제외되고, 남은 카드가 부드럽게 재배치되어 여백을 빈틈없이 채움
+  const activeWheelCards = useMemo(
+    () => deck.filter((card) => !selectedIds.includes(card.id)),
+    [deck, selectedIds],
   );
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   const [wheelReady, setWheelReady] = useState(false);
@@ -457,7 +463,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
   // Fast direct hit-test + O(1) candidate lookup with circular unwrapping
   const findTappedCard = useCallback(
     (clientX: number, clientY: number): TarotCard | null => {
-      if (!containerRef.current || deck.length === 0) return null;
+      if (!containerRef.current || activeWheelCards.length === 0) return null;
 
       // 1. Instant direct DOM hit test
       try {
@@ -465,8 +471,8 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
         const cardEl = el?.closest('[data-card-id]');
         if (cardEl) {
           const cardId = cardEl.getAttribute('data-card-id');
-          if (cardId && !selectedIds.includes(cardId)) {
-            const found = deck.find((c) => c.id === cardId);
+          if (cardId) {
+            const found = activeWheelCards.find((c) => c.id === cardId);
             if (found) return found;
           }
         }
@@ -488,7 +494,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
       const rotationRad = (rotationRef.current * Math.PI) / 180;
       const currentRelativeAngle = pointerAngle - rotationRad;
 
-      const total = deck.length || TOTAL_WHEEL_SLOTS;
+      const total = activeWheelCards.length || TOTAL_WHEEL_SLOTS;
       const step = (2 * Math.PI) / total;
 
       // Normalize currentRelativeAngle to [0, 2*PI)
@@ -512,8 +518,8 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
       let bestDiff = Infinity;
 
       for (const idx of candidateIndices) {
-        const card = deck[idx];
-        if (!card || selectedIds.includes(card.id)) continue;
+        const card = activeWheelCards[idx];
+        if (!card) continue;
 
         const cardAngle = idx * step;
         const rawDiff = Math.atan2(Math.sin(currentRelativeAngle - cardAngle), Math.cos(currentRelativeAngle - cardAngle));
@@ -526,7 +532,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
 
       return bestDiff < Math.max(0.28, step * 2.2) ? bestCard : null;
     },
-    [deck, isMobile, radius, selectedIds, yOffset],
+    [activeWheelCards, isMobile, radius, yOffset],
   );
 
   const handleSelect = useCallback(
@@ -582,9 +588,8 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
   };
 
   const handleAutoPick = () => {
-    const unpicked = deck.filter((card) => !selectedIds.includes(card.id));
-    if (unpicked.length === 0 || selectedEntries.length >= maxCards || isFinishing || hasCompletedRef.current) return;
-    const randomCard = unpicked[Math.floor(Math.random() * unpicked.length)];
+    if (activeWheelCards.length === 0 || selectedEntries.length >= maxCards || isFinishing || hasCompletedRef.current) return;
+    const randomCard = activeWheelCards[Math.floor(Math.random() * activeWheelCards.length)];
     if (randomCard) {
       handleSelect(randomCard);
     }
@@ -723,13 +728,13 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
     if (isIntentionalTap && !isFinishing) {
       let tapped: TarotCard | null = null;
       if (touchedCardIdRef.current) {
-        tapped = deck.find((c) => c.id === touchedCardIdRef.current) || null;
+        tapped = activeWheelCards.find((c) => c.id === touchedCardIdRef.current) || null;
       }
       if (!tapped) {
         tapped = findTappedCard(e.clientX, e.clientY);
       }
 
-      if (tapped !== null && !selectedIds.includes(tapped.id)) {
+      if (tapped !== null) {
         handleSelect(tapped);
       }
     } else if (wasDragging) {
@@ -844,7 +849,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
             }}
           />
 
-          {deck.map((card, positionIdx) => (
+          {activeWheelCards.map((card, positionIdx) => (
             <DeckWheelCard
               key={card.id}
               card={card}
@@ -853,8 +858,8 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
               radius={radius}
               offset={cardOffsets[positionIdx % cardOffsets.length] || { radOffset: 0, angleOffset: 0 }}
               isMobile={isMobile}
-              totalCards={deck.length || TOTAL_WHEEL_SLOTS}
-              isPicked={selectedIds.includes(card.id)}
+              totalCards={activeWheelCards.length}
+              isPicked={false}
               isHovered={hoveredCardId === card.id}
               cardBackId={effectiveCardBackId}
             />
@@ -1032,7 +1037,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
                 {selectedEntries.length} / {maxCards} 카드를 선택하세요
               </span>
               <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-yellow-500/15 border border-yellow-500/30 text-yellow-300 font-mono font-bold">
-                남은 덱: {deck.length - selectedEntries.length}장
+                남은 덱: {activeWheelCards.length}장
               </span>
             </div>
           </div>
@@ -1061,10 +1066,10 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
           type="button"
           onClick={handleShuffleDeck}
           className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-yellow-500/20 via-amber-500/20 to-yellow-500/20 border border-yellow-500/40 hover:border-yellow-400 text-yellow-200 text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-all shadow-md cursor-pointer"
-          title={`현재 남은 ${deck.length - selectedEntries.length}장의 덱을 셔플합니다 (이미 뽑은 카드는 덱에 다시 들어가지 않습니다)`}
+          title={`현재 남은 ${activeWheelCards.length}장의 덱을 셔플합니다 (이미 뽑은 카드는 덱에 다시 들어가지 않습니다)`}
         >
           <Shuffle size={13} className="text-yellow-400" />
-          <span>남은 덱 셔플 ({deck.length - selectedEntries.length}장)</span>
+          <span>남은 덱 셔플 ({activeWheelCards.length}장)</span>
         </button>
 
         <button

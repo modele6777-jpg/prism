@@ -3002,13 +3002,11 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
                     <Streamdown immediate>{displayFullReadingText}</Streamdown>
                   </div>
 
-                  {/* 🌟 3장의 카드별 4대 기둥 심층 분석 (도상 상징, 사주 공명, 콜라보 해설, 실천 팁) */}
-                  {renderCardInsightsSection(
-                    oracleMode === 'healing' ? healingResult?.card_insights : growthResult?.card_insights
-                  )}
+                  {/* 🌟 3장의 카드별 현실 실행 툴킷 (힐링 타로 결과 화면에서는 안 나오도록 제외) */}
+                  {oracleMode !== 'healing' && renderCardInsightsSection(growthResult?.card_insights)}
 
-                  {/* ☯️ 사주 ✕ 타로 콜라보 종합 마스터 리포트 (본원 공명, 세운 흐름, 오행 보약, 최종 계시) */}
-                  {renderExecutiveSummaryCard()}
+                  {/* ☯️ 자기계발 종합 마스터 리포트 (힐링 타로 결과 화면에서는 안 나오도록 제외) */}
+                  {oracleMode !== 'healing' && renderExecutiveSummaryCard()}
 
                   {/* 🌟 그에 맞는 루시의 조언 (TTS 가능) */}
                   <div className="pt-2">
