@@ -11,9 +11,6 @@ import {
   Trash2,
   Edit3,
   RefreshCw,
-  MessageCircle,
-  ChevronDown,
-  ChevronUp,
   Compass,
   TreeDeciduous,
   Leaf,
@@ -117,7 +114,7 @@ export function getDiaryContentSignature(
 }
 
 export function EpilogueDiaryView() {
-  const { sharedState, updateSharedState, openLucyChat } = useApp();
+  const { sharedState, updateSharedState } = useApp();
   const todayKey = getTodayDateKey();
 
   // Local & Shared History
@@ -198,7 +195,6 @@ export function EpilogueDiaryView() {
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [autoSaved, setAutoSaved] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const [expandedEntryId, setExpandedEntryId] = useState<string | null>(null);
 
   // Baseline signature tracking: autosave MUST only trigger when contents actually differ from last saved state
   const initialSignature = useMemo(() => {
@@ -715,21 +711,6 @@ export function EpilogueDiaryView() {
     }
   };
 
-  // Delete an entry from history
-  const handleDeleteEntry = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!window.confirm('이 성찰 다이어리 기록을 삭제하시겠습니까?')) return;
-
-    const filtered = entries.filter((item) => item.id !== id);
-    setEntries(filtered);
-    try {
-      localStorage.setItem('epilogue_diary_history', JSON.stringify(filtered));
-    } catch {
-      // ignore
-    }
-    await updateSharedState({ epilogueHistory: filtered }, 'epilogue').catch(() => {});
-  };
-
   return (
     <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 pt-home md:pt-home-md space-y-8 pb-16">
       {/* 🌟 Header Banner */}
@@ -1219,188 +1200,6 @@ export function EpilogueDiaryView() {
           )}
         </div>
       </motion.div>
-
-      {/* 🌟 Archive & Past Reflections Timeline */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between px-2">
-          <h3 className="text-base font-bold font-sans text-white flex items-center gap-2">
-            <BookOpen size={18} className="text-purple-400" />
-            지난 성찰 다이어리 기록 보관함 ({entries.length})
-          </h3>
-          <span className="text-xs text-white/40 font-mono">저장된 소울 아카이브</span>
-        </div>
-
-        {entries.length === 0 ? (
-          <div className="glass p-8 rounded-3xl border border-white/10 text-center text-white/40 text-xs font-sans space-y-2">
-            <Moon size={28} className="mx-auto text-purple-400/40 animate-pulse" />
-            <p>아직 작성된 성찰 다이어리가 없습니다.</p>
-            <p className="text-[11px] text-white/30">오늘 첫 번째 마음일기를 작성하고 저장해 보세요.</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {entries.map((entry) => {
-              const isExpanded = expandedEntryId === entry.id;
-              const formattedDate = new Date(entry.createdAt).toLocaleDateString('ko-KR', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                weekday: 'short',
-              });
-
-              const diaryContent = entry.mindDiary || entry.reflection || (entry.gratitudes || []).join(', ') || '성찰 기록';
-
-              return (
-                <motion.div
-                  key={entry.id}
-                  layout
-                  className="glass p-5 rounded-3xl border border-white/10 shadow-lg hover:border-purple-500/30 transition-all backdrop-blur-xl space-y-3"
-                >
-                  <div
-                    className="flex items-center justify-between cursor-pointer select-none"
-                    onClick={() => setExpandedEntryId(isExpanded ? null : entry.id)}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className="text-2xl">{entry.moodEmoji || '😌'}</span>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs sm:text-sm font-bold text-white">
-                            {formattedDate}
-                          </span>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                            {entry.mood}
-                          </span>
-                        </div>
-                        <p className="text-xs text-white/60 font-sans mt-0.5 font-serif break-keep break-words whitespace-normal leading-relaxed">
-                          {diaryContent}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      {/* Quick Kore TTS Button on Timeline Card */}
-                      <div onClick={(e) => e.stopPropagation()}>
-                        <TTSButton
-                          text={diaryContent}
-                          voice="Kore"
-                          className="text-purple-300 hover:text-white scale-90"
-                        />
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={(e) => handleDeleteEntry(entry.id, e)}
-                        className="p-1.5 rounded-xl hover:bg-rose-500/20 text-white/30 hover:text-rose-300 transition-all cursor-pointer"
-                        title="기록 삭제"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                      <div className="p-1 rounded-full text-white/40">
-                        {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Expanded Content */}
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="pt-3 border-t border-white/10 space-y-3 text-xs text-white/80 font-sans"
-                      >
-                        {/* Gratitudes */}
-                        {entry.gratitudes && entry.gratitudes.length > 0 && (
-                          <div className="space-y-1">
-                            <span className="text-[11px] font-bold text-amber-300/80 flex items-center gap-1.5 font-mono">
-                              <Sparkles size={12} /> 감사한 순간들:
-                            </span>
-                            <ul className="list-disc list-inside space-y-0.5 text-white/75 pl-1">
-                              {entry.gratitudes.map((g, gIdx) => (
-                                <li key={gIdx}>{g}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {/* Mind Diary Full Text */}
-                        {(entry.mindDiary || entry.reflection) && (
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[11px] font-bold text-purple-300/80 flex items-center gap-1.5 font-mono">
-                                <PenLine size={12} /> 오늘의 마음일기:
-                              </span>
-                              <div className="flex items-center gap-1.5">
-                                <TTSButton
-                                  text={entry.mindDiary || entry.reflection || ''}
-                                  voice="Kore"
-                                  className="text-purple-300 hover:text-white"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => handleCopyText(`archive_${entry.id}`, entry.mindDiary || entry.reflection || '')}
-                                  className="p-1 rounded-lg bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all cursor-pointer"
-                                  title="복사"
-                                >
-                                  {copiedKey === `archive_${entry.id}` ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-                                </button>
-                              </div>
-                            </div>
-                            <p className="bg-white/[0.02] p-3.5 rounded-2xl border border-white/5 whitespace-pre-line leading-relaxed text-purple-100/90 font-serif text-xs sm:text-sm">
-                              {entry.mindDiary || entry.reflection}
-                            </p>
-                          </div>
-                        )}
-
-                        {/* Legacy Anchor if exists in old records */}
-                        {entry.anchor && (
-                          <div className="space-y-1">
-                            <span className="text-[11px] font-bold text-indigo-300/80 flex items-center gap-1.5 font-mono">
-                              <Moon size={12} /> 소울 앵커:
-                            </span>
-                            <p className="text-indigo-200/90 font-medium italic pl-1">
-                              "{entry.anchor}"
-                            </p>
-                          </div>
-                        )}
-
-                        {/* AI Feedback */}
-                        {entry.aiFeedback && !isBrokenMidnightWhisper(entry.aiFeedback) && (
-                          <div className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/20 space-y-1 text-purple-100/90 leading-relaxed">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-bold text-purple-300 uppercase tracking-widest font-mono flex items-center gap-1">
-                                <Sparkles size={11} /> 루시의 피날레 조언
-                              </span>
-                              <TTSButton
-                                text={entry.aiFeedback}
-                                voice="Kore"
-                                className="text-purple-300 hover:text-white"
-                              />
-                            </div>
-                            <p className="whitespace-pre-line">{entry.aiFeedback}</p>
-                          </div>
-                        )}
-
-                        {/* Actions */}
-                        <div className="pt-2 flex justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={() => openLucyChat('epilogue')}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 text-[11px] font-bold font-sans transition-all cursor-pointer"
-                          >
-                            <MessageCircle size={12} />
-                            <span>루시와 대화 나누기</span>
-                          </button>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-              );
-            })}
-          </div>
-        )}
-      </div>
 
       {/* 🌟 Achievement Share Modal */}
       <EpilogueAchievementShareModal
