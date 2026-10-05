@@ -949,6 +949,9 @@ export default function TrinityApp() {
 
     const handleTabChange = (e: Event) => {
       const customEvent = e as CustomEvent;
+      if (customEvent.detail?.tab === 'tarot' && customEvent.detail?.focusDaily) {
+        sessionStorage.setItem('prism_tarot_focus_daily', 'true');
+      }
       applyTargetTab(customEvent.detail?.tab);
     };
 
@@ -2035,6 +2038,21 @@ function playDailyCardChimeAsync() {
     }
   }, [dailyResult, dailyDrawnCard]);
 
+  useEffect(() => {
+    if (activeMode === "tarot" && typeof window !== "undefined" && sessionStorage.getItem('prism_tarot_focus_daily')) {
+      sessionStorage.removeItem('prism_tarot_focus_daily');
+      resetTarotSession(true);
+      setTarotConcern("오늘의 타로");
+      restoreTodayDailyResult();
+      const targetCard = dailyResult?.drawnCard || dailyDrawnCard;
+      if (targetCard) {
+        setDrawnCards([targetCard]);
+        setTarotResult(dailyResult?.diagnosis || dailyResult?.summary || "");
+        setHideTarotPopup(false);
+      }
+    }
+  }, [activeMode, dailyResult, dailyDrawnCard, restoreTodayDailyResult, resetTarotSession]);
+
   const handleSend = async (customMsg?: string, sendOpts?: OracleDeepInsightSendOpts) => {
     const userMsg = (customMsg || chatInput).trim();
     if (!sendOpts?.force && ((!userMsg && !selectedImage) || isSendingRef.current || isGenerating.lucy)) return;
@@ -2976,7 +2994,23 @@ ${concernAnalysis.kind === "yes_no"
                 animate={{ opacity: 1, y: 0 }}
                 className="w-full pb-8 sm:pb-12"
               >
-                <TrinityOracleSection />
+                <TrinityOracleSection
+                  onNavigateToTarot={(focusDaily = true) => {
+                    resetTarotSession(true);
+                    if (focusDaily) {
+                      setTarotConcern("오늘의 타로");
+                      restoreTodayDailyResult();
+                      const targetCard = dailyResult?.drawnCard || dailyDrawnCard;
+                      if (targetCard) {
+                        setDrawnCards([targetCard]);
+                        setTarotResult(dailyResult?.diagnosis || dailyResult?.summary || "");
+                        setHideTarotPopup(false);
+                      }
+                    }
+                    setActiveMode("tarot");
+                    setIsChatOpen(false);
+                  }}
+                />
               </motion.div>
             ) : activeMode === "tarot" ? (
               <motion.div

@@ -339,10 +339,38 @@ ${stage4}
 ${stage5}`;
 }
 
-export function TrinityOracleSection() {
+export interface TrinityOracleSectionProps {
+  onNavigateToTarot?: (focusDaily?: boolean) => void;
+}
+
+export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSectionProps = {}) {
   const [, setLocation] = useLocation();
   const { sharedState, firebaseUser } = useApp();
   const userProfile = sharedState?.userProfile || getPersistentUserProfile();
+
+  // 🔄 실시간 일일 타로 동기화 틱
+  const [syncTick, setSyncTick] = useState<number>(0);
+  useEffect(() => {
+    const handleDailyUpdate = () => {
+      setSyncTick((t) => t + 1);
+    };
+    window.addEventListener('prism:daily_oracle_updated', handleDailyUpdate);
+    window.addEventListener('storage', handleDailyUpdate);
+    window.addEventListener('focus', handleDailyUpdate);
+    return () => {
+      window.removeEventListener('prism:daily_oracle_updated', handleDailyUpdate);
+      window.removeEventListener('storage', handleDailyUpdate);
+      window.removeEventListener('focus', handleDailyUpdate);
+    };
+  }, []);
+
+  const handleGoToTarot = useCallback((focusDaily = true) => {
+    if (onNavigateToTarot) {
+      onNavigateToTarot(focusDaily);
+    } else {
+      window.dispatchEvent(new CustomEvent('prism-tab-change', { detail: { tab: 'tarot', focusDaily } }));
+    }
+  }, [onNavigateToTarot]);
 
   // 사주 명리 정밀 계산 (기본값 내장으로 미입력 시에도 완벽한 명식 및 오행 분석 보장)
   const saju = useMemo(() => {
@@ -390,22 +418,38 @@ export function TrinityOracleSection() {
         const raw = localStorage.getItem(k);
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (parsed?.drawnCard || parsed?.diagnosis || parsed?.summary) {
+          if (parsed?.drawnCard || parsed?.card || parsed?.diagnosis || parsed?.summary) {
             return parsed;
           }
+        }
+      }
+
+      // Check sharedState
+      if (sharedState?.todayOracles?.[todayDateKey]?.trinity) {
+        const trinityData = sharedState.todayOracles[todayDateKey].trinity;
+        if (trinityData?.drawnCard || trinityData?.card || trinityData?.diagnosis || trinityData?.summary) {
+          return trinityData;
+        }
+      }
+      if (sharedState?.latestDailyOracles?.trinity?.dateKey === todayDateKey) {
+        const trinityData = sharedState.latestDailyOracles.trinity;
+        if (trinityData?.drawnCard || trinityData?.card || trinityData?.diagnosis || trinityData?.summary) {
+          return trinityData;
         }
       }
 
       // Fallback search across all local storage
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && key.startsWith('trinity_daily_result_') && key.endsWith(todayDateKey)) {
+        if (key && (key.startsWith('trinity_daily_result_') || key.startsWith('limit_daily_trinity_')) && key.endsWith(todayDateKey)) {
           const raw = localStorage.getItem(key);
           if (raw) {
-            const parsed = JSON.parse(raw);
-            if (parsed?.drawnCard || parsed?.diagnosis || parsed?.summary) {
-              return parsed;
-            }
+            try {
+              const parsed = JSON.parse(raw);
+              if (parsed?.drawnCard || parsed?.card || parsed?.diagnosis || parsed?.summary) {
+                return parsed;
+              }
+            } catch (_) {}
           }
         }
       }
@@ -413,7 +457,7 @@ export function TrinityOracleSection() {
       console.warn('[TrinityOracleSection] daily tarot result lookup error:', e);
     }
     return null;
-  }, [firebaseUser?.uid, todayDateKey]);
+  }, [firebaseUser?.uid, todayDateKey, sharedState?.todayOracles, sharedState?.latestDailyOracles, syncTick]);
 
   // 🔮 오늘의 타로 지배 카드 (Cosmic Anchor) - 오늘 직접 뽑은 일일 타로가 있으면 우선 연동, 미추첨 시 당일 천문 시드 기반 결정
   const todayDailyTarot: TarotCard = useMemo(() => {
@@ -2128,6 +2172,166 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
     );
   };
 
+  // 🌟 오늘의 지배 카드 (Cosmic Anchor) 연동 & 사전 안내 배너 렌더러
+  const renderCosmicDominantCardBanner = () => {
+    if (!hasTodayDailyResult) {
+      return (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative overflow-hidden rounded-3xl border border-yellow-400/40 bg-gradient-to-r from-yellow-950/40 via-amber-950/30 to-indigo-950/40 p-4 sm:p-5 shadow-[0_12px_36px_rgba(0,0,0,0.5)] backdrop-blur-xl"
+        >
+          {/* Ambient glow */}
+          <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-yellow-500/15 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-12 -left-12 w-48 h-48 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            {/* Left Info */}
+            <div className="flex items-start gap-3.5 min-w-0 flex-1">
+              <div className="w-11 h-11 rounded-2xl bg-yellow-500/20 border border-yellow-400/40 flex items-center justify-center text-yellow-300 shrink-0 shadow-[0_0_20px_rgba(234,179,8,0.3)] mt-0.5">
+                <Sparkles size={22} className="animate-pulse text-yellow-400" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-yellow-400 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping inline-block" />
+                    오늘의 지배 카드 (Cosmic Anchor) 연동 안내
+                  </span>
+                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-yellow-400/20 text-yellow-200 border border-yellow-400/30">
+                    사전 추천
+                  </span>
+                </div>
+                <h4 className="text-sm sm:text-base font-bold text-white tracking-tight flex items-center gap-1.5 flex-wrap">
+                  <span>오늘의 타로 선택 시 더 정확한 안내가 가능합니다</span>
+                </h4>
+                <p className="text-xs text-zinc-300/90 mt-1 leading-relaxed break-keep">
+                  오라클 타로는 오늘 하루를 관통하는 <strong className="text-yellow-300 font-bold">'오늘의 지배 카드'</strong>의 기저 파동 및 사주 본원과 융합하여 당신의 고민을 가장 입체적으로 해독합니다. <span className="text-amber-200 font-medium">오늘의 타로를 먼저 확인하시면 리딩의 정밀도가 극대화됩니다.</span>
+                </p>
+                <div className="mt-2 flex items-center gap-2 text-[11px] text-zinc-400 flex-wrap">
+                  <span className="text-amber-400/80">✦</span>
+                  <span>현재 당일 천문 시드 지배 카드: <strong className="text-amber-200 font-bold">[{todayDailyTarot.nameKo}]</strong> ({todayDailyTarot.name})</span>
+                  <span className="text-zinc-500">|</span>
+                  <span className="text-zinc-400">오늘 일진: <span className="text-white font-medium">{dailySaju?.dayPillar.full || '당일 운기'}</span></span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Action */}
+            <div className="flex flex-col sm:flex-row md:flex-col items-stretch sm:items-center md:items-end gap-2 shrink-0 w-full md:w-auto">
+              <button
+                type="button"
+                onClick={() => handleGoToTarot(true)}
+                className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-yellow-500 via-amber-500 to-yellow-600 hover:from-yellow-400 hover:to-amber-400 text-black font-extrabold text-xs tracking-wide flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(234,179,8,0.4)] transition-all cursor-pointer active:scale-95 whitespace-nowrap"
+              >
+                <Sparkles size={14} className="text-black" />
+                <span>오늘의 타로 먼저 선택하기 (추천)</span>
+              </button>
+              <span className="text-[10px] text-zinc-400 text-center md:text-right">
+                바로 오라클 카드를 뽑으셔도 무방합니다
+              </span>
+            </div>
+          </div>
+        </motion.div>
+      );
+    }
+
+    // When hasTodayDailyResult is true:
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative overflow-hidden rounded-3xl border border-yellow-400/40 bg-gradient-to-r from-yellow-950/40 via-amber-950/20 to-indigo-950/40 p-4 sm:p-5 shadow-[0_12px_36px_rgba(0,0,0,0.55)] backdrop-blur-xl"
+      >
+        {/* Ambient glow */}
+        <div className="absolute -top-12 -right-12 w-52 h-52 rounded-full bg-yellow-500/15 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-12 -left-12 w-52 h-52 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          {/* Left Card Thumbnail + Content */}
+          <div className="flex items-center sm:items-start gap-4 min-w-0 flex-1">
+            {/* Tarot Card Thumbnail with proper orientation */}
+            <div className="relative shrink-0 group">
+              <div className="w-14 sm:w-16 h-22 sm:h-24 rounded-xl overflow-hidden border-2 border-yellow-400/60 shadow-[0_0_18px_rgba(234,179,8,0.3)] bg-black/60 relative">
+                <img
+                  src={getTarotCardImageUrl(todayDailyTarot)}
+                  alt={todayDailyTarot.nameKo}
+                  className={`w-full h-full object-cover transition-transform duration-300 ${todayDailyTarot.reversed ? 'rotate-180' : ''}`}
+                  loading="lazy"
+                />
+              </div>
+              <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-black border tracking-tighter ${
+                  todayDailyTarot.reversed
+                    ? 'bg-rose-500/90 text-white border-rose-300 shadow-sm'
+                    : 'bg-emerald-500/90 text-white border-emerald-300 shadow-sm'
+                }`}>
+                  {todayDailyTarot.reversed ? '역방향' : '정방향'}
+                </span>
+              </div>
+            </div>
+
+            {/* Info details */}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <span className="text-[11px] font-black uppercase tracking-wider text-yellow-400 flex items-center gap-1.5">
+                  <Sparkles size={13} className="text-yellow-400 animate-pulse" />
+                  오늘의 지배 카드 (Cosmic Anchor)
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 flex items-center gap-1">
+                  <CheckCircle2 size={10} />
+                  오라클 배경 에너지 실시간 연동 활성화
+                </span>
+              </div>
+
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <h4 className="text-base sm:text-lg font-serif font-black text-white tracking-tight">
+                  [{todayDailyTarot.nameKo}]
+                </h4>
+                <span className="text-xs text-yellow-300/80 font-mono">
+                  {todayDailyTarot.name}
+                </span>
+                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${
+                  todayDailyTarot.reversed
+                    ? 'bg-rose-500/15 text-rose-300 border-rose-400/30'
+                    : 'bg-emerald-500/15 text-emerald-300 border-emerald-400/30'
+                }`}>
+                  {todayDailyTarot.reversed ? '역방향 (Reversed)' : '정방향 (Upright)'}
+                </span>
+              </div>
+
+              <p className="text-xs text-zinc-300/90 mt-1 leading-relaxed break-keep">
+                오늘 직접 뽑으신 지배 카드 <strong className="text-yellow-200">[{todayDailyTarot.nameKo}]</strong>의 파동이 사주 본원 <strong className="text-amber-300">[{saju?.dayMaster?.symbolName || '기운'}]</strong>과 공명하며, 이번 오라클 리딩 전반의 상황 진단과 현실 처방에 강력한 배경 에너지로 유기적 연동 중입니다.
+              </p>
+
+              <div className="mt-1.5 flex items-center gap-2 text-[11px] text-zinc-400 flex-wrap">
+                <span className="text-amber-400/80">✦</span>
+                <span>핵심 키워드: <strong className="text-zinc-200">{todayDailyTarot.keywords.slice(0, 3).join(', ')}</strong></span>
+                <span className="text-zinc-500">|</span>
+                <span>오늘 일진: <strong className="text-white">{dailySaju?.dayPillar.full || '당일 운기'}</strong> {dailySaju?.tenGodGan.name && `[${dailySaju.tenGodGan.name}]`}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Action Button */}
+          <div className="flex flex-col sm:flex-row md:flex-col items-stretch sm:items-center md:items-end gap-2 shrink-0 w-full md:w-auto">
+            <button
+              type="button"
+              onClick={() => handleGoToTarot(true)}
+              className="px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-yellow-400/30 text-yellow-300 font-bold text-xs tracking-wide flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer active:scale-95 whitespace-nowrap hover:text-white"
+              title="오늘의 타로 리딩 결과 및 음성 낭독 확인"
+            >
+              <Eye size={14} className="text-yellow-400" />
+              <span>오늘의 타로 결과 보기</span>
+            </button>
+            <span className="text-[10px] text-emerald-300/90 text-center md:text-right flex items-center gap-1 justify-center md:justify-end">
+              <span>✓ 1일 1회 일일 타로 연동 완료</span>
+            </span>
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
+
   return (
     <div className="w-full max-w-4xl mx-auto space-y-6 pb-12 text-white">
       {/* 1. Header & Segment Controller */}
@@ -2303,6 +2507,9 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
           )}
         </div>
       </div>
+
+      {/* 🌟 오늘의 지배 카드 (Cosmic Anchor) 연동 & 사전 안내 배너 */}
+      {renderCosmicDominantCardBanner()}
 
       {/* 2. Main Stage Area */}
       <AnimatePresence mode="wait">
