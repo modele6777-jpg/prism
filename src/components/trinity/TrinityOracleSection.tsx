@@ -245,31 +245,59 @@ export function buildFallbackHealingMessage(
   microAction?: any
 ): string {
   const sajuNameStr = saju?.name || recipientName || '내담자';
-  const dayMasterStr = saju ? `${saju.dayMaster.hanja}(${saju.dayMaster.symbolName})` : '본원 기운';
+  const dayMasterStr = saju ? `${saju.dayMaster.hanja}(${saju.dayMaster.korean} · ${saju.dayMaster.symbolName})` : '본원 기운';
   const domElStr = saju?.elements?.dominant?.name || '우세 오행';
+  const domElAdvice = saju?.elements?.dominant?.advice || '유연한 흐름';
   const lackElStr = saju?.elements?.lacking?.name || '결핍 오행';
   const yongsinStr = saju?.yongsin?.name || '용신 보약';
+  const yongsinTip = saju?.yongsin?.actionTip || '내면의 고요한 관찰';
 
   const c1 = cards[0];
   const c2 = cards[1];
   const c3 = cards[2];
-  const c1Name = c1 ? `${c1.nameKo || c1.name}${c1.reversed ? ' (역방향)' : ' (정방향)'}` : '과거 카드';
-  const c2Name = c2 ? `${c2.nameKo || c2.name}${c2.reversed ? ' (역방향)' : ' (정방향)'}` : '현재 카드';
-  const c3Name = c3 ? `${c3.nameKo || c3.name}${c3.reversed ? ' (역방향)' : ' (정방향)'}` : '조언 카드';
+  const c1Name = c1 ? `${c1.nameKo || c1.name}${c1.reversed ? ' (역방향)' : ' (정방향)'}` : '1번 과거 카드';
+  const c2Name = c2 ? `${c2.nameKo || c2.name}${c2.reversed ? ' (역방향)' : ' (정방향)'}` : '2번 현재 카드';
+  const c3Name = c3 ? `${c3.nameKo || c3.name}${c3.reversed ? ' (역방향)' : ' (정방향)'}` : '3번 조언 카드';
+  const c1Keywords = c1?.keywords ? c1.keywords.slice(0, 3).join(', ') : '원형적 상징';
+  const c2Keywords = c2?.keywords ? c2.keywords.slice(0, 3).join(', ') : '현실의 흐름';
+  const c3Keywords = c3?.keywords ? c3.keywords.slice(0, 3).join(', ') : '해결의 열쇠';
 
-  const stage1Text = synergy?.day_master_resonance || `${recipientName} 님, 오늘 ${recipientName} 님이 품고 태어난 [${dayMasterStr}] 본원 기운과 2026 병오년(丙午年)의 거대한 세운 흐름, 그리고 오늘 하루를 관통하는 일일 지배 카드인 [${todayCard.nameKo}](${todayCard.reversed ? '역방향' : '정방향'})의 기저 파동이 만나 당신의 삶의 무대에 매우 역동적이면서도 섬세한 운명의 장막을 펼쳐 보이고 있습니다.\n\n${effectiveInquiry ? `현재 마주하신 "${effectiveInquiry}" 고민 앞에서, ` : ''}사주 원국의 ${domElStr} 기운과 오늘의 타로 배경 에너지가 깊이 공명하며, 이제 뽑힌 3장의 오라클 카드가 당신의 과거·현재·미래를 관통하는 명쾌한 치유의 길을 제시합니다. ${synergy?.destiny_flow_synthesis || '외부의 소음에 휩쓸리지 않고 자신의 본원 페이스를 지키는 것이 가장 현명한 해법임을 비춰줍니다.'}`;
+  const todayCardStr = `[${todayCard.nameKo}] (${todayCard.name}${todayCard.reversed ? ' · 역방향' : ' · 정방향'})`;
+  const inquiryFocus = effectiveInquiry ? `현재 마주하신 "${effectiveInquiry}" 고민` : '지금 마주하신 삶의 화두와 내면의 질문';
 
-  const stage2Text = insights?.[0]?.personal_interpretation || insights?.[0]?.core_meaning || `첫 번째 과거/무의식의 자리에 놓인 [${c1Name}]는 지금의 고민이 싹트게 된 깊은 심리적 뿌리를 비추고 있습니다. ${sajuNameStr} 님의 타고난 사주 본원 [${dayMasterStr}] 기질은 본래 높은 책임감과 헌신성을 지니고 있으나, 과거로부터 누적되어 온 무의식적 피로와 홀로 모든 것을 감내하려던 부담이 내면에 보이지 않는 정체를 만들어냈음을 말해줍니다. 내면의 소리를 외면한 채 외부 기준에 맞추려 했던 그 과거의 씨앗이 오늘날 마음에 긴장의 파문을 일으켰던 것입니다.`;
+  const stage1Text = `${recipientName} 님, 오늘 당신이 품고 태어난 [${dayMasterStr}] 본원 기운과 2026 병오년(丙午年)의 거대한 세운 흐름, 그리고 오늘 하루를 관통하는 일일 지배 카드인 ${todayCardStr}의 기저 파동이 만나 당신의 삶의 무대에 매우 역동적이면서도 섬세한 운명의 장막을 펼쳐 보이고 있습니다.
 
-  const stage3Text = insights?.[1]?.personal_interpretation || insights?.[1]?.core_meaning || `두 번째 현재/상황의 흐름 자리에 놓인 [${c2Name}]는 지금 ${recipientName} 님이 일상과 관계 속에서 느끼고 계실 현실적 긴장과 마음의 소용돌이를 입체적으로 진단합니다. 사주에서 강하게 작용하는 ${domElStr}의 에너지가 현실 환경과 맞물리면서 생각은 꼬리를 물고 마음은 서둘러 상황을 통제하려 하고 있습니다. 그러나 카드의 도상은 지금의 갈등이 실패가 아니라 낡은 에너지를 정화하고 새로운 균형을 찾기 위해 필연적으로 거쳐야 할 정화의 과정임을 보여줍니다.`;
+오늘의 일일 지배 타로 [${todayCard.nameKo}]는 하루의 무의식적 기저와 현실 환경을 조율하는 핵심 우주 나침반입니다. 사주 원국에서 강하게 솟구치는 ${domElStr}의 기운과 오늘의 타로 배경 에너지가 교차하며, ${recipientName} 님이 품고 계신 ${inquiryFocus} 앞에서 내면의 무게와 생각의 속도를 조율하도록 촉구하고 있습니다. 사주 일간 본원의 고유한 품격과 오늘의 타로가 형성한 기저 장(Field) 안에서, 마음의 혼란은 결코 우연이 아니며 새로운 성숙과 도약을 향한 필연적인 운명적 신호탄입니다.
 
-  const stage4Text = insights?.[2]?.personal_interpretation || insights?.[2]?.core_meaning || `세 번째 미래/조언과 해결의 열쇠 자리에 등장한 [${c3Name}]는 이번 오라클 리딩의 가장 위대한 전환점이자 처방입니다. 사주 원국에서 반드시 보완해야 할 ${lackElStr}과 용신 ${yongsinStr}의 생명력 있는 기운이 이 카드의 영적 상징 속에서 완벽하게 살아 숨 쉬고 있습니다. 카드는 더 이상 불필요한 자기 검열이나 과거의 부담에 에너지를 빼앗기지 말고, 카드가 가리키는 새로운 시선과 유연한 결단을 내릴 것을 강력히 권고합니다.`;
+이제 당신이 직접 선택한 3장의 오라클 카드가 사주 명리의 오행 밸런스와 긴밀하게 결합하여, 과거의 무의식적 씨앗부터 현재의 현실적 갈등, 그리고 미래의 명쾌한 해결 열쇠에 이르기까지 깊고 자비로운 치유의 여정을 입체적으로 안내합니다. 외부의 소음에 휩쓸리지 않고 자신의 본원 페이스를 되찾는 지혜로운 해법이 지금 눈앞에 펼쳐집니다.`;
+
+  const stage2Text = `${insights?.[0]?.personal_interpretation ? `${insights[0].personal_interpretation}\n\n` : ''}첫 번째 과거와 무의식의 자리에 놓인 [${c1Name}]는 지금의 고민이 싹트게 된 깊은 심리적 뿌리와 내면의 씨앗을 투명하게 비추고 있습니다. 카드가 품은 핵심 상징([${c1Keywords}])은 오랜 시간 동안 당신의 의식 아래에서 묵묵히 축적되어 온 생각의 패턴과 억눌린 감정의 파동을 정밀하게 해독합니다.
+
+${sajuNameStr} 님의 타고난 사주 본원 [${dayMasterStr}] 기질은 본래 높은 책임감과 성실성을 지니고 있어, 주변의 기대를 외면하지 못하고 스스로 모든 무게를 짊어지려는 숭고한 기상을 가지고 있습니다. 그러나 오늘의 지배 타로 [${todayCard.nameKo}]의 파동과 1번 카드가 교차하면서 드러나는 진실은, 과거로부터 홀로 모든 것을 감내하려 했던 부담감과 "내가 더 참아야 한다"는 무의식적 자기 검열이 내면에 보이지 않는 에너지 정체를 만들어냈음을 말해줍니다.
+
+자신의 솔직한 감정과 욕구를 뒤로한 채 외부 기준과 타인의 시선에 맞추려 했던 그 과거의 시간들이 오늘날 마음에 깊은 피로와 긴장의 파문을 일으켰던 것입니다. 하지만 카드의 도상은 이것이 당신의 결함이나 실수가 아니라고 위로합니다. 그것은 자신의 최선을 다해 살아온 사람만이 남길 수 있는 고결한 삶의 훈장이자, 이제는 낡은 짐을 내려놓고 스스로를 보살펴야 할 때임을 알리는 영혼의 전환점입니다.`;
+
+  const stage3Text = `${insights?.[1]?.personal_interpretation ? `${insights[1].personal_interpretation}\n\n` : ''}두 번째 현재와 상황의 흐름 자리에 놓인 [${c2Name}]는 지금 ${recipientName} 님이 일상과 관계, 그리고 선택의 기로에서 느끼고 계실 현실적 긴장과 마음의 소용돌이를 입체적으로 진단합니다. 카드의 도상과 상징([${c2Keywords}])은 지금 겉으로 드러난 상황뿐만 아니라, 그 이면에서 요동치는 미세한 감정의 줄다리기를 날카롭게 포착합니다.
+
+사주 원국에서 강하게 작용하는 ${domElStr}의 에너지가 오늘의 지배 카드 [${todayCard.nameKo}]의 현실적 작용과 맞물리면서, 생각은 꼬리를 물고 마음은 서둘러 상황을 통제하거나 결과를 예측하려 조급해하고 있습니다. ${effectiveInquiry ? `특히 마주하신 "${effectiveInquiry}" 사안 앞에서, ` : ''}자신의 기준과 현실의 진행 속도 사이에 존재하는 괴리감이 마음에 답답함과 무력감을 번갈아 일으키고 있는 형국입니다.
+
+그러나 [${c2Name}]의 도상은 지금 마주한 갈등이 상황의 붕괴가 아니라, 낡고 정체된 에너지를 털어내고 새로운 균형을 찾기 위해 필연적으로 통과해야 할 '성스러운 정화의 관문(Purification Gate)'임을 보여줍니다. 바람이 불어야 먼지가 털려 나가듯, 현재의 혼란은 더 견고하고 유연한 자신을 빚어내기 위한 우주의 정돈 과정입니다. 지금은 서둘러 결과를 강제하려 하지 말고, 파도를 관찰하는 서퍼처럼 상황의 흐름을 한 걸음 물러서서 관찰하는 유연성이 절실합니다.`;
+
+  const stage4Text = `${insights?.[2]?.personal_interpretation ? `${insights[2].personal_interpretation}\n\n` : ''}세 번째 미래와 조언, 그리고 해결의 열쇠 자리에 장엄하게 등장한 [${c3Name}]는 이번 오라클 리딩의 가장 위대한 전환점이자 명쾌한 탈출 로드맵입니다. 카드가 담지하고 있는 원형적 지혜([${c3Keywords}])는 막연한 위로를 넘어, 현실의 안개를 걷어내고 명징한 방향성을 제시하는 강력한 영적 나침반으로 작용합니다.
+
+사주 원국에서 반드시 보충해야 할 결핍 오행 ${lackElStr}과 용신 ${yongsinStr}의 생명력 있는 기운이 이 3번 카드의 상징 체계 속에서 완벽하게 공명하고 있습니다. ${yongsinTip}의 사주 개운 원리가 카드의 도상과 만나면서, 당신에게 더 이상 과거의 죄책감이나 미래의 불안에 에너지를 낭비하지 말 것을 단호히 선언합니다. 이 카드는 상황을 통제하려 애쓰는 대신, ${recipientName} 님 스스로에게 주도권을 돌려주고 상황을 바라보는 프레임을 완전히 전환할 것을 지시합니다.
+
+오늘의 지배 타로 [${todayCard.nameKo}]가 던진 하루의 화두는 바로 이 3번 카드의 결단을 통해 가장 온전하고 풍요로운 성장의 결실로 매듭지어질 것입니다. 두려움 때문에 미뤄왔던 솔직한 표현을 시작하고, 자신을 갉아먹던 기준을 과감히 내려놓으십시오. 카드가 비추는 빛을 따라 걸어갈 때, 복잡하게 얽혀 있던 고민의 실타래는 마법처럼 풀려나가며 당신이 가야 할 가장 맑고 안전한 길이 눈앞에 펼쳐질 것입니다.`;
 
   const actionStr = typeof microAction === 'string' && microAction.length > 5
     ? microAction
-    : (microAction?.description || '따뜻한 온수를 섭취하고 3번의 깊은 복식호흡 실천하기');
+    : (microAction?.description || '따뜻한 온수를 섭취하고 가슴을 펴는 3번의 깊은 복식호흡 실천하기');
 
-  const stage5Text = synergy?.saju_oracle_verdict || `운명은 정해진 감옥이 아니라 당신의 선택과 호흡으로 빚어가는 살아있는 예술입니다. 사주 용신인 ${yongsinStr}의 에너지를 깨우기 위해 오늘 하루, "${actionStr}"을(를) 실천하며 스스로에게 온전한 쉼을 선물해 주십시오. 당신은 이미 자신만의 고유한 빛과 지혜를 품고 태어난 존귀한 영혼입니다. 사주와 타로의 축복이 당신의 모든 발걸음을 따뜻하게 감싸 안기를 진심으로 기원합니다.`;
+  const stage5Text = `${recipientName} 님, 운명은 이미 정해진 굳은 감옥이 아니라 당신의 호흡과 작은 선택들이 모여 빚어가는 살아있는 예술입니다. 사주 용신인 [${yongsinStr}]의 맑은 기운을 일상에서 깨우기 위해 오늘 하루, "${actionStr}"을(를) 정성스럽게 실천해 주십시오. 작은 온수를 마시고 가슴을 펴는 3번의 깊은 복식호흡만으로도 몸과 마음에 쌓였던 냉기와 독소가 씻겨 나가기 시작합니다.
+
+사주에서 ${domElAdvice}의 지혜를 마음에 새기고, 오늘의 지배 타로 [${todayCard.nameKo}]의 든든한 배경 장 안에서 당신의 고유한 중심을 회복하십시오. 고민은 당신을 무너뜨리기 위해 찾아온 적이 아니라, 당신 안에 잠자고 있던 거대한 사랑과 내적 힘을 깨우기 위해 찾아온 귀한 손님입니다.
+
+당신은 우주가 무수한 인연의 씨실과 날실로 정성껏 빚어낸 존귀하고 아름다운 영혼입니다. 오늘 하루, 스스로를 향해 "지금까지 정말 애썼다, 고맙다"는 따뜻한 인정과 다정한 미소를 건네주십시오. 사주 명리학의 유구한 지혜와 78장 타로 오라클의 영적 축복이 당신의 모든 발걸음을 눈부신 은총과 평온함으로 감싸 안기를 진심으로 기원합니다.`;
 
   return `### 🌌 1. 2026 오늘의 일일 타로 [${todayCard.nameKo}]와 사주 원국의 거대한 공명
 ${stage1Text}
@@ -758,7 +786,8 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
   const displayFullReadingText = useMemo(() => {
     if (oracleMode === 'healing') {
       const msg = healingResult?.message?.trim();
-      if (msg && msg.length >= 50) return msg;
+      const hasAllStages = Boolean(msg && msg.includes('1.') && msg.includes('2.') && msg.includes('3.') && msg.includes('4.') && msg.includes('5.'));
+      if (msg && msg.length >= 1000 && hasAllStages) return msg;
       if (healingResult) {
         return buildFallbackHealingMessage(
           drawnCards,
@@ -881,6 +910,12 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
     setIsLoading(true);
     stopTTS();
 
+    const sajuNameStr = saju?.name || recipientName || '내담자';
+    const dayMasterStr = saju ? `${saju.dayMaster.hanja}(${saju.dayMaster.korean} · ${saju.dayMaster.symbolName})` : '본원 기운';
+    const domElStr = saju?.elements?.dominant?.name || '우세 오행';
+    const lackElStr = saju?.elements?.lacking?.name || '결핍 오행';
+    const yongsinStr = saju?.yongsin?.name || '용신 보약';
+
     const cardDescriptions = cards
       .map((c, i) => {
         const d = getTarotCardDetails(c);
@@ -942,8 +977,11 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
         const systemPrompt = `당신은 동양의 '사주명리학(四柱命理)'과 서양의 '정통 78장 타로(Tarot)'를 완벽하게 교차 융합하는 '정통 사주 ✕ 타로 오라클 마스터(Saju & Tarot Oracle Master)'입니다.
 
 # 핵심 사명 (Core Oracle Mission):
-오라클 타로는 일반 타로보다 훨씬 더 길고 자세하며, 깊이 있는 대서사 구조로 내담자의 운명과 심리를 조망하는 상위 오라클입니다.
-질문자가 마주한 상황과 고민에 대해, 동양 명리학의 일간(본원 기운), 오행(목화토금수)의 균형 및 용신, 2026 병오년 세운, 오늘의 일일 타로 카드([${todayAnchorCard.nameKo}])의 결과와 배경 파동, 그리고 서양 타로의 3장 스프레드(1번: 과거/무의식의 뿌리, 2번: 현재/상황과 마음의 흐름, 3번: 미래/조언과 해결의 열쇠) 도상 상징을 정교하게 【콜라보레이션(융합 분석)】하여, 높은 통찰력과 현실적이고 따뜻한 해법을 담은 정통 타로 리딩을 제공하는 것입니다.
+오라클 타로는 일반 타로보다 훨씬 더 길고 자세하며, 방대하고 정밀한 영적/운명적 대서사를 제공하는 최상위 오라클입니다.
+이 리딩의 목적은 질문자가 털어놓은 【구체적인 고민의 근원적 치유, 내면의 무의식적 피로 해소, 사주 원국과 카드의 깊은 공명, 현실적이고 따뜻한 실천 개운 처방】을 사주 일간 본원(${saju?.dayMaster.symbolName}) 기질과 오늘의 일일 타로([${todayAnchorCard.nameKo}])의 배경 파동, 그리고 3장의 오라클 카드(1번: ${cards[0]?.nameKo}, 2번: ${cards[1]?.nameKo}, 3번: ${cards[2]?.nameKo})와 정교하게 교차 융합하여, 압도적으로 풍성하고 깊이 있는 '5단계 심층 총평 대서사 본문'으로 온전히 전달하는 것입니다.
+- 형식적인 단문이나 요약식 서술을 철저히 배제합니다.
+- 자기계발 오라클 타로와 동등하거나 그 이상의 풍성하고 디테일한 분량(2,500~3,500자 이상의 장문 대서사)으로 본문('message')을 서술하십시오.
+- 오직 질문자의 구체적인 고민("${effectiveInquiry || '삶의 균형과 심리적 치유'}")과 오늘의 일일 타로([${todayAnchorCard.nameKo}])의 배경 에너지를 서두부터 결말까지 관통시키며, 3장의 카드를 돋보기로 들여다보듯 도상 상징과 사주 오행(목화토금수), 용신을 결합해 깊이 있는 1:1 심층 상담을 전개하십시오.
 - 유치한 반말, 편지 형식의 사적인 독백("안녕... 네 작은 친구 제제야" 등)을 일절 배제합니다.
 - 성과 경쟁 채찍질이 아닌, 질문자의 타고난 기질과 카드의 흐름을 존중하는 깊이 있는 통찰과 심리적 해원(解冤), 명쾌한 방향성을 선물해야 합니다.
 - '화이트홀', '블랙홀', '웜홀', '손끝 물리량', '파동 측정' 등의 인위적/공상과학/기술적 용어는 절대 사용하지 마십시오.
@@ -956,8 +994,8 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
 3줄 요약은 지나치게 짧은 단문이나 축약으로 끝내지 말고, 사주 원국과 카드의 상징을 긴밀히 교차 융합하여 자기계발 오라클과 동등하게 풍성하고 깊이 있는 통찰(각 항목당 60~85자 내외의 완성된 문장)로 온전하게 작성하십시오.
 - 어설픈 쉼표 중간 끊기나 줄임말 없이, 주어와 서술어가 갖추어진 완성도 높은 정통 경어체 문맥으로 작성하십시오.
 
-# message (사주 ✕ 타로 콜라보 심층 총평 본문 — 5단계 구조):
-반드시 다음 5개의 소제목(### 마크다운 헤더)을 갖추어 질문자의 구체적 고민과 사주 ✕ 타로 콜라보 통찰을 풍성하게 전개하십시오:
+# message (사주 ✕ 타로 콜라보 심층 총평 본문 — 5단계 대서사 구조, 각 단계당 2~3개 이상의 긴 단락 필수):
+반드시 다음 5개의 소제목(### 마크다운 헤더)을 갖추고, 각 단계마다 350~500자 이상의 깊고 풍성한 단락들(총 2,500~3,500자 이상)을 전개하십시오:
 - ### 🌌 1. 2026 오늘의 일일 타로 [${todayAnchorCard.nameKo}]와 사주 원국의 거대한 공명
 - ### 🕯️ 2. 무의식의 뿌리와 과거의 씨앗 [1번 카드: ${cards[0]?.nameKo}]
 - ### ⚡ 3. 현실의 갈등과 마음의 소용돌이 [2번 카드: ${cards[1]?.nameKo}]
@@ -966,7 +1004,7 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
 
 반드시 마크다운 코드블록 없이 순수 JSON 형식으로만 응답해야 합니다. "message" 필드를 가장 먼저 작성하세요:
 {
-  "message": "질문자(${recipientName} 님)를 정중히 부르며 시작하여, 5개의 소제목(### 1~5단계)을 빠짐없이 갖추고 오늘의 일일 타로 [${todayAnchorCard.nameKo}]와 사주 일간 본원, 3장의 카드를 유기적으로 교차 해설한 5단계 심층 총평 대서사 본문 (마크다운 포맷)",
+  "message": "질문자(${recipientName} 님)를 정중히 부르며 시작하여, 5개의 소제목(### 1~5단계)을 빠짐없이 갖추고 각 단계마다 2~3개의 긴 단락으로 오늘의 일일 타로 [${todayAnchorCard.nameKo}]와 사주 일간 본원, 3장의 카드를 유기적으로 교차 해설한 2500~3500자 이상의 5단계 심층 총평 대서사 본문 (마크다운 포맷)",
   "concise_summary": [
     "[현재 에너지] 사주 일간(${saju?.dayMaster.symbolName})과 1·2번 카드가 마주한 질문자 내면의 무의식적 피로와 현실 에너지 흐름을 섬세하게 진단한 깊이 있는 1~2문장 (60~85자 내외)",
     "[방향과 결단] 사주 용신(${saju?.yongsin?.name || '조화'})과 3번 조언 카드가 제시하는 지혜로운 마음가짐과 영혼의 전환점 결단 (60~85자 내외)",
@@ -982,32 +1020,38 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
     "art_quote": "${dynamicPrescribedArt.art_quote}"
   },
   "saju_tarot_synergy": {
-    "day_master_resonance": "사주 일간 본원과 오늘의 타로 공명 분석 (2문장)",
+    "day_master_resonance": "사주 일간 본원과 오늘의 타로 공명 분석 (2~3문장의 깊은 해설)",
     "elemental_balance": {
-      "dominant_harmony": "우세 오행 조율 해설 (1~2문장)",
-      "lacking_remedy": "결핍 오행/용신 보완 해설 (1~2문장)"
+      "dominant_harmony": "우세 오행 조율 해설 (2문장)",
+      "lacking_remedy": "결핍 오행/용신 보완 해설 (2문장)"
     },
-    "destiny_flow_synthesis": "운명적 타이밍 지혜 (2문장)",
+    "destiny_flow_synthesis": "2026 세운과 오늘의 타로가 빚어내는 운명적 타이밍 지혜 (2~3문장)",
     "saju_oracle_verdict": "사주와 타로의 결정적 오라클 계시 (1~2문장)"
   },
   "card_insights": [
     {
       "card_name": "${cards[0]?.nameKo || '1번 카드'}",
       "position_name": "과거 / 무의식의 뿌리",
-      "core_meaning": "카드의 본질적 상징과 뜻",
-      "personal_interpretation": "질문자 상황에 대한 심층 리딩"
+      "core_meaning": "카드의 본질적 도상 상징과 뜻 (2~3문장 이상의 상세한 상징학적 해독)",
+      "saju_resonance": "질문자의 사주 일간 본원(${saju?.dayMaster.symbolName}) 및 오행과의 심층 공명 해설 (2~3문장)",
+      "personal_interpretation": "질문자의 고민 맥락과 연결된 과거 심리적 뿌리 상세 리딩 (3~4문장 이상의 디테일한 분석)",
+      "action_guide": "일상에서 실천할 수 있는 생각과 마음가짐의 정돈 조언 (2문장)"
     },
     {
       "card_name": "${cards[1]?.nameKo || '2번 카드'}",
       "position_name": "현재 / 상황과 마음의 흐름",
-      "core_meaning": "카드의 본질적 상징과 뜻",
-      "personal_interpretation": "현재 상황에 대한 심층 리딩"
+      "core_meaning": "카드의 본질적 도상 상징과 뜻 (2~3문장 이상의 상세한 상징학적 해독)",
+      "saju_resonance": "질문자의 사주 일간 본원(${saju?.dayMaster.symbolName}) 및 오행과의 심층 공명 해설 (2~3문장)",
+      "personal_interpretation": "현재 마주한 현실 갈등과 감정 역학 상세 리딩 (3~4문장 이상의 디테일한 분석)",
+      "action_guide": "현재 상황에서 마음의 균형을 잡는 구체적 조화 팁 (2문장)"
     },
     {
       "card_name": "${cards[2]?.nameKo || '3번 카드'}",
       "position_name": "미래 / 조언과 해결의 열쇠",
-      "core_meaning": "카드의 본질적 상징과 뜻",
-      "personal_interpretation": "미래 해결의 열쇠 리딩"
+      "core_meaning": "카드의 본질적 도상 상징과 뜻 (2~3문장 이상의 상세한 상징학적 해독)",
+      "saju_resonance": "질문자의 사주 결핍 오행 및 용신(${saju?.yongsin?.name || '보약'})과의 심층 공명 해설 (2~3문장)",
+      "personal_interpretation": "미래 해결의 열쇠와 운명적 돌파구 상세 리딩 (3~4문장 이상의 디테일한 분석)",
+      "action_guide": "오늘 즉시 실천할 가장 구체적인 개운 힐링 액션 (2문장)"
     }
   ]
 }`;
@@ -1016,7 +1060,7 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
           ? `\n\n# [최우선 필수 집중 주제] 내담자가 질문한 구체적인 고민:\n"${effectiveInquiry}"\n★ 절대 지침: 사주 ✕ 타로 리딩은 질문자의 구체적인 고민("${effectiveInquiry}")을 서두부터 중심에 두고 전개되어야 합니다. 일반론적 설명을 배제하고, 내담자가 호소한 고민 상황을 명확히 짚어내며, 사주 본원 기운(${saju?.dayMaster.symbolName})이 왜 이 고민 앞에서 특정 패턴을 겪게 되었는지, 그리고 뽑힌 3장의 카드가 이 고민을 어떻게 해결의 길로 인도하는지 사주와 타로의 콜라보레이션으로 명쾌하게 작성해 주세요.\n`
           : `\n\n# 질문자의 상황:\n사주 원국의 일간(${saju?.dayMaster.symbolName})과 오행 분포(${saju?.elements.dominant.name} 우세, ${saju?.elements.lacking.name} 결핍)를 바탕으로 현재 삶의 흐름과 고민을 입체적으로 조명하고, 3장의 타로 카드가 전하는 명쾌한 방향성을 전해 주세요.\n`;
 
-        const prompt = `${sajuContextPrompt}${inquiryPromptAddon}\n\n사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 질문자(${recipientName} 님)의 사주 명리학 원국과 뽑힌 3장의 타로 카드가 지닌 본질적 도상 상징과 뜻을 긴밀하게 '교차 융합(Collaboration)'하여, 질문자의 고민을 중심에 두고 높은 통찰과 현실적 해법을 담은 정통 타로 리딩 결과를 JSON으로 생성해 주십시오.\n\n★ [작성 지침]:\n1. 호칭: 정중하게 '${recipientName} 님'으로 부르며, 신뢰도 높은 정통 경어체(~입니다, ~을 나타냅니다, ~의 조언을 전합니다)로 작성하십시오.\n2. 'message' 필드는 본문 리딩의 핵심이므로 반드시 5개의 소제목(### 1~5단계)을 빠짐없이 갖추어 완전하고 깊이 있는 마크다운 본문으로 작성해 주십시오. (절대 빈 문자열이나 누락 금지)\n3. 3줄 요약('concise_summary')은 각 항목당 60~85자 내외로 사주 원국과 카드의 의미를 융합하여 자기계발 오라클만큼 풍성하고 깊이 있는 완성형 문맥으로 작성하십시오.`;
+        const prompt = `${sajuContextPrompt}${inquiryPromptAddon}\n\n사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 질문자(${recipientName} 님)의 사주 명리학 원국과 뽑힌 3장의 타로 카드가 지닌 본질적 도상 상징과 뜻을 긴밀하게 '교차 융합(Collaboration)'하여, 질문자의 고민을 중심에 두고 높은 통찰과 현실적 해법을 담은 정통 타로 리딩 결과를 JSON으로 생성해 주십시오.\n\n★ [작성 지침 - 절대 엄수]:\n1. 분량 및 디테일: 자기계발 오라클 타로처럼 매우 길고, 돋보기로 들여다보듯 디테일하고 깊이 있게 작성하십시오.\n2. 'message' 필드는 본문 리딩의 핵심 대서사이므로 반드시 5개의 소제목(### 1~5단계)을 빠짐없이 갖추고, 각 단계마다 2~3개의 긴 단락(각 단계당 350~500자 이상, 총 2,500~3,500자 이상)으로 풍성하게 서술하십시오. 결코 1~2줄의 짧은 요약으로 끝내지 마십시오.\n3. 3줄 요약('concise_summary')은 각 항목당 60~85자 내외로 사주 원국과 카드의 의미를 융합하여 자기계발 오라클만큼 풍성하고 깊이 있는 완성형 문맥으로 작성하십시오.\n4. 카드별 심층 분석('card_insights')의 4개 항목(core_meaning, saju_resonance, personal_interpretation, action_guide)을 3장의 카드 모두 빠짐없이 풍성하고 디테일하게 작성하십시오.`;
         const res = await invokeLLM({
           messages: [
             { role: 'system', content: systemPrompt },
@@ -1055,14 +1099,38 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
           messageText = Object.values(parsed.message).filter((v): v is string => typeof v === 'string').join('\n\n');
         }
 
-        if (!messageText || messageText.length < 50) {
+        const enrichedCardInsights: CardInsight[] = cards.map((c, i) => {
+          const role = slotPositions[i] || `${i + 1}번 카드`;
+          const rawInsight = parsed?.card_insights?.[i] || {};
+          const cardKeywords = c.keywords.slice(0, 3).join(', ');
+          const orientationText = c.reversed ? '역방향(내적 성찰과 에너지 정돈)' : '정방향(직접적인 발현과 흐름)';
+          return {
+            card_name: rawInsight.card_name || c.nameKo,
+            position_name: rawInsight.position_name || role,
+            core_meaning: (typeof rawInsight.core_meaning === 'string' && rawInsight.core_meaning.trim().length > 20)
+              ? rawInsight.core_meaning.trim()
+              : `${c.nameKo} 카드는 [${cardKeywords}]의 원형적 상징을 품고 있으며, ${orientationText}의 위치에서 상황의 본질을 꿰뚫는 깊은 영적 지혜를 담고 있습니다. 카드의 도상에 새겨진 상징들은 질문자의 의식 아래 잠들어 있던 직관을 일깨우고, 낡은 생각의 관성을 벗어나 새로운 시선으로 삶의 질서를 정돈하도록 안내합니다.`,
+            saju_resonance: (typeof rawInsight.saju_resonance === 'string' && rawInsight.saju_resonance.trim().length > 20)
+              ? rawInsight.saju_resonance.trim()
+              : `질문자의 사주 일간 [${dayMasterStr}] 본원과 만나 오행의 흐름을 조율하며, 오늘 하루를 이끄는 일일 지배 타로 [${todayAnchorCard.nameKo}]의 파동과 공명합니다. 사주에서 강하게 분출되는 ${domElStr}의 기운을 유연하게 순환시키고, 부족했던 ${lackElStr}과 용신 ${yongsinStr}의 생명력을 보완하여 어떤 마찰 속에서도 평정심을 유지하도록 지탱합니다.`,
+            personal_interpretation: (typeof rawInsight.personal_interpretation === 'string' && rawInsight.personal_interpretation.trim().length > 20)
+              ? rawInsight.personal_interpretation.trim()
+              : `${role}의 자리에서 ${recipientName} 님에게 전하는 핵심 메시지로, 카드의 상징이 ${effectiveInquiry ? `"${effectiveInquiry}" 고민 맥락과` : '질문자의 현실 상황과'} 정밀하게 맞물립니다. 마주한 혼란은 당신의 결함이 아니라 내면의 에너지가 새로운 성숙과 도약을 위해 필연적으로 거쳐야 할 정화의 관문입니다. 카드는 서둘러 상황을 통제하려 하기보다, 내면의 고요한 중심을 먼저 회복할 것을 강력히 권고합니다.`,
+            action_guide: (typeof rawInsight.action_guide === 'string' && rawInsight.action_guide.trim().length > 10)
+              ? rawInsight.action_guide.trim()
+              : `오늘 하루, [${c.keywords[0] || '조화'}]의 키워드를 마음에 품고 따뜻한 차 한 잔과 함께 깊은 호흡으로 몸과 마음의 긴장을 부드럽게 이완해 보세요.`,
+          };
+        });
+
+        const hasAllStages = Boolean(messageText && messageText.includes('1.') && messageText.includes('2.') && messageText.includes('3.') && messageText.includes('4.') && messageText.includes('5.'));
+        if (!messageText || messageText.length < 1000 || !hasAllStages) {
           messageText = buildFallbackHealingMessage(
             cards,
             saju,
             todayAnchorCard,
             recipientName,
             effectiveInquiry,
-            parsed?.card_insights,
+            enrichedCardInsights,
             parsed?.saju_tarot_synergy,
             parsed?.micro_action
           );
@@ -1087,7 +1155,7 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
           message: messageText,
           concise_summary: conciseBullets,
           saju_tarot_synergy: parsed?.saju_tarot_synergy,
-          card_insights: parsed?.card_insights,
+          card_insights: enrichedCardInsights,
           prescribed_art: (parsed?.prescribed_art?.artwork_title && !parsed.prescribed_art.artwork_title.includes('클로드 모네'))
             ? {
                 ...parsed.prescribed_art,
@@ -1238,6 +1306,17 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
       const yongsinStr = saju?.yongsin.name || '용신 보약';
 
       if (oracleMode === 'healing') {
+        const healingFallbackMessage = buildFallbackHealingMessage(
+          cards,
+          saju,
+          todayDailyTarot,
+          recipientName,
+          effectiveInquiry,
+          undefined,
+          undefined,
+          '따뜻한 온수를 자주 섭취하고 가슴을 펴는 3번의 깊은 복식호흡 실천하기'
+        );
+
         setHealingResult({
           concise_summary: [
             `[현재 에너지] 사주 [${dayMasterStr}]과 [${cards[0]?.nameKo || '1번'}] 카드가 만나 생각 과부하와 전환기 피로가 누적된 상태입니다.`,
@@ -1253,29 +1332,21 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
             destiny_flow_synthesis: `오늘의 일일 타로 [${todayDailyTarot.nameKo}]와 2026 병오년(丙午年)의 역동적인 운기 속에서, 이번 오라클 스프레드는 외부의 소음에 휩쓸리지 않고 자신의 본원 페이스를 지키는 것이 가장 현명한 해법임을 비춰줍니다.`,
             saju_oracle_verdict: `당신의 사주 원국과 타로 카드는 지금 마주한 흐름이 새로운 도약과 안정의 기점이 될 것임을 분명히 증명하고 있습니다.`
           },
-          card_insights: cards.map((c, i) => ({
-            card_name: c.nameKo,
-            position_name: slotPositions[i],
-            core_meaning: `${c.nameKo} 카드는 [${c.keywords.slice(0, 3).join(', ')}]의 원형적 상징을 품고 있으며, 상황의 본질을 꿰뚫고 새로운 통찰을 열어주는 핵심 메시지를 담고 있습니다. 카드가 품은 고유한 도상은 당신의 내면에 잠들어 있던 직관을 일깨우며 삶의 방향을 정돈하게 합니다.`,
-            saju_resonance: `질문자의 ${dayMasterStr} 본원과 만나 오행의 흐름을 조율하고, 오늘의 일일 타로 [${todayDailyTarot.nameKo}]의 파동과 공명하여 상황에 유연하게 대처할 수 있는 내적 에너지를 강화합니다.`,
-            personal_interpretation: `${slotPositions[i]}의 자리에서 ${recipientName} 님에게 전하는 메시지로, 카드의 상징이 질문자의 구체적인 상황과 맞물려 명확한 선택의 실마리를 제시합니다. 마주한 고민은 스스로를 옭아매는 벽이 아니라 새로운 성숙으로 나아가는 관문입니다.`,
-            action_guide: `오늘 하루, [${c.keywords[0] || '균형'}]의 키워드를 마음에 품고 생각과 행동의 정돈을 실천해 보세요.`,
-          })),
-          message: `### 🌌 1. 2026 오늘의 일일 타로 [${todayDailyTarot.nameKo}]와 사주 원국의 거대한 공명
-${recipientName} 님, 오늘 ${recipientName} 님이 품고 태어난 [${dayMasterStr}] 본원 기운과 2026 병오년(丙午年)의 거대한 세운 흐름, 그리고 오늘 하루를 관통하는 일일 지배 카드인 [${todayDailyTarot.nameKo}](${todayDailyTarot.reversed ? '역방향' : '정방향'})의 기저 파동이 만나 당신의 삶의 무대에 매우 역동적이면서도 섬세한 운명의 장막을 펼쳐 보이고 있습니다.
-오늘의 일일 타로 [${todayDailyTarot.nameKo}]는 하루의 무의식적 기저와 현실 환경을 조율하는 핵심 나침반입니다.${dailyDiagnosis ? ` 오늘 타로에서 진단된 "${dailyDiagnosis.slice(0, 80)}..." 흐름은 결코 우연이 아니며,` : ''} 사주 원국의 ${domElStr} 기운과 맞물려 ${recipientName} 님이 마주한 ${effectiveInquiry ? `"${effectiveInquiry}" 고민` : '현실의 질문'} 앞에서 내면의 무게를 다시 점검하도록 이끌고 있습니다. 사주 일간의 고유한 성향이 오늘의 타로 배경 에너지와 깊이 공명하며, 이제 뽑힌 3장의 오라클 카드가 당신의 과거·현재·미래를 관통하는 명쾌한 치유의 길을 제시합니다.
-
-### 🕯️ 2. 무의식의 뿌리와 과거의 씨앗 [1번 카드: ${cards[0]?.nameKo || '과거 카드'}]
-첫 번째 과거/무의식의 자리에 놓인 [${cards[0]?.nameKo || '1번 카드'}](${cards[0]?.reversed ? '역방향' : '정방향'})는 지금의 고민이 싹트게 된 깊은 심리적 뿌리를 비추고 있습니다. ${sajuNameStr} 님의 타고난 사주 본원 [${dayMasterStr}] 기질은 본래 맡은 바 책임을 성실히 완수하고 주변의 기대를 묵묵히 짊어지려는 숭고한 헌신성을 지니고 있습니다. 그러나 오늘의 지배 타로 [${todayDailyTarot.nameKo}]의 파동과 1번 카드의 도상이 교차하면서 드러나는 진실은, 과거로부터 누적되어 온 무의식적 피로와 홀로 모든 것을 감내해야 한다는 강박이 보이지 않는 정체를 만들어냈음을 말해줍니다. 내면의 소리를 외면한 채 외부 기준에 맞추려 했던 그 과거의 씨앗이 오늘날 당신의 마음에 무거운 긴장의 파문을 일으켰던 것입니다.
-
-### ⚡ 3. 현실의 갈등과 마음의 소용돌이 [2번 카드: ${cards[1]?.nameKo || '현재 카드'}]
-두 번째 현재/상황의 흐름 자리에 놓인 [${cards[1]?.nameKo || '2번 카드'}](${cards[1]?.reversed ? '역방향' : '정방향'})는 지금 ${recipientName} 님이 일상과 관계 속에서 느끼고 계실 현실적 긴장과 마음의 소용돌이를 입체적으로 진단합니다. 사주 원국에서 강하게 작용하는 ${domElStr}의 에너지가 오늘의 지배 카드 [${todayDailyTarot.nameKo}]의 현실적 작용과 맞물리면서, 생각은 꼬리를 물고 마음은 서둘러 상황을 통제하려 하고 있습니다. 그러나 카드의 도상은 지금 마주한 갈등이 외부 상황 때문만이 아니라, 자신의 기준과 현실의 속도 차이에서 비롯된 자연스러운 전환점임을 보여줍니다. 이 혼란은 실패가 아니라, 낡은 에너지를 털어내고 새로운 균형을 찾기 위해 필연적으로 거쳐야 할 정화의 과정입니다.
-
-### 🔮 4. 오라클의 전환점과 미래 해결의 열쇠 [3번 카드: ${cards[2]?.nameKo || '미래 카드'}]
-세 번째 미래/조언과 해결의 열쇠 자리에 등장한 [${cards[2]?.nameKo || '3번 카드'}](${cards[2]?.reversed ? '역방향' : '정방향'})는 이번 오라클 리딩의 가장 위대한 전환점이자 처방입니다. 사주 원국에서 반드시 보완해야 할 ${lackElStr}과 용신 ${yongsinStr}의 생명력 있는 기운이 이 카드의 영적 상징 속에서 완벽하게 살아 숨 쉬고 있습니다. 이 카드는 ${recipientName} 님에게 더 이상 불필요한 자기 검열이나 과거의 부담에 에너지를 빼앗기지 말고, 카드가 가리키는 새로운 시선과 유연한 결단을 내릴 것을 강력히 권고합니다. 오늘의 지배 타로 [${todayDailyTarot.nameKo}]가 던진 하루의 화두는 바로 이 3번 카드의 지혜를 통과할 때 가장 아름다운 성장과 안정의 결실로 매듭지어질 것입니다.
-
-### 🌿 5. 운명을 바꾸는 일상 개운 처방과 마스터의 영혼 축복
-${recipientName} 님, 운명은 정해진 감옥이 아니라 당신의 선택과 호흡으로 빚어가는 살아있는 예술입니다. 사주 용신인 ${yongsinStr}의 에너지를 깨우기 위해 오늘 하루, 따뜻한 온수를 자주 섭취하고 가슴을 펴는 깊은 복식호흡을 3회 이상 실천해 주십시오.${dailyRemedy ? ` 특히 오늘의 타로 처방인 "${dailyRemedy}"의 실천과 함께` : ''} 3번 카드의 상징 조언을 가슴에 품을 때, 정체되었던 기운은 맑게 순환되기 시작할 것입니다. 당신은 이미 자신만의 고유한 빛과 지혜를 품고 태어난 존귀한 영혼입니다. 사주와 타로의 축복이 당신의 모든 발걸음을 따뜻하게 감싸 안기를 진심으로 기원합니다.`,
+          card_insights: cards.map((c, i) => {
+            const role = slotPositions[i] || `${i + 1}번 카드`;
+            const cardKeywords = c.keywords.slice(0, 3).join(', ');
+            const isRev = c.reversed;
+            const orientationText = isRev ? '역방향(내적 성찰과 에너지 정돈)' : '정방향(직접적인 발현과 흐름)';
+            return {
+              card_name: c.nameKo,
+              position_name: role,
+              core_meaning: `${c.nameKo} 카드는 [${cardKeywords}]의 원형적 상징을 품고 있으며, ${orientationText}의 위치에서 상황의 본질을 꿰뚫는 깊은 영적 지혜를 담고 있습니다. 카드의 도상에 새겨진 상징들은 질문자의 의식 아래 잠들어 있던 직관을 일깨우고, 낡은 생각의 관성을 벗어나 새로운 시선으로 삶의 질서를 정돈하도록 안내합니다.`,
+              saju_resonance: `질문자의 사주 일간 [${dayMasterStr}] 본원과 만나 오행의 흐름을 조율하며, 오늘 하루를 이끄는 일일 지배 타로 [${todayDailyTarot.nameKo}]의 파동과 공명합니다. 사주에서 강하게 분출되는 ${domElStr}의 기운을 유연하게 순환시키고, 부족했던 ${lackElStr}과 용신 ${yongsinStr}의 생명력을 보완하여 어떤 마찰 속에서도 평정심을 유지하도록 지탱합니다.`,
+              personal_interpretation: `${role}의 자리에서 ${recipientName} 님에게 전하는 핵심 메시지로, 카드의 상징이 ${effectiveInquiry ? `"${effectiveInquiry}" 고민 맥락과` : '질문자의 현실 상황과'} 정밀하게 맞물립니다. 마주한 혼란은 당신의 결함이 아니라 내면의 에너지가 새로운 성숙과 도약을 위해 필연적으로 거쳐야 할 정화의 관문입니다. 카드는 서둘러 상황을 통제하려 하기보다, 내면의 고요한 중심을 먼저 회복할 것을 강력히 권고합니다.`,
+              action_guide: `오늘 하루, [${c.keywords[0] || '조화'}]의 키워드를 마음에 품고 따뜻한 차 한 잔과 함께 깊은 호흡으로 몸과 마음의 긴장을 부드럽게 이완해 보세요.`,
+            };
+          }),
+          message: healingFallbackMessage,
           prescribed_art: dynamicPrescribedArt,
           micro_action: '창문을 열고 시원한 공기를 들이마시며 가슴에 손을 얹고 3번 천천히 심호흡하기',
           reward_item: {
@@ -1388,14 +1459,14 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
 
   // 🎙️ 사주·타로 콜라보 심층 총평 전용 TTS Speech Text (힐링: 사주·타로 마스터 / 자기계발: 루시 + 끝에 주의사항 낭독)
   const oracleLetterSpeechText = useMemo(() => {
-    const message = oracleMode === 'healing' ? healingResult?.message : (growthResult?.message || growthResult?.macro_focus);
+    const message = displayFullReadingText;
     if (!message) return '';
     const recipient = recipientName;
     const intro = oracleMode === 'healing'
       ? `${recipient} 님을 위한 사주와 타로 콜라보 심층 마스터 리딩입니다.`
       : `루시가 ${recipient} 님에게 보내는 명쾌한 자기계발 실행 편지입니다.`;
     return prepareNaturalSpeechText(`${intro}\n\n${message}\n\n${ORACLE_CAUTION_SPEECH}`);
-  }, [oracleMode, healingResult?.message, growthResult?.message, growthResult?.macro_focus, recipientName]);
+  }, [displayFullReadingText, oracleMode, recipientName]);
 
   const isOracleLetterTTSActive = useMemo(() => {
     if (!isTTSActive || !oracleLetterSpeechText) return false;
@@ -1502,7 +1573,9 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
   // Executive Summary Card (Substantial Saju-Tarot Synthesis Report)
   const renderExecutiveSummaryCard = () => {
     const synergy = oracleMode === 'healing' ? healingResult?.saju_tarot_synergy : growthResult?.saju_tarot_synergy;
-    const verdict = synergy?.saju_oracle_verdict || (oracleMode === 'healing' ? healingResult?.message : growthResult?.macro_focus);
+    const verdict = synergy?.saju_oracle_verdict || (oracleMode === 'healing'
+      ? `${saju?.name || recipientName || '내담자'} 님의 사주 본원 기운과 3장의 카드가 조화롭게 만나, 삶의 긴장을 덜고 내면의 평온과 지혜를 회복하는 힐링의 관문이 활짝 열렸습니다.`
+      : growthResult?.macro_focus);
     const resonance = synergy?.day_master_resonance;
     const flow = synergy?.destiny_flow_synthesis;
     const remedy = synergy?.elemental_balance?.lacking_remedy;
@@ -2928,6 +3001,14 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
                   <div className="text-white/90 leading-relaxed font-sans text-xs sm:text-sm pt-2">
                     <Streamdown immediate>{displayFullReadingText}</Streamdown>
                   </div>
+
+                  {/* 🌟 3장의 카드별 4대 기둥 심층 분석 (도상 상징, 사주 공명, 콜라보 해설, 실천 팁) */}
+                  {renderCardInsightsSection(
+                    oracleMode === 'healing' ? healingResult?.card_insights : growthResult?.card_insights
+                  )}
+
+                  {/* ☯️ 사주 ✕ 타로 콜라보 종합 마스터 리포트 (본원 공명, 세운 흐름, 오행 보약, 최종 계시) */}
+                  {renderExecutiveSummaryCard()}
 
                   {/* 🌟 그에 맞는 루시의 조언 (TTS 가능) */}
                   <div className="pt-2">
