@@ -69,6 +69,12 @@ export function TodayLucyPersonaCard({
   const todayIljin = useMemo(() => calculateTodayIljin(new Date()), []);
   const cosmicTransit = useMemo(() => calculateTodayCosmicTransit(new Date()), []);
   const luckyPrescription = useMemo(() => getDailyLuckyPrescription(todayIljin), [todayIljin]);
+  const luckyDirectionLabel = useMemo(() => {
+    const dir = luckyPrescription.luckyDirection || '';
+    if (dir === '중앙') return '중앙';
+    if (dir.endsWith('쪽')) return dir;
+    return `${dir}쪽`;
+  }, [luckyPrescription.luckyDirection]);
   const bestieGreeting = useMemo(() => getBestieTimeGreeting(nickname, todayIljin), [nickname, todayIljin]);
 
   // Check today's daily tarot result from cache/sharedState
@@ -263,7 +269,7 @@ export function TodayLucyPersonaCard({
             onClick={() => setShowTransitDetail((v) => !v)}
             className="flex items-center gap-1 text-[11px] font-semibold text-purple-300/80 hover:text-purple-200 transition-colors ml-auto cursor-pointer"
           >
-            <span>{showTransitDetail ? "운세 세부정보 닫기" : "행운 처방 보기"}</span>
+            <span>{showTransitDetail ? "행운 처방 접기" : "행운 처방 보기"}</span>
             {showTransitDetail ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
           </button>
         </div>
@@ -278,44 +284,135 @@ export function TodayLucyPersonaCard({
               transition={{ duration: 0.3, ease: "easeInOut" }}
               className="overflow-hidden"
             >
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 p-3.5 rounded-2xl bg-black/40 border border-purple-500/20 text-xs">
-                {/* 1. Lucky Color */}
-                <div className="flex items-center gap-2 p-2 rounded-xl bg-white/[0.03] border border-white/5">
-                  <div
-                    className="w-6 h-6 rounded-lg border border-white/20 shrink-0 shadow-sm"
-                    style={{ backgroundColor: luckyPrescription.luckyColorHex }}
-                  />
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-[10px] text-white/40 uppercase font-mono">행운의 컬러</span>
-                    <span className="font-bold text-white truncate">{luckyPrescription.luckyColor}</span>
+              <div className="flex flex-col gap-3 p-4 sm:p-5 rounded-2xl bg-black/50 border border-purple-500/25 shadow-2xl backdrop-blur-xl text-xs">
+                {/* Header: Title & Daily Pillar Context */}
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-white/10">
+                  <div className="flex items-center gap-2">
+                    <Sparkles size={15} className="text-amber-300 animate-pulse" />
+                    <span className="font-bold text-sm text-white font-display">
+                      오늘의 오행 맞춤 행운 처방 (Lucky Prescription)
+                    </span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-200 border border-purple-500/30">
+                      {todayIljin.dayElement} 기운 보양
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-white/50 font-sans">
+                    {todayIljin.dateString} · {todayIljin.iljinTitle}
+                  </span>
+                </div>
+
+                {/* 4 Spacious Prescription Cards (2x2 Grid) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* 1. Lucky Color */}
+                  <div className="flex items-start gap-3 p-3.5 rounded-xl bg-white/[0.04] border border-white/10 hover:border-purple-400/30 hover:bg-white/[0.06] transition-all">
+                    <div
+                      className="w-9 h-9 rounded-xl border border-white/20 shrink-0 shadow-md flex items-center justify-center mt-0.5"
+                      style={{ backgroundColor: luckyPrescription.luckyColorHex }}
+                    >
+                      <div className="w-2.5 h-2.5 rounded-full bg-white/50 ring-2 ring-black/20" />
+                    </div>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-mono uppercase tracking-wider text-purple-300 font-semibold">
+                          행운의 컬러
+                        </span>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/10 text-white/70">
+                          {luckyPrescription.luckyColorHex}
+                        </span>
+                      </div>
+                      <span className="text-sm font-bold text-white leading-snug break-keep mt-1">
+                        {luckyPrescription.luckyColor}
+                      </span>
+                      <span className="text-[11px] text-white/50 leading-relaxed font-sans mt-0.5 break-keep">
+                        의상, 소품, 폰 배경화면으로 조화로운 기운 흡수
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 2. Lucky Time */}
+                  <div className="flex items-start gap-3 p-3.5 rounded-xl bg-white/[0.04] border border-white/10 hover:border-amber-400/30 hover:bg-white/[0.06] transition-all">
+                    <div className="w-9 h-9 rounded-xl border border-amber-400/30 bg-amber-400/10 flex items-center justify-center shrink-0 mt-0.5 text-amber-300 shadow-sm">
+                      <Clock size={18} />
+                    </div>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-mono uppercase tracking-wider text-amber-300 font-semibold">
+                          최적의 행운 시간대
+                        </span>
+                        <span className="text-[10px] font-sans px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-500/30">
+                          골든 아워
+                        </span>
+                      </div>
+                      <span className="text-sm font-bold text-white leading-snug break-keep mt-1">
+                        {luckyPrescription.luckyTime}
+                      </span>
+                      <span className="text-[11px] text-white/50 leading-relaxed font-sans mt-0.5 break-keep">
+                        집중 몰입, 중요 결정, 자기 돌봄에 가장 길한 기운
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 3. Lucky Activity */}
+                  <div className="flex items-start gap-3 p-3.5 rounded-xl bg-white/[0.04] border border-white/10 hover:border-emerald-400/30 hover:bg-white/[0.06] transition-all">
+                    <div className="w-9 h-9 rounded-xl border border-emerald-400/30 bg-emerald-400/10 flex items-center justify-center shrink-0 mt-0.5 text-emerald-300 shadow-sm">
+                      <Sparkle size={18} />
+                    </div>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-mono uppercase tracking-wider text-emerald-300 font-semibold">
+                          에너지 리셋 행동
+                        </span>
+                        <span className="text-[10px] font-sans px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-200 border border-emerald-500/30">
+                          개운 실천
+                        </span>
+                      </div>
+                      <p className="text-sm font-bold text-white leading-snug break-keep mt-1">
+                        {luckyPrescription.luckyActivity}
+                      </p>
+                      <span className="text-[11px] text-white/50 leading-relaxed font-sans mt-0.5 break-keep">
+                        몸과 마음에 고인 스트레스를 비우고 활력을 일깨우는 행동
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 4. Lucky Direction & Food */}
+                  <div className="flex items-start gap-3 p-3.5 rounded-xl bg-white/[0.04] border border-white/10 hover:border-cyan-400/30 hover:bg-white/[0.06] transition-all">
+                    <div className="w-9 h-9 rounded-xl border border-cyan-400/30 bg-cyan-400/10 flex items-center justify-center shrink-0 mt-0.5 text-cyan-300 shadow-sm">
+                      <Compass size={18} />
+                    </div>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-mono uppercase tracking-wider text-cyan-300 font-semibold">
+                          길방향 & 힐링 음식
+                        </span>
+                        <span className="text-[10px] font-sans font-semibold px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-200 border border-cyan-500/30">
+                          길방 {luckyDirectionLabel}
+                        </span>
+                      </div>
+                      <p className="text-sm font-bold text-white leading-snug break-keep mt-1">
+                        {luckyPrescription.luckyFood}
+                      </p>
+                      <span className="text-[11px] text-white/50 leading-relaxed font-sans mt-0.5 break-keep">
+                        {luckyDirectionLabel}을 향해 심호흡하고 속을 편안하게 채우기
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                {/* 2. Lucky Time */}
-                <div className="flex items-center gap-2 p-2 rounded-xl bg-white/[0.03] border border-white/5">
-                  <Clock size={18} className="text-amber-400 shrink-0" />
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-[10px] text-white/40 uppercase font-mono">최적의 행운 시간대</span>
-                    <span className="font-bold text-white truncate">{luckyPrescription.luckyTime}</span>
+                {/* Energy Flow & Elemental Advice Banner */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-xl bg-purple-950/40 border border-purple-500/20">
+                  <div className="flex items-start sm:items-center gap-2">
+                    <Zap size={14} className="text-amber-300 shrink-0 mt-0.5 sm:mt-0" />
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                      <span className="font-semibold text-purple-200 shrink-0">오늘의 오행 기운 조언:</span>
+                      <span className="text-white/90 break-keep font-sans">{todayIljin.elementalAdvice}</span>
+                    </div>
                   </div>
-                </div>
-
-                {/* 3. Lucky Activity */}
-                <div className="flex items-center gap-2 p-2 rounded-xl bg-white/[0.03] border border-white/5">
-                  <Sparkle size={18} className="text-emerald-400 shrink-0" />
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-[10px] text-white/40 uppercase font-mono">에너지 리셋 행동</span>
-                    <span className="font-bold text-white truncate">{luckyPrescription.luckyActivity}</span>
-                  </div>
-                </div>
-
-                {/* 4. Lucky Direction & Food */}
-                <div className="flex items-center gap-2 p-2 rounded-xl bg-white/[0.03] border border-white/5">
-                  <Compass size={18} className="text-cyan-400 shrink-0" />
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-[10px] text-white/40 uppercase font-mono">길방향 & 힐링 음식</span>
-                    <span className="font-bold text-white truncate">{luckyPrescription.luckyDirection}쪽 · {luckyPrescription.luckyFood}</span>
-                  </div>
+                  {todayIljin.elementDetail?.organs && (
+                    <span className="text-[10px] text-white/40 font-mono sm:text-right shrink-0">
+                      보양 장부: {todayIljin.elementDetail.organs}
+                    </span>
+                  )}
                 </div>
               </div>
             </motion.div>
