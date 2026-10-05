@@ -103,17 +103,18 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
 
     if (meditationList.some((item) => emo.includes(item))) {
       // 🌟 1분 명상 및 호흡 가이드에 맞춘 안정적이고 차분한 낭독 템포
-      rate = "-18%";
-      pitch = voiceName.includes("SunHi") ? "-1.8Hz" : "-2Hz";
+      rate = "-6%";
+      pitch = voiceName.includes("SunHi") ? "-0.8Hz" : "-1Hz";
     } else if (slowHealingList.some((item) => emo.includes(item))) {
-      rate = "-14%";
-      pitch = voiceName.includes("SunHi") ? "-1.2Hz" : "-1.5Hz";
+      // 🌿 따뜻함/공감/치유 낭독: 느려지지 않고 또렷하며 편안한 표준 낭독 템포 유지
+      rate = "+0%";
+      pitch = voiceName.includes("SunHi") ? "-0.4Hz" : "-0.6Hz";
     } else if (brightJoyList.some((item) => emo.includes(item))) {
       rate = "+4%";
       pitch = voiceName.includes("SunHi") ? "+1.5Hz" : "+1.8Hz";
     } else if (mysteryTarotList.some((item) => emo.includes(item))) {
-      rate = "-4%";
-      pitch = "-1Hz";
+      rate = "+0%";
+      pitch = "-0.5Hz";
     }
   }
 
@@ -121,8 +122,8 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
   if (rate === "+0%" && !emotion) {
     const cleanLower = cleanText.toLowerCase();
     if (/명상|호흡|들숨|날숨|숨결|숨을|들이쉬|내쉬|방하착|1분 명상|60초 호흡/.test(cleanLower)) {
-      rate = "-18%";
-      pitch = voiceName.includes("SunHi") ? "-1.8Hz" : "-2Hz";
+      rate = "-6%";
+      pitch = voiceName.includes("SunHi") ? "-0.8Hz" : "-1Hz";
     }
   }
 

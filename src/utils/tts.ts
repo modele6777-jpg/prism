@@ -65,9 +65,9 @@ export function playNativeBrowserSpeech(
   activeUtterances.add(utterance);
   utterance.lang = isKorean ? 'ko-KR' : 'en-US';
 
-  const isMeditation = /(?:명상|호흡|들숨|날숨|방하착|이완|치유)/.test(cleanText);
-  utterance.rate = typeof speed === 'number' && speed > 0 ? speed : (isMeditation ? 0.82 : 1.0);
-  utterance.pitch = isMeditation ? 0.95 : 1.0;
+  const isMeditation = /(?:명상|호흡|들숨|날숨|방하착)/.test(cleanText);
+  utterance.rate = typeof speed === 'number' && speed > 0 ? speed : (isMeditation ? 0.94 : 1.04);
+  utterance.pitch = isMeditation ? 0.98 : 1.0;
 
   const isMale =
     voiceNameOrType === 'Fenrir' ||

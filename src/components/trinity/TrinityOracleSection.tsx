@@ -1377,7 +1377,7 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
     }
     if (oracleLetterSpeechText) {
       const tone = oracleMode === 'healing' ? '따뜻함' : '자신감';
-      await playTTSInChunks(oracleLetterSpeechText, 'Kore', 110, tone);
+      await playTTSInChunks(oracleLetterSpeechText, 'Kore', 110, tone, 1.05);
     }
   };
 
@@ -1411,7 +1411,7 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
     }
     if (oracleSummarySpeechText) {
       const tone = oracleMode === 'healing' ? '따뜻함' : '자신감';
-      await playTTSInChunks(oracleSummarySpeechText, 'Kore', 110, tone);
+      await playTTSInChunks(oracleSummarySpeechText, 'Kore', 110, tone, 1.05);
     }
   };
 
@@ -1454,14 +1454,14 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
       return;
     }
     setActiveCardTTSKey(key);
-    await playTTSInChunks(speechText, 'Kore', 110, '신비');
+    await playTTSInChunks(speechText, 'Kore', 110, '신비', 1.05);
   };
 
   // Auto-prefetch TTS for Jeje's healing letter
   useEffect(() => {
     if (stage === 'result') {
       if (healingLetterSpeechText && healingLetterSpeechText.length >= 20) {
-        prefetchTTS(healingLetterSpeechText.slice(0, 350), 'Kore', '따뜻함');
+        prefetchTTS(healingLetterSpeechText.slice(0, 350), 'Kore', '따뜻함', undefined, 1.05);
       }
     }
   }, [stage, healingLetterSpeechText]);

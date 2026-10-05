@@ -86,9 +86,8 @@ const getTarotCardVisual = (card: TarotCard | null | undefined) => {
   return majorMap[card.id] ?? { icon: Sparkles, color: 'text-yellow-400' };
 };
 
-// 82 slots: 78 cards + 4 slot natural spread gap between head (card 0) and tail (card 77)
-// Eliminates the double-overlap seam so that no card is ever doubly covered from both sides
-export const TOTAL_WHEEL_SLOTS = 82;
+// 78-card complete circular wheel
+export const TOTAL_WHEEL_SLOTS = 78;
 
 type DeckWheelCardProps = {
   card: TarotCard;
@@ -116,8 +115,8 @@ const DeckWheelCard = React.memo(
     isHovered = false,
     cardBackId,
   }: DeckWheelCardProps) {
-    // Distribute cards evenly along the wheel with head/tail opening gap
-    const step = (2 * Math.PI) / TOTAL_WHEEL_SLOTS;
+    // 78 cards distributed continuously along the full 360 degree wheel
+    const step = (2 * Math.PI) / totalCards;
     const localAngle = positionIdx * step + offset.angleOffset;
     const liftAmount = isHovered ? (isMobile ? 8 : 14) : 0;
     const finalRadius = radius + offset.radOffset + liftAmount;
@@ -126,35 +125,68 @@ const DeckWheelCard = React.memo(
     const y = Math.round(finalRadius * Math.sin(localAngle) * 10) / 10;
 
     return (
-      <div
-        data-card-id={card.id}
-        className={`absolute left-1/2 top-1/2 w-16 h-26 sm:w-20 sm:h-32 md:w-28 md:h-44 rounded-lg sm:rounded-xl md:rounded-2xl flex items-center justify-center select-none transition-[transform,opacity] duration-150 ease-out overflow-hidden cursor-pointer ${
-          isPicked
-            ? 'opacity-0 scale-75 pointer-events-none'
-            : isHovered
-            ? 'pointer-events-auto border-2 border-amber-300 ring-1 ring-yellow-400/60 shadow-lg shadow-amber-500/25 z-[400] scale-[1.06] bg-zinc-950 tarot-card-border-flicker'
-            : 'pointer-events-auto border border-amber-500/40 shadow-md bg-zinc-950'
-        }`}
-        style={{
-          transform: `translate3d(-50%, -50%, 0) translate3d(${x}px, ${y}px, 0) rotate(${cardRotate}deg) ${isHovered ? 'translateY(-6px)' : ''}`,
-          transformOrigin: 'center center',
-          zIndex: isHovered ? 400 : 30 + positionIdx,
-          backfaceVisibility: 'hidden',
-          contain: 'layout style paint',
-          willChange: isHovered ? 'transform' : 'auto',
-        }}
-      >
-        {isHovered && !isPicked && (
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-200/30 to-transparent skew-x-12 pointer-events-none z-30 tarot-card-shimmer-sweep" />
+      <>
+        {/* Base card element (uniform shingle layering 30 + positionIdx) */}
+        <div
+          data-card-id={card.id}
+          className={`absolute left-1/2 top-1/2 w-16 h-26 sm:w-20 sm:h-32 md:w-28 md:h-44 rounded-lg sm:rounded-xl md:rounded-2xl flex items-center justify-center select-none transition-[transform,opacity] duration-150 ease-out overflow-hidden cursor-pointer ${
+            isPicked
+              ? 'opacity-0 scale-75 pointer-events-none'
+              : isHovered
+              ? 'pointer-events-auto border-2 border-amber-300 ring-1 ring-yellow-400/60 shadow-lg shadow-amber-500/25 z-[400] scale-[1.06] bg-zinc-950 tarot-card-border-flicker'
+              : 'pointer-events-auto border border-amber-500/40 shadow-md bg-zinc-950'
+          }`}
+          style={{
+            transform: `translate3d(-50%, -50%, 0) translate3d(${x}px, ${y}px, 0) rotate(${cardRotate}deg) ${isHovered ? 'translateY(-6px)' : ''}`,
+            transformOrigin: 'center center',
+            zIndex: isHovered ? 400 : 30 + positionIdx,
+            backfaceVisibility: 'hidden',
+            contain: 'layout style paint',
+            willChange: isHovered ? 'transform' : 'auto',
+          }}
+        >
+          {isHovered && !isPicked && (
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-200/30 to-transparent skew-x-12 pointer-events-none z-30 tarot-card-shimmer-sweep" />
+          )}
+          {!isPicked && (
+            <TarotCardBackFace
+              cardBackId={cardBackId}
+              size={isMobile ? 'sm' : 'wheel'}
+              isHovered={isHovered}
+            />
+          )}
+        </div>
+
+        {/* 🌟 Head-card (card 0) seam overlap: lifts left edge above tail card (card 77) to eliminate the double-covered sandwich while maintaining a 100% continuous unbroken circle */}
+        {positionIdx === 0 && !isPicked && (
+          <div
+            data-card-id={card.id}
+            className={`absolute left-1/2 top-1/2 w-16 h-26 sm:w-20 sm:h-32 md:w-28 md:h-44 rounded-lg sm:rounded-xl md:rounded-2xl flex items-center justify-center select-none transition-[transform,opacity] duration-150 ease-out overflow-hidden cursor-pointer pointer-events-auto ${
+              isHovered
+                ? 'border-2 border-amber-300 ring-1 ring-yellow-400/60 shadow-lg shadow-amber-500/25 z-[400] scale-[1.06] bg-zinc-950 tarot-card-border-flicker'
+                : 'border-l border-t border-b border-amber-500/40 shadow-md bg-zinc-950'
+            }`}
+            style={{
+              transform: `translate3d(-50%, -50%, 0) translate3d(${x}px, ${y}px, 0) rotate(${cardRotate}deg) ${isHovered ? 'translateY(-6px)' : ''}`,
+              transformOrigin: 'center center',
+              zIndex: isHovered ? 400 : 30 + totalCards + 5,
+              clipPath: 'polygon(0 0, 52% 0, 52% 100%, 0 100%)',
+              backfaceVisibility: 'hidden',
+              contain: 'layout style paint',
+              willChange: isHovered ? 'transform' : 'auto',
+            }}
+          >
+            {isHovered && (
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-yellow-200/30 to-transparent skew-x-12 pointer-events-none z-30 tarot-card-shimmer-sweep" />
+            )}
+            <TarotCardBackFace
+              cardBackId={cardBackId}
+              size={isMobile ? 'sm' : 'wheel'}
+              isHovered={isHovered}
+            />
+          </div>
         )}
-        {!isPicked && (
-          <TarotCardBackFace
-            cardBackId={cardBackId}
-            size={isMobile ? 'sm' : 'wheel'}
-            isHovered={isHovered}
-          />
-        )}
-      </div>
+      </>
     );
   },
   (prev, next) => {
@@ -487,7 +519,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
       const rotationRad = (rotationRef.current * Math.PI) / 180;
       const currentRelativeAngle = pointerAngle - rotationRad;
 
-      const total = TOTAL_WHEEL_SLOTS;
+      const total = deck.length || TOTAL_WHEEL_SLOTS;
       const step = (2 * Math.PI) / total;
 
       // Normalize currentRelativeAngle to [0, 2*PI)
@@ -852,7 +884,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
               radius={radius}
               offset={cardOffsets[positionIdx % cardOffsets.length] || { radOffset: 0, angleOffset: 0 }}
               isMobile={isMobile}
-              totalCards={TOTAL_WHEEL_SLOTS}
+              totalCards={deck.length || TOTAL_WHEEL_SLOTS}
               isPicked={selectedIds.includes(card.id)}
               isHovered={hoveredCardId === card.id}
               cardBackId={effectiveCardBackId}
