@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Sparkles, 
@@ -2655,40 +2654,6 @@ export function ArtRecommendationView() {
         )}
       </AnimatePresence>
 
-      {/* 🌟 뷰포트 고정 플로팅 생성 버튼: createPortal로 document.body에 마운트하여 모바일 transform 탈출 및 모바일/데스크톱 상시 100% 가시성 확보 */}
-      {typeof document !== "undefined" &&
-        createPortal(
-          <div
-            className="fixed bottom-[calc(var(--sab,0px)+4.75rem)] sm:bottom-safe-fab right-3 sm:right-6 z-[360] flex items-center pointer-events-auto transition-all duration-300 opacity-100"
-          >
-            <button
-              type="button"
-              onClick={() => {
-                if (activeTossRef.current) {
-                  handleExitTossMode();
-                }
-                void handleRecommendArt({
-                  forceRefresh: true,
-                  randomOffset: Date.now(),
-                });
-                resetAppScroll("smooth");
-              }}
-              disabled={loading}
-              className="prism-rainbow-btn py-3 px-4 sm:px-5 rounded-full text-xs font-black uppercase tracking-wider text-white flex items-center gap-2 shadow-[0_10px_35px_rgba(0,0,0,0.95),0_0_25px_rgba(59,130,246,0.7)] border-2 border-white/60 active:scale-95 cursor-pointer disabled:opacity-50 ring-2 ring-blue-400 backdrop-blur-2xl bg-zinc-950/95 whitespace-nowrap"
-              title="Daily ART 새로 생성하기"
-            >
-              <Sparkles size={16} className={loading ? "animate-spin" : "text-yellow-300 animate-pulse"} />
-              <span className="whitespace-nowrap font-sans font-bold">
-                {loading
-                  ? "큐레이션 중..."
-                  : recommendation
-                  ? "Daily ART 새로 생성"
-                  : "Daily ART 즉시 생성"}
-              </span>
-            </button>
-          </div>,
-          document.body
-        )}
     </div>
   );
 }
