@@ -163,29 +163,29 @@ export function EpilogueSynergySection() {
 
 [필수 대원칙]
 1. 정형화되거나 매일 똑같은 템플릿 문구를 절대 출력하지 마세요.
-2. 사용자가 남긴 깨달음("${insightText}")과 닉네임, 선택된 솔페지오 주파수(${activeFrequency}Hz)를 깊이 반영하여, 가슴 벅차오르는 거룩하고 시적인 문장으로 작성하세요.
-3. 반드시 유효한 JSON 형식으로만 응답하세요.`;
+2. 사용자가 남긴 깨달음("${insightText}")과 닉네임, 선택된 영혼 테마("${focusObj.label}")를 깊이 반영하여, 가슴 벅차오르는 거룩하고 시적인 문장으로 작성하세요.
+3. 주파수나 Hz 등의 물리적 수치 언급은 배제하고, 영혼의 깨달음과 내면의 평화, 의식의 진화에 집중하여 서술하세요.
+4. 반드시 유효한 JSON 형식으로만 응답하세요.`;
 
     const userPrompt = `[양쪽 메뉴 융합: DIARY 성찰 일기 ✕ PROFILE 영혼 프로필]
 [선택된 밤의 영혼 도약 포커스]: ${focusObj.label} (${focusObj.desc})
 [오늘 영혼의 깨달음/메아리]: "${insightText}"
-[조율 솔페지오 주파수]: ${activeFrequency}Hz
 [사용자 프로필]: 닉네임(${nickname}), 성향/MBTI(${mbti})
 
 반드시 아래 JSON 스키마로만 엄격하게 응답하세요:
 {
-  "title": "영혼 연대기 고유 칭호 (예: ${activeFrequency}Hz 〈${nickname}의 ${focusObj.label}〉 마스터 아카이브)",
+  "title": "영혼 연대기 고유 칭호 (예: 〈${nickname}의 ${focusObj.label}〉 마스터 아카이브)",
   "soulEvolutionLevel": "오늘의 영혼 진화 등급 (예: Mastery Level XII · 다이아몬드 통합 의식)",
   "dailyCoreTheme": "오늘 하루를 관통하는 핵심 영혼 테마 1문장",
   "soulAlignmentSynthesis": "선택된 영혼 포커스와 개인의 영혼 사명이 어떻게 융합되어 진화했는지를 통찰하는 거룩하고 품격 있는 해설 (3~4문장)",
   "sevenPrismStampStatus": [
-    { "space": "PROLOGUE (프롤로그)", "seal": "불굴의 멘탈 방패 각인 🛡️", "frequency": "432Hz", "status": "SYNCHRONIZED" },
-    { "space": "ORANGE (오렌지)", "seal": "양자 현실화 528Hz 도약 🌲", "frequency": "528Hz", "status": "SYNCHRONIZED" },
-    { "space": "TRINITY (트리니티)", "seal": "대운 개운 & 타로 오라클 ✨", "frequency": "741Hz", "status": "SYNCHRONIZED" },
-    { "space": "AURA (오라)", "seal": "저항 0% 완전 방하착 ⚡", "frequency": "639Hz", "status": "SYNCHRONIZED" },
-    { "space": "BLUEBIRD (블루버드)", "seal": "호오포노포노 백지 환생 🐦", "frequency": "417Hz", "status": "SYNCHRONIZED" },
-    { "space": "MUSE (뮤즈)", "seal": "거장의 영감 마스터클래스 🎶", "frequency": "852Hz", "status": "SYNCHRONIZED" },
-    { "space": "EPILOGUE (에필로그)", "seal": "영혼 연대기 마스터 아카이브 🌙", "frequency": "${activeFrequency}Hz", "status": "SYNCHRONIZED" }
+    { "space": "PROLOGUE (프롤로그)", "seal": "불굴의 멘탈 방패 각인 🛡️", "status": "SYNCHRONIZED" },
+    { "space": "ORANGE (오렌지)", "seal": "양자 현실화 도약 🌲", "status": "SYNCHRONIZED" },
+    { "space": "TRINITY (트리니티)", "seal": "대운 개운 & 타로 오라클 ✨", "status": "SYNCHRONIZED" },
+    { "space": "AURA (오라)", "seal": "저항 0% 완전 방하착 ⚡", "status": "SYNCHRONIZED" },
+    { "space": "BLUEBIRD (블루버드)", "seal": "호오포노포노 백지 환생 🐦", "status": "SYNCHRONIZED" },
+    { "space": "MUSE (뮤즈)", "seal": "거장의 영감 마스터클래스 🎶", "status": "SYNCHRONIZED" },
+    { "space": "EPILOGUE (에필로그)", "seal": "영혼 연대기 마스터 아카이브 🌙", "status": "SYNCHRONIZED" }
   ],
   "preSleepPrimingAffirmation": "취침 전 잠재의식을 우주와 동조시키는 수면 전 영혼 프라이밍 확언 1~2문장",
   "chronicleSealCode": "SOUL-CHRONICLE-PRISM-999-GOLD"
@@ -280,7 +280,7 @@ export function EpilogueSynergySection() {
                 <Sparkles size={12} className="text-purple-400 animate-pulse" />
                 DIARY ✕ PROFILE FUSION
               </span>
-              <span className="text-[10px] text-white/40 font-mono">{activeFrequency}Hz PINEAL AWAKENING</span>
+              <span className="text-[10px] text-white/40 font-mono">SOUL HARMONY AWAKENING</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3">
               <Award className="text-purple-400 drop-shadow-[0_0_12px_rgba(168,85,247,0.8)]" size={28} />
@@ -291,39 +291,18 @@ export function EpilogueSynergySection() {
             </p>
           </div>
 
-          {/* Solfeggio Tone & Frequency Controls */}
+          {/* Ambient Meditation Sound Control */}
           <div className="flex items-center gap-2 self-start md:self-auto">
-            <div className="flex rounded-xl bg-black/40 border border-white/10 p-1">
-              {[432, 528, 639, 741, 852, 963].map((f) => (
-                <button
-                  key={f}
-                  onClick={() => {
-                    setActiveFrequency(f);
-                    if (isAudioPlaying) {
-                      toggleFrequencyTone(f);
-                    }
-                  }}
-                  className={`px-2 py-1 rounded-lg text-[10px] font-mono font-bold transition-all cursor-pointer ${
-                    activeFrequency === f
-                      ? 'bg-purple-500 text-white shadow-[0_0_10px_rgba(168,85,247,0.5)]'
-                      : 'text-white/50 hover:text-white'
-                  }`}
-                >
-                  {f}
-                </button>
-              ))}
-            </div>
-
             <button
               onClick={() => toggleFrequencyTone()}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold font-sans flex items-center gap-2 border transition-all cursor-pointer shrink-0 ${
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold font-sans flex items-center gap-2 border transition-all cursor-pointer shrink-0 ${
                 isAudioPlaying
                   ? 'bg-purple-500 text-white border-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.6)] animate-pulse'
                   : 'bg-white/5 hover:bg-white/10 text-white/80 border-white/10'
               }`}
             >
               {isAudioPlaying ? <Volume2 size={15} /> : <VolumeX size={15} />}
-              <span>{isAudioPlaying ? `${activeFrequency}Hz 재생 중` : `${activeFrequency}Hz 켜기`}</span>
+              <span>{isAudioPlaying ? '수면 명상음 재생 중' : '수면 명상음 듣기'}</span>
             </button>
           </div>
         </div>
@@ -345,7 +324,7 @@ export function EpilogueSynergySection() {
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
           {[
             { name: 'PROLOGUE', icon: Shield, color: 'text-sky-400', desc: '멘탈 방패 각인' },
-            { name: 'ORANGE', icon: Zap, color: 'text-amber-400', desc: '528Hz 양자 실현' },
+            { name: 'ORANGE', icon: Zap, color: 'text-amber-400', desc: '양자 현실화 도약' },
             { name: 'TRINITY', icon: Star, color: 'text-yellow-400', desc: '사주 타로 개운' },
             { name: 'AURA', icon: Flame, color: 'text-emerald-400', desc: '0% 방하착 챔버' },
             { name: 'BLUEBIRD', icon: Feather, color: 'text-cyan-400', desc: '감정 백지 환생' },
@@ -401,10 +380,6 @@ export function EpilogueSynergySection() {
                   </span>
                 </div>
                 <p className="text-[11px] text-white/50 leading-relaxed font-sans">{focus.desc}</p>
-                <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[9px] font-mono text-purple-300">
-                  <span>동조 주파수</span>
-                  <span>{focus.frequency}Hz</span>
-                </div>
               </button>
             );
           })}
@@ -520,10 +495,7 @@ export function EpilogueSynergySection() {
                   key={idx}
                   className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-between"
                 >
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-white/90">{stamp.space}</span>
-                    <span className="text-[9px] text-purple-400/80 font-mono">{stamp.frequency}</span>
-                  </div>
+                  <span className="text-xs font-bold text-white/90">{stamp.space}</span>
                   <span className="text-[11px] text-purple-200 font-mono font-semibold">{stamp.seal}</span>
                 </div>
               ))}

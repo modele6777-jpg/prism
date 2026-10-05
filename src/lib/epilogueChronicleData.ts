@@ -79,7 +79,7 @@ export interface ChronicleStampData {
   sevenPrismStampStatus: {
     space: string;
     seal: string;
-    frequency: string;
+    frequency?: string;
     status: string;
   }[];
   preSleepPrimingAffirmation: string;
@@ -131,18 +131,18 @@ export function loadChronicleArchive(): ChronicleStampData[] {
 }
 
 /**
- * 날짜, 포커스, 주파수, 닉네임, 사용자 입력을 결합하여 동적으로 영혼 연대기 산출
+ * 날짜, 포커스, 닉네임, 사용자 입력을 결합하여 동적으로 영혼 연대기 산출
  */
 export function getDynamicSoulChronicle(
   focusId: string,
-  frequency: number,
-  customInsight: string,
+  frequency: number = 432,
+  customInsight: string = '',
   userProfile?: UserProfile | null,
   dateSeedKey?: string
 ): ChronicleStampData {
   const focus = COSMIC_FOCUS_OPTIONS.find((f) => f.id === focusId) || COSMIC_FOCUS_OPTIONS[0];
   const dateStr = dateSeedKey || new Date().toISOString().slice(0, 10);
-  const seed = getDateSeed(`epilogue_chronicle_${focus.id}_${dateStr}_${frequency}`);
+  const seed = getDateSeed(`epilogue_chronicle_${focus.id}_${dateStr}`);
   const nickname = userProfile?.basic?.nickname || userProfile?.basic?.name || '빛의 마스터';
   const mbti = (userProfile as any)?.psychology?.mbti || 'INFJ';
   const userText = (customInsight || '').trim();
@@ -154,7 +154,7 @@ export function getDynamicSoulChronicle(
   // Dynamic core theme
   const themes = [
     `7대 프리즘의 모든 파동이 [${focus.label}]을 통해 눈부신 빛으로 정렬된 완전한 날`,
-    `어둠과 혼란을 지나 영혼의 순수한 중심축을 우주의 진동수(${frequency}Hz)와 일치시킨 날`,
+    `어둠과 혼란을 지나 영혼의 순수한 중심축을 우주의 신성한 조화와 일치시킨 날`,
     `에고의 분별을 내려놓고 참된 자아의 신성한 지혜 속으로 깊이 녹아드는 축복의 밤`,
     `지나온 모든 순간의 인연과 경험을 감사의 황금빛으로 승화시킨 위대한 영혼의 도약일`,
   ];
@@ -163,15 +163,15 @@ export function getDynamicSoulChronicle(
   // Dynamic synthesis
   let soulAlignmentSynthesis = '';
   if (userText) {
-    soulAlignmentSynthesis = `${nickname}님께서 오늘 가슴에 새기신 깨달음("${userText}")은 우주의 거대한 직조판 위에 빛나는 황금실로 각인되었습니다. 선택하신 [${focus.label}]의 파동(${frequency}Hz)과 성향(${mbti})의 고유한 직관이 융합되어, 수면 속에서 무한한 지혜와 치유의 빛이 당신을 온전히 감싸 안습니다.`;
+    soulAlignmentSynthesis = `${nickname}님께서 오늘 가슴에 새기신 깨달음("${userText}")은 우주의 거대한 직조판 위에 빛나는 황금실로 각인되었습니다. 선택하신 [${focus.label}]의 본질과 성향(${mbti})의 고유한 직관이 융합되어, 수면 속에서 무한한 지혜와 치유의 빛이 당신을 온전히 감싸 안습니다.`;
   } else {
-    soulAlignmentSynthesis = `${nickname}님, 오늘 하루 지나온 모든 생각과 감정은 헛되지 않았으며 영혼의 성장판 위에 고결한 씨앗으로 심어졌습니다. [${focus.label}]을 향한 당신의 의지는 ${frequency}Hz 솔페지오 주파수의 파동을 타고 온 우주로 퍼져나가, 잠든 동안 가장 안전하고 완전한 재창조의 기적으로 응답합니다.`;
+    soulAlignmentSynthesis = `${nickname}님, 오늘 하루 지나온 모든 생각과 감정은 헛되지 않았으며 영혼의 성장판 위에 고결한 씨앗으로 심어졌습니다. [${focus.label}]을 향한 당신의 의지는 고요하고 맑은 밤의 기운을 타고 온 우주로 퍼져나가, 잠든 동안 가장 안전하고 완전한 재창조의 기적으로 응답합니다.`;
   }
 
   // Dynamic Pre-Sleep Priming Affirmation
   const affirmations = [
     `나는 오늘 하루의 모든 배움과 깨달음을 황금빛 축복으로 품고, 잠든 동안 무한한 우주의 잠재의식과 온전히 하나가 되어 기적의 내일을 창조한다.`,
-    `모든 긴장과 판단을 밤의 품에 내려놓는다. 나의 세포와 영혼은 ${frequency}Hz 천상의 주파수로 조율되어 가장 평온하고 눈부신 내일을 맞이한다.`,
+    `모든 긴장과 판단을 밤의 품에 내려놓는다. 나의 세포와 영혼은 가장 깊고 순수한 평온으로 조율되어 눈부신 내일을 맞이한다.`,
     `내 안에는 어떤 어둠도 밝힐 수 있는 불멸의 빛이 있다. 나는 안전하며, 사랑받고 있으며, 매 순간 더 온전한 나로 다시 태어난다.`,
     `잠재의식의 거대한 바다여, 오늘 밤 나의 모든 상처를 지혜로 바꾸고 최고의 가능성을 내일의 현실로 꽃피워 주소서.`,
   ];
@@ -181,20 +181,20 @@ export function getDynamicSoulChronicle(
   const chronicleSealCode = `SOUL-CHRONICLE-PRISM-${sealNumber}-GOLD`;
 
   const sevenPrismStampStatus = [
-    { space: 'PROLOGUE (프롤로그)', seal: '불굴의 멘탈 방패 각인 🛡️', frequency: '432Hz', status: 'SYNCHRONIZED' },
-    { space: 'ORANGE (오렌지)', seal: '양자 현실화 528Hz 도약 🌲', frequency: '528Hz', status: 'SYNCHRONIZED' },
-    { space: 'TRINITY (트리니티)', seal: '대운 개운 & 타로 오라클 ✨', frequency: '741Hz', status: 'SYNCHRONIZED' },
-    { space: 'AURA (오라)', seal: '저항 0% 완전 방하착 ⚡', frequency: '639Hz', status: 'SYNCHRONIZED' },
-    { space: 'BLUEBIRD (블루버드)', seal: '호오포노포노 백지 환생 🐦', frequency: '417Hz', status: 'SYNCHRONIZED' },
-    { space: 'MUSE (뮤즈)', seal: '거장의 영감 마스터클래스 🎶', frequency: '852Hz', status: 'SYNCHRONIZED' },
-    { space: 'EPILOGUE (에필로그)', seal: `영혼 연대기 ${focus.icon} 봉인 🌙`, frequency: `${frequency}Hz`, status: 'SYNCHRONIZED' }
+    { space: 'PROLOGUE (프롤로그)', seal: '불굴의 멘탈 방패 각인 🛡️', status: 'SYNCHRONIZED' },
+    { space: 'ORANGE (오렌지)', seal: '양자 현실화 도약 🌲', status: 'SYNCHRONIZED' },
+    { space: 'TRINITY (트리니티)', seal: '대운 개운 & 타로 오라클 ✨', status: 'SYNCHRONIZED' },
+    { space: 'AURA (오라)', seal: '저항 0% 완전 방하착 ⚡', status: 'SYNCHRONIZED' },
+    { space: 'BLUEBIRD (블루버드)', seal: '호오포노포노 백지 환생 🐦', status: 'SYNCHRONIZED' },
+    { space: 'MUSE (뮤즈)', seal: '거장의 영감 마스터클래스 🎶', status: 'SYNCHRONIZED' },
+    { space: 'EPILOGUE (에필로그)', seal: `영혼 연대기 ${focus.icon} 봉인 🌙`, status: 'SYNCHRONIZED' }
   ];
 
   return {
     id: `chronicle_${dateStr}_${focus.id}`,
     timestamp: Date.now(),
     dateKey: dateStr,
-    title: `〈${nickname}의 ${focus.label}〉 ${frequency}Hz 영혼 연대기 마스터 아카이브`,
+    title: `〈${nickname}의 ${focus.label}〉 영혼 연대기 마스터 아카이브`,
     soulEvolutionLevel,
     dailyCoreTheme,
     soulAlignmentSynthesis,
