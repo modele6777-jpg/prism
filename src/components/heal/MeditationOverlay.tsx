@@ -344,12 +344,19 @@ export function MeditationOverlay({
     if (step >= 0 && step <= 3) {
       const qText = selectedTheme.questions[step];
       if (qText) {
-        void playTTS(qText, 'Kore');
+        void playTTS(qText, 'Kore', false, '명상', undefined, false, undefined, undefined, 0.82);
       }
     } else if (step === 4) {
       void playTTS(
         '존재하는 것들을 소유하려 하거나, 상황을 조종하고, 타인의 인정에 얽매이려 하던 그 모든 것은 당신의 본성이 아닙니다. 툭 놓아버림으로써 기나긴 우주적 은총과 참된 자유가 머물기 시작합니다.',
-        'Kore'
+        'Kore',
+        false,
+        '명상',
+        undefined,
+        false,
+        undefined,
+        undefined,
+        0.82
       );
     } else {
       stopTTS();

@@ -681,6 +681,7 @@ export function stopTTSPlayback(): void {
 export type TTSEmotionType =
   | 'joy'        // 기쁨, 축하, 설렘, 활기
   | 'calm'       // 평온, 안식, 이완, 치유
+  | 'meditation' // 명상, 60초 호흡, 방하착, 깊은 이완
   | 'emphasis'   // 강조, 결의, 확신, 통찰
   | 'sadness'    // 슬픔, 위로, 애도, 비움
   | 'mystic'     // 신비, 오라클, 우주, 영혼
@@ -689,7 +690,7 @@ export type TTSEmotionType =
 
 export interface TTSEmotionProfile {
   emotion: TTSEmotionType;
-  playbackRate: number;      // 0.85 ~ 1.15
+  playbackRate: number;      // 0.75 ~ 1.15
   detune: number;            // Cents (-1200 ~ +1200)
   pitchHzOffset: number;     // Edge TTS / API 호환용
   preservesPitch: boolean;   // HTMLAudio preservesPitch
@@ -707,11 +708,19 @@ export const TTS_EMOTION_PROFILES: Record<TTSEmotionType, TTSEmotionProfile> = {
   },
   calm: {
     emotion: 'calm',
-    playbackRate: 0.93,
+    playbackRate: 0.86,
     detune: -60,
-    pitchHzOffset: -1,
+    pitchHzOffset: -1.2,
     preservesPitch: true,
     label: '평온과 안식',
+  },
+  meditation: {
+    emotion: 'meditation',
+    playbackRate: 0.82,
+    detune: -80,
+    pitchHzOffset: -1.8,
+    preservesPitch: true,
+    label: '명상과 호흡 치유',
   },
   emphasis: {
     emotion: 'emphasis',
@@ -761,10 +770,22 @@ export const TTS_EMOTION_PROFILES: Record<TTSEmotionType, TTSEmotionProfile> = {
 export function analyzeTextEmotion(text: string, explicitEmotion?: string): TTSEmotionProfile {
   if (explicitEmotion) {
     const norm = explicitEmotion.toLowerCase().trim();
+    if (
+      norm.includes('meditation') ||
+      norm.includes('명상') ||
+      norm.includes('호흡') ||
+      norm.includes('들숨') ||
+      norm.includes('날숨') ||
+      norm.includes('방하착') ||
+      norm.includes('1분') ||
+      norm.includes('이완')
+    ) {
+      return TTS_EMOTION_PROFILES.meditation;
+    }
     if (norm.includes('joy') || norm.includes('기쁨') || norm.includes('환희') || norm.includes('행복') || norm.includes('축하') || norm.includes('happy')) {
       return TTS_EMOTION_PROFILES.joy;
     }
-    if (norm.includes('calm') || norm.includes('평온') || norm.includes('안식') || norm.includes('이완') || norm.includes('치유') || norm.includes('peace') || norm.includes('relax')) {
+    if (norm.includes('calm') || norm.includes('평온') || norm.includes('안식') || norm.includes('치유') || norm.includes('peace') || norm.includes('relax')) {
       return TTS_EMOTION_PROFILES.calm;
     }
     if (norm.includes('emphasis') || norm.includes('강조') || norm.includes('확신') || norm.includes('결단') || norm.includes('focus') || norm.includes('insight')) {
@@ -790,6 +811,7 @@ export function analyzeTextEmotion(text: string, explicitEmotion?: string): TTSE
 
   const clean = text.toLowerCase();
 
+  let meditationScore = 0;
   let joyScore = 0;
   let calmScore = 0;
   let emphasisScore = 0;
@@ -797,13 +819,15 @@ export function analyzeTextEmotion(text: string, explicitEmotion?: string): TTSE
   let mysticScore = 0;
   let vitalityScore = 0;
 
+  const meditationKeywords = ['명상', '호흡', '들숨', '날숨', '방하착', '숨결', '숨을', '들이쉬', '내쉬', '단전', '차크라', '정좌', '좌선', '1분 명상', '마인드 리셋'];
   const joyKeywords = ['기쁨', '행복', '환희', '축하', '설렘', '즐거', '반가', '웃음', '신나', '빛나', '희망', '감사', '사랑', '대단', '좋아', '멋진', '축복', '환대'];
-  const calmKeywords = ['평온', '안식', '이완', '고요', '쉼', '휴식', '편안', '잠시', '호흡', '부드럽', '따뜻', '차분', '비우', '흘러', '정화', '다정', '안아', '안정', '느슨'];
+  const calmKeywords = ['평온', '안식', '이완', '고요', '쉼', '휴식', '편안', '잠시', '부드럽', '따뜻', '차분', '비우', '흘러', '정화', '다정', '안아', '안정', '느슨'];
   const emphasisKeywords = ['중요', '반드시', '기억', '확신', '결단', '핵심', '명심', '결코', '도전', '의지', '성공', '달성', '도약', '강력', '성찰', '통찰', '진실', '분명', '결정'];
   const sadnessKeywords = ['슬픔', '눈물', '아픔', '상처', '외로', '지친', '힘든', '버거운', '애도', '위로', '고단', '그리움', '상실'];
   const mysticKeywords = ['운명', '우주', '오라클', '타로', '별자리', '영혼', '직관', '신비', '차원', '공명', '시공간', '비밀', '흐름', '기운', '성좌'];
   const vitalityKeywords = ['활력', '에너지', '생기', '생체', '역동', '운동', '스트레칭', '기운', '움직', '파워', '깨어나', '시작', '실행', '리듬', '생명', '건강'];
 
+  meditationKeywords.forEach(k => { if (clean.includes(k)) meditationScore += 2; });
   joyKeywords.forEach(k => { if (clean.includes(k)) joyScore++; });
   calmKeywords.forEach(k => { if (clean.includes(k)) calmScore++; });
   emphasisKeywords.forEach(k => { if (clean.includes(k)) emphasisScore++; });
@@ -818,6 +842,7 @@ export function analyzeTextEmotion(text: string, explicitEmotion?: string): TTSE
   }
 
   const scores = [
+    { type: 'meditation' as TTSEmotionType, score: meditationScore },
     { type: 'joy' as TTSEmotionType, score: joyScore },
     { type: 'calm' as TTSEmotionType, score: calmScore },
     { type: 'emphasis' as TTSEmotionType, score: emphasisScore },
@@ -856,6 +881,7 @@ export async function playTTSAudio(
   sampleRate: number = 24000,
   emotionOrText?: string | TTSEmotionProfile,
   isSequenceChunk: boolean = false,
+  playbackRateOverride?: number,
 ): Promise<void> {
   if (typeof window === 'undefined') {
     throw new Error('TTS playback is only available in the browser');
@@ -919,7 +945,7 @@ export async function playTTSAudio(
   audio.src = ttsBlobUrl;
 
   try {
-    const targetRate = profile.playbackRate || 1.0;
+    const targetRate = playbackRateOverride || profile.playbackRate || 1.0;
     audio.playbackRate = targetRate;
     audio.defaultPlaybackRate = targetRate;
     if ('preservesPitch' in audio) {

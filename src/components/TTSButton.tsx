@@ -9,9 +9,11 @@ interface TTSButtonProps {
   className?: string;
   onPlay?: () => void;
   onClick?: () => void;
+  emotion?: string;
+  speed?: number;
 }
 
-export const TTSButton: React.FC<TTSButtonProps> = ({ text, voice = 'Kore', className = "", onPlay, onClick }) => {
+export const TTSButton: React.FC<TTSButtonProps> = ({ text, voice = 'Kore', className = "", onPlay, onClick, emotion, speed }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -24,13 +26,13 @@ export const TTSButton: React.FC<TTSButtonProps> = ({ text, voice = 'Kore', clas
     const timer = setTimeout(() => {
       if (cleanText.length > 130) {
         const firstSentence = cleanText.match(/[^.!?。！？\n]+[.!?。！？\n]?/)?.[0] || cleanText.slice(0, 100);
-        prefetchTTS(firstSentence, voice);
+        prefetchTTS(firstSentence, voice, emotion, undefined, speed);
       } else {
-        prefetchTTS(cleanText, voice);
+        prefetchTTS(cleanText, voice, emotion, undefined, speed);
       }
     }, 200);
     return () => clearTimeout(timer);
-  }, [cleanText, voice]);
+  }, [cleanText, voice, emotion, speed]);
 
   useEffect(() => {
     const unsubscribe = subscribeTTS((state) => {
@@ -59,9 +61,9 @@ export const TTSButton: React.FC<TTSButtonProps> = ({ text, voice = 'Kore', clas
     // If the text is long (e.g. Tarot results, comprehensive guide, multi-sentence reading),
     // stream smoothly in chunked sentences to prevent browser cutoffs, skips, and API timeouts.
     if (cleanText.length > 130 || cleanText.includes('\n')) {
-      playTTSInChunks(cleanText, voice, 140);
+      playTTSInChunks(cleanText, voice, 140, emotion, speed);
     } else {
-      playTTS(cleanText, voice);
+      playTTS(cleanText, voice, false, emotion, undefined, false, undefined, undefined, speed);
     }
   };
 

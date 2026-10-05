@@ -92,6 +92,25 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
 
+  // Meditation Voice Speed State (0.75x, 0.82x, 0.92x)
+  const [voiceSpeed, setVoiceSpeed] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('aura_meditation_voice_speed_v1');
+      if (saved) {
+        const val = parseFloat(saved);
+        if (!isNaN(val) && val >= 0.7 && val <= 1.0) return val;
+      }
+    } catch (_) {}
+    return 0.82; // 🌟 기본값: 호흡 리듬과 조화로운 0.82x 차분한 템포
+  });
+
+  const handleSetVoiceSpeed = (newSpeed: number) => {
+    setVoiceSpeed(newSpeed);
+    try {
+      localStorage.setItem('aura_meditation_voice_speed_v1', String(newSpeed));
+    } catch (_) {}
+  };
+
   // Haptic Feedback State (Mobile vibration pulses on Inhale & Exhale)
   const [hapticEnabled, setHapticEnabled] = useState<boolean>(() => getBreathingHapticSetting());
   const [hapticTestPhase, setHapticTestPhase] = useState<'idle' | 'inhale' | 'exhale'>('idle');
@@ -192,6 +211,9 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
     }
   }, []);
 
+  const voiceSpeedRef = useRef(voiceSpeed);
+  voiceSpeedRef.current = voiceSpeed;
+
   const startAffirmationLoop = useCallback(async (affirmation: string) => {
     stopAffirmationLoop(true);
     const sessionId = ++affirmationLoopSessionIdRef.current;
@@ -204,7 +226,8 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
         affirmationLoopSessionIdRef.current === sessionId
       ) {
         try {
-          await playTTS(affirmation, 'Kore', true);
+          const currentSpeed = voiceSpeedRef.current;
+          await playTTS(affirmation, 'Kore', true, '명상', undefined, false, undefined, undefined, currentSpeed);
         } catch (err) {
           console.warn('[Meditation] Affirmation loop TTS error:', err);
         }
@@ -216,9 +239,9 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
           break;
         }
 
-        // 2.5초 깊은 심호흡과 내면 흡수를 위한 평온한 간격 후 자동 반복 재생
+        // 3.5초 깊은 심호흡과 내면 흡수를 위한 평온한 간격 후 자동 반복 재생 (호흡 리듬에 여유 부여)
         await new Promise<void>((resolve) => {
-          affirmationLoopTimeoutRef.current = setTimeout(resolve, 2500);
+          affirmationLoopTimeoutRef.current = setTimeout(resolve, 3500);
         });
       }
 
@@ -762,6 +785,26 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
                 </div>
 
                 <div className="flex items-center gap-2">
+                  {/* Voice Speed Quick Toggle */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nextSpeed = voiceSpeed === 0.82 ? 0.75 : voiceSpeed === 0.75 ? 0.92 : 0.82;
+                      handleSetVoiceSpeed(nextSpeed);
+                      if (isAffirmationLooping) {
+                        const text = customPrescription?.completionAffirmation || activeTheme.affirmation;
+                        void startAffirmationLoop(text);
+                      }
+                    }}
+                    title={`명상 가이드 음성 속도 (현재: ${voiceSpeed}x) - 터치하여 변경`}
+                    className="px-2 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-xs flex items-center gap-1 cursor-pointer transition-all shadow-sm"
+                  >
+                    <Wind size={12} className="text-emerald-400" />
+                    <span className="text-[10px] font-mono font-bold">
+                      {voiceSpeed === 0.75 ? '0.75x 느림' : voiceSpeed === 0.82 ? '0.82x 차분' : '0.92x 보통'}
+                    </span>
+                  </button>
+
                   {/* Haptic Feedback Quick Toggle */}
                   <button
                     type="button"
@@ -774,7 +817,7 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
                     }`}
                   >
                     <Vibrate size={14} className={hapticEnabled && isRunning ? 'animate-pulse text-emerald-400' : ''} />
-                    <span className="text-[11px] font-medium">햅틱 {hapticEnabled ? 'ON' : 'OFF'}</span>
+                    <span className="text-[11px] font-medium hidden sm:inline">햅틱 {hapticEnabled ? 'ON' : 'OFF'}</span>
                   </button>
 
                   {/* Sound Toggle */}
@@ -968,8 +1011,10 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
                     <TTSButton
                       text={customPrescription?.completionAffirmation || activeTheme.affirmation}
                       voice="Kore"
+                      emotion="명상"
+                      speed={voiceSpeed}
                     />
-                    <span className="text-[11px] font-sans">1회 듣기</span>
+                    <span className="text-[11px] font-sans">1회 듣기 ({voiceSpeed}x)</span>
                   </div>
                   <button
                     onClick={() => handleCopyAffirmation(customPrescription?.completionAffirmation || activeTheme.affirmation)}
@@ -1171,6 +1216,47 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
                       }`}
                     />
                   </button>
+                </div>
+
+                {/* Voice Speed Setting */}
+                <div className="py-2.5 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-semibold text-white block">명상 가이드 음성 속도 (Voice Speed)</span>
+                      <span className="text-[11px] text-white/50">호흡 리듬에 맞춰 음성 낭독 템포를 여유롭고 차분하게 조절합니다</span>
+                    </div>
+                    <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
+                      {voiceSpeed}x
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 pt-1">
+                    {[
+                      { speed: 0.75, label: '0.75x 매우 느림', desc: '깊은 이완 & 긴 호흡' },
+                      { speed: 0.82, label: '0.82x 차분하게', desc: '★ 호흡 권장 템포' },
+                      { speed: 0.92, label: '0.92x 보통 속도', desc: '자연스러운 낭독' },
+                    ].map((item) => (
+                      <button
+                        key={item.speed}
+                        type="button"
+                        onClick={() => {
+                          handleSetVoiceSpeed(item.speed);
+                          if (isAffirmationLooping) {
+                            const text = customPrescription?.completionAffirmation || activeTheme.affirmation;
+                            void startAffirmationLoop(text);
+                          }
+                        }}
+                        className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                          voiceSpeed === item.speed
+                            ? 'bg-emerald-500/20 border-emerald-400 text-emerald-200 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
+                            : 'bg-white/5 hover:bg-white/10 border-white/10 text-white/60 hover:text-white'
+                        }`}
+                      >
+                        <span className="text-xs font-bold block">{item.label}</span>
+                        <span className="text-[10px] text-white/40 block mt-0.5">{item.desc}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -1409,8 +1495,8 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
 
                     <div className="flex items-center gap-2 shrink-0">
                       <div className="p-1 rounded-xl bg-white/5 border border-white/10 flex items-center gap-1.5 px-2">
-                        <TTSButton text={customPrescription.completionAffirmation} voice="Kore" />
-                        <span className="text-[10px] text-white/60">음성 듣기</span>
+                        <TTSButton text={customPrescription.completionAffirmation} voice="Kore" emotion="명상" speed={voiceSpeed} />
+                        <span className="text-[10px] text-white/60">음성 듣기 ({voiceSpeed}x)</span>
                       </div>
 
                       <button

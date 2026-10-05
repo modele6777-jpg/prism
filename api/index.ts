@@ -86,13 +86,13 @@ app.post([/.*\/chat\/completions$/, "/api/openai/v1/chat/completions", "/openai/
 import { handleTTS } from "../server/api-lib/ttsHandler";
 
 app.post("/api/ai/tts", async (req, res) => {
-  const { text, voice = "Kore", emotion } = req.body || {};
+  const { text, voice = "Kore", emotion, rate, speed } = req.body || {};
   if (!text) {
     return res.status(400).json({ error: "Empty speech text" });
   }
 
   try {
-    const result = await handleTTS({ text, voice, emotion });
+    const result = await handleTTS({ text, voice, emotion, rate, speed });
     return res.status(200).json(result);
   } catch (err: any) {
     console.error("Vercel TTS generation error:", err);

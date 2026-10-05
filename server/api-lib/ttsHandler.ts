@@ -19,6 +19,8 @@ export interface TTSHandlerOptions {
   text: string;
   voice?: string;
   emotion?: string;
+  rate?: string;
+  speed?: number;
 }
 
 export interface TTSHandlerResult {
@@ -28,7 +30,7 @@ export interface TTSHandlerResult {
 }
 
 export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerResult> {
-  const { text, voice = "Kore", emotion } = options;
+  const { text, voice = "Kore", emotion, speed } = options;
   if (!text) {
     throw new Error("Empty speech text");
   }
@@ -39,17 +41,6 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
   }
 
   const resolvedVoiceKey = voice || "Kore";
-  const cacheKey = `${resolvedVoiceKey}_${emotion || ""}_${cleanText}`;
-
-  // 1. Check in-memory cache
-  const cached = ttsServerCache.get(cacheKey);
-  if (cached && Date.now() - cached.timestamp < 3600000) {
-    return {
-      audioContent: cached.base64,
-      encoding: cached.encoding,
-      sampleRate: cached.sampleRate,
-    };
-  }
 
   const isKorean = /[가-힣]/.test(cleanText);
   const isMaleVoice =
@@ -63,58 +54,92 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
     voice === "ko-KR-InJoonNeural" ||
     voice === "en-US-GuyNeural";
 
-  // 2. Primary Engine: Edge Neural TTS (100% consistent timbre and prosody across sequential chunks)
-  try {
-    let voiceName = "ko-KR-SunHiNeural";
-    if (voice && (voice.includes("Neural") || voice.startsWith("ko-KR-") || voice.startsWith("en-US-"))) {
-      if (voice.includes("SoonBok") || voice.includes("soonbok") || voice.includes("Zephyr") || voice.includes("zephyr")) {
-        voiceName = "ko-KR-SunHiNeural"; // SoonBok은 EdgeTTS 미지원 음성이므로 최고 품질 명상 특화 SunHi로 안전 매핑
-      } else if (voice.includes("InJoon") || voice.includes("injoon") || voice.includes("Puck")) {
-        voiceName = "ko-KR-InJoonNeural";
-      } else if (voice.includes("Hyunsu") || voice.includes("hyunsu")) {
-        voiceName = "ko-KR-HyunsuNeural";
-      } else if (voice.includes("SunHi") || voice.includes("sunhi") || voice.includes("Kore")) {
-        voiceName = "ko-KR-SunHiNeural";
-      } else {
-        voiceName = isMaleVoice ? "ko-KR-InJoonNeural" : "ko-KR-SunHiNeural";
-      }
-    } else if (voice === "SoonBok" || voice === "soonbok" || voice === "Zephyr" || voice === "zephyr") {
-      voiceName = "ko-KR-SunHiNeural"; // 차분한 명상 특화
-    } else if (voice === "Hyunsu" || voice === "hyunsu") {
+  let voiceName = "ko-KR-SunHiNeural";
+  if (voice && (voice.includes("Neural") || voice.startsWith("ko-KR-") || voice.startsWith("en-US-"))) {
+    if (voice.includes("SoonBok") || voice.includes("soonbok") || voice.includes("Zephyr") || voice.includes("zephyr")) {
+      voiceName = "ko-KR-SunHiNeural"; // SoonBok은 EdgeTTS 미지원 음성이므로 최고 품질 명상 특화 SunHi로 안전 매핑
+    } else if (voice.includes("InJoon") || voice.includes("injoon") || voice.includes("Puck")) {
+      voiceName = "ko-KR-InJoonNeural";
+    } else if (voice.includes("Hyunsu") || voice.includes("hyunsu")) {
       voiceName = "ko-KR-HyunsuNeural";
-    } else if (voice === "InJoon" || voice === "injoon" || voice === "Puck" || voice === "puck") {
-      voiceName = "ko-KR-InJoonNeural";
-    } else if (voice === "SunHi" || voice === "sunhi" || voice === "Kore" || voice === "kore" || voice === "Lucy" || voice === "lucy") {
+    } else if (voice.includes("SunHi") || voice.includes("sunhi") || voice.includes("Kore")) {
       voiceName = "ko-KR-SunHiNeural";
-    } else if (isMaleVoice) {
-      voiceName = "ko-KR-InJoonNeural";
+    } else {
+      voiceName = isMaleVoice ? "ko-KR-InJoonNeural" : "ko-KR-SunHiNeural";
     }
-    let lang = "ko-KR";
-    let rate = "+0%";
-    let pitch = "+0Hz";
+  } else if (voice === "SoonBok" || voice === "soonbok" || voice === "Zephyr" || voice === "zephyr") {
+    voiceName = "ko-KR-SunHiNeural"; // 차분한 명상 특화
+  } else if (voice === "Hyunsu" || voice === "hyunsu") {
+    voiceName = "ko-KR-HyunsuNeural";
+  } else if (voice === "InJoon" || voice === "injoon" || voice === "Puck" || voice === "puck") {
+    voiceName = "ko-KR-InJoonNeural";
+  } else if (voice === "SunHi" || voice === "sunhi" || voice === "Kore" || voice === "kore" || voice === "Lucy" || voice === "lucy") {
+    voiceName = "ko-KR-SunHiNeural";
+  } else if (isMaleVoice) {
+    voiceName = "ko-KR-InJoonNeural";
+  }
 
-    if (!isKorean) {
-      lang = "en-US";
-      voiceName = isMaleVoice ? "en-US-GuyNeural" : "en-US-AriaNeural";
+  let lang = "ko-KR";
+  let rate = "+0%";
+  let pitch = "+0Hz";
+
+  if (!isKorean) {
+    lang = "en-US";
+    voiceName = isMaleVoice ? "en-US-GuyNeural" : "en-US-AriaNeural";
+  }
+
+  // 1. Explicit rate/speed setting override
+  if (options.rate) {
+    rate = options.rate;
+  } else if (typeof speed === "number" && !isNaN(speed) && speed > 0) {
+    const pct = Math.round((speed - 1.0) * 100);
+    rate = `${pct >= 0 ? "+" : ""}${pct}%`;
+  } else if (emotion) {
+    const emo = String(emotion).trim().toLowerCase();
+    const meditationList = ["명상", "meditation", "호흡", "breathing", "방하착", "이완", "마인드풀", "zen", "relaxation"];
+    const slowHealingList = ["공감", "위로", "치유", "차분", "평온", "슬픔", "따뜻", "empathy", "comfort", "healing", "calm", "peace", "sadness", "sad", "warm"];
+    const brightJoyList = ["기쁨", "응원", "설렘", "위트", "밝음", "재미", "신남", "joy", "cheer", "cheering", "excited", "witty", "happy", "fun", "bright"];
+    const mysteryTarotList = ["신비", "진지", "경고", "몽환", "mystery", "serious", "warning", "dreamy", "mystic"];
+
+    if (meditationList.some((item) => emo.includes(item))) {
+      // 🌟 1분 명상 및 호흡 가이드에 맞춘 안정적이고 차분한 낭독 템포
+      rate = "-18%";
+      pitch = voiceName.includes("SunHi") ? "-1.8Hz" : "-2Hz";
+    } else if (slowHealingList.some((item) => emo.includes(item))) {
+      rate = "-14%";
+      pitch = voiceName.includes("SunHi") ? "-1.2Hz" : "-1.5Hz";
+    } else if (brightJoyList.some((item) => emo.includes(item))) {
+      rate = "+4%";
+      pitch = voiceName.includes("SunHi") ? "+1.5Hz" : "+1.8Hz";
+    } else if (mysteryTarotList.some((item) => emo.includes(item))) {
+      rate = "-4%";
+      pitch = "-1Hz";
     }
+  }
 
-    if (emotion) {
-      const emo = String(emotion).trim().toLowerCase();
-      const slowHealingList = ["공감", "위로", "치유", "차분", "평온", "슬픔", "따뜻", "empathy", "comfort", "healing", "calm", "peace", "sadness", "sad", "warm"];
-      const brightJoyList = ["기쁨", "응원", "설렘", "위트", "밝음", "재미", "신남", "joy", "cheer", "cheering", "excited", "witty", "happy", "fun", "bright"];
-      const mysteryTarotList = ["신비", "진지", "경고", "몽환", "mystery", "serious", "warning", "dreamy", "mystic"];
-
-      if (slowHealingList.some((item) => emo.includes(item))) {
-        rate = "-8%";
-        pitch = voiceName.includes("SunHi") ? "-1.2Hz" : "-1.5Hz";
-      } else if (brightJoyList.some((item) => emo.includes(item))) {
-        rate = "+4%";
-        pitch = voiceName.includes("SunHi") ? "+1.5Hz" : "+1.8Hz";
-      } else if (mysteryTarotList.some((item) => emo.includes(item))) {
-        rate = "-4%";
-        pitch = "-1Hz";
-      }
+  // 2. Automatic semantic slowdown for meditation guidance if rate is still default
+  if (rate === "+0%" && !emotion) {
+    const cleanLower = cleanText.toLowerCase();
+    if (/명상|호흡|들숨|날숨|숨결|숨을|들이쉬|내쉬|방하착|1분 명상|60초 호흡/.test(cleanLower)) {
+      rate = "-18%";
+      pitch = voiceName.includes("SunHi") ? "-1.8Hz" : "-2Hz";
     }
+  }
+
+  const cacheKey = `${resolvedVoiceKey}_${emotion || ""}_${rate}_${cleanText}`;
+
+  // Check in-memory cache
+  const cached = ttsServerCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < 3600000) {
+    return {
+      audioContent: cached.base64,
+      encoding: cached.encoding,
+      sampleRate: cached.sampleRate,
+    };
+  }
+
+  // Primary Engine: Edge Neural TTS (100% consistent timbre and prosody across sequential chunks)
+  try {
 
     const generateWithEdgeTTS = async (textToSpeak: string): Promise<Buffer | null> => {
       // Strip any stray emojis or non-speech symbols that might disrupt EdgeTTS websocket
@@ -192,9 +217,10 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
       const ai = new GoogleGenAI({ apiKey: geminiApiKey });
       const selectedVoice = isMaleVoice ? "Fenrir" : "Kore";
 
+      const isSlowMeditation = rate.startsWith("-") || (emotion && /명상|호흡|치유|평온|calm|meditation/.test(emotion));
       const prompt = isMaleVoice
-        ? `Read the following text aloud in Korean with a natural, clear male voice:\n\n${cleanText}`
-        : `Read the following text aloud in Korean with a warm, gentle, clear female voice:\n\n${cleanText}`;
+        ? `Read the following text aloud in Korean with a ${isSlowMeditation ? "calm, gentle, slow, and serene meditative" : "natural, clear"} male voice:\n\n${cleanText}`
+        : `Read the following text aloud in Korean with a ${isSlowMeditation ? "warm, unhurried, gentle, and peaceful meditative" : "warm, gentle, clear"} female voice:\n\n${cleanText}`;
 
       const geminiResponse = await Promise.race([
         ai.models.generateContent({

@@ -181,7 +181,7 @@ export function AuraSynergySection() {
       if (!chamberSessionIdRef.current) {
         chamberSessionIdRef.current = `sanctuary_${Date.now()}`;
       }
-      playTTS(speechText, 'Kore', false, '치유', chamberSessionIdRef.current, true);
+      playTTS(speechText, 'Kore', false, '명상', chamberSessionIdRef.current, true, undefined, undefined, 0.82);
     }
   }, [chamberTimer, isChamberActive, isTtsGuideEnabled, sanctuaryData]);
 
@@ -190,7 +190,7 @@ export function AuraSynergySection() {
     if (isChamberCompleted && isTtsGuideEnabled && sanctuaryData?.zeroResistanceDeclaration) {
       const declText = `저항 0% 완전 해방 선언문입니다. ${sanctuaryData.zeroResistanceDeclaration}`;
       const timer = setTimeout(() => {
-        playTTS(declText, 'Kore', false, '평온');
+        playTTS(declText, 'Kore', false, '명상', undefined, false, undefined, undefined, 0.82);
       }, 700);
       return () => clearTimeout(timer);
     }
@@ -201,7 +201,7 @@ export function AuraSynergySection() {
       stopTTS();
     } else if (sanctuaryData?.zeroResistanceDeclaration) {
       const declText = `저항 0% 완전 해방 선언문입니다. ${sanctuaryData.zeroResistanceDeclaration}`;
-      playTTS(declText, 'Kore', false, '평온');
+      playTTS(declText, 'Kore', false, '명상', undefined, false, undefined, undefined, 0.82);
     }
   };
 
@@ -223,20 +223,20 @@ export function AuraSynergySection() {
 
       // Pre-warm / prefetch all 4 phase scripts immediately to avoid audio delay
       FIXED_SANCTUARY_SPEECHES.forEach((speech) => {
-        prefetchTTS(speech, 'Kore', '치유').catch(() => {});
+        prefetchTTS(speech, 'Kore', '명상', undefined, 0.82).catch(() => {});
       });
 
       // Pre-warm declaration script
       if (sanctuaryData?.zeroResistanceDeclaration) {
         const declText = `저항 0% 완전 해방 선언문입니다. ${sanctuaryData.zeroResistanceDeclaration}`;
-        prefetchTTS(declText, 'Kore', '평온').catch(() => {});
+        prefetchTTS(declText, 'Kore', '명상', undefined, 0.82).catch(() => {});
       }
 
       // Immediately start 1st phase speech with sequence session ID
       if (isTtsGuideEnabled) {
         lastSpokenPhaseRef.current = 0;
         const firstSpeech = getCleanPhaseSpeech(FIXED_SANCTUARY_PROTOCOL[0], 0);
-        playTTS(firstSpeech, 'Kore', false, '치유', sessId, true);
+        playTTS(firstSpeech, 'Kore', false, '명상', sessId, true, undefined, undefined, 0.82);
       }
     }
   };
