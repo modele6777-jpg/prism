@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.4.172",
+    "summary": "Google 계정 동기화 전용 SyncHeader 공통 컴포넌트 및 정밀 스타일 신설",
+    "builtAt": "2026-10-05T04:42:00.000Z",
+    "items": [
+      "재사용 가능한 Google 계정 동기화 헤더(SyncHeader.tsx) 신설: 상단 헤더(#auth-container, #btn-google-login, #user-profile, #user-name, #btn-logout) 마크업 스펙을 100% 준수하고 AppContext(Firebase Auth)와 즉시 연동되는 공통 컴포넌트 구축",
+      "Google 공식 4색 심볼 SVG(GoogleIcon) 컴포넌트화 및 로그인/로그아웃 전환 애니메이션: Google 정품 컬러(#4285F4, #34A853, #FBBC05, #EA4335)를 적용하고 Framer Motion 기반 상태 전환과 로딩 인디케이터 제공",
+      "실시간 클라우드 연결 상태 및 사용자 프로필 연동: 사용자 아바타, 닉네임/성명('제제'), 실시간 동기화 상태 뱃지 및 기기 수동 동기화(syncPrismDevices) 지원",
+      "글로벌 CSS 디자인 시스템 확장: .sync-header, .auth-box, .google-login-btn, .user-profile, .user-name, .logout-btn에 프리즘의 모던 글래스모피즘 테마를 완벽 반영"
+    ]
+  },
+  {
     "version": "1.4.171",
     "summary": "아우라 1분 명상 가이드 음성 감속 및 맞춤형 속도 조절 기능 탑재",
     "builtAt": "2026-10-05T03:22:00.000Z",

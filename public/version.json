@@ -1,14 +1,13 @@
 {
   "name": "luckey",
-  "version": "1.4.171",
-  "summary": "아우라 1분 명상 가이드 음성 감속 및 맞춤형 속도 조절 기능 탑재",
-  "builtAt": "2026-10-05T03:22:00.000Z",
+  "version": "1.4.172",
+  "summary": "Google 계정 동기화 전용 SyncHeader 공통 컴포넌트 및 정밀 스타일 신설",
+  "builtAt": "2026-10-05T04:42:00.000Z",
   "items": [
-    "아우라 1분 명상 가이드 음성 차분 감속(기본 0.82x) 적용: 기존 빠르고 건조했던 대화체 음성을 깊고 여유로운 명상 템포(속도 -18%, 피치 -1.8Hz, 브라우저 재생속도 0.82x)로 전면 보정하여 들숨과 날숨 리듬에 완벽하게 일치되도록 개선",
-    "명상 음성 속도 3단계 개인화 컨트롤(0.75x 매우 느림 / 0.82x 차분하게 / 0.92x 보통) 신설: 세션 진행 화면 상단 원클릭 토글 버튼 및 설정 탭 내 음성 속도 설정 카드를 통해 사용자의 호흡 주기에 맞춰 자유롭게 조절 및 자동 저장(localStorage)",
-    "확언 음성 반복 간격 및 호흡 공간 확장: 확언 반복 재생 시 다음 문장으로 넘어가는 간격을 기존 2.5초에서 3.5초로 여유 있게 늘려 충분한 들숨·날숨 호흡 및 잔향 집중 시간 확보",
-    "엔드투엔드 TTS 음성 속도·감정 파이프라인 확장: EdgeTTS 엔진 레이트 제어, Gemini 백엔드 명상 감정 튜닝, Web Audio/HTML5 Audio 재생속도 제어, TTS 공통 컴포넌트(TTSButton, tts.ts, audio.ts, ttsHandler.ts) 전 구간에 speed 및 명상 프로필 지원 추가",
-    "60초 성소 챔버 및 방하착(MeditationOverlay) 가이드 음성 안정화: 아우라 시너지 섹션 및 명상 오버레이의 음성 안내에도 '명상' 프로필 및 감속 템포를 일괄 적용하여 평온하고 안정된 몰입감 제공"
+    "재사용 가능한 Google 계정 동기화 헤더(SyncHeader.tsx) 신설: 상단 헤더(#auth-container, #btn-google-login, #user-profile, #user-name, #btn-logout) 마크업 스펙을 100% 준수하고 AppContext(Firebase Auth)와 즉시 연동되는 공통 컴포넌트 구축",
+    "Google 공식 4색 심볼 SVG(GoogleIcon) 컴포넌트화 및 로그인/로그아웃 전환 애니메이션: Google 정품 컬러(#4285F4, #34A853, #FBBC05, #EA4335)를 적용하고 Framer Motion 기반 상태 전환과 로딩 인디케이터 제공",
+    "실시간 클라우드 연결 상태 및 사용자 프로필 연동: 사용자 아바타, 닉네임/성명('제제'), 실시간 동기화 상태 뱃지 및 기기 수동 동기화(syncPrismDevices) 지원",
+    "글로벌 CSS 디자인 시스템 확장: .sync-header, .auth-box, .google-login-btn, .user-profile, .user-name, .logout-btn에 프리즘의 모던 글래스모피즘 테마를 완벽 반영"
   ],
   "author": "Antigravity AI Agent",
   "buildEnvironment": "cloud-run"
