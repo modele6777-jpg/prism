@@ -9,7 +9,12 @@ import { useApp, getPersistentUserProfile } from '@/contexts/AppContext';
 import { invokeLLM } from '@/lib/ai';
 import { recordPrismFeature } from '@/lib/prismOmniSync';
 import { playTTS, stopTTS, useTTSActive } from '@/utils/tts';
-import { getSafeArtworkUrl, buildPollinationsArtUrl } from '@/utils/artworkImage';
+import {
+  getSafeArtworkUrl,
+  buildPollinationsArtUrl,
+  isAiArtworkUrl,
+  getArtworkImageBadgeInfo,
+} from '@/utils/artworkImage';
 import { ImageOutputActions, downloadImage } from '@/components/ImageOutputActions';
 import { MuseSongYouTubePlayer } from '@/components/muse/MuseSongYouTubePlayer';
 import {
@@ -65,7 +70,7 @@ export function MuseSynergySection() {
     }
 
     // 2. [★ 최우선 대원칙] 거장의 공식 미술관 소장 원작 스캔본 (프록시 + 원본 직링)
-    if (selectedMaster.imageUrl) {
+    if (selectedMaster.imageUrl && !isAiArtworkUrl(selectedMaster.imageUrl)) {
       list.push(getSafeArtworkUrl(selectedMaster.imageUrl));
       list.push(encodeURI(selectedMaster.imageUrl));
     }
@@ -687,11 +692,19 @@ export function MuseSynergySection() {
                       onLoad={() => {
                         setLoadingArtwork(false);
                         setArtworkLoadError(false);
+                        if (isAiArtworkUrl(effectiveArtworkImage) || imageFallbackIndex >= 2) {
+                          setIsAiGenerated(true);
+                        }
                       }}
                       onError={() => {
                         // 원작 로드 실패 시에만 다음 단계(AI 미학 재현)로 자동 폴백
                         if (imageFallbackIndex + 1 < fallbackUrls.length) {
-                          setImageFallbackIndex((prev) => prev + 1);
+                          const nextIndex = imageFallbackIndex + 1;
+                          setImageFallbackIndex(nextIndex);
+                          const nextUrl = fallbackUrls[nextIndex];
+                          if (isAiArtworkUrl(nextUrl) || nextIndex >= 2) {
+                            setIsAiGenerated(true);
+                          }
                         } else {
                           setLoadingArtwork(false);
                           setArtworkLoadError(true);
@@ -702,15 +715,24 @@ export function MuseSynergySection() {
                         loadingArtwork ? 'opacity-0 scale-95 blur-sm' : 'opacity-100 scale-100 blur-0'
                       }`}
                     />
-                    <div className="absolute bottom-3 right-3 px-3 py-1.5 bg-black/85 backdrop-blur-md rounded-xl border border-yellow-400/30 flex items-center gap-2 shadow-lg z-20 pointer-events-none">
-                      <span className="relative flex h-1.5 w-1.5">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-yellow-400"></span>
-                      </span>
-                      <span className="text-[9px] font-black tracking-widest text-yellow-300 uppercase font-mono">
-                        {isAiGenerated || imageFallbackIndex >= 2 ? '✨ AI 미학 재현본 (원작 대체)' : '🏛️ 미술관 공식 원작 소장본'}
-                      </span>
-                    </div>
+                    {(() => {
+                      const badge = getArtworkImageBadgeInfo(
+                        isAiGenerated ? 'pollinations' : (selectedMaster.imageUrl ? 'wikimedia' : 'pollinations'),
+                        effectiveArtworkImage,
+                        imageFallbackIndex
+                      );
+                      return (
+                        <div className={`absolute bottom-3 right-3 px-3 py-1.5 backdrop-blur-md rounded-xl border ${badge.borderClass} flex items-center gap-2 shadow-lg z-20 pointer-events-none`}>
+                          <span className="relative flex h-1.5 w-1.5">
+                            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${badge.dotClass} opacity-75`}></span>
+                            <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${badge.dotClass}`}></span>
+                          </span>
+                          <span className={`text-[9px] font-black tracking-widest ${badge.textClass} uppercase font-mono`}>
+                            {badge.label}
+                          </span>
+                        </div>
+                      );
+                    })()}
                   </>
                 ) : (
                   <div className="relative w-full h-full p-6 flex flex-col items-center justify-center text-center bg-gradient-to-br from-amber-950/40 via-zinc-900 to-indigo-950/40 border border-amber-400/20">

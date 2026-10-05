@@ -313,9 +313,10 @@ export function collectAllLocalActivities(uid?: string | null): Partial<SharedSt
         safeLocalStorage.getItem('art_nanobanana_image') ||
         safeLocalStorage.getItem(`art_nanobanana_image_${today}`) ||
         parsedRec?.imageUrl;
-      const imageSource = safeLocalStorage.getItem('muse_today_art_image_source_v18') ||
-        safeLocalStorage.getItem('art_image_source') ||
-        'dailyart';
+      const rawSource = safeLocalStorage.getItem('muse_today_art_image_source_v18') ||
+        safeLocalStorage.getItem('art_image_source');
+      const isAiImg = img && (img.includes('pollinations.ai') || img.includes('/prompt/'));
+      const imageSource = isAiImg ? 'pollinations' : (rawSource || (parsedRec?.imageUrl ? 'dailyart' : 'pollinations'));
       const moodLabel = safeLocalStorage.getItem('muse_today_art_mood_label') ||
         safeLocalStorage.getItem('art_current_mood') ||
         '창작의 막힘 & 슬럼프 극복';
@@ -714,7 +715,9 @@ export function unpackAndHydrateLocalStorage(uid: string | null | undefined, sta
         try {
           const rec = artData.recommendation || (artData.title ? artData : null);
           const img = artData.image || artData.nanobananaImage || artData.imageUrl || rec?.imageUrl;
-          const imageSource = artData.imageSource || artData.artworkImageSource || 'dailyart';
+          const rawSource = artData.imageSource || artData.artworkImageSource;
+          const isAiImg = img && (img.includes('pollinations.ai') || img.includes('/prompt/'));
+          const imageSource = isAiImg ? 'pollinations' : (rawSource || (rec?.imageUrl ? 'dailyart' : 'pollinations'));
           const moodLabel = artData.moodLabel || artData.currentMoodLabel || '창작의 막힘 & 슬럼프 극복';
           const userConcern = artData.userConcern || '';
 

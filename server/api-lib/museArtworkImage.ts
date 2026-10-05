@@ -863,11 +863,11 @@ export async function proxyArtworkImage(rawUrl: string, res: Response): Promise<
     }
 
     if (!upstream.ok) {
-      const filename = decodeURIComponent(url.split("/").pop() || "masterpiece")
-        .replace(/[_-]/g, " ")
-        .replace(/\.[a-z0-9]+$/i, "");
-      const fallbackPrompt = encodeURIComponent(`Masterpiece fine art painting, museum exhibition quality: ${filename}`);
-      res.redirect(302, `https://image.pollinations.ai/prompt/${fallbackPrompt}?width=1024&height=768&nologo=true&model=turbo`);
+      console.warn(`[proxyArtworkImage] Upstream returned status ${upstream.status} for ${url}`);
+      res.status(upstream.status >= 400 && upstream.status < 600 ? upstream.status : 502).json({
+        error: "Upstream original museum image unavailable",
+        status: upstream.status,
+      });
       return;
     }
 
@@ -886,11 +886,10 @@ export async function proxyArtworkImage(rawUrl: string, res: Response): Promise<
     res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
     res.send(buffer);
   } catch (err) {
-    console.warn("[proxyArtworkImage] fetch failed, fallback redirect:", err);
-    const filename = decodeURIComponent(url.split("/").pop() || "masterpiece")
-      .replace(/[_-]/g, " ")
-      .replace(/\.[a-z0-9]+$/i, "");
-    const fallbackPrompt = encodeURIComponent(`Masterpiece fine art painting, museum exhibition quality: ${filename}`);
-    res.redirect(302, `https://image.pollinations.ai/prompt/${fallbackPrompt}?width=1024&height=768&nologo=true&model=turbo`);
+    console.warn("[proxyArtworkImage] fetch failed:", err);
+    res.status(502).json({
+      error: "Failed to proxy original museum image",
+      message: err instanceof Error ? err.message : String(err),
+    });
   }
 }

@@ -33,6 +33,10 @@ import {
   resolveArtworkImage,
   buildPollinationsArtUrl,
   getSafeArtworkUrl,
+  isAiArtworkUrl,
+  isAiArtworkSource,
+  resolveArtworkSource,
+  getArtworkImageBadgeInfo,
   type ArtworkImageSource,
 } from "@/utils/artworkImage";
 import { useApp } from "@/contexts/AppContext";
@@ -1419,16 +1423,14 @@ function sanitizeArtRecommendation(raw: ArtRecommendation, offset?: number): Art
   return rec;
 }
 
-function isAiRecreatedArtworkSource(source: ArtworkImageSource | null): boolean {
-  return source === "ai_replica" || source === "pollinations";
+function isAiRecreatedArtworkSource(source: ArtworkImageSource | null, url?: string | null, fallbackIndex?: number): boolean {
+  if (isAiArtworkUrl(url) || (typeof fallbackIndex === "number" && fallbackIndex >= 2)) return true;
+  return isAiArtworkSource(source, url);
 }
 
-function getArtworkImageBadgeLabel(source: ArtworkImageSource | null): string | null {
-  if (!source) return null;
-  if (source === "dailyart") return "🏛️ DailyArt 공식 원작";
-  if (source === "google") return "🏛️ 고화질 공식 원작";
-  if (source === "wikimedia" || source === "wikipedia" || source === "artic" || source === "met") return "🏛️ 미술관 공식 원작 소장본";
-  return "✨ AI 미학 재현본 (원작 저작권 대체)";
+function getArtworkImageBadgeLabel(source: ArtworkImageSource | null, url?: string | null, fallbackIndex?: number): string | null {
+  if (!source && !url) return null;
+  return getArtworkImageBadgeInfo(source, url, fallbackIndex).label;
 }
 
 const ART_CACHE_KEYS = {
@@ -1584,7 +1586,9 @@ export function ArtRecommendationView() {
   });
   const [artworkImageSource, setArtworkImageSource] = useState<ArtworkImageSource | null>(() => {
     if (typeof window !== "undefined" && isArtCacheFresh()) {
-      return (localStorage.getItem(ART_CACHE_KEYS.imageSource) as ArtworkImageSource) || null;
+      const cachedImg = localStorage.getItem(ART_CACHE_KEYS.image);
+      const cachedSrc = localStorage.getItem(ART_CACHE_KEYS.imageSource) as ArtworkImageSource | null;
+      return resolveArtworkSource(cachedSrc, cachedImg);
     }
     return null;
   });
@@ -1644,7 +1648,9 @@ export function ArtRecommendationView() {
     const cachedSource = localStorage.getItem(ART_CACHE_KEYS.imageSource) as ArtworkImageSource | null;
     if (cachedImg && cachedImg !== "null" && cachedImg !== "undefined") {
       setNanobananaImage(cachedImg);
-      if (cachedSource) setArtworkImageSource(cachedSource);
+      const effectiveSource = resolveArtworkSource(cachedSource, cachedImg);
+      setArtworkImageSource(effectiveSource);
+      localStorage.setItem(ART_CACHE_KEYS.imageSource, effectiveSource);
       setLoadingImage(false);
     }
 
@@ -2028,7 +2034,8 @@ export function ArtRecommendationView() {
         if (backup.recommendation) {
           setRecommendation(backup.recommendation);
           setNanobananaImage(backup.image || null);
-          setArtworkImageSource(backup.imageSource || null);
+          const effectiveSrc = resolveArtworkSource(backup.imageSource, backup.image);
+          setArtworkImageSource(effectiveSrc);
           setCurrentMoodLabel(backup.moodLabel || "창작의 막힘 & 슬럼프 극복");
           setCustomConcern(backup.concern || "");
           localStorage.removeItem("prism_toss_daily_backup");
@@ -2059,7 +2066,8 @@ export function ArtRecommendationView() {
       if (img) {
         localStorage.setItem(ART_CACHE_KEYS.image, img);
       }
-      const source = cloudArt.imageSource || cloudArt.artworkImageSource || "dailyart";
+      const rawSource = cloudArt.imageSource || cloudArt.artworkImageSource;
+      const source = resolveArtworkSource(rawSource, img);
       localStorage.setItem(ART_CACHE_KEYS.imageSource, source);
 
       const mood = cloudArt.moodLabel || cloudArt.currentMoodLabel;
@@ -2087,7 +2095,8 @@ export function ArtRecommendationView() {
         setRecommendation(rec);
         const img = cloudArt.image || cloudArt.nanobananaImage || cloudArt.imageUrl || rec.imageUrl;
         if (img) setNanobananaImage(img);
-        const source = cloudArt.imageSource || cloudArt.artworkImageSource || "dailyart";
+        const rawSource = cloudArt.imageSource || cloudArt.artworkImageSource;
+        const source = resolveArtworkSource(rawSource, img);
         setArtworkImageSource(source);
         return;
       }
@@ -2267,7 +2276,7 @@ export function ArtRecommendationView() {
     const list: string[] = [];
 
     // 1. [★ 최우선 대원칙] 미술관 공식 소장본 원작 스캔 (프록시 + 원본 직링)
-    if (recommendation.imageUrl) {
+    if (recommendation.imageUrl && !isAiArtworkUrl(recommendation.imageUrl)) {
       list.push(getSafeArtworkUrl(recommendation.imageUrl));
       list.push(encodeURI(recommendation.imageUrl));
     }
@@ -2802,10 +2811,22 @@ export function ArtRecommendationView() {
                         onLoad={() => {
                           setLoadingImage(false);
                           setImageLoadError(false);
+                          if (isAiArtworkUrl(effectiveImage) || imageFallbackIndex >= 2) {
+                            if (artworkImageSource !== "pollinations" && artworkImageSource !== "ai_replica") {
+                              setArtworkImageSource("pollinations");
+                              localStorage.setItem(ART_CACHE_KEYS.imageSource, "pollinations");
+                            }
+                          }
                         }}
                         onError={() => {
                           if (imageFallbackIndex + 1 < fallbackUrls.length) {
-                            setImageFallbackIndex((prev) => prev + 1);
+                            const nextIndex = imageFallbackIndex + 1;
+                            setImageFallbackIndex(nextIndex);
+                            const nextUrl = fallbackUrls[nextIndex];
+                            if (isAiArtworkUrl(nextUrl) || nextIndex >= 2) {
+                              setArtworkImageSource("pollinations");
+                              localStorage.setItem(ART_CACHE_KEYS.imageSource, "pollinations");
+                            }
                           } else {
                             setLoadingImage(false);
                             setImageLoadError(true);
@@ -2816,17 +2837,21 @@ export function ArtRecommendationView() {
                           loadingImage ? "opacity-0 scale-95 blur-sm" : "opacity-100 scale-100 blur-0"
                         }`} 
                       />
-                      {getArtworkImageBadgeLabel(artworkImageSource) ? (
-                        <div className="absolute bottom-3 right-3 px-3 py-1.5 bg-black/85 backdrop-blur-md rounded-xl border border-yellow-400/30 flex items-center gap-2 shadow-lg z-20 pointer-events-none">
-                          <span className="relative flex h-1.5 w-1.5">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-yellow-400"></span>
-                          </span>
-                          <span className="text-[9px] font-black tracking-widest text-yellow-300 uppercase font-mono">
-                            {getArtworkImageBadgeLabel(artworkImageSource)}
-                          </span>
-                        </div>
-                      ) : null}
+                      {(() => {
+                        const badge = getArtworkImageBadgeInfo(artworkImageSource, effectiveImage, imageFallbackIndex);
+                        if (!badge) return null;
+                        return (
+                          <div className={`absolute bottom-3 right-3 px-3 py-1.5 backdrop-blur-md rounded-xl border ${badge.borderClass} flex items-center gap-2 shadow-lg z-20 pointer-events-none`}>
+                            <span className="relative flex h-1.5 w-1.5">
+                              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${badge.dotClass} opacity-75`}></span>
+                              <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${badge.dotClass}`}></span>
+                            </span>
+                            <span className={`text-[9px] font-black tracking-widest ${badge.textClass} uppercase font-mono`}>
+                              {badge.label}
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </>
                   ) : imageLoadError ? (
                     /* Elegant Masterpiece Museum Canvas Plaque Fallback */
@@ -2887,7 +2912,7 @@ export function ArtRecommendationView() {
 
                 {effectiveImage && !loadingImage && (
                   <p className="text-[10px] text-amber-200/80 text-center leading-relaxed px-2 -mt-2">
-                    {isAiRecreatedArtworkSource(artworkImageSource) || imageFallbackIndex >= 2
+                    {isAiRecreatedArtworkSource(artworkImageSource, effectiveImage, imageFallbackIndex)
                       ? "✨ 원작의 저작권 보호 또는 소장처 정책으로 인해 원작의 구성과 색채를 정밀 분석하여 재현한 고화질 미학 버전입니다."
                       : "🏛️ 시카고 미술관 / 메트로폴리탄 / 위키미디어 / DailyArt 공식 소장 원작 스캔본입니다. (저작권 등으로 로드 불가 시 AI 재현본으로 자동 전환됩니다.)"}
                   </p>
