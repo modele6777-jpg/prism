@@ -1186,6 +1186,7 @@ export async function invokeLLMStructured<T extends z.ZodTypeAny>(params: {
   messages: Message[],
   schema: T,
   maxRetries?: number,
+  timeoutMs?: number,
 }): Promise<z.infer<T>> {
   const maxRetries = params.maxRetries ?? 1;
   let lastError: any;
@@ -1199,7 +1200,8 @@ export async function invokeLLMStructured<T extends z.ZodTypeAny>(params: {
           ...params.messages,
           { role: 'system', content: `IMPORTANT: You MUST respond entirely in valid JSON format matching the requested schema. Output ONLY the JSON object, with no markdown formatting (such as \`\`\`json) and no conversational text. IMPORTANT: All generated text content MUST be in Korean (한국어).\n\nThe JSON schema you must adhere to is:\n${JSON.stringify(schemaJson)}\n\n${PRISM_VOICE_RULES}` }
         ],
-        responseFormat: { type: "json_object" }
+        responseFormat: { type: "json_object" },
+        timeoutMs: params.timeoutMs,
       });
 
       // Robust cleanup for JSON parsing

@@ -49,6 +49,7 @@ export interface SecretNote {
   isSealed: boolean;
   blessingEcho?: string;
   colorTheme?: string;
+  isBlessingLoading?: boolean;
 }
 
 export const MOOD_TAGS = [
@@ -203,29 +204,30 @@ function getTodayKey(): string {
   return `${year}-${month}-${day}`;
 }
 
-function generateTailoredBlessingEcho(content: string, moodLabel: string): string {
+function generateTailoredBlessingEcho(content: string, moodLabel: string, userName: string = '제제'): string {
   const text = content.toLowerCase();
+  const name = userName || '제제';
 
   if (text.includes('회사') || text.includes('직장') || text.includes('일') || text.includes('야근') || text.includes('업무') || text.includes('상사') || text.includes('퇴사') || text.includes('이직') || text.includes('동료')) {
-    return '일터의 무거운 책임감을 잠시 내려놓고, 오늘 밤은 오직 당신만을 위한 따뜻한 쉼을 누리세요.';
+    return `${name} 님, 일터의 무거운 책임감을 잠시 내려놓고, 오늘 밤은 오직 당신만을 위한 따뜻하고 포근한 쉼을 누리세요.`;
   }
   if (text.includes('친구') || text.includes('사람') || text.includes('인간관계') || text.includes('상처') || text.includes('서운') || text.includes('배신') || text.includes('싸움') || text.includes('오해') || text.includes('눈치')) {
-    return '내 마음의 평화가 가장 소중합니다. 타인의 시선에 휘둘리지 않고 당신만의 맑은 온기를 지키세요.';
+    return `${name} 님의 마음의 평화가 가장 소중합니다. 타인의 시선에 휘둘리지 않고 당신만의 맑은 온기를 지키세요.`;
   }
   if (text.includes('사랑') || text.includes('연애') || text.includes('이별') || text.includes('그리움') || text.includes('보고싶') || text.includes('짝사랑') || text.includes('남자친구') || text.includes('여자친구') || text.includes('헤어') || text.includes('마음')) {
-    return '누군가를 진심으로 아끼고 사랑했던 당신의 순수한 온기는 그 자체로 눈부시게 아름답습니다.';
+    return `누군가를 진심으로 아끼고 사랑했던 ${name} 님의 순수한 온기는 그 자체로 눈부시게 아름답습니다.`;
   }
   if (text.includes('불안') || text.includes('걱정') || text.includes('두려') || text.includes('미래') || text.includes('시험') || text.includes('취업') || text.includes('면접') || text.includes('돈') || text.includes('재정') || text.includes('합격') || text.includes('준비')) {
-    return '조급해하지 않아도 괜찮아요. 모든 순리는 가장 알맞고 아름다운 때에 당신 편이 되어줍니다.';
+    return `조급해하지 않아도 괜찮아요, ${name} 님. 모든 순리는 가장 알맞고 아름다운 때에 당신 편이 되어줍니다.`;
   }
   if (text.includes('외로') || text.includes('혼자') || text.includes('쓸쓸') || text.includes('우울') || text.includes('눈물') || text.includes('지침') || text.includes('피곤') || text.includes('힘들') || text.includes('지쳐') || text.includes('버겁')) {
-    return '숨을 깊게 들이쉬고 내쉬어 보세요. 무거운 짐을 견뎌온 당신이라는 존재 자체로 이미 귀하고 충분합니다.';
+    return `숨을 깊게 들이쉬고 내쉬어 보세요. 무거운 짐을 견뎌온 ${name} 님이라는 존재 자체로 이미 귀하고 충분합니다.`;
   }
   if (text.includes('감사') || text.includes('행복') || text.includes('고마') || text.includes('희망') || text.includes('소망') || text.includes('축복') || text.includes('기쁨') || text.includes('좋아')) {
-    return '세상에 띄워 보낸 당신의 다정한 감사의 파동은 머지않아 더 커다란 행운과 평온으로 되돌아옵니다.';
+    return `세상에 띄워 보낸 ${name} 님의 다정한 감사의 파동은 머지않아 더 커다란 행운과 평온으로 되돌아옵니다.`;
   }
 
-  return '흘러간 것은 흘러간 대로 두고, 지금 이 순간의 나를 온전히 안아줍니다.';
+  return `${name} 님, 흘러간 것은 흘러간 대로 두고, 지금 이 순간의 나를 온전히 안아줍니다.`;
 }
 
 export function SecretMessage({ isOpen, onClose, isModal }: SecretMessageProps = {}) {
@@ -270,16 +272,20 @@ export function SecretMessage({ isOpen, onClose, isModal }: SecretMessageProps =
     }
   }, [noteContent]);
 
-  // Deep AI Emotion Analyzer Handler
+  // Deep AI Emotion Analyzer Handler (2.5초 안전 타임아웃)
   const handleDeepAiMoodAnalyze = async () => {
     if (!noteContent.trim()) return;
     setIsDeepAnalyzing(true);
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
       const res = await fetch('/api/ai/secret-mood-recommend', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: noteContent }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
       if (res.ok) {
         const data = await res.json();
         if (data?.moodTag) {
@@ -291,7 +297,6 @@ export function SecretMessage({ isOpen, onClose, isModal }: SecretMessageProps =
         setIsManualOverride(false);
       }
     } catch (e) {
-      console.warn('Deep AI mood analyze failed, falling back to instant detector:', e);
       if (liveRecommendation) {
         setSelectedMood(liveRecommendation.tagId);
         setIsManualOverride(false);
@@ -330,67 +335,38 @@ export function SecretMessage({ isOpen, onClose, isModal }: SecretMessageProps =
   const handleCreateNote = async (requestBlessing = false) => {
     if (!noteContent.trim()) return;
 
+    const currentContent = noteContent.trim();
     const today = getTodayKey();
     const moodObj = MOOD_TAGS.find((m) => m.id === selectedMood) || MOOD_TAGS[0];
 
-    let blessing: string | undefined = undefined;
+    const rawNick = sharedState?.userProfile?.basic?.nickname?.trim() || sharedState?.userProfile?.basic?.name?.trim();
+    const nickname = (rawNick && rawNick !== '박주형' && rawNick !== '쭈' && rawNick !== '여행자') ? rawNick : '제제';
 
-    if (requestBlessing) {
-      setIsGeneratingBlessing(true);
-      try {
-        const BlessingSchema = z.object({
-          comfortMantra: z.string().describe('사용자가 작성한 마음의 기록에 담긴 상황과 감정에 깊이 공감하고 위로해주는 파랑새의 따뜻한 답장 2~3문장'),
-          blessingEcho: z.string().optional().describe('한 줄의 평온 축복 확언'),
-        });
-
-        const res = await invokeLLMStructured({
-          messages: [
-            {
-              role: 'system',
-              content: `당신은 사용자의 지친 마음과 고민을 깊이 어루만져 주는 따뜻하고 다정한 '파랑새(BLUEBIRD)'입니다.
-사용자가 작성한 "마음의 기록" 본문 내용을 아주 꼼꼼하게 읽고, 사용자가 털어놓은 구체적인 이야기, 사건, 인물, 고민, 감정에 정확히 부합하는 진심 어린 답장(comfortMantra)을 작성해주세요.
-추상적이거나 뻔한 위로가 아닌, 사용자가 쓴 문구의 구체적인 상황을 직접 언급하고 다독여주는 따뜻한 구어체 문장(2~3문장)이어야 합니다.`,
-            },
-            {
-              role: 'user',
-              content: `[사용자의 현재 감정 태그]: ${moodObj.label}\n[사용자가 작성한 마음의 기록]:\n"${noteContent.trim()}"\n\n이 마음에 진심으로 공감하고 힘이 되어주는 파랑새의 답장을 전해주세요.`,
-            },
-          ],
-          schema: BlessingSchema,
-          maxRetries: 2,
-        });
-
-        if (res?.comfortMantra) {
-          blessing = res.comfortMantra.replace(/^['“”‘’]+|['“”‘’]+$/g, '').trim();
-        }
-      } catch (e) {
-        console.warn('Direct AI secret blessing generation fallback:', e);
-      } finally {
-        setIsGeneratingBlessing(false);
-      }
-
-      if (!blessing) {
-        blessing = generateTailoredBlessingEcho(noteContent, moodObj.label);
-      }
-    }
-
-    const firstLine = noteContent.trim().split('\n')[0]?.trim() || '';
+    const firstLine = currentContent.split('\n')[0]?.trim() || '';
     const autoTitle = firstLine.slice(0, 26) || `${moodObj.label}의 기록`;
+    const newNoteId = `secret-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
 
+    // ⚡ 1. 즉각 저장 (0ms 지연): UI 블로킹 없이 바로 보관함에 새 쪽지 등록
     const newNote: SecretNote = {
-      id: `secret-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      id: newNoteId,
       dateKey: today,
       createdAt: Date.now(),
       moodTag: selectedMood,
       title: firstLine.length > 26 ? `${autoTitle}...` : autoTitle,
-      content: noteContent.trim(),
+      content: currentContent,
       isSealed: isSealedState,
-      blessingEcho: blessing,
+      blessingEcho: undefined,
       colorTheme: moodObj.color,
+      isBlessingLoading: requestBlessing,
     };
 
     const updated = [newNote, ...notes];
     persistNotes(updated);
+
+    // 폼 즉시 리셋 & 방금 작성한 쪽지 즉시 열람 허용
+    setNoteContent('');
+    setIsManualOverride(false);
+    setUnlockedNoteIds((prev) => ({ ...prev, [newNote.id]: true }));
 
     // Sync to prism ecosystem
     recordPrismFeature({
@@ -400,15 +376,92 @@ export function SecretMessage({ isOpen, onClose, isModal }: SecretMessageProps =
       details: {
         dateKey: today,
         moodTag: moodObj.label,
-        hasBlessing: Boolean(blessing),
+        hasBlessing: Boolean(requestBlessing),
       },
     });
 
-    // Reset form
-    setNoteContent('');
-    setIsManualOverride(false);
-    // Automatically keep newly created note unlocked for the author session
-    setUnlockedNoteIds((prev) => ({ ...prev, [newNote.id]: true }));
+    if (!requestBlessing) return;
+
+    // ⚡ 2. 초고속 비동기 축복 답장 수신 (대기 없이 쪽지 카드 내부에서 로딩 후 스무스 업데이트)
+    setIsGeneratingBlessing(true);
+    try {
+      let blessing: string | undefined = undefined;
+
+      // 1순위: 전용 초고속 서버 API 호출 (최대 2.8초 타임아웃)
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2800);
+        const res = await fetch('/api/ai/secret-blessing', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: currentContent,
+            moodTag: moodObj.label,
+            userName: nickname,
+          }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.comfortMantra) {
+            blessing = String(data.comfortMantra).replace(/^['“”‘’]+|['“”‘’]+$/g, '').trim();
+          }
+        }
+      } catch (fastErr) {
+        // 서버 호출 타임아웃 또는 네트워크 단절 시 아래 스마트 폴백으로 즉각 전환
+      }
+
+      // 2순위: 클라이언트 경량 AI 호출 시도 (타임아웃 3초, maxRetries 0)
+      if (!blessing) {
+        try {
+          const BlessingSchema = z.object({
+            comfortMantra: z.string().describe('파랑새의 따뜻한 답장 2~3문장'),
+          });
+
+          const res = await invokeLLMStructured({
+            messages: [
+              {
+                role: 'system',
+                content: `당신은 사용자의 지친 마음을 다정하게 안아주는 '파랑새(BLUEBIRD)'입니다. 사용자가 적은 쪽지 내용에 깊이 공감하고 위로하는 2~3문장의 따뜻한 구어체 답장을 전해주세요.`,
+              },
+              {
+                role: 'user',
+                content: `[사용자]: ${nickname}\n[감정]: ${moodObj.label}\n[쪽지 내용]: "${currentContent}"\n\n파랑새의 답장을 전해주세요.`,
+              },
+            ],
+            schema: BlessingSchema,
+            maxRetries: 0,
+            timeoutMs: 3000,
+          });
+
+          if (res?.comfortMantra) {
+            blessing = res.comfortMantra.replace(/^['“”‘’]+|['“”‘’]+$/g, '').trim();
+          }
+        } catch (_) {}
+      }
+
+      // 3순위: 즉각 감정 매칭 휴리스틱 엔진 (0ms 폴백 - 항상 성공 보장)
+      if (!blessing) {
+        blessing = generateTailoredBlessingEcho(currentContent, moodObj.label, nickname);
+      }
+
+      // 쪽지 카드 내부 상태 및 로컬 스토리지에 축복 문구 반영
+      setNotes((prevNotes) => {
+        const nextNotes = prevNotes.map((n) =>
+          n.id === newNoteId
+            ? { ...n, blessingEcho: blessing, isBlessingLoading: false }
+            : n
+        );
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(nextNotes));
+        } catch (_) {}
+        return nextNotes;
+      });
+    } finally {
+      setIsGeneratingBlessing(false);
+    }
   };
 
   // 🌟 토스된 비밀 쪽지/감사 수신 및 즉각 작성/위로 분석
@@ -821,7 +874,7 @@ export function SecretMessage({ isOpen, onClose, isModal }: SecretMessageProps =
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <button
                 onClick={() => handleCreateNote(false)}
-                disabled={!noteContent.trim() || isGeneratingBlessing}
+                disabled={!noteContent.trim()}
                 className="flex-1 sm:flex-none px-5 py-3 rounded-2xl bg-white/10 hover:bg-white/15 active:scale-95 disabled:opacity-30 text-xs font-bold text-white transition-all cursor-pointer flex items-center justify-center gap-1.5 border border-white/10"
               >
                 <Lock size={14} />
@@ -830,20 +883,11 @@ export function SecretMessage({ isOpen, onClose, isModal }: SecretMessageProps =
 
               <button
                 onClick={() => handleCreateNote(true)}
-                disabled={!noteContent.trim() || isGeneratingBlessing}
+                disabled={!noteContent.trim()}
                 className="flex-1 sm:flex-none px-6 py-3 rounded-2xl bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 active:scale-95 disabled:opacity-40 text-xs font-bold text-white transition-all cursor-pointer flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(14,165,233,0.35)] border border-sky-300/30"
               >
-                {isGeneratingBlessing ? (
-                  <>
-                    <RefreshCw size={14} className="animate-spin" />
-                    <span>파랑새 교감 중...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles size={14} className="text-sky-200" />
-                    <span>파랑새의 축복 답장 받기</span>
-                  </>
-                )}
+                <Sparkles size={14} className="text-sky-200" />
+                <span>파랑새의 축복 답장 받기</span>
               </button>
             </div>
           </div>
@@ -967,7 +1011,14 @@ export function SecretMessage({ isOpen, onClose, isModal }: SecretMessageProps =
                             {note.content}
                           </p>
 
-                          {note.blessingEcho && (
+                          {note.isBlessingLoading ? (
+                            <div className="p-3.5 rounded-2xl bg-sky-500/10 border border-sky-400/20 text-xs text-sky-200/90 flex items-center gap-2.5 animate-pulse">
+                              <RefreshCw size={13} className="animate-spin text-sky-400 shrink-0" />
+                              <span className="text-[11px] leading-relaxed text-sky-200/80">
+                                🕊️ 파랑새가 제제님을 위한 따뜻한 위로의 답장을 적어내려가고 있어요...
+                              </span>
+                            </div>
+                          ) : note.blessingEcho ? (
                             <div className="p-3.5 rounded-2xl bg-sky-500/10 border border-sky-400/20 text-xs text-sky-200/90 space-y-1.5 leading-relaxed">
                               <div className="flex items-center justify-between text-[10px] font-bold text-sky-300 uppercase tracking-widest">
                                 <span className="flex items-center gap-1.5">
@@ -983,7 +1034,7 @@ export function SecretMessage({ isOpen, onClose, isModal }: SecretMessageProps =
                                 "{note.blessingEcho}"
                               </p>
                             </div>
-                          )}
+                          ) : null}
                         </div>
                       ) : (
                         <div

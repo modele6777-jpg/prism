@@ -1317,6 +1317,84 @@ ${content}
     });
   });
 
+  // Bluebird Secret Note Fast Blessing Generation Endpoint
+  app.post("/api/ai/secret-blessing", async (req, res) => {
+    const { content, moodTag, userName } = req.body || {};
+    const text = String(content || "").trim();
+    const tag = String(moodTag || "confession").trim();
+    const name = String(userName || "제제").trim();
+
+    if (!text) {
+      return res.status(400).json({ error: "쪽지 내용이 비어 있습니다." });
+    }
+
+    const { apiKey } = getAIConfig();
+    if (apiKey) {
+      try {
+        const ai = new GoogleGenAI({ apiKey });
+        const systemInstruction = `당신은 사용자의 지친 마음과 비밀을 다정하게 품어주는 치유의 영적 수호자 '파랑새(BLUEBIRD)'입니다.
+사용자가 작성한 비밀 쪽지 내용을 진심 어린 마음으로 읽고, 사용자가 처한 구체적인 감정과 상황을 직접 언급하며 깊은 공감과 위로를 건네는 2~3문장의 따뜻한 구어체 답장(comfortMantra)을 작성하세요.
+절대 뻔하거나 상투적인 조언을 하지 말고, 사용자가 털어놓은 구체적 사연, 감정, 인물, 고민을 따스하게 감싸 안아주세요.
+반드시 모든 자연어 출력은 현대 한국어 한글로만 작성하고 JSON 형태로 응답하세요.`;
+
+        const prompt = `[사용자 닉네임]: ${name}\n[감정 테마]: ${tag}\n[사용자가 작성한 비밀 쪽지]:\n"${text}"\n\n이 마음에 진심으로 공감하고 따뜻한 힘이 되어주는 파랑새의 위로 답장(comfortMantra)을 JSON으로 보내주세요.`;
+
+        const config = {
+          systemInstruction,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: {
+              comfortMantra: { type: "STRING" }
+            },
+            required: ["comfortMantra"]
+          },
+          maxOutputTokens: 512,
+        };
+
+        const contents = [{ role: "user", parts: [{ text: prompt }] }];
+        // Fast direct Gemini with prioritized fast model & 3.5s timeout race
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Fast AI Timeout")), 3500)
+        );
+        const { response } = await Promise.race([
+          callGeminiContentWithFallback(ai, contents, config, "gemini-3.1-flash-lite"),
+          timeoutPromise
+        ]);
+        const parsed = JSON.parse(response.text);
+        if (parsed?.comfortMantra) {
+          return res.status(200).json({
+            comfortMantra: parsed.comfortMantra.replace(/^['“”‘’]+|['“”‘’]+$/g, '').trim()
+          });
+        }
+      } catch (geminiErr) {
+        console.warn("[secret-blessing] Fast Gemini call failed or timed out, falling back to heuristic engine:", geminiErr);
+      }
+    }
+
+    // Heuristic fallback matching keywords and user's context
+    const lower = text.toLowerCase();
+    let echo = `${name} 님, 흘러간 것은 흘러간 대로 두고, 지금 이 순간의 나를 온전히 안아줍니다.`;
+
+    if (lower.includes('회사') || lower.includes('직장') || lower.includes('일') || lower.includes('야근') || lower.includes('업무') || lower.includes('상사') || lower.includes('퇴사') || lower.includes('이직') || lower.includes('동료')) {
+      echo = `${name} 님, 일터의 무거운 책임감을 잠시 내려놓고, 오늘 밤은 오직 당신만을 위한 따뜻하고 포근한 쉼을 누리세요.`;
+    } else if (lower.includes('친구') || lower.includes('사람') || lower.includes('인간관계') || lower.includes('상처') || lower.includes('서운') || lower.includes('배신') || lower.includes('싸움') || lower.includes('오해') || lower.includes('눈치')) {
+      echo = `${name} 님의 마음의 평화가 가장 소중합니다. 타인의 시선에 휘둘리지 않고 당신만의 맑은 온기를 지키세요.`;
+    } else if (lower.includes('사랑') || lower.includes('연애') || lower.includes('이별') || lower.includes('그리움') || lower.includes('보고싶') || lower.includes('짝사랑') || lower.includes('남자친구') || lower.includes('여자친구') || lower.includes('헤어') || lower.includes('마음')) {
+      echo = `누군가를 진심으로 아끼고 사랑했던 ${name} 님의 순수한 온기는 그 자체로 눈부시게 아름답습니다.`;
+    } else if (lower.includes('불안') || lower.includes('걱정') || lower.includes('두려') || lower.includes('미래') || lower.includes('시험') || lower.includes('취업') || lower.includes('면접') || lower.includes('돈') || lower.includes('재정') || lower.includes('합격') || lower.includes('준비')) {
+      echo = `조급해하지 않아도 괜찮아요, ${name} 님. 모든 순리는 가장 알맞고 아름다운 때에 당신 편이 되어줍니다.`;
+    } else if (lower.includes('외로') || lower.includes('혼자') || lower.includes('쓸쓸') || lower.includes('우울') || lower.includes('눈물') || lower.includes('지침') || lower.includes('피곤') || lower.includes('힘들') || lower.includes('지쳐') || lower.includes('버겁')) {
+      echo = `숨을 깊게 들이쉬고 내쉬어 보세요. 무거운 짐을 견뎌온 ${name} 님이라는 존재 자체로 이미 귀하고 충분합니다.`;
+    } else if (lower.includes('감사') || lower.includes('행복') || lower.includes('고마') || lower.includes('희망') || lower.includes('소망') || lower.includes('축복') || lower.includes('기쁨') || lower.includes('좋아')) {
+      echo = `세상에 띄워 보낸 ${name} 님의 다정한 감사의 파동은 머지않아 더 커다란 행운과 평온으로 되돌아옵니다.`;
+    }
+
+    return res.status(200).json({
+      comfortMantra: echo
+    });
+  });
+
   // TTS - 고품질 Edge Neural TTS + Google TTS 다중 엔진 통합 엔드포인트
   app.post("/api/ai/tts", async (req, res) => {
     const { text, voice = 'Kore', emotion } = req.body;

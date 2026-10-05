@@ -287,13 +287,13 @@ export function BluebirdSynergySection() {
   "spiritualResetDate": "${new Date().toLocaleDateString('ko-KR')}"
 }`;
 
-    // 14초 안전 타임아웃 (타임아웃 시에도 편지 내용을 분석한 동적 폴백 반환)
+    // 4.5초 안전 타임아웃 (지연 없이 편지 내용을 분석한 동적 폴백 즉시 반환)
     const contextualFallback = generateContextualPureZero(currentLetter, nickname, totalHooponoponoCleansings);
 
     const safetyTimeout = new Promise<PureZeroData>((resolve) => {
       setTimeout(() => {
         resolve(contextualFallback);
-      }, 14000);
+      }, 4500);
     });
 
     const runAI = async (): Promise<PureZeroData> => {
