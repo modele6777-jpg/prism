@@ -86,6 +86,10 @@ const getTarotCardVisual = (card: TarotCard | null | undefined) => {
   return majorMap[card.id] ?? { icon: Sparkles, color: 'text-yellow-400' };
 };
 
+// 82 slots: 78 cards + 4 slot natural spread gap between head (card 0) and tail (card 77)
+// Eliminates the double-overlap seam so that no card is ever doubly covered from both sides
+export const TOTAL_WHEEL_SLOTS = 82;
+
 type DeckWheelCardProps = {
   card: TarotCard;
   originalIdx: number;
@@ -107,15 +111,15 @@ const DeckWheelCard = React.memo(
     radius,
     offset,
     isMobile,
-    totalCards,
+    totalCards = TOTAL_WHEEL_SLOTS,
     isPicked = false,
     isHovered = false,
     cardBackId,
   }: DeckWheelCardProps) {
-    // Distribute cards evenly along the full 360 degree wheel
-    const step = (2 * Math.PI) / totalCards;
+    // Distribute cards evenly along the wheel with head/tail opening gap
+    const step = (2 * Math.PI) / TOTAL_WHEEL_SLOTS;
     const localAngle = positionIdx * step + offset.angleOffset;
-    const liftAmount = isHovered ? (isMobile ? 6 : 10) : 0;
+    const liftAmount = isHovered ? (isMobile ? 8 : 14) : 0;
     const finalRadius = radius + offset.radOffset + liftAmount;
     const cardRotate = (localAngle * 180) / Math.PI + 90;
     const x = Math.round(finalRadius * Math.cos(localAngle) * 10) / 10;
@@ -128,13 +132,13 @@ const DeckWheelCard = React.memo(
           isPicked
             ? 'opacity-0 scale-75 pointer-events-none'
             : isHovered
-            ? 'pointer-events-auto border-2 border-amber-300 ring-1 ring-yellow-400/60 shadow-lg shadow-amber-500/25 z-[300] scale-[1.04] bg-zinc-950 tarot-card-border-flicker'
+            ? 'pointer-events-auto border-2 border-amber-300 ring-1 ring-yellow-400/60 shadow-lg shadow-amber-500/25 z-[400] scale-[1.06] bg-zinc-950 tarot-card-border-flicker'
             : 'pointer-events-auto border border-amber-500/40 shadow-md bg-zinc-950'
         }`}
         style={{
-          transform: `translate3d(-50%, -50%, 0) translate3d(${x}px, ${y}px, 0) rotate(${cardRotate}deg) ${isHovered ? 'translateY(-5px)' : ''}`,
+          transform: `translate3d(-50%, -50%, 0) translate3d(${x}px, ${y}px, 0) rotate(${cardRotate}deg) ${isHovered ? 'translateY(-6px)' : ''}`,
           transformOrigin: 'center center',
-          zIndex: isHovered ? 300 : 10 + positionIdx,
+          zIndex: isHovered ? 400 : 30 + positionIdx,
           backfaceVisibility: 'hidden',
           contain: 'layout style paint',
           willChange: isHovered ? 'transform' : 'auto',
@@ -218,8 +222,8 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
 
   const cardOffsets = useMemo(
     () =>
-      Array.from({ length: 78 }).map((_, i) => ({
-        radOffset: ((i % 3) - 1) * 1.5,
+      Array.from({ length: 78 }).map(() => ({
+        radOffset: 0,
         angleOffset: 0,
       })),
     [],
@@ -483,7 +487,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
       const rotationRad = (rotationRef.current * Math.PI) / 180;
       const currentRelativeAngle = pointerAngle - rotationRad;
 
-      const total = deck.length;
+      const total = TOTAL_WHEEL_SLOTS;
       const step = (2 * Math.PI) / total;
 
       // Normalize currentRelativeAngle to [0, 2*PI)
@@ -806,14 +810,14 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
         onPointerCancel={handlePointerUp}
         onPointerLeave={() => setHoveredCardId(null)}
       >
-        {/* Subtle Vignette & Depth Masking */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_30%,rgba(9,9,11,0.6)_80%)] pointer-events-none z-[15]" />
-        <div className="absolute top-0 left-0 right-0 h-44 bg-gradient-to-b from-zinc-950 via-zinc-950/70 to-transparent pointer-events-none z-[20]" />
+        {/* Subtle Vignette & Depth Masking - positioned below card layer */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_30%,rgba(9,9,11,0.6)_80%)] pointer-events-none z-[10]" />
+        <div className="absolute top-0 left-0 right-0 h-44 bg-gradient-to-b from-zinc-950 via-zinc-950/70 to-transparent pointer-events-none z-[12]" />
 
         {/* 78-Card GPU Composited Wheel Layer - Single Hardware Composite Target */}
         <div
           ref={wheelLayerRef}
-          className="absolute left-1/2 top-1/2 transition-opacity duration-300"
+          className="absolute left-1/2 top-1/2 transition-opacity duration-300 z-[30]"
           style={{
             transform: buildWheelTransform(0),
             willChange: 'transform',
@@ -848,7 +852,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
               radius={radius}
               offset={cardOffsets[positionIdx % cardOffsets.length] || { radOffset: 0, angleOffset: 0 }}
               isMobile={isMobile}
-              totalCards={deck.length}
+              totalCards={TOTAL_WHEEL_SLOTS}
               isPicked={selectedIds.includes(card.id)}
               isHovered={hoveredCardId === card.id}
               cardBackId={effectiveCardBackId}

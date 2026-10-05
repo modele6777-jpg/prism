@@ -77,15 +77,26 @@ export function extractConciseSummary(text: string, cardContext?: any): string[]
     cleaned = cleaned.replace(/^(?:현재\s*에너지|방향과\s*결단|실천\s*처방|개운\s*처방|행동\s*처방|실천\s*가이드|개운\s*가이드)\s*[:—\-]\s*/, '');
     cleaned = cleanSentence(cleaned);
 
-    if (cleaned.length > 135) {
-      const idx = cleaned.lastIndexOf('.', 130);
-      if (idx > 50) {
+    if (cleaned.length > 80) {
+      const idx = cleaned.lastIndexOf('.', 75);
+      if (idx > 30) {
         cleaned = cleaned.slice(0, idx + 1);
       } else {
-        cleaned = cleaned.slice(0, 130) + '...';
+        const commaIdx = cleaned.indexOf(',');
+        if (commaIdx >= 20 && commaIdx <= 55) {
+          cleaned = cleaned.slice(0, commaIdx) + ' 상태입니다.';
+        } else {
+          const lastSpace = cleaned.lastIndexOf(' ', 50);
+          if (lastSpace > 20) {
+            cleaned = cleaned.slice(0, lastSpace).trim();
+          } else {
+            cleaned = cleaned.slice(0, 48).trim();
+          }
+        }
       }
     }
-    if (!/[.!?…"'\*_]$/.test(cleaned)) {
+    cleaned = cleaned.replace(/[\s.…·,-]+$/, '');
+    if (!/[.!?]$/.test(cleaned)) {
       cleaned += '.';
     }
     return `[${tag}] ${cleaned}`;
@@ -310,11 +321,28 @@ export function extractOracleConciseSummary(params: OracleConciseSummaryParams):
   const fmt = (tag: string, content: string) => {
     let t = clean(content);
     t = t.replace(/^(?:친애하는|안녕하세요|반갑습니다|안녕|어서\s*오세요)[^,.]*[,.]\s*/i, '');
-    if (t.length > 145) {
-      const idx = t.lastIndexOf('.', 140);
-      if (idx > 60) t = t.slice(0, idx + 1);
-      else t = t.slice(0, 140) + '...';
+    // 기존 말줄임표 제거
+    t = t.replace(/[\s.…·,-]+$/, '');
+    // 간결한 요약 원칙: 너무 긴 문장은 35~45자 내외에서 온전한 문장으로 단정하게 마무리
+    if (t.length > 46) {
+      const firstDot = t.indexOf('.');
+      if (firstDot >= 18 && firstDot <= 45) {
+        t = t.slice(0, firstDot + 1);
+      } else {
+        const firstComma = t.indexOf(',');
+        if (firstComma >= 18 && firstComma <= 40) {
+          t = t.slice(0, firstComma) + ' 상태입니다.';
+        } else {
+          const lastSpace = t.lastIndexOf(' ', 42);
+          if (lastSpace > 18) {
+            t = t.slice(0, lastSpace).trim();
+          } else {
+            t = t.slice(0, 40).trim();
+          }
+        }
+      }
     }
+    t = t.replace(/[\s.…·,-]+$/, '');
     if (!/[.!?]$/.test(t)) t += '.';
     return `[${tag}] ${t}`;
   };
@@ -327,7 +355,7 @@ export function extractOracleConciseSummary(params: OracleConciseSummaryParams):
     const rawLines = summaryBlockMatch[1]
       .split('\n')
       .map(clean)
-      .filter((l) => l.length > 10 && !l.startsWith('http'));
+      .filter((l) => l.length > 5 && !l.startsWith('http'));
     if (rawLines.length >= 3) {
       return [
         fmt('현재 에너지', rawLines[0]),
@@ -347,46 +375,38 @@ export function extractOracleConciseSummary(params: OracleConciseSummaryParams):
   const lackingEl = saju?.elements?.lacking?.name || '결핍 오행';
   const yongsin = saju?.yongsin?.name || '용신 기운';
 
-  const c1Name = c1 ? `${c1.nameKo || c1.name}${c1.reversed ? '(역방향)' : ''}` : '과거 카드';
-  const c2Name = c2 ? `${c2.nameKo || c2.name}${c2.reversed ? '(역방향)' : ''}` : '현재 카드';
-  const c3Name = c3 ? `${c3.nameKo || c3.name}${c3.reversed ? '(역방향)' : ''}` : '조언 카드';
+  const c1Name = c1 ? `${c1.nameKo || c1.name}${c1.reversed ? '(역)' : ''}` : '1번 카드';
+  const c2Name = c2 ? `${c2.nameKo || c2.name}${c2.reversed ? '(역)' : ''}` : '2번 카드';
+  const c3Name = c3 ? `${c3.nameKo || c3.name}${c3.reversed ? '(역)' : ''}` : '3번 카드';
 
-  const c1Keyword = c1?.keywords?.[0] || '내면의 뿌리';
-  const c2Keyword = c2?.keywords?.[0] || '상황의 전개';
-  const c3Keyword = c3?.keywords?.[0] || '해결의 열쇠';
-
-  const todayCardName = todayCard ? `${todayCard.nameKo || todayCard.name}${todayCard.reversed ? '(역방향)' : ''}` : '';
-  const todayCardKeyword = todayCard?.keywords?.[0] || '일일 운기';
-  const todayPrefix = todayCardName ? `오늘의 지배 타로인 [${todayCardName}]('${todayCardKeyword}')의 파동 속에서 ` : '';
-
-  // 1. [현재 에너지] (오늘의 지배 타로 + Card 1 & 2 도상 상징 + 사주 일간 본원 & 우세 오행 흐름 결합)
+  // 1. [현재 에너지] (핵심 40~55자)
   let line1 = '';
   if (isHealing) {
-    line1 = `${todayPrefix}사주 본원인 ${dayMaster}의 기운이 ${dominantEl}의 과열된 파동 속에서 ${c1Name}의 '${c1Keyword}' 뿌리와 맞물려, 현재 ${c2Name} 카드가 가리키듯 상황의 무게를 홀로 감내하며 심리적 긴장과 에너지 분산이 누적된 전환점의 상태입니다.`;
+    line1 = `사주 [${dayMaster}]과 [${c1Name}] 카드가 만나 생각의 과부하와 전환기 피로가 누적된 상태입니다.`;
   } else {
-    line1 = `${todayPrefix}사주 본원인 ${dayMaster}의 고유한 역량이 ${c1Name}의 '${c1Keyword}' 마인드셋과 만나, 현재 ${c2Name} 카드가 지적하듯 실행을 가로막는 생각의 과부하와 ${dominantEl}의 조급함으로 인해 현실적 추진력이 일시적으로 정체된 상태입니다.`;
+    line1 = `사주 [${dayMaster}]의 추진력이 [${c1Name}] 카드와 만나 일시적인 실행 정체에 머물러 있습니다.`;
   }
 
-  // 2. [방향과 결단] (Card 3 해결 열쇠 도상 + 사주 용신 보약 에너지 결합)
+  // 2. [방향과 결단] (핵심 40~55자)
   let line2 = '';
   if (isHealing) {
-    line2 = `사주에서 결핍된 ${lackingEl}을 보완하는 용신(${yongsin})의 생기를 깨우고, 3번 조언 카드인 ${c3Name}의 '${c3Keyword}' 지혜를 받아들여, 스스로를 채근하던 낡은 틀을 과감히 내려놓고 온전한 자아 회복의 길을 선택해야 합니다.`;
+    line2 = `용신 [${yongsin}]과 [${c3Name}] 카드를 따라 무거운 부담을 내려놓고 회복을 선택하세요.`;
   } else {
-    line2 = `사주 용신(${yongsin})의 날카로운 돌파 에너지를 가동하고, 3번 조언 카드인 ${c3Name}의 '${c3Keyword}' 전략을 채택하여, 분산된 목표를 단 하나로 압축하고 망설임 없이 결단하여 우선순위 1번에 모든 자원을 집중해야 합니다.`;
+    line2 = `용신 [${yongsin}]과 [${c3Name}] 카드를 따라 잔가지를 쳐내고 우선순위 1번에 집중하세요.`;
   }
 
-  // 3. [실천 처방] (Card 3 구체적 행동 팁 + 사주 오행 일상 개운법 결합)
+  // 3. [실천 처방] (핵심 35~50자)
   let line3 = '';
   const actionText = typeof microAction === 'string' && microAction.length > 5
-    ? microAction
+    ? clean(microAction)
     : (microAction?.description || microMission?.title || '');
 
-  if (actionText && actionText.length > 8) {
-    line3 = `${c3Name} 카드의 구체적 상징과 사주 ${yongsin} 개운법을 융합하여, 오늘 일상에서 "${clean(actionText)}"을(를) 10분 안에 즉각 실행함으로써 운명의 선순환 물꼬를 트세요.`;
+  if (actionText && actionText.length >= 6 && actionText.length <= 35) {
+    line3 = `오늘 일상에서 "${actionText}"을(를) 즉시 실천하며 기운 순환하기.`;
   } else if (isHealing) {
-    line3 = `${c3Name} 카드의 치유 처방과 사주 ${yongsin} 보약 에너지를 담아, 오늘 따뜻한 차 한 잔과 3번의 깊은 복식호흡으로 마음의 긴장을 즉시 비워내고 나 자신에게 온전한 쉼을 선물하기.`;
+    line3 = `따뜻한 차 한 잔과 3번의 깊은 심호흡으로 마음의 긴장을 즉시 비워내기.`;
   } else {
-    line3 = `${c3Name} 카드의 강력한 실행력과 사주 ${yongsin} 추진력을 결합하여, 오늘 10분 안에 끝낼 수 있는 가장 작은 현실 행동 과제 1가지를 망설임 없이 지금 즉시 완수하기.`;
+    line3 = `오늘 10분 안에 끝낼 수 있는 가장 작은 행동 과제 1가지를 즉시 완수하기.`;
   }
 
   return [
