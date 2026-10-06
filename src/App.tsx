@@ -69,6 +69,7 @@ import { resolveCanonicalPath } from "./lib/prismRouteRegistry";
 
 const ROUTES_MAP = [
   { path: "/", Component: HubHome },
+  { path: "/prologue", Component: HubHome },
   { path: "/universe", Component: HubHome },
   { path: "/ecpr", Component: HubHome },
   { path: "/todo", Component: HubHome },
@@ -102,6 +103,7 @@ function ActivePage({ loc }: { loc: string }) {
     <React.Suspense fallback={<PageLoader />}>
       <Switch location={cleanLoc}>
         <Route path="/"><HubHome /></Route>
+        <Route path="/prologue"><HubHome /></Route>
         <Route path="/universe"><HubHome /></Route>
         <Route path="/ecpr"><HubHome /></Route>
         <Route path="/todo"><HubHome /></Route>

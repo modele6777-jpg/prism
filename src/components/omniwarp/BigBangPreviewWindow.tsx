@@ -310,7 +310,7 @@ export function BigBangPreviewWindow({
             ? isWhitehole
               ? '지금 손을 떼면 [루시 1:1 대화]로 직행합니다'
               : isMirrorhole
-              ? '지금 손을 떼면 [LucKey 홈]으로 즉시 귀환합니다'
+              ? '지금 손을 떼면 [럭키 프롤로그 메인]으로 즉시 귀환합니다'
               : isBlackhole
               ? '지금 손을 떼면 [Key]로 들어갑니다'
               : currentTarget?.previewLabel || '손을 떼면 선택된 차원으로 도약합니다'

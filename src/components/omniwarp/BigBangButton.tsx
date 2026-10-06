@@ -525,6 +525,57 @@ export function BigBangButton() {
     currentPointerEventRef.current = e;
   };
 
+  // 🌟 럭키 프롤로그 메인 즉시 도약 헬퍼 (더블탭 시 실행)
+  const goToPrologueMain = useCallback((customContext?: any, customMetrics?: any) => {
+    // 대기 중인 1회 탭(루시 채팅 토글) 타이머 취소
+    if (singleTapTimerRef.current) {
+      clearTimeout(singleTapTimerRef.current);
+      singleTapTimerRef.current = null;
+    }
+    lastTapTimeRef.current = 0;
+
+    // 🌟 더블탭: 럭키 프롤로그 메인 귀환 사운드 & 햅틱 & 시각 효과
+    omniWarpAudio.playDoubleTap();
+    triggerHaptic('whitehole');
+
+    const ctx = customContext || serializeCurrentView(location);
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('prism:bigbang_commit', {
+          detail: {
+            phase: 'whitehole',
+            target: {
+              id: 'hub',
+              name: '럭키 프롤로그 메인',
+              destinationPath: '/',
+              themeColor: '#38bdf8',
+              eventHorizonMode: 'whitehole',
+            },
+            context: ctx,
+            metrics: customMetrics,
+            timestamp: Date.now(),
+          },
+        })
+      );
+    }
+
+    // 럭키 프롤로그 메인('/')으로 즉시 도약 및 상단 부드러운 스크롤
+    if (typeof window !== 'undefined' && (window.location.pathname.includes('key') || window.location.pathname.includes('calm') || window.location.pathname.includes('orb'))) {
+      window.location.href = '/';
+    } else {
+      navigate('/');
+      window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: '/' } }));
+      if (typeof window !== 'undefined') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    setActivePhase('idle');
+    setGauge(0);
+    setDurationMs(0);
+  }, [location, navigate]);
+
   const handlePointerUp = (e: React.PointerEvent<HTMLButtonElement> | PointerEvent) => {
     cleanupGlobalPointerListeners();
     if (!touchStartRef.current) return;
@@ -600,59 +651,19 @@ export function BigBangButton() {
       return dist <= 44;
     })();
 
-    // [1] 제자리 탭 (250ms 미만 및 제자리 영역 dist < 20)
-    if (duration < 250 && dist < 20) {
+    // [1] 제자리 탭 (360ms 미만 및 제자리 영역 dist < 30 또는 버튼 내부 터치)
+    const isTapGesture = (duration < 360 && dist < 30) || (duration < 320 && isWithinButton);
+    if (isTapGesture) {
       const nowMs = performance.now();
       const timeSinceLastTap = nowMs - lastTapTimeRef.current;
 
-      // 🎯 더블탭 감지 (이전 탭 후 280ms 이내 재탭 시): 즉시 프리즘 메인('/')으로 바로가기!
-      if (timeSinceLastTap > 0 && timeSinceLastTap < 280) {
-        // 대기 중인 1회 탭(루시 채팅 토글) 타이머 취소
-        if (singleTapTimerRef.current) {
-          clearTimeout(singleTapTimerRef.current);
-          singleTapTimerRef.current = null;
-        }
-        lastTapTimeRef.current = 0;
-
-        // 🌟 더블탭: 프리즘 메인 귀환 차임 & 햅틱 & 화면 이펙트
-        omniWarpAudio.playDoubleTap();
-        triggerHaptic('whitehole');
-
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(
-            new CustomEvent('prism:bigbang_commit', {
-              detail: {
-                phase: 'whitehole',
-                target: {
-                  id: 'hub',
-                  name: '프리즘 프롤로그 메인',
-                  destinationPath: '/',
-                  themeColor: '#38bdf8',
-                  eventHorizonMode: 'whitehole',
-                },
-                context,
-                metrics,
-                timestamp: Date.now(),
-              },
-            })
-          );
-        }
-
-        // 프리즘 메인('/')으로 즉시 도약
-        if (typeof window !== 'undefined' && (window.location.pathname.includes('key') || window.location.pathname.includes('calm') || window.location.pathname.includes('orb'))) {
-          window.location.href = '/';
-        } else {
-          navigate('/');
-          window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: '/' } }));
-        }
-
-        setActivePhase('idle');
-        setGauge(0);
-        setDurationMs(0);
+      // 🎯 더블탭 감지 (이전 탭 후 30ms ~ 400ms 이내 재탭 시): 즉시 럭키 프롤로그 메인('/')으로 바로가기!
+      if (timeSinceLastTap > 30 && timeSinceLastTap < 400) {
+        goToPrologueMain(context, metrics);
         return;
       }
 
-      // ☀️ 첫 번째 탭: 더블탭 입력 대기 (260ms) 후 싱글탭(루시 채팅 토글) 실행
+      // ☀️ 첫 번째 탭: 더블탭 입력 대기 (280ms) 후 싱글탭(루시 채팅 토글) 실행
       lastTapTimeRef.current = nowMs;
 
       if (singleTapTimerRef.current) {
@@ -1123,6 +1134,11 @@ export function BigBangButton() {
               id="bigbang-omnibutton"
               data-bigbang="true"
               type="button"
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                goToPrologueMain();
+              }}
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
@@ -1186,10 +1202,11 @@ export function BigBangButton() {
                   ? 'inset 0 0 22px rgba(56, 189, 248, 0.35), inset -6px -6px 18px rgba(0, 0, 0, 0.9), 0 0 30px rgba(56, 189, 248, 0.45)'
                   : 'inset 0 0 22px rgba(56, 189, 248, 0.25), inset -6px -6px 18px rgba(0, 0, 0, 0.9), 0 0 24px rgba(56, 189, 248, 0.3)',
               }}
+              title="빅뱅 버튼 (탭: 루시 대화 / 더블탭: 럭키 프롤로그 메인 / 홀드: Key 옴니워프)"
               aria-label={
                 hasSelectionToss
                   ? '빅뱅 버튼 · 선택 내용 토스 대기중'
-                  : '빅뱅 버튼 · 탭: 루시 대화, 더블탭: 홈, 홀드: Key'
+                  : '빅뱅 버튼 · 탭: 루시 대화, 더블탭: 럭키 프롤로그 메인, 홀드: Key'
               }
             >
               {/* 🌀 [웜홀] 빛비춤 + 어두운 심연 + 사건의 지평선 3원 동시 융합 전개 */}
