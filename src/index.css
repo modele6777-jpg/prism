@@ -1655,3 +1655,39 @@ h1, h2, h3, h4, h5, h6, p, span, label, blockquote {
   transition: all 0.2s ease;
 }
 
+/* =========================================================================
+   Tarot Card Flip Micro-Vibration & Particle Burst Effects
+   ========================================================================= */
+@keyframes tarot-screen-vibrate {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  12% {
+    transform: translate3d(-2.8px, 1.8px, 0) rotate(-0.25deg);
+  }
+  25% {
+    transform: translate3d(3.2px, -2px, 0) rotate(0.3deg);
+  }
+  38% {
+    transform: translate3d(-2.2px, -1.4px, 0) rotate(-0.18deg);
+  }
+  50% {
+    transform: translate3d(1.8px, 1.4px, 0) rotate(0.12deg);
+  }
+  65% {
+    transform: translate3d(-1.2px, 0.8px, 0) rotate(-0.06deg);
+  }
+  80% {
+    transform: translate3d(0.6px, -0.4px, 0) rotate(0.02deg);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+}
+
+.tarot-screen-vibrating {
+  animation: tarot-screen-vibrate 0.34s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  will-change: transform;
+}
+
+

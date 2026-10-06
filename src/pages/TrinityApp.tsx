@@ -102,9 +102,11 @@ import { useTarotCardBack } from "@/hooks/useTarotCardBack";
 import { playAudioHaptic } from "@/lib/audioHaptics";
 import { TodayTarotNarrationModal } from "@/components/trinity/TodayTarotNarrationModal";
 import { LucyTarotAdviceCard } from "@/components/trinity/LucyTarotAdviceCard";
+import { TarotSummaryGraphicCard } from "@/components/trinity/TarotSummaryGraphicCard";
 import { TodayTarotShareButton } from "@/components/trinity/TodayTarotShareModal";
 import { TarotCardZoomModal } from "@/components/trinity/TarotCardZoomModal";
 import { TarotFlippingCard } from "@/components/trinity/TarotFlippingCard";
+import { triggerTarotScreenVibration } from "@/utils/tarotEffects";
 import { TarotCard, TAROT_DECK, getTarotCardImageUrl } from "@/data/tarotData";
 import { shuffleCardDeck } from "@/lib/cardShuffle";
 import { playTTS, playTTSInChunks, splitSpeechIntoChunks, playConversation, stopTTS, useTTSActive, useTTSState, prefetchTTS, prepareNaturalSpeechText } from "@/utils/tts";
@@ -1166,6 +1168,9 @@ function playDailyCardChimeAsync() {
     }
     // Tactile audio haptic feedback for card draw
     playAudioHaptic('card_draw');
+
+    // 🌟 카드가 뒤집히는 순간 화면 미세 진동 트리거
+    triggerTarotScreenVibration({ intensity: 'medium' });
 
     // Instant non-blocking chime execution
     playDailyCardChimeAsync();
@@ -3586,57 +3591,25 @@ ${concernAnalysis.kind === "yes_no"
                                             </div>
                                           )}
 
-                                          {conciseSummaryBullets.length > 0 && tarotResult && (
-                                            <div className="p-4 rounded-2xl bg-gradient-to-r from-yellow-500/15 via-amber-500/10 to-transparent border border-yellow-500/35 shadow-inner">
-                                              <div className="flex items-center justify-between gap-2 mb-3">
-                                                <div className="flex items-center gap-1.5 text-yellow-300 font-bold text-xs">
-                                                  <Sparkles size={13} className="text-yellow-400 animate-pulse" />
-                                                  <span>✨ 핵심 3줄 요약 (Quick Summary)</span>
-                                                </div>
-                                                <button
-                                                  type="button"
-                                                  onClick={async () => {
-                                                    if (isSummaryTTSActive) {
-                                                      stopTTS();
-                                                    } else if (summarySpeechText) {
-                                                      await playTTSInChunks(summarySpeechText, 'Kore', 110, '신비');
-                                                    }
-                                                  }}
-                                                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
-                                                    isSummaryTTSActive
-                                                      ? "bg-yellow-400/25 text-yellow-300 border border-yellow-400/40 animate-pulse"
-                                                      : "bg-white/10 hover:bg-white/20 text-white/90 border border-white/15"
-                                                  }`}
-                                                  title="핵심 3줄 요약 음성 낭독"
-                                                >
-                                                  {isSummaryTTSActive ? <VolumeX size={11} /> : <Volume2 size={11} />}
-                                                  <span>{isSummaryTTSActive ? "중지" : "요약 듣기"}</span>
-                                                </button>
-                                              </div>
-                                              <ul className="space-y-2 text-xs text-white/90 leading-relaxed font-sans">
-                                                {conciseSummaryBullets.map((bullet, bIdx) => {
-                                                  const match = bullet.match(/^\[([^\]]+)\]\s*(.*)$/);
-                                                  const tag = match ? match[1] : null;
-                                                  const content = match ? match[2] : bullet;
-                                                  return (
-                                                    <li key={bIdx} className="flex items-start gap-2">
-                                                      <span className="text-yellow-400 font-bold shrink-0 mt-0.5">•</span>
-                                                      <div className="leading-snug">
-                                                        {tag && (
-                                                          <span className="inline-block px-1.5 py-0.5 mr-1.5 rounded text-[10px] font-bold bg-yellow-400/20 text-yellow-300 border border-yellow-400/30">
-                                                            {tag}
-                                                          </span>
-                                                        )}
-                                                        <span>{content}</span>
-                                                      </div>
-                                                    </li>
-                                                  );
-                                                })}
-                                              </ul>
+                                          <Streamdown immediate={!isTarotGenerating}>{displayTarotResult || tarotResult || ""}</Streamdown>
+
+                                          {/* ✨ 리딩 하단 핵심 3줄 요약 강조 그래픽 카드 UI */}
+                                          {conciseSummaryBullets.length > 0 && tarotResult && !isTarotGenerating && (
+                                            <div className="pt-2">
+                                              <TarotSummaryGraphicCard
+                                                bullets={conciseSummaryBullets}
+                                                readingText={displayTarotResult || tarotResult || ""}
+                                                isTTSActive={isSummaryTTSActive}
+                                                onToggleTTS={async () => {
+                                                  if (isSummaryTTSActive) {
+                                                    stopTTS();
+                                                  } else if (summarySpeechText) {
+                                                    await playTTSInChunks(summarySpeechText, 'Kore', 110, '신비');
+                                                  }
+                                                }}
+                                              />
                                             </div>
                                           )}
-
-                                          <Streamdown immediate={!isTarotGenerating}>{displayTarotResult || tarotResult || ""}</Streamdown>
 
                                           {/* 🌟 그에 맞는 루시의 조언 (TTS 가능) */}
                                           {tarotResult && !isTarotGenerating && (

@@ -16,6 +16,7 @@ export interface LucyResponseRecommendationProps {
   lucyAnswer: string;
   currentChannels: SpecialChannel[];
   isCasual?: boolean;
+  isGreeting?: boolean;
   onSwitchChannel: (channels: SpecialChannel[], isMaster: boolean, label: string) => void;
   onNavigate?: (path: string) => void;
 }
@@ -234,13 +235,38 @@ export function LucyResponseRecommendation({
   lucyAnswer,
   currentChannels = [],
   isCasual = false,
+  isGreeting = false,
   onSwitchChannel,
   onNavigate,
 }: LucyResponseRecommendationProps) {
   const [isLeaping, setIsLeaping] = useState(false);
 
-  // 1. 수다 모드(isCasual)에서는 기법 추천과 채널 추천을 전면 생략 (사용자 지정 규칙)
-  if (isCasual) {
+  // 1. 수다 모드(isCasual) 또는 루시의 인사말(isGreeting)에서는 기법 추천과 채널 추천을 전면 생략
+  if (isCasual || isGreeting) {
+    return null;
+  }
+
+  // 루시의 기본/환영 인사말 패턴 감지 시 LucKey 연계 추천 생략
+  const cleanLucyText = (lucyAnswer || '').trim();
+  if (
+    cleanLucyText.includes("통합 AI 마스터 가이드 '루시'야") ||
+    cleanLucyText.includes('반가워! 나는 루시야') ||
+    cleanLucyText.includes('오늘도 새로운 하루가 시작되었어') ||
+    cleanLucyText.includes('지난 대화들의 소중한 이야기들도 내 마음에 다 간직하고 있으니') ||
+    cleanLucyText.includes('영혼 여정을 함께하는')
+  ) {
+    return null;
+  }
+
+  // 사용자 질문이 아예 없거나(초기 인사말 단계) 공백인 경우 연계 추천 생략
+  const cleanUserText = (userQuery || '').trim().toLowerCase();
+  if (!cleanUserText) {
+    return null;
+  }
+
+  // 사용자 입력이 단순 인사말인 경우 연계 추천 생략
+  const isSimpleGreetingQuery = /^(안녕|안녕하세요|안뇽|하이|hi|hello|좋은\s*아침|좋은\s*하루|반가워|반갑습니다|루시\s*안녕|루시야\s*안녕|안녕\s*루시)[!~.\s]*$/i.test(cleanUserText);
+  if (isSimpleGreetingQuery && cleanLucyText.length < 160) {
     return null;
   }
 

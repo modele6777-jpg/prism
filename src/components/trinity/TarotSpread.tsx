@@ -12,6 +12,8 @@ import { TarotCardBackCustomizerModal } from './TarotCardBackCustomizerModal';
 import { PhysicalTarotInputModal } from './PhysicalTarotInputModal';
 import { useTarotCardBack } from '@/hooks/useTarotCardBack';
 import { playAudioHaptic } from '@/lib/audioHaptics';
+import { TarotCardFlipParticles } from './TarotCardFlipParticles';
+import { triggerTarotScreenVibration } from '@/utils/tarotEffects';
 
 export interface SelectedTarotCardEntry extends TarotCard {
   touchMetadata?: any | null;
@@ -542,6 +544,9 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
       // Tactile audio haptic feedback (acoustic + physical vibration)
       playAudioHaptic('card_draw');
 
+      // 🌟 카드가 슬롯에 안착하며 뒤집히는 순간 화면 미세 진동 효과 트리거
+      triggerTarotScreenVibration({ containerElement: rootRef.current, intensity: 'medium' });
+
       setSelectedEntries((prev) => {
         if (prev.some((entry) => entry.card.id === cardToSelect.id) || prev.length >= maxCards) return prev;
         const isReversed = allowReversed ? rollTarotReversed() : false;
@@ -749,7 +754,8 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
   return (
     <div
       ref={rootRef}
-      className="fixed inset-0 z-[300] bg-zinc-950 overflow-hidden flex flex-col items-center justify-between font-sans select-none touch-none overscroll-none"
+      id="tarot-stage-container"
+      className="fixed inset-0 z-[300] bg-zinc-950 overflow-hidden flex flex-col items-center justify-between font-sans select-none touch-none overscroll-none tarot-spread-stage-root"
       style={{
         touchAction: 'none',
         overscrollBehavior: 'none',
@@ -950,15 +956,32 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
                         className="absolute -inset-1 sm:-inset-1.5 rounded-xl md:rounded-2xl bg-gradient-to-tr from-amber-400/25 via-yellow-300/35 to-amber-500/25 blur-[6px] pointer-events-none tarot-card-drawing-flicker opacity-80"
                         style={{ zIndex: 1 }}
                       />
+
+                      {/* 🌟 카드가 뒤집히며 슬롯에 안착하는 순간 사방으로 터져나오는 찬란한 입자 애니메이션 */}
+                      <TarotCardFlipParticles
+                        active={true}
+                        triggerKey={`slot-draw-${i}-${drawnCard!.id}`}
+                        size={isMobile ? 'sm' : 'md'}
+                        count={isMobile ? 22 : 28}
+                      />
+
                       <motion.div
-                        initial={{ scale: 0.25, y: 70, opacity: 0, rotateZ: i % 2 === 0 ? -8 : 8 }}
-                        animate={{ scale: 1, y: 0, opacity: 1, rotateZ: 0 }}
-                        transition={{ type: 'spring', stiffness: 320, damping: 24, delay: i * 0.08 }}
+                        initial={{ scale: 0.25, y: 70, rotateY: 180, opacity: 0, rotateZ: i % 2 === 0 ? -8 : 8 }}
+                        animate={{ scale: 1, y: 0, rotateY: 0, opacity: 1, rotateZ: 0 }}
+                        transition={{ type: 'spring', stiffness: 320, damping: 24, delay: i * 0.06 }}
                         whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}
-                        onClick={() => setZoomedCard({ card: { ...drawnCard!, reversed: entry.reversed }, slotName: positionLabel })}
+                        onClick={() => {
+                          triggerTarotScreenVibration({ containerElement: rootRef.current, intensity: 'subtle' });
+                          setZoomedCard({ card: { ...drawnCard!, reversed: entry.reversed }, slotName: positionLabel });
+                        }}
                         className="absolute inset-0 border-2 border-yellow-400 rounded-xl md:rounded-2xl flex flex-col justify-between p-1.5 sm:p-2 md:p-3 text-center shadow-lg shadow-yellow-500/20 overflow-hidden cursor-zoom-in group hover:border-yellow-300 hover:shadow-yellow-500/40 transition-all active:scale-95 tarot-card-border-flicker"
                         title={`${drawnCard!.nameKo} 카드 크게 보기`}
-                        style={{ contain: 'layout style paint', zIndex: 2 }}
+                        style={{
+                          contain: 'layout style paint',
+                          zIndex: 2,
+                          transformStyle: 'preserve-3d',
+                          WebkitTransformStyle: 'preserve-3d',
+                        }}
                       >
                         {/* Radiant Shimmer Sweep on card draw */}
                         <motion.div

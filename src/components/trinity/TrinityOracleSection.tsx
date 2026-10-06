@@ -19,6 +19,7 @@ import { TarotFlippingCard } from './TarotFlippingCard';
 import { TarotCardBackCustomizerModal } from './TarotCardBackCustomizerModal';
 import { useTarotCardBack } from '@/hooks/useTarotCardBack';
 import { getTodayAnchorTarotCard } from '@/lib/todayTarotNarration';
+import { TarotSummaryGraphicCard } from '@/components/trinity/TarotSummaryGraphicCard';
 import {
   extractOracleConciseSummary,
   extractGivenName,
@@ -1701,77 +1702,20 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
     );
   };
 
-  // 🌟 78장 오라클 핵심 3줄 요약 전용 카드 렌더러 (다른 타로 결과와 100% 동일한 UI)
+  // 🌟 78장 오라클 핵심 3줄 요약 전용 그래픽 카드 렌더러
   const renderOracleSummaryCard = () => {
     if (!oracleSummaryBullets || oracleSummaryBullets.length === 0) return null;
 
     return (
-      <div className="p-4 rounded-2xl bg-gradient-to-r from-yellow-500/15 via-amber-500/10 to-transparent border border-yellow-500/35 shadow-inner">
-        <div className="flex items-center justify-between gap-2 mb-3">
-          <div className="flex items-center gap-1.5 text-yellow-300 font-bold text-xs">
-            <Sparkles size={13} className="text-yellow-400 animate-pulse" />
-            <span>✨ 핵심 3줄 요약 (Quick Summary)</span>
-            <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold bg-amber-500/20 text-amber-200 border border-amber-400/30">
-              사주 원국 ✕ 타로 3카드 융합
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            {oracleSummarySpeechText && (
-              <button
-                type="button"
-                onClick={handleToggleOracleSummaryTTS}
-                className={`px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
-                  isOracleSummaryTTSActive
-                    ? 'bg-yellow-400/25 text-yellow-300 border border-yellow-400/40 animate-pulse'
-                    : 'bg-white/10 hover:bg-white/20 text-white/90 border border-white/15'
-                }`}
-                title={isOracleSummaryTTSActive ? '요약 낭독 중지' : '핵심 3줄 요약 음성 낭독'}
-              >
-                {isOracleSummaryTTSActive ? <VolumeX size={11} /> : <Volume2 size={11} />}
-                <span>{isOracleSummaryTTSActive ? '중지' : '요약 듣기'}</span>
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => {
-                const header = '【핵심 3줄 요약】';
-                const copyText = `${header}\n${oracleSummaryBullets.join('\n')}`;
-                navigator.clipboard?.writeText(copyText).then(() => {
-                  setIsSummaryCopied(true);
-                  setTimeout(() => setIsSummaryCopied(false), 2000);
-                }).catch(() => {});
-              }}
-              className="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white text-[10px] font-medium flex items-center gap-1 transition-all cursor-pointer"
-              title="핵심 3줄 요약 클립보드 복사"
-            >
-              {isSummaryCopied ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
-              <span>{isSummaryCopied ? '복사됨' : '복사'}</span>
-            </button>
-          </div>
-        </div>
-
-        <ul className="space-y-2 text-xs text-white/90 leading-relaxed font-sans">
-          {oracleSummaryBullets.map((bullet, idx) => {
-            const match = bullet.match(/^\[([^\]]+)\]\s*(.*)$/);
-            const tag = match ? match[1] : null;
-            const content = match ? match[2] : bullet;
-
-            return (
-              <li key={idx} className="flex items-start gap-2">
-                <span className="text-yellow-400 font-bold shrink-0 mt-0.5">•</span>
-                <div className="leading-snug">
-                  {tag && (
-                    <span className="inline-block px-1.5 py-0.5 mr-1.5 rounded text-[10px] font-bold bg-yellow-400/20 text-yellow-300 border border-yellow-400/30">
-                      {tag}
-                    </span>
-                  )}
-                  <span>{content}</span>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
+      <TarotSummaryGraphicCard
+        bullets={oracleSummaryBullets}
+        readingText={displayFullReadingText}
+        isTTSActive={isOracleSummaryTTSActive}
+        onToggleTTS={oracleSummarySpeechText ? handleToggleOracleSummaryTTS : undefined}
+        title={oracleMode === 'healing' ? '사주 ✕ 타로 융합 핵심 3줄 요약' : '성장 오라클 핵심 3줄 요약'}
+        subtitle="ORACLE ESSENCE · 사주 원국 ✕ 타로 3카드 융합"
+        className="my-3"
+      />
     );
   };
 
@@ -2994,13 +2938,13 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
                     )}
                   </div>
 
-                  {/* ✨ 핵심 3줄 요약 카드 (상황 진단, 방향성, 실천 처방 & 원클릭 TTS) */}
-                  {renderOracleSummaryCard()}
-
                   {/* 📜 Streamdown 기반 정통 마크다운 본문 리딩 */}
                   <div className="text-white/90 leading-relaxed font-sans text-xs sm:text-sm pt-2">
                     <Streamdown immediate>{displayFullReadingText}</Streamdown>
                   </div>
+
+                  {/* ✨ 리딩 하단 핵심 3줄 요약 강조 그래픽 카드 UI */}
+                  {renderOracleSummaryCard()}
 
                   {/* 🌟 3장의 카드별 현실 실행 툴킷 (힐링 타로 결과 화면에서는 안 나오도록 제외) */}
                   {oracleMode !== 'healing' && renderCardInsightsSection(growthResult?.card_insights)}

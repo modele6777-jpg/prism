@@ -1476,30 +1476,72 @@ export default function LucyStandalonePage() {
                           isLatest={index === filteredMessages.length - 1}
                           isGenerating={isLucyGenerating && index === filteredMessages.length - 1}
                         />
-                        {/* 🔮 LucKey 연계 추천 채널 및 Key 실천 도약 바: 수다모드에서는 생략, 전문 모드에서만 유지 */}
-                        {(!isLucyGenerating || index < filteredMessages.length - 1) &&
-                          textContent &&
-                          textContent.trim().length > 10 &&
-                          !msgModeInfo.isCasual && (
-                          <div className="mt-2.5">
-                            <LucyResponseRecommendation
-                              userQuery={(() => {
-                                const prev = filteredMessages.slice(0, index).reverse().find((m: any) => m.role === 'user');
-                                if (!prev) return '';
-                                return typeof prev.content === 'string'
-                                  ? prev.content
-                                  : Array.isArray(prev.content)
-                                  ? prev.content.find((item: any) => item.type === 'text')?.text || ''
-                                  : '';
-                              })()}
-                              lucyAnswer={textContent}
-                              currentChannels={activeChannels}
-                              isCasual={msgModeInfo.isCasual}
-                              onSwitchChannel={(channels, isMaster, label) => handleActivateMessageMode(channels, isMaster, label)}
-                              onNavigate={(path) => navigate(path)}
-                            />
-                          </div>
-                        )}
+                        {/* 🔮 LucKey 연계 추천 채널 및 Key 실천 도약 바: 수다모드 및 루시의 인사말에서는 생략, 전문 모드에서만 유지 */}
+                        {(() => {
+                          if (isLucyGenerating && index === filteredMessages.length - 1) return null;
+                          if (!textContent || textContent.trim().length <= 10) return null;
+                          if (msgModeInfo.isCasual) return null;
+
+                          // 루시의 인사말인지 여부 정밀 판별
+                          const isGreeting = (() => {
+                            if (msgId === 'greet' || msgId === 'greet-main' || msgId.startsWith('greet-') || msgId.toLowerCase().includes('greet')) {
+                              return true;
+                            }
+                            // 이전 사용자 메시지가 전혀 없는 경우 (최초 입장 시 출력되는 루시 인사말)
+                            const prevUser = filteredMessages.slice(0, index).reverse().find((m: any) => m.role === 'user');
+                            if (!prevUser) {
+                              return true;
+                            }
+                            const cleanText = textContent.trim();
+                            if (
+                              cleanText.includes("통합 AI 마스터 가이드 '루시'야") ||
+                              cleanText.includes('반가워! 나는 루시야') ||
+                              cleanText.includes('오늘도 새로운 하루가 시작되었어') ||
+                              cleanText.includes('지난 대화들의 소중한 이야기들도 내 마음에 다 간직하고 있으니') ||
+                              cleanText.includes('영혼 여정을 함께하는')
+                            ) {
+                              return true;
+                            }
+                            const userText = (typeof prevUser.content === 'string'
+                              ? prevUser.content
+                              : Array.isArray(prevUser.content)
+                              ? prevUser.content.find((item: any) => item.type === 'text')?.text || ''
+                              : '').trim();
+                            if (!userText) {
+                              return true;
+                            }
+                            const isSimpleGreetingQuery = /^(안녕|안녕하세요|안뇽|하이|hi|hello|좋은\s*아침|좋은\s*하루|반가워|반갑습니다|루시\s*안녕|루시야\s*안녕|안녕\s*루시)[!~.\s]*$/i.test(userText);
+                            if (isSimpleGreetingQuery && cleanText.length < 160) {
+                              return true;
+                            }
+                            return false;
+                          })();
+
+                          if (isGreeting) return null;
+
+                          const prevUser = filteredMessages.slice(0, index).reverse().find((m: any) => m.role === 'user');
+                          const prevUserQuery = prevUser
+                            ? typeof prevUser.content === 'string'
+                              ? prevUser.content
+                              : Array.isArray(prevUser.content)
+                              ? prevUser.content.find((item: any) => item.type === 'text')?.text || ''
+                              : ''
+                            : '';
+
+                          return (
+                            <div className="mt-2.5">
+                              <LucyResponseRecommendation
+                                userQuery={prevUserQuery}
+                                lucyAnswer={textContent}
+                                currentChannels={activeChannels}
+                                isCasual={msgModeInfo.isCasual}
+                                isGreeting={isGreeting}
+                                onSwitchChannel={(channels, isMaster, label) => handleActivateMessageMode(channels, isMaster, label)}
+                                onNavigate={(path) => navigate(path)}
+                              />
+                            </div>
+                          );
+                        })()}
                       </>
                     )}
                   </div>

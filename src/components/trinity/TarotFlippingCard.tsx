@@ -17,6 +17,8 @@ import {
 import { type TarotCard, getTarotCardImageUrl } from '@/data/tarotData';
 import { TarotCardBackFace } from './TarotCardBackFace';
 import { useTarotCardBack } from '@/hooks/useTarotCardBack';
+import { TarotCardFlipParticles } from './TarotCardFlipParticles';
+import { triggerTarotScreenVibration } from '@/utils/tarotEffects';
 
 export function getTarotCardVisualHelper(card: TarotCard | null | undefined): {
   icon: LucideIcon;
@@ -124,9 +126,27 @@ export const TarotFlippingCard: React.FC<TarotFlippingCardProps> = ({
     iconSize = 14;
   }
 
+  const [particlesActive, setParticlesActive] = useState(false);
+  const [particleTriggerKey, setParticleTriggerKey] = useState(0);
+
+  // 카드가 180도에서 0도로 회전하며 앞면을 온전히 드러내는 황금 순간에 입자 애니메이션 및 화면 미세 진동 트리거
+  React.useEffect(() => {
+    const flipMomentMs = Math.max(100, Math.round((delay + 0.18) * 1000));
+    const timer = window.setTimeout(() => {
+      setParticlesActive(true);
+      setParticleTriggerKey((prev) => prev + 1);
+      triggerTarotScreenVibration({ intensity: 'subtle' });
+    }, flipMomentMs);
+
+    return () => window.clearTimeout(timer);
+  }, [delay]);
+
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsClicked(true);
+    setParticlesActive(true);
+    setParticleTriggerKey((prev) => prev + 1);
+    triggerTarotScreenVibration({ intensity: 'subtle' });
     setTimeout(() => setIsClicked(false), 450);
     onClick?.();
   };
@@ -136,6 +156,14 @@ export const TarotFlippingCard: React.FC<TarotFlippingCardProps> = ({
       style={{ perspective: 1200 }}
       className={`relative inline-block ${className}`}
     >
+      {/* 🌟 카드가 뒤집히는 순간 뿜어져 나오는 찬란한 입자 애니메이션 */}
+      <TarotCardFlipParticles
+        active={particlesActive}
+        triggerKey={particleTriggerKey}
+        size={size === 'sm' ? 'sm' : size === 'lg' ? 'lg' : 'md'}
+        count={size === 'sm' ? 20 : 26}
+      />
+
       {/* Subtle Mystical Candlelight / Celestial Aura Flicker while being drawn */}
       <div
         className="absolute -inset-1 sm:-inset-1.5 rounded-2xl bg-gradient-to-tr from-amber-400/20 via-yellow-300/30 to-amber-500/20 blur-[6px] pointer-events-none tarot-card-drawing-flicker opacity-75 group-hover:opacity-100 transition-opacity"
