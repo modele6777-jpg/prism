@@ -10,6 +10,7 @@ import { safeLocalStorage, safeSessionStorage } from '../utils/safeStorage';
 import { invokeLLMStream, PERSONAS, type Message, getCrossAppRecentDialogueContext } from '../lib/ai';
 import { buildPrismOmniscientContext } from '../lib/prismOmniSync';
 import { calculateDetailedSaju } from '../lib/sajuAnalysis';
+import { buildUserNatalSummary, formatRelationshipsContext } from '../lib/astrologyAnalysis';
 // Heavy wisdom engines are dynamically imported on first chat use to reduce initial bundle parse time
 // import { buildEarlyBuddhismSystemPrompt } from '../lib/earlyBuddhismWisdom';
 // import { buildGnosticSystemPrompt } from '../lib/gnosticWisdom';
@@ -1452,11 +1453,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const saju = sajuObj ? sajuObj.systemPromptSummary : (profile?.basic?.birthdate 
       ? `생년월일: ${profile.basic.birthdate} (${profile.basic.lunarSolar || 'solar'}), 생시: ${profile.basic?.birthtime || '모름'}` 
       : "기본 생년월일 정보 없음");
-    const astro = profile?.basic?.birthdate 
-      ? `태어난 도시: ${profile.basic.birthCity || '모름'}, 생년월일시: ${profile.basic.birthdate} ${profile.basic.birthtime || ''}`
-      : "점성 생일 정보 없음";
+    const astro = buildUserNatalSummary(profile);
     const memory = profile?.fate?.currentWorry || "특별한 고민 없음";
-    const relationships = "관계 정보 없음";
+    const relationships = formatRelationshipsContext(profile?.relationships);
     const currentVibe = sharedState?.currentVibe || "통상적인 기운";
     const preferences = profile?.psych?.aiPreference || "정보 없음";
     const globalMemory = sharedState?.globalMemory || "";
@@ -1470,9 +1469,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                      PERSONAS.orangeChat(memory, globalMemory, deepCoreInfo);
     } else if (sourcePersona === 'trinity') {
       const tarotContextMatch = options?.extraSystemContext?.match(/뽑은 (?:데일리 )?타로 카드:\s*([^\n\r]+)/);
-      const tarotCardName = tarotContextMatch ? tarotContextMatch[1].trim() : "트리니티 데일리 타로";
-      systemPrompt = `당신은 루시(Lucy)야. 지금은 트리니티 운세 및 타로 채널에서 대화 중이야. 사용자가 방금 질문한 내용(특히 데일리 타로 딥 인사이트, 타로 해석, 고민 상담 등)을 최우선으로 경청하고 다정하고 깊이 있게 설명해 줘.\n\n` +
-                     PERSONAS.lucyVision(saju, astro, tarotCardName, text, realName);
+      const tarotCardName = tarotContextMatch ? tarotContextMatch[1].trim() : "트리니티 타로 원형";
+      systemPrompt = PERSONAS.tarotCounselor(
+        tarotCardName,
+        text,
+        nickname || realName || '질문자님',
+        saju,
+        astro,
+        options?.extraSystemContext
+      );
     } else if (sourcePersona === 'aura') {
       systemPrompt = `당신은 루시(Lucy)야. 지금은 아우라 웰니스 채널에서 대화 중이야. 몸 컨디션과 실천 가능한 습관을 알려줘.\n\n` +
                      PERSONAS.healChat('신체 웰니스', globalMemory, deepCoreInfo);

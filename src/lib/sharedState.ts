@@ -59,12 +59,24 @@ export interface ProfileArt {
   artMedium?: string[];  // ['그림', '사진', '조각', ...]
 }
 
+// 점성학적 관계 및 지인 분석 정보
+export interface RelationshipEntry {
+  id: string;
+  name: string;            // 인물 이름/호칭 (예: 민수, 팀장님 등)
+  relation: string;        // 관계 (친구, 연인, 배우자, 직장 동료, 가족 등)
+  birthdate?: string;      // 생년월일 (선택)
+  zodiacSign?: string;     // 별자리 (예: 사자자리, 전갈자리 등)
+  traits?: string;         // 주요 성격 및 성향
+  dynamics?: string;       // 관계 역학 메모 또는 고민
+}
+
 export interface UserProfile {
   basic?: ProfileBasic;
   fate?: ProfileFate;
   music?: ProfileMusic;
   psych?: ProfilePsych;
   art?: ProfileArt;
+  relationships?: RelationshipEntry[];
   completedAt?: any;
 }
 
@@ -147,6 +159,9 @@ export function mergeUserProfiles(base?: UserProfile, incoming?: UserProfile, pr
     music: mergeSectionSafely(base.music, incoming.music, preferIncoming),
     psych: mergeSectionSafely(base.psych, incoming.psych, preferIncoming),
     art: mergeSectionSafely(base.art, incoming.art, preferIncoming),
+    relationships: preferIncoming
+      ? (incoming.relationships && incoming.relationships.length > 0 ? incoming.relationships : base.relationships)
+      : (base.relationships && base.relationships.length > 0 ? base.relationships : incoming.relationships),
     completedAt: (preferIncoming ? incoming.completedAt : base.completedAt) || incoming.completedAt || base.completedAt || Date.now(),
   };
 }

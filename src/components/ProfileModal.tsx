@@ -10,6 +10,8 @@ import { loadProfileFromAllVaults } from '@/lib/profileVault';
 import { APP_VERSION, fetchDeployedAppVersion, compareVersions } from '@/lib/appVersion';
 import { forceAppUpgradeAndReload } from '@/lib/prismSync';
 import { SajuCardView } from './SajuCardView';
+import { NatalChartCardView } from './NatalChartCardView';
+import type { RelationshipEntry } from '@/lib/sharedState';
 import { db, doc, setDoc, serverTimestamp } from '@/lib/firebase';
 import { cleanFirestoreData, unpackAndHydrateLocalStorage } from '@/lib/sharedStateSync';
 import { generatePairingCode, importWithPairingCode, getPairedVaultId, setPairedVaultId } from '@/lib/serverSyncClient';
@@ -153,6 +155,7 @@ export default function ProfileModal({ isOpen, onClose }: { isOpen: boolean; onC
     favoriteColors: initialProfile?.art?.favoriteColors || [] as string[],
     artMedium: initialProfile?.art?.artMedium || [] as string[],
   });
+  const [relationships, setRelationships] = useState<RelationshipEntry[]>(initialProfile?.relationships || []);
 
   useEffect(() => {
     const handleProfileUpdate = (e?: any) => {
@@ -169,6 +172,7 @@ export default function ProfileModal({ isOpen, onClose }: { isOpen: boolean; onC
       if (profile.music) setMusic((m) => ({ ...m, ...profile.music }));
       if (profile.psych) setPsych((p) => ({ ...p, ...profile.psych }));
       if (profile.art) setArt((a) => ({ ...a, ...profile.art }));
+      if (profile.relationships) setRelationships(profile.relationships);
     };
 
     handleProfileUpdate();
@@ -195,6 +199,7 @@ export default function ProfileModal({ isOpen, onClose }: { isOpen: boolean; onC
         music,
         psych,
         art,
+        relationships,
       });
       
       setPersistentUserProfile(profile);
@@ -291,8 +296,12 @@ export default function ProfileModal({ isOpen, onClose }: { isOpen: boolean; onC
 
             {/* 실시간 사주 본원 에너지 카드 */}
             {basic.birthdate && (
-              <div className="pt-2">
+              <div className="pt-2 space-y-4">
                 <SajuCardView profile={{ basic: { ...basic, gender: (basic.gender || undefined) as any }, fate, music, psych, art }} />
+                <NatalChartCardView 
+                  profile={{ basic: { ...basic, gender: (basic.gender || undefined) as any }, fate, music, psych, art, relationships }} 
+                  onUpdateRelationships={(newRels) => setRelationships(newRels)}
+                />
               </div>
             )}
           </div>
