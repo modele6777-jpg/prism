@@ -175,6 +175,42 @@ export const MASTERS_CATALOG: MasterItem[] = [
         creativeSparkTechnique: '솔리터리 하이라이트: 남들과 다른 나의 별난 개성 하나를 찾아 최고의 장점으로 승화시키기',
         colorPalette: ['#4338CA (기품 있는 인디고 퍼플)', '#22C55E (생명의 에메랄드 리프)', '#F8FAFC (홀로 선 순백)'],
         inspirationAffirmation: '나는 나만의 고유한 빛깔로 피어나는 세상에 단 하나뿐인 꽃이다.',
+      },
+      {
+        id: 'vg_wheatfield_crows',
+        piece: '까마귀가 나는 밀밭 (Wheatfield with Crows, 1890)',
+        medium: '유화 (Oil on Canvas) · 암스테르담 반 고흐 미술관 소장',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Vincent_van_Gogh_-_Wheatfield_with_crows_-_Google_Art_Project.jpg/1280px-Vincent_van_Gogh_-_Wheatfield_with_crows_-_Google_Art_Project.jpg',
+        originalMuseum: '네덜란드 암스테르담 반 고흐 미술관 (Van Gogh Museum)',
+        masterpieceInsight: '소용돌이치는 짙푸른 폭풍의 하늘과 황금빛 밀밭 사이를 날아오르는 까마귀 떼는 고뇌 속에서도 타오르는 강렬한 생명력의 불꽃입니다.',
+        masterDirectAdvice: '폭풍이 몰아치는 혼돈의 날에도 붓을 놓지 마십시오. 당신의 격렬한 감정은 두려움의 대상이 아니라 세상을 뒤흔들 예술의 거대한 에너지입니다.',
+        creativeSparkTechnique: '폭풍의 붓질: 불안과 압박감을 억누르지 않고 역동적인 선과 거침없는 에너지로 전환해 쏟아내기',
+        colorPalette: ['#1E3A8A (폭풍의 인디고 블루)', '#FBBF24 (타오르는 황금빛 밀밭)', '#09090B (비상하는 까마귀 블랙)'],
+        inspirationAffirmation: '나는 거친 폭풍 속에서도 당당하게 날아오르는 불멸의 생명력이다.',
+      },
+      {
+        id: 'vg_potato_eaters',
+        piece: '감자 먹는 사람들 (The Potato Eaters, 1885)',
+        medium: '유화 (Oil on Canvas) · 암스테르담 반 고흐 미술관 소장',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Van-gogh-potato-eaters-1885.jpg/1280px-Van-gogh-potato-eaters-1885.jpg',
+        originalMuseum: '네덜란드 암스테르담 반 고흐 미술관 (Van Gogh Museum)',
+        masterpieceInsight: '희미한 등불 아래 거친 손으로 수확한 감자를 나누는 노동자들의 진실한 눈빛 속에 인간 삶의 가장 숭고한 존엄이 깃들어 있습니다.',
+        masterDirectAdvice: '가식과 화려한 겉치레를 벗어던지십시오. 투박하고 정직한 노동과 진실한 마음이야말로 영혼을 가장 깊이 적시는 예술의 뿌리입니다.',
+        creativeSparkTechnique: '정직한 질감: 화려한 기교 대신 거칠고 진솔한 본질의 감각에 온전히 집중하기',
+        colorPalette: ['#78350F (대지의 흙빛 브라운)', '#FACC15 (희미한 등불 웜 옐로)', '#18181B (소박한 안식 딥 차콜)'],
+        inspirationAffirmation: '나는 삶의 진실하고 소박한 뿌리 속에서 가장 숭고한 아름다움을 길어 올린다.',
+      },
+      {
+        id: 'vg_church_auvers',
+        piece: '오베르의 교회 (The Church at Auvers, 1890)',
+        medium: '유화 (Oil on Canvas) · 파리 오르세 미술관 소장',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/The_Church_at_Auvers-sur-Oise.jpg/1024px-The_Church_at_Auvers-sur-Oise.jpg',
+        originalMuseum: '파리 오르세 미술관 (Musée d\'Orsay)',
+        masterpieceInsight: '직선으로 굳어 있던 고딕 성당의 벽체가 푸른 코발트 하늘 아래서 살아 숨 쉬는 유기체처럼 굽이치며 숭고한 영적 파동을 울립니다.',
+        masterDirectAdvice: '경직된 세상의 틀에 갇히지 마십시오. 당신의 호흡과 생명력으로 굳어진 형태를 부드럽게 춤추게 만드세요.',
+        creativeSparkTechnique: '형태의 유기화: 딱딱한 생각의 벽을 유연하고 리드미컬한 곡선으로 유연하게 풀어보기',
+        colorPalette: ['#1D4ED8 (코발트 딥 스카이)', '#EAB308 (성당 지붕의 앤틱 옐로)', '#15803D (생명의 잔디 그린)'],
+        inspirationAffirmation: '나는 경직된 세상의 틀을 넘어 살아 숨 쉬는 생명력의 아름다움을 창조한다.',
       }
     ]
   },
@@ -255,6 +291,30 @@ export const MASTERS_CATALOG: MasterItem[] = [
         creativeSparkTechnique: '증기광 효과: 흐릿한 잡념과 복잡한 상황을 빛의 프리즘으로 투과시켜 영감의 배경으로 변환하기',
         colorPalette: ['#0284C7 (증기 연기의 시안 블루)', '#475569 (철골 구조물 슬레이트)', '#FEF08A (천창 햇살 골드)'],
         inspirationAffirmation: '나는 번잡하고 분주한 세상 속에서도 영롱한 빛의 성전을 창조한다.',
+      },
+      {
+        id: 'monet_japanese_bridge',
+        piece: '지베르니의 일본식 다리와 수련 연못 (The Water Lily Pond - Japanese Footbridge, 1899)',
+        medium: '유화 (Oil on Canvas) · 런던 내셔널 갤러리 소장',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Claude_Monet_-_The_Water-Lily_Pond_-_Google_Art_Project.jpg/1280px-Claude_Monet_-_The_Water-Lily_Pond_-_Google_Art_Project.jpg',
+        originalMuseum: '런던 내셔널 갤러리 (The National Gallery, London)',
+        masterpieceInsight: '초록빛 버드나무 덩굴과 수련이 어우러진 연못 위를 아치형으로 가로지르는 목조 다리는 자연과 인간의 영혼이 가장 완벽한 평화로 공존하는 낙원의 풍경입니다.',
+        masterDirectAdvice: '당신만의 평화로운 정원을 가꾸십시오. 마음에 피어나는 작은 영감들을 소중히 보살피며, 조용하고 깊은 내면의 연못에서 지혜를 길어 올리세요.',
+        creativeSparkTechnique: '내면 정원 가꾸기: 번잡한 외부 자극을 끄고 나만의 고요한 쉼터 이미지를 떠올리며 호흡 가다듬기',
+        colorPalette: ['#15803D (싱그러운 버드나무 딥 그린)', '#38BDF8 (맑은 연못의 반영 스카이)', '#FEF08A (수련 꽃망울 크림)'],
+        inspirationAffirmation: '내 마음은 언제나 맑은 수면과 싱그러운 생명력이 숨 쉬는 평화로운 낙원이다.',
+      },
+      {
+        id: 'monet_rouen_cathedral',
+        piece: '루앙 대성당 (Rouen Cathedral: The Portal, Morning Light, 1894)',
+        medium: '유화 (Oil on Canvas) · 파리 오르세 미술관 소장',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Claude_Monet_-_Rouen_Cathedral%2C_the_West_Portal%2C_Dull_Weather_-_Google_Art_Project.jpg/1024px-Claude_Monet_-_Rouen_Cathedral%2C_the_West_Portal%2C_Dull_Weather_-_Google_Art_Project.jpg',
+        originalMuseum: '파리 오르세 미술관 (Musée d\'Orsay)',
+        masterpieceInsight: '거대한 돌로 쌓은 차가운 대성당 정면이 아침 햇살을 받아 영롱한 빛의 조각으로 해체되며 빛의 시간에 따른 영적인 변주를 펼쳐 보입니다.',
+        masterDirectAdvice: '단단하고 무거운 문제에 짓눌리지 마십시오. 빛의 각도를 바꾸면 거대한 돌벽조차 부드러운 빛의 아지랑이가 됩니다. 새로운 관점으로 바라보십시오.',
+        creativeSparkTechnique: '빛의 각도 전환: 해결되지 않는 문제를 완전히 다른 시간대나 다른 기분으로 다시 관찰하기',
+        colorPalette: ['#FDE047 (아침 햇살 웜 골드)', '#94A3B8 (석조 성당 페일 그레이)', '#60A5FA (여명 하늘 소프트 블루)'],
+        inspirationAffirmation: '나는 어떤 견고한 장벽도 부드럽고 따뜻한 빛의 관점으로 녹여낸다.',
       }
     ]
   },
@@ -323,6 +383,30 @@ export const MASTERS_CATALOG: MasterItem[] = [
         creativeSparkTechnique: '당당한 시선 교환: 두려운 대상이나 문제를 피하지 않고 정면으로 똑바로 응시하며 주도권 되찾기',
         colorPalette: ['#B45309 (금박 초커 앤틱 골드)', '#881337 (위풍당당 버건디)', '#0F172A (신비로운 배경 딥 나이트)'],
         inspirationAffirmation: '나는 내 운명의 완전한 주인이자 세상을 매혹하는 당당한 창조자다.',
+      },
+      {
+        id: 'klimt_three_ages',
+        piece: '여성의 세 시기 (The Three Ages of Woman, 1905)',
+        medium: '유화 (Oil on Canvas) · 로마 국립현대미술관 소장',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/Gustav_Klimt_047.jpg/1024px-Gustav_Klimt_047.jpg',
+        originalMuseum: '이탈리아 로마 국립현대미술관 (Galleria Nazionale d\'Arte Moderna)',
+        masterpieceInsight: '유아기의 순결, 젊음의 사랑과 포옹, 노년의 성찰을 하나의 화폭에 병치하며 시간의 도도한 흐름 속 인간 존재의 숭고한 순환을 성찰합니다.',
+        masterDirectAdvice: '나이 들어감이나 변화를 두려워하지 마십시오. 모든 시기는 저마다의 대체 불가능한 고유한 아름다움과 깊은 성숙의 축복을 품고 있습니다.',
+        creativeSparkTechnique: '생의 순환 긍정: 지금 내가 서 있는 생의 계절을 있는 그대로 긍정하고 가장 어울리는 결을 꽃피우기',
+        colorPalette: ['#FDE047 (순결한 유아기의 골드)', '#FB7185 (청춘의 포옹 로즈)', '#475569 (지혜로운 황혼 슬레이트)'],
+        inspirationAffirmation: '내 삶의 모든 계절은 거룩한 성숙과 눈부신 지혜로 아름답게 피어난다.',
+      },
+      {
+        id: 'klimt_beethoven_frieze',
+        piece: '베토벤 프리즈 (Beethoven Frieze, 1902)',
+        medium: '카제인 물감, 금박, 회반죽 벽화 · 비엔나 분리파 전시관 소장',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Klimt_Beethovenfries_Detail_Die_K%C3%BCnste_der_Chor_der_Paradiesengel_und_Die_Umarmung.jpg/1280px-Klimt_Beethovenfries_Detail_Die_K%C3%BCnste_der_Chor_der_Paradiesengel_und_Die_Umarmung.jpg',
+        originalMuseum: '오스트리아 비엔나 제체시온 전시관 (Vienna Secession)',
+        masterpieceInsight: '베토벤 9번 교향곡의 환희의 송가를 회화로 옮겨, 고난과 악의 세력을 뚫고 마침내 예술과 사랑의 궁극적 포옹으로 승리하는 인류의 영적 구원을 노래합니다.',
+        masterDirectAdvice: '예술을 통해 내면의 어둠을 돌파하십시오. 시련의 어두운 괴물들을 지나 마침내 당신이 도달할 곳은 순수한 환희와 사랑의 성소입니다.',
+        creativeSparkTechnique: '환희의 송가 시각화: 시련의 끝에서 펼쳐질 가장 눈부신 승리와 포옹의 순간을 선명하게 그리고 용기 얻기',
+        colorPalette: ['#F59E0B (초월적 환희 골드)', '#991B1B (시련 돌파 크림슨)', '#38BDF8 (천상의 찬가 아쿠아)'],
+        inspirationAffirmation: '나는 모든 시련을 뛰어넘어 예술과 사랑의 숭고한 환희로 승리한다.',
       }
     ]
   },
@@ -391,6 +475,30 @@ export const MASTERS_CATALOG: MasterItem[] = [
         creativeSparkTechnique: '마이크로 포커스: 전체 결과에 대한 부담을 내려놓고 오늘 완성할 손바닥만 한 세부 작업에만 집중하기',
         colorPalette: ['#FACC15 (산뜻한 레몬 옐로 옷)', '#DC2626 (선명한 붉은 실)', '#334155 (정적의 딥 차콜)'],
         inspirationAffirmation: '나는 한 올 한 올 정성을 다해 내 삶의 아름다운 무늬를 직조한다.',
+      },
+      {
+        id: 'vermeer_astronomer',
+        piece: '천문학자 (The Astronomer, 1668)',
+        medium: '유화 (Oil on Canvas) · 파리 루브르 박물관 소장',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Johannes_Vermeer_-_The_Astronomer_-_1668.jpg/1024px-Johannes_Vermeer_-_The_Astronomer_-_1668.jpg',
+        originalMuseum: '파리 루브르 박물관 (Musée du Louvre)',
+        masterpieceInsight: '창가로 쏟아지는 고요한 빛 속에서 천구의를 손끝으로 어루만지며 우주의 신비를 탐구하는 학자의 깊은 사유와 지적 열망입니다.',
+        masterDirectAdvice: '우주의 거대한 진리를 탐구하듯 당신의 호기심을 확장하십시오. 빛이 드는 책상 머리에서 당신만의 신대륙을 발견할 수 있습니다.',
+        creativeSparkTechnique: '천구의 관조: 눈앞의 일상을 넘어 더 넓은 지적 우주와 영적 지평으로 시야를 넓히기',
+        colorPalette: ['#0284C7 (지혜의 천구의 시안 블루)', '#D97706 (천문 서적 앰버 골드)', '#334155 (사유의 방 차콜 그레이)'],
+        inspirationAffirmation: '나는 호기심과 열린 마음으로 우주의 무한한 지혜와 영감을 탐구한다.',
+      },
+      {
+        id: 'vermeer_art_of_painting',
+        piece: '회화의 기술 / 화가의 아틀리에 (The Art of Painting, c. 1666–1668)',
+        medium: '유화 (Oil on Canvas) · 비엔나 미술사 박물관 소장',
+        imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Johannes_Vermeer_-_The_Art_of_Painting_-_Google_Art_Project.jpg/1024px-Johannes_Vermeer_-_The_Art_of_Painting_-_Google_Art_Project.jpg',
+        originalMuseum: '오스트리아 비엔나 미술사 박물관 (Kunsthistorisches Museum)',
+        masterpieceInsight: '커튼을 젖히고 엿보는 화실 안, 역사의 여신 클리오를 캔버스에 담는 화가의 뒷모습은 예술 창작의 신성한 소명에 바치는 최고의 헌사입니다.',
+        masterDirectAdvice: '창작하는 당신 자신의 소명을 자랑스러워하십시오. 세상의 소음 뒤에서 조용히 붓을 들 때 당신은 역사를 기록하는 창조자입니다.',
+        creativeSparkTechnique: '커튼 젖히기: 일상의 분주한 커튼을 젖히고 나만의 창작 신전으로 성스럽게 입장하기',
+        colorPalette: ['#1E3A8A (역사의 여신 울트라마린)', '#FACC15 (화실의 황금빛 햇살)', '#78350F (고풍스러운 샹들리에 브라운)'],
+        inspirationAffirmation: '나는 내 삶의 진실한 예술가로서 숭고한 창조의 소명을 기쁘게 살아낸다.',
       }
     ]
   },
@@ -1027,18 +1135,40 @@ export const MASTERS_CATALOG: MasterItem[] = [
   }
 ];
 
+export function extractEnglishArtworkKey(str: string): string {
+  if (!str) return '';
+  const match = str.match(/\(([a-zA-Z\s,'’–—\-/]+)/);
+  if (!match) return '';
+  const cleaned = match[1]
+    .split('/')[0]
+    .replace(/\b(the|a|an|in|at|on|of|over|and)\b/gi, '')
+    .replace(/[^a-zA-Z]/g, '')
+    .toLowerCase()
+    .trim();
+  return cleaned;
+}
+
 export function normalizeArtworkTitle(str: string): string {
   if (!str) return '';
-  return str
-    .split('(')[0]
-    .replace(/연작|꽃밭|들판|열두\s*송이|송이|의|를|을|에|과|와/g, '')
+  const koreanPart = str.split('(')[0];
+  return koreanPart
+    .replace(/연작|꽃밭|들판|열두\s*송이|송이|의|를|을|에|과|와|에서|속|한\s*가운데|한\s*소녀|소녀/g, '')
+    // Synonyms canonicalization
+    .replace(/양산을\s*(쓴|든)\s*여인/g, '양산여인')
+    .replace(/진주\s*(귀걸이|귀고리)/g, '진주귀걸이')
+    .replace(/(론강|아를).*별.*밤/g, '별빛밤론강')
+    .replace(/별.*밤/g, '별빛밤')
+    .replace(/(아를.*침실|반\s*고흐.*방|침실)/g, '반고흐침실')
+    .replace(/우유\s*(따르는|를\s*따르는)\s*여인/g, '우유따르는여인')
+    .replace(/해바라기/g, '해바라기')
+    .replace(/수련.*연못/g, '수련')
     .replace(/[^가-힣a-zA-Z0-9]/g, '')
     .toLowerCase()
     .trim();
 }
 
 /**
- * 거장의 전체 예술작품 목록 반환 (중복 완전 제거 및 모든 대표작 풀 구성)
+ * 거장의 전체 예술작품 목록 반환 (한 작품도 빠짐없이 모두 포함하며, 중복은 영구 완전 박멸)
  */
 export function getMasterAllArtworks(master: MasterItem): MasterArtwork[] {
   const rawList = master.artworks && master.artworks.length > 0
@@ -1063,27 +1193,44 @@ export function getMasterAllArtworks(master: MasterItem): MasterArtwork[] {
         quoteSource: master.quoteSource,
       }];
 
-  // 1. 1차 내부 중복 제거
-  const seenTitles = new Set<string>();
+  // 1. 1차 내부 중복 제거 (한국어 어근 키 + 영문 원제 키 동시 대조)
+  const seenKorTitles = new Set<string>();
+  const seenEngTitles = new Set<string>();
   const baseArtworks: MasterArtwork[] = [];
+
+  const registerArtwork = (art: MasterArtwork): boolean => {
+    const korKey = normalizeArtworkTitle(art.piece);
+    const engKey = extractEnglishArtworkKey(art.piece) || (art.pieceOriginal ? extractEnglishArtworkKey(`(${art.pieceOriginal})`) : '');
+
+    // 중복 판별: 한국어 정규화 키가 이미 있거나, 유의미한 영문명이 이미 존재하는 경우 중복으로 간주
+    if (korKey && seenKorTitles.has(korKey)) return false;
+    if (engKey && engKey.length >= 4 && seenEngTitles.has(engKey)) return false;
+
+    if (korKey) seenKorTitles.add(korKey);
+    if (engKey && engKey.length >= 4) seenEngTitles.add(engKey);
+
+    baseArtworks.push(art);
+    return true;
+  };
+
   for (const art of rawList) {
-    const key = normalizeArtworkTitle(art.piece);
-    if (key && !seenTitles.has(key)) {
-      seenTitles.add(key);
-      baseArtworks.push(art);
-    }
+    registerArtwork(art);
   }
 
-  if (master.category !== 'painting') {
-    return baseArtworks;
-  }
-
-  // 2. 회화 거장의 경우 MUSE_ART_CATALOG에서 추가 작품들을 매칭하여 전체 수록 (중복 엄격 방지)
+  // 2. MUSE_ART_CATALOG에서 거장의 추가 작품들을 매칭하여 전체 수록 (중복 및 타 작가 혼입 엄격 방지)
   const creatorKeywords: Record<string, string[]> = {
-    vangogh: ['반 고흐', 'gogh'],
+    vangogh: ['반 고흐', 'gogh', 'van gogh'],
     monet: ['모네', 'monet'],
     klimt: ['클림트', 'klimt'],
     vermeer: ['페르메이르', 'vermeer'],
+    debussy: ['드뷔시', 'debussy'],
+    bach: ['바흐', 'j.s. bach', 'johann sebastian bach'],
+    beethoven: ['베토벤', 'beethoven'],
+    chopin: ['쇼팽', 'chopin'],
+    rilke: ['릴케', 'rilke'],
+    yoondongju: ['윤동주', 'yoon dong-ju', 'yun dong-ju'],
+    hesse: ['헤세', 'hesse'],
+    nietzsche: ['니체', 'nietzsche'],
   };
 
   const keywords = creatorKeywords[master.id] || [master.name.split('(')[0].trim().toLowerCase()];
@@ -1093,26 +1240,31 @@ export function getMasterAllArtworks(master: MasterItem): MasterArtwork[] {
       const creatorLower = (entry.creator || '').toLowerCase();
       const matchesCreator = keywords.some((kw) => creatorLower.includes(kw.toLowerCase()));
       if (matchesCreator) {
-        const titleKey = normalizeArtworkTitle(entry.title);
-        if (titleKey && !seenTitles.has(titleKey)) {
-          seenTitles.add(titleKey);
-          baseArtworks.push({
-            id: entry.id || `catalog_${titleKey}`,
-            piece: `${entry.title} (${entry.titleOriginal || entry.title})`,
-            medium: `${entry.artworkType || '유화'} · ${entry.era || '명작'}`,
-            imageUrl: entry.imageUrl,
-            originalMuseum: entry.era || '세계 미술관 소장',
-            masterpieceInsight: entry.description || entry.quote || master.masterpieceInsight,
-            masterDirectAdvice: entry.quote
-              ? `"${entry.quote}" 이 작품에 깃든 깊은 미학적 울림을 마음에 품고, 당신만의 진솔한 예술 세계를 거침없이 펼치십시오.`
-              : master.masterDirectAdvice,
-            creativeSparkTechnique: entry.defaultChallenges?.[0] || master.creativeSparkTechnique,
-            colorPalette: entry.aestheticTone
-              ? [entry.aestheticTone, ...master.colorPalette.slice(1)]
-              : master.colorPalette,
-            inspirationAffirmation: entry.quote || master.inspirationAffirmation,
-          });
+        const candidatePiece = `${entry.title} (${entry.titleOriginal || entry.title})`;
+        const korKey = normalizeArtworkTitle(candidatePiece);
+        const engKey = extractEnglishArtworkKey(candidatePiece) || (entry.titleOriginal ? extractEnglishArtworkKey(`(${entry.titleOriginal})`) : '');
+
+        if ((korKey && seenKorTitles.has(korKey)) || (engKey && engKey.length >= 4 && seenEngTitles.has(engKey))) {
+          continue; // 이미 수록된 대표작이므로 중복 등록 방지
         }
+
+        registerArtwork({
+          id: entry.id || `catalog_${korKey}`,
+          piece: candidatePiece,
+          pieceOriginal: entry.titleOriginal,
+          medium: `${entry.artworkType || '유화'} · ${entry.era || '명작'}`,
+          imageUrl: entry.imageUrl,
+          originalMuseum: entry.era || '세계 미술관 소장',
+          masterpieceInsight: entry.description || entry.quote || master.masterpieceInsight,
+          masterDirectAdvice: entry.quote
+            ? `"${entry.quote}" 이 작품에 깃든 깊은 미학적 울림을 마음에 품고, 당신만의 진솔한 예술 세계를 거침없이 펼치십시오.`
+            : master.masterDirectAdvice,
+          creativeSparkTechnique: entry.defaultChallenges?.[0] || master.creativeSparkTechnique,
+          colorPalette: entry.aestheticTone
+            ? [entry.aestheticTone, ...master.colorPalette.slice(1)]
+            : master.colorPalette,
+          inspirationAffirmation: entry.quote || master.inspirationAffirmation,
+        });
       }
     }
   } catch (err) {

@@ -2531,19 +2531,19 @@ export function ArtRecommendationView() {
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.98 }}
-            className="p-12 rounded-[32px] bg-white/[0.01] border border-white/5 flex flex-col items-center justify-center text-center space-y-6 shadow-2xl backdrop-blur-3xl min-h-[400px]"
+            className="p-6 sm:p-12 rounded-2xl sm:rounded-[32px] bg-white/[0.01] border border-white/5 flex flex-col items-center justify-center text-center space-y-4 sm:space-y-6 shadow-2xl backdrop-blur-3xl min-h-[220px] sm:min-h-[400px]"
           >
             <div className="relative">
-              <div className="w-16 h-16 rounded-full border-2 border-dashed border-blue-500/40 animate-spin absolute inset-0" />
-              <div className="w-16 h-16 rounded-full border-2 border-t-blue-400 border-r-transparent animate-spin relative" />
-              <Palette size={20} className="absolute inset-x-0 mx-auto text-blue-400 top-1/2 -translate-y-1/2 animate-pulse" />
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 border-dashed border-blue-500/40 animate-spin absolute inset-0" />
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full border-2 border-t-blue-400 border-r-transparent animate-spin relative" />
+              <Palette className="w-4 h-4 sm:w-5 sm:h-5 absolute inset-x-0 mx-auto text-blue-400 top-1/2 -translate-y-1/2 animate-pulse" />
             </div>
             
-            <div className="space-y-2 max-w-md">
-              <h4 className="text-xs font-black uppercase tracking-[0.3em] text-blue-400 font-mono animate-pulse">
+            <div className="space-y-1.5 sm:space-y-2 max-w-md">
+              <h4 className="text-[10px] sm:text-xs font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] text-blue-400 font-mono animate-pulse">
                 [ ATTACHING ARTISTIC RESONANCE ]
               </h4>
-              <p className="text-sm text-white/70 leading-relaxed font-sans font-medium h-12 transition-all">
+              <p className="text-xs sm:text-sm text-white/70 leading-relaxed font-sans font-medium h-8 sm:h-12 transition-all">
                 {loadingMessages[loadingStep]}
               </p>
             </div>
@@ -2915,12 +2915,12 @@ export function ArtRecommendationView() {
                   className="relative rounded-2xl overflow-hidden border border-white/10 bg-black/40 aspect-[4/3] w-full max-w-lg mx-auto flex flex-col items-center justify-center group shadow-2xl transition-all duration-700 hover:scale-[1.02] hover:border-blue-400/40 hover:shadow-[0_0_35px_rgba(59,130,246,0.25)]"
                 >
                   {loadingImage && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white/50 text-xs p-6 text-center bg-black/60 z-10 transition-all">
-                      <div className="relative w-10 h-10">
-                        <div className="w-10 h-10 rounded-full border-2 border-dashed border-yellow-500/40 animate-spin absolute inset-0" />
-                        <div className="w-10 h-10 rounded-full border-2 border-t-yellow-400 border-r-transparent animate-spin relative" />
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 sm:gap-3 text-white/50 text-xs p-4 sm:p-6 text-center bg-black/60 z-10 transition-all">
+                      <div className="relative w-8 h-8 sm:w-10 sm:h-10">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-dashed border-yellow-500/40 animate-spin absolute inset-0" />
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-t-yellow-400 border-r-transparent animate-spin relative" />
                       </div>
-                      <span className="font-mono tracking-widest uppercase animate-pulse text-[10px] text-yellow-300 font-black">
+                      <span className="font-mono tracking-wider sm:tracking-widest uppercase animate-pulse text-[9px] sm:text-[10px] text-yellow-300 font-bold sm:font-black">
                         [ 🏛️ 세계 미술관 공식 원작 아카이브 로딩 중... ]
                       </span>
                     </div>

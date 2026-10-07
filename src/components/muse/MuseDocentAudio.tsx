@@ -54,7 +54,7 @@ interface MuseDocentAudioProps {
 function docentCacheKey(artwork: MuseDocentArtwork): string {
   const poem = artwork.famousPoem?.title || "poem";
   const song = artwork.famousSong?.title || "song";
-  return `muse_docent_trio_v4_${getTodayDateKey()}_${artwork.title}_${poem}_${song}`;
+  return `muse_docent_trio_v5_${getTodayDateKey()}_${artwork.title}_${poem}_${song}`;
 }
 
 function splitDocentScript(text: string): string[] {
@@ -304,10 +304,9 @@ export function MuseDocentAudio({ artwork }: MuseDocentAudioProps) {
     }
   };
 
-  // 🌟 '처음부터' 다시 듣기: 현재 중간 청크 위치와 무관하게 1번째 문장부터 온전히 처음부터 낭독
+  // 🌟 '처음부터' 다시 듣기: 현재 진행 상태와 무관하게 1번째 문장부터 온전히 처음부터 낭독
   const handleReplay = async () => {
-    const textToPlay = script.trim() || localStorage.getItem(docentCacheKey(artwork))?.trim();
-    if (!textToPlay) return;
+    let textToPlay = script.trim() || localStorage.getItem(docentCacheKey(artwork))?.trim() || "";
 
     // 1. 기존 재생 및 오디오 엘리먼트/TTS 상태 완전 중단
     stopTTS();
@@ -320,11 +319,27 @@ export function MuseDocentAudio({ artwork }: MuseDocentAudioProps) {
       audio.pause();
       audio.currentTime = 0;
       audio.removeAttribute("src");
+      audio.load();
     } catch (_) {}
 
-    // 짧은 대기(60ms)로 이전 오디오 세션 리소스가 완전히 해제되도록 보장
-    await new Promise((resolve) => setTimeout(resolve, 60));
-    if (playbackRunRef.current !== playbackRun) return;
+    // 스크립트가 아직 없으면 새로 fetch
+    if (!textToPlay) {
+      setPhase("preparing");
+      try {
+        textToPlay = await fetchScript();
+        if (playbackRunRef.current !== playbackRun || abortRef.current) return;
+        prepareScript(textToPlay);
+      } catch (e) {
+        if (playbackRunRef.current !== playbackRun) return;
+        setError("도슨트 음성을 불러오지 못했습니다.");
+        setPhase("error");
+        return;
+      }
+    }
+
+    // 짧은 대기(80ms)로 이전 오디오 세션 리소스가 완전히 해제되도록 보장
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    if (playbackRunRef.current !== playbackRun || abortRef.current) return;
 
     // 2. 전체 스크립트 1번째 문장부터 스트리밍 시작
     setPhase("speaking");
@@ -416,9 +431,9 @@ export function MuseDocentAudio({ artwork }: MuseDocentAudioProps) {
                 </div>
               </div>
 
-              {/* Sound Wave Animation Visualizer */}
-              <div className="relative flex flex-col items-center py-4">
-                <div className="relative w-24 h-24 md:w-28 md:h-28 flex items-center justify-center">
+              {/* Sound Wave Animation Visualizer (Mobile Minimalist & Sleek) */}
+              <div className="relative flex flex-col items-center py-2 sm:py-4">
+                <div className="relative w-16 h-16 sm:w-24 sm:h-24 md:w-28 md:h-28 flex items-center justify-center">
                   {phase === "speaking" && (
                     <>
                       <motion.span
@@ -434,20 +449,20 @@ export function MuseDocentAudio({ artwork }: MuseDocentAudioProps) {
                     </>
                   )}
                   <div
-                    className={`relative w-18 h-18 md:w-20 md:h-20 rounded-full flex items-center justify-center transition-all duration-500 ${
+                    className={`relative w-12 h-12 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-full flex items-center justify-center transition-all duration-500 ${
                       phase === "speaking"
                         ? "bg-gradient-to-br from-blue-500/30 to-indigo-500/30 shadow-[0_0_40px_rgba(59,130,246,0.35)]"
                         : "bg-white/5 border border-white/10"
                     }`}
                   >
                     {phase === "preparing" || isLoadingTts ? (
-                      <RefreshCw size={24} className="text-blue-300 animate-spin" />
+                      <RefreshCw size={18} className="text-blue-300 animate-spin sm:w-6 sm:h-6" />
                     ) : phase === "speaking" ? (
-                      <div className="flex items-end gap-1 h-7">
+                      <div className="flex items-end gap-0.5 sm:gap-1 h-5 sm:h-7">
                         {[0, 1, 2, 3, 4].map((i) => (
                           <motion.span
                             key={i}
-                            className="w-1 rounded-full bg-blue-300"
+                            className="w-0.5 sm:w-1 rounded-full bg-blue-300"
                             animate={{ height: ["20%", "100%", "30%"] }}
                             transition={{
                               duration: 0.8,
@@ -460,7 +475,7 @@ export function MuseDocentAudio({ artwork }: MuseDocentAudioProps) {
                         ))}
                       </div>
                     ) : (
-                      <Volume2 size={24} className="text-blue-300/80" />
+                      <Volume2 size={18} className="text-blue-300/80 sm:w-6 sm:h-6" />
                     )}
                   </div>
                 </div>

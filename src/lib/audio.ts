@@ -938,10 +938,14 @@ export async function playTTSAudio(
   const audio = getTTSAudioElement();
   try {
     audio.pause();
+    audio.currentTime = 0;
   } catch (_) {}
   audio.loop = false;
   audio.volume = 1;
   audio.src = ttsBlobUrl;
+  try {
+    audio.currentTime = 0;
+  } catch (_) {}
 
   try {
     const targetRate = 1.0;

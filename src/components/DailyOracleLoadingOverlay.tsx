@@ -84,11 +84,11 @@ export function DailyOracleLoadingOverlay({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5 }}
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-2xl px-6"
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-2xl px-4 sm:px-6"
         >
-          <div className="flex flex-col items-center gap-5 sm:gap-7 max-w-sm text-center">
+          <div className="flex flex-col items-center gap-3.5 sm:gap-6 max-w-sm text-center">
             {/* Breathing Aura Orb */}
-            <div className="relative w-20 h-20 sm:w-28 sm:h-28 flex items-center justify-center">
+            <div className="relative w-14 h-14 sm:w-24 sm:h-24 flex items-center justify-center">
               {/* Outer Pulsing Glow */}
               <motion.div
                 animate={{
@@ -100,7 +100,7 @@ export function DailyOracleLoadingOverlay({
                   repeat: Infinity,
                   ease: 'easeInOut',
                 }}
-                className={`absolute inset-0 rounded-full bg-gradient-radial ${styles.orb} blur-2xl`}
+                className={`absolute inset-0 rounded-full bg-gradient-radial ${styles.orb} blur-xl sm:blur-2xl`}
               />
 
               {/* Single Delicate Breathing Ring */}
@@ -128,23 +128,23 @@ export function DailyOracleLoadingOverlay({
                   repeat: Infinity,
                   ease: 'easeInOut',
                 }}
-                className="relative z-10 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-md flex items-center justify-center shadow-lg shadow-black/40"
+                className="relative z-10 w-9 h-9 sm:w-13 sm:h-13 rounded-xl sm:rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-md flex items-center justify-center shadow-lg shadow-black/40"
               >
-                <Sparkles className={`${styles.icon} w-5 h-5 sm:w-6 sm:h-6`} />
+                <Sparkles className={`${styles.icon} w-4 h-4 sm:w-5 sm:h-5`} />
               </motion.div>
             </div>
 
             {/* Poetic & Serene Text */}
-            <div className="space-y-2 sm:space-y-2.5">
+            <div className="space-y-1 sm:space-y-2">
               <motion.p
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-base sm:text-lg font-display font-medium text-white/95 tracking-wide"
+                className="text-sm sm:text-base font-display font-medium text-white/95 tracking-wide"
               >
                 영혼의 오라클을 조율하는 중
               </motion.p>
               
-              <div className="h-8 sm:h-9 flex items-center justify-center">
+              <div className="h-6 sm:h-8 flex items-center justify-center">
                 <AnimatePresence mode="wait">
                   <motion.p
                     key={quoteIdx}
@@ -152,12 +152,30 @@ export function DailyOracleLoadingOverlay({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
                     transition={{ duration: 0.35 }}
-                    className={`text-xs sm:text-sm ${styles.subtitle} font-normal tracking-wide leading-relaxed px-2`}
+                    className={`text-[11px] sm:text-xs md:text-sm ${styles.subtitle} font-normal tracking-wide leading-relaxed px-2`}
                   >
                     {SERENE_QUOTES[quoteIdx]}
                   </motion.p>
                 </AnimatePresence>
               </div>
+            </div>
+
+            {/* Minimal Hairline Progress */}
+            <div className="w-16 sm:w-24 h-[1.5px] bg-white/10 rounded-full overflow-hidden relative">
+              <motion.div
+                animate={{
+                  x: ['-100%', '100%'],
+                }}
+                transition={{
+                  duration: 2.2,
+                  repeat: Infinity,
+                  ease: [0.4, 0, 0.2, 1],
+                }}
+                style={{
+                  background: `linear-gradient(90deg, transparent, ${styles.accent}, transparent)`
+                }}
+                className="w-full h-full rounded-full"
+              />
             </div>
           </div>
         </motion.div>

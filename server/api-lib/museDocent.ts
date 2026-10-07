@@ -393,6 +393,35 @@ async function tryOpenAI(messages: GrokMessage[], maxTokens: number): Promise<st
   return null;
 }
 
+function isValidAudioDocent(reply: string, req: MuseDocentRequest): boolean {
+  if (!reply || reply.length < 350) return false;
+
+  // In audio mode, the docent must strictly follow: 1. 명곡 -> 2. 명시 -> 3. 명화
+  if (req.famousSong?.title) {
+    const songIndex = reply.indexOf(req.famousSong.title);
+    const artIndex = req.title ? reply.indexOf(req.title) : -1;
+
+    // Song must be mentioned and must appear before the artwork!
+    if (songIndex === -1 && !reply.includes(req.famousSong.artist)) {
+      return false;
+    }
+    if (songIndex !== -1 && artIndex !== -1 && artIndex < songIndex) {
+      // Artwork was mentioned before the song; LLM jumped straight to the artwork (middle)
+      return false;
+    }
+  }
+
+  // Must mention poem if provided
+  if (req.famousPoem?.title) {
+    const poemIndex = reply.indexOf(req.famousPoem.title);
+    if (poemIndex === -1 && !reply.includes(req.famousPoem.poet)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 export async function handleMuseDocent(req: MuseDocentRequest): Promise<{ reply: string }> {
   const history = Array.isArray(req.messages) ? req.messages : [];
   const isAudioMode = req.mode === "audio";
@@ -406,17 +435,32 @@ export async function handleMuseDocent(req: MuseDocentRequest): Promise<{ reply:
 
   // 1. Try Gemini
   const geminiReply = await tryGemini(buildMessages(false), maxTokens);
-  if (geminiReply) return { reply: geminiReply };
+  if (geminiReply) {
+    if (!isAudioMode || isValidAudioDocent(geminiReply, req)) {
+      return { reply: geminiReply };
+    }
+    console.warn("[muse/docent] Gemini audio docent skipped song/poem sequence; falling back to curated script");
+  }
 
   // 2. Try xAI Grok (with vision if image exists)
   const xaiReply = await tryXai(buildMessages(!!visionImageUrl), maxTokens);
-  if (xaiReply) return { reply: xaiReply };
+  if (xaiReply) {
+    if (!isAudioMode || isValidAudioDocent(xaiReply, req)) {
+      return { reply: xaiReply };
+    }
+    console.warn("[muse/docent] xAI audio docent skipped song/poem sequence; falling back to curated script");
+  }
 
   // 3. Try OpenAI
   const openAIReply = await tryOpenAI(buildMessages(false), maxTokens);
-  if (openAIReply) return { reply: openAIReply };
+  if (openAIReply) {
+    if (!isAudioMode || isValidAudioDocent(openAIReply, req)) {
+      return { reply: openAIReply };
+    }
+    console.warn("[muse/docent] OpenAI audio docent skipped song/poem sequence; falling back to curated script");
+  }
 
-  // 4. Zero-Failure Curated Masterpiece Docent
+  // 4. Zero-Failure Curated Masterpiece Docent (항상 1단계 명곡 -> 2단계 명시 -> 3단계 명화 순서 완전 보장)
   return { reply: generateCuratedDocentScript(req) };
 }
 

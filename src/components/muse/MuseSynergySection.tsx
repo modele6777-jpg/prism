@@ -582,22 +582,28 @@ export function MuseSynergySection() {
         <button
           onClick={handleStartMasterclass}
           disabled={isLoading}
-          className="w-full py-4 rounded-2xl bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500 hover:from-blue-400 hover:to-violet-400 text-white font-black text-sm tracking-wider uppercase transition-all shadow-[0_0_30px_rgba(59,130,246,0.4)] hover:shadow-[0_0_40px_rgba(59,130,246,0.6)] active:scale-[0.99] flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50"
+          className="w-full py-3.5 sm:py-4 px-4 rounded-2xl bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500 hover:from-blue-400 hover:to-violet-400 text-white font-black text-xs sm:text-sm tracking-wider uppercase transition-all shadow-[0_0_30px_rgba(59,130,246,0.4)] hover:shadow-[0_0_40px_rgba(59,130,246,0.6)] active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
         >
           {isLoading ? (
             <>
-              <RefreshCw size={18} className="animate-spin text-white" />
-              <span>〈{selectedArtwork?.piece?.split('(')[0]?.trim() || selectedMaster.name.split('(')[0]}〉 1:1 맞춤 영감 마스터클래스 생성 중...</span>
+              <RefreshCw size={15} className="animate-spin text-white shrink-0" />
+              <span className="truncate">
+                <span className="sm:hidden">1:1 마스터클래스 대화 생성 중...</span>
+                <span className="hidden sm:inline">〈{selectedArtwork?.piece?.split('(')[0]?.trim() || selectedMaster.name.split('(')[0]}〉 1:1 맞춤 영감 마스터클래스 생성 중...</span>
+              </span>
             </>
           ) : !isDailyArtConfirmed ? (
             <>
-              <Sparkles size={18} className="text-yellow-300" />
+              <Sparkles size={16} className="text-yellow-300 shrink-0" />
               <span>오늘의 데일리아트 먼저 확인하고 마스터클래스 시작하기</span>
             </>
           ) : (
             <>
-              <Sparkles size={18} className="text-yellow-300" />
-              <span>〈{selectedMaster.name.split('(')[0].trim()} × '{selectedArtwork?.piece?.split('(')[0]?.trim() || selectedMaster.piece.split('(')[0]}' 1:1 맞춤 영감 마스터클래스 대화〉 시작하기</span>
+              <Sparkles size={16} className="text-yellow-300 shrink-0" />
+              <span className="truncate">
+                <span className="sm:hidden">〈{selectedMaster.name.split('(')[0].trim()}〉 1:1 영감 대화 시작</span>
+                <span className="hidden sm:inline">〈{selectedMaster.name.split('(')[0].trim()} × '{selectedArtwork?.piece?.split('(')[0]?.trim() || selectedMaster.piece.split('(')[0]}' 1:1 맞춤 영감 마스터클래스 대화〉 시작하기</span>
+              </span>
             </>
           )}
         </button>
@@ -841,12 +847,12 @@ export function MuseSynergySection() {
                 className="relative rounded-2xl overflow-hidden border border-white/10 bg-black/50 aspect-[4/3] w-full max-w-lg mx-auto flex flex-col items-center justify-center group shadow-2xl transition-all duration-700 hover:scale-[1.02] hover:border-blue-400/40 hover:shadow-[0_0_35px_rgba(59,130,246,0.25)]"
               >
                 {loadingArtwork && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white/50 text-xs p-6 text-center bg-black/60 z-10 transition-all">
-                    <div className="relative w-10 h-10">
-                      <div className="w-10 h-10 rounded-full border-2 border-dashed border-yellow-500/40 animate-spin absolute inset-0" />
-                      <div className="w-10 h-10 rounded-full border-2 border-t-yellow-400 border-r-transparent animate-spin relative" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 sm:gap-3 text-white/50 text-xs p-4 sm:p-6 text-center bg-black/60 z-10 transition-all">
+                    <div className="relative w-8 h-8 sm:w-10 sm:h-10">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-dashed border-yellow-500/40 animate-spin absolute inset-0" />
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-t-yellow-400 border-r-transparent animate-spin relative" />
                     </div>
-                    <span className="font-mono tracking-widest uppercase animate-pulse text-[10px] text-yellow-300 font-black">
+                    <span className="font-mono tracking-wider sm:tracking-widest uppercase animate-pulse text-[9px] sm:text-[10px] text-yellow-300 font-bold sm:font-black">
                       [ 🏛️ 세계 미술관 공식 원작 소장본 불러오는 중... ]
                     </span>
                   </div>
