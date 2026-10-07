@@ -417,11 +417,10 @@ export async function playCompressedAudio(base64: string, playbackRate: number =
 
     const source = audioCtx.createBufferSource();
     source.buffer = decodedBuffer;
-    if (playbackRate && playbackRate !== 1.0) {
-      try {
-        source.playbackRate.value = playbackRate;
-      } catch (_) {}
-    }
+    // 🌟 모든 오디오 재생을 1.0 배속 표준 속도로 영구 고정
+    try {
+      source.playbackRate.value = 1.0;
+    } catch (_) {}
 
     const masterBus = getMasterAudioBus();
     source.connect(masterBus);
@@ -441,7 +440,7 @@ export async function playCompressedAudio(base64: string, playbackRate: number =
       source.onended = onEnded;
 
       // Safety timeout: If browser drops onended event, resolve cleanly after buffer duration
-      const durationMs = (((decodedBuffer.duration || 1) * 1000) / (playbackRate || 1.0)) + 250;
+      const durationMs = ((decodedBuffer.duration || 1) * 1000) + 250;
       setTimeout(() => {
         if (!settled) {
           onEnded();
@@ -1006,7 +1005,7 @@ export async function playTTSAudio(
       if (!isCompressed && encoding === 'pcm') {
         await playRawPCM(base64, sampleRate);
       } else {
-        await playCompressedAudio(base64, profile.playbackRate || 1.0);
+        await playCompressedAudio(base64, 1.0);
       }
     } finally {
       if (activePlaybackId === ttsPlaybackId && !isSequenceChunk) {

@@ -10,10 +10,11 @@ interface TTSButtonProps {
   onPlay?: () => void;
   onClick?: () => void;
   emotion?: string;
+  /** @deprecated 모든 TTS 재생은 1.0 배속으로 영구 고정됩니다 */
   speed?: number;
 }
 
-export const TTSButton: React.FC<TTSButtonProps> = ({ text, voice = 'Kore', className = "", onPlay, onClick, emotion, speed }) => {
+export const TTSButton: React.FC<TTSButtonProps> = ({ text, voice = 'Kore', className = "", onPlay, onClick, emotion }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
