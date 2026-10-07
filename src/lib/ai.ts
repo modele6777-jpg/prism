@@ -1156,17 +1156,20 @@ function generateMockFromZod(schema: z.ZodTypeAny, parentKey: string = "", error
     return "오늘 하루도 마음을 차분히 정리하며 긍정적인 에너지를 채워갑니다. 작은 순간 속에 담긴 소중한 평온을 느껴봅니다.";
   }
 
+  if (keyLower.includes("action") || desc.includes("작은 실천") || desc.includes("실천") || desc.includes("행동")) {
+    return "오늘 하루 이미 소망을 온전히 이룬 사람처럼 어깨를 펴고 주변에 따뜻하고 다정한 미소 짓기";
+  }
+  if (keyLower.includes("feelinganchor") || keyLower.includes("feeling") || keyLower.includes("anchor") || desc.includes("이미 받은 느낌") || desc.includes("감정 닻") || (desc.includes("느낌") && !desc.includes("청원"))) {
+    return "소망이 마침내 눈앞의 현실이 되었을 때 가슴 깊은 곳에서 차오르는 벅찬 안도감과 충만한 환희";
+  }
+  if (keyLower.includes("desire") || desc.includes("소원 선언") || desc.includes("청원") || (desc.includes("소원") && !desc.includes("실천") && !desc.includes("행동") && !desc.includes("느낌"))) {
+    return "우주여, 나의 간절한 소망이 가장 아름답고 지혜로운 방식으로 온전히 이루어지게 하옵소서.";
+  }
   if (keyLower.includes("affirmation") || desc.includes("확언")) {
     return "나는 내 안의 모든 의심을 내려놓고 우주의 무한한 풍요와 조화 속에서 원하는 모든 소망을 이미 온전히 성취했습니다.";
   }
-  if (keyLower.includes("action") || desc.includes("실천") || desc.includes("행동")) {
-    return "오늘 하루 모든 긴장을 내려놓고, 이미 소원을 이룬 사람의 여유로운 미소로 주변에 따뜻한 친절 건네기";
-  }
-  if (keyLower.includes("feelinganchor") || keyLower.includes("feeling") || keyLower.includes("anchor") || (desc.includes("느낌") && !desc.includes("청원"))) {
-    return "가슴 깊은 곳에서 샘솟는 절대적인 안도감과 벅찬 환희의 감격";
-  }
-  if (keyLower.includes("desire") || (desc.includes("소원") && !desc.includes("실천") && !desc.includes("행동") && !desc.includes("느낌"))) {
-    return "우주여, 나의 간절한 소망이 가장 아름답고 지혜로운 방식으로 온전히 이루어지게 하옵소서.";
+  if (keyLower.includes("reflection") || desc.includes("믿음으로 새기기") || desc.includes("사색")) {
+    return "원하는 것을 마음에 품었다는 것은 이미 그것을 온전히 담아낼 가능성이 당신 안에 준비되어 있다는 뜻입니다. 조급함을 내려놓고 이미 완성된 평온을 느껴보세요.";
   }
   if (keyLower.includes("mirrorphrase") || desc.includes("거울")) {
     return "너는 이미 온 우주의 축복을 온전히 누릴 자격이 있는 눈부신 존재다.";
@@ -1179,9 +1182,6 @@ function generateMockFromZod(schema: z.ZodTypeAny, parentKey: string = "", error
   }
   if (keyLower.includes("visualization") || desc.includes("시각화")) {
     return "조용히 눈을 감고 소망이 눈앞에 완벽히 이루어진 장면을 온몸의 감각으로 생생하게 느껴봅니다. 가슴 벅찬 전율과 따뜻한 안도가 전신으로 퍼져나갑니다.";
-  }
-  if (keyLower.includes("reflection") || desc.includes("믿음") || desc.includes("사색")) {
-    return "원하는 것을 마음에 품었다는 것은 이미 그것을 온전히 담아낼 가능성이 당신 안에 준비되어 있다는 뜻입니다. 조급함을 내려놓고 이미 완성된 평온을 느껴보세요.";
   }
 
   if (keyLower.includes("coherence")) return 85;

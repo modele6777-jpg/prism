@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.4.198",
+    "summary": "오늘의 시크릿 Ask(요청)·Receive(실천)·Feel(감정 닻) 중복 출력 오류 완전 해소 및 3대 기둥 분리 강화",
+    "builtAt": "2026-10-07T13:33:22.142Z",
+    "items": [
+      "오렌지 오늘의 시크릿 결과 중복 문제 원천 해결: generateMockFromZod 스키마 폴백 시 '소원' 키워드가 action(작은 실천)과 feelingAnchor(이미 받은 느낌)의 Zod description에 포함되어 모든 기둥에 동일한 문장이 유입되던 탐욕 매칭 버그를 완벽 분리 수정",
+      "ensureFullKit 3대 기둥 사전 감지 및 자동 치유(Auto-Healing) 도입: Ask(desire: 우주 청원문), Receive(action: 일상 신체 실천), Feel(feelingAnchor: 감정 닻) 간의 2-gram Jaccard 유사도 분석을 통해 필드 간 중복 발생 시 고유한 실천/감정 앵커로 즉시 분리 치유",
+      "로컬 스토리지 & 클라우드 상태 자동 정화: 기존에 중복 문장으로 저장되어 있던 dirty 캐시가 로드될 때 감지하여 각 기둥별 올바른 문장으로 즉시 자동 복구 및 재저장되도록 마운트 및 동기화 로직 보강",
+      "시크릿 AI 시스템 프롬프트 엄격 규칙 수립: LLM 생성 단계에서 Ask, Receive, Feel이 각기 다른 문장 구조, 어미, 역할을 유지하며 절대 문장을 상호 복제하지 않도록 규칙 17 신설"
+    ]
+  },
+  {
     "version": "1.4.197",
     "summary": "에셔 루프 해결 및 순환 셔터 렌더링 기반 원형(Circle) 타로 스프레드 컴포넌트(CircularTarotSpread) 신규 구축",
     "builtAt": "2026-10-07T12:50:27.187Z",

@@ -21,11 +21,11 @@ import { generateDynamicSecretKit, getDailySecretIndex, transmuteWorryOrWish } f
 const DailySecretSchema = z.object({
   affirmation: z.string().describe('Today’s Secret Affirmation: 사용자의 구체적 소원/고민 내용에 100% 밀착되어, 그 소망이 이미 눈앞에서 완벽히 실현되었음을 선언하는 생생하고 강력한 1인칭 현재완료형 확언 1문장 (기계적인 문구 "나의 소원 ...은 이루어졌으며"를 절대 쓰지 말고, 소원의 핵심 키워드와 극적 성취/해결 상황을 자연스럽고 품격 있게 녹여낼 것)'),
   reflection: z.string().describe('Believe · 믿음으로 새기기: 마음속 의심과 조급함을 지우고 소원이 이미 영적 차원에 존재함을 확신하게 돕는 깊이 있는 통찰 사색 2~3문장 (절대 affirmation과 같은 문장을 반복하지 말고 완전히 다른 사색적인 문장으로 작성)'),
-  action: z.string().describe('Receive · 오늘의 작은 실천: 소원이 이미 이루어진 사람처럼 오늘 당장 실천할 수 있는 구체적인 일상/신체적 행동 1문장 (예: "오늘 하루 가벼운 발걸음으로 산책하며 주변에 온화한 미소 짓기". 절대 desire, feelingAnchor, affirmation 문장을 복사하거나 중복하지 마세요)'),
-  desire: z.string().describe('Ask · 오늘의 소원 선언: 사용자의 소원을 바탕으로 우주에 명확하고 간결하게 요청하는 청원문 1문장 (예: "우주여, 나의 삶에 가장 아름다운 번영의 문을 활짝 열어주옵소서." 절대 action, feelingAnchor와 중복 금지)'),
+  action: z.string().describe('Receive · 오늘의 작은 실천: 소원이 이미 이루어진 사람처럼 오늘 당장 몸으로 실행할 수 있는 구체적인 일상/신체 행동 1문장 (예: "오늘 하루 가벼운 발걸음으로 산책하며 주변에 미소 짓기", "창문을 열고 시원한 공기를 깊게 들이마시기"). [중복 엄격 금지: 절대 desire(소원 선언)나 feelingAnchor(감정 묘사) 문장을 복사하거나 같게 작성하지 마세요]'),
+  desire: z.string().describe('Ask · 오늘의 소원 선언: 우주를 향해 소망을 명확하고 품격 있게 청원하는 선언문 1문장 (예: "우주여, ...의 소망이 가장 지혜롭고 아름다운 방식으로 피어나게 하옵소서"). [중복 엄격 금지: 절대 action(행동)이나 feelingAnchor(느낌) 문장과 같거나 비슷해서는 안 됩니다]'),
   visualizationGuide: z.string().describe('68초 시각화 스튜디오 가이드: 음성 낭독(TTS) 시 실제로 약 1분(60초 전후) 동안 깊은 몰입이 유지되도록 작성된 상세한 4단계 오감 명상 가이드(약 350~450자 분량: 1. 호흡 이완 유도 -> 2. 소원 성취의 생생한 시각/청각/촉각 정경 묘사 -> 3. 가슴 벅찬 안도감과 환희의 감정 절정 -> 4. 심장 중심 주파수 각인)'),
   gratitudeSeeds: z.array(z.string()).describe('감사 자석: 소원 성취 주파수를 높이고 풍요를 여는 서로 다른 구체적 감사 3가지'),
-  feelingAnchor: z.string().describe('Feel · 이미 받은 느낌: 소원이 이미 이루어졌을 때 느껴지는 벅찬 기쁨과 안도감을 생생히 환기하는 감정 한 줄 (예: "가슴 깊은 곳에서 차오르는 벅찬 안도감과 충만한 기쁨". 절대 action, desire와 중복 금지)'),
+  feelingAnchor: z.string().describe('Feel · 이미 받은 느낌: 소원이 이미 이루어졌을 때 가슴 깊은 곳에서 차오르는 벅찬 기쁨과 안도감을 생생히 환기하는 감정 한 줄 (예: "...할 때 가슴 가득 차오르는 벅찬 안도감과 충만한 환희"). [중복 엄격 금지: 절대 desire(청원문)나 action(신체 행동) 문장을 복사하지 마세요]'),
   mirrorPhrase: z.string().describe('거울 확언: 거울 속 나를 보며 소원 성취의 확신과 자존감을 채우는 거울 확언 1문장'),
   eveningPrompt: z.string().describe('저녁 감사 마무리: 소원이 이루어짐에 감사하며 편안한 수면으로 들어가는 저녁 마무리 1문장'),
   scriptingStarter: z.string().describe('스크립팅 노트: 소원이 완벽히 실현된 현재의 하루를 생생하게 써 내려가는 일기 첫 문장'),
@@ -60,6 +60,26 @@ function todayKey(): string {
 
 function dayStorageKey(suffix: string) {
   return `orange_daily_secret_${suffix}_${todayKey()}`;
+}
+
+/** 두 문장이 동일하거나 실질적으로 같은 문장인지(유사도 55% 이상 또는 상호 포함) 정밀 검사 */
+function isSubstantiallyDuplicate(s1?: string, s2?: string): boolean {
+  if (!s1 || !s2) return false;
+  const a = s1.trim().replace(/[\s.,!?~'"`·\-—–[\]()]/g, '');
+  const b = s2.trim().replace(/[\s.,!?~'"`·\-—–[\]()]/g, '');
+  if (!a || !b) return false;
+  if (a === b) return true;
+  if (a.length >= 7 && b.length >= 7 && (a.includes(b) || b.includes(a))) return true;
+
+  // 2-gram Jaccard 유사도 검사
+  const setA = new Set<string>();
+  for (let i = 0; i < a.length - 1; i++) setA.add(a.slice(i, i + 2));
+  const setB = new Set<string>();
+  for (let i = 0; i < b.length - 1; i++) setB.add(b.slice(i, i + 2));
+  let intersection = 0;
+  setA.forEach((bg) => { if (setB.has(bg)) intersection++; });
+  const union = setA.size + setB.size - intersection;
+  return union > 0 && (intersection / union) > 0.55;
 }
 
 export function ensureFullKit(
@@ -97,71 +117,66 @@ export function ensureFullKit(
     affirmation = fallback.affirmation;
   }
 
-  // 🚨 [필수 중복 방지 및 고정 문구 제거]
-  if (!reflection || reflection.includes('고요한 파동') || reflection.includes('심신을 정렬') || reflection === affirmation || reflection.length < 15 || !/[가-힣]/.test(reflection)) {
+  // 🚨 [Believe(reflection) 중복 방지]
+  if (
+    !reflection ||
+    reflection.includes('고요한 파동') ||
+    reflection.includes('심신을 정렬') ||
+    isSubstantiallyDuplicate(reflection, affirmation) ||
+    reflection.length < 15 ||
+    !/[가-힣]/.test(reflection)
+  ) {
     reflection = fallback.reflection;
   }
 
-  // 1. Ask(desire): 우주를 향한 맑고 간결한 청원문
-  let desire = raw.desire?.trim() || fallback.desire;
-  if (!desire || desire.includes('고요한 파동') || desire.includes('심신을 정렬') || desire === affirmation || desire === reflection || desire.length < 8 || !/[가-힣]/.test(desire)) {
+  // 🚨 [Ask(desire) · Receive(action) · Feel(feelingAnchor) 3대 기둥 사전 중복 감지 및 분리]
+  const rawDesireStr = raw.desire?.trim() || '';
+  const rawActionStr = raw.action?.trim() || '';
+  const rawFeelingStr = raw.feelingAnchor?.trim() || '';
+
+  const areAllThreeIdentical = Boolean(
+    rawDesireStr &&
+    rawActionStr &&
+    rawFeelingStr &&
+    isSubstantiallyDuplicate(rawDesireStr, rawActionStr) &&
+    isSubstantiallyDuplicate(rawDesireStr, rawFeelingStr)
+  );
+
+  // 1. Ask(desire) 소원 선언 검증: affirmation, reflection과 절대 달라야 함
+  let desire = (!areAllThreeIdentical ? rawDesireStr : '') || fallback.desire;
+  if (
+    !desire ||
+    desire.includes('고요한 파동') ||
+    desire.includes('심신을 정렬') ||
+    isSubstantiallyDuplicate(desire, affirmation) ||
+    isSubstantiallyDuplicate(desire, reflection) ||
+    !/[가-힣]/.test(desire)
+  ) {
     desire = fallback.desire;
   }
+  if (!desire || desire.length < 5) {
+    desire = effectiveWish
+      ? `우주여, 나의 간절한 소망 [${effectiveWish}]이(가) 가장 조화롭고 지혜로운 방식으로 온전히 피어나게 하옵소서.`
+      : fallback.desire;
+  }
 
-  // 2. Receive(action): 소원을 이미 이룬 자로서 오늘 당장 실행하는 구체적인 행동/미션 (Ask 및 Feel과 절대 중복 금지)
-  let action = raw.action?.trim() || fallback.action;
+  // 2. Receive(action) 중복 및 복사 원천 차단: desire, affirmation, reflection과 절대 달라야 함
+  let action = (!areAllThreeIdentical ? rawActionStr : '') || fallback.action;
   if (
     !action ||
     action.includes('고요한 파동') ||
     action.includes('심신을 정렬') ||
-    action === affirmation ||
-    action === reflection ||
-    action === desire || // 🚨 Receive와 Ask 중복 원천 차단
     action.length < 8 ||
-    !/[가-힣]/.test(action)
+    !/[가-힣]/.test(action) ||
+    isSubstantiallyDuplicate(action, desire) ||
+    isSubstantiallyDuplicate(action, affirmation) ||
+    isSubstantiallyDuplicate(action, reflection)
   ) {
-    action = (fallback.action && fallback.action !== desire && fallback.action !== affirmation)
-      ? fallback.action
-      : '오늘 하루 모든 긴장을 내려놓고, 이미 소원을 이룬 사람의 여유로운 미소로 주변에 따뜻한 친절 건네기';
-  }
-
-  // 3. Feel(feelingAnchor): 소원이 완벽히 실현된 순간 가슴 깊이 차오르는 생생한 감정 닻 (Receive 및 Ask와 절대 중복 금지)
-  let feelingAnchor = raw.feelingAnchor?.trim() || fallback.feelingAnchor;
-  if (
-    !feelingAnchor ||
-    feelingAnchor.includes('고요한 파동') ||
-    feelingAnchor.includes('심신을 정렬') ||
-    feelingAnchor === affirmation ||
-    feelingAnchor === reflection ||
-    feelingAnchor === action || // 🚨 Feel과 Receive 중복 원천 차단
-    feelingAnchor === desire || // 🚨 Feel과 Ask 중복 원천 차단
-    feelingAnchor.length < 6 ||
-    !/[가-힣]/.test(feelingAnchor)
-  ) {
-    feelingAnchor = (fallback.feelingAnchor && fallback.feelingAnchor !== desire && fallback.feelingAnchor !== action)
-      ? fallback.feelingAnchor
-      : '모든 걱정이 눈 녹듯 사라지고 가슴 깊은 곳에서 차오르는 벅찬 안도감과 충만한 기쁨';
-  }
-
-  // 4. [2차 정밀 중복 방어] 공백/특수문자 제외 정규화 기반 상호 복사 및 중복 원천 차단
-  const normAction = action.replace(/[\s\.\,\!\?~]/g, '');
-  const normDesire = desire.replace(/[\s\.\,\!\?~]/g, '');
-  const normFeeling = feelingAnchor.replace(/[\s\.\,\!\?~]/g, '');
-
-  if (normAction === normDesire || (normAction.length >= 6 && normDesire.includes(normAction)) || (normDesire.length >= 6 && normAction.includes(normDesire))) {
-    action = fallback.action && fallback.action !== desire
-      ? fallback.action
-      : '오늘 하루 가벼운 발걸음으로 산책하며 소원이 완성된 평온을 온몸으로 만끽하기';
-  }
-
-  if (
-    normFeeling === normDesire ||
-    normFeeling === normAction ||
-    (normFeeling.length >= 6 && (normDesire.includes(normFeeling) || normAction.includes(normFeeling)))
-  ) {
-    feelingAnchor = fallback.feelingAnchor && fallback.feelingAnchor !== desire && fallback.feelingAnchor !== action
-      ? fallback.feelingAnchor
-      : '온몸의 세포 하나하나가 깊은 평화와 벅찬 환희로 깨어나는 생생한 전율';
+    if (fallback.action && !isSubstantiallyDuplicate(fallback.action, desire)) {
+      action = fallback.action;
+    } else {
+      action = '오늘 하루 이미 소망을 온전히 이룬 사람처럼 어깨를 펴고 주변에 따뜻하고 다정한 미소 짓기';
+    }
   }
 
   let visualizationGuide = raw.visualizationGuide?.trim() || fallback.visualizationGuide;
@@ -169,6 +184,36 @@ export function ensureFullKit(
     visualizationGuide = fallback.visualizationGuide;
   }
 
+  // 3. Feel(feelingAnchor) 중복 및 복사 원천 차단: desire, action, affirmation, reflection과 절대 달라야 함
+  let feelingAnchor = (!areAllThreeIdentical ? rawFeelingStr : '') || fallback.feelingAnchor;
+  if (
+    !feelingAnchor ||
+    feelingAnchor.includes('고요한 파동') ||
+    feelingAnchor.includes('심신을 정렬') ||
+    !/[가-힣]/.test(feelingAnchor) ||
+    isSubstantiallyDuplicate(feelingAnchor, desire) ||
+    isSubstantiallyDuplicate(feelingAnchor, action) ||
+    isSubstantiallyDuplicate(feelingAnchor, affirmation) ||
+    isSubstantiallyDuplicate(feelingAnchor, reflection)
+  ) {
+    if (
+      fallback.feelingAnchor &&
+      !isSubstantiallyDuplicate(fallback.feelingAnchor, desire) &&
+      !isSubstantiallyDuplicate(fallback.feelingAnchor, action)
+    ) {
+      feelingAnchor = fallback.feelingAnchor;
+    } else {
+      feelingAnchor = '소망이 마침내 눈앞의 현실이 되었을 때 가슴 깊은 곳에서 차오르는 벅찬 안도감과 충만한 환희';
+    }
+  }
+
+  // 4. [3대 기둥 상호 고유성 최종 안전망] 어떠한 경우에도 셋 중 둘이 같지 않도록 보장
+  if (isSubstantiallyDuplicate(action, desire)) {
+    action = '오늘 하루 이미 소망을 온전히 이룬 사람처럼 어깨를 펴고 주변에 따뜻하고 다정한 미소 짓기';
+  }
+  if (isSubstantiallyDuplicate(feelingAnchor, desire) || isSubstantiallyDuplicate(feelingAnchor, action)) {
+    feelingAnchor = '소망이 마침내 눈앞의 현실이 되었을 때 가슴 깊은 곳에서 차오르는 벅찬 안도감과 충만한 환희';
+  }
   let mirrorPhrase = raw.mirrorPhrase?.trim() || fallback.mirrorPhrase;
   if (!mirrorPhrase || mirrorPhrase.includes('고요한 파동') || mirrorPhrase.includes('심신을 정렬') || mirrorPhrase === affirmation || !/[가-힣]/.test(mirrorPhrase)) {
     mirrorPhrase = fallback.mirrorPhrase;
@@ -911,6 +956,31 @@ export function DailySecret() {
         setData(full);
         localStorage.setItem(dayStorageKey('secret_received'), 'true');
         safeLocalStorage.setItem(dayStorageKey('secret_received'), 'true');
+
+        // Cloud snapshot had duplicate fields healed: re-persist to local storage
+        if (
+          actualSecretData?.action === actualSecretData?.desire ||
+          actualSecretData?.action === actualSecretData?.feelingAnchor ||
+          actualSecretData?.desire === actualSecretData?.feelingAnchor ||
+          isSubstantiallyDuplicate(actualSecretData?.action, actualSecretData?.desire) ||
+          isSubstantiallyDuplicate(actualSecretData?.action, actualSecretData?.feelingAnchor) ||
+          isSubstantiallyDuplicate(actualSecretData?.desire, actualSecretData?.feelingAnchor)
+        ) {
+          try {
+            const healedPayload = JSON.stringify({
+              date: today,
+              data: full,
+              updatedAt: full.updatedAt || Date.now(),
+              isReceived: true,
+            });
+            localStorage.setItem(STORAGE_KEY, healedPayload);
+            localStorage.setItem(`orange_daily_secret_${today}`, healedPayload);
+            localStorage.setItem('orange_daily_secret_cache', healedPayload);
+            safeLocalStorage.setItem(STORAGE_KEY, healedPayload);
+            safeLocalStorage.setItem(`orange_daily_secret_${today}`, healedPayload);
+            safeLocalStorage.setItem('orange_daily_secret_cache', healedPayload);
+          } catch (_) {}
+        }
       }
       if (cloudSecret.appliedWish) {
         setWish(cloudSecret.appliedWish);
@@ -985,7 +1055,39 @@ export function DailySecret() {
 
   useEffect(() => {
     const cached = loadCachedSecret();
-    if (cached) setData(cached);
+    if (cached) {
+      setData(cached);
+      // Auto-heal persistence: If stored cache contained duplicate fields across Ask, Receive, Feel, overwrite with healed kit
+      try {
+        const rawJson = localStorage.getItem(STORAGE_KEY);
+        if (rawJson) {
+          const parsed = JSON.parse(rawJson);
+          const rawD = parsed?.data || parsed;
+          if (
+            rawD &&
+            (rawD.action === rawD.desire ||
+              rawD.action === rawD.feelingAnchor ||
+              rawD.desire === rawD.feelingAnchor ||
+              isSubstantiallyDuplicate(rawD.action, rawD.desire) ||
+              isSubstantiallyDuplicate(rawD.action, rawD.feelingAnchor) ||
+              isSubstantiallyDuplicate(rawD.desire, rawD.feelingAnchor))
+          ) {
+            const healedPayload = JSON.stringify({
+              date: todayKey(),
+              data: cached,
+              updatedAt: cached.updatedAt || Date.now(),
+              isReceived: true,
+            });
+            localStorage.setItem(STORAGE_KEY, healedPayload);
+            localStorage.setItem(`orange_daily_secret_${todayKey()}`, healedPayload);
+            localStorage.setItem('orange_daily_secret_cache', healedPayload);
+            safeLocalStorage.setItem(STORAGE_KEY, healedPayload);
+            safeLocalStorage.setItem(`orange_daily_secret_${todayKey()}`, healedPayload);
+            safeLocalStorage.setItem('orange_daily_secret_cache', healedPayload);
+          }
+        }
+      } catch (_) {}
+    }
     const loadedWish = loadWish();
     if (loadedWish) setWish(loadedWish);
     const isApplied = loadWishApplied();
@@ -1265,7 +1367,11 @@ export function DailySecret() {
         '14. gratitudeSeeds: 소원 성취의 주파수를 여는 서로 다른 3가지의 구체적 감사 문장입니다.',
         '15. [언어 절대 준수] 모든 문장은 반드시 100% 품격 있는 한국어로만 작성해야 합니다.',
         '16. [고민/불안의 연금술적 성취 승화] 사용자가 고민이나 불안, 결핍(예: "취업이 안 돼서 걱정돼요", "빚 때문에 힘들어요", "시험에 떨어질까봐 무서워요")을 적었더라도, 결코 고민에 머무르거나 부정적 표현을 쓰지 마십시오. 론다 번의 끌어당김의 법칙(The Secret)에 따라, 그 고민이 완벽하게 해결되고 소망이 눈부시게 성취된 상태(예: 최고의 일터에 당당히 합격함, 모든 부채가 청산되고 풍요로워짐, 시험에 고득점으로 합격함)로 100% 승화시켜 기쁨과 감사의 주파수로 작성하십시오.',
-        '17. ★★★ [Ask(desire) · Receive(action) · Feel(feelingAnchor) 상호 중복 절대 금지] ★★★ Ask는 우주를 향한 청원문, Receive는 오늘 당장의 구체적 행동 실천, Feel은 성취 순간의 감정 닻입니다. 3개 항목은 목적과 문장 형식이 완전히 달라야 하며, 절대로 동일한 문장이나 복사된 어구를 중복 기재하지 마십시오.',
+        '17. [★★★ Ask(desire) · Receive(action) · Feel(feelingAnchor) 3대 기둥 상호 중복 절대 엄금 ★★★]',
+        '   - desire: 우주를 향해 올리는 품격 있는 청원문 1문장 (예: "우주여, ...의 소망이 가장 지혜롭고 아름다운 방식으로 피어나게 하옵소서")',
+        '   - action: 이미 소망을 이룬 사람처럼 오늘 당장 몸으로 실행할 수 있는 일상/신체 행동 1문장 (예: "오늘 하루 가벼운 발걸음으로 산책하며 주변에 미소 짓기")',
+        '   - feelingAnchor: 소원이 이미 이루어졌을 때 가슴 깊은 곳에서 차오르는 벅찬 기쁨과 안도감의 감정 닻 1문장 (예: "...할 때 가슴 가득 차오르는 벅찬 안도감과 충만한 환희")',
+        '   - [경고]: desire, action, feelingAnchor 및 affirmation, reflection은 서로 문장 구조, 어미, 의미가 완전히 달라야 하며, 절대 서로의 문장을 복사하거나 같게 작성하지 마십시오.',
         '',
         hasWish
           ? [

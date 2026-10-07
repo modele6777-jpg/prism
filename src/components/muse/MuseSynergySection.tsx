@@ -9,6 +9,7 @@ import { useApp, getPersistentUserProfile } from '@/contexts/AppContext';
 import { invokeLLM } from '@/lib/ai';
 import { recordPrismFeature } from '@/lib/prismOmniSync';
 import { playTTS, stopTTS, useTTSActive } from '@/utils/tts';
+import { getTodayDateKey } from '@/lib/dailyCache';
 import {
   getSafeArtworkUrl,
   buildPollinationsArtUrl,

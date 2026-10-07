@@ -1,13 +1,13 @@
 {
   "name": "luckey",
-  "version": "1.4.197",
-  "summary": "에셔 루프 해결 및 순환 셔터 렌더링 기반 원형(Circle) 타로 스프레드 컴포넌트(CircularTarotSpread) 신규 구축",
-  "builtAt": "2026-10-07T12:50:27.187Z",
+  "version": "1.4.198",
+  "summary": "오늘의 시크릿 Ask(요청)·Receive(실천)·Feel(감정 닻) 중복 출력 오류 완전 해소 및 3대 기둥 분리 강화",
+  "builtAt": "2026-10-07T13:33:22.142Z",
   "items": [
-    "원형 타로 스프레드(CircularTarotSpread.tsx) 신규 제작: N장의 카드가 원형으로 균등하게 방사형 배치되며 서로 일정한 각도로 겹치도록 정밀 각도 및 동적 최적 반지름 연산 적용",
-    "에셔 루프(Escher Loop) 모순 해결 순환 셔터 분할 렌더링 구현: 0번부터 N-2번 카드까지는 순차적으로 z-index를 올려 배치하고, 마지막 N번째 카드는 형태 변형 없이 CSS clip-path로 좌우 50% 분할(0.5% 서브픽셀 오버랩 브릿지)하여 왼쪽 절반은 N-1번 카드를 덮는 최상위 레이어, 오른쪽 절반은 1번 카드 아래로 파고드는 최하위 레이어로 동시 렌더링하여 모든 카드가 한쪽 면만 균일하게 노출되도록 완벽 구현",
-    "인터랙티브 리프트 & 포커스 효과: 마우스 호버 및 터치 시 선택 카드가 래디얼 방향으로 부드럽게 떠오르며(translateY 리프트 + scale 1.09) z-index 9999로 승격되어 황금빛 아우라와 함께 전체 형태가 온전히 부각되는 반응형 인터랙션 제공",
-    "앞/뒷면 전환, 천문 자이로스코프 자전 및 X-Ray 디버그 모드 지원: 카드 앞면 일러스트 및 20종 테마 뒷면(TarotCardBackFace) 원클릭 토글, 자전 애니메이션, 에셔 분할 절개선을 시각적으로 관찰할 수 있는 X-Ray 트릭 뷰 및 전용 모달(CircularTarotSpreadModal) 연동 완비"
+    "오렌지 오늘의 시크릿 결과 중복 문제 원천 해결: generateMockFromZod 스키마 폴백 시 '소원' 키워드가 action(작은 실천)과 feelingAnchor(이미 받은 느낌)의 Zod description에 포함되어 모든 기둥에 동일한 문장이 유입되던 탐욕 매칭 버그를 완벽 분리 수정",
+    "ensureFullKit 3대 기둥 사전 감지 및 자동 치유(Auto-Healing) 도입: Ask(desire: 우주 청원문), Receive(action: 일상 신체 실천), Feel(feelingAnchor: 감정 닻) 간의 2-gram Jaccard 유사도 분석을 통해 필드 간 중복 발생 시 고유한 실천/감정 앵커로 즉시 분리 치유",
+    "로컬 스토리지 & 클라우드 상태 자동 정화: 기존에 중복 문장으로 저장되어 있던 dirty 캐시가 로드될 때 감지하여 각 기둥별 올바른 문장으로 즉시 자동 복구 및 재저장되도록 마운트 및 동기화 로직 보강",
+    "시크릿 AI 시스템 프롬프트 엄격 규칙 수립: LLM 생성 단계에서 Ask, Receive, Feel이 각기 다른 문장 구조, 어미, 역할을 유지하며 절대 문장을 상호 복제하지 않도록 규칙 17 신설"
   ],
   "author": "Antigravity AI Agent",
   "buildEnvironment": "cloud-run"
