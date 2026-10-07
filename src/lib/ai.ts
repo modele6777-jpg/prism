@@ -1159,11 +1159,14 @@ function generateMockFromZod(schema: z.ZodTypeAny, parentKey: string = "", error
   if (keyLower.includes("affirmation") || desc.includes("확언")) {
     return "나는 내 안의 모든 의심을 내려놓고 우주의 무한한 풍요와 조화 속에서 원하는 모든 소망을 이미 온전히 성취했습니다.";
   }
-  if (keyLower.includes("desire") || desc.includes("소원")) {
-    return "우주여, 나의 간절한 소망이 가장 아름답고 지혜로운 방식으로 온전히 이루어지게 하옵소서.";
+  if (keyLower.includes("action") || desc.includes("실천") || desc.includes("행동")) {
+    return "오늘 하루 모든 긴장을 내려놓고, 이미 소원을 이룬 사람의 여유로운 미소로 주변에 따뜻한 친절 건네기";
   }
-  if (keyLower.includes("feelinganchor") || keyLower.includes("anchor") || desc.includes("느낌")) {
+  if (keyLower.includes("feelinganchor") || keyLower.includes("feeling") || keyLower.includes("anchor") || (desc.includes("느낌") && !desc.includes("청원"))) {
     return "가슴 깊은 곳에서 샘솟는 절대적인 안도감과 벅찬 환희의 감격";
+  }
+  if (keyLower.includes("desire") || (desc.includes("소원") && !desc.includes("실천") && !desc.includes("행동") && !desc.includes("느낌"))) {
+    return "우주여, 나의 간절한 소망이 가장 아름답고 지혜로운 방식으로 온전히 이루어지게 하옵소서.";
   }
   if (keyLower.includes("mirrorphrase") || desc.includes("거울")) {
     return "너는 이미 온 우주의 축복을 온전히 누릴 자격이 있는 눈부신 존재다.";

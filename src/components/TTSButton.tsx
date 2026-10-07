@@ -26,13 +26,13 @@ export const TTSButton: React.FC<TTSButtonProps> = ({ text, voice = 'Kore', clas
     const timer = setTimeout(() => {
       if (cleanText.length > 130) {
         const firstSentence = cleanText.match(/[^.!?。！？\n]+[.!?。！？\n]?/)?.[0] || cleanText.slice(0, 100);
-        prefetchTTS(firstSentence, voice, emotion, undefined, speed);
+        prefetchTTS(firstSentence, voice, emotion);
       } else {
-        prefetchTTS(cleanText, voice, emotion, undefined, speed);
+        prefetchTTS(cleanText, voice, emotion);
       }
     }, 200);
     return () => clearTimeout(timer);
-  }, [cleanText, voice, emotion, speed]);
+  }, [cleanText, voice, emotion]);
 
   useEffect(() => {
     const unsubscribe = subscribeTTS((state) => {
@@ -61,9 +61,9 @@ export const TTSButton: React.FC<TTSButtonProps> = ({ text, voice = 'Kore', clas
     // If the text is long (e.g. Tarot results, comprehensive guide, multi-sentence reading),
     // stream smoothly in chunked sentences to prevent browser cutoffs, skips, and API timeouts.
     if (cleanText.length > 130 || cleanText.includes('\n')) {
-      playTTSInChunks(cleanText, voice, 140, emotion, speed);
+      playTTSInChunks(cleanText, voice, 140, emotion);
     } else {
-      playTTS(cleanText, voice, false, emotion, undefined, false, undefined, undefined, speed);
+      playTTS(cleanText, voice, false, emotion);
     }
   };
 

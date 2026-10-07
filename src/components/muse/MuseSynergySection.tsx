@@ -37,19 +37,42 @@ export function MuseSynergySection() {
     return getMasterAllArtworks(selectedMaster);
   }, [selectedMaster]);
 
-  // 1-1. 거장의 세부 예술작품 선택 상태 (모든 작품 지원)
+  // 1-1. 거장의 세부 예술작품 선택 상태 (항시 랜덤 선정, 목록 숨김)
   const [selectedArtwork, setSelectedArtwork] = useState<MasterArtwork>(() => {
     const initialList = getMasterAllArtworks(MASTERS_CATALOG[0]);
-    return initialList[0] || (MASTERS_CATALOG[0] as unknown as MasterArtwork);
+    const randomIndex = Math.floor(Math.random() * initialList.length);
+    return initialList[randomIndex] || (MASTERS_CATALOG[0] as unknown as MasterArtwork);
   });
 
   const [userCreativeDilemma, setUserCreativeDilemma] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
+  // 🌟 오늘의 데일리아트 필수 확인 여부 감지 (고민 입력 및 결과 수신 전제 조건)
+  const [isDailyArtConfirmed, setIsDailyArtConfirmed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(`prism_daily_art_confirmed_${getTodayDateKey()}`) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    const handleDailyArtConfirmed = () => {
+      try {
+        setIsDailyArtConfirmed(localStorage.getItem(`prism_daily_art_confirmed_${getTodayDateKey()}`) === 'true');
+      } catch {
+        setIsDailyArtConfirmed(false);
+      }
+    };
+    window.addEventListener('prism:daily_art_confirmed', handleDailyArtConfirmed);
+    return () => window.removeEventListener('prism:daily_art_confirmed', handleDailyArtConfirmed);
+  }, []);
+
   // 2. 동적 마스터클래스 대화 데이터 (초기값도 거장별/작품별/날짜별 동적 계산)
   const initialDialogue = useMemo(() => {
     const list = getMasterAllArtworks(MASTERS_CATALOG[0]);
-    return getMasterpieceDynamicDialogue(MASTERS_CATALOG[0], '', userProfile, undefined, list[0]);
+    const initArt = selectedArtwork || list[0];
+    return getMasterpieceDynamicDialogue(MASTERS_CATALOG[0], '', userProfile, undefined, initArt);
   }, []);
 
   const [dialogueData, setDialogueData] = useState<MasterpieceDialogueData>(initialDialogue);
@@ -196,39 +219,52 @@ export function MuseSynergySection() {
     }
   };
 
-  // 거장 선택 시: 거장의 첫 번째 예술작품 및 고유 대화 데이터로 즉시 전환
+  // 거장 선택 시: 거장의 전체 수록 예술작품 중 1편을 항시 랜덤으로 자동 선정 및 즉시 전환
   const handleSelectMaster = (master: MasterItem) => {
     setSelectedMaster(master);
     const artworks = getMasterAllArtworks(master);
-    const firstArt = artworks[0] || (master as unknown as MasterArtwork);
-    setSelectedArtwork(firstArt);
+    const randomIndex = Math.floor(Math.random() * artworks.length);
+    const randomArt = artworks[randomIndex] || (master as unknown as MasterArtwork);
+    setSelectedArtwork(randomArt);
     setCustomArtworkUrl('');
     setIsAiGenerated(false);
     setImageFallbackIndex(0);
     setArtworkLoadError(false);
     setLoadingArtwork(true);
 
-    const freshDialogue = getMasterpieceDynamicDialogue(master, userCreativeDilemma, userProfile, undefined, firstArt);
+    const freshDialogue = getMasterpieceDynamicDialogue(master, userCreativeDilemma, userProfile, undefined, randomArt);
     setDialogueData(freshDialogue);
     // 거장을 새로 선택했을 때도 생성 버튼을 눌러야 결과가 생성되도록 초기화
     setIsSynthesized(false);
   };
 
-  // 세부 예술작품 선택 시: 해당 작품의 원작 이미지, 통찰, 조언으로 즉시 연동
-  const handleSelectArtwork = (art: MasterArtwork) => {
-    setSelectedArtwork(art);
+  // 🎲 다른 작품 랜덤 추천: 거장의 모든 수록 작품 풀에서 무작위 다른 대표작으로 전환 (목록 비노출)
+  const handleRollRandomArtwork = () => {
+    const artworks = getMasterAllArtworks(selectedMaster);
+    if (artworks.length <= 1) return;
+    const currentId = selectedArtwork?.id || selectedArtwork?.piece;
+    const otherArtworks = artworks.filter((a) => (a.id || a.piece) !== currentId);
+    const pool = otherArtworks.length > 0 ? otherArtworks : artworks;
+    const nextArt = pool[Math.floor(Math.random() * pool.length)];
+    setSelectedArtwork(nextArt);
     setCustomArtworkUrl('');
     setIsAiGenerated(false);
     setImageFallbackIndex(0);
     setArtworkLoadError(false);
     setLoadingArtwork(true);
 
-    const freshDialogue = getMasterpieceDynamicDialogue(selectedMaster, userCreativeDilemma, userProfile, undefined, art);
+    const freshDialogue = getMasterpieceDynamicDialogue(selectedMaster, userCreativeDilemma, userProfile, undefined, nextArt);
     setDialogueData(freshDialogue);
   };
 
   // 거장의 1:1 심층 마스터클래스 AI 생성 시작 (선택된 세부 작품 반영)
   const handleStartMasterclass = async () => {
+    // 🌟 오늘의 데일리아트 필수 확인 가드: 미확인 시 데일리아트 탭으로 안내
+    if (!isDailyArtConfirmed) {
+      window.dispatchEvent(new CustomEvent('prism-tab-change', { detail: { tab: 'artRecommendation' } }));
+      return;
+    }
+
     setIsLoading(true);
 
     const rawNick = userProfile?.basic?.nickname?.trim() || userProfile?.basic?.name?.trim();
@@ -447,86 +483,100 @@ export function MuseSynergySection() {
           })}
         </div>
 
-        {/* 2. 거장의 전체 예술작품 컬렉션 전체 보기 및 선택 */}
-        <div className="space-y-3 pt-2">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-            <label className="text-xs font-bold text-amber-300 flex items-center gap-2 font-mono uppercase tracking-wider">
-              <Sparkles size={15} className="text-amber-400" />
-              <span>2. 〈{selectedMaster.name.split('(')[0].trim()}〉의 전체 예술작품 컬렉션 ({availableArtworks.length}작품 수록)</span>
+        {/* 2. 거장의 예술작품: 항시 랜덤 설정 (목록 숨김) */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-amber-500/10 border border-amber-500/25 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
+              <label className="text-xs font-bold text-amber-300 font-mono uppercase tracking-wider">
+                오늘의 선정 명작 · 항시 랜덤 큐레이션 (총 {availableArtworks.length}작품 수록)
+              </label>
+            </div>
+            <button
+              type="button"
+              onClick={handleRollRandomArtwork}
+              title="거장의 다른 대표작 랜덤 추천받기"
+              className="self-start sm:self-auto px-3 py-1.5 rounded-xl border border-amber-400/30 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
+            >
+              <RefreshCw size={12} className="text-amber-400" />
+              <span>다른 작품 랜덤 추천</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-3.5 p-3 sm:p-3.5 rounded-xl bg-black/40 border border-white/10">
+            {selectedArtwork.imageUrl ? (
+              <div className="w-14 h-14 rounded-xl overflow-hidden bg-black/50 border border-white/10 shrink-0 relative">
+                <img
+                  src={getSafeArtworkUrl(selectedArtwork.imageUrl)}
+                  alt={selectedArtwork.piece}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLElement).style.display = 'none';
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="w-14 h-14 rounded-xl bg-white/5 border border-white/10 shrink-0 flex items-center justify-center text-xl text-white/80">
+                {selectedMaster.category === 'music' ? '🎵' : selectedMaster.category === 'poem' ? '📜' : selectedMaster.category === 'quote' ? '💬' : '🎨'}
+              </div>
+            )}
+
+            <div className="min-w-0 flex-1 space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                  {selectedMaster.category === 'music' ? '명곡' : selectedMaster.category === 'poem' ? '명시' : selectedMaster.category === 'quote' ? '명언' : '명화'} · 랜덤 선정
+                </span>
+                <span className="text-[10px] text-white/50 font-sans truncate">
+                  {selectedArtwork.originalMuseum || selectedMaster.title}
+                </span>
+              </div>
+              <h5 className="text-sm font-bold text-white truncate leading-snug">
+                {selectedArtwork.piece.split('(')[0].trim()}
+              </h5>
+              <p className="text-[11px] text-white/60 truncate font-serif">
+                {selectedArtwork.medium}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {!isDailyArtConfirmed ? (
+          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-950/60 via-indigo-950/40 to-black border border-blue-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-xs font-bold text-blue-300">
+                <Sparkles size={14} className="text-yellow-400 shrink-0" />
+                <span>오늘의 데일리아트 필수 확인 필요</span>
+              </div>
+              <p className="text-[11px] text-white/70 leading-relaxed font-sans">
+                거장에게 창작 고민을 입력하고 1:1 맞춤 조언을 받으시려면, 먼저 오늘 큐레이션된 <strong>오늘의 데일리아트(명곡·명시·명화)</strong>를 확인해 주세요.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('prism-tab-change', { detail: { tab: 'artRecommendation' } }));
+              }}
+              className="shrink-0 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-blue-900/30 cursor-pointer active:scale-95 transition-all"
+            >
+              <Sparkles size={13} className="text-yellow-300" />
+              <span>오늘의 데일리아트 확인하러 가기</span>
+            </button>
+          </div>
+        ) : (
+          <div>
+            <label className="block text-[11px] text-white/50 mb-2 font-medium">
+              거장에게 조언받고 싶은 현재의 창작 고민이나 인생의 막막함을 적어주세요 (선택):
             </label>
-            <span className="text-[10px] text-white/50 font-sans">
-              마스터클래스를 진행할 작품을 선택하세요
-            </span>
+            <input
+              type="text"
+              value={userCreativeDilemma}
+              onChange={(e) => setUserCreativeDilemma(e.target.value)}
+              placeholder="예: 새로운 아이디어가 떠오르지 않고 완성할 자신감이 떨어졌어요..."
+              className="w-full px-4 py-3.5 rounded-2xl bg-black/40 border border-white/10 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-blue-400/60 font-sans"
+            />
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-            {availableArtworks.map((art, idx) => {
-              const isArtSelected = selectedArtwork.id === art.id || selectedArtwork.piece === art.piece;
-              return (
-                <button
-                  key={art.id || `${art.piece}_${idx}`}
-                  type="button"
-                  onClick={() => handleSelectArtwork(art)}
-                  className={`relative overflow-hidden p-3 rounded-2xl border text-left flex items-center gap-3 transition-all cursor-pointer group ${
-                    isArtSelected
-                      ? 'bg-amber-500/20 border-amber-400 text-white shadow-[0_0_20px_rgba(245,158,11,0.25)] scale-[1.01]'
-                      : 'bg-white/[0.03] border-white/10 text-white/70 hover:bg-white/[0.07] hover:text-white hover:border-white/20'
-                  }`}
-                >
-                  {art.imageUrl ? (
-                    <div className="w-12 h-12 rounded-xl overflow-hidden bg-black/40 border border-white/10 shrink-0 relative">
-                      <img
-                        src={getSafeArtworkUrl(art.imageUrl)}
-                        alt={art.piece}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        loading="lazy"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLElement).style.display = 'none';
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 shrink-0 flex items-center justify-center text-lg text-white/80">
-                      {selectedMaster.category === 'music' ? '🎵' : selectedMaster.category === 'poem' ? '📜' : selectedMaster.category === 'quote' ? '💬' : '🎨'}
-                    </div>
-                  )}
-
-                  <div className="min-w-0 flex-1 space-y-0.5">
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/10 text-amber-300 font-bold truncate">
-                        {selectedMaster.category === 'music' ? '명곡' : selectedMaster.category === 'poem' ? '명시' : selectedMaster.category === 'quote' ? '명언' : '명화'} #{idx + 1}
-                      </span>
-                      {isArtSelected && (
-                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-400 text-zinc-950 font-bold font-mono shrink-0 shadow-sm">
-                          선택됨 ✓
-                        </span>
-                      )}
-                    </div>
-                    <h5 className="text-xs font-bold text-white truncate leading-snug">
-                      {art.piece.split('(')[0].trim()}
-                    </h5>
-                    <p className="text-[10px] text-white/50 truncate font-serif">
-                      {art.medium}
-                    </p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-[11px] text-white/50 mb-2 font-medium">
-            거장에게 조언받고 싶은 현재의 창작 고민이나 인생의 막막함을 적어주세요 (선택):
-          </label>
-          <input
-            type="text"
-            value={userCreativeDilemma}
-            onChange={(e) => setUserCreativeDilemma(e.target.value)}
-            placeholder="예: 새로운 아이디어가 떠오르지 않고 완성할 자신감이 떨어졌어요..."
-            className="w-full px-4 py-3.5 rounded-2xl bg-black/40 border border-white/10 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-blue-400/60 font-sans"
-          />
-        </div>
+        )}
 
         <button
           onClick={handleStartMasterclass}
@@ -537,6 +587,11 @@ export function MuseSynergySection() {
             <>
               <RefreshCw size={18} className="animate-spin text-white" />
               <span>〈{selectedArtwork?.piece?.split('(')[0]?.trim() || selectedMaster.name.split('(')[0]}〉 1:1 맞춤 영감 마스터클래스 생성 중...</span>
+            </>
+          ) : !isDailyArtConfirmed ? (
+            <>
+              <Sparkles size={18} className="text-yellow-300" />
+              <span>오늘의 데일리아트 먼저 확인하고 마스터클래스 시작하기</span>
             </>
           ) : (
             <>
@@ -591,52 +646,24 @@ export function MuseSynergySection() {
             </div>
           </div>
 
-          {/* 거장의 전체 작품 빠른 둘러보기 & 실시간 전환 바 */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-white/[0.03] border border-white/10 space-y-2.5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
-                <Sparkles size={12} className="text-amber-400" />
-                〈{selectedMaster.name.split('(')[0].trim()}〉의 전체 작품 둘러보기 & 빠른 전환 ({availableArtworks.length}작품)
-              </span>
-              <span className="text-[10px] text-white/40 font-sans">
-                클릭 시 해당 작품의 원작/플레이어/통찰로 즉시 전환
+          {/* 선정된 명작 정보 및 다른 작품 랜덤 전환 바 (목록 숨김) */}
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-white/[0.03] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 text-xs text-white/80">
+              <Sparkles size={14} className="text-amber-400 shrink-0" />
+              <span>
+                현재 선정 명작: <strong className="text-white font-bold">{selectedArtwork.piece.split('(')[0].trim()}</strong>
+                <span className="text-white/40 ml-1.5 font-sans text-[11px]">({selectedMaster.name.split('(')[0].trim()}의 {availableArtworks.length}개 대표작 중 항시 랜덤 큐레이션)</span>
               </span>
             </div>
-
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
-              {availableArtworks.map((art, idx) => {
-                const isCurrentArt = selectedArtwork.id === art.id || selectedArtwork.piece === art.piece;
-                return (
-                  <button
-                    key={`quick_${art.id || idx}`}
-                    type="button"
-                    onClick={() => handleSelectArtwork(art)}
-                    className={`shrink-0 px-3.5 py-2 rounded-xl border text-xs font-medium flex items-center gap-2 transition-all cursor-pointer ${
-                      isCurrentArt
-                        ? 'bg-amber-500/25 border-amber-400 text-white shadow-[0_0_15px_rgba(245,158,11,0.3)] font-bold scale-[1.02]'
-                        : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white'
-                    }`}
-                  >
-                    {art.imageUrl ? (
-                      <img
-                        src={getSafeArtworkUrl(art.imageUrl)}
-                        alt=""
-                        className="w-5 h-5 rounded-md object-cover"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLElement).style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <span className="text-sm">
-                        {selectedMaster.category === 'music' ? '🎵' : selectedMaster.category === 'poem' ? '📜' : selectedMaster.category === 'quote' ? '💬' : '🎨'}
-                      </span>
-                    )}
-                    <span className="truncate max-w-[150px]">{art.piece.split('(')[0].trim()}</span>
-                    {isCurrentArt && <span className="text-amber-300 text-[10px] font-bold">✓</span>}
-                  </button>
-                );
-              })}
-            </div>
+            <button
+              type="button"
+              onClick={handleRollRandomArtwork}
+              title="거장의 다른 대표작 랜덤 추천받기"
+              className="self-start sm:self-auto px-3.5 py-1.5 rounded-xl border border-amber-400/30 bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
+            >
+              <RefreshCw size={12} className="text-amber-400" />
+              <span>다른 작품 랜덤 추천</span>
+            </button>
           </div>
 
           {/* 🌟 명곡 / 명시 / 명언 / 명화 분야별 맞춤 감상 섹션 */}
@@ -1044,7 +1071,7 @@ export function MuseSynergySection() {
           <div className="space-y-1.5 max-w-md">
             <h4 className="text-base font-bold text-white">마스터클래스 1:1 대화 대기</h4>
             <p className="text-xs text-white/50 leading-relaxed font-sans">
-              마스터클래스를 진행할 거장과 원하는 대표작(총 {availableArtworks.length}작품 수록)을 선택하고 필요시 창작 고민을 입력한 후, 상단의 <strong>〈{selectedMaster.name.split('(')[0].trim()} × '{selectedArtwork?.piece?.split('(')[0]?.trim() || selectedMaster.piece.split('(')[0]}' 1:1 맞춤 영감 마스터클래스 대화〉 시작하기</strong> 버튼을 누르면 1:1 조언과 명작 통찰이 펼쳐집니다.
+              마스터클래스를 진행할 거장을 선택하고(총 {availableArtworks.length}개 대표작 중 항시 랜덤 선정), 필요시 창작 고민을 입력한 후, 상단의 <strong>〈{selectedMaster.name.split('(')[0].trim()} × '{selectedArtwork?.piece?.split('(')[0]?.trim() || selectedMaster.piece.split('(')[0]}' 1:1 맞춤 영감 마스터클래스 대화〉 시작하기</strong> 버튼을 누르면 1:1 조언과 명작 통찰이 펼쳐집니다.
             </p>
           </div>
         </div>

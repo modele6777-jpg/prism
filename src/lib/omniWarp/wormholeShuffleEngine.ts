@@ -60,7 +60,7 @@ export const CORE_WORMHOLE_DESTINATIONS: WormholeDestinationItem[] = [
   },
   {
     id: 'trinity-daily',
-    name: '사주 만세력',
+    name: 'SAJU',
     subName: '영혼의 설계도 사주 오행 & 만세력 리포트',
     path: '/trinity?tab=destiny',
     icon: '🧭',

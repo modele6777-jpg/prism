@@ -80,6 +80,7 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
   }
 
   let lang = "ko-KR";
+  // 🌟 모든 TTS를 1.0 배속(표준 낭독 속도 rate: "+0%")으로 엄격 고정
   let rate = "+0%";
   let pitch = "+0Hz";
 
@@ -88,13 +89,7 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
     voiceName = isMaleVoice ? "en-US-GuyNeural" : "en-US-AriaNeural";
   }
 
-  // 1. Explicit rate/speed setting override
-  if (options.rate) {
-    rate = options.rate;
-  } else if (typeof speed === "number" && !isNaN(speed) && speed > 0) {
-    const pct = Math.round((speed - 1.0) * 100);
-    rate = `${pct >= 0 ? "+" : ""}${pct}%`;
-  } else if (emotion) {
+  if (emotion) {
     const emo = String(emotion).trim().toLowerCase();
     const meditationList = ["명상", "meditation", "호흡", "breathing", "방하착", "이완", "마인드풀", "zen", "relaxation"];
     const slowHealingList = ["공감", "위로", "치유", "차분", "평온", "슬픔", "따뜻", "empathy", "comfort", "healing", "calm", "peace", "sadness", "sad", "warm"];
@@ -102,28 +97,13 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
     const mysteryTarotList = ["신비", "진지", "경고", "몽환", "mystery", "serious", "warning", "dreamy", "mystic"];
 
     if (meditationList.some((item) => emo.includes(item))) {
-      // 🌟 1분 명상 및 호흡 가이드에 맞춘 안정적이고 차분한 낭독 템포
-      rate = "-6%";
       pitch = voiceName.includes("SunHi") ? "-0.8Hz" : "-1Hz";
     } else if (slowHealingList.some((item) => emo.includes(item))) {
-      // 🌿 따뜻함/공감/치유 낭독: 느려지지 않고 또렷하며 편안한 표준 낭독 템포 유지
-      rate = "+0%";
       pitch = voiceName.includes("SunHi") ? "-0.4Hz" : "-0.6Hz";
     } else if (brightJoyList.some((item) => emo.includes(item))) {
-      rate = "+4%";
       pitch = voiceName.includes("SunHi") ? "+1.5Hz" : "+1.8Hz";
     } else if (mysteryTarotList.some((item) => emo.includes(item))) {
-      rate = "+0%";
       pitch = "-0.5Hz";
-    }
-  }
-
-  // 2. Automatic semantic slowdown for meditation guidance if rate is still default
-  if (rate === "+0%" && !emotion) {
-    const cleanLower = cleanText.toLowerCase();
-    if (/명상|호흡|들숨|날숨|숨결|숨을|들이쉬|내쉬|방하착|1분 명상|60초 호흡/.test(cleanLower)) {
-      rate = "-6%";
-      pitch = voiceName.includes("SunHi") ? "-0.8Hz" : "-1Hz";
     }
   }
 
@@ -218,10 +198,9 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
       const ai = new GoogleGenAI({ apiKey: geminiApiKey });
       const selectedVoice = isMaleVoice ? "Fenrir" : "Kore";
 
-      const isSlowMeditation = rate.startsWith("-") || (emotion && /명상|호흡|치유|평온|calm|meditation/.test(emotion));
       const prompt = isMaleVoice
-        ? `Read the following text aloud in Korean with a ${isSlowMeditation ? "calm, gentle, slow, and serene meditative" : "natural, clear"} male voice:\n\n${cleanText}`
-        : `Read the following text aloud in Korean with a ${isSlowMeditation ? "warm, unhurried, gentle, and peaceful meditative" : "warm, gentle, clear"} female voice:\n\n${cleanText}`;
+        ? `Read the following text aloud in Korean at natural standard 1.0x pace with a clear, comfortable male voice:\n\n${cleanText}`
+        : `Read the following text aloud in Korean at natural standard 1.0x pace with a warm, clear, comfortable female voice:\n\n${cleanText}`;
 
       const geminiResponse = await Promise.race([
         ai.models.generateContent({

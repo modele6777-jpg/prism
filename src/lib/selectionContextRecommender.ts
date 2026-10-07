@@ -51,7 +51,7 @@ export const PRISM_ALL_APP_DESTINATIONS: PrismMenuDestination[] = [
   // 2. 사주 만세력 리포트
   {
     id: 'trinity_saju',
-    name: '사주 만세력',
+    name: 'SAJU',
     subName: '음양오행 운명 리포트',
     path: '/trinity?tab=destiny',
     basePath: '/trinity',

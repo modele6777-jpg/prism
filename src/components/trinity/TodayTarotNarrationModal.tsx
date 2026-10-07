@@ -394,17 +394,9 @@ export function TodayTarotNarrationModal({
                 </div>
               </div>
 
-              {/* Full Markdown 5-Step Reading Body */}
-              <div
-                className="text-white/85 text-sm leading-relaxed relative z-10 w-full font-sans"
-                style={{ wordBreak: 'keep-all' }}
-              >
-                <Streamdown immediate>{narrationData.cleanDiagnosis || narrationData.rawDiagnosis}</Streamdown>
-              </div>
-
-              {/* ✨ 리딩 하단 핵심 3줄 요약 강조 그래픽 카드 UI */}
+              {/* 🌟 1. 핵심 3줄 요약 첫 칸 고정 렌더링 (원클릭 요약 TTS 지원) */}
               {narrationData.conciseSummaryBullets.length > 0 && (
-                <div className="pt-2">
+                <div className="pt-1 pb-3">
                   <TarotSummaryGraphicCard
                     bullets={narrationData.conciseSummaryBullets}
                     readingText={narrationData.cleanDiagnosis || narrationData.rawDiagnosis}
@@ -415,6 +407,14 @@ export function TodayTarotNarrationModal({
                   />
                 </div>
               )}
+
+              {/* Full Markdown 5-Step Reading Body */}
+              <div
+                className="text-white/85 text-sm leading-relaxed relative z-10 w-full font-sans"
+                style={{ wordBreak: 'keep-all' }}
+              >
+                <Streamdown immediate>{narrationData.cleanDiagnosis || narrationData.rawDiagnosis}</Streamdown>
+              </div>
 
               {/* Planetary / Frequency Harmony Section */}
               <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10 space-y-2 mt-2">

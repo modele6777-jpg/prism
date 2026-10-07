@@ -32,12 +32,12 @@ export function LucyAuraLoader({
     >
       {/* Soft Ambient Emerald Glow */}
       <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-        <div className="w-64 h-64 rounded-full bg-emerald-500/8 blur-3xl" />
+        <div className="w-48 h-48 sm:w-64 sm:h-64 rounded-full bg-emerald-500/8 blur-3xl" />
       </div>
 
       <div className="relative z-10 flex flex-col items-center text-center">
         {/* Minimal Clover Breath Emblem */}
-        <div className="relative flex items-center justify-center mb-6">
+        <div className="relative flex items-center justify-center mb-4 sm:mb-6">
           {/* Subtle Outer Hairline Pulse Ring */}
           <motion.div
             animate={{
@@ -49,7 +49,7 @@ export function LucyAuraLoader({
               repeat: Number.POSITIVE_INFINITY,
               ease: 'easeInOut',
             }}
-            className="absolute w-20 h-20 rounded-full border border-emerald-400/20"
+            className="absolute w-16 h-16 sm:w-20 sm:h-20 rounded-full border border-emerald-400/20"
           />
 
           {/* Minimal Clover Geometry Container */}
@@ -62,13 +62,13 @@ export function LucyAuraLoader({
               repeat: Number.POSITIVE_INFINITY,
               ease: 'easeInOut',
             }}
-            className="w-14 h-14 rounded-2xl bg-emerald-950/40 border border-emerald-500/20 flex items-center justify-center shadow-lg shadow-emerald-950/60 backdrop-blur-sm"
+            className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-emerald-950/40 border border-emerald-500/20 flex items-center justify-center shadow-lg shadow-emerald-950/60 backdrop-blur-sm"
           >
             <svg
               viewBox="0 0 32 32"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
-              className="w-7 h-7 text-emerald-400"
+              className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-400"
             >
               {/* Minimal Organic Four Leaf Petals */}
               <g stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -88,12 +88,12 @@ export function LucyAuraLoader({
         </div>
 
         {/* Minimal Lucy Wordmark */}
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-xs font-semibold tracking-[0.3em] uppercase text-emerald-300 font-sans">
+        <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
+          <span className="text-[11px] sm:text-xs font-semibold tracking-[0.3em] uppercase text-emerald-300 font-sans">
             Lucy
           </span>
           <span className="w-1 h-1 rounded-full bg-emerald-400/50" />
-          <span className="text-[10px] tracking-[0.2em] uppercase text-emerald-400/60 font-mono">
+          <span className="text-[9px] sm:text-[10px] tracking-[0.2em] uppercase text-emerald-400/60 font-mono">
             Bestie
           </span>
         </div>
@@ -102,20 +102,20 @@ export function LucyAuraLoader({
         <motion.p
           animate={{ opacity: [0.65, 0.95, 0.65] }}
           transition={{ duration: 2.4, repeat: Number.POSITIVE_INFINITY, ease: 'easeInOut' }}
-          className="text-xs sm:text-[13px] font-medium tracking-wide text-emerald-100/90 font-sans max-w-xs break-keep"
+          className="text-xs sm:text-[13px] font-medium tracking-wide text-emerald-100/90 font-sans max-w-xs break-keep px-4"
         >
           {message}
         </motion.p>
 
         {/* Minimal Submessage */}
         {subMessage && (
-          <p className="text-[10px] tracking-[0.2em] text-emerald-500/50 font-mono mt-1 uppercase">
+          <p className="text-[9px] sm:text-[10px] tracking-[0.2em] text-emerald-500/50 font-mono mt-1 uppercase">
             {subMessage}
           </p>
         )}
 
         {/* Minimal Hairline Progress Indicator */}
-        <div className="w-28 sm:w-32 h-[1.5px] bg-white/10 rounded-full mt-4 overflow-hidden relative">
+        <div className="w-24 sm:w-32 h-[1.5px] bg-white/10 rounded-full mt-3 sm:mt-4 overflow-hidden relative">
           <motion.div
             animate={{
               x: ['-100%', '100%'],

@@ -15,7 +15,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { getTodayDateKey } from "@/lib/dailyCache";
-import { playTTS, playTTSInChunks, stopTTS, pauseTTS, resumeTTS, subscribeTTS, prefetchTTS } from "@/utils/tts";
+import { playTTS, playTTSInChunks, stopTTS, pauseTTS, resumeTTS, subscribeTTS, prefetchTTS, prefetchTTSChunks } from "@/utils/tts";
 import { getTTSAudioElement, isTTSAudioPlaying } from "@/lib/audio";
 
 type PlayerPhase = "idle" | "preparing" | "speaking" | "paused" | "done" | "error";
@@ -156,8 +156,8 @@ export function MuseDocentAudio({ artwork }: MuseDocentAudioProps) {
       setParagraphs(parsed);
       persistScript(narration);
 
-      // Pre-warm audio in background
-      prefetchTTS(narration, "Kore", "차분");
+      // Pre-warm audio in background (초반 청크들을 미리 로드하여 클릭 즉시 1번째 문장부터 매끄럽게 시작)
+      prefetchTTSChunks(narration, "Kore", 150, "차분");
       return parsed;
     },
     [persistScript],
@@ -170,7 +170,7 @@ export function MuseDocentAudio({ artwork }: MuseDocentAudioProps) {
     const cached = localStorage.getItem(cacheKey);
     if (cached?.trim()) {
       prepareScript(cached);
-      prefetchTTS(cached, "Kore", "차분");
+      prefetchTTSChunks(cached, "Kore", 150, "차분");
       return;
     }
 
@@ -179,7 +179,7 @@ export function MuseDocentAudio({ artwork }: MuseDocentAudioProps) {
         .then((narration) => {
           if (narration?.trim()) {
             prepareScript(narration);
-            prefetchTTS(narration, "Kore", "차분");
+            prefetchTTSChunks(narration, "Kore", 150, "차분");
           }
         })
         .catch(() => {});
@@ -212,13 +212,15 @@ export function MuseDocentAudio({ artwork }: MuseDocentAudioProps) {
   }, [artwork.imageUrl, artwork.title, artwork.famousPoem?.title, artwork.famousSong?.title]);
 
   const startAudioPlayback = useCallback(async (narrationText: string) => {
+    // 1. 기존 진행 중인 모든 재생을 정지하고 세션 초기화
+    stopTTS();
     pausedRef.current = false;
+    abortRef.current = false;
     const playbackRun = ++playbackRunRef.current;
     setPhase("speaking");
 
     try {
-      // 긴 도슨트 전체를 자연스러운 문장 단위(150자) 파이프라인 프리페칭 스트리밍으로 재생하여
-      // 브라우저/모바일 절전 및 중간 끊김 현상을 원천 방지합니다.
+      // 긴 도슨트 전체를 자연스러운 문장 단위(150자) 파이프라인 프리페칭 스트리밍으로 1번째 문장부터 순차 재생
       await playTTSInChunks(narrationText, "Kore", 150, "차분");
       if (playbackRunRef.current === playbackRun && !abortRef.current && !pausedRef.current) {
         setPhase("done");
@@ -240,11 +242,18 @@ export function MuseDocentAudio({ artwork }: MuseDocentAudioProps) {
     }
 
     abortRef.current = false;
-    playbackRunRef.current += 1;
     pausedRef.current = false;
+    playbackRunRef.current += 1;
     setExpanded(true);
     setError(null);
     stopTTS();
+
+    try {
+      const audio = getTTSAudioElement();
+      audio.pause();
+      audio.currentTime = 0;
+      audio.removeAttribute("src");
+    } catch (_) {}
 
     const cacheKey = docentCacheKey(artwork);
     const cached = localStorage.getItem(cacheKey);
@@ -295,17 +304,41 @@ export function MuseDocentAudio({ artwork }: MuseDocentAudioProps) {
     }
   };
 
-  const handleReplay = () => {
-    if (!script.trim()) return;
-    const audio = getTTSAudioElement();
-    if (audio.src && audio.duration > 0) {
+  // 🌟 '처음부터' 다시 듣기: 현재 중간 청크 위치와 무관하게 1번째 문장부터 온전히 처음부터 낭독
+  const handleReplay = async () => {
+    const textToPlay = script.trim() || localStorage.getItem(docentCacheKey(artwork))?.trim();
+    if (!textToPlay) return;
+
+    // 1. 기존 재생 및 오디오 엘리먼트/TTS 상태 완전 중단
+    stopTTS();
+    pausedRef.current = false;
+    abortRef.current = false;
+    const playbackRun = ++playbackRunRef.current;
+
+    try {
+      const audio = getTTSAudioElement();
+      audio.pause();
       audio.currentTime = 0;
-      pausedRef.current = false;
-      audio.play().catch(() => {});
-      resumeTTS();
-      setPhase("speaking");
-    } else {
-      void startAudioPlayback(script);
+      audio.removeAttribute("src");
+    } catch (_) {}
+
+    // 짧은 대기(60ms)로 이전 오디오 세션 리소스가 완전히 해제되도록 보장
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    if (playbackRunRef.current !== playbackRun) return;
+
+    // 2. 전체 스크립트 1번째 문장부터 스트리밍 시작
+    setPhase("speaking");
+    try {
+      await playTTSInChunks(textToPlay, "Kore", 150, "차분");
+      if (playbackRunRef.current === playbackRun && !abortRef.current && !pausedRef.current) {
+        setPhase("done");
+      }
+    } catch (err) {
+      if (playbackRunRef.current !== playbackRun) return;
+      console.warn("[MuseDocentAudio] replay error:", err);
+      const message = err instanceof Error ? err.message : "음성 재생 오류가 발생했습니다.";
+      setError(message);
+      setPhase("error");
     }
   };
 

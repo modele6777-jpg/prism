@@ -86,78 +86,73 @@ export function DailyOracleLoadingOverlay({
           transition={{ duration: 0.5 }}
           className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-2xl px-6"
         >
-          <div className="flex flex-col items-center gap-8 max-w-sm text-center">
+          <div className="flex flex-col items-center gap-5 sm:gap-7 max-w-sm text-center">
             {/* Breathing Aura Orb */}
-            <div className="relative w-32 h-32 flex items-center justify-center">
+            <div className="relative w-20 h-20 sm:w-28 sm:h-28 flex items-center justify-center">
               {/* Outer Pulsing Glow */}
               <motion.div
                 animate={{
-                  scale: [1, 1.35, 1],
-                  opacity: [0.35, 0.75, 0.35],
+                  scale: [1, 1.25, 1],
+                  opacity: [0.25, 0.55, 0.25],
                 }}
                 transition={{
-                  duration: 3.6,
+                  duration: 3.2,
                   repeat: Infinity,
                   ease: 'easeInOut',
                 }}
                 className={`absolute inset-0 rounded-full bg-gradient-radial ${styles.orb} blur-2xl`}
               />
 
-              {/* Concentric Breathing Rings */}
-              {[0, 1].map((i) => (
-                <motion.div
-                  key={i}
-                  animate={{
-                    scale: [1, 1.15 + i * 0.1, 1],
-                    rotate: i % 2 === 0 ? [0, 180, 360] : [360, 180, 0],
-                    opacity: [0.3, 0.6, 0.3],
-                  }}
-                  transition={{
-                    scale: { duration: 3 + i * 0.8, repeat: Infinity, ease: 'easeInOut' },
-                    rotate: { duration: 16 + i * 4, repeat: Infinity, ease: 'linear' },
-                    opacity: { duration: 3, repeat: Infinity, ease: 'easeInOut' },
-                  }}
-                  className={`absolute inset-0 rounded-full border ${styles.ring}`}
-                  style={{ margin: i * 8 }}
-                />
-              ))}
+              {/* Single Delicate Breathing Ring */}
+              <motion.div
+                animate={{
+                  scale: [0.95, 1.06, 0.95],
+                  opacity: [0.3, 0.6, 0.3],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                }}
+                className={`absolute inset-0 rounded-full border ${styles.ring}`}
+              />
 
               {/* Inner Star / Soft Icon */}
               <motion.div
                 animate={{
-                  scale: [0.92, 1.08, 0.92],
-                  opacity: [0.8, 1, 0.8],
+                  scale: [0.95, 1.05, 0.95],
+                  opacity: [0.85, 1, 0.85],
                 }}
                 transition={{
                   duration: 2.4,
                   repeat: Infinity,
                   ease: 'easeInOut',
                 }}
-                className="relative z-10 w-16 h-16 rounded-full bg-white/[0.04] border border-white/10 backdrop-blur-md flex items-center justify-center shadow-[0_0_24px_rgba(255,255,255,0.1)]"
+                className="relative z-10 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-md flex items-center justify-center shadow-lg shadow-black/40"
               >
-                <Sparkles className={`${styles.icon} w-7 h-7`} />
+                <Sparkles className={`${styles.icon} w-5 h-5 sm:w-6 sm:h-6`} />
               </motion.div>
             </div>
 
             {/* Poetic & Serene Text */}
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-2.5">
               <motion.p
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-lg md:text-xl font-display font-medium text-white/95 tracking-wide"
+                className="text-base sm:text-lg font-display font-medium text-white/95 tracking-wide"
               >
                 영혼의 오라클을 조율하는 중
               </motion.p>
               
-              <div className="h-10 flex items-center justify-center">
+              <div className="h-8 sm:h-9 flex items-center justify-center">
                 <AnimatePresence mode="wait">
                   <motion.p
                     key={quoteIdx}
-                    initial={{ opacity: 0, y: 6 }}
+                    initial={{ opacity: 0, y: 4 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.4 }}
-                    className={`text-xs md:text-sm ${styles.subtitle} font-normal tracking-wider leading-relaxed`}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.35 }}
+                    className={`text-xs sm:text-sm ${styles.subtitle} font-normal tracking-wide leading-relaxed px-2`}
                   >
                     {SERENE_QUOTES[quoteIdx]}
                   </motion.p>

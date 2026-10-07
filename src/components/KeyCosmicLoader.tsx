@@ -28,13 +28,13 @@ export function KeyCosmicLoader({
     >
       {/* Soft Ambient Cyan/Indigo Glow */}
       <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-        <div className="w-64 h-64 rounded-full bg-cyan-500/8 blur-3xl" />
-        <div className="w-48 h-48 rounded-full bg-indigo-500/8 blur-2xl" />
+        <div className="w-48 h-48 sm:w-64 sm:h-64 rounded-full bg-cyan-500/8 blur-3xl" />
+        <div className="w-36 h-36 sm:w-48 sm:h-48 rounded-full bg-indigo-500/8 blur-2xl" />
       </div>
 
       <div className="relative z-10 flex flex-col items-center text-center">
         {/* Minimal Key Emblem */}
-        <div className="relative flex items-center justify-center mb-6">
+        <div className="relative flex items-center justify-center mb-4 sm:mb-6">
           {/* Subtle Outer Hairline Pulse Ring */}
           <motion.div
             animate={{
@@ -46,10 +46,10 @@ export function KeyCosmicLoader({
               repeat: Number.POSITIVE_INFINITY,
               ease: 'easeInOut',
             }}
-            className="absolute w-20 h-20 rounded-full border border-cyan-400/20"
+            className="absolute w-16 h-16 sm:w-20 sm:h-20 rounded-full border border-cyan-400/20"
           />
 
-          {/* Minimal Orbit Star */}
+          {/* Minimal Orbit Star (Desktop only to keep mobile pristine) */}
           <motion.div
             animate={{ rotate: 360 }}
             transition={{
@@ -57,7 +57,7 @@ export function KeyCosmicLoader({
               repeat: Number.POSITIVE_INFINITY,
               ease: 'linear',
             }}
-            className="absolute w-24 h-24 rounded-full border border-dashed border-cyan-400/15"
+            className="hidden sm:block absolute w-24 h-24 rounded-full border border-dashed border-cyan-400/15"
           >
             <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-cyan-300 shadow-[0_0_8px_#67e8f9]" />
           </motion.div>
@@ -72,13 +72,13 @@ export function KeyCosmicLoader({
               repeat: Number.POSITIVE_INFINITY,
               ease: 'easeInOut',
             }}
-            className="w-14 h-14 rounded-2xl bg-zinc-900/80 border border-cyan-500/20 flex items-center justify-center shadow-lg shadow-black/50 backdrop-blur-sm"
+            className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-zinc-900/80 border border-cyan-500/20 flex items-center justify-center shadow-lg shadow-black/50 backdrop-blur-sm"
           >
             <svg
               viewBox="0 0 32 32"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
-              className="w-7 h-7 text-cyan-300"
+              className="w-6 h-6 sm:w-7 sm:h-7 text-cyan-300"
             >
               {/* Minimalist Key Head Ring */}
               <circle
@@ -116,12 +116,12 @@ export function KeyCosmicLoader({
         </div>
 
         {/* Minimal Key Wordmark */}
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-xs font-semibold tracking-[0.3em] uppercase text-cyan-300 font-sans">
+        <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
+          <span className="text-[11px] sm:text-xs font-semibold tracking-[0.3em] uppercase text-cyan-300 font-sans">
             Key
           </span>
           <span className="w-1 h-1 rounded-full bg-cyan-400/50" />
-          <span className="text-[10px] tracking-[0.2em] uppercase text-cyan-400/60 font-mono">
+          <span className="text-[9px] sm:text-[10px] tracking-[0.2em] uppercase text-cyan-400/60 font-mono">
             Calm
           </span>
         </div>
@@ -130,14 +130,14 @@ export function KeyCosmicLoader({
         <motion.p
           animate={{ opacity: [0.65, 0.95, 0.65] }}
           transition={{ duration: 2.2, repeat: Number.POSITIVE_INFINITY, ease: 'easeInOut' }}
-          className="text-xs sm:text-[13px] font-medium tracking-wide text-cyan-100/90 font-sans max-w-xs break-keep"
+          className="text-xs sm:text-[13px] font-medium tracking-wide text-cyan-100/90 font-sans max-w-xs break-keep px-4"
         >
           {message}
         </motion.p>
 
         {/* Minimal Submessage */}
         {subMessage && (
-          <p className="text-[10px] tracking-[0.2em] text-cyan-500/50 font-mono mt-1 uppercase">
+          <p className="text-[9px] sm:text-[10px] tracking-[0.2em] text-cyan-500/50 font-mono mt-1 uppercase">
             {subMessage}
           </p>
         )}

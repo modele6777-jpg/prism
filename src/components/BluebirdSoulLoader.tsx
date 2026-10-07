@@ -3,69 +3,68 @@ import { motion } from 'motion/react';
 
 export const BluebirdSoulLoader = () => {
   return (
-    <div className="flex flex-col items-center justify-center py-10 gap-6">
-      <div className="relative w-20 h-20">
-        {/* Core Pulsing Heart of the Pharmacy */}
+    <div className="flex flex-col items-center justify-center py-8 sm:py-10 gap-4 sm:gap-5 select-none">
+      <div className="relative w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
+        {/* Subtle Breathing Outer Hairline */}
         <motion.div
           animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.6, 0.3],
+            scale: [0.94, 1.06, 0.94],
+            opacity: [0.25, 0.6, 0.25],
           }}
           transition={{
-            duration: 2,
+            duration: 3,
             repeat: Infinity,
-            ease: "easeInOut"
+            ease: "easeInOut",
           }}
-          className="absolute inset-0 m-auto w-4 h-4 bg-blue-400 rounded-full blur-[2px]"
+          className="absolute inset-0 rounded-full border border-sky-400/20"
         />
 
-        {/* Orbiting Frequency Rings */}
-        {[0, 1, 2].map((i) => (
-          <motion.div
-            key={i}
-            animate={{
-              rotate: 360,
-              scale: [1, 1.1, 1],
-            }}
-            transition={{
-              rotate: { duration: 3 + i, repeat: Infinity, ease: "linear" },
-              scale: { duration: 2, repeat: Infinity, ease: "easeInOut", delay: i * 0.5 }
-            }}
-            className="absolute inset-0 border border-blue-500/20 rounded-[35%] flex items-center justify-center"
-            style={{ padding: i * 8 }}
-          >
-            <div className="w-1 h-1 bg-blue-300 rounded-full shadow-[0_0_8px_rgba(96,165,250,0.8)]" />
-          </motion.div>
-        ))}
+        {/* Ambient Glow */}
+        <div className="w-8 h-8 rounded-full bg-sky-400/10 blur-xl" />
 
-        {/* The Ghost Bird Wings (Abstract) */}
+        {/* Minimal Soul Bird Wing Emblem */}
         <motion.div
           animate={{
-            rotate: [0, 15, -15, 0],
+            scale: [0.97, 1.03, 0.97],
           }}
           transition={{
-            duration: 4,
+            duration: 2.4,
             repeat: Infinity,
-            ease: "easeInOut"
+            ease: "easeInOut",
           }}
-          className="absolute inset-0 flex items-center justify-center"
+          className="relative z-10 w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-sky-950/40 border border-sky-500/20 flex items-center justify-center shadow-lg shadow-sky-950/50 backdrop-blur-sm"
         >
-           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="text-blue-400/30">
-             <path d="M20.3 5.4a1 1 0 0 0-1.2-1.2c-1.5.4-3.5 1.4-5 2.8C12.6 8.5 12 10.5 12 12c0 1.5.6 3.5 2.1 5 1.5 1.4 3.5 2.4 5 2.8a1 1 0 0 0 1.2-1.2c-.4-1.5-1.4-3.5-2.8-5 1.4-1.5 2.4-3.5 2.8-5z" />
-             <path d="M3.7 5.4a1 1 0 0 1 1.2-1.2c1.5.4 3.5 1.4 5 2.8C11.4 8.5 12 10.5 12 12c0 1.5-.6 3.5-2.1 5-1.5 1.4-3.5 2.4-5 2.8a1 1 0 0 1-1.2-1.2c.4-1.5 1.4-3.5 2.8-5-1.4-1.5-2.4-3.5-2.8-5z" />
-           </svg>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-sky-300">
+            <path d="M20.3 5.4a1 1 0 0 0-1.2-1.2c-1.5.4-3.5 1.4-5 2.8C12.6 8.5 12 10.5 12 12c0 1.5.6 3.5 2.1 5 1.5 1.4 3.5 2.4 5 2.8a1 1 0 0 0 1.2-1.2c-.4-1.5-1.4-3.5-2.8-5 1.4-1.5 2.4-3.5 2.8-5z" fill="currentColor" fillOpacity="0.2" />
+            <path d="M3.7 5.4a1 1 0 0 1 1.2-1.2c1.5.4 3.5 1.4 5 2.8C11.4 8.5 12 10.5 12 12c0 1.5-.6 3.5-2.1 5-1.5 1.4-3.5 2.4-5 2.8a1 1 0 0 1-1.2-1.2c.4-1.5 1.4-3.5 2.8-5-1.4-1.5-2.4-3.5-2.8-5z" fill="currentColor" fillOpacity="0.2" />
+          </svg>
         </motion.div>
       </div>
-      
-      <div className="flex flex-col items-center">
+
+      <div className="flex flex-col items-center text-center px-4">
         <motion.span
-          animate={{ opacity: [0.3, 1, 0.3] }}
-          transition={{ duration: 2, repeat: Infinity }}
-          className="text-[10px] font-bold text-blue-400 tracking-[0.4em] uppercase"
+          animate={{ opacity: [0.6, 1, 0.6] }}
+          transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+          className="text-[10px] sm:text-[11px] font-bold text-sky-300 tracking-[0.25em] uppercase font-mono"
         >
-          Compounding Soul Medicine
+          Bluebird · Soul Medicine
         </motion.span>
-        <p className="text-[9px] text-white/20 mt-1 ">치유의 주파수를 조율하는 중...</p>
+        <p className="text-[11px] text-white/50 mt-1 font-sans">치유의 주파수를 조율하는 중...</p>
+      </div>
+
+      {/* Minimal Hairline Progress */}
+      <div className="w-20 sm:w-28 h-[1.5px] bg-white/10 rounded-full overflow-hidden relative">
+        <motion.div
+          animate={{
+            x: ['-100%', '100%'],
+          }}
+          transition={{
+            duration: 1.8,
+            repeat: Infinity,
+            ease: [0.4, 0, 0.2, 1],
+          }}
+          className="w-full h-full rounded-full bg-gradient-to-r from-transparent via-sky-400 to-transparent"
+        />
       </div>
     </div>
   );

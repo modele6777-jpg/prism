@@ -700,7 +700,7 @@ export interface TTSEmotionProfile {
 export const TTS_EMOTION_PROFILES: Record<TTSEmotionType, TTSEmotionProfile> = {
   joy: {
     emotion: 'joy',
-    playbackRate: 1.07,
+    playbackRate: 1.0,
     detune: 120,
     pitchHzOffset: 2,
     preservesPitch: true,
@@ -708,7 +708,7 @@ export const TTS_EMOTION_PROFILES: Record<TTSEmotionType, TTSEmotionProfile> = {
   },
   calm: {
     emotion: 'calm',
-    playbackRate: 0.86,
+    playbackRate: 1.0,
     detune: -60,
     pitchHzOffset: -1.2,
     preservesPitch: true,
@@ -716,7 +716,7 @@ export const TTS_EMOTION_PROFILES: Record<TTSEmotionType, TTSEmotionProfile> = {
   },
   meditation: {
     emotion: 'meditation',
-    playbackRate: 0.82,
+    playbackRate: 1.0,
     detune: -80,
     pitchHzOffset: -1.8,
     preservesPitch: true,
@@ -724,7 +724,7 @@ export const TTS_EMOTION_PROFILES: Record<TTSEmotionType, TTSEmotionProfile> = {
   },
   emphasis: {
     emotion: 'emphasis',
-    playbackRate: 0.97,
+    playbackRate: 1.0,
     detune: -30,
     pitchHzOffset: 0,
     preservesPitch: true,
@@ -732,7 +732,7 @@ export const TTS_EMOTION_PROFILES: Record<TTSEmotionType, TTSEmotionProfile> = {
   },
   sadness: {
     emotion: 'sadness',
-    playbackRate: 0.90,
+    playbackRate: 1.0,
     detune: -90,
     pitchHzOffset: -2,
     preservesPitch: true,
@@ -740,7 +740,7 @@ export const TTS_EMOTION_PROFILES: Record<TTSEmotionType, TTSEmotionProfile> = {
   },
   mystic: {
     emotion: 'mystic',
-    playbackRate: 0.92,
+    playbackRate: 1.0,
     detune: 30,
     pitchHzOffset: 1,
     preservesPitch: true,
@@ -748,7 +748,7 @@ export const TTS_EMOTION_PROFILES: Record<TTSEmotionType, TTSEmotionProfile> = {
   },
   vitality: {
     emotion: 'vitality',
-    playbackRate: 1.05,
+    playbackRate: 1.0,
     detune: 80,
     pitchHzOffset: 2,
     preservesPitch: true,
@@ -756,7 +756,7 @@ export const TTS_EMOTION_PROFILES: Record<TTSEmotionType, TTSEmotionProfile> = {
   },
   neutral: {
     emotion: 'neutral',
-    playbackRate: 1.00,
+    playbackRate: 1.0,
     detune: 0,
     pitchHzOffset: 0,
     preservesPitch: true,
@@ -945,9 +945,9 @@ export async function playTTSAudio(
   audio.src = ttsBlobUrl;
 
   try {
-    const targetRate = playbackRateOverride || profile.playbackRate || 1.0;
-    audio.playbackRate = targetRate;
-    audio.defaultPlaybackRate = targetRate;
+    const targetRate = 1.0;
+    audio.playbackRate = 1.0;
+    audio.defaultPlaybackRate = 1.0;
     if ('preservesPitch' in audio) {
       (audio as any).preservesPitch = true;
     }

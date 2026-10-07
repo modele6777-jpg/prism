@@ -1027,11 +1027,21 @@ export const MASTERS_CATALOG: MasterItem[] = [
   }
 ];
 
+export function normalizeArtworkTitle(str: string): string {
+  if (!str) return '';
+  return str
+    .split('(')[0]
+    .replace(/연작|꽃밭|들판|열두\s*송이|송이|의|를|을|에|과|와/g, '')
+    .replace(/[^가-힣a-zA-Z0-9]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
 /**
- * 거장의 모든 대표 예술작품 목록 반환 (카탈로그 연동 포함)
+ * 거장의 전체 예술작품 목록 반환 (중복 완전 제거 및 모든 대표작 풀 구성)
  */
 export function getMasterAllArtworks(master: MasterItem): MasterArtwork[] {
-  const baseArtworks = master.artworks && master.artworks.length > 0
+  const rawList = master.artworks && master.artworks.length > 0
     ? [...master.artworks]
     : [{
         id: `${master.id}_primary`,
@@ -1053,11 +1063,22 @@ export function getMasterAllArtworks(master: MasterItem): MasterArtwork[] {
         quoteSource: master.quoteSource,
       }];
 
+  // 1. 1차 내부 중복 제거
+  const seenTitles = new Set<string>();
+  const baseArtworks: MasterArtwork[] = [];
+  for (const art of rawList) {
+    const key = normalizeArtworkTitle(art.piece);
+    if (key && !seenTitles.has(key)) {
+      seenTitles.add(key);
+      baseArtworks.push(art);
+    }
+  }
+
   if (master.category !== 'painting') {
     return baseArtworks;
   }
 
-  // 회화 거장의 경우 MUSE_ART_CATALOG에서 추가 작품들을 매칭하여 전체 수록!
+  // 2. 회화 거장의 경우 MUSE_ART_CATALOG에서 추가 작품들을 매칭하여 전체 수록 (중복 엄격 방지)
   const creatorKeywords: Record<string, string[]> = {
     vangogh: ['반 고흐', 'gogh'],
     monet: ['모네', 'monet'],
@@ -1066,16 +1087,15 @@ export function getMasterAllArtworks(master: MasterItem): MasterArtwork[] {
   };
 
   const keywords = creatorKeywords[master.id] || [master.name.split('(')[0].trim().toLowerCase()];
-  const existingTitles = new Set(baseArtworks.map((a) => a.piece.toLowerCase().replace(/[^a-z0-9가-힣]/g, '')));
 
   try {
     for (const entry of MUSE_ART_CATALOG) {
       const creatorLower = (entry.creator || '').toLowerCase();
       const matchesCreator = keywords.some((kw) => creatorLower.includes(kw.toLowerCase()));
       if (matchesCreator) {
-        const titleKey = entry.title.toLowerCase().replace(/[^a-z0-9가-힣]/g, '');
-        if (!existingTitles.has(titleKey)) {
-          existingTitles.add(titleKey);
+        const titleKey = normalizeArtworkTitle(entry.title);
+        if (titleKey && !seenTitles.has(titleKey)) {
+          seenTitles.add(titleKey);
           baseArtworks.push({
             id: entry.id || `catalog_${titleKey}`,
             piece: `${entry.title} (${entry.titleOriginal || entry.title})`,
