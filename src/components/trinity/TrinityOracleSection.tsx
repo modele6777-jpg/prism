@@ -2978,12 +2978,6 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
                   {/* ✨ 리딩 하단 핵심 3줄 요약 강조 그래픽 카드 UI */}
                   {renderOracleSummaryCard()}
 
-                  {/* 🌟 3장의 카드별 현실 실행 툴킷 (힐링 타로 결과 화면에서는 안 나오도록 제외) */}
-                  {oracleMode !== 'healing' && renderCardInsightsSection(growthResult?.card_insights)}
-
-                  {/* ☯️ 자기계발 종합 마스터 리포트 (힐링 타로 결과 화면에서는 안 나오도록 제외) */}
-                  {oracleMode !== 'healing' && renderExecutiveSummaryCard()}
-
                   {/* 🌟 그에 맞는 루시의 조언 (TTS 가능) */}
                   <div className="pt-2">
                     <LucyTarotAdviceCard
