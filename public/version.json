@@ -1,12 +1,15 @@
 {
   "name": "luckey",
-  "version": "1.4.194",
-  "summary": "빅뱅 버튼 더블탭(Double-Tap) 시 럭키 프롤로그 메인('/') 즉시 귀환 및 내비게이션 연동 구현",
-  "builtAt": "2026-10-06T14:52:00.000Z",
+  "version": "1.4.195",
+  "summary": "데일리아트·타로·오라클 일일 필수 확인 게이팅, 핵심 3줄 요약 최상단 고정, SAJU 메뉴명 변경 및 17종 테마별 배열법 맞춤 리딩 구조화 & 전면 최적화",
+  "builtAt": "2026-10-07T12:30:00.000Z",
   "items": [
-    "빅뱅 버튼(BigBangButton) 더블탭 감지 파이프라인 정밀화: 더블탭 인터벌을 모바일 표준(30ms~400ms)으로 최적화하고 럭키 프롤로그 메인('/') 즉시 귀환 핸들러(goToPrologueMain) 구현",
-    "더블클릭(onDoubleClick) 네이티브 백업 핸들러 및 원클릭 복귀 햅틱/차임 음향 연동",
-    "App.tsx 라우터에 /prologue 표준 경로 매핑 추가 및 빅뱅 프리뷰 윈도우 텍스트 동기화"
+    "데일리아트(MUSE) 고민 입력 게이팅 적용: 오늘의 추천 아트를 필수 확인해야 맞춤 고민 입력 및 예술 처방이 활성화되도록 잠금 안내 배너 및 인터랙션 구현",
+    "타로 및 오라클 타로 오늘의 타로 필수 확인 게이팅: 오늘의 일일 타로(지배 카드)를 먼저 확인해야 개인 맞춤 타로 고민 작성, 전체 배열법 선택 및 78장 오라클 3카드 스프레드가 활성화되도록 잠금 및 원클릭 바로가기 지원",
+    "모든 타로·오라클 결과 핵심 3줄 요약 최상단 첫 칸 고정: 78장 타로 리딩, 오라클 타로 리딩, 일일 타로 모달 결과창 전체에서 [핵심 3줄 요약 (Quick Summary)] 카드가 판정 배너 및 본문보다 최우선인 첫 번째 칸에 상시 렌더링되도록 통일",
+    "트리니티 서브 내비게이션 메뉴명 변경: 기존 '사주 만세력' 탭 라벨을 간결하고 통일된 'SAJU'로 변경",
+    "17종 전 테마 및 배열법 맞춤형 리딩 구조 신설: daily, super_money, lucky, fortune_boost, angel, healing, new_year, saju, binary_choice, yes_no, love, career, money, timing, obstacle, celtic_cross, general 등 각 배열법과 테마에 최적화된 단계별 제목, 서브타이틀, 맞춤 지침 및 요약 태그(buildSpreadTailoredReadingGuide) 전면 연동",
+    "앱 전반 렌더링 및 인터랙션 대폭 최적화: 타로 고민 입력 시 useDeferredValue 적용으로 타이핑 렉 완전 제거, AuroraBackground GPU 합성 및 데스크톱 파티클 수 최적화, 스크롤 이벤트 디바운싱/스로틀링, 서버 볼트 폴링 주기 최적화 및 탭 비활성화 시 자동 절전 적용"
   ],
   "author": "Antigravity AI Agent",
   "buildEnvironment": "cloud-run"

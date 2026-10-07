@@ -164,6 +164,7 @@ export function subscribeToPairedVault(onUpdate: (state: SharedState) => void): 
   // 3. Continuous Background Polling & Visibility wakeup trigger
   const pollServerVault = async () => {
     if (isDestroyed) return;
+    if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
     try {
       const serverState = await pullFromServerVault(vaultId);
       if (serverState && !isDestroyed) {
@@ -176,7 +177,7 @@ export function subscribeToPairedVault(onUpdate: (state: SharedState) => void): 
     } catch (_) {}
   };
 
-  const pollInterval = window.setInterval(pollServerVault, 4000);
+  const pollInterval = window.setInterval(pollServerVault, 15000);
 
   const handleWakeup = () => {
     if (document.visibilityState === 'visible') {

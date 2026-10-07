@@ -18,6 +18,7 @@ import {
   Download,
   Volume2,
   ArrowUp,
+  Lock,
 } from "lucide-react";
 import { resetAppScroll } from "@/utils/scrollToTop";
 import { ImageOutputActions, downloadImage } from "@/components/ImageOutputActions";
@@ -2169,7 +2170,7 @@ export function ArtRecommendationView() {
       }
     };
 
-    const interval = setInterval(checkDateRollover, 10000);
+    const interval = setInterval(checkDateRollover, 60000);
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
         checkDateRollover();
@@ -2499,6 +2500,17 @@ export function ArtRecommendationView() {
               </button>
             )}
           </div>
+
+          {/* 🔒 오늘의 데일리아트 필수 확인 안내 배너 */}
+          <div className="p-4 rounded-2xl bg-white/[0.03] border border-blue-400/20 text-center space-y-1.5 max-w-md mx-auto">
+            <div className="flex items-center justify-center gap-1.5 text-xs text-blue-300 font-bold">
+              <Lock size={13} className="text-blue-400" />
+              <span>나만의 고민 맞춤 예술 처방은 오늘의 데일리아트 확인 후 가능합니다</span>
+            </div>
+            <p className="text-[11px] text-white/50 leading-relaxed font-sans">
+              오늘을 여는 '오늘의 Daily ART'를 먼저 확인하시면, 나만의 고민을 입력하여 1:1 맞춤 명작을 처방받을 수 있는 입력창이 활성화됩니다.
+            </p>
+          </div>
         </motion.div>
       )}
 
@@ -2538,6 +2550,115 @@ export function ArtRecommendationView() {
             transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
             className="space-y-8"
           >
+            {/* 💬 현재 고민 맞춤 처방 결과 표시 배너 (고민이 적용된 상태일 때) */}
+            {(recommendation as any)?.userConcern && (
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-blue-500/20 via-indigo-500/15 to-purple-500/10 border border-blue-400/40 flex items-center justify-between gap-3 text-left shadow-md">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="text-lg shrink-0">💬</span>
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-bold text-blue-300 uppercase tracking-widest block font-mono">
+                      나의 고민 맞춤 예술 처방 적용 중
+                    </span>
+                    <p className="text-xs sm:text-sm text-white/95 font-medium truncate">
+                      "{(recommendation as any).userConcern}"
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCustomConcern("");
+                    localStorage.removeItem(ART_CACHE_KEYS.userConcern);
+                    void handleRecommendArt({ forceRefresh: false, userConcern: "" });
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white/80 hover:text-white text-xs font-bold transition-all shrink-0 cursor-pointer active:scale-95"
+                  title="고민 설정 해제하고 오늘의 데일리아트 원본으로 복원"
+                >
+                  ✕ 원본 복원
+                </button>
+              </div>
+            )}
+
+            {/* ✍️ 고민 맞춤 예술 처방 섹션 (오늘의 데일리아트 확인 완료 시 활성화) */}
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-5 sm:p-7 rounded-[28px] bg-gradient-to-br from-blue-950/30 via-zinc-900/80 to-purple-950/20 border border-blue-500/30 shadow-xl backdrop-blur-xl space-y-4 text-left"
+            >
+              <div className="flex items-center justify-between gap-2 flex-wrap border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-300">
+                    <Sparkles size={14} className="animate-pulse" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm sm:text-base font-bold text-white tracking-tight flex items-center gap-2 flex-wrap">
+                      <span>✍️ 나만의 고민 입력 & 맞춤 예술 처방</span>
+                      <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 font-semibold font-mono">
+                        ✓ 데일리아트 확인 완료
+                      </span>
+                    </h4>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-xs text-white/60 font-sans leading-relaxed">
+                오늘 마주한 고민이나 감정 상태를 들려주세요. 마음을 보듬고 창조적 돌파구를 열어줄 맞춤 명곡·명시·명화를 즉시 처방해 드립니다.
+              </p>
+
+              {/* Quick Concern Suggestions */}
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {CONCERN_SUGGESTIONS.map((suggestion, sIdx) => (
+                  <button
+                    key={sIdx}
+                    type="button"
+                    onClick={() => setCustomConcern(suggestion.replace(/^[^\s]+\s/, ''))}
+                    className="px-2.5 py-1 rounded-xl bg-white/5 hover:bg-blue-500/15 border border-white/10 hover:border-blue-400/30 text-[11px] text-white/70 hover:text-blue-200 transition-all cursor-pointer active:scale-95 text-left"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+
+              {/* Textarea */}
+              <div className="relative">
+                <textarea
+                  value={customConcern}
+                  onChange={(e) => setCustomConcern(e.target.value)}
+                  placeholder="현재 마음의 고민이나 풀고 싶은 상황을 편안하게 적어주세요 (예: 마음이 너무 복잡하고 지쳤어요, 새로운 아이디어가 절실해요 등)..."
+                  className="w-full h-24 bg-black/40 border border-white/15 focus:border-blue-400 rounded-2xl p-4 text-xs sm:text-sm text-white placeholder:text-white/30 resize-none focus:outline-none transition-all leading-relaxed"
+                />
+                {customConcern.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => setCustomConcern("")}
+                    className="absolute right-3 top-3 p-1 rounded-lg bg-white/10 hover:bg-white/20 text-white/50 hover:text-white text-xs cursor-pointer"
+                    title="고민 내용 지우기"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              <div className="flex justify-end pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!customConcern.trim()) return;
+                    void handleRecommendArt({
+                      forceRefresh: true,
+                      randomOffset: Date.now(),
+                      userConcern: customConcern.trim(),
+                    });
+                    resetAppScroll("smooth");
+                  }}
+                  disabled={loading || !customConcern.trim()}
+                  className="prism-rainbow-btn py-3 px-6 rounded-xl text-xs sm:text-sm font-black uppercase tracking-wider text-white shadow-lg flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transition-transform"
+                >
+                  <Sparkles size={14} className={loading ? "animate-spin" : "text-yellow-300"} />
+                  <span>{loading ? "맞춤 예술 처방 중..." : "🎨 고민 맞춤 예술 처방받기"}</span>
+                </button>
+              </div>
+            </motion.div>
             {/* 🌟 최상단 배치: 오늘의 예술 오디오 도슨트 (MUSE AUDIO DOCENT - 오늘의 명곡, 명시, 명화 통합 가이드) */}
             {recommendation.famousPoem && recommendation.famousSong && (
               <motion.div

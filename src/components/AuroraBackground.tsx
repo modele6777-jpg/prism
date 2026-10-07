@@ -401,7 +401,8 @@ function NebulaOrb({
         background: `radial-gradient(circle closest-side, ${withAlpha(color, opacity)} 0%, transparent 100%)`,
         animationDuration,
         willChange: animate ? 'transform' : 'auto',
-        transform: 'translateZ(0)',
+        transform: 'translate3d(0, 0, 0)',
+        backfaceVisibility: 'hidden',
       }}
     />
   );
@@ -418,27 +419,30 @@ const AuroraBackgroundComponent: React.FC = () => {
   const foldCover = isGalaxyFoldSeClass() && isFoldCoverScreen();
   const galaxy = profile === 'galaxy';
   const starDensity = isMobile
-    ? 24
+    ? 20
     : legacy
-      ? 42
+      ? 36
       : foldCover
-        ? 64
+        ? 50
         : profile === 'pwa'
-          ? 58
+          ? 48
           : profile === 'reduced'
-            ? 68
+            ? 52
             : galaxy
-              ? 90
-              : 96;
+              ? 64
+              : 72;
   const minStarSize = legacy ? 2 : 1.5;
   const nebulaBlur = isXS ? 26 : legacy ? 48 : foldCover ? 82 : profile === 'full' || galaxy ? 104 : 72;
   const animateOrbs = !isMobile && (profile === 'full' || (galaxy && !foldCover));
-  const staticStarCount = isMobile ? 24 : isXS ? 20 : legacy ? 32 : foldCover ? 40 : 48;
-  const shootingStarCount = isXS ? 1 : legacy ? 3 : foldCover ? 5 : profile === 'full' ? 9 : galaxy ? 8 : 6;
-
+  const staticStarCount = isMobile ? 20 : isXS ? 18 : legacy ? 28 : foldCover ? 32 : 36;
+  const shootingStarCount = isXS ? 1 : legacy ? 2 : foldCover ? 3 : profile === 'full' ? 5 : galaxy ? 4 : 3;
 
   return (
-    <div className="prism-aura-bg fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden>
+    <div
+      className="prism-aura-bg fixed inset-0 pointer-events-none z-0 overflow-hidden"
+      style={{ contain: 'strict', contentVisibility: 'auto' }}
+      aria-hidden
+    >
       <div
         className="absolute inset-0"
         style={{

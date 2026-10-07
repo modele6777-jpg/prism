@@ -4,6 +4,7 @@ import React, {
   useCallback,
   useMemo,
   useRef,
+  useDeferredValue,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -249,6 +250,7 @@ import {
   type TarotConcernAnalysis,
   type TarotConcernKind,
 } from "@/lib/trinity/utils";
+import { buildSpreadTailoredReadingGuide } from "@/lib/trinity/spreadStructures";
 import {
   auth,
   db,
@@ -1539,8 +1541,9 @@ function playDailyCardChimeAsync() {
   const [showTarotCardBackModal, setShowTarotCardBackModal] = useState(false);
   const [showPhysicalTarotModal, setShowPhysicalTarotModal] = useState(false);
   const { theme: tarotBackTheme } = useTarotCardBack();
+  const deferredTarotConcern = useDeferredValue(tarotConcern);
   const tarotConcernAnalysis: TarotConcernAnalysis = useMemo(() => {
-    const base = analyzeTarotConcern(tarotConcern);
+    const base = analyzeTarotConcern(deferredTarotConcern);
     if (customSpread) {
       const kind: TarotConcernKind =
         customSpread.theme === 'binary_choice'
@@ -1560,7 +1563,7 @@ function playDailyCardChimeAsync() {
       };
     }
     return base;
-  }, [tarotConcern, customSpread]);
+  }, [deferredTarotConcern, customSpread]);
   const tarotSpreadRecommendation = tarotConcernAnalysis.spread;
   const isAutoRecommended = !customSpread;
   const [isTarotGenerating, setIsTarotGenerating] = useState(false);
@@ -2013,6 +2016,13 @@ function playDailyCardChimeAsync() {
 
   const isDailyTarotBlocked = isTrinityDailyLockedToday();
 
+  const isDailyTarotChecked = Boolean(
+    isDailyOracleAlreadyDone ||
+    dailyResult?.drawnCard ||
+    dailyResult?.diagnosis ||
+    dailyDrawnCard
+  );
+
   useEffect(() => {
     const todayKey = getTodayDateKey();
 
@@ -2023,6 +2033,24 @@ function playDailyCardChimeAsync() {
       }
     }
   }, [sharedState, isTrinityDailyLockedToday, restoreTodayDailyResult, firebaseUser?.uid]);
+
+  useEffect(() => {
+    const handleOpenDailyTarotEvent = () => {
+      setActiveMode('tarot');
+      setTarotConcern('오늘의 타로');
+      setCustomSpread(null);
+      restoreTodayDailyResult();
+      const targetCard = dailyResult?.drawnCard || dailyDrawnCard;
+      if (targetCard) {
+        setShowDailyModal(true);
+      }
+    };
+
+    window.addEventListener('trinity:open_daily_tarot', handleOpenDailyTarotEvent);
+    return () => {
+      window.removeEventListener('trinity:open_daily_tarot', handleOpenDailyTarotEvent);
+    };
+  }, [dailyResult, dailyDrawnCard, restoreTodayDailyResult]);
 
   useEffect(() => {
     if (localHistory && localHistory.length > 0) {
@@ -2436,6 +2464,16 @@ function playDailyCardChimeAsync() {
             ? `\n오늘의 지배 카드 (배경 에너지): ${dailyCard.nameKo} (${dailyCard.name})${dailyCard.reversed ? ' [역방향]' : ''}\n-> 이번 고민 리딩 시 오늘 하루를 이끄는 [${dailyCard.nameKo}]의 파동과 상호작용을 1단계(마음과 현재 에너지)와 4단계(실천 처방)에 필히 융합하여 서술하십시오.`
             : '';
 
+          const tailoredGuide = buildSpreadTailoredReadingGuide(
+            concernAnalysis.theme || 'general',
+            concernAnalysis.spread,
+            {
+              optionA: concernAnalysis.optionA,
+              optionB: concernAnalysis.optionB,
+              concern: tarotConcern,
+            }
+          );
+
           systemPrompt = `당신은 질문자의 가슴 깊은 고민을 꿰뚫어보고, 따뜻한 공감과 날카로운 직관으로 운명의 길을 밝혀주는 신비롭고 영험한 전문 타로 마스터 '트리니티'입니다.
 실제 1:1 타로 상담실에서 촛불을 켜고 내담자의 눈을 마주 보며 카드를 한 장씩 넘겨 리딩해 주듯, 살아 숨 쉬는 생생한 대화형 어조(정중하고 기품 있는 해요체·하십시오체)로 깊은 울림을 선사하십시오.
 
@@ -2446,7 +2484,7 @@ function playDailyCardChimeAsync() {
 
 [★ 최우선 필수 대원칙 — 뽑힌 카드의 고유한 상징과 뜻 중심의 심층 리딩]
 1. **타로 본연의 도상과 상징 중심 해독**: 카드 이름만 단순 언급하고 지나가는 피상적 리딩은 절대 금지합니다. 뽑힌 모든 카드의 도상학적 상징(그림 속 인물의 표정과 자세, 손에 쥔 도구, 배경 색채, 4대 원소 기운)과 정통 타로의 본질적 의미(정방향/역방향의 깊은 뜻)를 리딩 전체의 가장 확고한 뼈대와 근거로 삼으십시오.
-2. **모든 단계에서 카드의 뜻과 의미를 인용하여 전개**: 2단계(펼쳐진 카드들이 들려주는 이야기)뿐만 아니라, 1단계(현재 에너지), 3단계(결단과 방향성), 4단계(실천 처방)에 이르기까지 "이 카드의 [OO 상징]과 [OO 뜻]이 보여주듯...", "카드 속 [인물/도상]이 전하는 본질적 교훈처럼..."과 같이 각 카드의 상징과 뜻을 직접 거론하며 논리적이고 입체적으로 설명하십시오.
+2. **모든 단계에서 카드의 뜻과 의미를 인용하여 전개**: 모든 단계에 걸쳐 "이 카드의 [OO 상징]과 [OO 뜻]이 보여주듯...", "카드 속 [인물/도상]이 전하는 본질적 교훈처럼..."과 같이 각 카드의 상징과 뜻을 직접 거론하며 논리적이고 입체적으로 설명하십시오.
 3. **정방향과 역방향의 세밀한 뜻 구별**: 역방향 카드가 있다면, 단순히 부정적으로 치부하지 않고 에너지가 내면으로 향하거나, 억압·지연·정화가 필요한 카드의 고유한 그림자 의미를 정밀하게 짚어주십시오.
 
 [🚫 절대 금지 규칙 — 우주물리학 비유 및 기계적 수치 언급 전면 금지]
@@ -2456,47 +2494,15 @@ function playDailyCardChimeAsync() {
 
 [🚫 내용 중복 및 반복 서술 엄격 금지]
 - 동일한 문장, 동일한 조언, 동일한 표현을 리딩 내에서 절대로 2번 이상 중복하여 서술하지 마십시오.
-- 각 단계(1단계~5단계)는 고유한 통찰과 관점을 담아야 하며, 앞서 언급한 카드의 해석이나 키워드를 다른 단계에서 그대로 복사하듯 반복 나열하지 마십시오.
+- 각 단계는 고유한 통찰과 관점을 담아야 하며, 앞서 언급한 카드의 해석이나 키워드를 다른 단계에서 그대로 복사하듯 반복 나열하지 마십시오.
 
 [🔮 타로 마스터 리딩 원칙 — 보고서형 어투 절대 금지]
-1. **생생한 상담실 대화체**: 딱딱한 기획서·보고서·수치 나열형(예: '성공률 80%, 실패율 20%', '1단계: 진단' 등 사무적 어투)은 절대 지양하십시오. 대신 "카드를 가만히 마주하니...", "가장 먼저 눈에 밟히는 카드는...", "이 카드가 당신께 이렇게 속삭이고 있네요"처럼 실제 타로 마스터의 생동감 넘치는 호흡으로 이야기하듯 서술하십시오.
+1. **생생한 상담실 대화체**: 딱딱한 기획서·보고서·수치 나열형은 절대 지양하십시오. 대신 실제 타로 마스터의 생동감 넘치는 호흡으로 이야기하듯 서술하십시오.
 2. **깊은 공감과 날카로운 팩트폭행의 조화**: 내담자가 겪고 있는 혼란과 불안을 따뜻하게 안아주되, 카드가 경고하는 현실적 맹점이나 피해야 할 악수는 숨김없이 명쾌하고 솔직하게 짚어주십시오.
 3. **스토리텔링 식 카드 융합 해독**: 카드를 개별 사전식으로 분리해 나열하지 말고, 각 위치의 상징들이 서로 인과관계를 맺으며 어떻게 흘러가는지 하나의 흥미진진한 운명의 드라마처럼 유기적으로 엮어내십시오.
-4. **명확하고 흔들림 없는 결론**: 애매하게 얼버무리거나 "상황에 따라 다릅니다" 같은 회피는 금지합니다. 카드의 기운이 가리키는 방향을 마스터의 확신 있는 어조로 단호하게 선언하십시오.
+4. **명확하고 흔들림 없는 결론**: 애매하게 얼버무리거나 회피하지 않고, 카드의 기운이 가리키는 방향을 마스터의 확신 있는 어조로 단호하게 선언하십시오.
 
-[✨ 리딩 구성 형식 — 아래 5단계 마크다운 구조로 감동적이고 흡입력 있게 전개하세요]
-
-### 🕯️ 1. 카드가 비추는 당신의 마음과 현재 에너지
-- 질문자님의 고민("${tarotConcern}")을 마주했을 때 전해져 오는 내면의 파동과 말 못 할 갈등, 현재 상황의 숨은 진실을, 펼쳐진 카드의 본질적 기운과 상징에 비추어 마스터의 깊은 직관으로 짚어주며 깊은 공감대를 형성하십시오. ${dailyCard ? `(오늘의 배경을 이끄는 [${dailyCard.nameKo}] 카드의 기운과 맞물려 지금 어떤 국면에 서 있는지 함께 짚어주세요.)` : ''}
-
-### 🎴 2. 펼쳐진 카드들이 들려주는 이야기 (카드별 상징과 본래 뜻 심층 해독)
-- **${concernAnalysis.spread.name}**의 각 위치에 놓인 카드들([${cardNames}])을 한 장씩 짚어가며, 각 카드가 지닌 정통 타로 도상(그림 속 인물, 도구, 배경, 원소)과 고유한 본래 뜻(정방향/역방향 의미)을 상세하고 생생하게 해독하십시오.
-- 각 카드마다 단순히 키워드를 나열하는 데 그치지 않고, "이 카드 속 [인물/도구/상징]이 의미하는 바는 바로..."와 같이 카드의 상징적 의미를 내담자의 실제 현실 속 사건, 감정, 관계와 밀접하게 결합하여 한 편의 드라마처럼 깊이 있게 풀어내십시오.
-
-### 🔮 3. 트리니티 마스터의 직관적 결단 & 방향성
-- 내담자의 질문("${tarotConcern}")에 대해 카드가 가리키는 고유한 뜻과 상징에 근거하여 명확한 최종 결단과 방향성을 내리십시오.
-${concernAnalysis.kind === "yes_no"
-  ? `- **[예/아니오 결정 질문 절대 규칙]**: 반드시 첫 줄에 **최종 판정: [YES]** 또는 **최종 판정: [NO]** (또는 신중한 보완이 필요할 시 **[조건부 YES]**)를 명확하게 선언하십시오. 'YES' 또는 'NO'라는 영문 판정 단어를 절대로 생략하지 말고 대괄호 안에 굵게 표기한 후, 카드의 상징과 본래 뜻을 근거로 그 이유를 확신에 찬 목소리로 들려주십시오.`
-  : concernAnalysis.kind === "binary_choice"
-    ? `- **[양자택일 질문 필수 규칙]**: 반드시 첫 줄에 **최종 선택: [OO]**를 굵게 선언하고, 선택된 쪽을 추천하는 이유와 반대쪽을 지금 피해야 하는 이유를 카드의 상징으로 밝히십시오.`
-    : `- **[실천 방향 선언]**: **[적극적인 실행과 도약 권장 / 신중한 준비와 호흡 조율 / 새로운 관점 전환 필요]**와 같이 품격 있고 명확한 실천 방향으로 굵게 선언하고, 뽑힌 카드의 본질적 의미와 상징이 왜 이 방향을 지목하는지 그 필연적 이유를 확신에 찬 목소리로 들려주십시오.`
-}
-
-### 🌿 4. 운의 흐름을 바꿀 마스터의 실천 처방 (개운 가이드)
-- 머리로만 아는 것은 운을 바꾸지 못합니다. 뽑힌 카드가 담고 있는 긍정의 에너지를 증폭하고 그림자의 위험을 예방할 수 있도록, 카드의 상징과 뜻에서 도출된 현실적이고 구체적인 행동 처방(마음가짐, 소통 방식, 피해야 할 행동, 행운의 행동 등)을 다정하면서도 명확하게 짚어주십시오.
-
-### ✨ 5. 당신의 길을 축복하는 영혼의 한마디
-- 타로는 정해진 굴레가 아니라 운명을 개척하는 등불입니다. 내담자가 두려움을 떨치고 스스로의 운명을 주도할 수 있도록, 가슴 깊이 간직할 지혜와 따뜻한 용기의 축복을 마스터의 서명처럼 건네며 마무리하십시오.
-
-[✨ 핵심 3줄 요약 — 리딩 본문 맨 마지막에 반드시 아래 형식으로 3줄 요약을 작성하십시오]
-[핵심 3줄 요약]
-- [현재 에너지] (내담자의 현재 내면 상황과 카드가 비추는 기운 핵심 1문장)
-- [방향과 결단] (${concernAnalysis.kind === "yes_no" ? '최종 판정 결과인 [YES] 또는 [NO]를 반드시 포함하여 ' : ''}마스터의 결정적 판정 및 운의 흐름 핵심 1문장)
-- [실천 처방] (오늘 당장 실행할 수 있는 구체적인 행동 조언 핵심 1문장)
-
-[⚠️ 필수 완결성 원칙 — 리딩 끝까지 완전 작성]
-- 중간에 서술을 멈추거나 생략하지 마십시오.
-- 1단계부터 5단계 축복의 한마디 및 [핵심 3줄 요약]의 마지막 줄까지 한 문장도 끊김 없이 끝까지 완결된 형태로 작성하여 주십시오.${binaryChoicePromptAddon}${spreadPromptAddon}${contextPromptAddon}`;
+${tailoredGuide.promptTemplate}${binaryChoicePromptAddon}${spreadPromptAddon}${contextPromptAddon}`;
         }
 
         let finalResponse = "";
@@ -2949,7 +2955,7 @@ ${concernAnalysis.kind === "yes_no"
         className={`prism-xs-subnav fixed top-safe-nav md:top-safe-nav-md left-1/2 z-[100] flex items-center gap-1 p-1 rounded-3xl bg-white/5 backdrop-blur-2xl border border-white/10 shadow-2xl max-w-[95vw] overflow-x-auto no-scrollbar md:max-w-fit md:overflow-visible transition-opacity duration-300 ${isSpecialFeatureChromeHidden ? SPECIAL_FEATURE_CHROME_HIDDEN_CLASS : 'opacity-100'}`}
       >
         {[
-          { id: "destiny", icon: Compass, label: "사주 만세력" },
+          { id: "destiny", icon: Compass, label: "SAJU" },
           { id: "tarot", icon: TarotCardIcon as any, label: "TAROT" },
           { id: "oracle", icon: Sparkles, label: "ORACLE" },
         ].map((item) => {
@@ -3131,11 +3137,47 @@ ${concernAnalysis.kind === "yes_no"
                               </div>
                             )}
 
-                            <div className="space-y-3 text-left w-full overflow-hidden">
-                              <div className="flex items-center justify-between pl-2">
-                                <label className="text-xs text-white/50 font-bold uppercase tracking-widest block">
-                                  Your Concern
-                                </label>
+                            {!isDailyTarotChecked ? (
+                              <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-yellow-500/15 via-amber-500/10 to-purple-950/20 border border-yellow-500/40 shadow-xl space-y-4 text-center my-4">
+                                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-yellow-500/20 border border-yellow-400/40 text-yellow-300 text-xs font-bold">
+                                  <Sparkles size={14} className="text-yellow-400 animate-pulse" />
+                                  <span>오늘의 타로 필수 확인 안내</span>
+                                </div>
+                                <div className="space-y-2 max-w-lg mx-auto">
+                                  <h3 className="text-base sm:text-lg font-bold text-white font-serif">
+                                    오늘의 타로를 먼저 확인해 주세요 🌟
+                                  </h3>
+                                  <p className="text-xs text-white/80 leading-relaxed break-keep">
+                                    개인 맞춤 타로 고민과 다양한 배열법 리딩을 진행하시려면 먼저 오늘 하루를 이끄는 천상의 지배 카드(오늘의 타로)를 확인해야 합니다. 오늘의 우주 에너지를 먼저 마주해 보세요!
+                                  </p>
+                                </div>
+                                <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setTarotConcern("오늘의 타로");
+                                      setCustomSpread(null);
+                                      const targetCard = dailyResult?.drawnCard || dailyDrawnCard;
+                                      if (targetCard) {
+                                        setShowDailyModal(true);
+                                      } else {
+                                        handleUnifiedReading("tarot");
+                                      }
+                                    }}
+                                    className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-gradient-to-r from-yellow-500 via-amber-500 to-yellow-600 hover:from-yellow-400 hover:to-amber-400 text-black font-extrabold text-xs sm:text-sm tracking-wider flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(234,179,8,0.4)] transition-all cursor-pointer active:scale-95"
+                                  >
+                                    <Sparkles size={16} />
+                                    <span>🌟 오늘의 타로 원카드 지금 확인하기</span>
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="space-y-3 text-left w-full overflow-hidden">
+                                  <div className="flex items-center justify-between pl-2">
+                                    <label className="text-xs text-white/50 font-bold uppercase tracking-widest block">
+                                      Your Concern
+                                    </label>
                                 <button
                                   type="button"
                                   onClick={() => setIsSpreadModalOpen(true)}
@@ -3426,6 +3468,8 @@ ${concernAnalysis.kind === "yes_no"
                                 </div>
                               )}
                             </div>
+                          </>
+                        )}
                           </div>
                         ) : (
                           <div className="flex-1 flex flex-col overflow-hidden relative w-full text-left">
@@ -3548,6 +3592,57 @@ ${concernAnalysis.kind === "yes_no"
                                     ) : (
                                       <div className="space-y-4">
                                           {/* ✨ 핵심 3줄 요약 카드 (상황 진단, 방향성, 실천 처방 & 원클릭 TTS) */}
+
+                                          {conciseSummaryBullets.length > 0 && tarotResult && (
+                                            <div className="p-4 rounded-2xl bg-gradient-to-r from-yellow-500/15 via-amber-500/10 to-transparent border border-yellow-500/35 shadow-inner">
+                                              <div className="flex items-center justify-between gap-2 mb-3">
+                                                <div className="flex items-center gap-1.5 text-yellow-300 font-bold text-xs">
+                                                  <Sparkles size={13} className="text-yellow-400 animate-pulse" />
+                                                  <span>✨ 핵심 3줄 요약 (Quick Summary)</span>
+                                                </div>
+                                                <button
+                                                  type="button"
+                                                  onClick={async () => {
+                                                    if (isSummaryTTSActive) {
+                                                      stopTTS();
+                                                    } else if (summarySpeechText) {
+                                                      await playTTSInChunks(summarySpeechText, 'Kore', 110, '신비');
+                                                    }
+                                                  }}
+                                                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                                                    isSummaryTTSActive
+                                                      ? "bg-yellow-400/25 text-yellow-300 border border-yellow-400/40 animate-pulse"
+                                                      : "bg-white/10 hover:bg-white/20 text-white/90 border border-white/15"
+                                                  }`}
+                                                  title="핵심 3줄 요약 음성 낭독"
+                                                >
+                                                  {isSummaryTTSActive ? <VolumeX size={11} /> : <Volume2 size={11} />}
+                                                  <span>{isSummaryTTSActive ? "중지" : "요약 듣기"}</span>
+                                                </button>
+                                              </div>
+                                              <ul className="space-y-2 text-xs text-white/90 leading-relaxed font-sans">
+                                                {conciseSummaryBullets.map((bullet, bIdx) => {
+                                                  const match = bullet.match(/^\[([^\]]+)\]\s*(.*)$/);
+                                                  const tag = match ? match[1] : null;
+                                                  const content = match ? match[2] : bullet;
+                                                  return (
+                                                    <li key={bIdx} className="flex items-start gap-2">
+                                                      <span className="text-yellow-400 font-bold shrink-0 mt-0.5">•</span>
+                                                      <div className="leading-snug">
+                                                        {tag && (
+                                                          <span className="inline-block px-1.5 py-0.5 mr-1.5 rounded text-[10px] font-bold bg-yellow-400/20 text-yellow-300 border border-yellow-400/30">
+                                                            {tag}
+                                                          </span>
+                                                        )}
+                                                        <span>{content}</span>
+                                                      </div>
+                                                    </li>
+                                                  );
+                                                })}
+                                              </ul>
+                                            </div>
+                                          )}
+
                                           {/* ⚖️ 예/아니오 (YES or NO) 마스터 최종 판정 배너 */}
                                           {tarotYesNoVerdict && (
                                             <div className={`p-4 rounded-2xl border flex items-center justify-between gap-3 shadow-lg backdrop-blur-md transition-all ${
@@ -3593,6 +3688,8 @@ ${concernAnalysis.kind === "yes_no"
 
                                           <Streamdown immediate={!isTarotGenerating}>{displayTarotResult || tarotResult || ""}</Streamdown>
 
+
+
                                           {/* ✨ 리딩 하단 핵심 3줄 요약 강조 그래픽 카드 UI */}
                                           {conciseSummaryBullets.length > 0 && tarotResult && !isTarotGenerating && (
                                             <div className="pt-2">
@@ -3609,9 +3706,7 @@ ${concernAnalysis.kind === "yes_no"
                                                 }}
                                               />
                                             </div>
-                                          )}
-
-                                          {/* 🌟 그에 맞는 루시의 조언 (TTS 가능) */}
+                                          )}                                          {/* 🌟 그에 맞는 루시의 조언 (TTS 가능) */}
                                           {tarotResult && !isTarotGenerating && (
                                             <div className="pt-2">
                                               <LucyTarotAdviceCard

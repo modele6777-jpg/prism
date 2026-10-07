@@ -194,8 +194,13 @@ export function useAutoPrismSync({
       }
     };
 
+    let lastRecord = 0;
     const recordInteraction = () => {
-      lastInteractionAtRef.current = Date.now();
+      const now = Date.now();
+      if (now - lastRecord > 2500) {
+        lastRecord = now;
+        lastInteractionAtRef.current = now;
+      }
     };
 
     // Note: Do NOT listen to 'prism:daily_oracle_updated', 'prism:feature_updated', or 'storage' here!
@@ -206,7 +211,6 @@ export function useAutoPrismSync({
     window.addEventListener('focus', onResume);
     window.addEventListener('touchstart', recordInteraction, { passive: true });
     window.addEventListener('pointerdown', recordInteraction, { passive: true });
-    window.addEventListener('scroll', recordInteraction, { capture: true, passive: true });
 
     // Cross-Tab Realtime Broadcast Channel Listener
     let channel: BroadcastChannel | null = null;
@@ -224,7 +228,6 @@ export function useAutoPrismSync({
       window.removeEventListener('focus', onResume);
       window.removeEventListener('touchstart', recordInteraction);
       window.removeEventListener('pointerdown', recordInteraction);
-      window.removeEventListener('scroll', recordInteraction, { capture: true } as EventListenerOptions);
       if (channel) {
         try { channel.close(); } catch (_) {}
       }

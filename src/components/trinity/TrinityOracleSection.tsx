@@ -2754,19 +2754,48 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
               </div>
 
               {/* Native TarotSpread Component Integration with Customizable Card Back */}
-              <div className="w-full min-h-[440px] md:min-h-[480px] relative">
-                <TarotSpread
-                  key={`oracle-spread-${oracleMode}-${cardBackId}`}
-                  maxCards={3}
-                  positions={slotPositions}
-                  deckSource={activeDeckSource}
-                  cardBackId={cardBackId}
-                  allowReversed={true}
-                  spreadName={oracleMode === 'healing' ? '내면아이 쉼 스프레드' : '4원소 마인드셋 스프레드'}
-                  onComplete={handleCardsComplete}
-                  onCancel={() => {}}
-                />
-              </div>
+              {!hasTodayDailyResult ? (
+                <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-amber-500/15 via-yellow-500/10 to-purple-950/20 border border-yellow-500/40 shadow-xl space-y-4 text-center my-6">
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-yellow-500/20 border border-yellow-400/40 text-yellow-300 text-xs font-bold">
+                    <Sparkles size={14} className="text-yellow-400 animate-pulse" />
+                    <span>오늘의 타로 필수 확인 안내</span>
+                  </div>
+                  <div className="space-y-2 max-w-lg mx-auto">
+                    <h3 className="text-base sm:text-lg font-bold text-white font-serif">
+                      오늘의 타로를 먼저 확인해 주세요 🌟
+                    </h3>
+                    <p className="text-xs text-zinc-300 leading-relaxed break-keep">
+                      78장 오라클 타로의 사주 ✕ 타로 융합 리딩을 진행하시려면 먼저 오늘의 지배 에너지와 카드를 마주하는 '오늘의 타로'를 확인해야 합니다. 우주의 일일 파동이 조율된 후 오라클 리딩이 활성화됩니다.
+                    </p>
+                  </div>
+                  <div className="pt-2 flex justify-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent('trinity:open_daily_tarot'));
+                      }}
+                      className="px-7 py-3.5 rounded-2xl bg-gradient-to-r from-yellow-500 via-amber-500 to-yellow-600 hover:from-yellow-400 hover:to-amber-400 text-black font-extrabold text-xs sm:text-sm tracking-wider flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(234,179,8,0.4)] transition-all cursor-pointer active:scale-95"
+                    >
+                      <Sparkles size={16} />
+                      <span>🌟 오늘의 타로 먼저 확인하러 가기</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="w-full min-h-[440px] md:min-h-[480px] relative">
+                  <TarotSpread
+                    key={`oracle-spread-${oracleMode}-${cardBackId}`}
+                    maxCards={3}
+                    positions={slotPositions}
+                    deckSource={activeDeckSource}
+                    cardBackId={cardBackId}
+                    allowReversed={true}
+                    spreadName={oracleMode === 'healing' ? '내면아이 쉼 스프레드' : '4원소 마인드셋 스프레드'}
+                    onComplete={handleCardsComplete}
+                    onCancel={() => {}}
+                  />
+                </div>
+              )}
             </div>
           </motion.div>
         ) : (
@@ -2910,6 +2939,9 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
                 </div>
 
                 <div className="text-white/85 text-xs sm:text-sm leading-relaxed relative z-10 w-full font-sans space-y-4" style={{ wordBreak: 'keep-all' }}>
+                  {/* ✨ 핵심 3줄 요약 카드 (항상 첫 칸에 고정: 상황 진단, 방향성, 실천 처방 & 원클릭 TTS) */}
+                  {renderOracleSummaryCard()}
+
                   {/* 🔮 오늘의 일일 타로 결과 연동 상태 배너 */}
                   <div className="p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-purple-500/10 to-amber-500/5 border border-amber-400/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs shadow-sm">
                     <div className="flex items-center gap-2 flex-wrap">
