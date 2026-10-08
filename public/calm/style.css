@@ -1642,6 +1642,8 @@ button, a, input, textarea, select {
   transform: scale(0.9);
   transition: opacity 1.2s ease, transform 1.2s cubic-bezier(0.25, 1, 0.5, 1);
   filter: blur(0.5px);
+  will-change: transform, opacity, box-shadow;
+  transform-origin: center center;
 }
 
 .balloon-aura-ring.ring-2 {
@@ -1801,16 +1803,117 @@ button, a, input, textarea, select {
 }
 
 @keyframes auraInflate1 {
-  0% { transform: scale(0.85); opacity: 0.2; }
-  100% { transform: scale(1.65); opacity: 0.65; }
+  0% {
+    transform: scale(0.85) translateY(4px);
+    opacity: 0.18;
+    box-shadow: 0 0 10px rgba(224, 169, 109, 0.12);
+  }
+  15% {
+    transform: scale(1.02) translateY(2px);
+    opacity: 0.28;
+    box-shadow: 0 0 16px rgba(224, 169, 109, 0.2);
+  }
+  32% {
+    transform: scale(1.19) translateY(-1px);
+    opacity: 0.38;
+    box-shadow: 0 0 24px rgba(224, 169, 109, 0.3);
+  }
+  50% {
+    transform: scale(1.36) translateY(-3.5px);
+    opacity: 0.48;
+    box-shadow: 0 0 30px rgba(245, 158, 11, 0.38);
+  }
+  68% {
+    transform: scale(1.50) translateY(-6px);
+    opacity: 0.58;
+    box-shadow: 0 0 38px rgba(245, 158, 11, 0.45);
+  }
+  84% {
+    transform: scale(1.60) translateY(-7.5px);
+    opacity: 0.64;
+    box-shadow: 0 0 44px rgba(245, 158, 11, 0.5);
+  }
+  100% {
+    transform: scale(1.66) translateY(-8px);
+    opacity: 0.68;
+    box-shadow: 0 0 48px rgba(245, 158, 11, 0.55);
+  }
 }
+
 @keyframes auraInflate2 {
-  0% { transform: scale(0.9); opacity: 0.1; }
-  100% { transform: scale(1.85); opacity: 0.45; }
+  0% {
+    transform: scale(0.88) translateY(4px);
+    opacity: 0.10;
+    box-shadow: 0 0 12px rgba(224, 169, 109, 0.08);
+  }
+  15% {
+    transform: scale(1.05) translateY(2px);
+    opacity: 0.16;
+    box-shadow: 0 0 18px rgba(224, 169, 109, 0.15);
+  }
+  32% {
+    transform: scale(1.26) translateY(-1px);
+    opacity: 0.24;
+    box-shadow: 0 0 26px rgba(224, 169, 109, 0.22);
+  }
+  50% {
+    transform: scale(1.48) translateY(-3.5px);
+    opacity: 0.33;
+    box-shadow: 0 0 34px rgba(245, 158, 11, 0.3);
+  }
+  68% {
+    transform: scale(1.66) translateY(-6px);
+    opacity: 0.39;
+    box-shadow: 0 0 42px rgba(245, 158, 11, 0.36);
+  }
+  84% {
+    transform: scale(1.78) translateY(-7.5px);
+    opacity: 0.43;
+    box-shadow: 0 0 48px rgba(245, 158, 11, 0.4);
+  }
+  100% {
+    transform: scale(1.86) translateY(-8px);
+    opacity: 0.46;
+    box-shadow: 0 0 52px rgba(245, 158, 11, 0.42);
+  }
 }
+
 @keyframes auraInflate3 {
-  0% { transform: scale(0.95); opacity: 0.05; }
-  100% { transform: scale(2.05); opacity: 0.3; }
+  0% {
+    transform: scale(0.92) translateY(4px);
+    opacity: 0.05;
+    box-shadow: 0 0 14px rgba(217, 119, 6, 0.04);
+  }
+  15% {
+    transform: scale(1.10) translateY(2px);
+    opacity: 0.10;
+    box-shadow: 0 0 20px rgba(217, 119, 6, 0.08);
+  }
+  32% {
+    transform: scale(1.34) translateY(-1px);
+    opacity: 0.16;
+    box-shadow: 0 0 28px rgba(217, 119, 6, 0.14);
+  }
+  50% {
+    transform: scale(1.60) translateY(-3.5px);
+    opacity: 0.22;
+    box-shadow: 0 0 36px rgba(217, 119, 6, 0.2);
+  }
+  68% {
+    transform: scale(1.82) translateY(-6px);
+    opacity: 0.26;
+    box-shadow: 0 0 44px rgba(217, 119, 6, 0.24);
+  }
+  84% {
+    transform: scale(1.98) translateY(-7.5px);
+    opacity: 0.29;
+    box-shadow: 0 0 50px rgba(217, 119, 6, 0.28);
+  }
+  100% {
+    transform: scale(2.08) translateY(-8px);
+    opacity: 0.32;
+    box-shadow: 0 0 56px rgba(217, 119, 6, 0.3);
+  }
 }
 
 /* 2. HOLD PHASE: 2s Suspended Weightless Float */
@@ -1819,17 +1922,13 @@ button, a, input, textarea, select {
 }
 
 .balloon-stage-area.phase-hold .balloon-aura-ring.ring-1 {
-  transform: scale(1.65);
-  opacity: 0.65;
-  animation: auraHoldPulse 2s ease-in-out infinite alternate;
+  animation: auraHoldPulse1 2s ease-in-out infinite alternate;
 }
 .balloon-stage-area.phase-hold .balloon-aura-ring.ring-2 {
-  transform: scale(1.85);
-  opacity: 0.45;
+  animation: auraHoldPulse2 2s ease-in-out infinite alternate;
 }
 .balloon-stage-area.phase-hold .balloon-aura-ring.ring-3 {
-  transform: scale(2.05);
-  opacity: 0.3;
+  animation: auraHoldPulse3 2s ease-in-out infinite alternate;
 }
 
 @keyframes organicBalloonHold {
@@ -1845,12 +1944,46 @@ button, a, input, textarea, select {
   }
 }
 
-@keyframes auraHoldPulse {
-  0% { transform: scale(1.65); opacity: 0.65; }
-  100% { transform: scale(1.72); opacity: 0.8; }
+@keyframes auraHoldPulse1 {
+  0% {
+    transform: scale(1.66) translateY(-8px);
+    opacity: 0.68;
+    box-shadow: 0 0 48px rgba(245, 158, 11, 0.55);
+  }
+  100% {
+    transform: scale(1.72) translateY(-11px);
+    opacity: 0.82;
+    box-shadow: 0 0 60px rgba(245, 158, 11, 0.68);
+  }
 }
 
-/* 3. EXHALE PHASE: 5s Fluid Organic Deflation & Tension Release */
+@keyframes auraHoldPulse2 {
+  0% {
+    transform: scale(1.86) translateY(-8px);
+    opacity: 0.46;
+    box-shadow: 0 0 52px rgba(245, 158, 11, 0.42);
+  }
+  100% {
+    transform: scale(1.92) translateY(-11px);
+    opacity: 0.56;
+    box-shadow: 0 0 64px rgba(245, 158, 11, 0.5);
+  }
+}
+
+@keyframes auraHoldPulse3 {
+  0% {
+    transform: scale(2.08) translateY(-8px);
+    opacity: 0.32;
+    box-shadow: 0 0 56px rgba(217, 119, 6, 0.3);
+  }
+  100% {
+    transform: scale(2.15) translateY(-11px);
+    opacity: 0.40;
+    box-shadow: 0 0 68px rgba(217, 119, 6, 0.38);
+  }
+}
+
+/* 3. EXHALE PHASE: 5s Fluid Organic Deflation & Synchronized Contracting Pulse */
 .organic-balloon.phase-exhale {
   animation: organicBalloonDeflate 5s cubic-bezier(0.28, 0.05, 0.22, 1) forwards;
 }
@@ -1895,16 +2028,135 @@ button, a, input, textarea, select {
 }
 
 @keyframes auraDeflate1 {
-  0% { transform: scale(1.65); opacity: 0.65; }
-  100% { transform: scale(0.85); opacity: 0.2; }
+  0% {
+    transform: scale(1.66) translateY(-8px);
+    opacity: 0.68;
+    box-shadow: 0 0 48px rgba(245, 158, 11, 0.55);
+  }
+  20% {
+    transform: scale(1.48) translateY(-6px);
+    opacity: 0.54;
+    box-shadow: 0 0 34px rgba(162, 89, 59, 0.38);
+  }
+  45% {
+    transform: scale(1.28) translateY(-3px);
+    opacity: 0.42;
+    box-shadow: 0 0 25px rgba(162, 89, 59, 0.28);
+  }
+  70% {
+    transform: scale(1.06) translateY(0px);
+    opacity: 0.30;
+    box-shadow: 0 0 16px rgba(224, 169, 109, 0.2);
+  }
+  100% {
+    transform: scale(0.85) translateY(4px);
+    opacity: 0.18;
+    box-shadow: 0 0 8px rgba(224, 169, 109, 0.1);
+  }
 }
+
 @keyframes auraDeflate2 {
-  0% { transform: scale(1.85); opacity: 0.45; }
-  100% { transform: scale(0.9); opacity: 0.1; }
+  0% {
+    transform: scale(1.86) translateY(-8px);
+    opacity: 0.46;
+    box-shadow: 0 0 52px rgba(245, 158, 11, 0.42);
+  }
+  20% {
+    transform: scale(1.64) translateY(-6px);
+    opacity: 0.36;
+    box-shadow: 0 0 38px rgba(162, 89, 59, 0.3);
+  }
+  45% {
+    transform: scale(1.38) translateY(-3px);
+    opacity: 0.26;
+    box-shadow: 0 0 28px rgba(162, 89, 59, 0.22);
+  }
+  70% {
+    transform: scale(1.12) translateY(0px);
+    opacity: 0.18;
+    box-shadow: 0 0 18px rgba(224, 169, 109, 0.15);
+  }
+  100% {
+    transform: scale(0.88) translateY(4px);
+    opacity: 0.10;
+    box-shadow: 0 0 10px rgba(224, 169, 109, 0.05);
+  }
 }
+
 @keyframes auraDeflate3 {
-  0% { transform: scale(2.05); opacity: 0.3; }
-  100% { transform: scale(0.95); opacity: 0.05; }
+  0% {
+    transform: scale(2.08) translateY(-8px);
+    opacity: 0.32;
+    box-shadow: 0 0 56px rgba(217, 119, 6, 0.3);
+  }
+  20% {
+    transform: scale(1.80) translateY(-6px);
+    opacity: 0.24;
+    box-shadow: 0 0 42px rgba(162, 89, 59, 0.24);
+  }
+  45% {
+    transform: scale(1.50) translateY(-3px);
+    opacity: 0.16;
+    box-shadow: 0 0 30px rgba(162, 89, 59, 0.18);
+  }
+  70% {
+    transform: scale(1.20) translateY(0px);
+    opacity: 0.10;
+    box-shadow: 0 0 20px rgba(217, 119, 6, 0.1);
+  }
+  100% {
+    transform: scale(0.92) translateY(4px);
+    opacity: 0.05;
+    box-shadow: 0 0 12px rgba(217, 119, 6, 0.03);
+  }
+}
+
+/* 4. IDLE / PAUSED PHASE: Gentle Resting Aura Breathing Pulse */
+.balloon-stage-area.phase-idle .balloon-aura-ring.ring-1 {
+  animation: auraIdlePulse1 4s ease-in-out infinite alternate;
+}
+.balloon-stage-area.phase-idle .balloon-aura-ring.ring-2 {
+  animation: auraIdlePulse2 4s ease-in-out infinite alternate 0.25s;
+}
+.balloon-stage-area.phase-idle .balloon-aura-ring.ring-3 {
+  animation: auraIdlePulse3 4s ease-in-out infinite alternate 0.5s;
+}
+
+@keyframes auraIdlePulse1 {
+  0% {
+    transform: scale(0.9) translateY(0);
+    opacity: 0.22;
+    box-shadow: 0 0 10px rgba(224, 169, 109, 0.15);
+  }
+  100% {
+    transform: scale(0.96) translateY(-3px);
+    opacity: 0.32;
+    box-shadow: 0 0 18px rgba(224, 169, 109, 0.25);
+  }
+}
+@keyframes auraIdlePulse2 {
+  0% {
+    transform: scale(0.92) translateY(0);
+    opacity: 0.14;
+    box-shadow: 0 0 12px rgba(224, 169, 109, 0.1);
+  }
+  100% {
+    transform: scale(0.98) translateY(-3px);
+    opacity: 0.20;
+    box-shadow: 0 0 20px rgba(224, 169, 109, 0.18);
+  }
+}
+@keyframes auraIdlePulse3 {
+  0% {
+    transform: scale(0.94) translateY(0);
+    opacity: 0.08;
+    box-shadow: 0 0 14px rgba(217, 119, 6, 0.05);
+  }
+  100% {
+    transform: scale(1.01) translateY(-3px);
+    opacity: 0.14;
+    box-shadow: 0 0 22px rgba(217, 119, 6, 0.12);
+  }
 }
 
 /* 4. IDLE / PAUSED PHASE */

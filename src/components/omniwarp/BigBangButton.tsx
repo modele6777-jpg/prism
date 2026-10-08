@@ -21,7 +21,7 @@ import { triggerHaptic, startBlackHoleContinuousHaptic, stopBlackHoleContinuousH
 import { safeSessionStorage } from '@/utils/safeStorage';
 import { peekPendingSelection, savePendingSelection, clearPendingSelection, getLiveSelectedText } from '@/lib/selectionBridge';
 import { sendPrismToss } from '@/lib/prismToss';
-import { tossSelectionToMenu } from '@/lib/selectionContextRecommender';
+import { tossSelectionToMenu, PRISM_ALL_APP_DESTINATIONS } from '@/lib/selectionContextRecommender';
 import { BigBangCircularMeter } from './BigBangCircularMeter';
 import { PrismAppIcon } from './PrismAppIcon';
 
@@ -307,38 +307,71 @@ export function BigBangButton() {
     const deltaY = currentPointer ? currentPointer.clientY - start.y : 0;
     const dist = Math.hypot(deltaX, deltaY);
 
-    // 🎯 드래그(dist >= 20) 중일 때:
-    // 7대 정규 앱 엄격 순환(Non-Repeating App Cycle) 추천 메뉴를 실시간 타깃으로 동기화 (글자 토스 포함)
+    // 🎯 제스처 실시간 타깃 및 HUD 매핑:
+    // 1) 드래그 (dist >= 20): Key (마음약방 & 40가지 연습) 도약
+    // 2) 제자리 홀드 (dist < 20, elapsed >= 250): 루시 (/chat 1:1 대화) 소환
+    // 3) 가볍게 탭 (dist < 20, elapsed < 250): 홈 (/) 베이스캠프 복귀
     const textToToss = touchStartSelectionRef.current || getActiveSelectionText();
+    const elapsed = now - start.time;
+
+    let currentHole: 'whitehole' | 'blackhole' = 'whitehole';
 
     if (dist >= 20) {
       setIsPageScrolling(false);
-      const contextCandidate = peekNextRecommendedMenuByCycle(location, textToToss || undefined);
+      currentHole = 'blackhole';
       const isTextToss = Boolean(textToToss);
       target = {
-        id: contextCandidate.menu.id,
-        icon: contextCandidate.menu.emoji,
-        phase: 'wormhole',
+        id: 'key',
+        icon: '🔑',
+        phase: 'blackhole',
         gauge: metrics.virtualForce,
         aiTemperature: temp,
-        title: contextCandidate.menu.name,
+        title: 'Key 마음약방',
         actionType: isTextToss ? 'smart_toss' : 'navigate',
         previewLabel: isTextToss
-          ? `[추천 1위 토스 · 순환 ${contextCandidate.stats.visitedCount}/${contextCandidate.stats.totalCount}] ${contextCandidate.menu.name}`
-          : `[맥락 추천 1위 · 순환 ${contextCandidate.stats.visitedCount}/${contextCandidate.stats.totalCount}] ${contextCandidate.menu.name}`,
-        previewDescription: isTextToss
-          ? `"${textToToss.slice(0, 20)}..." ➔ ${contextCandidate.menu.name} 즉시 실행`
-          : contextCandidate.reason,
-        destinationPath: contextCandidate.safePath,
-        themeColor: contextCandidate.menu.themeColor,
-        accentGlow: contextCandidate.menu.themeColor || 'rgba(56, 189, 248, 0.85)',
-        cycleStats: contextCandidate.stats,
+          ? `[Key 토스] "${textToToss.slice(0, 16)}..." ➔ 40가지 연습 처방`
+          : `[드래그 도약] Key 마음약방`,
+        previewDescription: '제이미 저커먼 도서 연동 마음 치유 동반자 & 40가지 소매틱 연습',
+        destinationPath: '/key',
+        themeColor: '#0ea5e9',
+        accentGlow: 'rgba(14, 165, 233, 0.85)',
+      };
+    } else if (elapsed >= 250) {
+      currentHole = 'whitehole';
+      const isTextToss = Boolean(textToToss);
+      target = {
+        id: 'lucy',
+        icon: '💬',
+        phase: 'whitehole',
+        gauge: metrics.virtualForce,
+        aiTemperature: temp,
+        title: '루시 1:1 대화',
+        actionType: isTextToss ? 'smart_toss' : 'navigate',
+        previewLabel: isTextToss
+          ? `[루시 토스] "${textToToss.slice(0, 16)}..." ➔ 루시 질의`
+          : `[홀드 소환] 루시 1:1 대화`,
+        previewDescription: '마음의 안식처 루시와 나누는 따뜻한 대화와 지혜 조언',
+        destinationPath: '/chat',
+        themeColor: '#fde68a',
+        accentGlow: 'rgba(253, 230, 138, 0.85)',
+      };
+    } else {
+      currentHole = 'whitehole';
+      target = {
+        id: 'hub',
+        icon: '🏠',
+        phase: 'whitehole',
+        gauge: metrics.virtualForce,
+        aiTemperature: temp,
+        title: '홈 베이스캠프',
+        actionType: 'navigate',
+        previewLabel: '가볍게 탭 ➔ 홈으로 이동',
+        previewDescription: '프롤로그 허브 메인으로 귀환합니다',
+        destinationPath: '/',
+        themeColor: '#38bdf8',
+        accentGlow: 'rgba(56, 189, 248, 0.85)',
       };
     }
-
-    // 🪞 미러홀 제거: 250ms 미만은 화이트홀(빛비춤), 250ms 이상 홀드 시 블랙홀(어두운 심연)로 즉시 전환
-    const elapsed = now - start.time;
-    let currentHole: 'whitehole' | 'blackhole' = elapsed >= 250 ? 'blackhole' : 'whitehole';
 
     // 중요한 상태 변경(섹터, 페이즈, 어보트, 홀)이 발생했거나 약 33ms(30fps) 경과 시 상태 일괄 동기화
     const isSectorChanged = sectorIdx !== lastSectorRef.current;
@@ -525,34 +558,81 @@ export function BigBangButton() {
     currentPointerEventRef.current = e;
   };
 
-  // 🌟 럭키 프롤로그 메인 즉시 도약 헬퍼 (더블탭 시 실행)
-  const goToPrologueMain = useCallback((customContext?: any, customMetrics?: any) => {
-    // 대기 중인 1회 탭(루시 채팅 토글) 타이머 취소
+  // ⚡ 추천 1순위 즉시 도약 헬퍼 (더블탭 시 실행 - 루시와 Key는 엄격 제외)
+  const goToNextRecommended = useCallback((customContext?: any, customMetrics?: any) => {
+    // 대기 중인 1회 탭(홈 이동) 타이머 즉시 취소
     if (singleTapTimerRef.current) {
       clearTimeout(singleTapTimerRef.current);
       singleTapTimerRef.current = null;
     }
     lastTapTimeRef.current = 0;
 
-    // 🌟 더블탭: 럭키 프롤로그 메인 귀환 사운드 & 햅틱 & 시각 효과
+    // 🌟 더블탭: 추천 1순위 웜홀 사운드 & 햅틱
     omniWarpAudio.playDoubleTap();
-    triggerHaptic('whitehole');
+    triggerHaptic('wormhole');
 
-    const ctx = customContext || serializeCurrentView(location);
+    const textToToss = touchStartSelectionRef.current || getActiveSelectionText();
+    const { menu: targetMenu, reason, stats, safePath } = commitNextRecommendedMenuByCycle(
+      location,
+      textToToss || undefined
+    );
+
+    // 🛡️ 실존 페이지 및 워프 불가 목적지 검증 (루시/Key 엄격 제외 보장)
+    const isExcluded = (p: string, id: string) => {
+      const lower = `${p} ${id}`.toLowerCase();
+      return (
+        lower.includes('chat') ||
+        lower.includes('lucy') ||
+        lower.includes('key') ||
+        lower.includes('calm')
+      );
+    };
+
+    let finalSafePath = safePath;
+    let finalMenu = targetMenu;
+
+    if (
+      !isValidPrismPath(finalSafePath) ||
+      isDisallowedWarpDestination(finalMenu.id) ||
+      isDisallowedWarpDestination(finalSafePath) ||
+      isExcluded(finalSafePath, finalMenu.id)
+    ) {
+      console.warn(`[DoubleTapRecommend] Filtered restricted path: ${finalSafePath}`);
+      const fallback = PRISM_ALL_APP_DESTINATIONS.find(
+        (d) => d.tossTargetId === 'trinity' || d.basePath === '/trinity'
+      ) || PRISM_ALL_APP_DESTINATIONS[0];
+      finalSafePath = fallback.path;
+      finalMenu = fallback;
+    }
+
+    const cycleLabel = stats.isFullCycleCompleted
+      ? `새 순환 ${stats.cycleIndex}회차`
+      : `순환 ${stats.visitedCount}/${stats.totalCount}`;
+
+    const previewLabel = textToToss
+      ? `[추천 1위 토스 · ${cycleLabel}] ${finalMenu.name}`
+      : `[추천 1위 도약 · ${cycleLabel}] ${finalMenu.name}`;
+
+    const previewDescription = textToToss
+      ? `"${textToToss.slice(0, 20)}..." ➔ ${finalMenu.name} 즉시 실행`
+      : reason;
 
     if (typeof window !== 'undefined') {
       window.dispatchEvent(
         new CustomEvent('prism:bigbang_commit', {
           detail: {
-            phase: 'whitehole',
+            phase: 'wormhole',
             target: {
-              id: 'hub',
-              name: '럭키 프롤로그 메인',
-              destinationPath: '/',
-              themeColor: '#38bdf8',
-              eventHorizonMode: 'whitehole',
+              id: finalMenu.id,
+              name: finalMenu.name,
+              destinationPath: finalSafePath,
+              themeColor: finalMenu.themeColor,
+              icon: finalMenu.emoji,
+              previewLabel,
+              previewDescription,
+              cycleStats: stats,
             },
-            context: ctx,
+            context: customContext || serializeCurrentView(location),
             metrics: customMetrics,
             timestamp: Date.now(),
           },
@@ -560,21 +640,39 @@ export function BigBangButton() {
       );
     }
 
-    // 럭키 프롤로그 메인('/')으로 즉시 도약 및 상단 부드러운 스크롤
-    if (typeof window !== 'undefined' && (window.location.pathname.includes('key') || window.location.pathname.includes('calm') || window.location.pathname.includes('orb'))) {
-      window.location.href = '/';
+    if (textToToss) {
+      tossSelectionToMenu(textToToss, finalMenu, location, (targetPath) => {
+        if (isKeySite) {
+          window.location.href = targetPath;
+        } else {
+          navigate(targetPath);
+          window.dispatchEvent(new CustomEvent('prism-navigate', { detail: { path: targetPath } }));
+          window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: targetPath } }));
+        }
+      });
     } else {
-      navigate('/');
-      window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: '/' } }));
-      if (typeof window !== 'undefined') {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (isKeySite) {
+        window.location.href = finalSafePath;
+      } else {
+        navigate(finalSafePath);
+        window.dispatchEvent(new CustomEvent('prism-navigate', { detail: { path: finalSafePath } }));
+        window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: finalSafePath } }));
+        if (finalSafePath.includes('?tab=')) {
+          const tabName = finalSafePath.split('?tab=')[1]?.split('&')[0];
+          if (tabName) {
+            sessionStorage.setItem('prism_target_tab', tabName);
+            window.dispatchEvent(new CustomEvent('prism-tab-change', { detail: { tab: tabName } }));
+          }
+        }
       }
     }
 
+    touchStartSelectionRef.current = '';
     setActivePhase('idle');
     setGauge(0);
     setDurationMs(0);
-  }, [location, navigate]);
+    resetActiveContextPeek();
+  }, [location, navigate, getActiveSelectionText, isKeySite]);
 
   const handlePointerUp = (e: React.PointerEvent<HTMLButtonElement> | PointerEvent) => {
     cleanupGlobalPointerListeners();
@@ -657,13 +755,13 @@ export function BigBangButton() {
       const nowMs = performance.now();
       const timeSinceLastTap = nowMs - lastTapTimeRef.current;
 
-      // 🎯 더블탭 감지 (이전 탭 후 30ms ~ 400ms 이내 재탭 시): 즉시 럭키 프롤로그 메인('/')으로 바로가기!
-      if (timeSinceLastTap > 30 && timeSinceLastTap < 400) {
-        goToPrologueMain(context, metrics);
+      // 🎯 더블탭 감지 (이전 탭 후 30ms ~ 380ms 이내 재탭 시): 추천 1순위 즉시 도약! (루시/Key 엄격 제외)
+      if (timeSinceLastTap > 30 && timeSinceLastTap < 380) {
+        goToNextRecommended(context, metrics);
         return;
       }
 
-      // ☀️ 첫 번째 탭: 더블탭 입력 대기 (280ms) 후 싱글탭(루시 채팅 토글) 실행
+      // ☀️ 첫 번째 탭: 더블탭 입력 대기 (240ms) 후 싱글탭(홈으로 이동) 실행
       lastTapTimeRef.current = nowMs;
 
       if (singleTapTimerRef.current) {
@@ -675,46 +773,17 @@ export function BigBangButton() {
         triggerHaptic('whitehole');
         omniWarpAudio.playWhiteHole();
 
-        // 🌟 텍스트 드래그(선택) 연동: 글자를 스크롤/선택한 상태에서 빅뱅 탭 ➔ 루시에게 즉시 토스!
-        const textToToss = touchStartSelectionRef.current || getActiveSelectionText();
-
-        if (textToToss) {
-          savePendingSelection(textToToss, 'lucy', location);
-          try {
-            sessionStorage.setItem(
-              'lucy_injected_auto_send',
-              `[선택 내용 토스 질의]\n"${textToToss}"\n\n이 내용에 대해 핵심 분석과 실천적인 마음 치유 및 지혜 조언을 해줘.`
-            );
-            sessionStorage.setItem('lucy_injected_input_draft', textToToss);
-          } catch (_) {}
-          sendPrismToss({
-            sourceApp: location || 'bigbang_button',
-            targetApp: 'lucy',
-            actionType: 'smart_toss',
-            contextMessage: textToToss,
-            autoPrompt: textToToss,
-            tossedAt: Date.now(),
-          });
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(
-              new CustomEvent('prism:selection_tossed', {
-                detail: { text: textToToss, target: 'lucy', sourcePath: location },
-              })
-            );
-          }
-        }
-
-        // ☀️ 제자리 탭: 빛비춤(화이트홀) 화면 이펙트 발동!
+        // ☀️ 제자리 탭: 럭키 프롤로그 홈('/')으로 즉시 복귀!
         if (typeof window !== 'undefined') {
           window.dispatchEvent(
             new CustomEvent('prism:bigbang_commit', {
               detail: {
                 phase: 'whitehole',
                 target: {
-                  id: 'lucy',
-                  name: '루시 1:1 대화',
-                  destinationPath: '/chat',
-                  themeColor: '#fde68a',
+                  id: 'hub',
+                  name: '홈 베이스캠프',
+                  destinationPath: '/',
+                  themeColor: '#38bdf8',
                   eventHorizonMode: 'whitehole',
                 },
                 context,
@@ -725,31 +794,30 @@ export function BigBangButton() {
           );
         }
 
-        if (isChatView && !textToToss) {
-          // 채팅 화면에서 선택 텍스트가 없을 때만 이전 페이지로 귀환
-          const returnPath = safeSessionStorage.getItem('prism_chat_return_path') || '/';
-          safeSessionStorage.removeItem('prism_chat_return_path');
-          const finalDest = returnPath.includes('chat') ? '/' : returnPath;
-          if (isKeySite) {
-            window.location.href = finalDest;
-          } else {
-            navigate(finalDest);
-            window.dispatchEvent(new CustomEvent('prism-navigate', { detail: { path: finalDest } }));
-            window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: finalDest } }));
+        if (location === '/' || location === '') {
+          // 이미 홈 화면일 때는 최상단으로 부드럽게 스크롤
+          if (typeof window !== 'undefined') {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
           }
         } else {
-          // 일반 페이지(또는 텍스트를 들고 있을 때)는 루시 채팅 열기 & 토스 연계
-          const currentPath = location || '/';
-          safeSessionStorage.setItem('prism_chat_return_path', currentPath);
-          if (isKeySite) {
-            window.location.href = '/chat';
+          // 다른 화면일 때는 홈('/')으로 즉시 이동
+          if (
+            typeof window !== 'undefined' &&
+            (window.location.pathname.includes('key') ||
+              window.location.pathname.includes('calm') ||
+              window.location.pathname.includes('orb'))
+          ) {
+            window.location.href = '/';
           } else {
-            navigate('/chat');
-            window.dispatchEvent(new CustomEvent('prism-navigate', { detail: { path: '/chat' } }));
-            window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: '/chat' } }));
+            navigate('/');
+            window.dispatchEvent(new CustomEvent('prism-navigate', { detail: { path: '/' } }));
+            window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: '/' } }));
+            if (typeof window !== 'undefined') {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
           }
         }
-      }, 260);
+      }, 240);
 
       setActivePhase('idle');
       setGauge(0);
@@ -764,104 +832,88 @@ export function BigBangButton() {
     }
     lastTapTimeRef.current = 0;
 
-    // [2] 홀드 (250ms 이상) 또는 드래그 릴리즈 분기
+    // [2] 홀드 (300ms 이상) 또는 드래그 릴리즈 분기
     const textToToss = touchStartSelectionRef.current || getActiveSelectionText();
 
-    // 🎯 빅뱅 버튼 드래그 (dist >= 20):
-    // 7대 핵심 정규 앱 엄격 순환(Non-Repeating App Cycle) 기반 추천 메뉴 도약 / 글자 토스 실행!
+    // 🔑 [드래그: dist >= 20] ➔ Key (마음약방 & 40가지 연습) 도약!
     if (dist >= 20) {
-      triggerHaptic('wormhole');
-      omniWarpAudio.playWormhole();
+      triggerHaptic('blackhole');
+      omniWarpAudio.playBlackHole();
 
-      const { menu: targetMenu, reason, stats, safePath } = commitNextRecommendedMenuByCycle(
-        location,
-        textToToss || undefined
-      );
-
-      // 🛡️ 실존 페이지 및 워프 불가 목적지 검증
-      if (
-        !isValidPrismPath(safePath) ||
-        (safePath === '/' && isDisallowedWarpDestination('hub')) ||
-        safePath === '/universe' ||
-        safePath === '/profile' ||
-        isDisallowedWarpDestination(targetMenu.id) ||
-        isDisallowedWarpDestination(safePath)
-      ) {
-        console.warn(`[ContextCycle] Blocked navigation to invalid or restricted path: ${safePath}`);
-        setActivePhase('idle');
-        setGauge(0);
-        setDurationMs(0);
-        touchStartSelectionRef.current = '';
-        resetActiveContextPeek();
-        return;
+      // 🔑 텍스트 드래그(선택) 연동: 글자를 스크롤/선택한 상태에서 드래그 ➔ Key 40가지 연습으로 즉시 토스!
+      if (textToToss) {
+        savePendingSelection(textToToss, 'key', location);
+        try {
+          sessionStorage.setItem('key_tossed_text', textToToss);
+          sessionStorage.setItem('key_target_tab', 'tab-exercises');
+        } catch (_) {}
+        sendPrismToss({
+          sourceApp: location || 'bigbang_button',
+          targetApp: 'key',
+          actionType: 'smart_toss',
+          contextMessage: textToToss,
+          autoPrompt: textToToss,
+          tossedAt: Date.now(),
+        });
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('prism:selection_tossed', {
+              detail: { text: textToToss, target: 'key', sourcePath: location },
+            })
+          );
+          window.dispatchEvent(
+            new CustomEvent('prism:selection_saved', {
+              detail: { text: textToToss, target: 'key', sourcePath: location },
+            })
+          );
+        }
       }
-
-      const cycleLabel = stats.isFullCycleCompleted
-        ? `새 순환 ${stats.cycleIndex}회차`
-        : `순환 ${stats.visitedCount}/${stats.totalCount}`;
-
-      const previewLabel = textToToss
-        ? `[추천 1위 토스 · ${cycleLabel}] ${targetMenu.name}`
-        : `[맥락 추천 1위 · ${cycleLabel}] ${targetMenu.name}`;
-
-      const previewDescription = textToToss
-        ? `"${textToToss.slice(0, 20)}..." ➔ ${targetMenu.name} 즉시 실행`
-        : stats.isFullCycleCompleted
-        ? `${reason} (🎉 전체 7대 앱 1사이클 완주! 새로운 순환이 시작됩니다.)`
-        : `${reason} (${stats.cycleIndex}회차 순환 탐험: ${stats.visitedCount}/${stats.totalCount})`;
 
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
           new CustomEvent('prism:bigbang_commit', {
             detail: {
-              phase: 'wormhole',
+              phase: 'blackhole',
               target: {
-                id: targetMenu.id,
-                name: targetMenu.name,
-                destinationPath: safePath,
-                themeColor: targetMenu.themeColor,
-                icon: targetMenu.emoji,
-                previewLabel,
-                previewDescription,
-                cycleStats: stats,
+                id: 'key',
+                name: 'Key',
+                destinationPath: '/key',
+                themeColor: '#0ea5e9',
+                eventHorizonMode: 'blackhole',
+                previewLabel: '[드래그 도약] Key 마음약방',
+                previewDescription: '제이미 저커먼 도서 연동 마음 치유 동반자 & 40가지 소매틱 연습',
               },
               context,
-              metrics: { ...metrics, phase: 'wormhole' },
+              metrics: { ...metrics, phase: 'blackhole' },
               timestamp: Date.now(),
             },
           })
         );
       }
 
-      if (textToToss) {
-        // 대상 메뉴로 즉각 토스 & 네비게이션 실행
-        tossSelectionToMenu(textToToss, targetMenu, location, (targetPath) => {
+      setTimeout(() => {
+        if (isKeySite && !textToToss) {
+          // Key 사이트에서 드래그 시 홈 귀환
+          const returnPath = safeSessionStorage.getItem('prism_key_return_path') || '/';
+          safeSessionStorage.removeItem('prism_key_return_path');
+          const finalDest =
+            returnPath.includes('key') || returnPath.includes('calm') || returnPath.includes('orb')
+              ? '/'
+              : returnPath;
+          window.location.href = finalDest;
+        } else {
+          // Key 사이트로 도약
+          const currentPath = location || '/';
+          safeSessionStorage.setItem('prism_key_return_path', currentPath);
           if (isKeySite) {
-            window.location.href = targetPath;
+            window.location.href = '/key';
           } else {
-            navigate(targetPath);
-            window.dispatchEvent(new CustomEvent('prism-navigate', { detail: { path: targetPath } }));
-            window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: targetPath } }));
+            navigate('/key');
+            window.dispatchEvent(new CustomEvent('prism-navigate', { detail: { path: '/key' } }));
+            window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: '/key' } }));
           }
-        });
-      } else {
-        setTimeout(() => {
-          if (isKeySite) {
-            window.location.href = safePath;
-          } else {
-            navigate(safePath);
-            window.dispatchEvent(new CustomEvent('prism-navigate', { detail: { path: safePath } }));
-            window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: safePath } }));
-            if (safePath.includes('?tab=')) {
-              const tabName = safePath.split('?tab=')[1]?.split('&')[0];
-              if (tabName) {
-                sessionStorage.setItem('prism_target_tab', tabName);
-                window.dispatchEvent(new CustomEvent('prism-tab-change', { detail: { tab: tabName } }));
-              }
-            }
-          }
-        }, 240);
-      }
+        }
+      }, 240);
 
       touchStartSelectionRef.current = '';
       setActivePhase('idle');
@@ -871,20 +923,23 @@ export function BigBangButton() {
       return;
     }
 
-    // C. 제자리 홀드 후 떼기 (dist < 20): Key(마음약방) 들어가기 / 나가기 토글!
-    triggerHaptic('blackhole');
-    omniWarpAudio.playBlackHole();
+    // 💬 [홀드: dist < 20] ➔ 루시 (/chat 1:1 대화) 소환!
+    triggerHaptic('whitehole');
+    omniWarpAudio.playWhiteHole();
 
-    // 🔑 텍스트 드래그(선택) 연동: 글자를 스크롤/선택한 상태에서 빅뱅 홀드 ➔ Key 40가지 연습으로 즉시 토스!
+    // 🌟 텍스트 드래그(선택) 연동: 글자를 스크롤/선택한 상태에서 빅뱅 홀드 ➔ 루시에게 즉시 토스!
     if (textToToss) {
-      savePendingSelection(textToToss, 'key', location);
+      savePendingSelection(textToToss, 'lucy', location);
       try {
-        sessionStorage.setItem('key_tossed_text', textToToss);
-        sessionStorage.setItem('key_target_tab', 'tab-exercises');
+        sessionStorage.setItem(
+          'lucy_injected_auto_send',
+          `[선택 내용 토스 질의]\n"${textToToss}"\n\n이 내용에 대해 핵심 분석과 실천적인 마음 치유 및 지혜 조언을 해줘.`
+        );
+        sessionStorage.setItem('lucy_injected_input_draft', textToToss);
       } catch (_) {}
       sendPrismToss({
         sourceApp: location || 'bigbang_button',
-        targetApp: 'key',
+        targetApp: 'lucy',
         actionType: 'smart_toss',
         contextMessage: textToToss,
         autoPrompt: textToToss,
@@ -893,12 +948,7 @@ export function BigBangButton() {
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
           new CustomEvent('prism:selection_tossed', {
-            detail: { text: textToToss, target: 'key', sourcePath: location },
-          })
-        );
-        window.dispatchEvent(
-          new CustomEvent('prism:selection_saved', {
-            detail: { text: textToToss, target: 'key', sourcePath: location },
+            detail: { text: textToToss, target: 'lucy', sourcePath: location },
           })
         );
       }
@@ -908,16 +958,18 @@ export function BigBangButton() {
       window.dispatchEvent(
         new CustomEvent('prism:bigbang_commit', {
           detail: {
-            phase: 'blackhole',
+            phase: 'whitehole',
             target: {
-              id: 'key',
-              name: 'Key',
-              destinationPath: '/key',
-              themeColor: '#0ea5e9',
-              eventHorizonMode: 'blackhole',
+              id: 'lucy',
+              name: '루시 1:1 대화',
+              destinationPath: '/chat',
+              themeColor: '#fde68a',
+              eventHorizonMode: 'whitehole',
+              previewLabel: '[홀드 소환] 루시 1:1 대화',
+              previewDescription: '마음의 안식처 루시와 나누는 따뜻한 대화와 지혜 조언',
             },
             context,
-            metrics: { ...metrics, phase: 'blackhole' },
+            metrics: { ...metrics, phase: 'whitehole' },
             timestamp: Date.now(),
           },
         })
@@ -925,12 +977,12 @@ export function BigBangButton() {
     }
 
     setTimeout(() => {
-      if (isKeySite && !textToToss) {
-        // Key 사이트 나가기 -> 프리즘 귀환
-        const returnPath = safeSessionStorage.getItem('prism_key_return_path') || '/';
-        safeSessionStorage.removeItem('prism_key_return_path');
-        const finalDest = (returnPath.includes('key') || returnPath.includes('calm') || returnPath.includes('orb')) ? '/' : returnPath;
-        if (typeof window !== 'undefined' && (window.location.pathname.includes('key') || window.location.pathname.includes('calm') || window.location.pathname.includes('orb'))) {
+      if (isChatView && !textToToss) {
+        // 채팅 화면에서 홀드 시 이전 페이지 귀환
+        const returnPath = safeSessionStorage.getItem('prism_chat_return_path') || '/';
+        safeSessionStorage.removeItem('prism_chat_return_path');
+        const finalDest = returnPath.includes('chat') ? '/' : returnPath;
+        if (isKeySite) {
           window.location.href = finalDest;
         } else {
           navigate(finalDest);
@@ -938,17 +990,20 @@ export function BigBangButton() {
           window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: finalDest } }));
         }
       } else {
-        // Key 사이트 들어가기 -> /key 입장 & 토스 수신
+        // 루시 채팅방으로 입장
         const currentPath = location || '/';
-        safeSessionStorage.setItem('prism_key_return_path', currentPath);
-        navigate('/key');
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('prism-navigate', { detail: { path: '/key' } }));
-          window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: '/key' } }));
+        safeSessionStorage.setItem('prism_chat_return_path', currentPath);
+        if (isKeySite) {
+          window.location.href = '/chat';
+        } else {
+          navigate('/chat');
+          window.dispatchEvent(new CustomEvent('prism-navigate', { detail: { path: '/chat' } }));
+          window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: '/chat' } }));
         }
       }
     }, 240);
 
+    touchStartSelectionRef.current = '';
     setActivePhase('idle');
     setGauge(0);
     setDurationMs(0);
@@ -1016,26 +1071,30 @@ export function BigBangButton() {
     if (activePhase === 'wormhole') return 'omniwarp';
     // 🌌 사건의 지평선 상태 (조준 중): 해당 조준 채널의 아이콘을 최우선으로 표출!
     if (radialSectorIndex >= 0) return RADIAL_WARP_APPS[radialSectorIndex]?.id || 'hub';
-    // 🪞 제자리 홀드 - Key 사이트에서는 프리즘 홈 귀환
-    if (isKeySite) return 'hub';
-    // 🔑 제자리 홀드 - 프리즘 페이지에서는 Key 입장
-    return 'key';
+    // 🔑 드래그 시: Key 마음약방
+    if (dragDistance >= 20) return 'key';
+    // 💬 제자리 홀드 - 채팅 화면에서는 프리즘 홈 귀환
+    if (isChatView) return 'hub';
+    // 💬 제자리 홀드 - 일반 화면에서는 루시 1:1 대화
+    return 'lucy';
   })();
 
   const activeAppName = (() => {
     if (isAborted) return '취소';
-    // 🌀 웜홀 상태: 임의 차원 도약 명칭 표출
-    if (activePhase === 'wormhole') return '웜홀 시공간 도약 (임의 차원 전이)';
+    // 🌀 웜홀 상태: 추천 1순위 차원 도약
+    if (activePhase === 'wormhole') return '추천 1순위 차원 도약';
     // 🌌 사건의 지평선 상태 (조준 중): 해당 조준 채널 및 서브메뉴 명칭 표출
     if (radialSectorIndex >= 0) {
       const channel = RADIAL_WARP_APPS[radialSectorIndex];
       const subTitle = currentTarget?.title || '';
       return subTitle ? `${channel?.name || ''} · ${subTitle}` : (channel?.name || '');
     }
-    // 🪞 제자리 홀드 - Key 화면에서는 프리즘 귀환
-    if (isKeySite) return '프리즘 귀환 (Key 나가기)';
-    // 🔑 제자리 홀드 - 프리즘 페이지에서는 Key 입장
-    return 'Key (마음약방 입장)';
+    // 🔑 드래그 시: Key 마음약방 도약
+    if (dragDistance >= 20) return 'Key (마음약방 도약)';
+    // 💬 제자리 홀드 - 채팅 화면에서는 프리즘 귀환
+    if (isChatView) return '프리즘 귀환 (채팅 나가기)';
+    // 💬 제자리 홀드 - 일반 화면에서는 루시 대화
+    return '루시 (1:1 마음 대화)';
   })();
 
   return (
@@ -1049,7 +1108,7 @@ export function BigBangButton() {
           onPointerEnter={() => setIsHovered(true)}
           onPointerLeave={() => setIsHovered(false)}
         >
-          {/* 🌟 텍스트 선택(스크롤) 시 3대 토스 경로 안내 뱃지 표출 */}
+          {/* 🌟 텍스트 선택(스크롤) 시 4대 토스 경로 안내 뱃지 표출 */}
           <AnimatePresence>
             {hasSelectionToss && !isPressing && (
               <motion.div
@@ -1060,11 +1119,13 @@ export function BigBangButton() {
                 className="absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap px-3 py-1.5 rounded-full bg-slate-950/95 backdrop-blur-xl border border-cyan-400/60 text-[10px] font-bold text-cyan-200 shadow-[0_4px_24px_rgba(0,240,255,0.45)] pointer-events-none flex items-center gap-1.5 z-50 animate-pulse ring-1 ring-cyan-400/40"
               >
                 <span className="text-xs">✨</span>
-                <span className="text-yellow-300 font-black">탭</span><span className="text-slate-300">▸루시</span>
+                <span className="text-sky-300 font-black">탭</span><span className="text-slate-300">▸홈</span>
                 <span className="text-slate-500">│</span>
-                <span className="text-cyan-300 font-black">홀드</span><span className="text-slate-300">▸Key(40연습)</span>
+                <span className="text-purple-300 font-black">더블탭</span><span className="text-slate-300">▸추천1위</span>
                 <span className="text-slate-500">│</span>
-                <span className="text-purple-300 font-black">드래그</span><span className="text-slate-300">▸추천1위</span>
+                <span className="text-yellow-300 font-black">홀드</span><span className="text-slate-300">▸루시</span>
+                <span className="text-slate-500">│</span>
+                <span className="text-cyan-300 font-black">드래그</span><span className="text-slate-300">▸Key</span>
               </motion.div>
             )}
           </AnimatePresence>
@@ -1137,7 +1198,7 @@ export function BigBangButton() {
               onDoubleClick={(e) => {
                 e.stopPropagation();
                 e.preventDefault();
-                goToPrologueMain();
+                goToNextRecommended();
               }}
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
@@ -1202,11 +1263,11 @@ export function BigBangButton() {
                   ? 'inset 0 0 22px rgba(56, 189, 248, 0.35), inset -6px -6px 18px rgba(0, 0, 0, 0.9), 0 0 30px rgba(56, 189, 248, 0.45)'
                   : 'inset 0 0 22px rgba(56, 189, 248, 0.25), inset -6px -6px 18px rgba(0, 0, 0, 0.9), 0 0 24px rgba(56, 189, 248, 0.3)',
               }}
-              title="빅뱅 버튼 (탭: 루시 대화 / 더블탭: 럭키 프롤로그 메인 / 홀드: Key 옴니워프)"
+              title="빅뱅 버튼 (탭: 홈 / 더블탭: 추천 1순위 / 홀드: 루시 / 드래그: Key)"
               aria-label={
                 hasSelectionToss
                   ? '빅뱅 버튼 · 선택 내용 토스 대기중'
-                  : '빅뱅 버튼 · 탭: 루시 대화, 더블탭: 럭키 프롤로그 메인, 홀드: Key'
+                  : '빅뱅 버튼 · 탭: 홈, 더블탭: 추천 1순위, 홀드: 루시, 드래그: Key'
               }
             >
               {/* 🌀 [웜홀] 빛비춤 + 어두운 심연 + 사건의 지평선 3원 동시 융합 전개 */}
