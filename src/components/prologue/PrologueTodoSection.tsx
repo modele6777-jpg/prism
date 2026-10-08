@@ -27,7 +27,9 @@ import {
   HardDrive,
   Save,
   ArrowUpDown,
-  Filter
+  Filter,
+  Layers,
+  ListOrdered
 } from 'lucide-react';
 import { useApp, getPersistentUserProfile } from '@/contexts/AppContext';
 import { invokeLLM } from '@/lib/ai';
@@ -37,7 +39,8 @@ import { playTTS, stopTTS, useTTSActive } from '@/utils/tts';
 export type MissionCategory = 'mind' | 'action' | 'wisdom' | 'gratitude' | 'custom';
 export type MissionPriority = 'high' | 'medium' | 'low' | 'essential' | 'growth' | 'healing';
 export type NormalizedPriority = 'high' | 'medium' | 'low';
-export type SortOption = 'default' | 'priority-desc' | 'priority-asc' | 'time-asc';
+export type SortOption = 'priority-desc' | 'priority-asc' | 'time-asc' | 'default';
+export type ViewMode = 'grouped' | 'ranked';
 
 export function normalizePriority(p: MissionPriority | string | undefined): NormalizedPriority {
   if (p === 'high' || p === 'essential') return 'high';
@@ -57,6 +60,8 @@ export interface MissionItem {
   isCustom?: boolean;
   actionHint?: string;
   actionRoute?: string;
+  recommendReason?: string;
+  recommendedRank?: number;
 }
 
 export interface MissionStreakData {
@@ -74,8 +79,12 @@ export const CATEGORY_META: Record<MissionCategory, { label: string; icon: strin
 
 export const PRIORITY_CONFIG: Record<NormalizedPriority, {
   id: NormalizedPriority;
+  rankNumber: number;
   label: string;
+  rankBadge: string;
   badgeLabel: string;
+  tierTitle: string;
+  tierSubtitle: string;
   icon: string;
   textColor: string;
   badgeBg: string;
@@ -87,52 +96,64 @@ export const PRIORITY_CONFIG: Record<NormalizedPriority, {
 }> = {
   high: {
     id: 'high',
-    label: '높음',
-    badgeLabel: '🔥 높음',
+    rankNumber: 1,
+    label: '추천 1순위',
+    rankBadge: '🥇 추천 1순위',
+    badgeLabel: '🔥 추천 1순위 (핵심)',
+    tierTitle: '최우선 핵심 과업',
+    tierSubtitle: '오늘의 에너지 중심을 세우고 가장 중요한 성과를 여는 골든 퀘스트',
     icon: '🔥',
     textColor: 'text-rose-400',
     badgeBg: 'bg-rose-500/15 border-rose-500/30 text-rose-300 hover:bg-rose-500/25',
-    cardBorder: 'border-rose-500/30 hover:border-rose-400/60 shadow-[0_0_20px_rgba(244,63,94,0.08)]',
-    cardBg: 'bg-gradient-to-r from-rose-950/20 via-white/[0.02] to-transparent',
-    leftStripe: 'from-rose-500 to-red-600 shadow-[0_0_10px_rgba(244,63,94,0.7)]',
+    cardBorder: 'border-rose-500/30 hover:border-rose-400/60 shadow-[0_0_24px_rgba(244,63,94,0.1)]',
+    cardBg: 'bg-gradient-to-r from-rose-950/25 via-zinc-950/40 to-transparent',
+    leftStripe: 'from-amber-400 via-rose-500 to-red-600 shadow-[0_0_12px_rgba(244,63,94,0.7)]',
     dotColor: 'bg-rose-500',
     weight: 3,
   },
   medium: {
     id: 'medium',
-    label: '보통',
-    badgeLabel: '⚡ 보통',
+    rankNumber: 2,
+    label: '추천 2순위',
+    rankBadge: '🥈 추천 2순위',
+    badgeLabel: '⚡ 추천 2순위 (도약)',
+    tierTitle: '도약 & 실천 과업',
+    tierSubtitle: '시야를 넓히고 영감과 지속 가능한 추진력을 얻는 도약 퀘스트',
     icon: '⚡',
     textColor: 'text-amber-400',
     badgeBg: 'bg-amber-500/15 border-amber-500/30 text-amber-300 hover:bg-amber-500/25',
-    cardBorder: 'border-amber-500/30 hover:border-amber-400/60 shadow-[0_0_20px_rgba(245,158,11,0.08)]',
-    cardBg: 'bg-gradient-to-r from-amber-950/20 via-white/[0.02] to-transparent',
-    leftStripe: 'from-amber-400 to-orange-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]',
+    cardBorder: 'border-amber-500/30 hover:border-amber-400/60 shadow-[0_0_24px_rgba(245,158,11,0.1)]',
+    cardBg: 'bg-gradient-to-r from-amber-950/25 via-zinc-950/40 to-transparent',
+    leftStripe: 'from-amber-400 to-orange-500 shadow-[0_0_10px_rgba(245,158,11,0.6)]',
     dotColor: 'bg-amber-400',
     weight: 2,
   },
   low: {
     id: 'low',
-    label: '낮음',
-    badgeLabel: '🌿 낮음',
+    rankNumber: 3,
+    label: '추천 3순위',
+    rankBadge: '🥉 추천 3순위',
+    badgeLabel: '🌿 추천 3순위 (회복)',
+    tierTitle: '회복 & 웰니스 과업',
+    tierSubtitle: '몸의 세포를 깨우고 따뜻한 연결과 평온한 안식을 선사하는 회복 퀘스트',
     icon: '🌿',
     textColor: 'text-emerald-400',
     badgeBg: 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/25',
-    cardBorder: 'border-emerald-500/25 hover:border-emerald-400/50 shadow-[0_0_20px_rgba(16,185,129,0.05)]',
-    cardBg: 'bg-gradient-to-r from-emerald-950/20 via-white/[0.02] to-transparent',
-    leftStripe: 'from-emerald-400 to-teal-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]',
+    cardBorder: 'border-emerald-500/25 hover:border-emerald-400/50 shadow-[0_0_24px_rgba(16,185,129,0.08)]',
+    cardBg: 'bg-gradient-to-r from-emerald-950/25 via-zinc-950/40 to-transparent',
+    leftStripe: 'from-emerald-400 to-teal-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]',
     dotColor: 'bg-emerald-400',
     weight: 1,
   },
 };
 
 export const PRIORITY_META: Record<string, { label: string; icon: string; textColor: string }> = {
-  high: { label: '높음', icon: '🔥', textColor: 'text-rose-400' },
-  medium: { label: '보통', icon: '⚡', textColor: 'text-amber-400' },
-  low: { label: '낮음', icon: '🌿', textColor: 'text-emerald-400' },
-  essential: { label: '높음', icon: '🔥', textColor: 'text-rose-400' },
-  growth: { label: '보통', icon: '⚡', textColor: 'text-amber-400' },
-  healing: { label: '낮음', icon: '🌿', textColor: 'text-emerald-400' },
+  high: { label: '추천 1순위', icon: '🔥', textColor: 'text-rose-400' },
+  medium: { label: '추천 2순위', icon: '⚡', textColor: 'text-amber-400' },
+  low: { label: '추천 3순위', icon: '🌿', textColor: 'text-emerald-400' },
+  essential: { label: '추천 1순위', icon: '🔥', textColor: 'text-rose-400' },
+  growth: { label: '추천 2순위', icon: '⚡', textColor: 'text-amber-400' },
+  healing: { label: '추천 3순위', icon: '🌿', textColor: 'text-emerald-400' },
 };
 
 export const AI_PRESET_MODES = [
@@ -144,6 +165,7 @@ export const AI_PRESET_MODES = [
 ];
 
 export const INITIAL_CURATED_MISSIONS: Omit<MissionItem, 'completed'>[] = [
+  // 🥇 추천 1순위 (최우선 골든 핵심 과업)
   {
     id: 'mission-mind-1',
     title: '아침 3분 호흡 명상으로 신경계 안정화하기',
@@ -151,6 +173,7 @@ export const INITIAL_CURATED_MISSIONS: Omit<MissionItem, 'completed'>[] = [
     category: 'mind',
     priority: 'high',
     estimatedMinutes: 3,
+    recommendReason: '기상 직후 미주신경 안정 및 코르티솔 조절 최우선',
     actionHint: 'eCPR 호흡 가이드로 이동',
     actionRoute: '/ecpr',
   },
@@ -161,17 +184,10 @@ export const INITIAL_CURATED_MISSIONS: Omit<MissionItem, 'completed'>[] = [
     category: 'action',
     priority: 'high',
     estimatedMinutes: 25,
+    recommendReason: '하루 중 가장 높은 뇌 집중도 시간대 골든 과업 완수',
     actionHint: '25분 몰입 집중',
   },
-  {
-    id: 'mission-body-1',
-    title: '맑은 미온수 2잔 천천히 음미 및 10분 가벼운 햇빛 산책',
-    description: '밤새 잠들어 있던 림프 순환과 장기를 깨우고, 자연광을 쬐어 낮 시간 활력 세로토닌을 충전합니다.',
-    category: 'action',
-    priority: 'low',
-    estimatedMinutes: 10,
-    actionHint: '햇빛 & 미온수 충전',
-  },
+  // 🥈 추천 2순위 (도약 & 실천 과업)
   {
     id: 'mission-wisdom-1',
     title: '오늘의 우주 운명 타로 카드 1장 뽑고 마음에 품기',
@@ -179,8 +195,30 @@ export const INITIAL_CURATED_MISSIONS: Omit<MissionItem, 'completed'>[] = [
     category: 'wisdom',
     priority: 'medium',
     estimatedMinutes: 3,
+    recommendReason: '하루 선택의 갈림길에서 우주적 통찰과 나침반 획득',
     actionHint: 'Universe 탭 바로가기',
     actionRoute: '/universe',
+  },
+  {
+    id: 'mission-routine-1',
+    title: '오후 15분 디지털 디톡스 & 주변 공간 미니멀 정돈',
+    description: '책상과 시각적 잡음을 정리하고 잠시 화면을 멀리하여 오후 후반부의 집중력 저하를 방어합니다.',
+    category: 'action',
+    priority: 'medium',
+    estimatedMinutes: 15,
+    recommendReason: '시각적 잡음 제거를 통한 후반부 집중력 및 에너지 재충전',
+    actionHint: '15분 공간 정돈',
+  },
+  // 🥉 추천 3순위 (회복 & 웰니스 과업)
+  {
+    id: 'mission-body-1',
+    title: '맑은 미온수 2잔 천천히 음미 및 10분 가벼운 햇빛 산책',
+    description: '밤새 잠들어 있던 림프 순환과 장기를 깨우고, 자연광을 쬐어 낮 시간 활력 세로토닌을 충전합니다.',
+    category: 'action',
+    priority: 'low',
+    estimatedMinutes: 10,
+    recommendReason: '체내 림프 순환 활성화 및 세로토닌 합성 지원',
+    actionHint: '햇빛 & 미온수 충전',
   },
   {
     id: 'mission-gratitude-1',
@@ -189,6 +227,7 @@ export const INITIAL_CURATED_MISSIONS: Omit<MissionItem, 'completed'>[] = [
     category: 'gratitude',
     priority: 'low',
     estimatedMinutes: 5,
+    recommendReason: '옥시토신 분비 및 깊은 숙면을 유도하는 심리적 이완',
     actionHint: '감사 명상',
   },
 ];
@@ -253,7 +292,14 @@ export function PrologueTodoSection() {
             } catch (_) {}
           }
           if (parsed.date === todayKey) {
-            return { missions: parsed.missions, savedTime: timeLabel };
+            const enriched = parsed.missions.map((m: MissionItem) => {
+              const curated = INITIAL_CURATED_MISSIONS.find(c => c.id === m.id);
+              return {
+                ...m,
+                recommendReason: m.recommendReason || curated?.recommendReason || (normalizePriority(m.priority) === 'high' ? '최우선 골든 과업' : normalizePriority(m.priority) === 'medium' ? '도약 & 실천 과업' : '회복 & 웰니스 과업'),
+              };
+            });
+            return { missions: enriched, savedTime: timeLabel };
           } else {
             // Carry over user custom or in-progress tasks to new day
             const customOrActive = parsed.missions.filter((m: MissionItem) => m.isCustom || !m.completed);
@@ -261,7 +307,14 @@ export function PrologueTodoSection() {
             const existingIds = new Set(customOrActive.map((m: MissionItem) => m.id));
             const additions = freshCurated.filter(m => !existingIds.has(m.id));
             const merged = [...customOrActive, ...additions];
-            return { missions: merged, savedTime: '오늘 날짜로 동기화됨' };
+            const enriched = merged.map((m: MissionItem) => {
+              const curated = INITIAL_CURATED_MISSIONS.find(c => c.id === m.id);
+              return {
+                ...m,
+                recommendReason: m.recommendReason || curated?.recommendReason,
+              };
+            });
+            return { missions: enriched, savedTime: '오늘 날짜로 동기화됨' };
           }
         }
       }
@@ -399,11 +452,12 @@ export function PrologueTodoSection() {
   const [aiCustomInput, setAiCustomInput] = useState<string>('');
   const [isGeneratingAi, setIsGeneratingAi] = useState<boolean>(false);
 
-  // Filtering & Sorting
+  // Filtering & Sorting (추천순위 우선 기본 정렬 및 그룹 뷰 기본값)
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'completed'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<'all' | NormalizedPriority>('all');
-  const [sortBy, setSortBy] = useState<SortOption>('default');
+  const [sortBy, setSortBy] = useState<SortOption>('priority-desc');
+  const [viewMode, setViewMode] = useState<ViewMode>('grouped');
 
   // TTS audio briefing state
   const isTTSPlayingGlobal = useTTSActive();
@@ -418,15 +472,33 @@ export function PrologueTodoSection() {
   const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
   const isAllCompleted = totalCount > 0 && completedCount === totalCount;
 
-  // Counts by priority
-  const priorityCounts = useMemo(() => {
-    const counts = { high: 0, medium: 0, low: 0 };
+  // Counts and stats by recommended priority tier
+  const priorityStats = useMemo(() => {
+    const stats: Record<NormalizedPriority, { total: number; completed: number; active: number }> = {
+      high: { total: 0, completed: 0, active: 0 },
+      medium: { total: 0, completed: 0, active: 0 },
+      low: { total: 0, completed: 0, active: 0 },
+    };
     missions.forEach(m => {
       const norm = normalizePriority(m.priority);
-      counts[norm] = (counts[norm] || 0) + 1;
+      stats[norm].total += 1;
+      if (m.completed) {
+        stats[norm].completed += 1;
+      } else {
+        stats[norm].active += 1;
+      }
     });
-    return counts;
+    return stats;
   }, [missions]);
+
+  // Backward compatibility priority counts
+  const priorityCounts = useMemo(() => {
+    return {
+      high: priorityStats.high.total,
+      medium: priorityStats.medium.total,
+      low: priorityStats.low.total,
+    };
+  }, [priorityStats]);
 
   // Streak update when all completed
   useEffect(() => {
@@ -509,6 +581,7 @@ export function PrologueTodoSection() {
       estimatedMinutes: Number(newMinutes) || 10,
       completed: false,
       isCustom: true,
+      recommendReason: newPriority === 'high' ? '직접 등록한 오늘 최우선 골든 과업' : newPriority === 'medium' ? '직접 등록한 도약 & 실천 과업' : '직접 등록한 웰니스 & 여유 과업',
     };
 
     updateAndSaveMissions(prev => [newItem, ...prev]);
@@ -523,7 +596,7 @@ export function PrologueTodoSection() {
 
   // Reset to default curated missions
   const handleResetToDefault = () => {
-    if (window.confirm('ToDo 목록을 기본 큐레이션으로 초기화하시겠습니까?')) {
+    if (window.confirm('ToDo 목록을 추천순위별 기본 큐레이션으로 초기화하시겠습니까?')) {
       const reset = INITIAL_CURATED_MISSIONS.map(m => ({ ...m, completed: false }));
       updateAndSaveMissions(reset);
     }
@@ -541,7 +614,7 @@ export function PrologueTodoSection() {
     saveToLocalStorage(missions);
   };
 
-  // AI Personalized Mission Generation
+  // AI Personalized Mission Generation (추천 1·2·3순위 구조화 생성)
   const handleGenerateAiMissions = async () => {
     setIsGeneratingAi(true);
     try {
@@ -550,7 +623,7 @@ export function PrologueTodoSection() {
       const userName = (rawNick && rawNick !== '박주형' && rawNick !== '쭈' && rawNick !== '여행자' && rawNick !== '사용자') ? rawNick : '제제';
 
       const prompt = `당신은 사용자의 웰니스, 마음챙김, 생산성, 영혼 성장을 돕는 라이프 퀘스트 마스터 AI입니다.
-아래 조건에 따라 오늘 하루 실천할 수 있는 현실적이고 매력적인 데일리 미션 3개를 JSON 형식으로 생성하세요.
+아래 조건에 따라 오늘 하루 실천할 수 있는 현실적이고 매력적인 데일리 미션 3개를 '추천 순위별(1순위: 최우선 핵심, 2순위: 도약 실천, 3순위: 회복 웰니스)'로 JSON 형식으로 생성하세요.
 
 [사용자 정보]
 - 이름/닉네임: ${userName}
@@ -559,10 +632,13 @@ export function PrologueTodoSection() {
 - 현재 날짜: ${todayFormatted}
 
 [미션 요구사항]
-1. 단순한 체크리스트가 아닌, 심리적 안정, 행동 실행, 일상의 소소한 기쁨을 불어넣는 영감 있는 과업이어야 합니다.
+1. 반드시 3개의 미션을 각각 추천 1순위('high'), 추천 2순위('medium'), 추천 3순위('low')로 배분하여 반환하세요:
+   - 1순위 (priority: 'high'): 오늘 가장 먼저 완수해야 할 집중도 최고조의 최우선 골든 퀘스트
+   - 2순위 (priority: 'medium'): 성취감과 리듬, 창의적 통찰을 넓히는 도약 퀘스트
+   - 3순위 (priority: 'low'): 몸의 긴장을 풀고 감사와 평온을 회복하는 웰니스 퀘스트
 2. 소요 시간은 3분~30분 이내로 부담 없이 실행 가능해야 합니다.
 3. category는 'mind', 'action', 'wisdom', 'gratitude' 중 하나여야 합니다.
-4. priority는 'high'(높음 - 긴급/핵심), 'medium'(보통 - 일반 과업), 'low'(낮음 - 여유/웰니스) 중 하나여야 합니다.
+4. recommendReason에는 해당 미션이 이 순위로 추천된 이유를 1문장으로 명시하세요.
 5. 반드시 순수한 JSON 배열만 반환하세요:
 [
   {
@@ -571,6 +647,7 @@ export function PrologueTodoSection() {
     "category": "mind" | "action" | "wisdom" | "gratitude",
     "priority": "high" | "medium" | "low",
     "estimatedMinutes": 5,
+    "recommendReason": "추천 사유 (1문장)",
     "actionHint": "간단한 팁"
   }
 ]`;
@@ -602,6 +679,7 @@ export function PrologueTodoSection() {
           estimatedMinutes: Number(item.estimatedMinutes) || 10,
           completed: false,
           isCustom: true,
+          recommendReason: item.recommendReason ? String(item.recommendReason) : 'AI 맞춤 추천 순위 지정',
           actionHint: item.actionHint ? String(item.actionHint) : 'AI 맞춤 추천 미션',
         }));
 
@@ -624,7 +702,7 @@ export function PrologueTodoSection() {
     }
   };
 
-  // Audio TTS Briefing
+  // Audio TTS Briefing (추천 순위별 체계적 낭독)
   const handleToggleAudioBriefing = () => {
     if (isBriefingPlaying || isTTSPlayingGlobal) {
       stopTTS();
@@ -636,17 +714,25 @@ export function PrologueTodoSection() {
     const userName = (rawNick && rawNick !== '박주형' && rawNick !== '쭈' && rawNick !== '여행자' && rawNick !== '당신') ? rawNick : '제제';
     const pendingCount = totalCount - completedCount;
 
-    let briefingText = `안녕하세요, ${userName}님. 오늘 ${todayFormatted}의 데일리 미션 오디오 브리핑입니다. ` +
-      `오늘 하루를 위해 준비된 총 ${totalCount}개의 미션 중, 현재 ${completedCount}개를 달성하셨고 ${pendingCount}개의 퀘스트가 기다리고 있습니다. ` +
-      `오늘의 핵심 미션을 안내해 드립니다. `;
+    const tier1 = missions.filter(m => normalizePriority(m.priority) === 'high' && !m.completed);
+    const tier2 = missions.filter(m => normalizePriority(m.priority) === 'medium' && !m.completed);
+    const tier3 = missions.filter(m => normalizePriority(m.priority) === 'low' && !m.completed);
 
-    const activeList = missions.filter(m => !m.completed).slice(0, 3);
-    if (activeList.length > 0) {
-      activeList.forEach((m, idx) => {
-        briefingText += `미션 ${idx + 1}, ${m.title}. ${m.description || ''} `;
-      });
+    let briefingText = `안녕하세요, ${userName}님. 오늘 ${todayFormatted}의 추천순위별 ToDo 오디오 브리핑입니다. ` +
+      `준비된 총 ${totalCount}개의 퀘스트 중, 현재 ${completedCount}개를 달성하셨고 ${pendingCount}개의 퀘스트가 남아있습니다. `;
+
+    if (pendingCount > 0) {
+      if (tier1.length > 0) {
+        briefingText += `가장 먼저 오늘 반드시 완수해야 할 추천 1순위 핵심 과업은, ${tier1.map(m => m.title).join(', ')} 입니다. `;
+      }
+      if (tier2.length > 0) {
+        briefingText += `이어서 일상의 도약과 실행을 이끄는 추천 2순위 과업은, ${tier2.map(m => m.title).join(', ')} 입니다. `;
+      }
+      if (tier3.length > 0) {
+        briefingText += `마지막으로 몸과 마음의 안식을 채우는 추천 3순위 회복 과업은, ${tier3.map(m => m.title).join(', ')} 입니다. `;
+      }
     } else {
-      briefingText += `모든 일일 미션을 이미 멋지게 완수하셨습니다! 당신의 놀라운 실행력과 마음에 아낌없는 찬사를 보냅니다. `;
+      briefingText += `축하합니다! 오늘의 모든 추천 미션을 올클리어하셨습니다. 성취의 기쁨을 온전히 누리세요. `;
     }
 
     briefingText += `조급해하지 마시고, 지금 이 순간 할 수 있는 가장 작은 호흡과 걸음 하나에 집중하세요. 오늘도 우주의 온기와 평온이 함께합니다.`;
@@ -655,24 +741,33 @@ export function PrologueTodoSection() {
     playTTS(briefingText, 'Kore', false, '확신');
   };
 
-  // Copy list to clipboard
+  // Copy list to clipboard (추천순위별 깔끔한 그룹 포맷팅)
   const handleCopyList = () => {
-    const listText = `[📅 ${todayFormatted} ToDo]\n` +
-      `달성률: ${completedCount}/${totalCount} (${progressPercent}%)\n\n` +
-      missions.map(m => {
-        const norm = normalizePriority(m.priority);
-        const pri = PRIORITY_CONFIG[norm];
-        return `${m.completed ? '✅ [완료]' : '⬜ [진행]'} [${pri.badgeLabel}] ${m.title} (${CATEGORY_META[m.category]?.label || '기타'}${m.estimatedMinutes ? `, ${m.estimatedMinutes}분` : ''})\n   └ ${m.description || '목표를 향해 나아갑니다.'}`;
-      }).join('\n\n') +
-      `\n\n- LucKey PROLOGUE ToDo`;
+    const tier1 = missions.filter(m => normalizePriority(m.priority) === 'high');
+    const tier2 = missions.filter(m => normalizePriority(m.priority) === 'medium');
+    const tier3 = missions.filter(m => normalizePriority(m.priority) === 'low');
 
-    navigator.clipboard.writeText(listText).then(() => {
+    const formatTier = (title: string, items: MissionItem[]) => {
+      if (items.length === 0) return '';
+      return `${title}\n` + items.map(m => {
+        return `${m.completed ? '✅' : '⬜'} [${m.completed ? '완료' : '진행'}] ${m.title}${m.estimatedMinutes ? ` (${m.estimatedMinutes}분)` : ''}${m.recommendReason ? ` - 💡 ${m.recommendReason}` : ''}\n   └ ${m.description || '목표를 향해 나아갑니다.'}`;
+      }).join('\n') + '\n\n';
+    };
+
+    const listText = `[📅 ${todayFormatted} ToDo - 추천순위별 리포트]\n` +
+      `전체 달성률: ${completedCount}/${totalCount} (${progressPercent}%)\n\n` +
+      formatTier('🥇 [추천 1순위: 최우선 핵심 과업]', tier1) +
+      formatTier('🥈 [추천 2순위: 도약 & 실천 과업]', tier2) +
+      formatTier('🥉 [추천 3순위: 회복 & 웰니스 과업]', tier3) +
+      `- LucKey PROLOGUE ToDo`;
+
+    navigator.clipboard.writeText(listText.trim()).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
   };
 
-  // Filtered & Sorted list
+  // Filtered & Sorted list (추천 순위 기반 랭킹 정렬 보장)
   const filteredMissions = useMemo(() => {
     let list = missions.filter(m => {
       // Status filter
@@ -696,22 +791,49 @@ export function PrologueTodoSection() {
       list = [...list].sort((a, b) => {
         const wa = PRIORITY_CONFIG[normalizePriority(a.priority)].weight;
         const wb = PRIORITY_CONFIG[normalizePriority(b.priority)].weight;
-        if (wb !== wa) return wb - wa; // 3 (high) -> 2 (med) -> 1 (low)
-        return Number(a.completed) - Number(b.completed);
+        if (wb !== wa) return wb - wa; // 3 (1순위) -> 2 (2순위) -> 1 (3순위)
+        return Number(a.completed) - Number(b.completed); // 미완료 우선
       });
     } else if (sortBy === 'priority-asc') {
       list = [...list].sort((a, b) => {
         const wa = PRIORITY_CONFIG[normalizePriority(a.priority)].weight;
         const wb = PRIORITY_CONFIG[normalizePriority(b.priority)].weight;
-        if (wa !== wb) return wa - wb; // 1 (low) -> 2 (med) -> 3 (high)
+        if (wa !== wb) return wa - wb; // 1 (3순위) -> 2 (2순위) -> 3 (1순위)
         return Number(a.completed) - Number(b.completed);
       });
     } else if (sortBy === 'time-asc') {
       list = [...list].sort((a, b) => (a.estimatedMinutes || 0) - (b.estimatedMinutes || 0));
+    } else if (sortBy === 'default') {
+      // 기본 등록순에서도 미완료 상태 및 추천 가중치를 유지
+      list = [...list].sort((a, b) => Number(a.completed) - Number(b.completed));
     }
 
     return list;
   }, [missions, statusFilter, categoryFilter, priorityFilter, sortBy]);
+
+  // Grouped Tiers for Tiered View Mode
+  const groupedTiers = useMemo(() => {
+    const tiers: {
+      priority: NormalizedPriority;
+      config: typeof PRIORITY_CONFIG['high'];
+      items: MissionItem[];
+    }[] = [
+      { priority: 'high', config: PRIORITY_CONFIG.high, items: [] },
+      { priority: 'medium', config: PRIORITY_CONFIG.medium, items: [] },
+      { priority: 'low', config: PRIORITY_CONFIG.low, items: [] },
+    ];
+
+    filteredMissions.forEach(item => {
+      const norm = normalizePriority(item.priority);
+      const target = tiers.find(t => t.priority === norm);
+      if (target) target.items.push(item);
+    });
+
+    if (priorityFilter !== 'all') {
+      return tiers.filter(t => t.priority === priorityFilter);
+    }
+    return tiers;
+  }, [filteredMissions, priorityFilter]);
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-6 pb-16 text-white font-sans">
@@ -1050,15 +1172,15 @@ export function PrologueTodoSection() {
 
                 {/* Priority select */}
                 <div>
-                  <label className="block text-[10px] text-white/50 mb-1.5 font-mono">우선순위</label>
+                  <label className="block text-[10px] text-white/50 mb-1.5 font-mono">추천 우선순위</label>
                   <select
                     value={newPriority}
                     onChange={e => setNewPriority(e.target.value as NormalizedPriority)}
                     className="w-full px-3 py-2 rounded-xl bg-black/60 border border-white/10 text-xs text-white focus:outline-none focus:border-emerald-400"
                   >
-                    <option value="high">🔥 높음 (핵심 필수 과업)</option>
-                    <option value="medium">⚡ 보통 (일반 성장 과업)</option>
-                    <option value="low">🌿 낮음 (여유 & 회복 과업)</option>
+                    <option value="high">🥇 추천 1순위 (최우선 골든 핵심)</option>
+                    <option value="medium">🥈 추천 2순위 (도약 & 일상 실천)</option>
+                    <option value="low">🥉 추천 3순위 (회복 & 웰니스 리셋)</option>
                   </select>
                 </div>
 
@@ -1101,8 +1223,78 @@ export function PrologueTodoSection() {
         )}
       </AnimatePresence>
 
-      {/* 🗂️ Filter Tabs & Sort Controls */}
-      <div className="space-y-3 pt-2">
+      {/* 🌟 추천순위별 현황 & 빠른 선택 카드 (추천순위 개편 핵심 UI) */}
+      <div className="space-y-2 pt-1">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold text-white/70 flex items-center gap-1.5 font-sans">
+            <Award size={14} className="text-amber-400" />
+            <span>오늘의 추천순위별 과업 현황</span>
+          </span>
+          <span className="text-[11px] text-white/40 font-mono">
+            {priorityFilter !== 'all' ? `${PRIORITY_CONFIG[priorityFilter].label} 필터 적용 중` : '모든 추천순위 표시'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          {(['high', 'medium', 'low'] as NormalizedPriority[]).map((tierKey) => {
+            const conf = PRIORITY_CONFIG[tierKey];
+            const stats = priorityStats[tierKey];
+            const isSelected = priorityFilter === tierKey;
+            const tierPercent = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
+            const isTierDone = stats.total > 0 && stats.completed === stats.total;
+
+            return (
+              <button
+                key={tierKey}
+                type="button"
+                onClick={() => setPriorityFilter(isSelected ? 'all' : tierKey)}
+                className={`p-3.5 sm:p-4 rounded-[22px] border text-left transition-all duration-200 cursor-pointer relative overflow-hidden ${
+                  isSelected
+                    ? `${conf.cardBorder} ${conf.cardBg} shadow-[0_0_24px_rgba(255,255,255,0.08)] scale-[1.01]`
+                    : 'bg-white/[0.02] border-white/10 hover:border-white/20 hover:bg-white/[0.04]'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">{conf.rankNumber === 1 ? '🥇' : conf.rankNumber === 2 ? '🥈' : '🥉'}</span>
+                    <div>
+                      <h4 className="text-xs font-black text-white flex items-center gap-1.5">
+                        <span>{conf.rankBadge}</span>
+                        {isTierDone && (
+                          <span className="text-[9.5px] px-1.5 py-0.2 rounded-md bg-emerald-500/20 text-emerald-300 font-bold">
+                            올클리어
+                          </span>
+                        )}
+                      </h4>
+                      <p className="text-[10px] text-white/50">{conf.tierTitle}</p>
+                    </div>
+                  </div>
+
+                  <div className="text-right shrink-0">
+                    <span className="text-xs font-mono font-bold text-white">
+                      {stats.completed}/{stats.total}
+                    </span>
+                    <span className="block text-[10px] font-mono text-white/40">
+                      {tierPercent}%
+                    </span>
+                  </div>
+                </div>
+
+                {/* Micro Progress Bar */}
+                <div className="w-full h-1.5 rounded-full bg-black/40 overflow-hidden mt-3 border border-white/5">
+                  <div 
+                    className={`h-full rounded-full transition-all duration-500 bg-gradient-to-r ${conf.leftStripe}`}
+                    style={{ width: `${tierPercent}%` }}
+                  />
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 🗂️ Filter Tabs & View Mode & Sort Controls */}
+      <div className="space-y-3 pt-1">
         <div className="flex flex-wrap items-center justify-between gap-3">
           {/* Status filters */}
           <div className="flex items-center gap-1 p-1 rounded-2xl bg-white/[0.04] border border-white/10">
@@ -1126,8 +1318,38 @@ export function PrologueTodoSection() {
             ))}
           </div>
 
-          {/* Sort Selector & Reset Controls */}
+          {/* View Mode Toggle & Sort Selector & Controls */}
           <div className="flex flex-wrap items-center gap-2">
+            {/* View Mode Toggle: Grouped Tier vs Ranked List */}
+            <div className="flex items-center p-1 rounded-xl bg-white/[0.04] border border-white/10">
+              <button
+                type="button"
+                onClick={() => setViewMode('grouped')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  viewMode === 'grouped'
+                    ? 'bg-indigo-500/30 text-indigo-200 border border-indigo-400/40 shadow-sm'
+                    : 'text-white/50 hover:text-white'
+                }`}
+                title="추천순위별로 묶어보기"
+              >
+                <Layers size={13} />
+                <span>추천그룹별</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('ranked')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  viewMode === 'ranked'
+                    ? 'bg-indigo-500/30 text-indigo-200 border border-indigo-400/40 shadow-sm'
+                    : 'text-white/50 hover:text-white'
+                }`}
+                title="추천순위 번호순 랭킹 리스트로 보기"
+              >
+                <ListOrdered size={13} />
+                <span>랭킹 리스트</span>
+              </button>
+            </div>
+
             {/* Sort Dropdown */}
             <div className="relative inline-flex items-center">
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/10 text-xs text-white/80 hover:border-white/20 transition-all">
@@ -1138,10 +1360,10 @@ export function PrologueTodoSection() {
                   className="bg-transparent text-xs text-white/90 focus:outline-none cursor-pointer pr-1"
                   aria-label="ToDo 정렬"
                 >
-                  <option value="default" className="bg-zinc-900 text-white">기본 등록순</option>
-                  <option value="priority-desc" className="bg-zinc-900 text-rose-300">🔥 우선순위 높은 순</option>
-                  <option value="priority-asc" className="bg-zinc-900 text-emerald-300">🌿 우선순위 낮은 순</option>
+                  <option value="priority-desc" className="bg-zinc-900 text-rose-300 font-bold">🌟 추천순위 높은 순</option>
+                  <option value="priority-asc" className="bg-zinc-900 text-emerald-300">🌿 추천순위 낮은 순</option>
                   <option value="time-asc" className="bg-zinc-900 text-amber-300">⏱️ 소요 시간 짧은 순</option>
+                  <option value="default" className="bg-zinc-900 text-white">📋 기본 등록순</option>
                 </select>
               </div>
             </div>
@@ -1196,7 +1418,7 @@ export function PrologueTodoSection() {
                 : 'bg-rose-500/10 text-rose-400/70 hover:text-rose-300 hover:bg-rose-500/20 border border-rose-500/20'
             }`}
           >
-            <span>🔥 높음</span>
+            <span>🥇 1순위</span>
             <span className="font-mono text-[10px] opacity-80">({priorityCounts.high})</span>
           </button>
           <button
@@ -1208,7 +1430,7 @@ export function PrologueTodoSection() {
                 : 'bg-amber-500/10 text-amber-400/70 hover:text-amber-300 hover:bg-amber-500/20 border border-amber-500/20'
             }`}
           >
-            <span>⚡ 보통</span>
+            <span>🥈 2순위</span>
             <span className="font-mono text-[10px] opacity-80">({priorityCounts.medium})</span>
           </button>
           <button
@@ -1220,36 +1442,221 @@ export function PrologueTodoSection() {
                 : 'bg-emerald-500/10 text-emerald-400/70 hover:text-emerald-300 hover:bg-emerald-500/20 border border-emerald-500/20'
             }`}
           >
-            <span>🌿 낮음</span>
+            <span>🥉 3순위</span>
             <span className="font-mono text-[10px] opacity-80">({priorityCounts.low})</span>
           </button>
         </div>
       </div>
 
-      {/* 📋 Mission Items List */}
-      <div className="space-y-3">
-        {filteredMissions.length === 0 ? (
-          <div className="p-12 text-center rounded-[28px] border border-dashed border-white/10 bg-white/[0.01] space-y-3">
-            <span className="text-3xl block">🍃</span>
-            <p className="text-xs text-white/50">
-              {priorityFilter !== 'all' 
-                ? `'${PRIORITY_CONFIG[priorityFilter].label}' 우선순위 조건에 맞는 ToDo가 없습니다.` 
-                : '해당 조건에 맞는 ToDo가 없습니다.'}
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                setStatusFilter('all');
-                setCategoryFilter('all');
-                setPriorityFilter('all');
-              }}
-              className="text-xs text-indigo-400 hover:underline cursor-pointer"
-            >
-              필터 초기화하기
-            </button>
-          </div>
-        ) : (
-          filteredMissions.map((item) => {
+      {/* 📋 Mission Items List & Tier Display */}
+      {filteredMissions.length === 0 ? (
+        <div className="p-12 text-center rounded-[28px] border border-dashed border-white/10 bg-white/[0.01] space-y-3">
+          <span className="text-3xl block">🍃</span>
+          <p className="text-xs text-white/50">
+            {priorityFilter !== 'all' 
+              ? `'${PRIORITY_CONFIG[priorityFilter].label}' 조건에 맞는 ToDo가 없습니다.` 
+              : '해당 조건에 맞는 ToDo가 없습니다.'}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setStatusFilter('all');
+              setCategoryFilter('all');
+              setPriorityFilter('all');
+            }}
+            className="text-xs text-indigo-400 hover:underline cursor-pointer"
+          >
+            필터 초기화하기
+          </button>
+        </div>
+      ) : viewMode === 'grouped' ? (
+        /* 📑 Mode 1: 추천순위 그룹별 묶어보기 */
+        <div className="space-y-6">
+          {groupedTiers.map((tier) => {
+            if (tier.items.length === 0 && priorityFilter !== 'all') return null;
+            const tierTotal = tier.items.length;
+            const tierCompleted = tier.items.filter(i => i.completed).length;
+
+            return (
+              <div key={tier.priority} className="space-y-3">
+                {/* Tier Group Header Banner */}
+                <div className={`p-4 rounded-[22px] border ${tier.config.cardBorder} ${tier.config.cardBg} backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg ${tier.config.badgeBg}`}>
+                      {tier.config.rankNumber === 1 ? '🥇' : tier.config.rankNumber === 2 ? '🥈' : '🥉'}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-black text-white">{tier.config.rankBadge} · {tier.config.tierTitle}</span>
+                        <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${tier.config.badgeBg}`}>
+                          {tierCompleted}/{tierTotal} 완료
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-white/50">{tier.config.tierSubtitle}</p>
+                    </div>
+                  </div>
+
+                  {tierTotal > 0 && (
+                    <div className="flex items-center gap-2 self-end sm:self-center">
+                      <span className="text-xs font-mono font-bold text-white/70">
+                        달성률 {Math.round((tierCompleted / tierTotal) * 100)}%
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Items in Tier */}
+                {tier.items.length === 0 ? (
+                  <div className="p-6 text-center rounded-[20px] border border-dashed border-white/10 bg-white/[0.01]">
+                    <p className="text-xs text-white/40">이 추천순위 단계에 해당하는 ToDo가 없습니다.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {tier.items.map((item, idx) => {
+                      const cat = CATEGORY_META[item.category] || CATEGORY_META.custom;
+                      const normPri = normalizePriority(item.priority);
+                      const priConfig = PRIORITY_CONFIG[normPri];
+
+                      return (
+                        <motion.div
+                          key={item.id}
+                          layout
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          className={`group relative p-4 sm:p-5 rounded-[24px] border transition-all duration-300 ${
+                            item.completed
+                              ? 'bg-white/[0.015] border-white/5 opacity-60'
+                              : `${priConfig.cardBorder} ${priConfig.cardBg} shadow-lg backdrop-blur-sm`
+                          }`}
+                        >
+                          <div className="flex items-start gap-3 sm:gap-4">
+                            {/* Priority Indicator Stripe */}
+                            <div 
+                              className={`w-1.5 self-stretch rounded-full bg-gradient-to-b ${priConfig.leftStripe} shrink-0 my-0.5 opacity-85 group-hover:opacity-100 transition-all`}
+                              title={`추천순위: ${priConfig.rankBadge}`} 
+                            />
+
+                            {/* Interactive Checkbox */}
+                            <button
+                              type="button"
+                              onClick={() => handleToggleMission(item.id)}
+                              className={`mt-0.5 w-6 h-6 rounded-xl flex items-center justify-center border transition-all cursor-pointer shrink-0 ${
+                                item.completed
+                                  ? 'bg-emerald-500 border-emerald-400 text-white shadow-[0_0_12px_rgba(16,185,129,0.5)]'
+                                  : 'border-white/20 hover:border-indigo-400 bg-white/5 hover:bg-indigo-500/10 text-transparent'
+                              }`}
+                              aria-label={item.completed ? '미션 완료 해제' : '미션 완료 표시'}
+                            >
+                              <Check size={14} className={item.completed ? 'stroke-[3]' : 'opacity-0'} />
+                            </button>
+
+                            {/* Task Content */}
+                            <div className="flex-1 min-w-0 space-y-1.5">
+                              {/* Metadata Header */}
+                              <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                                {/* Priority selector badge */}
+                                <div className="relative inline-flex items-center">
+                                  <select
+                                    value={normPri}
+                                    onChange={e => {
+                                      e.stopPropagation();
+                                      handleChangePriority(item.id, e.target.value as NormalizedPriority);
+                                    }}
+                                    onClick={e => e.stopPropagation()}
+                                    className={`appearance-none text-[10.5px] font-bold px-2 py-0.5 pr-4 rounded-lg border transition-all cursor-pointer focus:outline-none ${priConfig.badgeBg}`}
+                                    title="추천순위 변경 (클릭하여 1순위/2순위/3순위 선택)"
+                                  >
+                                    <option value="high" className="bg-zinc-900 text-rose-300 font-bold">🥇 추천 1순위 (핵심)</option>
+                                    <option value="medium" className="bg-zinc-900 text-amber-300 font-bold">🥈 추천 2순위 (도약)</option>
+                                    <option value="low" className="bg-zinc-900 text-emerald-300 font-bold">🥉 추천 3순위 (회복)</option>
+                                  </select>
+                                  <ChevronDown size={10} className="absolute right-1 pointer-events-none opacity-60 text-white" />
+                                </div>
+
+                                <span className="text-white/20" aria-hidden="true">·</span>
+                                <span className={`font-medium ${cat.color}`}>
+                                  {cat.icon} {cat.label}
+                                </span>
+                                {item.estimatedMinutes && (
+                                  <>
+                                    <span className="text-white/20" aria-hidden="true">·</span>
+                                    <span className="text-white/40 flex items-center gap-1 font-mono text-[10px]">
+                                      <Clock size={10} />
+                                      {item.estimatedMinutes}분
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+
+                              {/* Task Title */}
+                              <h4
+                                onClick={() => handleToggleMission(item.id)}
+                                className={`text-sm sm:text-base font-bold transition-all cursor-pointer leading-snug ${
+                                  item.completed
+                                    ? 'line-through text-white/40'
+                                    : 'text-white group-hover:text-indigo-200'
+                                }`}
+                              >
+                                {item.title}
+                              </h4>
+
+                              {/* Task Description */}
+                              {item.description && (
+                                <p className={`text-xs leading-relaxed ${item.completed ? 'text-white/30 line-through' : 'text-white/60'}`}>
+                                  {item.description}
+                                </p>
+                              )}
+
+                              {/* Recommendation Reason Badge */}
+                              {item.recommendReason && !item.completed && (
+                                <div className="pt-0.5">
+                                  <span className="inline-flex items-center gap-1 text-[10.5px] text-amber-300/90 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-lg">
+                                    <span className="text-[11px]">💡</span>
+                                    <span className="font-mono text-[9.5px] text-amber-400/80">추천 사유:</span>
+                                    <span className="font-medium text-amber-200">{item.recommendReason}</span>
+                                  </span>
+                                </div>
+                              )}
+
+                              {/* Action Hint / Link if present */}
+                              {item.actionRoute && !item.completed && (
+                                <div className="pt-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => navigate(item.actionRoute!)}
+                                    className="text-[11px] font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors cursor-pointer"
+                                  >
+                                    <span>{item.actionHint || '바로가기'}</span>
+                                    <ArrowRight size={11} />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Delete Button */}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteMission(item.id)}
+                              className="opacity-40 group-hover:opacity-100 text-white/30 hover:text-red-400 p-1.5 rounded-lg hover:bg-white/5 transition-all cursor-pointer shrink-0"
+                              title="미션 삭제"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        /* 🏆 Mode 2: 랭킹 리스트 보기 */
+        <div className="space-y-3">
+          {filteredMissions.map((item, idx) => {
             const cat = CATEGORY_META[item.category] || CATEGORY_META.custom;
             const normPri = normalizePriority(item.priority);
             const priConfig = PRIORITY_CONFIG[normPri];
@@ -1270,8 +1677,8 @@ export function PrologueTodoSection() {
                 <div className="flex items-start gap-3 sm:gap-4">
                   {/* Priority Indicator Stripe */}
                   <div 
-                    className={`w-1 self-stretch rounded-full bg-gradient-to-b ${priConfig.leftStripe} shrink-0 my-0.5 opacity-80 group-hover:opacity-100 transition-all`}
-                    title={`우선순위: ${priConfig.label}`} 
+                    className={`w-1.5 self-stretch rounded-full bg-gradient-to-b ${priConfig.leftStripe} shrink-0 my-0.5 opacity-85 group-hover:opacity-100 transition-all`}
+                    title={`추천순위: ${priConfig.rankBadge}`} 
                   />
 
                   {/* Interactive Checkbox */}
@@ -1289,9 +1696,20 @@ export function PrologueTodoSection() {
                   </button>
 
                   {/* Task Content */}
-                  <div className="flex-1 min-w-0 space-y-1">
-                    {/* Metadata Header (Zero-Pill Typography) */}
+                  <div className="flex-1 min-w-0 space-y-1.5">
+                    {/* Metadata Header with Rank index */}
                     <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                      {/* Rank Index Tag */}
+                      <span className={`px-2 py-0.5 rounded-lg font-mono font-black text-[10px] ${
+                        idx === 0
+                          ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40 shadow-[0_0_10px_rgba(251,191,36,0.3)]'
+                          : idx === 1
+                          ? 'bg-sky-400/20 text-sky-300 border border-sky-400/40'
+                          : 'bg-white/10 text-white/70 border border-white/15'
+                      }`}>
+                        #{idx + 1}
+                      </span>
+
                       {/* Priority selector badge */}
                       <div className="relative inline-flex items-center">
                         <select
@@ -1302,11 +1720,11 @@ export function PrologueTodoSection() {
                           }}
                           onClick={e => e.stopPropagation()}
                           className={`appearance-none text-[10.5px] font-bold px-2 py-0.5 pr-4 rounded-lg border transition-all cursor-pointer focus:outline-none ${priConfig.badgeBg}`}
-                          title="우선순위 변경 (클릭하여 높음/보통/낮음 선택)"
+                          title="추천순위 변경"
                         >
-                          <option value="high" className="bg-zinc-900 text-rose-300 font-bold">🔥 높음</option>
-                          <option value="medium" className="bg-zinc-900 text-amber-300 font-bold">⚡ 보통</option>
-                          <option value="low" className="bg-zinc-900 text-emerald-300 font-bold">🌿 낮음</option>
+                          <option value="high" className="bg-zinc-900 text-rose-300 font-bold">🥇 추천 1순위 (핵심)</option>
+                          <option value="medium" className="bg-zinc-900 text-amber-300 font-bold">🥈 추천 2순위 (도약)</option>
+                          <option value="low" className="bg-zinc-900 text-emerald-300 font-bold">🥉 추천 3순위 (회복)</option>
                         </select>
                         <ChevronDown size={10} className="absolute right-1 pointer-events-none opacity-60 text-white" />
                       </div>
@@ -1345,9 +1763,20 @@ export function PrologueTodoSection() {
                       </p>
                     )}
 
+                    {/* Recommendation Reason Badge */}
+                    {item.recommendReason && !item.completed && (
+                      <div className="pt-0.5">
+                        <span className="inline-flex items-center gap-1 text-[10.5px] text-amber-300/90 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-lg">
+                          <span className="text-[11px]">💡</span>
+                          <span className="font-mono text-[9.5px] text-amber-400/80">추천 사유:</span>
+                          <span className="font-medium text-amber-200">{item.recommendReason}</span>
+                        </span>
+                      </div>
+                    )}
+
                     {/* Action Hint / Link if present */}
                     {item.actionRoute && !item.completed && (
-                      <div className="pt-1.5">
+                      <div className="pt-1">
                         <button
                           type="button"
                           onClick={() => navigate(item.actionRoute!)}
@@ -1372,9 +1801,9 @@ export function PrologueTodoSection() {
                 </div>
               </motion.div>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
 
       {/* 🌌 Bottom Inspiration Banner */}
       <div className="p-6 rounded-[28px] border border-white/5 bg-gradient-to-r from-indigo-950/20 via-purple-950/20 to-black text-center space-y-2">
