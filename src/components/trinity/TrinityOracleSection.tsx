@@ -725,6 +725,23 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
     setStage('result');
   };
 
+  // 🚪 오라클 카드 선택창 닫기 핸들러: 기존 저장된 세션이 있으면 결과창으로, 없으면 모드 선택창으로 안전하게 복귀
+  const handleCancelOracleSpread = useCallback(() => {
+    if (todayDailySession && (todayDailySession.healingResult || todayDailySession.growthResult)) {
+      if (todayDailySession.mode === 'healing' && todayDailySession.healingResult) {
+        setHealingResult(todayDailySession.healingResult);
+      } else if (todayDailySession.mode === 'growth' && todayDailySession.growthResult) {
+        setGrowthResult(todayDailySession.growthResult);
+      }
+      setDrawnCards(todayDailySession.drawnCards || []);
+      setStage('result');
+    } else {
+      setIsModeChosen(false);
+      setStage('spread');
+    }
+    stopTTS();
+  }, [todayDailySession]);
+
   // Load collected treasures and growth records on mount
   useEffect(() => {
     try {
@@ -1031,7 +1048,7 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
 1. 오라클 타로는 일반 타로보다 훨씬 더 길고 자세하며, 방대하고 정밀한 영적/운명적 청사진을 제공하는 상위 오라클입니다.
 2. 질문자가 오늘 마주한 기저 운기는 오늘의 타로([${todayAnchorCard.nameKo}])의 상징과 진단 내용에 의해 이미 첫 단추가 채워져 있습니다.
 3. 이번에 새로 뽑힌 3장의 오라클 카드(1번: ${cards[0]?.nameKo}, 2번: ${cards[1]?.nameKo}, 3번: ${cards[2]?.nameKo})는 오늘의 타로가 던진 일일 운명의 화두를 심층적으로 확장하고 해결하는 직접적인 연계 카드입니다.
-4. 따라서 리딩의 첫 시작(### 1단계)부터 오늘의 타로 결과와 사주 본원 기운(${saju.dayMaster.symbolName})의 상호작용을 명확하게 짚어내고, 3장의 오라클 카드가 오늘의 타로 에너지를 어떻게 조율하고 더 높은 차원의 해법으로 이끄는지 반드시 유기적으로 연결하여 2500~3500자 이상의 압도적 대서사로 전개하십시오.
+4. 따라서 리딩의 첫 시작(### 1단계)부터 오늘의 타로 결과와 사주 본원 기운(${saju?.dayMaster?.symbolName || '본원 기운'})의 상호작용을 명확하게 짚어내고, 3장의 오라클 카드가 오늘의 타로 에너지를 어떻게 조율하고 더 높은 차원의 해법으로 이끄는지 반드시 유기적으로 연결하여 2500~3500자 이상의 압도적 대서사로 전개하십시오.
 `
       : '';
 
@@ -1042,7 +1059,7 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
 
 # 핵심 사명 (Core Oracle Mission):
 오라클 타로는 일반 타로보다 훨씬 더 길고 자세하며, 방대하고 정밀한 영적/운명적 대서사를 제공하는 최상위 오라클입니다.
-이 리딩의 목적은 질문자가 털어놓은 【구체적인 고민의 근원적 치유, 내면의 무의식적 피로 해소, 사주 원국과 카드의 깊은 공명, 현실적이고 따뜻한 실천 개운 처방】을 사주 일간 본원(${saju?.dayMaster.symbolName}) 기질과 오늘의 일일 타로([${todayAnchorCard.nameKo}])의 배경 파동, 그리고 3장의 오라클 카드(1번: ${cards[0]?.nameKo}, 2번: ${cards[1]?.nameKo}, 3번: ${cards[2]?.nameKo})와 정교하게 교차 융합하여, 압도적으로 풍성하고 깊이 있는 '5단계 심층 총평 대서사 본문'으로 온전히 전달하는 것입니다.
+이 리딩의 목적은 질문자가 털어놓은 【구체적인 고민의 근원적 치유, 내면의 무의식적 피로 해소, 사주 원국과 카드의 깊은 공명, 현실적이고 따뜻한 실천 개운 처방】을 사주 일간 본원(${saju?.dayMaster?.symbolName || '본원 기운'}) 기질과 오늘의 일일 타로([${todayAnchorCard.nameKo}])의 배경 파동, 그리고 3장의 오라클 카드(1번: ${cards[0]?.nameKo}, 2번: ${cards[1]?.nameKo}, 3번: ${cards[2]?.nameKo})와 정교하게 교차 융합하여, 압도적으로 풍성하고 깊이 있는 '5단계 심층 총평 대서사 본문'으로 온전히 전달하는 것입니다.
 - 형식적인 단문이나 요약식 서술을 철저히 배제합니다.
 - 자기계발 오라클 타로와 동등하거나 그 이상의 풍성하고 디테일한 분량(2,500~3,500자 이상의 장문 대서사)으로 본문('message')을 서술하십시오.
 - 오직 질문자의 구체적인 고민("${effectiveInquiry || '삶의 균형과 심리적 치유'}")과 오늘의 일일 타로([${todayAnchorCard.nameKo}])의 배경 에너지를 서두부터 결말까지 관통시키며, 3장의 카드를 돋보기로 들여다보듯 도상 상징과 사주 오행(목화토금수), 용신을 결합해 깊이 있는 1:1 심층 상담을 전개하십시오.
@@ -1070,7 +1087,7 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
 {
   "message": "질문자(${recipientName} 님)를 정중히 부르며 시작하여, 5개의 소제목(### 1~5단계)을 빠짐없이 갖추고 각 단계마다 2~3개의 긴 단락으로 오늘의 일일 타로 [${todayAnchorCard.nameKo}]와 사주 일간 본원, 3장의 카드를 유기적으로 교차 해설한 2500~3500자 이상의 5단계 심층 총평 대서사 본문 (마크다운 포맷)",
   "concise_summary": [
-    "[현재 에너지] 사주 일간(${saju?.dayMaster.symbolName})과 1·2번 카드가 마주한 질문자 내면의 무의식적 피로와 현실 에너지 흐름을 섬세하게 진단한 깊이 있는 1~2문장 (60~85자 내외)",
+    "[현재 에너지] 사주 일간(${saju?.dayMaster?.symbolName || '본원 기운'})과 1·2번 카드가 마주한 질문자 내면의 무의식적 피로와 현실 에너지 흐름을 섬세하게 진단한 깊이 있는 1~2문장 (60~85자 내외)",
     "[방향과 결단] 사주 용신(${saju?.yongsin?.name || '조화'})과 3번 조언 카드가 제시하는 지혜로운 마음가짐과 영혼의 전환점 결단 (60~85자 내외)",
     "[실천 처방] 오늘 일상에서 지친 심신을 회복하고 운명의 기운을 상생으로 순환시킬 구체적이고 따뜻한 힐링 실천법 (55~80자 내외)"
   ],
@@ -1097,7 +1114,7 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
       "card_name": "${cards[0]?.nameKo || '1번 카드'}",
       "position_name": "과거 / 무의식의 뿌리",
       "core_meaning": "카드의 본질적 도상 상징과 뜻 (2~3문장 이상의 상세한 상징학적 해독)",
-      "saju_resonance": "질문자의 사주 일간 본원(${saju?.dayMaster.symbolName}) 및 오행과의 심층 공명 해설 (2~3문장)",
+      "saju_resonance": "질문자의 사주 일간 본원(${saju?.dayMaster?.symbolName || '본원 기운'}) 및 오행과의 심층 공명 해설 (2~3문장)",
       "personal_interpretation": "질문자의 고민 맥락과 연결된 과거 심리적 뿌리 상세 리딩 (3~4문장 이상의 디테일한 분석)",
       "action_guide": "일상에서 실천할 수 있는 생각과 마음가짐의 정돈 조언 (2문장)"
     },
@@ -1105,7 +1122,7 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
       "card_name": "${cards[1]?.nameKo || '2번 카드'}",
       "position_name": "현재 / 상황과 마음의 흐름",
       "core_meaning": "카드의 본질적 도상 상징과 뜻 (2~3문장 이상의 상세한 상징학적 해독)",
-      "saju_resonance": "질문자의 사주 일간 본원(${saju?.dayMaster.symbolName}) 및 오행과의 심층 공명 해설 (2~3문장)",
+      "saju_resonance": "질문자의 사주 일간 본원(${saju?.dayMaster?.symbolName || '본원 기운'}) 및 오행과의 심층 공명 해설 (2~3문장)",
       "personal_interpretation": "현재 마주한 현실 갈등과 감정 역학 상세 리딩 (3~4문장 이상의 디테일한 분석)",
       "action_guide": "현재 상황에서 마음의 균형을 잡는 구체적 조화 팁 (2문장)"
     },
@@ -1121,8 +1138,8 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
 }`;
 
         const inquiryPromptAddon = effectiveInquiry
-          ? `\n\n# [최우선 필수 집중 주제] 내담자가 질문한 구체적인 고민:\n"${effectiveInquiry}"\n★ 절대 지침: 사주 ✕ 타로 리딩은 질문자의 구체적인 고민("${effectiveInquiry}")을 서두부터 중심에 두고 전개되어야 합니다. 일반론적 설명을 배제하고, 내담자가 호소한 고민 상황을 명확히 짚어내며, 사주 본원 기운(${saju?.dayMaster.symbolName})이 왜 이 고민 앞에서 특정 패턴을 겪게 되었는지, 그리고 뽑힌 3장의 카드가 이 고민을 어떻게 해결의 길로 인도하는지 사주와 타로의 콜라보레이션으로 명쾌하게 작성해 주세요.\n`
-          : `\n\n# 질문자의 상황:\n사주 원국의 일간(${saju?.dayMaster.symbolName})과 오행 분포(${saju?.elements.dominant.name} 우세, ${saju?.elements.lacking.name} 결핍)를 바탕으로 현재 삶의 흐름과 고민을 입체적으로 조명하고, 3장의 타로 카드가 전하는 명쾌한 방향성을 전해 주세요.\n`;
+          ? `\n\n# [최우선 필수 집중 주제] 내담자가 질문한 구체적인 고민:\n"${effectiveInquiry}"\n★ 절대 지침: 사주 ✕ 타로 리딩은 질문자의 구체적인 고민("${effectiveInquiry}")을 서두부터 중심에 두고 전개되어야 합니다. 일반론적 설명을 배제하고, 내담자가 호소한 고민 상황을 명확히 짚어내며, 사주 본원 기운(${saju?.dayMaster?.symbolName || '본원 기운'})이 왜 이 고민 앞에서 특정 패턴을 겪게 되었는지, 그리고 뽑힌 3장의 카드가 이 고민을 어떻게 해결의 길로 인도하는지 사주와 타로의 콜라보레이션으로 명쾌하게 작성해 주세요.\n`
+          : `\n\n# 질문자의 상황:\n사주 원국의 일간(${saju?.dayMaster?.symbolName || '본원 기운'})과 오행 분포(${saju?.elements?.dominant?.name || '조화'} 우세, ${saju?.elements?.lacking?.name || '보완'} 결핍)를 바탕으로 현재 삶의 흐름과 고민을 입체적으로 조명하고, 3장의 타로 카드가 전하는 명쾌한 방향성을 전해 주세요.\n`;
 
         const prompt = `${sajuContextPrompt}${inquiryPromptAddon}\n\n사용자가 뽑은 3장의 카드:\n${cardDescriptions}\n\n위 질문자(${recipientName} 님)의 사주 명리학 원국과 뽑힌 3장의 타로 카드가 지닌 본질적 도상 상징과 뜻을 긴밀하게 '교차 융합(Collaboration)'하여, 질문자의 고민을 중심에 두고 높은 통찰과 현실적 해법을 담은 정통 타로 리딩 결과를 JSON으로 생성해 주십시오.\n\n★ [작성 지침 - 절대 엄수]:\n1. 분량 및 디테일: 자기계발 오라클 타로처럼 매우 길고, 돋보기로 들여다보듯 디테일하고 깊이 있게 작성하십시오.\n2. 'message' 필드는 본문 리딩의 핵심 대서사이므로 반드시 5개의 소제목(### 1~5단계)을 빠짐없이 갖추고, 각 단계마다 2~3개의 긴 단락(각 단계당 350~500자 이상, 총 2,500~3,500자 이상)으로 풍성하게 서술하십시오. 결코 1~2줄의 짧은 요약으로 끝내지 마십시오.\n3. 3줄 요약('concise_summary')은 각 항목당 60~85자 내외로 사주 원국과 카드의 의미를 융합하여 자기계발 오라클만큼 풍성하고 깊이 있는 완성형 문맥으로 작성하십시오.\n4. 카드별 심층 분석('card_insights')의 4개 항목(core_meaning, saju_resonance, personal_interpretation, action_guide)을 3장의 카드 모두 빠짐없이 풍성하고 디테일하게 작성하십시오.`;
         const res = await invokeLLM({
@@ -1249,8 +1266,8 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
       } else {
         // [GROWTH MODE] Extreme Focus on Self-Development, Competence Building, Habit Architecture, and Breakthrough Execution
         const growthInquiryPromptAddon = effectiveInquiry
-          ? `\n\n# [최우선 필수 집중 과제] 질문자가 직면한 구체적인 성장 고민 및 돌파 과제:\n"${effectiveInquiry}"\n★ 절대 지침: 오라클 루시의 자기계발 서한은 오직 위의 구체적인 성장 고민/과제("${effectiveInquiry}")를 정중앙에 두고 풀이해야 합니다. 일반적인 자기계발 격언을 배제하고, 질문자가 고민하는 현실적 문제점("${effectiveInquiry}")의 원인을 사주 기질(${saju?.dayMaster.symbolName}) 관점에서 날카롭게 진단하고, 3장의 카드를 활용해 즉시 돌파할 수 있는 실행 전략과 행동 지침을 명쾌하게 제시해 주세요.\n`
-          : `\n\n# 질문자의 잠재 역량 돌파 과제:\n질문자의 사주 본원(${saju?.dayMaster.symbolName})이 지닌 본래의 추진력을 가로막는 나태함과 미루기, 목표 실행의 정체를 부수고, 오늘 즉시 행동으로 전환할 수 있는 강력한 자기계발 돌파구를 제시해 주세요.\n`;
+          ? `\n\n# [최우선 필수 집중 과제] 질문자가 직면한 구체적인 성장 고민 및 돌파 과제:\n"${effectiveInquiry}"\n★ 절대 지침: 오라클 루시의 자기계발 서한은 오직 위의 구체적인 성장 고민/과제("${effectiveInquiry}")를 정중앙에 두고 풀이해야 합니다. 일반적인 자기계발 격언을 배제하고, 질문자가 고민하는 현실적 문제점("${effectiveInquiry}")의 원인을 사주 기질(${saju?.dayMaster?.symbolName || '본원 기운'}) 관점에서 날카롭게 진단하고, 3장의 카드를 활용해 즉시 돌파할 수 있는 실행 전략과 행동 지침을 명쾌하게 제시해 주세요.\n`
+          : `\n\n# 질문자의 잠재 역량 돌파 과제:\n질문자의 사주 본원(${saju?.dayMaster?.symbolName || '본원 기운'})이 지닌 본래의 추진력을 가로막는 나태함과 미루기, 목표 실행의 정체를 부수고, 오늘 즉시 행동으로 전환할 수 있는 강력한 자기계발 돌파구를 제시해 주세요.\n`;
 
         const systemPrompt = `당신은 탁월함을 이끌어내는 초정밀 자기계발 멘토이자 퍼포먼스 라이프 코치 '오라클 루시(Lucy)'입니다.
 
@@ -1384,10 +1401,10 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
       console.error('Oracle AI error:', err);
       // Fallbacks with rich Saju-Tarot blended meanings
       const sajuNameStr = saju?.name || '내담자';
-      const dayMasterStr = saju ? `${saju.dayMaster.hanja}(${saju.dayMaster.symbolName})` : '본원 기운';
-      const domElStr = saju?.elements.dominant.name || '우세 오행';
-      const lackElStr = saju?.elements.lacking.name || '결핍 오행';
-      const yongsinStr = saju?.yongsin.name || '용신 보약';
+      const dayMasterStr = saju?.dayMaster ? `${saju.dayMaster.hanja}(${saju.dayMaster.symbolName})` : '본원 기운';
+      const domElStr = saju?.elements?.dominant?.name || '우세 오행';
+      const lackElStr = saju?.elements?.lacking?.name || '결핍 오행';
+      const yongsinStr = saju?.yongsin?.name || '용신 보약';
 
       if (oracleMode === 'healing') {
         const healingFallbackMessage = buildFallbackHealingMessage(
@@ -2901,7 +2918,7 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
                   allowReversed={true}
                   spreadName={oracleMode === 'healing' ? '내면아이 쉼 스프레드' : '4원소 마인드셋 스프레드'}
                   onComplete={handleCardsComplete}
-                  onCancel={() => {}}
+                  onCancel={handleCancelOracleSpread}
                 />
               </div>
             </div>

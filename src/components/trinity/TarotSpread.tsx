@@ -131,11 +131,11 @@ const DeckWheelCard = React.memo(
     return (
       <div
         data-card-id={card.id}
-        className={`absolute left-1/2 top-1/2 w-14 h-24 sm:w-16 sm:h-28 md:w-20 md:h-34 rounded-lg sm:rounded-xl md:rounded-2xl flex items-center justify-center select-none transition-[transform,opacity] duration-200 ease-out overflow-hidden cursor-pointer ${
+        className={`absolute left-1/2 top-1/2 w-16 h-28 sm:w-20 sm:h-34 md:w-24 md:h-40 rounded-lg sm:rounded-xl md:rounded-2xl flex items-center justify-center select-none transition-[transform,opacity] duration-200 ease-out overflow-hidden cursor-pointer ${
           isPicked
             ? 'opacity-0 scale-75 pointer-events-none'
             : isHovered
-            ? 'pointer-events-auto border-2 border-amber-300 ring-1 ring-yellow-400/60 shadow-lg shadow-amber-500/25 z-[400] scale-[1.08] bg-zinc-950 tarot-card-border-flicker'
+            ? 'pointer-events-auto border-2 border-amber-300 ring-1 ring-yellow-400/60 shadow-lg shadow-amber-500/25 z-[400] scale-[1.12] bg-zinc-950 tarot-card-border-flicker'
             : 'pointer-events-auto border border-amber-500/40 shadow-md bg-zinc-950'
         }`}
         style={{
@@ -209,11 +209,11 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
   const compactSlots = maxCards >= 4 || isMobile;
   const slotClass = isMobile
     ? compactSlots
-      ? 'w-10 h-15 sm:w-12 sm:h-18'
-      : 'w-11 h-17 sm:w-14 sm:h-20'
+      ? 'w-12 h-18 sm:w-14 sm:h-21'
+      : 'w-15 h-23 sm:w-18 sm:h-28'
     : compactSlots
-      ? 'w-14 h-20 sm:w-16 sm:h-24 md:w-20 md:h-32'
-      : 'w-18 h-28 md:w-28 md:h-44';
+      ? 'w-16 h-24 sm:w-20 sm:h-30 md:w-24 md:h-36'
+      : 'w-22 h-34 md:w-30 md:h-46';
   const slotsWrapClass = isMobile
     ? 'flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 max-w-[96vw]'
     : compactSlots
@@ -391,6 +391,19 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
       applyRotation(rotationRef.current);
     }
   }, [wheelReady, applyRotation]);
+
+  // Handle ESC key to cancel/close the card spread window
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onCancel();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onCancel]);
 
   // Complete Viewport & Background Scroll Locking during card picking
   useEffect(() => {

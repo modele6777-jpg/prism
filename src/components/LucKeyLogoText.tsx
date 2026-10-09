@@ -33,13 +33,9 @@ export function LucKeyLogoText({
       <span className="bg-gradient-to-r from-emerald-400 via-green-400 to-teal-300 bg-clip-text text-transparent drop-shadow-[0_0_12px_rgba(52,211,153,0.85)]">
         LUC
       </span>
-      {/* KE: Radiant Imperial Gold of Key and Luck */}
-      <span className="bg-gradient-to-r from-amber-300 via-yellow-300 to-amber-400 bg-clip-text text-transparent drop-shadow-[0_0_12px_rgba(251,191,36,0.8)]">
-        KE
-      </span>
-      {/* Y: Sacred Clover Emerald Green of Miracles */}
-      <span className="bg-gradient-to-b from-emerald-300 via-emerald-400 to-teal-400 bg-clip-text text-transparent drop-shadow-[0_0_12px_rgba(52,211,153,0.85)]">
-        Y
+      {/* KEY: Radiant Imperial Gold & Solar Yellow (KE & Y 모두 노란색 통일) */}
+      <span className="bg-gradient-to-r from-amber-300 via-yellow-300 to-amber-400 bg-clip-text text-transparent drop-shadow-[0_0_12px_rgba(251,191,36,0.85)]">
+        KEY
       </span>
     </span>
   );
