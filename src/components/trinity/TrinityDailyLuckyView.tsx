@@ -368,7 +368,7 @@ export function TrinityDailyLuckyView({ onConsult }: TrinityDailyLuckyViewProps)
   const profile = sharedState?.userProfile || getPersistentUserProfile();
   const saju = useMemo(() => (profile ? calculateDetailedSaju(profile) : null), [profile]);
   const rawUserName = profile?.basic?.nickname?.trim() || profile?.basic?.name?.trim();
-  const userName = (rawUserName && rawUserName !== '박주형' && rawUserName !== '쭈' && rawUserName !== '여행자') ? rawUserName : '제제';
+  const userName = (rawUserName && rawUserName !== '여행자') ? rawUserName : '제제';
 
   // State initialization with SharedState -> LocalStorage -> Fallback priority
   const [luckyData, setLuckyData] = useState<TrinityDailyLuckyData>(() => {

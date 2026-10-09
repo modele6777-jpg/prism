@@ -47,7 +47,7 @@ export function LucyTarotAdviceCard({
 }: LucyTarotAdviceCardProps) {
   const { sharedState, openLucyChat } = useApp();
   const rawNick = sharedState?.userProfile?.basic?.nickname?.trim() || sharedState?.userProfile?.basic?.name?.trim();
-  const nickname = (rawNick && rawNick !== '박주형' && rawNick !== '쭈' && rawNick !== '여행자') ? rawNick : '제제';
+  const nickname = (rawNick && rawNick !== '여행자') ? rawNick : '제제';
 
   const params = useMemo<LucyTarotAdviceParams>(() => ({
     cards,

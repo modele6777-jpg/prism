@@ -540,15 +540,15 @@ export default function LucyStandalonePage() {
   }, []);
 
 
-  // Determine User Nickname ('제제' prioritized)
+  // Determine User Nickname
   const rawNickname = sharedState?.userProfile?.basic?.nickname?.trim();
   const rawDisplayName = firebaseUser?.displayName?.trim();
   const rawName = sharedState?.userProfile?.basic?.name?.trim();
-  const userDisplayName = (rawNickname && rawNickname !== '여행자' && rawNickname !== '사용자' && rawNickname !== '박주형' && rawNickname !== '쭈')
+  const userDisplayName = (rawNickname && rawNickname !== '여행자' && rawNickname !== '사용자')
     ? rawNickname
-    : ((rawName && rawName !== '여행자' && rawName !== '박주형')
+    : ((rawName && rawName !== '여행자')
       ? rawName
-      : (rawDisplayName && rawDisplayName !== '박주형' && rawDisplayName !== '쭈' ? rawDisplayName : '제제'));
+      : (rawDisplayName || '제제'));
 
   // Detailed Saju Info for Soul Profile View
   const sajuInfo = useMemo(() => calculateDetailedSaju(sharedState?.userProfile), [sharedState?.userProfile]);

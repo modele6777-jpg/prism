@@ -422,7 +422,7 @@ export function hasKoreanJongseong(word: string): boolean {
 export function extractGivenName(fullName: string): string {
   if (!fullName) return '';
   const trimmed = fullName.trim();
-  if (trimmed === '박주형' || trimmed === '주형' || trimmed === '제제') return '제제';
+  if (trimmed === '제제') return '제제';
   if (trimmed.length <= 1 || trimmed === '여행자') return trimmed;
 
   // 공백으로 성과 이름이 구분된 경우 (예: "박 주형" -> "주형")

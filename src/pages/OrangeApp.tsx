@@ -1149,9 +1149,9 @@ export default function OrangeApp() {
 
       const rawNick = sharedState?.userProfile?.basic?.nickname;
       const rawName = sharedState?.userProfile?.basic?.name;
-      const orangeUserName = (rawNick && rawNick !== '박주형' && rawNick !== '쭈' && rawNick !== '여행자')
+      const orangeUserName = (rawNick && rawNick !== '여행자')
         ? rawNick
-        : ((rawName && rawName !== '박주형' && rawName !== '여행자') ? rawName : '제제');
+        : ((rawName && rawName !== '여행자') ? rawName : '제제');
 
       const data = await invokeLLMStructured({
         messages: [

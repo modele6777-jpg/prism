@@ -1,13 +1,13 @@
 {
   "name": "luckey",
-  "version": "1.4.207",
-  "summary": "간간히 구버전(예전) 로딩화면이 번쩍이며 뜨는 현상 원천 해결 및 프리하이드레이션 HTML 로더 전면 일원화",
-  "builtAt": "2026-10-09T01:22:00.000Z",
+  "version": "1.4.208",
+  "summary": "프로필 설정 실명 입력 시 '제제' 고정 버그 완전 수정 및 사용자 고유 성명 보존 정상화",
+  "builtAt": "2026-10-09T02:30:00.000Z",
   "items": [
-    "구버전 정적 프리하이드레이션 로더 제거 및 미니멀 일원화: index.html 내 잔존하던 이전 세대의 과도한 300x320 SVG 그래픽 및 구형 프로그레스 바를 완전히 퇴역시키고, LucKeyCosmicLoader와 1:1로 일치하는 미니멀 클로버-키 인시그니아 및 헤어라인 펄스 애니메이션으로 전면 교체",
-    "초기 렌더링 및 새로고침 시 화면 깜빡임/불일치 원천 차단: React 마운트 이전의 정적 HTML과 마운트 직후의 LucKeyCosmicLoader 간 배경색(#06070a), 앰비언트 글로우, 워드마크, 메시지 및 로딩 진행 바의 시각 요소를 완벽히 동기화하여 전환 시 이질감 완전 제거",
-    "로그인/미인증 화면 브랜딩 최신화: LoginScreen에 남아있던 구 PRISM 트라이앵글 심볼 및 텍스트를 LucKey 미니멀 클로버-키 인장 및 공식 LucKeyLogoText로 교체하여 인증 진입 구간에서도 구버전 그래픽이 노출되지 않도록 정비",
-    "전역 로더 서브텍스트 통일: PrismRainbowLoader 및 App.tsx의 서브 문구를 'LUCKEY · SOUL SANCTUARY'로 일치시켜 모든 로딩 진입 지점의 브랜드 일관성 확보"
+    "프로필 설정 실명 입력 시 '제제' 강제 덮어쓰기 버그 원천 제거: ProfilePage, ProfileModal, EpilogueApp 및 profileVault 내에 존재하던 사용자 실명 필터링 및 '제제' 강제 치환 로직을 완전 삭제",
+    "프로필 다중 금고(ProfileVault) 및 저장 시 최신 데이터 우선권(preferIncoming=true) 확립: 프로필 저장 시 사용자가 입력한 실명 및 정보가 기존 캐시나 병합 과정에서 유실되지 않고 모든 로컬/세션 볼트 및 Firestore에 즉시 온전히 반영되도록 보장",
+    "전체 7대 앱 및 챗/연금술 융합 섹션 사용자 성명/호칭 정상 반영: Lucy, Orange, Trinity, Bluebird, Heal, Muse, Epilogue 및 온보딩/채팅 컴포넌트 전반에서 사용자 실명과 닉네임이 정상 적용되도록 일괄 개선",
+    "입력 폼 플레이스홀더 정제: 실명 입력 필드의 플레이스홀더를 혼동을 주는 '예: 제제'에서 '예: 홍길동'으로 분리 개선"
   ],
   "author": "Antigravity AI Agent",
   "buildEnvironment": "cloud-run"

@@ -51,11 +51,10 @@ export function SyncHeader({
 
   const displayName =
     firebaseUser?.displayName ||
-    (sharedState?.userProfile?.basic?.nickname &&
-    sharedState.userProfile.basic.nickname !== '박주형' &&
-    sharedState.userProfile.basic.nickname !== '쭈'
-      ? sharedState.userProfile.basic.nickname
-      : sharedState?.userProfile?.basic?.name || firebaseUser?.email?.split('@')[0] || '제제');
+    sharedState?.userProfile?.basic?.nickname ||
+    sharedState?.userProfile?.basic?.name ||
+    firebaseUser?.email?.split('@')[0] ||
+    '제제';
 
   const handleLogin = async () => {
     setLoading(true);

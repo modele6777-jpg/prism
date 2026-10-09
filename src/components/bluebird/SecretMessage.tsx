@@ -340,7 +340,7 @@ export function SecretMessage({ isOpen, onClose, isModal }: SecretMessageProps =
     const moodObj = MOOD_TAGS.find((m) => m.id === selectedMood) || MOOD_TAGS[0];
 
     const rawNick = sharedState?.userProfile?.basic?.nickname?.trim() || sharedState?.userProfile?.basic?.name?.trim();
-    const nickname = (rawNick && rawNick !== '박주형' && rawNick !== '쭈' && rawNick !== '여행자') ? rawNick : '제제';
+    const nickname = (rawNick && rawNick !== '여행자') ? rawNick : '제제';
 
     const firstLine = currentContent.split('\n')[0]?.trim() || '';
     const autoTitle = firstLine.slice(0, 26) || `${moodObj.label}의 기록`;

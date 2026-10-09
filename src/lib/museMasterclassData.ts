@@ -1287,7 +1287,7 @@ export function getMasterpieceDynamicDialogue(
   const art = selectedArtwork || master.artworks?.[0] || master;
   const seed = getDateSeed(dateSeedKey || `muse_master_${master.id}_${art.piece}_${new Date().toISOString().slice(0, 10)}`);
   const rawNick = userProfile?.basic?.nickname?.trim() || userProfile?.basic?.name?.trim();
-  const nickname = (rawNick && rawNick !== '박주형' && rawNick !== '쭈' && rawNick !== '여행자') ? rawNick : '제제';
+  const nickname = (rawNick && rawNick !== '여행자') ? rawNick : '제제';
   const dilemmaText = (userDilemma || '').trim();
 
   // 날짜별 변화하는 다이내믹 변주 문구

@@ -86,9 +86,9 @@ export function TrinityDestinyReportView({ onConsult }: TrinityDestinyReportView
   // 프로필 편집 모달/인라인 토글
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editName, setEditName] = useState(
-    (profile?.basic?.name && profile.basic.name !== '박주형' && profile.basic.name !== '여행자')
+    (profile?.basic?.name && profile.basic.name !== '여행자')
       ? profile.basic.name
-      : '제제'
+      : (profile?.basic?.nickname || '제제')
   );
   const [editBirthdate, setEditBirthdate] = useState(profile?.basic?.birthdate || '1995-05-15');
   const [editBirthtime, setEditBirthtime] = useState(profile?.basic?.birthtime || '12:00');

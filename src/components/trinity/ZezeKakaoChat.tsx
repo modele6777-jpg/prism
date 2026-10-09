@@ -226,7 +226,7 @@ export function ZezeKakaoChat({
 
       const rawUserName = saju?.name?.trim() || '';
       const extracted = extractGivenName(rawUserName);
-      const givenName = (extracted && extracted !== '박주형' && extracted !== '주형' && extracted !== '여행자') ? extracted : '제제';
+      const givenName = (extracted && extracted !== '여행자') ? extracted : '제제';
 
       const sajuPromptSection = saju ? `
 # 내담자 사주 명식(四柱) & 타로 융합 정보:

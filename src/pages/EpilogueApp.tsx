@@ -323,9 +323,9 @@ export default function EpilogueApp() {
   const initialProfile = sharedState?.userProfile || loadProfileFromAllVaults() || getPersistentUserProfile();
 
   const rawInitName = initialProfile?.basic?.name || '';
-  const initName = (rawInitName && rawInitName !== '박주형' && rawInitName !== '여행자') ? rawInitName : (rawInitName === '박주형' ? '제제' : '');
+  const initName = (rawInitName && rawInitName !== '여행자') ? rawInitName : '';
   const rawInitNick = initialProfile?.basic?.nickname || '';
-  const initNick = (rawInitNick && rawInitNick !== '박주형' && rawInitNick !== '쭈' && rawInitNick !== '여행자') ? rawInitNick : ((rawInitNick === '박주형' || rawInitNick === '쭈') ? '제제' : '');
+  const initNick = (rawInitNick && rawInitNick !== '여행자') ? rawInitNick : '';
 
   const [basic, setBasic] = useState({
     name: initName,
@@ -366,8 +366,6 @@ export default function EpilogueApp() {
       if (!profile) return;
       if (profile.basic) {
         const cleanBasic = { ...profile.basic };
-        if (cleanBasic.name === '박주형') cleanBasic.name = '제제';
-        if (cleanBasic.nickname === '박주형' || cleanBasic.nickname === '쭈') cleanBasic.nickname = '제제';
         setBasic((b) => ({ ...b, ...cleanBasic }));
       }
       if (profile.fate) setFate((f) => ({ ...f, ...profile.fate }));
@@ -398,7 +396,7 @@ export default function EpilogueApp() {
         music,
         psych,
         art,
-      });
+      }, true);
 
       // 1. 즉시 로컬 볼트 및 브라우저 스토리지에 저장 (0ms 오프라인 보장)
       saveProfileToAllVaults(profile);
@@ -454,7 +452,7 @@ export default function EpilogueApp() {
               label="실명 *"
               value={basic.name}
               onChange={(v) => setBasic((b) => ({ ...b, name: v }))}
-              placeholder="예: 제제"
+              placeholder="예: 홍길동"
             />
             <InputField
               label="닉네임 (루시 AI가 부를 호칭)"

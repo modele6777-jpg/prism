@@ -466,7 +466,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       try {
         const rawNick = sharedStateRef.current?.userProfile?.basic?.nickname || sharedStateRef.current?.userProfile?.basic?.name;
-        const nick = (rawNick && rawNick !== '박주형' && rawNick !== '쭈' && rawNick !== '여행자') ? rawNick : '제제';
+        const nick = (rawNick && rawNick !== '여행자') ? rawNick : '제제';
         const currentStored = loadSavedUnifiedMessages();
         const archivalResult = processDailyChatArchival(currentStored, nick);
         if (archivalResult.wasArchived) {
@@ -579,7 +579,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
           if (remoteList.length > 0) {
             const rawNick = sharedStateRef.current?.userProfile?.basic?.nickname || sharedStateRef.current?.userProfile?.basic?.name;
-            const nick = (rawNick && rawNick !== '박주형' && rawNick !== '쭈' && rawNick !== '여행자') ? rawNick : '제제';
+            const nick = (rawNick && rawNick !== '여행자') ? rawNick : '제제';
             const archivalResult = processDailyChatArchival(remoteList, nick);
             if (archivalResult.wasArchived) {
               saveUnifiedMessagesSafely(archivalResult.messages);
@@ -1341,7 +1341,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const clearPersonaMessages = useCallback((persona?: PersonaType) => {
     const target = persona || 'lucy';
     const rawNick = sharedStateRef.current?.userProfile?.basic?.nickname || sharedStateRef.current?.userProfile?.basic?.name;
-    const nick = (rawNick && rawNick !== '박주형' && rawNick !== '쭈' && rawNick !== '여행자') ? rawNick : '제제';
+    const nick = (rawNick && rawNick !== '여행자') ? rawNick : '제제';
     const initialGreet = archiveAndResetChat(unifiedMessages, nick, target);
 
     if (pushChatThreadsTimerRef.current) {

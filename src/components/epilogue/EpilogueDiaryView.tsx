@@ -157,9 +157,9 @@ export function EpilogueDiaryView() {
     () =>
       calculateEpilogueAchievementStats(
         entries,
-        (sharedState?.userProfile?.basic?.nickname && sharedState.userProfile.basic.nickname !== '박주형' && sharedState.userProfile.basic.nickname !== '쭈')
-          ? sharedState.userProfile.basic.nickname
-          : ((sharedState?.userProfile?.basic?.name && sharedState.userProfile.basic.name !== '박주형') ? sharedState.userProfile.basic.name : '제제')
+        (sharedState?.userProfile?.basic?.nickname?.trim())
+          ? sharedState.userProfile.basic.nickname.trim()
+          : (sharedState?.userProfile?.basic?.name?.trim() || '제제')
       ),
     [entries, sharedState?.userProfile]
   );
@@ -547,7 +547,7 @@ export function EpilogueDiaryView() {
         .join(', ');
 
       const rawUser = sharedState?.userProfile?.basic?.nickname || sharedState?.userProfile?.basic?.name;
-      const userName = (rawUser && rawUser !== '박주형' && rawUser !== '쭈' && rawUser !== '여행자') ? rawUser : '제제';
+      const userName = (rawUser && rawUser !== '여행자') ? rawUser : '제제';
 
       const generated = await invokeMindDiaryLLM({
         rawNotes: rawNotes.trim(),
@@ -583,7 +583,7 @@ export function EpilogueDiaryView() {
         .join(', ');
 
       const rawUser = sharedState?.userProfile?.basic?.nickname || sharedState?.userProfile?.basic?.name;
-      const userName = (rawUser && rawUser !== '박주형' && rawUser !== '쭈' && rawUser !== '여행자') ? rawUser : '제제';
+      const userName = (rawUser && rawUser !== '여행자') ? rawUser : '제제';
 
       const whisper = await invokeLucyMidnightWhisperLLM({
         userName,
@@ -611,7 +611,7 @@ export function EpilogueDiaryView() {
       const activeMoodObj = MOOD_OPTIONS.find((m) => m.label === selectedMood) || MOOD_OPTIONS[0];
       const validGratitudes = gratitudes.map((g) => g.trim()).filter(Boolean);
       const rawUser = sharedState?.userProfile?.basic?.nickname || sharedState?.userProfile?.basic?.name;
-      const userName = (rawUser && rawUser !== '박주형' && rawUser !== '쭈' && rawUser !== '여행자') ? rawUser : '제제';
+      const userName = (rawUser && rawUser !== '여행자') ? rawUser : '제제';
       const fallback = createLucyMidnightWhisperFallback({
         userName,
         mood: activeMoodObj.label,

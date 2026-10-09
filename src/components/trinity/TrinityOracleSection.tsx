@@ -408,8 +408,8 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
     }
     return calculateDetailedSaju({
       basic: {
-        name: (userProfile?.basic?.name && userProfile.basic.name !== '박주형' && userProfile.basic.name !== '여행자') ? userProfile.basic.name : '제제',
-        nickname: (userProfile?.basic?.nickname && userProfile.basic.nickname !== '박주형' && userProfile.basic.nickname !== '쭈' && userProfile.basic.nickname !== '여행자') ? userProfile.basic.nickname : '제제',
+        name: (userProfile?.basic?.name && userProfile.basic.name !== '여행자') ? userProfile.basic.name : '제제',
+        nickname: (userProfile?.basic?.nickname && userProfile.basic.nickname !== '여행자') ? userProfile.basic.nickname : '제제',
         birthdate: '1995-05-15',
         birthtime: '12:00',
         gender: (userProfile?.basic?.gender as any) || 'female',
@@ -533,9 +533,9 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
   // 사주 정보 빠른 수정 모달 상태
   const [showSajuModal, setShowSajuModal] = useState<boolean>(false);
   const [editName, setEditName] = useState(
-    (userProfile?.basic?.name && userProfile.basic.name !== '박주형' && userProfile.basic.name !== '여행자')
+    (userProfile?.basic?.name && userProfile.basic.name !== '여행자')
       ? userProfile.basic.name
-      : '제제'
+      : (userProfile?.basic?.nickname || '제제')
   );
   const [editBirthdate, setEditBirthdate] = useState(userProfile?.basic?.birthdate || '1995-05-15');
   const [editBirthtime, setEditBirthtime] = useState(userProfile?.basic?.birthtime || '12:00');
@@ -614,11 +614,11 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
   // 질문자 명칭 추출 (내이름 대신 '제제' 표기)
   const recipientName = useMemo(() => {
     const rawName = userProfile?.basic?.name?.trim();
-    if (rawName && rawName !== '여행자' && rawName !== '박주형') {
+    if (rawName && rawName !== '여행자') {
       return rawName;
     }
     const rawNick = userProfile?.basic?.nickname?.trim();
-    if (rawNick && rawNick !== '여행자' && rawNick !== '박주형' && rawNick !== '쭈') {
+    if (rawNick && rawNick !== '여행자') {
       return rawNick;
     }
     return '제제';
@@ -626,7 +626,7 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
 
   // 🌿 제제 전용 다정한 호칭
   const jejeName = useMemo(() => {
-    if (!recipientName || recipientName === '박주형' || recipientName === '제제') return '제제';
+    if (!recipientName || recipientName === '제제') return '제제';
     return extractGivenName(recipientName);
   }, [recipientName]);
 

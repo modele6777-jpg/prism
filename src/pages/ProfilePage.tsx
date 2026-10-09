@@ -108,9 +108,9 @@ export default function ProfilePage() {
   const initialProfile = sharedState?.userProfile || getPersistentUserProfile();
 
   const rawInitName = initialProfile?.basic?.name || '';
-  const initName = (rawInitName && rawInitName !== '박주형' && rawInitName !== '여행자') ? rawInitName : (rawInitName === '박주형' ? '제제' : '');
+  const initName = (rawInitName && rawInitName !== '여행자') ? rawInitName : '';
   const rawInitNick = initialProfile?.basic?.nickname || '';
-  const initNick = (rawInitNick && rawInitNick !== '박주형' && rawInitNick !== '쭈' && rawInitNick !== '여행자') ? rawInitNick : ((rawInitNick === '박주형' || rawInitNick === '쭈') ? '제제' : '');
+  const initNick = (rawInitNick && rawInitNick !== '여행자') ? rawInitNick : '';
 
   // 5개 섹션 상태
   const [basic, setBasic] = useState({
@@ -155,8 +155,6 @@ export default function ProfilePage() {
       if (!profile) return;
       if (profile.basic) {
         const cleanBasic = { ...profile.basic };
-        if (cleanBasic.name === '박주형') cleanBasic.name = '제제';
-        if (cleanBasic.nickname === '박주형' || cleanBasic.nickname === '쭈') cleanBasic.nickname = '제제';
         setBasic(b => ({ ...b, ...cleanBasic }));
       }
       if (profile.fate) setFate(f => ({ ...f, ...profile.fate }));
@@ -191,7 +189,7 @@ export default function ProfilePage() {
         psych,
         art,
         relationships,
-      });
+      }, true);
 
       setPersistentUserProfile(profile);
 
@@ -242,7 +240,7 @@ export default function ProfilePage() {
         return (
           <div className="space-y-4">
             <InputField label="실명 *" value={basic.name}
-              onChange={v => setBasic(b => ({ ...b, name: v }))} placeholder="예: 제제" />
+              onChange={v => setBasic(b => ({ ...b, name: v }))} placeholder="예: 홍길동" />
             <InputField label="닉네임 (루시가 부를 이름)" value={basic.nickname}
               onChange={v => setBasic(b => ({ ...b, nickname: v }))} placeholder="예: 제제" />
             <InputField label="생년월일" value={basic.birthdate} type="date"

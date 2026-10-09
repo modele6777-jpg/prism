@@ -279,7 +279,7 @@ export function AuraSynergySection() {
     const userPrompt = `[양쪽 메뉴 융합: LETTING GO 방하착 ✕ 1-MIN 마이크로 호흡]
 [타겟 신체 긴장 영역]: "${tensionLabel}"
 [사용자가 직접 적은 마음에 걸리는 생각 / 쥐고 있는 감정]: ${trimmedDetail ? `"${trimmedDetail}" (핵심 정제 주제: "${concernTopic}")` : '(입력 없음 - 신체 긴장 영역 중심 해방 설계)'}
-[사용자 닉네임]: "${(userProfile?.basic?.nickname && userProfile.basic.nickname !== '박주형' && userProfile.basic.nickname !== '쭈') ? userProfile.basic.nickname : ((userProfile?.basic?.name && userProfile.basic.name !== '박주형') ? userProfile.basic.name : '제제')}"
+[사용자 닉네임]: "${userProfile?.basic?.nickname || userProfile?.basic?.name || '제제'}"
 
 반드시 아래 JSON 스키마로만 엄격하게 응답하세요 (문맥 상 오류 및 비문 절대 금지):
 {

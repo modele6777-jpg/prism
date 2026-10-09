@@ -64,15 +64,6 @@ export function loadProfileFromAllVaults(): UserProfile | undefined {
     Object.keys(merged.art || {}).length > 0
   );
 
-  if (isPopulated && merged?.basic) {
-    if (merged.basic.name === '박주형') {
-      merged.basic.name = '제제';
-    }
-    if (merged.basic.nickname === '박주형' || merged.basic.nickname === '쭈') {
-      merged.basic.nickname = '제제';
-    }
-  }
-
   return isPopulated ? merged : undefined;
 }
 
@@ -84,8 +75,8 @@ export function saveProfileToAllVaults(profile: UserProfile | undefined): void {
 
   try {
     const existing = loadProfileFromAllVaults();
-    // 기존에 있던 비어있지 않은 데이터를 빈 값으로 덮어쓰지 않도록 무손실 병합
-    const finalMerged = mergeUserProfiles(existing, profile);
+    // 기존에 있던 비어있지 않은 데이터를 빈 값으로 덮어쓰지 않도록 무손실 병합 (신규 저장 프로필 우선)
+    const finalMerged = mergeUserProfiles(existing, profile, true);
     if (!finalMerged || Object.keys(finalMerged).length === 0) return;
 
     const serialized = JSON.stringify(finalMerged);
