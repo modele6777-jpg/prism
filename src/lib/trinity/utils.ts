@@ -5,7 +5,7 @@
 
 import { calculateDetailedSaju } from '@/lib/sajuAnalysis';
 import type { UserProfile } from '@/lib/sharedState';
-import { extractConciseSummary } from '@/lib/tarotSummaryUtils';
+import { extractConciseSummary, stripSummaryFromTarotText } from '@/lib/tarotSummaryUtils';
 import { getTarotCardDetails } from '@/lib/dailyTarotOracle';
 
 // ✨ Constants
@@ -1529,12 +1529,7 @@ ${decisionText}
 - **실천 한 걸음**: 가슴속으로만 맴돌던 생각을 밖으로 꺼내어 작은 실천(메모, 가벼운 대화, 정리 정돈)으로 연결해 보세요. 작은 파동이 큰 대운을 불러옵니다.
 
 ### ✨ 5. 당신의 길을 축복하는 영혼의 한마디
-_"카드는 정해진 운명을 가두는 틀이 아니라, 당신 안의 빛을 깨우는 거울입니다. 당신은 이미 답을 알고 있으며, 길은 당신이 딛는 발걸음마다 환하게 열릴 것입니다."_${photoMode ? '\n\n*(비전 포털 — 인식된 카드의 신비로운 에너지가 함께 투영되었습니다)*' : ''}
-
-[핵심 3줄 요약]
-- [현재 에너지] ${leadCard?.reversed ? `현재 [${leadName}] 카드의 역방향 기운이 일시적인 저항을 암시하나, 차분히 중심을 잡으면 새 길이 열립니다.` : `현재 [${leadName}] 카드가 맑고 역동적인 변화의 파동을 건네며, 직관을 신뢰할 때임을 가리킵니다.`}
-- [방향과 결단] ${binaryPick ? `최종 선택은 [${binaryPick.chosen}]이며, 확신을 갖고 나아가는 것이 운을 여는 열쇠입니다.` : analysis.kind === 'yes_no' ? `최종 판정은 [${cards[cards.length - 1]?.reversed ? 'NO' : 'YES'}]이며, ${cards[cards.length - 1]?.reversed ? '지금은 잠시 멈추어 변수를 보완하고 내실을 다지는 것이 현명합니다.' : '카드가 긍정의 에너지를 비추고 있으니 확신을 갖고 전진하세요.'}` : '운의 흐름은 정체를 지나 도약과 확신의 타이밍을 명확히 가리키고 있습니다.'}
-- [실천 처방] 타인의 시선이나 후회를 내려놓고, 가슴속 생각을 메모나 대화 등 오늘 즉시 실천으로 옮겨보세요.`;
+_"카드는 정해진 운명을 가두는 틀이 아니라, 당신 안의 빛을 깨우는 거울입니다. 당신은 이미 답을 알고 있으며, 길은 당신이 딛는 발걸음마다 환하게 열릴 것입니다."_${photoMode ? '\n\n*(비전 포털 — 인식된 카드의 신비로운 에너지가 함께 투영되었습니다)*' : ''}`;
 }
 
 /**
@@ -1603,14 +1598,8 @@ export function ensureCompleteTarotReading(
     cleaned += '.';
   }
 
-  // 5. 핵심 3줄 요약 블록 누락 방지 (리딩 본문 끝에 요약이 없으면 자동 생성 보완)
-  const hasSummaryBlock = /(?:\[핵심\s*(?:3줄\s*|세줄\s*)?요약\]|###\s*.*핵심\s*(?:3줄\s*|세줄\s*)?요약|###\s*.*핵심\s*요약|\[핵심\s*요약\])/i.test(cleaned);
-  if (!hasSummaryBlock) {
-    const summaryLines = extractConciseSummary(cleaned, cards?.[0]);
-    if (summaryLines.length === 3) {
-      cleaned += `\n\n[핵심 3줄 요약]\n- ${summaryLines[0]}\n- ${summaryLines[1]}\n- ${summaryLines[2]}`;
-    }
-  }
+  // 5. 본문 내 후행 요약 블록 완전 제거 (상단 별도 요약 그래픽 카드로 노출되므로 본문 중복 방지)
+  cleaned = stripSummaryFromTarotText(cleaned);
 
   return cleaned;
 }

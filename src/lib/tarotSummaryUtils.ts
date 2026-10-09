@@ -13,27 +13,38 @@ export function sanitizeTarotDecisionYesNo(text: string): string {
 
 export function stripSummaryFromTarotText(text: string): string {
   if (!text) return "";
-  const sanitizedInput = sanitizeTarotDecisionYesNo(text);
+  let cleaned = sanitizeTarotDecisionYesNo(text);
 
-  // 1. 전체 텍스트에서 [핵심 3줄 요약] 헤더와 그에 이어지는 요약 블록을 깔끔히 제거하여 본문 중복 완벽 차단
-  const headerRegex = /(?:\r?\n|^)\s*(?:#{1,6}\s*)?(?:✨\s*)?(?:\[\s*)?(?:핵심\s*(?:3줄\s*|세줄\s*)?요약|3줄\s*요약|Quick\s*Summary)(?:\])?\s*(?::)?\s*(?:\r?\n|$)/i;
-  const match = sanitizedInput.match(headerRegex);
+  // 1. 헤더 기반 요약 블록 탐색 및 도려내기 (온갖 변형 패턴 지원)
+  // - 마크다운 헤더 (###, ##, #)
+  // - 볼드/이탤릭 기호 (**, __, *)
+  // - 이모지 (✨, 🌟, 🔮, 📌, 💡, 📋, 💎, ⚡, 🌿, 🎯 등)
+  // - 괄호 ([ ], 【 】, ( ))
+  // - 키워드: 핵심 3줄 요약, 핵심 세줄 요약, 3줄 요약, 세줄 요약, 3줄 핵심 요약, 핵심 요약, Quick Summary, Executive Summary, 3-Line Summary 등
+  // - 헤더 라인 뒤에 붙는 부가설명 (예: — 리딩 본문 맨 마지막..., : 사주 ✕ 타로..., 등)
+  const headerRegex = /(?:\r?\n|^)\s*(?:[-*•·\d.]+\s*)?(?:#{1,6}\s*)?(?:\*{1,2}|_{1,2})?\s*(?:[✨🌟🔮📌💡📋💎⚡🌿🎯]\s*)*\s*(?:[\[【(])?\s*(?:[✨🌟🔮📌💡📋💎⚡🌿🎯]\s*)*\s*(?:핵심\s*(?:3줄|세줄|3대)?\s*요약|3줄\s*(?:핵심\s*)?요약|세줄\s*(?:핵심\s*)?요약|핵심\s*요약|Quick\s*Summary|Executive\s*Summary|3-Line\s*Summary)\s*(?:[\]】)])?\s*(?:\*{1,2}|_{1,2})?\s*(?:[:—\-–~]|—[^\r\n]*)?[^\r\n]*(?:\r?\n|$)/i;
 
-  let cleaned = sanitizedInput;
-  if (match && match.index !== undefined) {
+  let match = cleaned.match(headerRegex);
+  while (match && match.index !== undefined) {
     const cutPos = match.index;
-    const afterHeader = sanitizedInput.slice(cutPos + match[0].length);
-    // 요약 뒤에 다음 정규 섹션(###)이 이어지는 경우 요약 블록만 도려내고, 맨 끝에 온 경우 끝까지 제거
-    const nextSectionMatch = afterHeader.match(/(?:\r?\n|^)\s*#{1,6}\s+(?!.*(?:요약|Summary))/i);
+    const afterHeader = cleaned.slice(cutPos + match[0].length);
+    // 요약 뒤에 다음 정규 섹션(### 또는 1~5단계)이 이어지는 경우 요약 블록만 도려내고, 그 외에는 끝까지 전부 제거
+    const nextSectionMatch = afterHeader.match(/(?:\r?\n|^)\s*#{1,6}\s+(?!.*(?:요약|Summary|에너지|결단|처방))/i);
     if (nextSectionMatch && nextSectionMatch.index !== undefined) {
-      cleaned = sanitizedInput.slice(0, cutPos).trim() + "\n\n" + afterHeader.slice(nextSectionMatch.index).trim();
+      cleaned = cleaned.slice(0, cutPos).trim() + "\n\n" + afterHeader.slice(nextSectionMatch.index).trim();
     } else {
-      cleaned = sanitizedInput.slice(0, cutPos).trim();
+      cleaned = cleaned.slice(0, cutPos).trim();
     }
+    match = cleaned.match(headerRegex);
   }
 
-  // 2. 잔여 [현재 에너지], [방향과 결단], [실천 처방] 단독 불릿 라인도 깨끗하게 정리
-  cleaned = cleaned.replace(/(?:\r?\n)\s*[-*•·]?\s*\[(?:현재\s*에너지|방향과\s*결단|실천\s*처방)\][^\r\n]*/gi, "").trim();
+  // 2. 단독으로 남아있을 수 있는 요약 불릿 라인들(현재 에너지, 방향과 결단, 실천 처방 등) 모두 제거
+  const bulletTagsRegex = /(?:\r?\n|^)\s*[-*•·\d.]*\s*(?:\*{1,2})?\s*[\[【(]?\s*(?:현재\s*에너지|현재\s*상황|내면\s*에너지|상황\s*진단|방향과\s*결단|운의\s*방향|방향성|결단과\s*방향|실천\s*처방|개운\s*처방|행동\s*처방|실천\s*가이드|개운\s*가이드|행동\s*가이드|행동\s*조언|실천\s*조언)\s*[\]】)]?\s*(?:\*{1,2})?\s*[:—\-–]?[^\r\n]*/gi;
+  cleaned = cleaned.replace(bulletTagsRegex, "").trim();
+
+  // 3. 텍스트 맨 끝에 남아있는 불완전한 요약 서두 라인 정리
+  cleaned = cleaned.replace(/(?:\r?\n|^)\s*[-*•·]?\s*[\*\_]*\[?(?:핵심\s*3줄\s*요약|3줄\s*요약|핵심\s*요약)\]?[\*\_]*\s*$/i, "").trim();
+
   return cleaned;
 }
 

@@ -187,12 +187,7 @@ ${isReversed ? '지금은 서두르기보다 주변 상황을 면밀히 살피�
 - **주의할 점**: 사소한 일이나 타인의 말에 감정을 소모하지 않기
 
 ### ✨ 5. 당신의 길을 축복하는 영혼의 한마디
-> _"나는 오늘 [${cardName}] 카드의 조화로운 에너지를 마음에 품고, 나에게 주어지는 모든 순간을 감사와 확신으로 맞이합니다."_
-
-[핵심 3줄 요약]
-- [현재 에너지] ${cardName} 카드의 ${orientation} 파동이 중심을 이루는 하루입니다.
-- [방향과 결단] ${isReversed ? '신중하게 내실을 다지며 흐름을 조율하세요.' : '내면의 직관을 믿고 적극적으로 나아가세요.'}
-- [실천 처방] 맑은 물 한 잔과 함께 깊은 심호흡으로 마음의 평온 지키기`;
+> _"나는 오늘 [${cardName}] 카드의 조화로운 에너지를 마음에 품고, 나에게 주어지는 모든 순간을 감사와 확신으로 맞이합니다."_`;
 
   return {
     diagnosis,
@@ -3653,7 +3648,7 @@ ${tailoredGuide.promptTemplate}${binaryChoicePromptAddon}${spreadPromptAddon}${c
                                             </div>
                                           )}
 
-                                          <Streamdown immediate={!isTarotGenerating}>{displayTarotResult || tarotResult || ""}</Streamdown>
+                                          <Streamdown immediate={!isTarotGenerating}>{displayTarotResult || stripSummaryFromTarotText(tarotResult || "")}</Streamdown>
 
                                           {/* 🌟 그에 맞는 루시의 조언 (TTS 가능) */}
                                           {tarotResult && !isTarotGenerating && (
@@ -3734,7 +3729,7 @@ ${tailoredGuide.promptTemplate}${binaryChoicePromptAddon}${spreadPromptAddon}${c
                                       card: drawnCards?.[0] || (dailyResult?.drawnCard ?? (dailyDrawnCard ?? null)),
                                       dateStr: new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" }),
                                       conciseSummaryBullets: conciseSummaryBullets,
-                                      diagnosis: displayTarotResult || tarotResult,
+                                      diagnosis: displayTarotResult || stripSummaryFromTarotText(tarotResult || ""),
                                       rawBlessing: dailyResult?.blessing,
                                       frequency: dailyResult?.frequency,
                                       luckyNumber: dailyResult?.luckyNumber,

@@ -832,15 +832,9 @@ export function buildSpreadTailoredReadingGuide(
 
 ${stepsMarkdown}
 
-[✨ 핵심 3줄 요약 — 리딩 본문 맨 마지막에 반드시 아래 형식으로 3줄 요약을 작성하십시오]
-[핵심 3줄 요약]
-- [${tag1}] (${structure.steps[0]?.subtitle || '핵심 상황'} 요약 1문장)
-- [${tag2}] (${structure.steps[1]?.subtitle || '방향과 결단'} 요약 1문장)
-- [${tag3}] (${structure.steps[3]?.subtitle || structure.steps[2]?.subtitle || '실천 처방'} 요약 1문장)
-
-[⚠️ 필수 완결성 원칙 — 리딩 끝까지 완전 작성]
-- 중간에 서술을 멈추거나 생략하지 마십시오.
-- 1단계부터 ${structure.steps.length}단계 및 [핵심 3줄 요약]의 마지막 줄까지 한 문장도 끊김 없이 끝까지 완결된 형태로 작성하여 주십시오.`;
+[⚠️ 필수 완결성 및 요약 배제 원칙]
+- 본문 마지막에 [핵심 3줄 요약]이나 별도의 요약 블록을 절대로 작성하지 마십시오. (상단 전용 그래픽 카드로 자동 분리 노출됩니다)
+- 중간에 서술을 멈추거나 생략하지 말고, 1단계부터 ${structure.steps.length}단계 본문 리딩만 한 문장도 끊김 없이 끝까지 완결된 형태로 작성하여 주십시오.`;
 
   return { structure, promptTemplate };
 }
