@@ -97,7 +97,6 @@ import { AcimHandbookModal } from "@/components/trinity/AcimHandbookModal";
 import { useBinauralBeat } from "@/hooks/useBinauralBeat";
 import { TarotSpread } from "@/components/trinity/TarotSpread";
 import { TarotSpreadSelectionModal } from "@/components/trinity/TarotSpreadSelectionModal";
-import { CircularTarotSpreadModal } from "@/components/trinity/CircularTarotSpreadModal";
 import { TarotCardBackCustomizerModal } from "@/components/trinity/TarotCardBackCustomizerModal";
 import { PhysicalTarotInputModal } from "@/components/trinity/PhysicalTarotInputModal";
 import { useTarotCardBack } from "@/hooks/useTarotCardBack";
@@ -1539,7 +1538,6 @@ function playDailyCardChimeAsync() {
   });
   const [customSpread, setCustomSpread] = useState<TarotSpreadRecommendation | null>(null);
   const [isSpreadModalOpen, setIsSpreadModalOpen] = useState(false);
-  const [isCircularSpreadModalOpen, setIsCircularSpreadModalOpen] = useState(false);
   const [showTarotCardBackModal, setShowTarotCardBackModal] = useState(false);
   const [showPhysicalTarotModal, setShowPhysicalTarotModal] = useState(false);
   const { theme: tarotBackTheme } = useTarotCardBack();
@@ -3203,15 +3201,6 @@ ${tailoredGuide.promptTemplate}${binaryChoicePromptAddon}${spreadPromptAddon}${c
                                   <Layers size={12} className="text-yellow-400" />
                                   <span>🎴 전체 배열법 선택</span>
                                 </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setIsCircularSpreadModalOpen(true)}
-                                  className="flex-none px-3 py-1.5 rounded-xl border text-[11px] font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-sm bg-gradient-to-r from-purple-500/20 via-amber-500/15 to-purple-500/20 border-purple-400/40 text-purple-200 hover:border-purple-300 hover:text-white"
-                                  title="원형 에셔 셔터 순환 타로 스프레드 뷰 열기"
-                                >
-                                  <Compass size={12} className="text-amber-400" />
-                                  <span>🪐 원형 에셔 스프레드</span>
-                                </button>
                                 {POPULAR_TAROT_SPREAD_PRESETS.map((preset) => {
                                   const isSelected = tarotSpreadRecommendation.theme === preset.theme;
                                   return (
@@ -4330,12 +4319,6 @@ ${tailoredGuide.promptTemplate}${binaryChoicePromptAddon}${spreadPromptAddon}${c
         currentSpread={tarotSpreadRecommendation}
         isAutoRecommended={isAutoRecommended}
         onSelectSpread={(spread) => setCustomSpread(spread)}
-      />
-
-      {/* Escher Circular Iris Tarot Spread Modal */}
-      <CircularTarotSpreadModal
-        isOpen={isCircularSpreadModalOpen}
-        onClose={() => setIsCircularSpreadModalOpen(false)}
       />
 
       {/* Tarot Card Zoom / Detail Inspection Modal */}
