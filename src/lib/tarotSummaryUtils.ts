@@ -15,35 +15,38 @@ export function stripSummaryFromTarotText(text: string): string {
   if (!text) return "";
   let cleaned = sanitizeTarotDecisionYesNo(text);
 
-  // 1. 헤더 기반 요약 블록 탐색 및 도려내기 (온갖 변형 패턴 지원)
-  // - 마크다운 헤더 (###, ##, #)
-  // - 볼드/이탤릭 기호 (**, __, *)
-  // - 이모지 (✨, 🌟, 🔮, 📌, 💡, 📋, 💎, ⚡, 🌿, 🎯 등)
-  // - 괄호 ([ ], 【 】, ( ))
-  // - 키워드: 핵심 3줄 요약, 핵심 세줄 요약, 3줄 요약, 세줄 요약, 3줄 핵심 요약, 핵심 요약, Quick Summary, Executive Summary, 3-Line Summary 등
-  // - 헤더 라인 뒤에 붙는 부가설명 (예: — 리딩 본문 맨 마지막..., : 사주 ✕ 타로..., 등)
-  const headerRegex = /(?:\r?\n|^)\s*(?:[-*•·\d.]+\s*)?(?:#{1,6}\s*)?(?:\*{1,2}|_{1,2})?\s*(?:[✨🌟🔮📌💡📋💎⚡🌿🎯]\s*)*\s*(?:[\[【(])?\s*(?:[✨🌟🔮📌💡📋💎⚡🌿🎯]\s*)*\s*(?:핵심\s*(?:3줄|세줄|3대)?\s*요약|3줄\s*(?:핵심\s*)?요약|세줄\s*(?:핵심\s*)?요약|핵심\s*요약|Quick\s*Summary|Executive\s*Summary|3-Line\s*Summary)\s*(?:[\]】)])?\s*(?:\*{1,2}|_{1,2})?\s*(?:[:—\-–~]|—[^\r\n]*)?[^\r\n]*(?:\r?\n|$)/i;
-
-  let match = cleaned.match(headerRegex);
-  while (match && match.index !== undefined) {
-    const cutPos = match.index;
-    const afterHeader = cleaned.slice(cutPos + match[0].length);
-    // 요약 뒤에 다음 정규 섹션(### 또는 1~5단계)이 이어지는 경우 요약 블록만 도려내고, 그 외에는 끝까지 전부 제거
-    const nextSectionMatch = afterHeader.match(/(?:\r?\n|^)\s*#{1,6}\s+(?!.*(?:요약|Summary|에너지|결단|처방))/i);
-    if (nextSectionMatch && nextSectionMatch.index !== undefined) {
-      cleaned = cleaned.slice(0, cutPos).trim() + "\n\n" + afterHeader.slice(nextSectionMatch.index).trim();
-    } else {
-      cleaned = cleaned.slice(0, cutPos).trim();
-    }
-    match = cleaned.match(headerRegex);
+  // 1. 선행 핵심 3줄 요약 블록 안전하게 제거 (상단에 그래픽 카드가 별도 렌더링되므로 본문 첫머리 중복 방지)
+  // 단, 본문 내용(### 헤더)이 최소 하나 이상 존재할 때만 선행 요약을 제거하여 조기 빈 화면 방지
+  const hasSubsequentBody = /(?:\r?\n|^)\s*###\s+/m.test(cleaned);
+  if (hasSubsequentBody) {
+    cleaned = cleaned.replace(
+      /^\s*(?:#{1,6}\s*)?(?:\*{1,2}|_{1,2})?\s*(?:[✨🌟🔮📌💡📋💎⚡🌿🎯]\s*)*\s*(?:[\[【(])?\s*(?:[✨🌟🔮📌💡📋💎⚡🌿🎯]\s*)*\s*(?:핵심\s*(?:3줄|세줄|3대)?\s*요약|3줄\s*(?:핵심\s*)?요약|세줄\s*(?:핵심\s*)?요약|핵심\s*요약|Quick\s*Summary|Executive\s*Summary|3-Line\s*Summary)\s*(?:[\]】)])?\s*(?:\*{1,2}|_{1,2})?\s*(?:[:—\-–~]|—[^\r\n]*)?[\r\n]+(?:[\t ]*[-*•·\d.]*?\s*(?:\*{1,2})?\s*\[[^\]]+\][^\r\n]*[\r\n]+){1,6}\s*/i,
+      ""
+    );
   }
 
-  // 2. 단독으로 남아있을 수 있는 요약 불릿 라인들(현재 에너지, 방향과 결단, 실천 처방 등) 모두 제거
-  const bulletTagsRegex = /(?:\r?\n|^)\s*[-*•·\d.]*\s*(?:\*{1,2})?\s*[\[【(]?\s*(?:현재\s*에너지|현재\s*상황|내면\s*에너지|상황\s*진단|방향과\s*결단|운의\s*방향|방향성|결단과\s*방향|실천\s*처방|개운\s*처방|행동\s*처방|실천\s*가이드|개운\s*가이드|행동\s*가이드|행동\s*조언|실천\s*조언)\s*[\]】)]?\s*(?:\*{1,2})?\s*[:—\-–]?[^\r\n]*/gi;
-  cleaned = cleaned.replace(bulletTagsRegex, "").trim();
+  // 2. 후행 핵심 3줄 요약 블록 완전 분리 및 영구 제거 (#핵심 3줄요약, [핵심 3줄 요약] 등)
+  // 본문의 중반 이후(최소 30% 이후) 또는 마지막 단계 이후에 위치한 모든 후행 요약 블록 탐색
+  const lastSectionMatch = cleaned.match(/(?:###\s*(?:✨\s*)?(?:[3-5][\.\s]|영혼의\s*한마디|당신의\s*길을\s*축복하는|마스터의\s*실천\s*처방|최종\s*결실))/i);
+  const searchStart = lastSectionMatch && lastSectionMatch.index !== undefined
+    ? lastSectionMatch.index + 20
+    : Math.floor(cleaned.length * 0.35);
 
-  // 3. 텍스트 맨 끝에 남아있는 불완전한 요약 서두 라인 정리
-  cleaned = cleaned.replace(/(?:\r?\n|^)\s*[-*•·]?\s*[\*\_]*\[?(?:핵심\s*3줄\s*요약|3줄\s*요약|핵심\s*요약)\]?[\*\_]*\s*$/i, "").trim();
+  const endChunk = cleaned.slice(searchStart);
+  const summaryHeaderMatch = endChunk.match(
+    /(?:\r?\n|^)\s*(?:[-*•·\d.]+\s*)?(?:#{1,6}\s*)?(?:\*{1,2}|_{1,2})?\s*(?:[✨🌟🔮📌💡📋💎⚡🌿🎯]\s*)*\s*(?:[\[【(])?\s*(?:[✨🌟🔮📌💡📋💎⚡🌿🎯]\s*)*\s*(?:핵심\s*(?:3줄|세줄|3대)?\s*요약|3줄\s*(?:핵심\s*)?요약|세줄\s*(?:핵심\s*)?요약|핵심\s*요약|Quick\s*Summary|Executive\s*Summary|3-Line\s*Summary)(?:[\]】)])?\s*(?:\*{1,2}|_{1,2})?\s*(?:[:—\-–~]|—[^\r\n]*)?\s*(?:\r?\n|$)/i
+  );
+
+  if (summaryHeaderMatch && summaryHeaderMatch.index !== undefined) {
+    const cutPos = searchStart + summaryHeaderMatch.index;
+    cleaned = cleaned.slice(0, cutPos).trim();
+  }
+
+  // 3. 본문 끝부분에 말머리 없이 불릿 형태로만 남겨진 잔여 요약 라인 안전하게 정리
+  cleaned = cleaned.replace(/(?:\r?\n)\s*[-*•·]?\s*\[(?:현재\s*에너지|방향과\s*결단|실천\s*처방|개운\s*처방|오늘의\s*에너지|상황\s*나침반|개운\s*액션|머니\s*마인드셋|현금\s*흐름|부자\s*액션|잠재\s*럭키|기회의\s*문|개운\s*비법|영혼\s*주파수|빛의\s*나침반|천상의\s*은총|상처의\s*자각|내면아이\s*목소리|셀프\s*힐링|신년\s*봄·여름\s*흐름|가을·겨울\s*결실|대운\s*핵심\s*나침반|년·월주\s*사회성|일주\s*본질|시주\s*결실\s*처방|현재\s*딜레마|최종\s*선택\s*판정|결단\s*행동\s*수칙|최종\s*판정\s*\(YES\/NO\)|실행\s*지침|나의\s*속마음|상대의\s*속마음|사랑의\s*해법|현재\s*역량|돌파\s*전략|성공\s*비전|재정\s*상태|막힘\s*해소|유입\s*기회|과거\s*인과|현재\s*타이밍|결정적\s*시점|상황\s*진단|장애물\s*실체|현재와\s*도전|시간과\s*심리\s*축|최종\s*마스터\s*결말|과거\s*원인|현재\s*상황|미래\s*결실)\][^\r\n]*$/gi, "").trim();
+
+  // 4. 리딩 끝에 홀로 남겨진 '# 핵심 3줄 요약' 등 잔여 마크다운 헤더 라인 제거
+  cleaned = cleaned.replace(/(?:\r?\n)\s*(?:#{1,6}\s*)?(?:✨\s*)?(?:\[\s*)?(?:핵심\s*(?:3줄\s*|세줄\s*)?요약|3줄\s*요약|Quick\s*Summary)(?:\])?\s*:?\s*$/gi, "").trim();
 
   return cleaned;
 }
@@ -79,7 +82,7 @@ export function extractConciseSummary(text: string, cardContext?: any): string[]
     );
   };
 
-  const formatSummaryLine = (tag: '현재 에너지' | '방향과 결단' | '실천 처방', content: string): string => {
+  const formatSummaryLine = (tag: string, content: string): string => {
     let cleaned = stripGreetingFromText(content);
     cleaned = cleaned.replace(/^\[(?!YES\b|NO\b|조건부\s*YES)[^\]]+\]\s*(:|-|—)?\s*/i, '');
     cleaned = cleaned.replace(/^(?:현재\s*에너지|방향과\s*결단|실천\s*처방|개운\s*처방|행동\s*처방|실천\s*가이드|개운\s*가이드)\s*[:—\-]\s*/, '');
@@ -113,6 +116,9 @@ export function extractConciseSummary(text: string, cardContext?: any): string[]
   let p1Current = '';
   let p1Decision = '';
   let p1Action = '';
+  let tag1 = '';
+  let tag2 = '';
+  let tag3 = '';
 
   // Priority 1: Explicit [핵심 3줄 요약] block
   const summaryBlockMatch = text.match(
@@ -126,6 +132,8 @@ export function extractConciseSummary(text: string, cardContext?: any): string[]
       .filter((l) => l.length > 5 && !l.startsWith('http') && !isGreetingOrMeta(l));
 
     for (const line of rawLines) {
+      const bracketMatch = line.match(/^\[([^\]]+)\]/);
+      const rowTag = bracketMatch ? bracketMatch[1].trim() : '';
       const cleaned = stripGreetingFromText(line.replace(/^\[[^\]]+\]\s*/, ''));
       if (!cleaned || isGreetingOrMeta(cleaned)) continue;
 
@@ -133,19 +141,30 @@ export function extractConciseSummary(text: string, cardContext?: any): string[]
         /\[(?:현재\s*에너지|현재\s*상황|내면\s*에너지|상황\s*진단|현재|에너지|상황)\]/i.test(line) ||
         (!p1Current && /^(?:현재\s*에너지|현재\s*상황|내면|에너지)/i.test(line))
       ) {
-        if (!p1Current) { p1Current = cleaned; continue; }
+        if (!p1Current) { p1Current = cleaned; tag1 = rowTag; continue; }
       }
       if (
         /\[(?:방향과\s*결단|결단\s*(?:및|&)?\s*방향(?:성)?|방향성|결단|선택|판정|미래\s*흐름)\]/i.test(line) ||
         (!p1Decision && /^(?:방향과\s*결단|결단|방향|선택|판정)/i.test(line))
       ) {
-        if (!p1Decision) { p1Decision = cleaned; continue; }
+        if (!p1Decision) { p1Decision = cleaned; tag2 = rowTag; continue; }
       }
       if (
         /\[(?:실천\s*처방|개운\s*처방|행동\s*처방|실천\s*가이드|개운\s*가이드|행동\s*가이드|실천\s*조언|행동\s*조언|실천|처방|조언|행동|가이드)\]/i.test(line) ||
         (!p1Action && /^(?:실천\s*처방|개운\s*처방|실천|처방|행동|조언)/i.test(line))
       ) {
-        if (!p1Action) { p1Action = cleaned; continue; }
+        if (!p1Action) { p1Action = cleaned; tag3 = rowTag; continue; }
+      }
+
+      if (!p1Current) {
+        p1Current = cleaned;
+        tag1 = rowTag;
+      } else if (!p1Decision) {
+        p1Decision = cleaned;
+        tag2 = rowTag;
+      } else if (!p1Action) {
+        p1Action = cleaned;
+        tag3 = rowTag;
       }
     }
 
@@ -292,9 +311,9 @@ export function extractConciseSummary(text: string, cardContext?: any): string[]
 
   // 🌟 ALWAYS RETURN EXACTLY 3 BULLETS (Currently, Direction, Action)
   return [
-    formatSummaryLine('현재 에너지', fallbackCurrent),
-    formatSummaryLine('방향과 결단', fallbackDecision),
-    formatSummaryLine('실천 처방', fallbackAction),
+    formatSummaryLine(tag1 || '현재 에너지', fallbackCurrent),
+    formatSummaryLine(tag2 || '방향과 결단', fallbackDecision),
+    formatSummaryLine(tag3 || '실천 처방', fallbackAction),
   ];
 }
 

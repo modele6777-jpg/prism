@@ -828,13 +828,44 @@ export function buildSpreadTailoredReadingGuide(
 
   const [tag1, tag2, tag3] = structure.summaryTags;
 
-  const promptTemplate = `[✨ 테마 특화 리딩 구성 형식 — 아래 ${structure.steps.length}단계 맞춤 마크다운 구조로 감동적이고 흡입력 있게 전개하세요]
+  const findStepTitleForTag = (tag: string, defaultStepIdx: number): string => {
+    const cleanTag = tag.replace(/[^가-힣a-zA-Z0-9]/g, '');
+    const matched = structure.steps.find((s) => {
+      const combined = `${s.title} ${s.subtitle}`.replace(/[^가-힣a-zA-Z0-9]/g, '');
+      return (
+        combined.includes(cleanTag) ||
+        (cleanTag.length >= 2 && combined.includes(cleanTag.slice(0, 2)))
+      );
+    });
+    const chosen = matched || structure.steps[defaultStepIdx] || structure.steps[0];
+    return chosen ? `${chosen.stepNumber}. ${chosen.title}` : tag;
+  };
+
+  const step1Title = findStepTitleForTag(tag1, 0);
+  const step2Title = findStepTitleForTag(tag2, Math.min(1, structure.steps.length - 1));
+  const step3Title = findStepTitleForTag(tag3, Math.min(3, structure.steps.length - 1));
+
+  const promptTemplate = `[✨ 테마 특화 리딩 구성 형식 — 반드시 아래 순서대로 감동적이고 흡입력 있게 전개하세요]
+
+[✨ 핵심 3줄 요약 — 리딩 결과의 최상단에 반드시 아래 형식으로 3줄 요약을 가장 먼저 작성하십시오]
+[핵심 3줄 요약]
+- [${tag1}] (${step1Title} 섹션의 제목과 핵심 내용에 맞춘 1문장 요약)
+- [${tag2}] (${step2Title} 섹션의 제목과 핵심 내용에 맞춘 1문장 요약)
+- [${tag3}] (${step3Title} 섹션의 제목과 핵심 내용에 맞춘 1문장 요약)
+
+[★ 중복 생성 절대 금지 — 본문 및 하단 중복 기입 전면 배제]
+- [핵심 3줄 요약] 블록은 오직 리딩 결과의 최상단에 단 1회만 출력해야 합니다.
+- 요약 블록 출력 후에는 해당 요약 내용을 중복 기입하지 마십시오.
+- 이어지는 본문 단계(1단계~${structure.steps.length}단계) 내부나 리딩 맨 마지막(끝부분)에 [핵심 3줄 요약] 또는 요약 블록을 절대로 다시 작성하거나 중복 기입해서는 안 됩니다. 리딩 본문 마지막에는 어떠한 형태의 요약 블록도 절대 기재하지 마십시오.
+
+[✨ 본문 심층 리딩 — 최상단 3줄 요약 출력 완료 후, 아래 ${structure.steps.length}단계 맞춤 마크다운 구조로 순서대로 전개하세요]
 
 ${stepsMarkdown}
 
-[⚠️ 필수 완결성 및 요약 배제 원칙]
-- 본문 마지막에 [핵심 3줄 요약]이나 별도의 요약 블록을 절대로 작성하지 마십시오. (상단 전용 그래픽 카드로 자동 분리 노출됩니다)
-- 중간에 서술을 멈추거나 생략하지 말고, 1단계부터 ${structure.steps.length}단계 본문 리딩만 한 문장도 끊김 없이 끝까지 완결된 형태로 작성하여 주십시오.`;
+[⚠️ 필수 완결성 및 요약 중복 배제 원칙 — 리딩 끝까지 완전 작성]
+- 중간에 서술을 멈추거나 생략하지 마십시오.
+- 최상단 [핵심 3줄 요약]부터 1단계~${structure.steps.length}단계 마지막 축복까지 한 문장도 끊김 없이 끝까지 완결된 형태로 작성하여 주십시오.
+- 본문 마지막에 [핵심 3줄 요약]이나 어떠한 형태의 요약 블록도 절대로 다시 작성하지 마십시오.`;
 
   return { structure, promptTemplate };
 }

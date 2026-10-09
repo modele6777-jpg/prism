@@ -3586,6 +3586,21 @@ ${tailoredGuide.promptTemplate}${binaryChoicePromptAddon}${spreadPromptAddon}${c
                                       </div>
                                     ) : (
                                       <div className="space-y-4">
+                                          {/* ✨ 핵심 3줄 요약 프리미엄 그래픽 카드 (최상단 고정 & 원클릭 TTS) */}
+                                          {conciseSummaryBullets.length > 0 && tarotResult && (
+                                            <TarotSummaryGraphicCard
+                                              bullets={conciseSummaryBullets}
+                                              readingText={displayTarotResult || tarotResult || ""}
+                                              isTTSActive={isSummaryTTSActive}
+                                              onToggleTTS={async () => {
+                                                if (isSummaryTTSActive) {
+                                                  stopTTS();
+                                                } else if (summarySpeechText) {
+                                                  await playTTSInChunks(summarySpeechText, 'Kore', 110, '신비');
+                                                }
+                                              }}
+                                            />
+                                          )}
 
                                           {/* ⚖️ 예/아니오 (YES or NO) 마스터 최종 판정 배너 */}
                                           {tarotYesNoVerdict && (
@@ -3630,26 +3645,7 @@ ${tailoredGuide.promptTemplate}${binaryChoicePromptAddon}${spreadPromptAddon}${c
                                             </div>
                                           )}
 
-                                          {/* ✨ 리딩 결과 상단 핵심 3줄 요약 강조 그래픽 카드 UI */}
-                                          {conciseSummaryBullets.length > 0 && tarotResult && !isTarotGenerating && (
-                                            <div className="pb-3 pt-1">
-                                              <TarotSummaryGraphicCard
-                                                bullets={conciseSummaryBullets}
-                                                readingText={displayTarotResult || tarotResult || ""}
-                                                isTTSActive={isSummaryTTSActive}
-                                                onToggleTTS={async () => {
-                                                  if (isSummaryTTSActive) {
-                                                    stopTTS();
-                                                  } else if (summarySpeechText) {
-                                                    await playTTSInChunks(summarySpeechText, 'Kore', 110, '신비');
-                                                  }
-                                                }}
-                                              />
-                                            </div>
-                                          )}
-
                                           <Streamdown immediate={!isTarotGenerating}>{displayTarotResult || stripSummaryFromTarotText(tarotResult || "")}</Streamdown>
-
                                           {/* 🌟 그에 맞는 루시의 조언 (TTS 가능) */}
                                           {tarotResult && !isTarotGenerating && (
                                             <div className="pt-2">

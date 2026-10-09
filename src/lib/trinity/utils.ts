@@ -1027,7 +1027,7 @@ ${options}
    - 절대로 'YES'나 'NO' 단어를 생략하거나 애매한 말로 얼버무리지 마십시오.
    - 반드시 **최종 판정: [YES]** 또는 **최종 판정: [NO]**라고 명확한 영문 단어를 대괄호 안에 포함하여 선언해야 합니다.
 2. 선언 직후, 뽑힌 카드의 상징과 정방향/역방향의 깊은 뜻(특히 3번째 최종 판정 카드의 기운)을 근거로 삼아 왜 [YES] 또는 [NO]인지 그 필연적 이유를 설득력 있고 확신에 찬 목소리로 풀어내십시오.
-3. 리딩 마지막의 [핵심 3줄 요약] 중 [방향과 결단] 항목에서도 "최종 판정은 [YES]이며..." 혹은 "최종 판정은 [NO]이며..."와 같이 판정 결과(YES 또는 NO)를 빠짐없이 명시하십시오.`;
+3. 최상단의 [핵심 3줄 요약] 중 [방향과 결단] 항목에서도 "최종 판정은 [YES]이며..." 혹은 "최종 판정은 [NO]이며..."와 같이 판정 결과(YES 또는 NO)를 빠짐없이 명시하십시오.`;
   }
 
   return `
@@ -1512,7 +1512,12 @@ export function buildLocalTarotReading(concern: string, cards: any[], photoMode?
     decisionText = `### 🔮 3. 트리니티 마스터의 직관적 결단 & 방향성\n**마스터의 핵심 선언: [도약과 확신의 타이밍]**\n\n지금 당신을 둘러싼 흐름은 정체를 지나 변화의 물꼬를 트고 있습니다. 두려움에 머무르지 말고 직관을 믿고 나아가세요.`;
   }
 
-  return `### 🕯️ 1. 카드가 비추는 당신의 마음과 현재 에너지
+  return `[핵심 3줄 요약]
+- [현재 에너지] ${leadCard?.reversed ? `현재 [${leadName}] 카드의 역방향 기운이 일시적인 저항을 암시하나, 차분히 중심을 잡으면 새 길이 열립니다.` : `현재 [${leadName}] 카드가 맑고 역동적인 변화의 파동을 건네며, 직관을 신뢰할 때임을 가리킵니다.`}
+- [방향과 결단] ${binaryPick ? `최종 선택은 [${binaryPick.chosen}]이며, 확신을 갖고 나아가는 것이 운을 여는 열쇠입니다.` : analysis.kind === 'yes_no' ? `최종 판정은 [${cards[cards.length - 1]?.reversed ? 'NO' : 'YES'}]이며, ${cards[cards.length - 1]?.reversed ? '지금은 잠시 멈추어 변수를 보완하고 내실을 다지는 것이 현명합니다.' : '카드가 긍정의 에너지를 비추고 있으니 확신을 갖고 전진하세요.'}` : '운의 흐름은 정체를 지나 도약과 확신의 타이밍을 명확히 가리키고 있습니다.'}
+- [실천 처방] 타인의 시선이나 후회를 내려놓고, 가슴속 생각을 메모나 대화 등 오늘 즉시 실천으로 옮겨보세요.
+
+### 🕯️ 1. 카드가 비추는 당신의 마음과 현재 에너지
 어서 오세요. 카드를 조용히 마주하니, 당신께서 가슴속에 품고 계신 **"${concern}"**에 대한 깊은 고민과 복잡한 마음결이 그대로 느껴집니다.
 
 현재 당신의 에너지는 중요한 갈림길 위에 서 있으며, 가장 먼저 모습을 드러낸 **[${leadName}]** 카드는 당신이 더 이상 혼자서 불안해하지 않아도 된다는 다정한 위로와 함께 변화의 신호를 건네고 있습니다.
@@ -1598,8 +1603,30 @@ export function ensureCompleteTarotReading(
     cleaned += '.';
   }
 
-  // 5. 본문 내 후행 요약 블록 완전 제거 (상단 별도 요약 그래픽 카드로 노출되므로 본문 중복 방지)
-  cleaned = stripSummaryFromTarotText(cleaned);
+  // 5. 후행 중복 요약 블록 완전 제거 (본문 하단에 남아 있는 어떠한 형태의 요약 블록도 영구 삭제)
+  const lastSectionMatch = cleaned.match(/(?:###\s*(?:✨\s*)?(?:[3-5][\.\s]|영혼의\s*한마디|당신의\s*길을\s*축복하는|마스터의\s*실천\s*처방|최종\s*결실))/i);
+  const searchStart = lastSectionMatch && lastSectionMatch.index !== undefined
+    ? lastSectionMatch.index + 20
+    : Math.floor(cleaned.length * 0.4);
+
+  const endChunk = cleaned.slice(searchStart);
+  const summaryHeaderMatch = endChunk.match(
+    /(?:\r?\n|^)\s*(?:[-*•·\d.]+\s*)?(?:#{1,6}\s*)?(?:\*{1,2}|_{1,2})?\s*(?:[✨🌟🔮📌💡📋💎⚡🌿🎯]\s*)*\s*(?:[\[【(])?\s*(?:[✨🌟🔮📌💡📋💎⚡🌿🎯]\s*)*\s*(?:핵심\s*(?:3줄|세줄|3대)?\s*요약|3줄\s*(?:핵심\s*)?요약|세줄\s*(?:핵심\s*)?요약|핵심\s*요약|Quick\s*Summary|Executive\s*Summary|3-Line\s*Summary)(?:[\]】)])?\s*(?:\*{1,2}|_{1,2})?\s*(?:[:—\-–~]|—[^\r\n]*)?\s*(?:\r?\n|$)/i
+  );
+
+  if (summaryHeaderMatch && summaryHeaderMatch.index !== undefined) {
+    cleaned = cleaned.slice(0, searchStart + summaryHeaderMatch.index).trim();
+  }
+  cleaned = cleaned.replace(/(?:\r?\n)\s*[-*•·]?\s*\[(?:현재\s*에너지|방향과\s*결단|실천\s*처방|개운\s*처방|오늘의\s*에너지|상황\s*나침반|개운\s*액션|머니\s*마인드셋|현금\s*흐름|부자\s*액션|잠재\s*럭키|기회의\s*문|개운\s*비법|영혼\s*주파수|빛의\s*나침반|천상의\s*은총|상처의\s*자각|내면아이\s*목소리|셀프\s*힐링|신년\s*봄·여름\s*흐름|가을·겨울\s*결실|대운\s*핵심\s*나침반|년·월주\s*사회성|일주\s*본질|시주\s*결실\s*처방|현재\s*딜레마|최종\s*선택\s*판정|결단\s*행동\s*수칙|최종\s*판정\s*\(YES\/NO\)|실행\s*지침|나의\s*속마음|상대의\s*속마음|사랑의\s*해법|현재\s*역량|돌파\s*전략|성공\s*비전|재정\s*상태|막힘\s*해소|유입\s*기회|과거\s*인과|현재\s*타이밍|결정적\s*시점|상황\s*진단|장애물\s*실체|현재와\s*도전|시간과\s*심리\s*축|최종\s*마스터\s*결말|과거\s*원인|현재\s*상황|미래\s*결실)[^\]]*\][^\r\n]*$/gi, "").trim();
+
+  // 6. 핵심 3줄 요약 블록 누락 방지 (리딩 본문 최상단에 요약이 없으면 자동 생성하여 최상단에 배치)
+  const hasSummaryBlock = /(?:\[핵심\s*(?:3줄\s*|세줄\s*)?요약\]|###\s*.*핵심\s*(?:3줄\s*|세줄\s*)?요약|###\s*.*핵심\s*요약|\[핵심\s*요약\])/i.test(cleaned);
+  if (!hasSummaryBlock) {
+    const summaryLines = extractConciseSummary(cleaned, cards?.[0]);
+    if (summaryLines.length === 3) {
+      cleaned = `[핵심 3줄 요약]\n- ${summaryLines[0]}\n- ${summaryLines[1]}\n- ${summaryLines[2]}\n\n` + cleaned;
+    }
+  }
 
   return cleaned;
 }
