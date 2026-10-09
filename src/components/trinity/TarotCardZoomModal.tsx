@@ -323,8 +323,8 @@ export function TarotCardZoomModal({
               );
             })()}
 
-            {/* Keywords & Symbolic Meaning */}
-            {keywords.length > 0 && (
+            {/* Keywords & Symbolic Meaning (정방향일 때만 핵심 상징 키워드 노출, 역방향일 때는 중복/참고 혼선 방지를 위해 완전 제외) */}
+            {!isCardReversed && keywords.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -333,7 +333,7 @@ export function TarotCardZoomModal({
               >
                 <div className="flex items-center gap-1.5 text-yellow-300 font-bold text-xs">
                   <Tag size={12} className="text-yellow-400" />
-                  <span>{isCardReversed ? '(참고) 정방향 본래 상징 키워드' : '카드의 핵심 상징 키워드'}</span>
+                  <span>카드의 핵심 상징 키워드</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {keywords.map((kw, i) => (
