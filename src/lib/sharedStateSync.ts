@@ -419,6 +419,111 @@ export function collectAllLocalActivities(uid?: string | null): Partial<SharedSt
     }
   } catch (_) {}
 
+  // 11. Collect Prologue ToDo Missions (오늘 및 마스터 할 일 목록)
+  try {
+    const rawMaster = safeLocalStorage.getItem('prologue_todo_missions_v1');
+    const rawLegacy = safeLocalStorage.getItem(`prologue_daily_todos_${todayKey}`);
+    if (rawMaster) {
+      const parsed = JSON.parse(rawMaster);
+      if (parsed && Array.isArray(parsed.missions) && parsed.missions.length > 0) {
+        result.todoMissions = parsed;
+      }
+    } else if (rawLegacy) {
+      const parsed = JSON.parse(rawLegacy);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        result.todoMissions = {
+          date: todayKey,
+          missions: parsed,
+          lastSavedAt: new Date().toISOString(),
+        };
+      }
+    }
+  } catch (_) {}
+
+  // 12. Collect AI eCPR 긴급 감정 처방전
+  try {
+    const rawEcpr = safeLocalStorage.getItem('prologue_ecpr_latest_prescription');
+    if (rawEcpr) {
+      const parsed = JSON.parse(rawEcpr);
+      if (parsed && parsed.prescription) {
+        result.ecprPrescription = parsed;
+      }
+    }
+  } catch (_) {}
+
+  // 13. Collect Oracle Tarot Sessions (힐링 타로, 자기계발 타로)
+  try {
+    const oracleSessions: Record<string, any> = {};
+    const healingKey = `prism_trinity_oracle_session_healing_${todayKey}`;
+    const growthKey = `prism_trinity_oracle_session_growth_${todayKey}`;
+    const rawHealing = safeLocalStorage.getItem(healingKey);
+    const rawGrowth = safeLocalStorage.getItem(growthKey);
+    if (rawHealing) {
+      try { oracleSessions[`healing_${todayKey}`] = JSON.parse(rawHealing); } catch (_) {}
+    }
+    if (rawGrowth) {
+      try { oracleSessions[`growth_${todayKey}`] = JSON.parse(rawGrowth); } catch (_) {}
+    }
+    if (typeof localStorage !== 'undefined') {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('prism_trinity_oracle_session_')) {
+          const subKey = k.replace('prism_trinity_oracle_session_', '');
+          if (!oracleSessions[subKey]) {
+            try {
+              const v = localStorage.getItem(k);
+              if (v) oracleSessions[subKey] = JSON.parse(v);
+            } catch (_) {}
+          }
+        }
+      }
+    }
+    if (Object.keys(oracleSessions).length > 0) {
+      result.oracleSessions = oracleSessions;
+    }
+  } catch (_) {}
+
+  // 14. Collect Oracle Treasures & Growth Logs
+  try {
+    const rawTreasures = safeLocalStorage.getItem('trinity_healing_treasures');
+    if (rawTreasures) {
+      const parsed = JSON.parse(rawTreasures);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        result.healingTreasures = parsed;
+      }
+    }
+    const rawGrowthLog = safeLocalStorage.getItem('trinity_growth_logs');
+    if (rawGrowthLog) {
+      result.growthLogs = JSON.parse(rawGrowthLog);
+    }
+  } catch (_) {}
+
+  // 15. Collect Epilogue Reflection Diaries
+  try {
+    const rawDiary = safeLocalStorage.getItem('epilogue_diary_history');
+    if (rawDiary) {
+      const parsed = JSON.parse(rawDiary);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        result.epilogueHistory = parsed;
+      }
+    }
+  } catch (_) {}
+
+  // 16. Collect Talisman Chest & Equipped Charm
+  try {
+    const rawChest = safeLocalStorage.getItem('prism_talisman_chest_v4') || safeLocalStorage.getItem('prism_talisman_chest');
+    if (rawChest) {
+      const parsed = JSON.parse(rawChest);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        result.talismanChest = parsed;
+      }
+    }
+    const rawEquipped = safeLocalStorage.getItem('prism_equipped_charm');
+    if (rawEquipped) {
+      result.equippedCharm = JSON.parse(rawEquipped);
+    }
+  } catch (_) {}
+
   return result;
 }
 
@@ -477,12 +582,29 @@ export function getSharedStateSignature(s: SharedState | null | undefined): stri
   const newestFeat = Array.isArray(s.featureHistory) && s.featureHistory.length > 0 ? s.featureHistory[0] : null;
   const featSummary = newestFeat ? `${s.featureHistory?.length}_${newestFeat.id}_${newestFeat.timestamp || 0}` : '0';
 
+  const todoSummary = s.todoMissions
+    ? `${s.todoMissions.date}_${s.todoMissions.missions?.length || 0}_${s.todoMissions.missions?.filter((m: any) => m.completed)?.length || 0}_${s.todoMissions.lastSavedAt || ''}`
+    : 'no_todo';
+
+  const ecprSummary = s.ecprPrescription
+    ? `${s.ecprPrescription.timestamp || 0}_${s.ecprPrescription.distressType || ''}_${s.ecprPrescription.symptoms?.slice(0, 10) || ''}`
+    : 'no_ecpr';
+
+  const oracleSessionCount = Object.keys(s.oracleSessions || {}).length;
+  const oracleSummary = oracleSessionCount > 0
+    ? `${oracleSessionCount}_${Object.keys(s.oracleSessions || {}).sort().join(',')}`
+    : 'no_oracle';
+
+  const treasureSummary = `${s.healingTreasures?.length || 0}_${s.growthLogs?.streak || 0}_${s.growthLogs?.completed || false}`;
+  const talismanSummary = `${s.talismanChest?.length || 0}_${s.equippedCharm?.id || ''}`;
+  const epilogueSummary = `${s.epilogueHistory?.length || 0}_${s.epilogueHistory?.[0]?.dateKey || ''}`;
+
   const clientTs = s.clientUpdatedAt || 0;
   const serverTs = (s.updatedAt as any)?.toMillis?.() || s.updatedAt || 0;
 
   const hLen = `${s.featureHistory?.length || 0}_${s.orangeHistory?.length || 0}_${s.museHistory?.length || 0}_${s.bluebirdHistory?.length || 0}_${s.favoriteInsightIds?.length || 0}_${s.rebibleVerses?.length || 0}_${(s as any).epilogueHistory?.length || 0}`;
 
-  return `${clientTs}_${serverTs}|${profStr}|${s.themeColor || ''}|${s.currentVibe || ''}|${todayOracleSummary}|${secretSummary}|${luckySummary}|${hopoSummary}|${artSummary}|${chatSummary}|${rebibleSummary}|${featSummary}|${hLen}`;
+  return `${clientTs}_${serverTs}|${profStr}|${s.themeColor || ''}|${s.currentVibe || ''}|${todayOracleSummary}|${secretSummary}|${luckySummary}|${hopoSummary}|${artSummary}|${chatSummary}|${rebibleSummary}|${featSummary}|${todoSummary}|${ecprSummary}|${oracleSummary}|${treasureSummary}|${talismanSummary}|${epilogueSummary}|${hLen}`;
 }
 
 let lastHydratedSignature = '';
@@ -848,6 +970,80 @@ export function unpackAndHydrateLocalStorage(uid: string | null | undefined, sta
     } catch (_) {}
   }
 
+  // 4e. Hydrate Prologue ToDo Missions across devices (PC <-> Mobile)
+  if (state.todoMissions && Array.isArray(state.todoMissions.missions)) {
+    try {
+      const todoPayloadStr = JSON.stringify(state.todoMissions);
+      safeLocalStorage.setItem('prologue_todo_missions_v1', todoPayloadStr);
+      if (state.todoMissions.date) {
+        safeLocalStorage.setItem(`prologue_daily_todos_${state.todoMissions.date}`, JSON.stringify(state.todoMissions.missions));
+      }
+      window.dispatchEvent(new CustomEvent('prologue_todo_storage_sync', {
+        detail: {
+          date: state.todoMissions.date || todayKey,
+          missions: state.todoMissions.missions,
+          lastSavedAt: state.todoMissions.lastSavedAt || new Date().toISOString()
+        }
+      }));
+      window.dispatchEvent(new CustomEvent('prism:todo_updated', { detail: state.todoMissions }));
+    } catch (_) {}
+  }
+
+  // 4f. Hydrate AI eCPR Emergency Prescription across devices (PC <-> Mobile)
+  if (state.ecprPrescription && state.ecprPrescription.prescription) {
+    try {
+      safeLocalStorage.setItem('prologue_ecpr_latest_prescription', JSON.stringify(state.ecprPrescription));
+      window.dispatchEvent(new CustomEvent('prism:ecpr_updated', { detail: state.ecprPrescription }));
+    } catch (_) {}
+  }
+
+  // 4g. Hydrate Oracle Tarot Sessions across devices (PC <-> Mobile)
+  if (state.oracleSessions && typeof state.oracleSessions === 'object') {
+    try {
+      Object.entries(state.oracleSessions).forEach(([subKey, session]) => {
+        if (session) {
+          safeLocalStorage.setItem(`prism_trinity_oracle_session_${subKey}`, JSON.stringify(session));
+        }
+      });
+      window.dispatchEvent(new CustomEvent('prism:oracle_session_updated', { detail: state.oracleSessions }));
+    } catch (_) {}
+  }
+
+  // 4h. Hydrate Oracle Treasures & Growth Logs
+  if (Array.isArray(state.healingTreasures) && state.healingTreasures.length > 0) {
+    try {
+      safeLocalStorage.setItem('trinity_healing_treasures', JSON.stringify(state.healingTreasures));
+    } catch (_) {}
+  }
+  if (state.growthLogs) {
+    try {
+      safeLocalStorage.setItem('trinity_growth_logs', JSON.stringify(state.growthLogs));
+    } catch (_) {}
+  }
+
+  // 4i. Hydrate Epilogue Reflection Diaries
+  if (Array.isArray(state.epilogueHistory) && state.epilogueHistory.length > 0) {
+    try {
+      safeLocalStorage.setItem('epilogue_diary_history', JSON.stringify(state.epilogueHistory));
+      window.dispatchEvent(new CustomEvent('epilogue:diary_synced', { detail: state.epilogueHistory }));
+    } catch (_) {}
+  }
+
+  // 4j. Hydrate Talisman Chest & Equipped Charm
+  if (Array.isArray(state.talismanChest) && state.talismanChest.length > 0) {
+    try {
+      const chestStr = JSON.stringify(state.talismanChest);
+      safeLocalStorage.setItem('prism_talisman_chest_v4', chestStr);
+      safeLocalStorage.setItem('prism_talisman_chest', chestStr);
+      window.dispatchEvent(new CustomEvent('orange:charm_synced', { detail: state.talismanChest }));
+    } catch (_) {}
+  }
+  if (state.equippedCharm) {
+    try {
+      safeLocalStorage.setItem('prism_equipped_charm', JSON.stringify(state.equippedCharm));
+    } catch (_) {}
+  }
+
   // 5. Dispatch Custom Events across the whole app to instantly re-render UI
   try {
     window.dispatchEvent(new CustomEvent('prism:daily_oracle_updated', { detail: state.todayOracles }));
@@ -858,6 +1054,9 @@ export function unpackAndHydrateLocalStorage(uid: string | null | undefined, sta
     window.dispatchEvent(new CustomEvent('prism:daily_art_updated', { detail: state.dailyArts }));
     window.dispatchEvent(new CustomEvent('prism:trinity_lucky_updated', { detail: state.trinityDailyLucky }));
     window.dispatchEvent(new CustomEvent('trinity:daily_lucky_synced', { detail: state.trinityDailyLucky }));
+    window.dispatchEvent(new CustomEvent('prism:todo_updated', { detail: state.todoMissions }));
+    window.dispatchEvent(new CustomEvent('prism:ecpr_updated', { detail: state.ecprPrescription }));
+    window.dispatchEvent(new CustomEvent('prism:oracle_session_updated', { detail: state.oracleSessions }));
     window.dispatchEvent(new CustomEvent('prism:full_state_synced', { detail: state }));
   } catch (_) {}
 }
@@ -1064,6 +1263,100 @@ export function mergeSharedState(
   (local.chatHistory || []).forEach((m: any) => { if (m?.id) chatMap.set(m.id, m); });
   if (chatMap.size > 0) {
     merged.chatHistory = Array.from(chatMap.values()).sort((a, b) => Number(a.timestamp || 0) - Number(b.timestamp || 0));
+  }
+
+  // 6e. Merge Prologue ToDo Missions (lossless union of custom & curated missions)
+  if (local.todoMissions || remote.todoMissions) {
+    if (!remote.todoMissions) {
+      merged.todoMissions = local.todoMissions;
+    } else if (!local.todoMissions) {
+      merged.todoMissions = remote.todoMissions;
+    } else {
+      const localSaved = new Date(local.todoMissions.lastSavedAt || 0).getTime();
+      const remoteSaved = new Date(remote.todoMissions.lastSavedAt || 0).getTime();
+      const base = localSaved >= remoteSaved ? local.todoMissions : remote.todoMissions;
+      const other = localSaved >= remoteSaved ? remote.todoMissions : local.todoMissions;
+      
+      const missionMap = new Map<string, any>();
+      (other.missions || []).forEach((m: any) => { if (m?.id) missionMap.set(m.id, m); });
+      (base.missions || []).forEach((m: any) => { if (m?.id) missionMap.set(m.id, m); });
+      
+      merged.todoMissions = {
+        date: base.date || getTodayDateKey(),
+        missions: Array.from(missionMap.values()),
+        lastSavedAt: new Date(Math.max(localSaved, remoteSaved, Date.now())).toISOString(),
+      };
+    }
+  }
+
+  // 6f. Merge AI eCPR Emergency Prescription
+  if (local.ecprPrescription || remote.ecprPrescription) {
+    if (!remote.ecprPrescription) {
+      merged.ecprPrescription = local.ecprPrescription;
+    } else if (!local.ecprPrescription) {
+      merged.ecprPrescription = remote.ecprPrescription;
+    } else {
+      const localTs = Number(local.ecprPrescription.timestamp || 0);
+      const remoteTs = Number(remote.ecprPrescription.timestamp || 0);
+      merged.ecprPrescription = localTs >= remoteTs ? local.ecprPrescription : remote.ecprPrescription;
+    }
+  }
+
+  // 6g. Merge Oracle Tarot Sessions (healing & growth sessions)
+  const mergedOracleSessions: Record<string, any> = {
+    ...(remote.oracleSessions || {}),
+    ...(local.oracleSessions || {}),
+  };
+  const allOracleKeys = new Set([...Object.keys(remote.oracleSessions || {}), ...Object.keys(local.oracleSessions || {})]);
+  allOracleKeys.forEach((key) => {
+    const l = (local.oracleSessions || {})[key];
+    const r = (remote.oracleSessions || {})[key];
+    if (l && r) {
+      const lTime = new Date(l.savedAt || 0).getTime();
+      const rTime = new Date(r.savedAt || 0).getTime();
+      mergedOracleSessions[key] = lTime >= rTime ? l : r;
+    } else {
+      mergedOracleSessions[key] = l || r;
+    }
+  });
+  if (Object.keys(mergedOracleSessions).length > 0) {
+    merged.oracleSessions = mergedOracleSessions;
+  }
+
+  // 6h. Merge Oracle Treasures & Growth Logs
+  const treasureMap = new Map<string, any>();
+  (remote.healingTreasures || []).forEach((t: any) => { if (t?.id) treasureMap.set(t.id, t); });
+  (local.healingTreasures || []).forEach((t: any) => { if (t?.id) treasureMap.set(t.id, t); });
+  if (treasureMap.size > 0) {
+    merged.healingTreasures = Array.from(treasureMap.values());
+  }
+
+  if (local.growthLogs || remote.growthLogs) {
+    const lStreak = Number(local.growthLogs?.streak || 0);
+    const rStreak = Number(remote.growthLogs?.streak || 0);
+    merged.growthLogs = lStreak >= rStreak ? (local.growthLogs || remote.growthLogs) : remote.growthLogs;
+  }
+
+  // 6i. Merge Epilogue Reflection Diaries
+  const diaryMap = new Map<string, any>();
+  (remote.epilogueHistory || []).forEach((d: any) => { if (d?.dateKey || d?.id) diaryMap.set(d.dateKey || d.id, d); });
+  (local.epilogueHistory || []).forEach((d: any) => { if (d?.dateKey || d?.id) diaryMap.set(d.dateKey || d.id, d); });
+  if (diaryMap.size > 0) {
+    merged.epilogueHistory = Array.from(diaryMap.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  }
+
+  // 6j. Merge Talisman Chest & Equipped Charm
+  const chestMap = new Map<string, any>();
+  (remote.talismanChest || []).forEach((c: any) => { if (c?.id) chestMap.set(c.id, c); });
+  (local.talismanChest || []).forEach((c: any) => { if (c?.id) chestMap.set(c.id, c); });
+  if (chestMap.size > 0) {
+    merged.talismanChest = Array.from(chestMap.values()).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+  }
+
+  if (local.equippedCharm || remote.equippedCharm) {
+    const lTime = Number(local.equippedCharm?.timestamp || 0);
+    const rTime = Number(remote.equippedCharm?.timestamp || 0);
+    merged.equippedCharm = lTime >= rTime ? (local.equippedCharm || remote.equippedCharm) : remote.equippedCharm;
   }
 
   merged.clientAppVersions = {

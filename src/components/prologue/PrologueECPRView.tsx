@@ -278,7 +278,7 @@ const GROUNDING_STEPS = [
 ];
 
 export function PrologueECPRView() {
-  const { sharedState, openLucyChat } = useApp();
+  const { sharedState, updateSharedState, openLucyChat } = useApp();
   const rawUser = sharedState?.userProfile?.basic?.nickname?.trim() || sharedState?.userProfile?.basic?.name?.trim();
   const userName = (rawUser && rawUser !== '여행자') ? rawUser : '제제';
 
@@ -299,8 +299,38 @@ export function PrologueECPRView() {
   // AI eCPR Custom Prescription State
   const [symptomInput, setSymptomInput] = useState<string>('');
   const [isPrescribing, setIsPrescribing] = useState<boolean>(false);
-  const [prescription, setPrescription] = useState<ECPRPrescriptionResult | null>(null);
+  const [prescription, setPrescription] = useState<ECPRPrescriptionResult | null>(() => {
+    if (sharedState?.ecprPrescription?.prescription) {
+      return sharedState.ecprPrescription.prescription;
+    }
+    try {
+      const raw = localStorage.getItem('prologue_ecpr_latest_prescription');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return parsed?.prescription || parsed || null;
+      }
+    } catch (_) {}
+    return null;
+  });
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  // Reactive cross-device sync for eCPR
+  useEffect(() => {
+    if (sharedState?.ecprPrescription?.prescription) {
+      setPrescription(sharedState.ecprPrescription.prescription);
+    }
+  }, [sharedState?.ecprPrescription]);
+
+  useEffect(() => {
+    const handleEcprUpdate = (e: Event) => {
+      const custom = e as CustomEvent;
+      if (custom.detail?.prescription) {
+        setPrescription(custom.detail.prescription);
+      }
+    };
+    window.addEventListener('prism:ecpr_updated', handleEcprUpdate);
+    return () => window.removeEventListener('prism:ecpr_updated', handleEcprUpdate);
+  }, []);
 
   // EFT (Emotional Freedom Techniques) State
   const [isEFTActive, setIsEFTActive] = useState<boolean>(false);
@@ -446,6 +476,17 @@ export function PrologueECPRView() {
         userName,
       });
       setPrescription(res);
+      const payload = {
+        prescription: res,
+        distressType: activeProtocol.title,
+        symptoms: textToUse.trim() || activeProtocol.description,
+        timestamp: Date.now(),
+        dateKey: new Date().toLocaleDateString('sv'),
+      };
+      try {
+        localStorage.setItem('prologue_ecpr_latest_prescription', JSON.stringify(payload));
+        void updateSharedState({ ecprPrescription: payload }, 'prologue_ecpr');
+      } catch (_) {}
     } catch (err) {
       console.error('[eCPR] Prescription generation failed:', err);
     } finally {

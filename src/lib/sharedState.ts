@@ -223,6 +223,23 @@ export interface SharedState {
   hoponoponoDaily?: Record<string, any>; // key: dateKey (YYYY-MM-DD), value: Bluebird Hoponopono data
   dailyArts?: Record<string, any>; // key: dateKey (YYYY-MM-DD), value: Muse Daily Art recommendation data
   trinityDailyLucky?: Record<string, any>; // key: dateKey (YYYY-MM-DD), value: Trinity Daily Lucky data (report, quests, boost)
+  todoMissions?: {
+    date: string;
+    missions: any[];
+    lastSavedAt?: string;
+  };
+  ecprPrescription?: {
+    prescription: any;
+    distressType?: string;
+    symptoms?: string;
+    timestamp?: number;
+    dateKey?: string;
+  };
+  oracleSessions?: Record<string, any>; // key: `${mode}_${dateKey}`, value: SavedDailyOracleSession
+  healingTreasures?: any[]; // Oracle treasures
+  growthLogs?: any; // Oracle growth streak and completion
+  talismanChest?: any[]; // Orange talisman chest
+  equippedCharm?: any; // Currently equipped talisman
   rebibleVerses?: any[]; // Re:Bible holy scriptures and annotations across devices
   chatHistory?: any[]; // Unified chat messages across devices
   chatThreads?: Record<string, any[]>; // Unified chat messages across devices

@@ -409,7 +409,7 @@ export interface TrinityOracleSectionProps {
 
 export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSectionProps = {}) {
   const [, setLocation] = useLocation();
-  const { sharedState, firebaseUser } = useApp();
+  const { sharedState, updateSharedState, firebaseUser } = useApp();
   const userProfile = sharedState?.userProfile || getPersistentUserProfile();
 
   // 🔄 실시간 일일 타로 동기화 틱
@@ -709,6 +709,66 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
   useEffect(() => {
     const saved = loadTodayOracleSession(oracleMode, todayDateKey);
     setTodayDailySession(saved);
+  }, [oracleMode, todayDateKey]);
+
+  // 클라우드 실시간 동기화 헬퍼 (PC <-> 모바일 양방향 실시간 보존)
+  const syncOracleSessionToCloud = useCallback((mode: 'healing' | 'growth', session: SavedDailyOracleSession) => {
+    const sessionKey = `${mode}_${todayDateKey}`;
+    try {
+      void updateSharedState({
+        oracleSessions: {
+          ...(sharedState?.oracleSessions || {}),
+          [sessionKey]: session,
+        },
+        todayOracles: {
+          ...(sharedState?.todayOracles || {}),
+          [todayDateKey]: {
+            ...((sharedState?.todayOracles || {})[todayDateKey] || {}),
+            [`oracle_${mode}`]: {
+              mode,
+              dateKey: todayDateKey,
+              cards: session.drawnCards?.map(c => c.nameKo || c.name),
+              summary: mode === 'healing' ? session.healingResult?.message : session.growthResult?.macro_focus,
+              timestamp: Date.now(),
+            }
+          }
+        }
+      }, 'trinity_oracle');
+    } catch (_) {}
+  }, [sharedState, todayDateKey, updateSharedState]);
+
+  // 실시간 기기 간 오라클 세션 수신 리스너 (PC에서 뽑으면 모바일에서도 즉시 반영)
+  useEffect(() => {
+    const handleOracleSync = () => {
+      const saved = loadTodayOracleSession(oracleMode, todayDateKey);
+      if (saved) {
+        setTodayDailySession(saved);
+        if (saved.drawnCards && saved.drawnCards.length > 0) {
+          setDrawnCards(saved.drawnCards);
+          if (saved.healingResult && oracleMode === 'healing') setHealingResult(saved.healingResult);
+          if (saved.growthResult && oracleMode === 'growth') setGrowthResult(saved.growthResult);
+        }
+      }
+      try {
+        const tr = localStorage.getItem(STORAGE_HEALING_TREASURES);
+        if (tr) setTreasures(JSON.parse(tr));
+        const gr = localStorage.getItem(STORAGE_GROWTH_LOGS);
+        if (gr) {
+          const parsed = JSON.parse(gr);
+          setStreakCount(parsed.streak || 1);
+          if (parsed.lastDate === new Date().toISOString().split('T')[0] && parsed.completed) {
+            setIsGrowthCompleted(true);
+          }
+        }
+      } catch (_) {}
+    };
+
+    window.addEventListener('prism:oracle_session_updated', handleOracleSync);
+    window.addEventListener('prism:realtime_sync', handleOracleSync);
+    return () => {
+      window.removeEventListener('prism:oracle_session_updated', handleOracleSync);
+      window.removeEventListener('prism:realtime_sync', handleOracleSync);
+    };
   }, [oracleMode, todayDateKey]);
 
   // 오늘 결과 다시 보기 핸들러
@@ -1262,6 +1322,7 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
           savedAt: new Date().toISOString(),
         };
         saveDailyOracleSession('healing', todayDateKey, savedHealingSession);
+        syncOracleSessionToCloud('healing', savedHealingSession);
         setTodayDailySession(savedHealingSession);
       } else {
         // [GROWTH MODE] Extreme Focus on Self-Development, Competence Building, Habit Architecture, and Breakthrough Execution
@@ -1395,6 +1456,7 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
           savedAt: new Date().toISOString(),
         };
         saveDailyOracleSession('growth', todayDateKey, savedGrowthSession);
+        syncOracleSessionToCloud('growth', savedGrowthSession);
         setTodayDailySession(savedGrowthSession);
       }
     } catch (err) {
@@ -1465,6 +1527,7 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
           savedAt: new Date().toISOString(),
         };
         saveDailyOracleSession('healing', todayDateKey, fbHealingSession);
+        syncOracleSessionToCloud('healing', fbHealingSession);
         setTodayDailySession(fbHealingSession);
       } else {
         const fallbackGrowthResult: GrowthResult = {
@@ -1529,6 +1592,7 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
           savedAt: new Date().toISOString(),
         };
         saveDailyOracleSession('growth', todayDateKey, fbGrowthSession);
+        syncOracleSessionToCloud('growth', fbGrowthSession);
         setTodayDailySession(fbGrowthSession);
       }
     } finally {
@@ -1552,6 +1616,7 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
     setTreasures(updated);
     try {
       localStorage.setItem(STORAGE_HEALING_TREASURES, JSON.stringify(updated));
+      void updateSharedState({ healingTreasures: updated }, 'trinity_oracle');
     } catch (e) {
       console.warn('Failed to save treasure', e);
     }
@@ -1566,10 +1631,12 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
       setStreakCount(nextStreak);
       try {
         const todayStr = new Date().toISOString().split('T')[0];
+        const growthPayload = { streak: nextStreak, lastDate: todayStr, completed: true };
         localStorage.setItem(
           STORAGE_GROWTH_LOGS,
-          JSON.stringify({ streak: nextStreak, lastDate: todayStr, completed: true })
+          JSON.stringify(growthPayload)
         );
+        void updateSharedState({ growthLogs: growthPayload }, 'trinity_oracle');
       } catch (e) {
         console.warn('Failed to save growth log', e);
       }

@@ -139,6 +139,10 @@ export function LoginScreen() {
             )}
           </motion.button>
 
+          <p className="text-[11px] text-center text-emerald-400/90 font-medium">
+            ✨ 같은 Google 계정으로 로그인 시 PC와 모바일의 모든 정보가 실시간 자동 동기화됩니다.
+          </p>
+
           {/* Developer mode / Instant preview bypass button across all environments */}
           <motion.button
             whileHover={{ scale: 1.02, y: -1 }}

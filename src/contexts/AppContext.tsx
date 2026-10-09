@@ -4,7 +4,7 @@ import { handleFirestoreError, OperationType } from '../lib/firestoreUtils';
 import { mergeUserProfiles, type SharedState, type UserProfile } from '../lib/sharedState';
 import { loadProfileFromAllVaults, saveProfileToAllVaults } from '../lib/profileVault';
 import { syncPrismAcrossDevices, type PrismSyncResult } from '../lib/prismSync';
-import { unpackAndHydrateLocalStorage, cleanFirestoreData, mergeSharedState, getSharedStateSignature } from '../lib/sharedStateSync';
+import { unpackAndHydrateLocalStorage, cleanFirestoreData, mergeSharedState, getSharedStateSignature, collectAllLocalActivities, getSharedStateUpdatedAt } from '../lib/sharedStateSync';
 import { pushToServerVault, pullFromServerVault, generatePairingCode, importWithPairingCode, pushToPairedVault, pullFromPairedVault, getPairedVaultId, setPairedVaultId, subscribeToPairedVault } from '../lib/serverSyncClient';
 import { safeLocalStorage, safeSessionStorage } from '../utils/safeStorage';
 import { invokeLLMStream, PERSONAS, type Message, getCrossAppRecentDialogueContext } from '../lib/ai';
@@ -687,15 +687,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           const cloudState = remoteShared || serverVaultState;
           const cloudProfile = remoteShared?.userProfile || remoteProfile || serverVaultState?.userProfile;
 
-          const localCached = loadFromLocal(user.uid);
+          const localCached = loadFromLocal(user.uid) || loadGuestState();
           const localVaultProfile = getPersistentUserProfile();
 
           // Lossless profile merge: combine local and cloud without data destruction
           const mergedProfile = mergeUserProfiles(localVaultProfile, cloudProfile);
 
+          // Gather all local activities before merge
+          const guestActivities = collectAllLocalActivities(user.uid);
+          const baseLocalWithActivities: SharedState = {
+            ...(localCached || {}),
+            ...guestActivities,
+            userProfile: mergedProfile || localCached?.userProfile || guestActivities.userProfile,
+          };
+
           const mergedData: SharedState = mergeSharedState(
-            localCached || {},
-            cloudState || {}
+            baseLocalWithActivities,
+            cloudState || {},
+            getSharedStateUpdatedAt(baseLocalWithActivities),
+            getSharedStateUpdatedAt(cloudState)
           );
           if (mergedProfile && Object.keys(mergedProfile).length > 0) {
             mergedData.userProfile = mergedProfile;
@@ -715,7 +725,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             pushToServerVault(user.uid, mergedData);
           }
 
-          unpackAndHydrateLocalStorage(user.uid, mergedData);
+          unpackAndHydrateLocalStorage(user.uid, mergedData, true);
 
           // Restore and merge chat history across devices immediately on authentication
           if (remoteChatSnap?.exists()) {
@@ -862,6 +872,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         window.dispatchEvent(new CustomEvent('prism:realtime_sync', { detail: mergedData }));
         if (mergedData.todayOracles) {
           window.dispatchEvent(new CustomEvent('prism:daily_oracle_updated', { detail: mergedData.todayOracles }));
+        }
+        if (mergedData.todoMissions) {
+          window.dispatchEvent(new CustomEvent('prism:todo_updated', { detail: mergedData.todoMissions }));
+        }
+        if (mergedData.ecprPrescription) {
+          window.dispatchEvent(new CustomEvent('prism:ecpr_updated', { detail: mergedData.ecprPrescription }));
+        }
+        if (mergedData.oracleSessions) {
+          window.dispatchEvent(new CustomEvent('prism:oracle_session_updated', { detail: mergedData.oracleSessions }));
         }
       } else {
         // Document does not exist on Firestore yet: initialize Firestore with persistent profile safely!

@@ -365,10 +365,17 @@ export function PrologueTodoSection() {
       window.dispatchEvent(new CustomEvent('prologue_todo_storage_sync', {
         detail: { date: todayKey, missions: missionsToSave, lastSavedAt: nowIso }
       }));
+
+      // Cloud Real-Time Auto-Sync across devices (PC <-> Mobile)
+      try {
+        void updateSharedState({
+          todoMissions: payload,
+        }, 'prologue_todo');
+      } catch (_) {}
     } catch (e) {
       console.warn('[PrologueTodo] Error saving missions to localStorage:', e);
     }
-  }, [todayKey, legacyStorageKey]);
+  }, [todayKey, legacyStorageKey, updateSharedState]);
 
   // Helper to update state and immediately persist
   const updateAndSaveMissions = useCallback((updater: MissionItem[] | ((prev: MissionItem[]) => MissionItem[])) => {
@@ -384,7 +391,7 @@ export function PrologueTodoSection() {
     saveToLocalStorage(missions);
   }, [missions, saveToLocalStorage]);
 
-  // Synchronize across multiple browser tabs / windows
+  // Synchronize across multiple browser tabs / windows and cross-device realtime cloud
   useEffect(() => {
     const handleStorageEvent = (e: StorageEvent) => {
       if ((e.key === MASTER_STORAGE_KEY || e.key === legacyStorageKey) && e.newValue) {
@@ -413,9 +420,11 @@ export function PrologueTodoSection() {
 
     window.addEventListener('storage', handleStorageEvent);
     window.addEventListener('prologue_todo_storage_sync', handleCustomSync);
+    window.addEventListener('prism:todo_updated', handleCustomSync);
     return () => {
       window.removeEventListener('storage', handleStorageEvent);
       window.removeEventListener('prologue_todo_storage_sync', handleCustomSync);
+      window.removeEventListener('prism:todo_updated', handleCustomSync);
     };
   }, [legacyStorageKey]);
 
