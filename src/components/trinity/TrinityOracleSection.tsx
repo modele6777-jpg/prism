@@ -3134,32 +3134,25 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
                   {/* ✨ 핵심 3줄 요약 카드 (항상 첫 칸에 고정: 상황 진단, 방향성, 실천 처방 & 원클릭 TTS) */}
                   {renderOracleSummaryCard()}
 
-                  {/* 🔮 오늘의 일일 타로 결과 연동 상태 배너 */}
-                  <div className="p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-purple-500/10 to-amber-500/5 border border-amber-400/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs shadow-sm">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Sparkles size={14} className="text-amber-400 animate-pulse shrink-0" />
-                      <span className="text-amber-300 font-bold text-xs">
-                        오늘의 타로 결과 연동:
-                      </span>
-                      <span className="text-white font-medium">
-                        [{todayDailyTarot.nameKo}]
-                      </span>
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${
-                        todayDailyTarot.reversed
-                          ? 'bg-rose-500/20 text-rose-300 border-rose-400/40'
-                          : 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40'
-                      }`}>
-                        {todayDailyTarot.reversed ? '역방향 (Reversed)' : '정방향 (Upright)'}
-                      </span>
-                      <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-200 border border-amber-400/30 text-[10px] font-bold">
-                        {hasTodayDailyResult ? '✓ 일일 타로 진단 ✕ 오라클 심층 확장' : '천문 지배 기저 에너지 결합'}
-                      </span>
-                    </div>
-                    {todayDailyResultData?.diagnosis && (
-                      <p className="text-[11px] text-zinc-300/80 italic line-clamp-1 sm:max-w-xs">
-                        "{todayDailyResultData.diagnosis}"
-                      </p>
-                    )}
+                  {/* 🔮 오늘의 일일 타로 결과 연동 상태 배너 (오른쪽 리딩 내용 노출 숨김) */}
+                  <div className="p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-purple-500/10 to-amber-500/5 border border-amber-400/30 flex items-center gap-2 flex-wrap text-xs shadow-sm">
+                    <Sparkles size={14} className="text-amber-400 animate-pulse shrink-0" />
+                    <span className="text-amber-300 font-bold text-xs">
+                      오늘의 타로 결과 연동:
+                    </span>
+                    <span className="text-white font-medium">
+                      [{todayDailyTarot.nameKo}]
+                    </span>
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${
+                      todayDailyTarot.reversed
+                        ? 'bg-rose-500/20 text-rose-300 border-rose-400/40'
+                        : 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40'
+                    }`}>
+                      {todayDailyTarot.reversed ? '역방향 (Reversed)' : '정방향 (Upright)'}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-200 border border-amber-400/30 text-[10px] font-bold">
+                      {hasTodayDailyResult ? '✓ 일일 타로 진단 ✕ 오라클 심층 확장' : '천문 지배 기저 에너지 결합'}
+                    </span>
                   </div>
 
                   {/* 📜 Streamdown 기반 정통 마크다운 본문 리딩 */}
