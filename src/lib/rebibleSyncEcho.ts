@@ -60,9 +60,9 @@ export const BOOK_META_MAP: Record<CanonicalReBibleBook, { icon: string; subtitl
   },
   '성찰의 서': {
     icon: '🍊',
-    subtitle: '감정 연금술 · 소원의 우물 · 제1원칙 전략 성찰',
+    subtitle: '감정 연금술 · 별에게 소원빌기 · 제1원칙 전략 성찰',
     defaultEmotions: ['명료함', '통찰', '연금술', '확신'],
-    defaultTags: ['오렌지', '감정연금술', '성찰의서', '소원의우물']
+    defaultTags: ['오렌지', '감정연금술', '성찰의서', '별에게소원빌기']
   },
   '운명의 서': {
     icon: '🔮',
@@ -245,12 +245,12 @@ export function summarizeBookActivities(
       const emotionMatches = logs.map((l) => l.title.match(/\[([^\]]+)\]/)?.[1] || '').filter(Boolean);
       const targetName = emotionMatches[0] || '감정 연금술';
       const mainDetail = rawDetails[0] || '제1원칙 본질 통찰';
-      const wishLog = logs.find((l) => l.appName.includes('소원의 우물'));
+      const wishLog = logs.find((l) => l.appName.includes('별에게 소원빌기') || l.appName.includes('소원의 우물'));
       const wishText = wishLog?.detail || '';
 
       return {
-        title: `감정 연금술 [${targetName}]과 소원의 우물`,
-        fact: `오렌지 비밀의 방에서 [${targetName}]의 감정을 제1원칙으로 분석하여 감정의 핵을 마주하고 사유를 정립함. 성찰 내용: "${mainDetail}".${wishText ? ` 소원의 우물에 "${wishText}"의 소망을 띄워 보내며,` : ''} 막연한 불안과 두려움을 명료한 확신과 생산적인 실천력으로 승화시킴.`,
+        title: `감정 연금술 [${targetName}]과 별에게 소원빌기`,
+        fact: `오렌지 비밀의 방에서 [${targetName}]의 감정을 제1원칙으로 분석하여 감정의 핵을 마주하고 사유를 정립함. 성찰 내용: "${mainDetail}".${wishText ? ` 별에게 "${wishText}"의 소망을 띄워 보내며,` : ''} 막연한 불안과 두려움을 명료한 확신과 생산적인 실천력으로 승화시킴.`,
         emotions: ['명료함', '통찰', '연금술', '확신'],
         tags: [...tags, '감정연금술', '제1원칙', ...emotionMatches.slice(0, 2)]
       };
@@ -644,14 +644,14 @@ export function buildTodaySyncEchoDraft(existingVerses: ReBibleVerse[] = []): Sy
     const wishes = tryParseJson('wishing_well_wishes_v1');
     if (Array.isArray(wishes)) {
       wishes.filter((w: any) => w.createdAt && getLocalDateKey(w.createdAt) === todayKey).forEach((wish: any) => {
-        const wishContent = wish.text || wish.content || '소원의 우물 소망';
+        const wishContent = wish.text || wish.content || '별빛 소망';
         const log: SyncEchoActivityLog = {
           app: 'orange',
-          appName: '소원의 우물',
+          appName: '별에게 소원빌기',
           category: 'reflection',
           title: `소원 띄우기 [${wish.category || '소망'}]`,
           detail: `띄운 소망: "${wishContent}"`,
-          icon: '🌊',
+          icon: '⭐',
           timestamp: wish.createdAt || Date.now()
         };
         allCollectedLogs.push(log);

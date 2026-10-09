@@ -1960,6 +1960,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const btnRxSaveJournal = document.getElementById('btn-rx-save-journal');
   const btnRxPracticeNow = document.getElementById('btn-rx-practice-now');
+  const btnRxPrint = document.getElementById('btn-rx-print');
   const btnRxToggleSound = document.getElementById('btn-rx-toggle-sound');
   const btnRxPrev = document.getElementById('btn-rx-prev');
   const btnRxNext = document.getElementById('btn-rx-next');
@@ -2237,6 +2238,13 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!rxPrescribedEx) return;
       closePrescriptionStudio();
       window.startPractice(rxPrescribedEx.globalIndex);
+    });
+  }
+
+  // 처방전 인쇄 및 출력
+  if (btnRxPrint) {
+    btnRxPrint.addEventListener('click', () => {
+      window.print();
     });
   }
 

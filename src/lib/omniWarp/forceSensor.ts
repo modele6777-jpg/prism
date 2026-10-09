@@ -41,7 +41,7 @@ export const RADIAL_WARP_APPS: RadialWarpApp[] = [
   {
     id: 'orange',
     name: '오렌지',
-    title: '오렌지 소원의 우물',
+    title: '오렌지 별에게 소원빌기',
     path: '/orange',
     icon: 'orange',
     runeSymbol: 'ᛋ',
@@ -49,7 +49,7 @@ export const RADIAL_WARP_APPS: RadialWarpApp[] = [
     runeMeaning: '태양과 소원',
     themeColor: '#f97316', // 주황 (Orange)
     accentGlow: 'rgba(249, 115, 22, 0.65)',
-    description: '감정 성찰과 소원의 우물에 소망을 띄우는 비밀의 숲',
+    description: '감정 성찰과 밤하늘 별에 소망을 띄우는 비밀의 숲',
   },
   {
     id: 'trinity',

@@ -1051,10 +1051,10 @@ export function initTTSAudioLifecycle(): void {
 }
 
 /**
- * Authentic Web Audio synthesized water droplet & splash sound ("퐁당~")
- * for the Wishing Well (소원의 우물) and water-based healing interactions.
+ * Authentic Web Audio synthesized celestial shooting star & starlight chime sound ("슈웅~ 팅그랑✨")
+ * for Wish Upon a Star (별에게 소원빌기) and starlight healing interactions.
  */
-export function playWishingWellPlopSound(): void {
+export function playStarWishSound(): void {
   if (typeof window === 'undefined') return;
   try {
     const ctx = getSharedAudioContext();
@@ -1064,93 +1064,102 @@ export function playWishingWellPlopSound(): void {
 
     const now = ctx.currentTime;
 
-    // 1. Primary Well Water Impact ("퐁")
-    const osc1 = ctx.createOscillator();
-    const gain1 = ctx.createGain();
-    osc1.type = 'sine';
+    // 1. Ascending Celestial Pentatonic Star Chimes (별빛 아르페지오 팅그랑~)
+    const starFrequencies = [880, 1108.73, 1318.51, 1661.22, 2217.46, 2637.02];
+    starFrequencies.forEach((freq, idx) => {
+      const startTime = now + idx * 0.055;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
 
-    // Pitch envelope: fast rising bubble then gentle settling
-    osc1.frequency.setValueAtTime(320, now);
-    osc1.frequency.exponentialRampToValueAtTime(1420, now + 0.06);
-    osc1.frequency.exponentialRampToValueAtTime(680, now + 0.28);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, startTime);
+      // Subtle celestial micro-vibrato
+      osc.frequency.exponentialRampToValueAtTime(freq * 1.015, startTime + 0.12);
+      osc.frequency.exponentialRampToValueAtTime(freq, startTime + 0.35);
 
-    gain1.gain.setValueAtTime(0.0001, now);
-    gain1.gain.linearRampToValueAtTime(0.42, now + 0.015);
-    gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
+      gain.gain.setValueAtTime(0.0001, startTime);
+      gain.gain.linearRampToValueAtTime(0.18 / (1 + idx * 0.15), startTime + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.55 + idx * 0.08);
 
-    osc1.connect(gain1);
-    gain1.connect(ctx.destination);
+      // Delicate high shimmer harmonic
+      const overtone = ctx.createOscillator();
+      const overGain = ctx.createGain();
+      overtone.type = 'triangle';
+      overtone.frequency.setValueAtTime(freq * 2, startTime);
+      overGain.gain.setValueAtTime(0.0001, startTime);
+      overGain.gain.linearRampToValueAtTime(0.045, startTime + 0.01);
+      overGain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.28);
 
-    osc1.start(now);
-    osc1.stop(now + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      overtone.connect(overGain);
+      overGain.connect(ctx.destination);
 
-    // 2. Secondary Droplet Ripple ("당~")
-    const osc2 = ctx.createOscillator();
-    const gain2 = ctx.createGain();
-    osc2.type = 'sine';
+      osc.start(startTime);
+      osc.stop(startTime + 0.7);
+      overtone.start(startTime);
+      overtone.stop(startTime + 0.32);
+    });
 
-    const t2 = now + 0.09;
-    osc2.frequency.setValueAtTime(650, t2);
-    osc2.frequency.exponentialRampToValueAtTime(1780, t2 + 0.05);
-    osc2.frequency.exponentialRampToValueAtTime(940, t2 + 0.26);
-
-    gain2.gain.setValueAtTime(0.0001, t2);
-    gain2.gain.linearRampToValueAtTime(0.28, t2 + 0.018);
-    gain2.gain.exponentialRampToValueAtTime(0.0001, t2 + 0.38);
-
-    osc2.connect(gain2);
-    gain2.connect(ctx.destination);
-
-    osc2.start(t2);
-    osc2.stop(t2 + 0.42);
-
-    // 3. Low-end Deep Well Resonance (우물 속 깊은 울림)
-    const subOsc = ctx.createOscillator();
-    const subGain = ctx.createGain();
-    subOsc.type = 'sine';
-    subOsc.frequency.setValueAtTime(180, now);
-    subOsc.frequency.exponentialRampToValueAtTime(90, now + 0.45);
-
-    subGain.gain.setValueAtTime(0.0001, now);
-    subGain.gain.linearRampToValueAtTime(0.22, now + 0.03);
-    subGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
-
-    subOsc.connect(subGain);
-    subGain.connect(ctx.destination);
-
-    subOsc.start(now);
-    subOsc.stop(now + 0.55);
-
-    // 4. Subtle Splash Noise Burst (물방울 튀는 소리)
-    const sampleRate = ctx.sampleRate;
-    const noiseLength = Math.floor(sampleRate * 0.06);
-    const noiseBuffer = ctx.createBuffer(1, noiseLength, sampleRate);
-    const output = noiseBuffer.getChannelData(0);
-    for (let i = 0; i < noiseLength; i++) {
-      output[i] = (Math.random() * 2 - 1) * Math.exp(-i / (sampleRate * 0.015));
+    // 2. Shooting Star Astral Shimmer Sweep (유성 비상 휘파람 "슈웅~")
+    const sweepSampleRate = ctx.sampleRate;
+    const sweepLength = Math.floor(sweepSampleRate * 0.45);
+    const sweepBuffer = ctx.createBuffer(1, sweepLength, sweepSampleRate);
+    const sweepData = sweepBuffer.getChannelData(0);
+    for (let i = 0; i < sweepLength; i++) {
+      const envelope = Math.sin((i / sweepLength) * Math.PI);
+      sweepData[i] = (Math.random() * 2 - 1) * envelope;
     }
 
     const noiseSource = ctx.createBufferSource();
-    noiseSource.buffer = noiseBuffer;
+    noiseSource.buffer = sweepBuffer;
 
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(2200, now);
-    filter.Q.setValueAtTime(4.0, now);
+    const sweepFilter = ctx.createBiquadFilter();
+    sweepFilter.type = 'bandpass';
+    sweepFilter.frequency.setValueAtTime(1400, now);
+    sweepFilter.frequency.exponentialRampToValueAtTime(5200, now + 0.32);
+    sweepFilter.Q.setValueAtTime(5.5, now);
 
-    const noiseGain = ctx.createGain();
-    noiseGain.gain.setValueAtTime(0.16, now);
-    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
+    const sweepGain = ctx.createGain();
+    sweepGain.gain.setValueAtTime(0.0001, now);
+    sweepGain.gain.linearRampToValueAtTime(0.14, now + 0.12);
+    sweepGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
 
-    noiseSource.connect(filter);
-    filter.connect(noiseGain);
-    noiseGain.connect(ctx.destination);
+    noiseSource.connect(sweepFilter);
+    sweepFilter.connect(sweepGain);
+    sweepGain.connect(ctx.destination);
 
     noiseSource.start(now);
-    noiseSource.stop(now + 0.07);
+    noiseSource.stop(now + 0.46);
+
+    // 3. Warm Cosmic Starlight Pad (은하수 온기 베이스 220Hz / 440Hz)
+    const padOsc = ctx.createOscillator();
+    const padGain = ctx.createGain();
+    padOsc.type = 'sine';
+    padOsc.frequency.setValueAtTime(220, now);
+    padOsc.frequency.exponentialRampToValueAtTime(440, now + 0.4);
+
+    padGain.gain.setValueAtTime(0.0001, now);
+    padGain.gain.linearRampToValueAtTime(0.12, now + 0.08);
+    padGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.75);
+
+    padOsc.connect(padGain);
+    padGain.connect(ctx.destination);
+
+    padOsc.start(now);
+    padOsc.stop(now + 0.8);
   } catch (err) {
-    console.warn('[Audio] Failed to play wishing well plop sound:', err);
+    console.warn('[Audio] Failed to play star wish sound:', err);
   }
+}
+
+/**
+ * Authentic Web Audio synthesized water droplet & splash sound ("퐁당~")
+ * for the Wishing Well (소원의 우물) and water-based healing interactions.
+ */
+export function playWishingWellPlopSound(): void {
+  // Delegate to star wish sound for new celestial experience while preserving backward compatibility
+  playStarWishSound();
 }
 
 // Re-export audio haptic feedback engine

@@ -2,20 +2,22 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Sparkles,
-  Waves,
+  Star,
+  Stars as LucideStars,
   X,
   History,
-  Droplet,
   Heart,
   Compass,
   RefreshCw,
   Feather,
+  Moon,
+  Orbit,
 } from 'lucide-react';
 import { auth } from '@/lib/firebase';
 import { useApp } from '@/contexts/AppContext';
 import { sendWishingWellToLucy } from '@/lib/oracleDeepInsight';
 import { TTSButton } from '@/components/TTSButton';
-import { playWishingWellPlopSound } from '@/lib/audio';
+import { playStarWishSound, playWishingWellPlopSound } from '@/lib/audio';
 import {
   WISH_CATEGORIES,
   WishCategoryId,
@@ -110,8 +112,8 @@ export function WishingWellModal({
     setIsCasting(true);
     setErrorMsg(null);
 
-    // Soothing crystal water plop sound ("퐁당~")
-    playWishingWellPlopSound();
+    // Celestial shooting star & starlight chime sound ("슈웅~ 팅그랑✨")
+    playStarWishSound();
 
     const targetCategory = overrideCategory || selectedCategory;
     if (overrideCategory && overrideCategory !== selectedCategory) {
@@ -129,7 +131,7 @@ export function WishingWellModal({
       const effectiveWish =
         (wishStr !== undefined ? wishStr : wishInput).trim() ||
         catMeta.defaultWish ||
-        '내면의 평화와 안식을 찾길 소망합니다.';
+        '가슴속 간절한 소망이 밤하늘 별빛처럼 밝게 실현되길 기원합니다.';
       const result = await castWishIntoWell(uid, effectiveWish, targetCategory);
       setLatestResult(result);
       setWishesHistory((prev) => deduplicateWishes([result, ...prev]));
@@ -138,7 +140,7 @@ export function WishingWellModal({
       }
     } catch (err: any) {
       console.error('[WishingWellModal] Error casting wish:', err);
-      setErrorMsg(err?.message || '우물과 교감하는 중 오류가 발생했습니다.');
+      setErrorMsg(err?.message || '별빛과 교감하는 중 오류가 발생했습니다.');
     } finally {
       clearTimeout(safetyTimer);
       setIsCasting(false);
@@ -228,22 +230,22 @@ export function WishingWellModal({
       {/* Glass Header */}
       <div className="relative z-10 flex items-center justify-between px-6 sm:px-8 py-5 border-b border-white/10 shrink-0 bg-white/[0.04] backdrop-blur-md">
         <div className="flex items-center gap-3.5">
-          <div className="relative w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400/30 via-white/15 to-white/5 border border-white/25 flex items-center justify-center shadow-[0_8px_24px_rgba(245,158,11,0.25),inset_0_1px_1px_rgba(255,255,255,0.5)] shrink-0 overflow-hidden">
+          <div className="relative w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400/30 via-indigo-500/25 to-purple-600/30 border border-amber-300/35 flex items-center justify-center shadow-[0_8px_24px_rgba(245,158,11,0.25),inset_0_1px_1px_rgba(255,255,255,0.5)] shrink-0 overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-t from-amber-500/25 to-transparent" />
-            <Waves className="relative z-10 w-5 h-5 text-amber-300 drop-shadow-[0_0_10px_rgba(251,191,36,0.9)]" />
+            <Star className="relative z-10 w-5 h-5 text-amber-300 fill-amber-300/40 drop-shadow-[0_0_10px_rgba(251,191,36,0.9)] animate-pulse" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-base sm:text-lg font-bold text-white tracking-tight flex items-center gap-2">
-                소원의 우물
-                <span className="text-[11px] font-serif italic text-amber-300/90 font-normal">Wishing Well</span>
+                별에게 소원빌기
+                <span className="text-[11px] font-serif italic text-amber-300/90 font-normal">Wish Upon a Star</span>
               </h2>
-              <span className="text-[9px] font-black px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400/20 to-orange-400/20 text-amber-300 border border-amber-300/40 uppercase tracking-widest font-mono shadow-[0_0_12px_rgba(245,158,11,0.25)]">
-                ORANGE
+              <span className="text-[9px] font-black px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400/20 via-orange-400/20 to-indigo-500/20 text-amber-300 border border-amber-300/40 uppercase tracking-widest font-mono shadow-[0_0_12px_rgba(245,158,11,0.25)]">
+                ORANGE CELESTIAL
               </span>
             </div>
             <p className="text-[11px] sm:text-xs text-white/60 font-sans mt-0.5">
-              맑은 크리스탈 수면에 진실한 소망을 띄우고, 우물의 신비로운 화답을 만나보세요
+              밤하늘 은하수에 진실한 소망을 띄우고, 별빛의 신비로운 화답을 만나보세요
             </p>
           </div>
         </div>
@@ -274,8 +276,8 @@ export function WishingWellModal({
                 : 'text-white/50 hover:text-white/90 hover:bg-white/[0.05] border border-transparent'
             }`}
           >
-            <Sparkles size={13} className={activeTab === 'cast' ? 'text-amber-300 animate-pulse' : ''} />
-            <span>소원 띄우기</span>
+            <Star size={13} className={activeTab === 'cast' ? 'text-amber-300 animate-pulse fill-amber-300/40' : ''} />
+            <span>별에게 소원 빌기</span>
           </button>
 
           <button
@@ -291,7 +293,7 @@ export function WishingWellModal({
             }`}
           >
             <History size={13} className={activeTab === 'history' ? 'text-amber-300' : ''} />
-            <span>우물의 기억</span>
+            <span>별의 기억</span>
             {wishesHistory.length > 0 && (
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-400/25 text-amber-300 font-mono font-bold border border-amber-300/40">
                 {wishesHistory.length}
@@ -316,53 +318,76 @@ export function WishingWellModal({
       <div className="relative z-10 flex-1 overflow-y-auto p-5 sm:p-8 space-y-6">
         {activeTab === 'cast' ? (
           <div className="space-y-6">
-            {/* Luminous Liquid Glass Wishing Pond Centerpiece */}
-            <div className="relative w-full h-48 sm:h-56 rounded-[28px] bg-gradient-to-b from-white/[0.1] via-amber-500/[0.06] to-black/70 border border-white/25 flex flex-col items-center justify-center overflow-hidden shadow-[inset_0_1px_2px_rgba(255,255,255,0.4),0_20px_60px_rgba(0,0,0,0.7)] backdrop-blur-2xl group">
+            {/* Luminous Celestial Starlit Night Sky Centerpiece */}
+            <div className="relative w-full h-48 sm:h-56 rounded-[28px] bg-gradient-to-b from-indigo-950/40 via-purple-950/30 to-black/85 border border-amber-400/25 flex flex-col items-center justify-center overflow-hidden shadow-[inset_0_1px_2px_rgba(255,255,255,0.4),0_20px_60px_rgba(0,0,0,0.8)] backdrop-blur-2xl group">
               {/* Shimmering Glass Top Lip Highlight */}
-              <div className="absolute top-0 inset-x-8 h-[1px] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
+              <div className="absolute top-0 inset-x-8 h-[1px] bg-gradient-to-r from-transparent via-amber-200/60 to-transparent" />
 
-              {/* Concentric Fluid Glass Ripples */}
+              {/* Twinkling Background Stars Field */}
+              <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                <span className="absolute top-4 left-10 w-1 h-1 bg-amber-200 rounded-full animate-ping opacity-75" />
+                <span className="absolute top-8 right-16 w-1.5 h-1.5 bg-yellow-200 rounded-full animate-pulse opacity-90 shadow-[0_0_8px_#fde047]" />
+                <span className="absolute bottom-6 left-1/4 w-1 h-1 bg-white rounded-full animate-pulse delay-300 opacity-80" />
+                <span className="absolute top-1/2 right-1/4 w-1 h-1 bg-amber-300 rounded-full animate-ping delay-700 opacity-60" />
+                <span className="absolute bottom-8 right-10 w-1 h-1 bg-indigo-200 rounded-full animate-pulse delay-500 opacity-80" />
+                <span className="absolute top-12 left-1/3 w-1.5 h-1.5 bg-white/90 rounded-full shadow-[0_0_6px_#ffffff] animate-pulse" />
+              </div>
+
+              {/* Concentric Celestial Orbital Halos */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <motion.div
-                  animate={{ scale: [0.6, 1.4, 2.4], opacity: [0.65, 0.25, 0] }}
-                  transition={{ duration: 4.5, repeat: Number.POSITIVE_INFINITY, ease: 'easeOut' }}
+                  animate={{ scale: [0.7, 1.35, 2.3], opacity: [0.65, 0.25, 0] }}
+                  transition={{ duration: 4.2, repeat: Number.POSITIVE_INFINITY, ease: 'easeOut' }}
                   className="w-40 h-40 rounded-full border border-amber-300/40 shadow-[0_0_20px_rgba(245,158,11,0.25)]"
                 />
                 <motion.div
-                  animate={{ scale: [0.6, 1.4, 2.4], opacity: [0.55, 0.2, 0] }}
-                  transition={{ duration: 4.5, repeat: Number.POSITIVE_INFINITY, delay: 1.5, ease: 'easeOut' }}
-                  className="w-40 h-40 rounded-full border border-orange-400/35 shadow-[0_0_20px_rgba(249,115,22,0.2)]"
+                  animate={{ scale: [0.7, 1.35, 2.3], opacity: [0.55, 0.2, 0] }}
+                  transition={{ duration: 4.2, repeat: Number.POSITIVE_INFINITY, delay: 1.4, ease: 'easeOut' }}
+                  className="w-40 h-40 rounded-full border border-indigo-400/35 shadow-[0_0_20px_rgba(99,102,241,0.2)]"
                 />
                 <motion.div
-                  animate={{ scale: [0.6, 1.4, 2.4], opacity: [0.45, 0.15, 0] }}
-                  transition={{ duration: 4.5, repeat: Number.POSITIVE_INFINITY, delay: 3, ease: 'easeOut' }}
-                  className="w-40 h-40 rounded-full border border-yellow-200/30 shadow-[0_0_15px_rgba(254,240,138,0.2)]"
+                  animate={{ scale: [0.7, 1.35, 2.3], opacity: [0.45, 0.15, 0] }}
+                  transition={{ duration: 4.2, repeat: Number.POSITIVE_INFINITY, delay: 2.8, ease: 'easeOut' }}
+                  className="w-40 h-40 rounded-full border border-amber-200/30 shadow-[0_0_15px_rgba(254,240,138,0.2)]"
                 />
               </div>
 
-              {/* Liquid Crystal Water Bed */}
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/20 via-black/30 to-transparent opacity-90 pointer-events-none" />
+              {/* Starlight Nebula Radial Wash */}
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-400/20 via-purple-900/20 to-transparent opacity-90 pointer-events-none" />
 
-              {/* Floating Soul Gem / Plop Water Coin */}
+              {/* Shooting Star Flare Animation on Casting */}
+              {isCasting && (
+                <motion.div
+                  initial={{ x: -160, y: 120, opacity: 0 }}
+                  animate={{ x: 260, y: -140, opacity: [0, 1, 1, 0] }}
+                  transition={{ duration: 1.4, repeat: Number.POSITIVE_INFINITY, ease: 'easeInOut' }}
+                  className="absolute pointer-events-none z-20"
+                >
+                  <div className="w-2.5 h-2.5 rounded-full bg-white shadow-[0_0_16px_#fff,0_0_32px_#f59e0b]" />
+                  <div className="w-32 h-[2px] -rotate-45 bg-gradient-to-r from-transparent via-amber-300/60 to-white -mt-1 -ml-28" />
+                </motion.div>
+              )}
+
+              {/* Floating Celestial Star Crystal */}
               <div className="relative z-10 flex flex-col items-center gap-3 text-center px-4">
                 <motion.div
                   animate={
                     isCasting
-                      ? { scale: [1, 1.35, 0.8], rotate: 360, y: [0, 15, -5] }
-                      : { y: [0, -6, 0] }
+                      ? { scale: [1, 1.4, 0.85], rotate: [0, 180, 360], y: [0, -14, 2] }
+                      : { y: [0, -6, 0], rotate: [0, 5, 0, -5, 0] }
                   }
                   transition={
                     isCasting
-                      ? { duration: 1.6, repeat: Number.POSITIVE_INFINITY, ease: 'easeInOut' }
-                      : { duration: 3.5, repeat: Number.POSITIVE_INFINITY, ease: 'easeInOut' }
+                      ? { duration: 1.4, repeat: Number.POSITIVE_INFINITY, ease: 'easeInOut' }
+                      : { duration: 4.5, repeat: Number.POSITIVE_INFINITY, ease: 'easeInOut' }
                   }
-                  className="relative w-16 h-16 rounded-full bg-gradient-to-tr from-amber-400 via-orange-300 to-white/95 p-[2px] shadow-[0_0_35px_rgba(245,158,11,0.6),inset_0_1px_2px_rgba(255,255,255,0.9)] flex items-center justify-center cursor-default"
+                  className="relative w-16 h-16 rounded-full bg-gradient-to-tr from-amber-400 via-amber-200 to-indigo-300 p-[2px] shadow-[0_0_40px_rgba(245,158,11,0.7),inset_0_1px_2px_rgba(255,255,255,0.9)] flex items-center justify-center cursor-default"
                 >
-                  <div className="w-full h-full rounded-full bg-gradient-to-b from-slate-900/95 to-slate-950 flex items-center justify-center shadow-inner">
-                    <Droplet className="w-7 h-7 text-amber-300 drop-shadow-[0_0_12px_rgba(251,191,36,0.9)]" />
+                  <div className="w-full h-full rounded-full bg-gradient-to-b from-slate-900/95 via-indigo-950/90 to-slate-950 flex items-center justify-center shadow-inner">
+                    <Star className="w-7 h-7 text-amber-300 fill-amber-300/40 drop-shadow-[0_0_14px_rgba(251,191,36,0.95)]" />
                   </div>
                   {/* Surrounding Starlight Glimmer */}
-                  <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.9)] flex items-center justify-center">
+                  <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-300 shadow-[0_0_12px_rgba(251,191,36,1)] flex items-center justify-center">
                     <Sparkles size={8} className="text-slate-950" />
                   </div>
                 </motion.div>
@@ -370,11 +395,11 @@ export function WishingWellModal({
                 <div className="space-y-1">
                   <p className="text-xs sm:text-sm font-bold text-amber-200 tracking-wide font-sans drop-shadow-sm">
                     {isCasting
-                      ? '퐁당~ 소원이 수면 깊은 곳으로 가라앉고 있습니다...'
-                      : '맑은 수면에 진심을 담아 소원을 띄워보세요'}
+                      ? '슈웅~ 소원이 은하수를 건너 별빛으로 날아가고 있습니다...'
+                      : '밤하늘 가장 빛나는 별에 진심을 담아 소원을 띄워보세요'}
                   </p>
                   <p className="text-[10px] text-white/55 font-mono">
-                    {isCasting ? '우물이 마음에 화답하는 중 · Echoing' : 'Ask · Believe · Receive'}
+                    {isCasting ? '별빛이 마음에 화답하는 중 · Celestial Echoing' : 'Ask · Believe · Receive · Starlight Resonance'}
                   </p>
                 </div>
               </div>
@@ -387,13 +412,14 @@ export function WishingWellModal({
                   initial={{ opacity: 0, scale: 0.95, y: 15 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: 15 }}
-                  className="p-6 sm:p-7 rounded-[26px] bg-gradient-to-br from-amber-500/20 via-white/[0.06] to-black/60 border border-amber-300/50 shadow-[0_20px_50px_rgba(245,158,11,0.25),inset_0_1px_2px_rgba(255,255,255,0.45)] space-y-4 backdrop-blur-2xl relative overflow-hidden"
+                  className="p-6 sm:p-7 rounded-[26px] bg-gradient-to-br from-amber-500/20 via-indigo-950/30 to-black/70 border border-amber-300/50 shadow-[0_20px_50px_rgba(245,158,11,0.25),inset_0_1px_2px_rgba(255,255,255,0.45)] space-y-4 backdrop-blur-2xl relative overflow-hidden"
                 >
                   <div className="absolute top-0 right-0 w-48 h-48 bg-amber-400/15 rounded-full blur-3xl pointer-events-none" />
 
                   <div className="flex items-center justify-between border-b border-white/10 pb-3.5">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold px-3 py-1 rounded-full bg-gradient-to-r from-amber-400/30 to-orange-400/30 text-amber-200 border border-amber-300/50 shadow-[0_0_12px_rgba(245,158,11,0.3)] font-mono">
+                      <span className="text-xs font-bold px-3 py-1 rounded-full bg-gradient-to-r from-amber-400/30 to-orange-400/30 text-amber-200 border border-amber-300/50 shadow-[0_0_12px_rgba(245,158,11,0.3)] font-mono flex items-center gap-1">
+                        <Star size={11} className="text-amber-300 fill-amber-300/40" />
                         #{latestResult.crystalKeyword}
                       </span>
                       <span className="text-xs text-white/65 font-sans">{latestResult.categoryLabel}</span>
@@ -426,7 +452,7 @@ export function WishingWellModal({
                   <div className="p-4 sm:p-5 rounded-2xl bg-amber-500/[0.1] border border-amber-300/30 space-y-2 backdrop-blur-xl shadow-inner">
                     <div className="text-[10px] font-black text-amber-300 uppercase tracking-wider flex items-center gap-1.5 font-mono">
                       <Sparkles size={12} className="text-amber-300 animate-pulse" />
-                      <span>우물의 메아리</span>
+                      <span>별빛의 메아리</span>
                     </div>
                     <p className="text-xs sm:text-sm text-white/95 leading-relaxed font-sans font-medium break-keep">
                       {latestResult.echo}
@@ -520,7 +546,7 @@ export function WishingWellModal({
                 <div className="space-y-2">
                   <div className="flex items-center gap-1.5 text-[11px] text-white/65">
                     <Feather size={12} className="text-amber-300" />
-                    <span>추천 소망 문구 (클릭 시 자동 입력)</span>
+                    <span>밤하늘에 띄울 추천 소망 문구 (클릭 시 자동 입력)</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {QUICK_WISH_CHIPS[selectedCategory]?.map((chip, idx) => (
@@ -551,7 +577,7 @@ export function WishingWellModal({
                       id="wishing-well-textarea"
                       value={wishInput}
                       onChange={(e) => setWishInput(e.target.value.slice(0, 200))}
-                      placeholder={`소원을 직접 적으셔도 좋고, 비워두시면 '${selectedCategoryMeta.label}'의 기본 소망으로 우물이 화답합니다...`}
+                      placeholder={`별에게 띄울 소원을 직접 적으셔도 좋고, 비워두시면 '${selectedCategoryMeta.label}'의 기본 소망으로 별빛이 화답합니다...`}
                       rows={3}
                       className="w-full p-4 bg-transparent text-sm text-white placeholder:text-white/35 focus:outline-none resize-none leading-relaxed font-sans"
                     />
@@ -574,16 +600,16 @@ export function WishingWellModal({
                 >
                   {isCasting ? (
                     <>
-                      <Waves className="w-5 h-5 animate-spin text-slate-950" />
-                      <span>소원의 메아리를 듣는 중...</span>
+                      <Star className="w-5 h-5 animate-spin text-slate-950 fill-slate-950" />
+                      <span>별빛의 화답을 듣는 중... (슈웅~)</span>
                     </>
                   ) : (
                     <>
                       <Sparkles className="w-5 h-5 text-slate-950" />
                       <span>
                         {wishInput.trim()
-                          ? '우물에 소원 띄우기 (퐁당~)'
-                          : `${selectedCategoryMeta.emoji} [${selectedCategoryMeta.label}] 소원 띄우기`}
+                          ? '별에게 소원 띄우기 (슈웅~)'
+                          : `${selectedCategoryMeta.emoji} [${selectedCategoryMeta.label}] 별에게 소원 빌기`}
                       </span>
                     </>
                   )}
@@ -592,27 +618,27 @@ export function WishingWellModal({
             )}
           </div>
         ) : (
-          /* 우물의 기억 (히스토리 탭) */
+          /* 별의 기억 (히스토리 탭) */
           <div className="space-y-4">
             {loadingHistory ? (
               <div className="py-16 flex flex-col items-center justify-center gap-3 text-white/50 text-xs font-sans">
-                <Waves className="w-8 h-8 animate-pulse text-amber-300" />
-                <span>우물에 담긴 기억들을 불러오고 있습니다...</span>
+                <Sparkles className="w-8 h-8 animate-pulse text-amber-300" />
+                <span>별빛에 담긴 기억들을 불러오고 있습니다...</span>
               </div>
             ) : wishesHistory.length === 0 ? (
               <div className="py-20 text-center text-white/50 space-y-3">
                 <div className="w-16 h-16 rounded-full bg-white/[0.05] border border-white/15 flex items-center justify-center mx-auto text-amber-300/50 shadow-inner">
-                  <Droplet className="w-7 h-7" />
+                  <Star className="w-7 h-7 text-amber-300/50 fill-amber-300/20" />
                 </div>
-                <p className="text-sm font-bold text-white/80">아직 우물에 띄운 소원이 없습니다.</p>
+                <p className="text-sm font-bold text-white/80">아직 별에 띄운 소원이 없습니다.</p>
                 <p className="text-xs text-white/45 font-sans">
-                  첫 번째 소원을 적고 내면 아이와 따뜻하게 교감해보세요.
+                  밤하늘 첫 번째 별에 소망을 띄우고 내면 아이와 따뜻하게 교감해보세요.
                 </p>
                 <button
                   onClick={() => setActiveTab('cast')}
                   className="mt-2 px-4 py-2 rounded-xl bg-amber-400/20 hover:bg-amber-400/30 border border-amber-300/40 text-amber-200 text-xs font-bold transition-all cursor-pointer"
                 >
-                  소원 띄우러 가기 &rarr;
+                  별에게 소원 빌러 가기 &rarr;
                 </button>
               </div>
             ) : (
@@ -624,7 +650,8 @@ export function WishingWellModal({
                   >
                     <div className="flex items-center justify-between border-b border-white/[0.1] pb-3">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold px-3 py-0.5 rounded-full bg-amber-400/25 text-amber-200 border border-amber-300/40 font-mono">
+                        <span className="text-xs font-bold px-3 py-0.5 rounded-full bg-amber-400/25 text-amber-200 border border-amber-300/40 font-mono flex items-center gap-1">
+                          <Star size={10} className="text-amber-300 fill-amber-300/40" />
                           #{item.crystalKeyword}
                         </span>
                         <span className="text-xs text-white/60">{item.categoryLabel}</span>
@@ -648,7 +675,7 @@ export function WishingWellModal({
                     <div className="p-4 rounded-xl bg-amber-500/[0.08] border border-amber-300/25 space-y-1.5 backdrop-blur-xl">
                       <div className="text-[10px] font-black text-amber-300 uppercase tracking-wider flex items-center gap-1.5 font-mono">
                         <Sparkles size={11} className="text-amber-300" />
-                        <span>우물의 메아리</span>
+                        <span>별빛의 메아리</span>
                       </div>
                       <p className="text-xs sm:text-sm text-white/90 leading-relaxed font-sans font-medium break-keep">
                         {item.echo}

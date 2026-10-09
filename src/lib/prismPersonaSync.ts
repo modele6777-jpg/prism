@@ -71,7 +71,7 @@ export function extractLatestDialogueContext(activePath: string): PersonaDialogu
               lastUserMessage: typeof lastUser === 'string' ? lastUser : '',
               lastAssistantMessage: typeof lastModel === 'string' ? lastModel.slice(0, 300) : '',
               summary: `오렌지 성찰 기록: "${String(lastUser).slice(0, 60)}"`,
-              dominantEmotionOrTheme: '감정 성찰과 소원의 우물',
+              dominantEmotionOrTheme: '감정 성찰과 별에게 소원빌기',
               capturedAt: now,
             };
           }
@@ -230,7 +230,7 @@ export function synthesizePersonaHandoffPrompt(
 이 직관의 의미를 깊이 풀이해주고, 오늘 내가 현실에서 바로 실천할 수 있는 3단계 행동 가이드를 들려줘.`;
     }
     if (dialogue?.sourceApp === 'orange') {
-      return `루시야, 방금 [오렌지 비밀의 숲]에서 감정을 성찰하고 소원의 우물을 마주하다 건너왔어.
+      return `루시야, 방금 [오렌지 비밀의 숲]에서 감정을 성찰하고 별에게 소원을 빌다 건너왔어.
 • 나눴던 생각: ${lastUser || lastAi}
 이 마음의 여정에 이어서, 내 영혼에 따뜻한 조언과 지혜를 들려줘.`;
     }

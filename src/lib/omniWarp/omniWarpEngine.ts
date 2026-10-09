@@ -68,9 +68,9 @@ export function serializeCurrentView(activePath: string): OmniWarpContext {
       if (tossData) sessionData.artContext = JSON.parse(tossData);
     } catch (_) {}
   } else if (normPath.includes('orange')) {
-    title = '오렌지 성찰 & 소원의 우물';
-    summary = '불안과 감정을 성찰하고 소원의 우물에 소망을 띄우는 비밀의 숲';
-    primarySubject = '내면 성찰과 소원의 우물';
+    title = '오렌지 성찰 & 별에게 소원빌기';
+    summary = '불안과 감정을 성찰하고 밤하늘 별에게 소망을 띄우는 비밀의 숲';
+    primarySubject = '내면 성찰과 별에게 소원빌기';
   } else if (normPath.includes('heal')) {
     title = '호오포노포노 & 아우라 치유';
     summary = '미안·용서·감사·사랑 4마디 감정 정화 의식';
@@ -165,15 +165,15 @@ export interface QuantumDestination {
 export const QUANTUM_BLACKHOLE_DESTINATIONS: QuantumDestination[] = [
   {
     id: 'orange',
-    name: '오렌지 소원의 우물',
-    subName: '감정 성찰과 소원의 우물',
+    name: '오렌지 별에게 소원빌기',
+    subName: '감정 성찰과 별에게 소원빌기',
     path: '/orange',
     icon: '🍊',
     runeSymbol: 'ᛋ',
     runeName: 'Sowilo',
     themeColor: '#f97316',
     accentGlow: 'rgba(249, 115, 22, 0.85)',
-    description: '비밀의 숲 소원의 우물에 마음의 소망을 띄우는 감정 성찰',
+    description: '비밀의 숲 밤하늘 별에 마음의 소망을 띄우는 감정 성찰',
   },
   {
     id: 'trinity',

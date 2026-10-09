@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import {
   Sparkles,
   KeyRound,
   RefreshCw,
-  Droplet,
+  Star,
   Check,
   ArrowRight,
   Send,
@@ -101,14 +101,14 @@ export function WishingWellSecretRecommendations({
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-sm sm:text-base font-bold text-white tracking-tight flex items-center gap-1.5">
-                오늘의 시크릿 x 우물 AI 추천
+                오늘의 시크릿 x 별빛 AI 추천
               </h3>
               <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-400/25 to-orange-400/25 text-amber-300 border border-amber-300/40 font-mono tracking-wider">
                 AI SYNERGY
               </span>
             </div>
             <p className="text-[11px] text-white/60 font-sans mt-0.5 break-keep">
-              시크릿의 확언을 우물의 맑은 수면에 내려놓아 무의식의 저항을 씻고 실현을 가속합니다
+              시크릿의 확언을 밤하늘 별에 띄워 무의식의 저항을 녹이고 현실화를 가속합니다
             </p>
           </div>
         </div>
@@ -248,10 +248,10 @@ export function WishingWellSecretRecommendations({
                   disabled={isCasting}
                   onClick={() => handleDirectCast(rec)}
                   className="py-2.5 px-5 rounded-xl bg-gradient-to-r from-amber-400/90 via-amber-300/90 to-yellow-300/90 hover:from-amber-300 hover:to-yellow-200 text-slate-950 font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-[0_4px_16px_rgba(245,158,11,0.35)] disabled:opacity-40"
-                  title="이 소원을 즉시 우물에 띄웁니다 (퐁당~)"
+                  title="이 소원을 즉시 밤하늘 별에게 띄웁니다 (슈웅~)"
                 >
-                  <Droplet size={14} className="text-slate-950 fill-slate-950" />
-                  <span>우물에 바로 띄우기</span>
+                  <Star size={14} className="text-slate-950 fill-slate-950" />
+                  <span>별에게 바로 띄우기</span>
                 </button>
               </div>
             </motion.div>

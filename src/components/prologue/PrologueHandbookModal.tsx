@@ -65,7 +65,7 @@ export const SANCTUARY_GUIDES = [
     name: '🌲 ORANGE (오렌지)',
     role: '1원칙 딥리즈닝 & 론다 번 시크릿 소원 일기',
     color: 'border-orange-500/30 bg-orange-500/10 text-orange-300',
-    details: '끌어당김의 법칙 3단계(Ask·Believe·Receive)와 소원의 우물, 감성 일지를 통해 현실을 주도적으로 창조합니다.'
+    details: '끌어당김의 법칙 3단계(Ask·Believe·Receive)와 별에게 소원빌기, 감성 일지를 통해 현실을 주도적으로 창조합니다.'
   },
   {
     name: '✨ TRINITY (트리니티)',

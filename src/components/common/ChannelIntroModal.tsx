@@ -71,8 +71,8 @@ export const PRISM_CHANNELS_DETAILS: Record<string, ChannelDetail> = {
   },
   orange: {
     id: 'orange',
-    name: '오렌지 성찰 & 소원의 우물',
-    subName: '감정 성찰과 내면 소망의 현실화',
+    name: '오렌지 성찰 & 별에게 소원빌기',
+    subName: '감정 성찰과 별빛 소망의 현실화',
     badge: '감정 성찰 & 소원 채널',
     emblemEmoji: '🍊',
     runeSymbol: 'ᛋ',
@@ -80,14 +80,14 @@ export const PRISM_CHANNELS_DETAILS: Record<string, ChannelDetail> = {
     runeMeaning: '태양과 내면의 불꽃',
     themeColor: '#f97316',
     accentGlow: 'rgba(249, 115, 22, 0.4)',
-    summary: '복잡한 감정을 차분히 정돈하고, 소원의 우물에 마음 깊은 소망을 띄워 현실로 직조하는 비밀의 숲입니다.',
+    summary: '복잡한 감정을 차분히 정돈하고, 밤하늘 별에게 마음 깊은 소망을 띄워 현실로 직조하는 비밀의 숲입니다.',
     description:
-      '불안과 결핍의 에너지를 풍요와 감사의 확언으로 승화시키는 소원의 우물 시크릿 키트와 100일 감정 필사 트레이닝을 지원합니다.',
+      '불안과 결핍의 에너지를 풍요와 감사의 확언으로 승화시키는 별빛 소원 시크릿 키트와 100일 감정 필사 트레이닝을 지원합니다.',
     highlights: [
       {
-        icon: '📜',
-        title: '소원의 우물 시크릿 키트',
-        desc: '인과 맥락이 100% 일치하는 완성형 확언과 감사의 에너지를 시각화하는 프리미엄 소원 처방',
+        icon: '⭐',
+        title: '별에게 소원빌기 & 시크릿 키트',
+        desc: '인과 맥락이 100% 일치하는 완성형 확언과 감사의 에너지를 시각화하는 프리미엄 별빛 소원 처방',
       },
       {
         icon: '✍️',
@@ -101,7 +101,7 @@ export const PRISM_CHANNELS_DETAILS: Record<string, ChannelDetail> = {
       },
     ],
     speechText:
-      '오렌지 성찰과 소원의 우물 채널은 감정을 정리하고 내면의 소망을 완성형 확언으로 현실화하는 비밀의 숲입니다. 소원의 우물과 100일 필사를 통해 마음에 풍요로운 온기를 채워보세요.',
+      '오렌지 성찰과 별에게 소원빌기 채널은 감정을 정리하고 내면의 소망을 완성형 확언으로 현실화하는 비밀의 숲입니다. 별빛 소원과 100일 필사를 통해 마음에 풍요로운 온기를 채워보세요.',
   },
   trinity: {
     id: 'trinity',

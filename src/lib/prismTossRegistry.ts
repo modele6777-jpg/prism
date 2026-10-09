@@ -42,11 +42,11 @@ export const TOSS_DESTINATIONS: Record<string, TossDestination> = {
   },
   orange: {
     id: 'orange',
-    name: '오렌지 성찰 & 소원의 우물',
-    subName: '감정 성찰과 소원의 우물',
+    name: '오렌지 성찰 & 별에게 소원빌기',
+    subName: '감정 성찰과 별에게 소원빌기',
     icon: '🍊',
     path: '/orange',
-    description: '불안과 감정을 성찰하고 소원의 우물에 소망을 띄우는 비밀의 숲',
+    description: '불안과 감정을 성찰하고 밤하늘 별에게 소망을 띄우는 비밀의 숲',
     themeColor: '#fb923c',
   },
   heal: {

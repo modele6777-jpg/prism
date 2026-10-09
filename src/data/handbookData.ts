@@ -672,7 +672,7 @@ export const HANDBOOK_DATA: Record<HandbookChannel, HandbookUniverse> = {
           {
             title: '🌲 ORANGE (오렌지)',
             subtitle: '1원칙 딥리즈닝 & 론다 번 시크릿 소원 일기',
-            details: '끌어당김의 법칙 3단계(Ask·Believe·Receive)와 소원의 우물, 감성 일지를 통해 현실을 주도적으로 창조합니다.',
+            details: '끌어당김의 법칙 3단계(Ask·Believe·Receive)와 별에게 소원빌기, 감성 일지를 통해 현실을 주도적으로 창조합니다.',
           },
           {
             title: '✨ TRINITY (트리니티)',
@@ -791,7 +791,7 @@ export const HANDBOOK_DATA: Record<HandbookChannel, HandbookUniverse> = {
         roman: 'Ⅱ',
         title: '발자취 미러 & 영구 보존',
         shortLabel: '발자취 미러',
-        description: '오늘 기록된 타로 리딩, 소원의 우물, 생체 명상, 비밀 라디오 기록을 안전하게 보관합니다.',
+        description: '오늘 기록된 타로 리딩, 별빛 소원, 생체 명상, 비밀 라디오 기록을 안전하게 보관합니다.',
         narration: '발자취 미러. 당신이 걸어온 모든 순간은 영혼의 성장을 증명하는 귀중한 역사입니다.',
         sections: [
           {

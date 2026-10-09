@@ -1300,7 +1300,7 @@ export default function OrangeApp() {
             <div 
               className="relative w-11 h-11 rounded-full border border-white/10 flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.05)] group backdrop-blur-md cursor-pointer transition-transform active:scale-95 shrink-0" 
               onClick={() => openChannelIntro('orange')}
-              title="오렌지 성찰 & 소원의 우물 채널 소개 (클릭)"
+              title="오렌지 성찰 & 별에게 소원빌기 채널 소개 (클릭)"
             >
                <motion.div 
                  animate={{ rotate: 360 }} 
@@ -1327,7 +1327,7 @@ export default function OrangeApp() {
       >
         {[
           { id: 'secret', icon: KeyRound, label: 'Secret' },
-          { id: 'wishingWell', icon: Waves, label: 'WELL' },
+          { id: 'wishingWell', icon: Star, label: 'STAR' },
           { id: 'synergy', icon: Sparkles, label: 'CATALYST' }
         ].map(item => {
           const isActive = activeMode === item.id;

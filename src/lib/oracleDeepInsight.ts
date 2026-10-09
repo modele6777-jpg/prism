@@ -126,7 +126,7 @@ export function sendCharmCanvasToLucy(
 }
 
 /**
- * 6. ORANGE: 소원의 우물 (Wishing Well) 결과 전송
+ * 6. ORANGE: 별에게 소원빌기 (Wish Upon a Star) 결과 전송
  */
 export function sendWishingWellToLucy(
   wellResult: { categoryLabel?: string; wish?: string; echo?: string; innerChildGuidance?: string; crystalKeyword?: string; [key: string]: any },
@@ -135,13 +135,13 @@ export function sendWishingWellToLucy(
 ) {
   const catLabel = wellResult.categoryLabel || '소망';
   const wishText = wellResult.wish || '내면의 평화와 안식';
-  const echoText = wellResult.echo || '우주의 응답';
-  const crystalKey = wellResult.crystalKeyword || '평온';
-  const deepContext = `[🌲 오렌지 소원의 우물(Wishing Well) 연계]\n- 소원 영역: ${catLabel}\n- 소망 내용: "${wishText}"\n- 우물의 메아리: "${echoText}"\n- 내면 아이 가이드: "${wellResult.innerChildGuidance || ''}"\n- 크리스탈 키워드: #${crystalKey}`;
+  const echoText = wellResult.echo || '별빛의 응답';
+  const crystalKey = wellResult.crystalKeyword || '별빛의 평온';
+  const deepContext = `[⭐ 오렌지 별에게 소원빌기(Wish Upon a Star) 연계]\n- 소원 영역: ${catLabel}\n- 소망 내용: "${wishText}"\n- 별빛의 메아리: "${echoText}"\n- 내면 아이 가이드: "${wellResult.innerChildGuidance || ''}"\n- 수호석 키워드: #${crystalKey}`;
 
   openLucyChat('orange');
   return sendUnifiedMessage(
-    `소원의 우물에 띄운 "${wishText}" 소망과 우물의 메아리에 대해 루시와 심층 상담을 나누고 싶어.\n\n[우물의 메아리]\n"${echoText}"\n${wellResult.innerChildGuidance ? `\n내면 아이 가이드: "${wellResult.innerChildGuidance}"\n` : ''}\n이 소원이 현실로 피어날 수 있도록 내면의 의심과 불안을 녹이고 확신을 채워주는 조언을 해줘.`,
+    `별에게 띄운 "${wishText}" 소망과 별빛의 화답에 대해 루시와 심층 상담을 나누고 싶어.\n\n[별빛의 메아리]\n"${echoText}"\n${wellResult.innerChildGuidance ? `\n내면 아이 가이드: "${wellResult.innerChildGuidance}"\n` : ''}\n이 소원이 현실로 피어날 수 있도록 내면의 의심과 저항을 녹이고 확신을 채워주는 조언을 해줘.`,
     'orange',
     undefined,
     { force: true, oracleContext: deepContext }

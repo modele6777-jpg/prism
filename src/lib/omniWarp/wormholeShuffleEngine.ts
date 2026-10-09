@@ -91,17 +91,17 @@ export const CORE_WORMHOLE_DESTINATIONS: WormholeDestinationItem[] = [
     isActive: true,
   },
 
-  // 2. 오렌지 성찰 & 소원의 우물 (Orange)
+  // 2. 오렌지 성찰 & 별에게 소원빌기 (Orange)
   {
     id: 'orange-wishingWell',
-    name: '소원의 우물',
-    subName: '무의식의 소망을 띄우는 신비한 우물',
+    name: '별에게 소원빌기',
+    subName: '밤하늘 별에 소망을 띄우는 신비한 별빛',
     path: '/orange?tab=wishingWell',
-    icon: '🪙',
+    icon: '⭐',
     runeSymbol: 'ᚷ',
     runeName: 'Gebo',
     runeMeaning: '선물과 소망의 결실',
-    description: '마음 깊은 곳의 갈망과 소원을 신비로운 우물에 띄워 우주로 전송합니다.',
+    description: '마음 깊은 곳의 갈망과 소원을 밤하늘 별에 띄워 우주로 전송합니다.',
     themeColor: '#ea580c',
     accentGlow: 'rgba(234, 88, 12, 0.95)',
     channelId: 'orange',

@@ -41,7 +41,7 @@ const BOOK_THEMES: Record<string, { icon: string; subtitle: string; bgBadge: str
   },
   '성찰의 서': {
     icon: '🍊',
-    subtitle: '감정 연금술 · 소원의 우물 · 제1원칙 전략 성찰',
+    subtitle: '감정 연금술 · 별에게 소원빌기 · 제1원칙 전략 성찰',
     bgBadge: 'bg-amber-500/15',
     textBadge: 'text-amber-900',
     borderColor: 'border-amber-300/70',

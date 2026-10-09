@@ -127,9 +127,11 @@
       inset: -16px;
       border-radius: 50%;
       border: 1.5px solid rgba(224, 169, 109, 0.45);
+      border-top-color: rgba(251, 191, 36, 0.72);
+      border-bottom-color: rgba(162, 89, 59, 0.35);
       background: radial-gradient(circle, rgba(224, 169, 109, 0.12) 0%, rgba(162, 89, 59, 0.03) 70%, transparent 100%);
       opacity: 0.25;
-      transform: scale(0.9);
+      transform: scale(0.9) rotate(0deg);
       transition: opacity 1.2s ease, transform 1.2s cubic-bezier(0.25, 1, 0.5, 1);
       filter: blur(0.5px);
       will-change: transform, opacity, box-shadow;
@@ -138,16 +140,17 @@
 
     .balloon-aura-ring.ring-2 {
       inset: -36px;
-      border-color: rgba(224, 169, 109, 0.28);
-      border-width: 1px;
+      border: 1px solid rgba(224, 169, 109, 0.28);
+      border-left-color: rgba(245, 158, 11, 0.58);
+      border-right-color: rgba(251, 191, 36, 0.36);
       opacity: 0.15;
     }
 
     .balloon-aura-ring.ring-3 {
       inset: -62px;
-      border-color: rgba(217, 119, 6, 0.18);
-      border-width: 1px;
-      border-style: dashed;
+      border: 1px dashed rgba(217, 119, 6, 0.22);
+      border-top-color: rgba(254, 240, 138, 0.48);
+      border-bottom-color: rgba(224, 169, 109, 0.18);
       opacity: 0.1;
     }
 
@@ -286,37 +289,37 @@
 
     @keyframes auraInflate1 {
       0% {
-        transform: scale(0.85) translateY(4px);
+        transform: scale(0.85) translateY(4px) rotate(0deg);
         opacity: 0.18;
         box-shadow: 0 0 10px rgba(224, 169, 109, 0.12);
       }
       15% {
-        transform: scale(1.02) translateY(2px);
+        transform: scale(1.02) translateY(2px) rotate(4deg);
         opacity: 0.28;
         box-shadow: 0 0 16px rgba(224, 169, 109, 0.2);
       }
       32% {
-        transform: scale(1.19) translateY(-1px);
+        transform: scale(1.19) translateY(-1px) rotate(11deg);
         opacity: 0.38;
         box-shadow: 0 0 24px rgba(224, 169, 109, 0.3);
       }
       50% {
-        transform: scale(1.36) translateY(-3.5px);
+        transform: scale(1.36) translateY(-3.5px) rotate(19deg);
         opacity: 0.48;
         box-shadow: 0 0 30px rgba(245, 158, 11, 0.38);
       }
       68% {
-        transform: scale(1.50) translateY(-6px);
+        transform: scale(1.50) translateY(-6px) rotate(27deg);
         opacity: 0.58;
         box-shadow: 0 0 38px rgba(245, 158, 11, 0.45);
       }
       84% {
-        transform: scale(1.60) translateY(-7.5px);
+        transform: scale(1.60) translateY(-7.5px) rotate(33deg);
         opacity: 0.64;
         box-shadow: 0 0 44px rgba(245, 158, 11, 0.5);
       }
       100% {
-        transform: scale(1.66) translateY(-8px);
+        transform: scale(1.66) translateY(-8px) rotate(36deg);
         opacity: 0.68;
         box-shadow: 0 0 48px rgba(245, 158, 11, 0.55);
       }
@@ -324,37 +327,37 @@
 
     @keyframes auraInflate2 {
       0% {
-        transform: scale(0.88) translateY(4px);
+        transform: scale(0.88) translateY(4px) rotate(0deg);
         opacity: 0.10;
         box-shadow: 0 0 12px rgba(224, 169, 109, 0.08);
       }
       15% {
-        transform: scale(1.05) translateY(2px);
+        transform: scale(1.05) translateY(2px) rotate(-6deg);
         opacity: 0.16;
         box-shadow: 0 0 18px rgba(224, 169, 109, 0.15);
       }
       32% {
-        transform: scale(1.26) translateY(-1px);
+        transform: scale(1.26) translateY(-1px) rotate(-16deg);
         opacity: 0.24;
         box-shadow: 0 0 26px rgba(224, 169, 109, 0.22);
       }
       50% {
-        transform: scale(1.48) translateY(-3.5px);
+        transform: scale(1.48) translateY(-3.5px) rotate(-28deg);
         opacity: 0.33;
         box-shadow: 0 0 34px rgba(245, 158, 11, 0.3);
       }
       68% {
-        transform: scale(1.66) translateY(-6px);
+        transform: scale(1.66) translateY(-6px) rotate(-38deg);
         opacity: 0.39;
         box-shadow: 0 0 42px rgba(245, 158, 11, 0.36);
       }
       84% {
-        transform: scale(1.78) translateY(-7.5px);
+        transform: scale(1.78) translateY(-7.5px) rotate(-45deg);
         opacity: 0.43;
         box-shadow: 0 0 48px rgba(245, 158, 11, 0.4);
       }
       100% {
-        transform: scale(1.86) translateY(-8px);
+        transform: scale(1.86) translateY(-8px) rotate(-48deg);
         opacity: 0.46;
         box-shadow: 0 0 52px rgba(245, 158, 11, 0.42);
       }
@@ -362,37 +365,37 @@
 
     @keyframes auraInflate3 {
       0% {
-        transform: scale(0.92) translateY(4px);
+        transform: scale(0.92) translateY(4px) rotate(0deg);
         opacity: 0.05;
         box-shadow: 0 0 14px rgba(217, 119, 6, 0.04);
       }
       15% {
-        transform: scale(1.10) translateY(2px);
+        transform: scale(1.10) translateY(2px) rotate(3deg);
         opacity: 0.10;
         box-shadow: 0 0 20px rgba(217, 119, 6, 0.08);
       }
       32% {
-        transform: scale(1.34) translateY(-1px);
+        transform: scale(1.34) translateY(-1px) rotate(8deg);
         opacity: 0.16;
         box-shadow: 0 0 28px rgba(217, 119, 6, 0.14);
       }
       50% {
-        transform: scale(1.60) translateY(-3.5px);
+        transform: scale(1.60) translateY(-3.5px) rotate(14deg);
         opacity: 0.22;
         box-shadow: 0 0 36px rgba(217, 119, 6, 0.2);
       }
       68% {
-        transform: scale(1.82) translateY(-6px);
+        transform: scale(1.82) translateY(-6px) rotate(20deg);
         opacity: 0.26;
         box-shadow: 0 0 44px rgba(217, 119, 6, 0.24);
       }
       84% {
-        transform: scale(1.98) translateY(-7.5px);
+        transform: scale(1.98) translateY(-7.5px) rotate(25deg);
         opacity: 0.29;
         box-shadow: 0 0 50px rgba(217, 119, 6, 0.28);
       }
       100% {
-        transform: scale(2.08) translateY(-8px);
+        transform: scale(2.08) translateY(-8px) rotate(28deg);
         opacity: 0.32;
         box-shadow: 0 0 56px rgba(217, 119, 6, 0.3);
       }
@@ -427,12 +430,12 @@
 
     @keyframes auraHoldPulse1 {
       0% {
-        transform: scale(1.66) translateY(-8px);
+        transform: scale(1.66) translateY(-8px) rotate(36deg);
         opacity: 0.68;
         box-shadow: 0 0 48px rgba(245, 158, 11, 0.55);
       }
       100% {
-        transform: scale(1.72) translateY(-11px);
+        transform: scale(1.72) translateY(-11px) rotate(42deg);
         opacity: 0.82;
         box-shadow: 0 0 60px rgba(245, 158, 11, 0.68);
       }
@@ -440,12 +443,12 @@
 
     @keyframes auraHoldPulse2 {
       0% {
-        transform: scale(1.86) translateY(-8px);
+        transform: scale(1.86) translateY(-8px) rotate(-48deg);
         opacity: 0.46;
         box-shadow: 0 0 52px rgba(245, 158, 11, 0.42);
       }
       100% {
-        transform: scale(1.92) translateY(-11px);
+        transform: scale(1.92) translateY(-11px) rotate(-55deg);
         opacity: 0.56;
         box-shadow: 0 0 64px rgba(245, 158, 11, 0.5);
       }
@@ -453,12 +456,12 @@
 
     @keyframes auraHoldPulse3 {
       0% {
-        transform: scale(2.08) translateY(-8px);
+        transform: scale(2.08) translateY(-8px) rotate(28deg);
         opacity: 0.32;
         box-shadow: 0 0 56px rgba(217, 119, 6, 0.3);
       }
       100% {
-        transform: scale(2.15) translateY(-11px);
+        transform: scale(2.15) translateY(-11px) rotate(34deg);
         opacity: 0.40;
         box-shadow: 0 0 68px rgba(217, 119, 6, 0.38);
       }
@@ -509,27 +512,27 @@
 
     @keyframes auraDeflate1 {
       0% {
-        transform: scale(1.66) translateY(-8px);
+        transform: scale(1.66) translateY(-8px) rotate(36deg);
         opacity: 0.68;
         box-shadow: 0 0 48px rgba(245, 158, 11, 0.55);
       }
       20% {
-        transform: scale(1.48) translateY(-6px);
+        transform: scale(1.48) translateY(-6px) rotate(28deg);
         opacity: 0.54;
         box-shadow: 0 0 34px rgba(162, 89, 59, 0.38);
       }
       45% {
-        transform: scale(1.28) translateY(-3px);
+        transform: scale(1.28) translateY(-3px) rotate(18deg);
         opacity: 0.42;
         box-shadow: 0 0 25px rgba(162, 89, 59, 0.28);
       }
       70% {
-        transform: scale(1.06) translateY(0px);
+        transform: scale(1.06) translateY(0px) rotate(8deg);
         opacity: 0.30;
         box-shadow: 0 0 16px rgba(224, 169, 109, 0.2);
       }
       100% {
-        transform: scale(0.85) translateY(4px);
+        transform: scale(0.85) translateY(4px) rotate(0deg);
         opacity: 0.18;
         box-shadow: 0 0 8px rgba(224, 169, 109, 0.1);
       }
@@ -537,27 +540,27 @@
 
     @keyframes auraDeflate2 {
       0% {
-        transform: scale(1.86) translateY(-8px);
+        transform: scale(1.86) translateY(-8px) rotate(-48deg);
         opacity: 0.46;
         box-shadow: 0 0 52px rgba(245, 158, 11, 0.42);
       }
       20% {
-        transform: scale(1.64) translateY(-6px);
+        transform: scale(1.64) translateY(-6px) rotate(-38deg);
         opacity: 0.36;
         box-shadow: 0 0 38px rgba(162, 89, 59, 0.3);
       }
       45% {
-        transform: scale(1.38) translateY(-3px);
+        transform: scale(1.38) translateY(-3px) rotate(-24deg);
         opacity: 0.26;
         box-shadow: 0 0 28px rgba(162, 89, 59, 0.22);
       }
       70% {
-        transform: scale(1.12) translateY(0px);
+        transform: scale(1.12) translateY(0px) rotate(-11deg);
         opacity: 0.18;
         box-shadow: 0 0 18px rgba(224, 169, 109, 0.15);
       }
       100% {
-        transform: scale(0.88) translateY(4px);
+        transform: scale(0.88) translateY(4px) rotate(0deg);
         opacity: 0.10;
         box-shadow: 0 0 10px rgba(224, 169, 109, 0.05);
       }
@@ -565,27 +568,27 @@
 
     @keyframes auraDeflate3 {
       0% {
-        transform: scale(2.08) translateY(-8px);
+        transform: scale(2.08) translateY(-8px) rotate(28deg);
         opacity: 0.32;
         box-shadow: 0 0 56px rgba(217, 119, 6, 0.3);
       }
       20% {
-        transform: scale(1.80) translateY(-6px);
+        transform: scale(1.80) translateY(-6px) rotate(22deg);
         opacity: 0.24;
         box-shadow: 0 0 42px rgba(162, 89, 59, 0.24);
       }
       45% {
-        transform: scale(1.50) translateY(-3px);
+        transform: scale(1.50) translateY(-3px) rotate(14deg);
         opacity: 0.16;
         box-shadow: 0 0 30px rgba(162, 89, 59, 0.18);
       }
       70% {
-        transform: scale(1.20) translateY(0px);
+        transform: scale(1.20) translateY(0px) rotate(6deg);
         opacity: 0.10;
         box-shadow: 0 0 20px rgba(217, 119, 6, 0.1);
       }
       100% {
-        transform: scale(0.92) translateY(4px);
+        transform: scale(0.92) translateY(4px) rotate(0deg);
         opacity: 0.05;
         box-shadow: 0 0 12px rgba(217, 119, 6, 0.03);
       }
@@ -604,36 +607,36 @@
 
     @keyframes auraIdlePulse1 {
       0% {
-        transform: scale(0.9) translateY(0);
+        transform: scale(0.9) translateY(0) rotate(0deg);
         opacity: 0.22;
         box-shadow: 0 0 10px rgba(224, 169, 109, 0.15);
       }
       100% {
-        transform: scale(0.96) translateY(-3px);
+        transform: scale(0.96) translateY(-3px) rotate(4deg);
         opacity: 0.32;
         box-shadow: 0 0 18px rgba(224, 169, 109, 0.25);
       }
     }
     @keyframes auraIdlePulse2 {
       0% {
-        transform: scale(0.92) translateY(0);
+        transform: scale(0.92) translateY(0) rotate(0deg);
         opacity: 0.14;
         box-shadow: 0 0 12px rgba(224, 169, 109, 0.1);
       }
       100% {
-        transform: scale(0.98) translateY(-3px);
+        transform: scale(0.98) translateY(-3px) rotate(-5deg);
         opacity: 0.20;
         box-shadow: 0 0 20px rgba(224, 169, 109, 0.18);
       }
     }
     @keyframes auraIdlePulse3 {
       0% {
-        transform: scale(0.94) translateY(0);
+        transform: scale(0.94) translateY(0) rotate(0deg);
         opacity: 0.08;
         box-shadow: 0 0 14px rgba(217, 119, 6, 0.05);
       }
       100% {
-        transform: scale(1.01) translateY(-3px);
+        transform: scale(1.01) translateY(-3px) rotate(3deg);
         opacity: 0.14;
         box-shadow: 0 0 22px rgba(217, 119, 6, 0.12);
       }
@@ -1348,6 +1351,13 @@
         <!-- 3단계: 처방전 영수증 발급 -->
         <div class="rx-stage-view hidden" id="rx-stage-3">
           <div class="rx-receipt-card" id="rx-receipt-printable">
+            <!-- 인쇄 시 상단 절취선 가이드 (출력 시 깔끔하게 잘리도록 표시) -->
+            <div class="rx-cut-guide rx-cut-guide-top print-only">
+              <span class="rx-cut-icon">✂</span>
+              <span class="rx-cut-text">절취선 (Cut along the dashed line)</span>
+              <span class="rx-cut-icon">✂</span>
+            </div>
+
             <div class="rx-receipt-header">
               <div class="rx-receipt-badge">DR. Z's CLINICAL RX</div>
               <h2>오늘의 3분 마음 처방전</h2>
@@ -1356,29 +1366,50 @@
 
             <div class="rx-receipt-divider">--------------------------------</div>
 
-            <div class="rx-receipt-row">
-              <span class="rx-label">처방 대상:</span>
-              <span class="rx-val">지금 평온이 필요한 나</span>
-            </div>
-            <div class="rx-receipt-row">
-              <span class="rx-label">오늘의 상태:</span>
-              <span class="rx-val" id="rx-receipt-worry-label">긴장 및 불안 완화</span>
-            </div>
-
-            <div class="rx-receipt-box">
-              <div class="rx-rec-badge-mini" id="rx-rec-badge">1장 · 인지적 탈융합</div>
-              <h4 id="rx-rec-title">연습 1. 걱정 그리기 (18쪽)</h4>
-              <p id="rx-rec-desc">머릿속 혼돈에 형태와 무게를 부여해 나와 분리하는 연습입니다.</p>
+            <!-- 섹션 1: 처방 대상 -->
+            <div class="rx-receipt-section rx-section-patient">
+              <div class="rx-receipt-row">
+                <span class="rx-label">처방 대상:</span>
+                <span class="rx-val">지금 평온이 필요한 나</span>
+              </div>
             </div>
 
-            <div class="rx-receipt-quote">
-              <span class="quote-mark">“</span>
-              <p id="rx-rec-quote">괜찮지 않아도 괜찮습니다. 생각은 통제할 수 없지만, 그 생각을 대하는 나의 태도는 선택할 수 있습니다.</p>
+            <!-- 섹션 2: 상태 -->
+            <div class="rx-receipt-section rx-section-status">
+              <div class="rx-receipt-row">
+                <span class="rx-label">오늘의 상태:</span>
+                <span class="rx-val" id="rx-receipt-worry-label">긴장 및 불안 완화</span>
+              </div>
+            </div>
+
+            <!-- 섹션 3: 상세 처방 -->
+            <div class="rx-receipt-section rx-section-detail">
+              <div class="rx-receipt-row rx-section-detail-header">
+                <span class="rx-label">상세 처방:</span>
+                <span class="rx-section-badge">맞춤 행동 요법</span>
+              </div>
+              <div class="rx-receipt-box">
+                <div class="rx-rec-badge-mini" id="rx-rec-badge">1장 · 인지적 탈융합</div>
+                <h4 id="rx-rec-title">연습 1. 걱정 그리기 (18쪽)</h4>
+                <p id="rx-rec-desc">머릿속 혼돈에 형태와 무게를 부여해 나와 분리하는 연습입니다.</p>
+              </div>
+
+              <div class="rx-receipt-quote">
+                <span class="quote-mark">“</span>
+                <p id="rx-rec-quote">괜찮지 않아도 괜찮습니다. 생각은 통제할 수 없지만, 그 생각을 대하는 나의 태도는 선택할 수 있습니다.</p>
+              </div>
             </div>
 
             <div class="rx-receipt-footer">
               <p>도서 《왜 나는 불안할까》 제이미 저커먼 박사 지식 연동</p>
               <div class="rx-receipt-barcode">||| | |||| | ||| ||||| || | |||</div>
+            </div>
+
+            <!-- 인쇄 시 하단 절취선 가이드 (출력 시 깔끔하게 잘리도록 표시) -->
+            <div class="rx-cut-guide rx-cut-guide-bottom print-only">
+              <span class="rx-cut-icon">✂</span>
+              <span class="rx-cut-text">절취선 (Cut along the dashed line)</span>
+              <span class="rx-cut-icon">✂</span>
             </div>
           </div>
 
@@ -1388,6 +1419,9 @@
             </button>
             <button id="btn-rx-practice-now" class="btn-sage">
               <span>🎯 처방된 연습 지금 실천하기</span>
+            </button>
+            <button id="btn-rx-print" class="btn-outline-sage" type="button" title="처방전 인쇄/출력">
+              <span>🖨️ 처방전 인쇄</span>
             </button>
           </div>
         </div>

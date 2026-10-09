@@ -656,17 +656,17 @@ export function OrangeSynergySection() {
         </div>
       </div>
 
-      {/* Wishing Well Past History Bar (소원의 우물 과거 소망 불러오기) */}
+      {/* Star Wishing Past History Bar (별에게 빌었던 과거 소망 불러오기) */}
       {wishesHistory.length > 0 && (
         <div className="p-4 sm:p-5 rounded-[24px] bg-gradient-to-r from-amber-950/30 via-zinc-950/40 to-orange-950/30 border border-amber-400/25 space-y-3 backdrop-blur-xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Compass size={15} className="text-amber-400" />
               <span className="text-xs font-bold text-amber-200 font-sans">
-                소원의 우물에 담았던 소망 불러오기
+                별에게 빌었던 소망 불러오기 (별의 기억)
               </span>
               <span className="text-[10px] text-amber-300 font-mono font-bold bg-amber-500/15 border border-amber-400/25 px-2 py-0.5 rounded-full">
-                과거 소원 {wishesHistory.length}건
+                별빛 소원 {wishesHistory.length}건
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -828,7 +828,7 @@ export function OrangeSynergySection() {
               className="text-[11px] text-orange-300 hover:text-orange-200 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 px-3 py-1.5 rounded-full flex items-center gap-1.5 transition-all cursor-pointer mt-2 break-keep"
             >
               <Sparkles size={12} className="text-orange-400 animate-pulse shrink-0" />
-              <span className="text-left break-keep break-words">우물 최근 소원 적용: "{recentWishingWellWish}"</span>
+              <span className="text-left break-keep break-words">별에게 빌었던 최근 소원 적용: "{recentWishingWellWish}"</span>
             </button>
           )}
         </div>
@@ -927,7 +927,7 @@ export function OrangeSynergySection() {
           {isLoading ? (
             <>
               <RefreshCw size={18} className="animate-spin text-black" />
-              <span>시크릿 & 소원의 우물 양자장 가속 중...</span>
+              <span>시크릿 & 별빛 소원 양자장 가속 중...</span>
             </>
           ) : (
             <>

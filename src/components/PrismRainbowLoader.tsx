@@ -10,7 +10,7 @@ export type PrismRainbowLoaderProps = LucKeyCosmicLoaderProps;
 export function PrismRainbowLoader({
   fullScreen = false,
   message = '행운과 해답의 문을 여는 중...',
-  subMessage = 'LUCKEY · SOUL SANCTUARY & CELESTIAL KEY',
+  subMessage = 'LUCKEY · SOUL SANCTUARY',
   compact = false,
 }: PrismRainbowLoaderProps) {
   return (

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Triangle } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
+import { LucKeyLogoText } from './LucKeyLogoText';
 export function LoginScreen() {
   const { signInWithGoogle, signInAsDeveloper, signInAsPairedSession, importDevicePairingCode } = useApp();
   const [loading, setLoading] = useState(false);
@@ -79,28 +80,34 @@ export function LoginScreen() {
       >
         {/* Logo area */}
         <div className="flex flex-col items-center gap-4">
-          <div className="relative w-28 h-28 rounded-full border-[1px] border-white/10 flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.1)] group mx-auto backdrop-blur-md">
-            <div className="absolute inset-0 bg-gradient-to-tr from-[#ff6b6b] via-[#feca57] via-[#1dd1a1] via-[#54a0ff] to-[#5f27cd] opacity-30 mix-blend-screen rounded-full" />
-            <motion.div animate={{ rotate: 360 }} transition={{ duration: 30, repeat: Number.POSITIVE_INFINITY, ease: "linear" }} className="absolute inset-0 rounded-full border border-dashed border-white/30" />
-            <div className="absolute inset-[6px] rounded-full border border-white/5 bg-white/5 flex items-center justify-center">
-              <Triangle 
-                className="relative z-10 text-white drop-shadow-[0_0_12px_rgba(255,255,255,1)] transition-transform group-hover:scale-110 duration-500 animate-pulse -translate-y-[2px]" 
-                fill="transparent"
-                strokeWidth={2} 
-                size={40} 
-              />
+          <div className="relative w-24 h-24 rounded-3xl border border-white/10 flex items-center justify-center shadow-[0_0_30px_rgba(52,211,153,0.15)] group mx-auto backdrop-blur-md bg-zinc-900/60">
+            <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500/20 via-amber-500/15 to-cyan-500/20 opacity-40 mix-blend-screen rounded-3xl" />
+            <motion.div animate={{ rotate: 360 }} transition={{ duration: 25, repeat: Number.POSITIVE_INFINITY, ease: "linear" }} className="absolute -inset-2 rounded-full border border-dashed border-emerald-400/20" />
+            <div className="relative z-10 flex items-center justify-center">
+              <svg viewBox="0 0 32 32" fill="none" className="w-12 h-12" xmlns="http://www.w3.org/2000/svg">
+                <g stroke="#34d399" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M16 16 C16 11, 12 9, 12 12 C12 15, 16 16, 16 16" fill="#34d399" fillOpacity="0.25" />
+                  <path d="M16 16 C21 16, 23 12, 20 12 C17 12, 16 16, 16 16" fill="#34d399" fillOpacity="0.25" />
+                  <path d="M16 16 C16 21, 20 23, 20 20 C20 17, 16 16, 16 16" fill="#34d399" fillOpacity="0.25" />
+                  <path d="M16 16 C11 16, 9 20, 12 20 C15 20, 16 16, 16 16" fill="#34d399" fillOpacity="0.25" />
+                </g>
+                <g stroke="#fcd34d" strokeWidth="1.6" strokeLinecap="round">
+                  <circle cx="16" cy="16" r="2.5" fill="#fde047" stroke="none" />
+                  <path d="M16 18.5 L16 25" />
+                  <path d="M16 23 L18.5 23" />
+                  <path d="M16 25 L18 25" />
+                </g>
+              </svg>
             </div>
           </div>
 
-          <div className="text-center mt-4">
-            <h1 className="font-display text-4xl tracking-[0.2em] mb-1 text-white">
-               PRISM
-            </h1>
+          <div className="text-center mt-2">
+            <LucKeyLogoText size="lg" />
           </div>
 
-          <p className="text-center text-sm text-white/50 leading-relaxed max-w-xs mt-2 mb-10">
-            다차원적 페르소나와 영혼의 분석<br />
-            하나로 연결된 거대한 기억의 궤도
+          <p className="text-center text-sm text-white/50 leading-relaxed max-w-xs mt-1 mb-8">
+            행운(Luck)과 지혜의 해답(Key)을 여는<br />
+            당신만의 소울 안식처 &amp; AI 페르소나 유니버스
           </p>
         </div>
 
@@ -202,7 +209,7 @@ export function LoginScreen() {
         </div>
 
         <p className="text-xs text-white/25 text-center flex items-center justify-center gap-1">
-          PRISM에 오신 것을 환영합니다, 제제 <Triangle size={11} className="inline-block align-middle ml-1 -translate-y-[1px]" />
+          LucKey 유니버스에 오신 것을 환영합니다 🍀
         </p>
       </motion.div>
     </div>

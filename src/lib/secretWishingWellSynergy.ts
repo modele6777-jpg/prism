@@ -285,7 +285,7 @@ export async function fetchAiSecretWellRecommendations(
   const fallback = generateDeterministicSecretWellRecommendations(ctx, seed);
 
   try {
-    const prompt = `당신은 치유와 성찰의 오렌지(ORANGE) 유니버스에서 [오늘의 시크릿(The Secret)]과 [소원의 우물(Wishing Well)]의 에너지를 잇는 '시크릿-우물 AI 공명 안내자'입니다.
+    const prompt = `당신은 치유와 성찰의 오렌지(ORANGE) 유니버스에서 [오늘의 시크릿(The Secret)]과 [별에게 소원빌기(Wish Upon a Star)]의 에너지를 잇는 '시크릿-별빛 AI 공명 안내자'입니다.
 
 사용자의 오늘 시크릿 상태:
 - 시크릿 테마: ${ctx.themeKo} (${ctx.theme})
@@ -293,13 +293,13 @@ export async function fetchAiSecretWellRecommendations(
 - 사용자 소원/염원: "${ctx.effectiveWish}"
 - 시크릿 감정 닻: "${ctx.feelingAnchor}"
 
-소원의 우물은 시크릿의 확언을 현실로 빚어내기 위해 '마음의 집착을 내려놓고 정화하며(Letting Go)', '내면 아이를 사랑하고', '잠재의식 깊은 곳에 씨앗을 심는' 성소입니다.
-위 시크릿과 공명하는 3가지 서로 다른 차원의 맞춤 우물 소망 문구를 JSON 형식으로 작성해 주세요.
+별에게 소원빌기는 시크릿의 확언을 밤하늘 별에 띄워 '조급함과 집착을 내려놓고 은하수에 맡기며(Letting Go)', '내면 아이를 별빛처럼 사랑하고', '잠재의식에 찬란한 별빛 씨앗을 심는' 성소입니다.
+위 시크릿과 공명하는 3가지 서로 다른 차원의 맞춤 별빛 소망 문구를 JSON 형식으로 작성해 주세요.
 
 규칙:
-1. wish1 (정화 & 저항 방출): category는 "inner_peace". 시크릿 소원에 대한 조급함, 결핍, 불안을 우물에 흘려보내는 문장 (60~85자).
-2. wish2 (자격 & 내면아이 신뢰): category는 "self_love". 이 시크릿 축복을 누릴 자격이 충분함을 내면 아이와 확신하는 문장 (60~85자).
-3. wish3 (씨앗 심기 & 현실화): category는 "dream" 또는 "courage" 또는 "relationship". 시크릿 주파수를 우물에 각인하여 현실 결실을 맺는 문장 (60~85자).
+1. wish1 (정화 & 저항 방출): category는 "inner_peace". 시크릿 소원에 대한 조급함, 결핍, 불안을 밤하늘에 띄워 보내는 문장 (60~85자).
+2. wish2 (자격 & 내면아이 신뢰): category는 "self_love". 이 시크릿 축복을 누릴 자격이 충분함을 밤하늘 별빛과 확신하는 문장 (60~85자).
+3. wish3 (씨앗 심기 & 현실화): category는 "dream" 또는 "courage" 또는 "relationship". 시크릿 주파수를 별빛에 각인하여 현실 결실을 맺는 문장 (60~85자).
 4. 각 항목별로 synergyReason(왜 이 소망이 오늘의 시크릿과 시너지를 내는지 1문장, 30~50자)을 작성하세요.
 
 반드시 마크다운 없이 유효한 JSON 문자열로만 응답하세요:
