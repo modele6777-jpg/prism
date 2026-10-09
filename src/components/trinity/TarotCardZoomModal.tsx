@@ -8,7 +8,7 @@ import {
   Tag,
   Compass,
 } from 'lucide-react';
-import { type TarotCard, getTarotCardImageUrl } from '@/data/tarotData';
+import { type TarotCard, getTarotCardImageUrl, getTarotReversedData } from '@/data/tarotData';
 
 export interface TarotCardZoomData {
   id?: string;
@@ -277,17 +277,63 @@ export function TarotCardZoomModal({
               </motion.div>
             </div>
 
+            {/* 🔄 역방향 심층 상징 및 뜻 (Reversed Meaning & Shadow Wisdom) */}
+            {isCardReversed && (() => {
+              const revData = getTarotReversedData(card as any);
+              return (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.35, delay: 0.1 }}
+                  className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-rose-950/40 via-purple-950/20 to-black/60 border border-rose-500/40 shadow-inner space-y-2.5 text-left"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 text-rose-300 font-bold text-xs">
+                      <Sparkles size={13} className="text-rose-400 animate-pulse" />
+                      <span>🔄 역방향 핵심 뜻 &amp; 그림자 통찰</span>
+                    </div>
+                    <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-200 border border-rose-500/30">
+                      역방향 적용됨
+                    </span>
+                  </div>
+
+                  {/* 역방향 키워드 */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {revData.keywords.map((kw, i) => (
+                      <span
+                        key={i}
+                        className="px-2 py-0.5 rounded-lg sm:rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-200 font-bold text-[11px] sm:text-xs shadow-sm"
+                      >
+                        #{kw}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* 역방향 심층 해석 */}
+                  <div className="p-2.5 rounded-xl bg-black/40 border border-rose-500/20 text-xs text-rose-100/90 leading-relaxed font-sans">
+                    <p className="font-medium">{revData.meaning}</p>
+                  </div>
+
+                  {/* 역방향 실천 & 주의 조언 */}
+                  <div className="flex items-start gap-2 pt-0.5 text-[11px] text-amber-200/90">
+                    <span className="font-bold text-amber-400 shrink-0">💡 역방향 조언:</span>
+                    <span className="leading-snug">{revData.advice}</span>
+                  </div>
+                </motion.div>
+              );
+            })()}
+
             {/* Keywords & Symbolic Meaning */}
             {keywords.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.35, delay: 0.12 }}
-                className="p-3 sm:p-3.5 rounded-2xl bg-white/[0.04] border border-white/10 space-y-1.5 sm:space-y-2"
+                className="p-3 sm:p-3.5 rounded-2xl bg-white/[0.04] border border-white/10 space-y-1.5 sm:space-y-2 text-left"
               >
                 <div className="flex items-center gap-1.5 text-yellow-300 font-bold text-xs">
                   <Tag size={12} className="text-yellow-400" />
-                  <span>카드의 핵심 상징 키워드</span>
+                  <span>{isCardReversed ? '(참고) 정방향 본래 상징 키워드' : '카드의 핵심 상징 키워드'}</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {keywords.map((kw, i) => (

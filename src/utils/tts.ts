@@ -617,6 +617,21 @@ export function prefetchTTSChunks(
   } catch (_) {}
 }
 
+// 🎯 낭독 청취 위치 기억: 알림 등으로 끊기거나 일시정지 시 처음부터 다시 듣지 않고 해당 청크부터 이어듣기 지원
+interface TTSChunkProgress {
+  fullText: string;
+  chunkIndex: number;
+  totalChunks: number;
+  updatedAt: number;
+}
+let lastTTSProgress: TTSChunkProgress | null = null;
+
+export function resetTTSProgress(text?: string): void {
+  if (!text || lastTTSProgress?.fullText === text) {
+    lastTTSProgress = null;
+  }
+}
+
 /**
  * Splits any long reading (e.g. Tarot 78-cards reading, horoscope, meditation)
  * into optimal, sentence-safe chunks and streams them with active prefetching.
@@ -649,13 +664,26 @@ export const playTTSInChunks = async (
   const chunks = splitSpeechIntoChunks(cleanText, maxChunkLength);
   if (chunks.length === 0) return;
 
+  // 알림이나 일시정지로 인해 중간에 끊겼던 경우, 처음부터 다시 듣지 않고 중단 지점부터 이어듣기
+  let startChunkIndex = 0;
+  if (
+    lastTTSProgress &&
+    lastTTSProgress.fullText === cleanText &&
+    lastTTSProgress.chunkIndex > 0 &&
+    lastTTSProgress.chunkIndex < chunks.length &&
+    Date.now() - lastTTSProgress.updatedAt < 15 * 60 * 1000
+  ) {
+    startChunkIndex = lastTTSProgress.chunkIndex;
+    console.log(`[TTS] Resuming playback from interrupted chunk ${startChunkIndex + 1}/${chunks.length}`);
+  }
+
   // Start sequence session
   stopTTS();
   const sequenceSessionId = `seq_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
   updateTTSState({
     isLoading: true,
     isSpeaking: true,
-    activeText: chunks[0] || cleanText.slice(0, 50),
+    activeText: chunks[startChunkIndex] || cleanText.slice(0, 50),
     activeFullText: cleanText,
     activeSessionId: sequenceSessionId,
   });
@@ -673,17 +701,25 @@ export const playTTSInChunks = async (
     } catch (_) {}
 
     // Pre-fetch the upcoming 2 chunks ahead of playback (locked to 1.0x)
-    if (chunks.length > 1) {
-      prefetchTTS(chunks[1], voice, emotion).catch(() => {});
+    if (startChunkIndex + 1 < chunks.length) {
+      prefetchTTS(chunks[startChunkIndex + 1], voice, emotion).catch(() => {});
     }
-    if (chunks.length > 2) {
-      prefetchTTS(chunks[2], voice, emotion).catch(() => {});
+    if (startChunkIndex + 2 < chunks.length) {
+      prefetchTTS(chunks[startChunkIndex + 2], voice, emotion).catch(() => {});
     }
 
-    for (let i = 0; i < chunks.length; i++) {
+    for (let i = startChunkIndex; i < chunks.length; i++) {
       if (ttsState.activeSessionId !== sequenceSessionId || !isPlayingSequence) {
         break;
       }
+
+      // 현재 진행 중인 청크 위치 저장 (중간에 알림으로 끊기더라도 다음 재생 시 여기서부터 이어듣기)
+      lastTTSProgress = {
+        fullText: cleanText,
+        chunkIndex: i,
+        totalChunks: chunks.length,
+        updatedAt: Date.now(),
+      };
 
       // Proactively pre-fetch next upcoming 2 chunks in advance (locked to 1.0x)
       if (i + 1 < chunks.length) {
@@ -713,6 +749,11 @@ export const playTTSInChunks = async (
 
       if (ttsState.activeSessionId !== sequenceSessionId || !isPlayingSequence) {
         break;
+      }
+
+      // 완독 성공 시 저장된 위치 초기화 (다음 번엔 처음부터 들을 수 있도록)
+      if (isLastChunk) {
+        lastTTSProgress = null;
       }
 
       // Micro-pause between chunks (60ms) for natural human speech rhythm

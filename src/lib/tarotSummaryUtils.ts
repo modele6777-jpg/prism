@@ -15,28 +15,25 @@ export function stripSummaryFromTarotText(text: string): string {
   if (!text) return "";
   const sanitizedInput = sanitizeTarotDecisionYesNo(text);
 
-  // 1. 후행 핵심 요약 섹션 안전하게 분리
-  // 요약 블록은 본문(1~5단계) 맨 마지막에 위치하므로 5단계 축복 섹션 이후 또는 후반부(하위 40%)에서만 탐색
-  const step5Match = sanitizedInput.match(/(?:###\s*(?:✨\s*)?5[\.\s]|5단계|영혼의\s*한마디|당신의\s*길을\s*축복하는)/i);
-  const searchStart = step5Match && step5Match.index !== undefined
-    ? step5Match.index + 20
-    : Math.floor(sanitizedInput.length * 0.55);
+  // 1. 전체 텍스트에서 [핵심 3줄 요약] 헤더와 그에 이어지는 요약 블록을 깔끔히 제거하여 본문 중복 완벽 차단
+  const headerRegex = /(?:\r?\n|^)\s*(?:#{1,6}\s*)?(?:✨\s*)?(?:\[\s*)?(?:핵심\s*(?:3줄\s*|세줄\s*)?요약|3줄\s*요약|Quick\s*Summary)(?:\])?\s*(?::)?\s*(?:\r?\n|$)/i;
+  const match = sanitizedInput.match(headerRegex);
 
-  const endChunk = sanitizedInput.slice(searchStart);
-  const summaryHeaderMatch = endChunk.match(
-    /(?:\r?\n|^)\s*(?:#{1,6}\s*)?(?:✨\s*)?(?:\[\s*)?(?:핵심\s*(?:3줄\s*|세줄\s*)?요약|3줄\s*요약|Quick\s*Summary)(?:\])?\s*(?::)?\s*(?:\r?\n|$)/i
-  );
-
-  if (summaryHeaderMatch && summaryHeaderMatch.index !== undefined) {
-    const cutPos = searchStart + summaryHeaderMatch.index;
-    let cleaned = sanitizedInput.slice(0, cutPos).trim();
-    // 잔여 불릿 라인도 안전하게 정리
-    cleaned = cleaned.replace(/(?:\r?\n)\s*[-*•·]?\s*\[(?:현재\s*에너지|방향과\s*결단|실천\s*처방)\][^\r\n]*/gi, "").trim();
-    return cleaned;
+  let cleaned = sanitizedInput;
+  if (match && match.index !== undefined) {
+    const cutPos = match.index;
+    const afterHeader = sanitizedInput.slice(cutPos + match[0].length);
+    // 요약 뒤에 다음 정규 섹션(###)이 이어지는 경우 요약 블록만 도려내고, 맨 끝에 온 경우 끝까지 제거
+    const nextSectionMatch = afterHeader.match(/(?:\r?\n|^)\s*#{1,6}\s+(?!.*(?:요약|Summary))/i);
+    if (nextSectionMatch && nextSectionMatch.index !== undefined) {
+      cleaned = sanitizedInput.slice(0, cutPos).trim() + "\n\n" + afterHeader.slice(nextSectionMatch.index).trim();
+    } else {
+      cleaned = sanitizedInput.slice(0, cutPos).trim();
+    }
   }
 
-  // 2. 말머리 없이 본문 끝부분에 불릿 형태로만 남은 경우만 끝부분 정리
-  let cleaned = sanitizedInput.replace(/(?:\r?\n)\s*[-*•·]?\s*\[(?:현재\s*에너지|방향과\s*결단|실천\s*처방)\][^\r\n]*$/gi, "").trim();
+  // 2. 잔여 [현재 에너지], [방향과 결단], [실천 처방] 단독 불릿 라인도 깨끗하게 정리
+  cleaned = cleaned.replace(/(?:\r?\n)\s*[-*•·]?\s*\[(?:현재\s*에너지|방향과\s*결단|실천\s*처방)\][^\r\n]*/gi, "").trim();
   return cleaned;
 }
 

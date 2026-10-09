@@ -948,7 +948,7 @@ ${content}
     let userContextBlock = "";
     if (profile?.basic) {
       const b = profile.basic;
-      userContextBlock = `\n\n[질문자 프로필 & 사주 배경지식]:\n- 이름/호칭: ${b.name || b.nickname || "질문자"}\n- 생년월일: ${b.birthdate || "미입력"} (${b.lunarSolar || "양력"})\n- 생시: ${b.birthtime || "미입력"}\n- 성별: ${b.gender || "미입력"}${profile.fate?.currentWorry ? `\n- 최근 주요 고민: ${profile.fate.currentWorry}` : ""}${profile.fate?.lifeGoal ? `\n- 인생 핵심 목표: ${profile.fate.lifeGoal}` : ""}\n[배경지식 반영 필수 원칙]: 위 질문자의 기본 프로필과 운명적 배경을 카드의 ${orientation} 상징 및 일일 비전과 깊이 있게 연계하여 서술하세요.`;
+      userContextBlock = `\n\n[질문자 프로필 & 사주 배경지식]:\n- 닉네임/호칭: ${b.nickname || b.name || "질문자"} (※ 실명보다 친근한 닉네임을 최우선으로 다정하게 불러주세요)\n- 생년월일: ${b.birthdate || "미입력"} (${b.lunarSolar || "양력"})\n- 생시: ${b.birthtime || "미입력"}\n- 성별: ${b.gender || "미입력"}${profile.fate?.currentWorry ? `\n- 최근 주요 고민: ${profile.fate.currentWorry}` : ""}${profile.fate?.lifeGoal ? `\n- 인생 핵심 목표: ${profile.fate.lifeGoal}` : ""}\n[배경지식 반영 필수 원칙]: 위 질문자의 기본 프로필(닉네임 호칭 우선)과 운명적 배경을 카드의 ${orientation} 상징 및 일일 비전과 깊이 있게 연계하여 서술하세요.`;
     }
 
     const touchWaveBlock = touchMetadata
@@ -1074,7 +1074,7 @@ ${content}
     let userContextBlock = "";
     if (profile?.basic) {
       const b = profile.basic;
-      userContextBlock = `\n\n[치유 대상자 프로필 배경지식]:\n- 이름/호칭: ${b.name || b.nickname || "수련자"}\n- 생년월일: ${b.birthdate || "미입력"} (${b.gender || "미입력"})${profile.psych?.currentSymptoms ? `\n- 현재 호소 증상: ${profile.psych.currentSymptoms}` : ""}${profile.fate?.currentWorry ? `\n- 내면 고민: ${profile.fate.currentWorry}` : ""}\n[배경지식 반영 필수]: 대상자의 호소 증상 및 프로필을 [${cardNameKo}] 카드의 방하착 테마와 자연스럽게 융합하여 서술하세요.`;
+      userContextBlock = `\n\n[치유 대상자 프로필 배경지식]:\n- 닉네임/호칭: ${b.nickname || b.name || "수련자"} (※ 실명보다 친근한 닉네임을 최우선으로 다정하게 불러주세요)\n- 생년월일: ${b.birthdate || "미입력"} (${b.gender || "미입력"})${profile.psych?.currentSymptoms ? `\n- 현재 호소 증상: ${profile.psych.currentSymptoms}` : ""}${profile.fate?.currentWorry ? `\n- 내면 고민: ${profile.fate.currentWorry}` : ""}\n[배경지식 반영 필수]: 대상자의 호소 증상 및 프로필(닉네임 호칭 우선)을 [${cardNameKo}] 카드의 방하착 테마와 자연스럽게 융합하여 서술하세요.`;
     }
 
     const { apiKey } = getAIConfig();

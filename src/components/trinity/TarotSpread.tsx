@@ -204,13 +204,19 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
   const concernText = concern.trim();
   const hasConcern = concernText.length > 0;
   const hasSpreadMeta = spreadName.trim().length > 0;
-  const compactSlots = maxCards >= 4;
-  const slotClass = compactSlots
-    ? 'w-14 h-20 sm:w-16 sm:h-24 md:w-20 md:h-32'
-    : 'w-18 h-28 md:w-28 md:h-44';
-  const slotsWrapClass = compactSlots
-    ? 'flex flex-wrap items-end justify-center gap-2 sm:gap-3 max-w-[92vw]'
-    : 'flex items-center justify-center gap-4 md:gap-6';
+  const compactSlots = maxCards >= 4 || isMobile;
+  const slotClass = isMobile
+    ? compactSlots
+      ? 'w-10 h-15 sm:w-12 sm:h-18'
+      : 'w-11 h-17 sm:w-14 sm:h-20'
+    : compactSlots
+      ? 'w-14 h-20 sm:w-16 sm:h-24 md:w-20 md:h-32'
+      : 'w-18 h-28 md:w-28 md:h-44';
+  const slotsWrapClass = isMobile
+    ? 'flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 max-w-[96vw]'
+    : compactSlots
+      ? 'flex flex-wrap items-end justify-center gap-2 sm:gap-3 max-w-[92vw]'
+      : 'flex items-center justify-center gap-4 md:gap-6';
 
   const activeSource = useMemo(() => {
     return deckSource && deckSource.length > 0 ? deckSource : TAROT_DECK;
@@ -344,12 +350,13 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
       const w = window.innerWidth;
       const h = window.innerHeight;
       if (w < 480) {
-        setRadius(Math.max(340, Math.min(420, h * 0.52)));
-        setYOffset(Math.max(400, Math.min(480, h * 0.60)));
+        // Calibrated for mobile / iPhone Mini to keep wheel cards completely unoccluded
+        setRadius(Math.max(300, Math.min(380, h * 0.44)));
+        setYOffset(Math.max(330, Math.min(410, h * 0.49)));
         setIsMobile(true);
       } else if (w < 768) {
-        setRadius(480);
-        setYOffset(560);
+        setRadius(460);
+        setYOffset(540);
         setIsMobile(true);
       } else {
         setRadius(640);
@@ -767,17 +774,18 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
     >
       {/* Top Floating Action Buttons (Card Back & Physical Input) */}
       <div
-        className="absolute z-[320] flex items-center gap-2 pointer-events-auto"
+        className="absolute z-[320] flex items-center gap-1.5 sm:gap-2 pointer-events-auto"
         style={{
-          top: 'calc(env(safe-area-inset-top, 0px) + 14px)',
-          left: 'calc(env(safe-area-inset-left, 0px) + 16px)',
+          top: 'calc(env(safe-area-inset-top, 0px) + 10px)',
+          left: 'calc(env(safe-area-inset-left, 0px) + 12px)',
         }}
       >
         <button
           type="button"
           onClick={() => setShowCardBackModal(true)}
-          className="px-3.5 py-2 min-h-[44px] rounded-full border border-yellow-500/40 bg-zinc-900/95 text-xs font-bold text-yellow-300 hover:text-yellow-200 hover:border-yellow-400/70 shadow-[0_4px_24px_rgba(0,0,0,0.8)] backdrop-blur-md active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
+          className="p-2 sm:px-3.5 sm:py-2 min-h-[38px] sm:min-h-[44px] rounded-full border border-yellow-500/40 bg-zinc-900/95 text-xs font-bold text-yellow-300 hover:text-yellow-200 hover:border-yellow-400/70 shadow-[0_4px_24px_rgba(0,0,0,0.8)] backdrop-blur-md active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
           title="Quin 스타일 20종 타로 카드 뒷면 변경"
+          aria-label="덱 뒷면 변경"
         >
           <Palette size={14} />
           <span className="hidden sm:inline">덱 뒷면 변경</span>
@@ -786,8 +794,9 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
         <button
           type="button"
           onClick={() => setShowPhysicalInputModal(true)}
-          className="px-3.5 py-2 min-h-[44px] rounded-full border border-amber-500/40 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-xs font-bold text-amber-200 hover:text-yellow-100 hover:border-amber-400 shadow-[0_4px_24px_rgba(0,0,0,0.8)] backdrop-blur-md active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
+          className="p-2 sm:px-3.5 sm:py-2 min-h-[38px] sm:min-h-[44px] rounded-full border border-amber-500/40 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-xs font-bold text-amber-200 hover:text-yellow-100 hover:border-amber-400 shadow-[0_4px_24px_rgba(0,0,0,0.8)] backdrop-blur-md active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
           title="소장하신 실물 카드로 직접 입력하여 AI 리딩 받기"
+          aria-label="실물 카드 직접 입력"
         >
           <BookOpen size={14} />
           <span className="hidden sm:inline">실물 카드 직접 입력</span>
@@ -801,10 +810,10 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
           e.stopPropagation();
           onCancel();
         }}
-        className="absolute z-[320] px-4 py-2 min-h-[44px] min-w-[44px] rounded-full border border-yellow-500/40 bg-zinc-900/95 text-xs font-bold uppercase tracking-widest text-yellow-300 hover:text-yellow-200 hover:border-yellow-400/60 shadow-[0_4px_24px_rgba(0,0,0,0.8)] backdrop-blur-md active:scale-95 transition-all flex items-center justify-center cursor-pointer pointer-events-auto"
+        className="absolute z-[320] px-3.5 sm:px-4 py-1.5 sm:py-2 min-h-[38px] sm:min-h-[44px] min-w-[38px] sm:min-w-[44px] rounded-full border border-yellow-500/40 bg-zinc-900/95 text-xs font-bold uppercase tracking-widest text-yellow-300 hover:text-yellow-200 hover:border-yellow-400/60 shadow-[0_4px_24px_rgba(0,0,0,0.8)] backdrop-blur-md active:scale-95 transition-all flex items-center justify-center cursor-pointer pointer-events-auto"
         style={{
-          top: 'calc(env(safe-area-inset-top, 0px) + 14px)',
-          right: 'calc(env(safe-area-inset-right, 0px) + 16px)',
+          top: 'calc(env(safe-area-inset-top, 0px) + 10px)',
+          right: 'calc(env(safe-area-inset-right, 0px) + 12px)',
         }}
         aria-label="닫기"
       >
@@ -824,7 +833,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
       >
         {/* Subtle Vignette & Depth Masking - positioned below card layer */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_30%,rgba(9,9,11,0.6)_80%)] pointer-events-none z-[10]" />
-        <div className="absolute top-0 left-0 right-0 h-44 bg-gradient-to-b from-zinc-950 via-zinc-950/70 to-transparent pointer-events-none z-[12]" />
+        <div className="absolute top-0 left-0 right-0 h-20 sm:h-44 bg-gradient-to-b from-zinc-950 via-zinc-950/70 to-transparent pointer-events-none z-[12]" />
 
         {/* 78-Card GPU Composited Wheel Layer - Single Hardware Composite Target */}
         <div
@@ -875,23 +884,20 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
         {/* Top Info Banner (Theme / Spread Meta / Question) */}
         {(hasConcern || hasSpreadMeta) && (
           <div
-            className="absolute left-0 right-0 z-[96] px-4 pointer-events-none flex justify-center"
+            className="absolute left-0 right-0 z-[96] px-3 sm:px-4 pointer-events-none flex justify-center"
             style={{
-              top: 'calc(env(safe-area-inset-top, 0px) + 12px)',
-              paddingRight: 'calc(env(safe-area-inset-right, 0px) + 72px)',
-              paddingLeft: 'calc(env(safe-area-inset-left, 0px) + 16px)',
+              top: isMobile ? 'calc(env(safe-area-inset-top, 0px) + 3.2rem)' : 'calc(env(safe-area-inset-top, 0px) + 12px)',
+              paddingRight: isMobile ? '12px' : 'calc(env(safe-area-inset-right, 0px) + 72px)',
+              paddingLeft: isMobile ? '12px' : 'calc(env(safe-area-inset-left, 0px) + 16px)',
             }}
           >
-            <div className="w-full max-w-md rounded-2xl border border-yellow-500/25 bg-zinc-900/90 backdrop-blur-md px-3.5 py-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.5)] space-y-1.5 pointer-events-none">
+            <div className="w-full max-w-sm sm:max-w-md rounded-xl sm:rounded-2xl border border-yellow-500/25 bg-zinc-900/90 backdrop-blur-md px-2.5 sm:px-3.5 py-1.5 sm:py-2.5 shadow-[0_8px_32px_rgba(0,0,0,0.5)] space-y-0.5 sm:space-y-1.5 pointer-events-none">
               {hasSpreadMeta && (
                 <div className="text-center">
-                  <p className="text-[8px] sm:text-[9px] font-bold uppercase tracking-[0.25em] text-yellow-500/75 mb-0.5 font-mono">
-                    자동 추천 배열법
-                  </p>
-                  <p className="text-xs sm:text-sm font-bold text-yellow-200">
+                  <p className="text-[10px] sm:text-sm font-bold text-yellow-200">
                     {spreadName} · {maxCards}장
                   </p>
-                  {spreadReason && (
+                  {!isMobile && spreadReason && (
                     <p className="text-[9px] sm:text-[10px] text-white/50 leading-tight mt-0.5 line-clamp-1 break-keep">
                       {spreadReason}
                     </p>
@@ -899,11 +905,8 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
                 </div>
               )}
               {hasConcern && (
-                <div className="text-center border-t border-white/5 pt-1">
-                  <p className="text-[8px] sm:text-[9px] font-bold uppercase tracking-[0.25em] text-yellow-500/75 mb-0.5 font-mono">
-                    나의 고민
-                  </p>
-                  <p className="text-[11px] sm:text-xs text-white/90 leading-tight line-clamp-2 break-keep">
+                <div className={`text-center ${hasSpreadMeta ? 'border-t border-white/5 pt-0.5 sm:pt-1' : ''}`}>
+                  <p className="text-[10px] sm:text-xs text-white/90 leading-tight line-clamp-1 break-keep">
                     {concernText}
                   </p>
                 </div>
@@ -914,14 +917,12 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
 
         {/* Selected Card Slots Layer */}
         <div
-          className="absolute flex flex-col items-center justify-center gap-3 sm:gap-4 md:gap-6 z-[95] pointer-events-none w-full px-2"
+          className="absolute flex flex-col items-center justify-center gap-1.5 sm:gap-4 md:gap-6 z-[95] pointer-events-none w-full px-2"
           style={{
             top: isMobile
               ? hasConcern || hasSpreadMeta
-                ? compactSlots
-                  ? 'calc(env(safe-area-inset-top, 0px) + 7.2rem)'
-                  : 'calc(env(safe-area-inset-top, 0px) + 6.5rem)'
-                : 'calc(env(safe-area-inset-top, 0px) + 3.8rem)'
+                ? 'calc(env(safe-area-inset-top, 0px) + 5.6rem)'
+                : 'calc(env(safe-area-inset-top, 0px) + 3.0rem)'
               : hasConcern || hasSpreadMeta
                 ? compactSlots
                   ? 'calc(env(safe-area-inset-top, 0px) + 9.5rem)'
@@ -1069,48 +1070,50 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
 
       {/* Bottom Quick Control Bar */}
       <div
-        className="relative z-[310] flex items-center justify-center gap-2 sm:gap-3 px-4 py-3 bg-zinc-950/80 backdrop-blur-md border-t border-yellow-500/20 w-full touch-none select-none overscroll-none"
+        className="relative z-[310] flex items-center justify-center gap-1.5 sm:gap-3 px-2 sm:px-4 py-2 sm:py-3 bg-zinc-950/85 backdrop-blur-md border-t border-yellow-500/20 w-full touch-none select-none overscroll-none"
         style={{
           touchAction: 'none',
           overscrollBehavior: 'none',
-          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)'
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)'
         }}
       >
         <button
           type="button"
           onClick={() => handleQuickSpin('left')}
-          className="px-3 py-2 rounded-xl bg-zinc-900 border border-yellow-500/25 hover:border-yellow-400 text-yellow-300 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition-all shadow-md cursor-pointer"
+          className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-zinc-900 border border-yellow-500/25 hover:border-yellow-400 text-yellow-300 text-xs font-semibold flex items-center gap-1 active:scale-95 transition-all shadow-md cursor-pointer shrink-0"
+          title="왼쪽으로 회전"
         >
           <ChevronLeft size={14} />
-          <span>좌회전</span>
+          <span className="hidden min-[380px]:inline">좌회전</span>
         </button>
 
         <button
           type="button"
           onClick={handleShuffleDeck}
-          className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-yellow-500/20 via-amber-500/20 to-yellow-500/20 border border-yellow-500/40 hover:border-yellow-400 text-yellow-200 text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-all shadow-md cursor-pointer"
+          className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-gradient-to-r from-yellow-500/20 via-amber-500/20 to-yellow-500/20 border border-yellow-500/40 hover:border-yellow-400 text-yellow-200 text-xs font-bold flex items-center gap-1 sm:gap-1.5 active:scale-95 transition-all shadow-md cursor-pointer shrink"
           title={`현재 남은 ${activeWheelCards.length}장의 덱을 셔플합니다 (이미 뽑은 카드는 덱에 다시 들어가지 않습니다)`}
         >
-          <Shuffle size={13} className="text-yellow-400" />
-          <span>남은 덱 셔플 ({activeWheelCards.length}장)</span>
+          <Shuffle size={13} className="text-yellow-400 shrink-0" />
+          <span className="truncate">셔플 ({activeWheelCards.length})</span>
         </button>
 
         <button
           type="button"
           onClick={handleAutoPick}
           disabled={selectedEntries.length >= maxCards}
-          className="px-3.5 py-2 rounded-xl bg-yellow-500 text-zinc-950 font-bold text-xs flex items-center gap-1.5 hover:bg-yellow-400 active:scale-95 transition-all shadow-[0_0_16px_rgba(234,179,8,0.4)] disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+          className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-yellow-500 text-zinc-950 font-bold text-xs flex items-center gap-1 sm:gap-1.5 hover:bg-yellow-400 active:scale-95 transition-all shadow-[0_0_16px_rgba(234,179,8,0.4)] disabled:opacity-40 disabled:pointer-events-none cursor-pointer shrink-0"
         >
           <Sparkles size={13} />
-          <span>자동 한 장</span>
+          <span className="whitespace-nowrap">자동 한 장</span>
         </button>
 
         <button
           type="button"
           onClick={() => handleQuickSpin('right')}
-          className="px-3 py-2 rounded-xl bg-zinc-900 border border-yellow-500/25 hover:border-yellow-400 text-yellow-300 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition-all shadow-md cursor-pointer"
+          className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-zinc-900 border border-yellow-500/25 hover:border-yellow-400 text-yellow-300 text-xs font-semibold flex items-center gap-1 active:scale-95 transition-all shadow-md cursor-pointer shrink-0"
+          title="오른쪽으로 회전"
         >
-          <span>우회전</span>
+          <span className="hidden min-[380px]:inline">우회전</span>
           <ChevronRight size={14} />
         </button>
       </div>

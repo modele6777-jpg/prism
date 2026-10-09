@@ -3602,57 +3602,6 @@ ${tailoredGuide.promptTemplate}${binaryChoicePromptAddon}${spreadPromptAddon}${c
                                       </div>
                                     ) : (
                                       <div className="space-y-4">
-                                          {/* ✨ 핵심 3줄 요약 카드 (상황 진단, 방향성, 실천 처방 & 원클릭 TTS) */}
-
-                                          {conciseSummaryBullets.length > 0 && tarotResult && (
-                                            <div className="p-4 rounded-2xl bg-gradient-to-r from-yellow-500/15 via-amber-500/10 to-transparent border border-yellow-500/35 shadow-inner">
-                                              <div className="flex items-center justify-between gap-2 mb-3">
-                                                <div className="flex items-center gap-1.5 text-yellow-300 font-bold text-xs">
-                                                  <Sparkles size={13} className="text-yellow-400 animate-pulse" />
-                                                  <span>✨ 핵심 3줄 요약 (Quick Summary)</span>
-                                                </div>
-                                                <button
-                                                  type="button"
-                                                  onClick={async () => {
-                                                    if (isSummaryTTSActive) {
-                                                      stopTTS();
-                                                    } else if (summarySpeechText) {
-                                                      await playTTSInChunks(summarySpeechText, 'Kore', 110, '신비');
-                                                    }
-                                                  }}
-                                                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer ${
-                                                    isSummaryTTSActive
-                                                      ? "bg-yellow-400/25 text-yellow-300 border border-yellow-400/40 animate-pulse"
-                                                      : "bg-white/10 hover:bg-white/20 text-white/90 border border-white/15"
-                                                  }`}
-                                                  title="핵심 3줄 요약 음성 낭독"
-                                                >
-                                                  {isSummaryTTSActive ? <VolumeX size={11} /> : <Volume2 size={11} />}
-                                                  <span>{isSummaryTTSActive ? "중지" : "요약 듣기"}</span>
-                                                </button>
-                                              </div>
-                                              <ul className="space-y-2 text-xs text-white/90 leading-relaxed font-sans">
-                                                {conciseSummaryBullets.map((bullet, bIdx) => {
-                                                  const match = bullet.match(/^\[([^\]]+)\]\s*(.*)$/);
-                                                  const tag = match ? match[1] : null;
-                                                  const content = match ? match[2] : bullet;
-                                                  return (
-                                                    <li key={bIdx} className="flex items-start gap-2">
-                                                      <span className="text-yellow-400 font-bold shrink-0 mt-0.5">•</span>
-                                                      <div className="leading-snug">
-                                                        {tag && (
-                                                          <span className="inline-block px-1.5 py-0.5 mr-1.5 rounded text-[10px] font-bold bg-yellow-400/20 text-yellow-300 border border-yellow-400/30">
-                                                            {tag}
-                                                          </span>
-                                                        )}
-                                                        <span>{content}</span>
-                                                      </div>
-                                                    </li>
-                                                  );
-                                                })}
-                                              </ul>
-                                            </div>
-                                          )}
 
                                           {/* ⚖️ 예/아니오 (YES or NO) 마스터 최종 판정 배너 */}
                                           {tarotYesNoVerdict && (

@@ -46,6 +46,41 @@ const STORAGE_HEALING_TREASURES = 'prism_oracle_healing_treasures';
 const STORAGE_GROWTH_LOGS = 'prism_oracle_growth_logs';
 const STORAGE_ORACLE_MODE = 'trinity_oracle_mode';
 const STORAGE_ORACLE_MODE_SELECTED = 'trinity_oracle_mode_selected';
+const STORAGE_DAILY_ORACLE_PREFIX = 'prism_oracle_daily_';
+
+export interface SavedDailyOracleSession {
+  dateKey: string;
+  mode: 'healing' | 'growth';
+  drawnCards: TarotCard[];
+  inquiryText?: string;
+  healingResult?: HealingResult | null;
+  growthResult?: GrowthResult | null;
+  savedAt: string;
+}
+
+export const getDailyOracleStorageKey = (mode: 'healing' | 'growth', dateKey: string) => {
+  return `${STORAGE_DAILY_ORACLE_PREFIX}${mode}_${dateKey}`;
+};
+
+export const loadTodayOracleSession = (mode: 'healing' | 'growth', dateKey: string): SavedDailyOracleSession | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(getDailyOracleStorageKey(mode, dateKey));
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
+export const saveDailyOracleSession = (mode: 'healing' | 'growth', dateKey: string, session: SavedDailyOracleSession) => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(getDailyOracleStorageKey(mode, dateKey), JSON.stringify(session));
+  } catch (e) {
+    console.warn('[Oracle] Failed to save daily session:', e);
+  }
+};
 
 export interface CardInsight {
   card_name: string;
@@ -533,9 +568,9 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
   // 사주 정보 빠른 수정 모달 상태
   const [showSajuModal, setShowSajuModal] = useState<boolean>(false);
   const [editName, setEditName] = useState(
-    (userProfile?.basic?.name && userProfile.basic.name !== '여행자')
-      ? userProfile.basic.name
-      : (userProfile?.basic?.nickname || '제제')
+    (userProfile?.basic?.nickname && userProfile.basic.nickname !== '여행자')
+      ? userProfile.basic.nickname
+      : ((userProfile?.basic?.name && userProfile.basic.name !== '여행자') ? userProfile.basic.name : '제제')
   );
   const [editBirthdate, setEditBirthdate] = useState(userProfile?.basic?.birthdate || '1995-05-15');
   const [editBirthtime, setEditBirthtime] = useState(userProfile?.basic?.birthtime || '12:00');
@@ -611,18 +646,18 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
     stopTTS();
   }, []);
 
-  // 질문자 명칭 추출 (내이름 대신 '제제' 표기)
+  // 질문자 명칭 추출 (닉네임 최우선 호칭)
   const recipientName = useMemo(() => {
-    const rawName = userProfile?.basic?.name?.trim();
-    if (rawName && rawName !== '여행자') {
-      return rawName;
-    }
     const rawNick = userProfile?.basic?.nickname?.trim();
     if (rawNick && rawNick !== '여행자') {
       return rawNick;
     }
+    const rawName = userProfile?.basic?.name?.trim();
+    if (rawName && rawName !== '여행자') {
+      return rawName;
+    }
     return '제제';
-  }, [userProfile?.basic?.name, userProfile?.basic?.nickname]);
+  }, [userProfile?.basic?.nickname, userProfile?.basic?.name]);
 
   // 🌿 제제 전용 다정한 호칭
   const jejeName = useMemo(() => {
@@ -664,6 +699,42 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
   const isTTSActive = useTTSActive();
   const ttsState = useTTSState();
   const [inquiryText, setInquiryText] = useState<string>('');
+
+  // 🌟 오늘의 오라클 당일 1회 세션 및 복원 상태 (오늘의 타로처럼 하루 1회 보존 & 다시보기)
+  const [todayDailySession, setTodayDailySession] = useState<SavedDailyOracleSession | null>(() =>
+    loadTodayOracleSession(oracleMode, todayDateKey)
+  );
+
+  // 모드 변경 또는 마운트 시 당일 저장된 오라클 결과 자동 로드
+  useEffect(() => {
+    const saved = loadTodayOracleSession(oracleMode, todayDateKey);
+    setTodayDailySession(saved);
+    if (saved && saved.drawnCards && saved.drawnCards.length >= 3) {
+      setDrawnCards(saved.drawnCards);
+      if (saved.inquiryText) setInquiryText(saved.inquiryText);
+      if (oracleMode === 'healing' && saved.healingResult) {
+        setHealingResult(saved.healingResult);
+        setStage('result');
+      } else if (oracleMode === 'growth' && saved.growthResult) {
+        setGrowthResult(saved.growthResult);
+        setStage('result');
+      }
+    }
+  }, [oracleMode, todayDateKey]);
+
+  // 오늘 결과 다시 보기 핸들러
+  const handleRestoreTodayOracle = () => {
+    const saved = todayDailySession || loadTodayOracleSession(oracleMode, todayDateKey);
+    if (!saved || !saved.drawnCards) return;
+    setDrawnCards(saved.drawnCards);
+    if (saved.inquiryText) setInquiryText(saved.inquiryText);
+    if (oracleMode === 'healing' && saved.healingResult) {
+      setHealingResult(saved.healingResult);
+    } else if (oracleMode === 'growth' && saved.growthResult) {
+      setGrowthResult(saved.growthResult);
+    }
+    setStage('result');
+  };
 
   // Load collected treasures and growth records on mount
   useEffect(() => {
@@ -820,7 +891,7 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
     }
   }, [oracleMode, healingResult, growthResult, drawnCards, saju, todayAnchorCard, recipientName, inquiryText]);
 
-  // Handle mode switch with persistent saving
+  // Handle mode switch with persistent saving and daily session restore
   const handleModeSwitch = (mode: 'healing' | 'growth') => {
     setOracleMode(mode);
     setIsModeChosen(true);
@@ -828,10 +899,27 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
       localStorage.setItem(STORAGE_ORACLE_MODE, mode);
       localStorage.setItem(STORAGE_ORACLE_MODE_SELECTED, 'true');
     } catch (_) {}
-    setStage('spread');
-    setDrawnCards([]);
-    setHealingResult(null);
-    setGrowthResult(null);
+
+    const saved = loadTodayOracleSession(mode, todayDateKey);
+    setTodayDailySession(saved);
+    if (saved && saved.drawnCards && saved.drawnCards.length >= 3) {
+      setDrawnCards(saved.drawnCards);
+      if (saved.inquiryText) setInquiryText(saved.inquiryText);
+      if (mode === 'healing' && saved.healingResult) {
+        setHealingResult(saved.healingResult);
+        setStage('result');
+      } else if (mode === 'growth' && saved.growthResult) {
+        setGrowthResult(saved.growthResult);
+        setStage('result');
+      } else {
+        setStage('result');
+      }
+    } else {
+      setStage('spread');
+      setDrawnCards([]);
+      setHealingResult(null);
+      setGrowthResult(null);
+    }
     setIsHealingCompleted(false);
     setSelectedCardIdx(0);
     setShowAllCardsTogether(true);
@@ -1173,6 +1261,16 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
         };
 
         setHealingResult(finalHealingResult);
+        const savedHealingSession: SavedDailyOracleSession = {
+          dateKey: todayDateKey,
+          mode: 'healing',
+          drawnCards: cards,
+          inquiryText: effectiveInquiry,
+          healingResult: finalHealingResult,
+          savedAt: new Date().toISOString(),
+        };
+        saveDailyOracleSession('healing', todayDateKey, savedHealingSession);
+        setTodayDailySession(savedHealingSession);
       } else {
         // [GROWTH MODE] Extreme Focus on Self-Development, Competence Building, Habit Architecture, and Breakthrough Execution
         const growthInquiryPromptAddon = effectiveInquiry
@@ -1296,6 +1394,16 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
         };
 
         setGrowthResult(finalGrowthResult);
+        const savedGrowthSession: SavedDailyOracleSession = {
+          dateKey: todayDateKey,
+          mode: 'growth',
+          drawnCards: cards,
+          inquiryText: effectiveInquiry,
+          growthResult: finalGrowthResult,
+          savedAt: new Date().toISOString(),
+        };
+        saveDailyOracleSession('growth', todayDateKey, savedGrowthSession);
+        setTodayDailySession(savedGrowthSession);
       }
     } catch (err) {
       console.error('Oracle AI error:', err);
@@ -1318,7 +1426,7 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
           '따뜻한 온수를 자주 섭취하고 가슴을 펴는 3번의 깊은 복식호흡 실천하기'
         );
 
-        setHealingResult({
+        const fallbackHealingResult: HealingResult = {
           concise_summary: [
             `[현재 에너지] 사주 [${dayMasterStr}]과 [${cards[0]?.nameKo || '1번'}] 카드가 만나 생각 과부하와 전환기 피로가 누적된 상태입니다.`,
             `[방향과 결단] 용신 [${yongsinStr}]과 [${cards[2]?.nameKo || '조언 카드'}]를 따라 무거운 부담을 내려놓고 회복을 선택하세요.`,
@@ -1354,9 +1462,20 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
             name: '지혜의 나침반',
             description: '사주와 타로의 에너지를 조화롭게 정렬하는 통찰의 상징'
           }
-        });
+        };
+        setHealingResult(fallbackHealingResult);
+        const fbHealingSession: SavedDailyOracleSession = {
+          dateKey: todayDateKey,
+          mode: 'healing',
+          drawnCards: cards,
+          inquiryText: effectiveInquiry,
+          healingResult: fallbackHealingResult,
+          savedAt: new Date().toISOString(),
+        };
+        saveDailyOracleSession('healing', todayDateKey, fbHealingSession);
+        setTodayDailySession(fbHealingSession);
       } else {
-        setGrowthResult({
+        const fallbackGrowthResult: GrowthResult = {
           concise_summary: [
             `[현재 에너지] 사주 [${dayMasterStr}]의 추진력이 [${cards[0]?.nameKo || '1번'}] 카드와 만나 일시적인 실행 정체에 머물러 있습니다.`,
             `[방향과 결단] 용신 [${yongsinStr}]과 [${cards[2]?.nameKo || '3번 카드'}]를 따라 잔가지를 쳐내고 우선순위 1번에 집중하세요.`,
@@ -1407,7 +1526,18 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
           },
           evening_reflection: '오늘 나는 결과에 끌려다니지 않고 스스로의 역량을 한 단계 성장시켰는가?',
           prescribed_art: dynamicPrescribedArt,
-        });
+        };
+        setGrowthResult(fallbackGrowthResult);
+        const fbGrowthSession: SavedDailyOracleSession = {
+          dateKey: todayDateKey,
+          mode: 'growth',
+          drawnCards: cards,
+          inquiryText: effectiveInquiry,
+          growthResult: fallbackGrowthResult,
+          savedAt: new Date().toISOString(),
+        };
+        saveDailyOracleSession('growth', todayDateKey, fbGrowthSession);
+        setTodayDailySession(fbGrowthSession);
       }
     } finally {
       setIsLoading(false);
@@ -2503,23 +2633,40 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
                 <span>실행 스트릭 {streakCount}일차</span>
               </div>
             )}
+            {todayDailySession && stage !== 'result' && (
+              <button
+                type="button"
+                onClick={handleRestoreTodayOracle}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500/25 to-yellow-500/25 border border-amber-400/40 text-amber-300 text-xs font-bold hover:brightness-110 transition-all cursor-pointer shadow-sm active:scale-95"
+              >
+                <Sparkles size={13} className="text-amber-400" />
+                <span>오늘의 결과 다시 보기</span>
+              </button>
+            )}
           </div>
 
           {stage === 'result' && (
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  setStage('spread');
-                  setDrawnCards([]);
-                  setHealingResult(null);
-                  setGrowthResult(null);
-                  stopTTS();
-                }}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-white/90 text-xs font-medium transition-all cursor-pointer"
-              >
-                <RotateCcw size={12} />
-                <span>다시 뽑기</span>
-              </button>
+              {todayDailySession ? (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-semibold">
+                  <Sparkles size={12} className="text-amber-400" />
+                  <span>오늘의 오라클 완료 (하루 1회)</span>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    setStage('spread');
+                    setDrawnCards([]);
+                    setHealingResult(null);
+                    setGrowthResult(null);
+                    stopTTS();
+                  }}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-white/90 text-xs font-medium transition-all cursor-pointer"
+                >
+                  <RotateCcw size={12} />
+                  <span>다시 뽑기</span>
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -2781,6 +2928,38 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
                     </button>
                   </div>
                 </div>
+              ) : todayDailySession ? (
+                <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-amber-500/15 via-yellow-500/10 to-zinc-900 border border-yellow-500/40 shadow-xl space-y-4 text-center my-6">
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-xs font-bold">
+                    <Sparkles size={14} className="text-amber-400 animate-pulse" />
+                    <span>오늘의 {oracleMode === 'healing' ? '치유' : '자기계발'} 오라클 완료 (하루 1회 제한)</span>
+                  </div>
+                  <div className="space-y-2 max-w-lg mx-auto">
+                    <h3 className="text-base sm:text-lg font-bold text-white font-serif">
+                      오늘 뽑으신 3장의 오라클 카드가 안전하게 보관되어 있습니다 🌟
+                    </h3>
+                    <p className="text-xs text-zinc-300 leading-relaxed break-keep">
+                      오라클 타로는 오늘의 타로처럼 하루에 단 한 번 진행됩니다. 오늘 마주한 3장의 카드와 루시의 심층 리딩, 실천 처방을 언제든 다시 확인하실 수 있습니다.
+                    </p>
+                    <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                      {todayDailySession.drawnCards.map((c, idx) => (
+                        <span key={idx} className="px-3 py-1 rounded-xl bg-white/10 border border-white/20 text-yellow-300 font-bold text-xs shadow-sm">
+                          {idx + 1}. {c.nameKo} {c.reversed ? '(역방향)' : '(정방향)'}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="pt-2 flex justify-center">
+                    <button
+                      type="button"
+                      onClick={handleRestoreTodayOracle}
+                      className="px-7 py-3.5 rounded-2xl bg-gradient-to-r from-yellow-500 via-amber-500 to-yellow-600 hover:from-yellow-400 hover:to-amber-400 text-black font-extrabold text-xs sm:text-sm tracking-wider flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(234,179,8,0.4)] transition-all cursor-pointer active:scale-95"
+                    >
+                      <Sparkles size={16} />
+                      <span>✨ 오늘의 오라클 결과 다시 보기</span>
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <div className="w-full min-h-[440px] md:min-h-[480px] relative">
                   <TarotSpread
@@ -3006,20 +3185,27 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
                 {/* 3. Bottom Actions: Redraw, Mode Switch, Share */}
                 <div className="pt-3 border-t border-white/10 flex flex-wrap items-center justify-center sm:justify-between gap-2.5 relative z-10 w-full shrink-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setStage('spread');
-                        setDrawnCards([]);
-                        setHealingResult(null);
-                        setGrowthResult(null);
-                        stopTTS();
-                      }}
-                      className="text-yellow-400/90 hover:text-yellow-300 hover:bg-yellow-500/10 transition-all text-[11px] font-bold flex items-center gap-1.5 py-2 px-4 rounded-full bg-yellow-500/5 border border-yellow-500/20 hover:border-yellow-500/40 cursor-pointer active:scale-95"
-                    >
-                      <RotateCcw size={12} />
-                      <span>다시 카드 뽑기 (Redraw)</span>
-                    </button>
+                    {todayDailySession ? (
+                      <div className="flex items-center gap-1.5 py-2 px-4 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-bold">
+                        <Sparkles size={12} className="text-amber-400" />
+                        <span>오늘의 {oracleMode === 'healing' ? '치유' : '자기계발'} 오라클 완료 (하루 1회 · 매일 자정 갱신)</span>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStage('spread');
+                          setDrawnCards([]);
+                          setHealingResult(null);
+                          setGrowthResult(null);
+                          stopTTS();
+                        }}
+                        className="text-yellow-400/90 hover:text-yellow-300 hover:bg-yellow-500/10 transition-all text-[11px] font-bold flex items-center gap-1.5 py-2 px-4 rounded-full bg-yellow-500/5 border border-yellow-500/20 hover:border-yellow-500/40 cursor-pointer active:scale-95"
+                      >
+                        <RotateCcw size={12} />
+                        <span>다시 카드 뽑기 (Redraw)</span>
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={handleResetToModeSelection}

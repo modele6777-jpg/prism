@@ -10,6 +10,7 @@ import { invokeLLM } from '@/lib/ai';
 import { playTTS, stopTTS, useTTSActive } from '@/utils/tts';
 import { SajuAnalysisResult } from '@/lib/sajuAnalysis';
 import { extractGivenName, formatKoreanVocative, formatKoreanToTarget } from '@/lib/tarotSummaryUtils';
+import { getPersistentUserProfile } from '@/contexts/AppContext';
 
 export interface ChatMessage {
   id: string;
@@ -224,13 +225,16 @@ export function ZezeKakaoChat({
         ?.map((ci, idx) => `[${idx + 1}번 ${ci.position_name}: ${ci.card_name}]\n- 상징/도상 본래 뜻: ${ci.core_meaning}\n- 심층 리딩: ${ci.personal_interpretation}${ci.action_guide ? `\n- 실천 가이드: ${ci.action_guide}` : ''}`)
         .join('\n\n');
 
-      const rawUserName = saju?.name?.trim() || '';
-      const extracted = extractGivenName(rawUserName);
-      const givenName = (extracted && extracted !== '여행자') ? extracted : '제제';
+      const userProfile = getPersistentUserProfile();
+      const rawNick = userProfile?.basic?.nickname?.trim();
+      const rawName = userProfile?.basic?.name?.trim() || saju?.name?.trim() || '';
+      const chosenName = (rawNick && rawNick !== '여행자')
+        ? rawNick
+        : ((rawName && rawName !== '여행자') ? extractGivenName(rawName) : '제제');
 
       const sajuPromptSection = saju ? `
 # 내담자 사주 명식(四柱) & 타로 융합 정보:
-- 성명: ${givenName}
+- 호칭/닉네임: ${chosenName}
 - 사주 일간(본원): ${saju.dayMaster.hanja} (${saju.dayMaster.korean}, ${saju.dayMaster.symbolName})
 - 오행 분포: 목(${saju.elements.counts.목}), 화(${saju.elements.counts.화}), 토(${saju.elements.counts.토}), 금(${saju.elements.counts.금}), 수(${saju.elements.counts.수})
 - 용신(보약): ${saju.yongsin.name}
@@ -244,7 +248,7 @@ ${oracleMode === 'growth' && growthResult?.saju_tarot_synergy ? `- 사주×타�
 당신은 헬로우봇(Hellobot) 특유의 사랑스럽고 다정한 카톡 챗봇처럼, 사주 명리학과 타로 카드를 융합하여 사용자와 1:1 심리 및 내면 치유 종합상담을 진행합니다.
 ${sajuPromptSection}
 # 호칭 절대 규칙 (★매우 중요):
-제제는 사용자의 가장 가깝고 다정한 내면아이 친구입니다. 사용자의 이름을 부를 때는 절대 성(姓)을 붙이지 말고, 성을 제외한 이름 '${givenName}'으로만 다정하게 부르세요 (예: '${formatKoreanVocative(givenName)}', '${formatKoreanToTarget(givenName)}', '${givenName}이'). 절대 성을 붙여서 부르지 마세요.
+제제는 사용자의 가장 가깝고 다정한 내면아이 친구입니다. 본명보다 사용자가 지정한 닉네임/호칭 '${chosenName}'(으)로 다정하게 부르세요 (예: '${formatKoreanVocative(chosenName)}', '${chosenName}이'). 절대 딱딱한 본명이나 성을 붙여 부르지 마세요.
 
 # 상담 페르소나 및 어조:
 - 조심스럽고 다정하며 따뜻한 반말(해체)을 사용합니다. ("~했어?", "~해볼까?", "~해도 괜찮아", "~일지도 몰라")
@@ -264,7 +268,7 @@ ${healingResult?.prescribed_art ? `(추천 예술: ${healingResult.prescribed_ar
 당신은 헬로우봇(Hellobot) 특유의 친근하면서도 명쾌한 카톡 코칭 챗봇처럼, 사주 명리학과 3장의 타로 카드를 결합하여 사용자의 '자기계발(Self-Development), 역량 성장, 습관 설계, 생산성 루틴'에 집중하는 1:1 심층 자기계발 코칭을 진행합니다.
 ${sajuPromptSection}
 # 호칭 절대 규칙 (★매우 중요):
-제제는 사용자의 가장 가깝고 다정한 성장 코치 친구입니다. 사용자의 이름을 부를 때는 절대 성(姓)을 붙이지 말고, 성을 제외한 이름 '${givenName}'으로만 다정하게 부르세요 (예: '${formatKoreanVocative(givenName)}', '${formatKoreanToTarget(givenName)}', '${givenName}이'). 절대 성을 붙여서 부르지 마세요.
+제제는 사용자의 가장 가깝고 다정한 성장 코치 친구입니다. 본명보다 사용자가 지정한 닉네임/호칭 '${chosenName}'(으)로 다정하게 부르세요 (예: '${formatKoreanVocative(chosenName)}', '${chosenName}이'). 절대 딱딱한 본명이나 성을 붙여 부르지 마세요.
 
 # 상담 페르소나 및 어조:
 - 친근하고 든든한 반말/해요체를 자연스럽게 혼용하는 다정한 성장 코치 어조를 사용합니다.

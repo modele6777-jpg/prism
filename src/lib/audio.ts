@@ -611,12 +611,14 @@ export function getTTSAudioElement(): HTMLAudioElement {
   }
 }
 
+let ttsUserExplicitlyPaused = false;
+
 export function isTTSAudioPlaying(): boolean {
-  return ttsShouldBePlaying && !!ttsAudioEl && !ttsAudioEl.paused && !ttsAudioEl.ended;
+  return ttsShouldBePlaying && !ttsUserExplicitlyPaused && !!ttsAudioEl && !ttsAudioEl.paused && !ttsAudioEl.ended;
 }
 
 export function pauseTTSAudio(): void {
-  ttsShouldBePlaying = false;
+  ttsUserExplicitlyPaused = true;
   stopTTSKeepAlive();
   releaseScreenWakeLock().catch(() => {});
   if (ttsAudioEl && !ttsAudioEl.paused) {
@@ -635,6 +637,8 @@ export function pauseTTSAudio(): void {
 }
 
 export function resumeTTSAudio(): void {
+  ttsUserExplicitlyPaused = false;
+  ttsShouldBePlaying = true;
   try {
     const ctx = getSharedAudioContext();
     if (ctx.state === 'suspended') {
@@ -642,8 +646,8 @@ export function resumeTTSAudio(): void {
     }
   } catch {}
 
-  // Only resume if playback was explicitly requested and not stopped
-  if (ttsShouldBePlaying && ttsAudioEl && ttsAudioEl.paused && !ttsAudioEl.ended && ttsAudioEl.src) {
+  // Resume HTML5 audio if loaded
+  if (ttsAudioEl && ttsAudioEl.paused && !ttsAudioEl.ended && ttsAudioEl.src) {
     startTTSKeepAlive();
     acquireScreenWakeLock().catch(() => {});
     ttsAudioEl.play().catch((err) => console.warn('[Audio] Failed to resume TTS audio:', err));
@@ -653,6 +657,7 @@ export function resumeTTSAudio(): void {
 export function stopTTSAudio(): void {
   ttsPlaybackId++;
   ttsShouldBePlaying = false;
+  ttsUserExplicitlyPaused = false;
   stopTTSKeepAlive();
   releaseScreenWakeLock().catch(() => {});
   revokeTTSBlobUrl();
@@ -964,6 +969,7 @@ export async function playTTSAudio(
       const cleanup = () => {
         audio.removeEventListener('ended', onEnded);
         audio.removeEventListener('error', onError);
+        audio.removeEventListener('pause', onInvoluntaryPause);
       };
 
       const finish = () => {
@@ -989,8 +995,23 @@ export async function playTTSAudio(
         reject(e || new Error('[AudioPlayer] HTMLAudioElement playback failed'));
       };
 
+      // 🔔 모바일 알림(카카오톡, 문자, 캘린더 등)이나 백그라운드 오디오 인터럽트로 인한 일시정지 시 자동 복구
+      const onInvoluntaryPause = () => {
+        if (isSettled || !ttsShouldBePlaying || ttsUserExplicitlyPaused || activePlaybackId !== ttsPlaybackId) return;
+        console.log('[AudioPlayer] External notification or system interruption detected. Scheduling auto-resume...');
+        // 알림음이 끝난 직후(600ms~1200ms) 현재 위치에서 자동으로 재생 재개
+        setTimeout(() => {
+          if (!isSettled && ttsShouldBePlaying && !ttsUserExplicitlyPaused && activePlaybackId === ttsPlaybackId && audio.paused && !audio.ended) {
+            audio.play().catch((resumeErr) => {
+              console.warn('[AudioPlayer] Involuntary pause auto-resume delayed:', resumeErr);
+            });
+          }
+        }, 700);
+      };
+
       audio.addEventListener('ended', onEnded);
       audio.addEventListener('error', onError);
+      audio.addEventListener('pause', onInvoluntaryPause);
 
       const playPromise = audio.play();
       if (playPromise !== undefined) {
@@ -1038,6 +1059,15 @@ export function initTTSAudioLifecycle(): void {
       }
     } catch (error) {
       console.error('[AudioLifecycle] Failed to restore AudioContext:', error);
+    }
+
+    // 알림 팝업 창 또는 앱 복귀 시 중단되었던 TTS 자동 재생 재개
+    if (ttsShouldBePlaying && !ttsUserExplicitlyPaused && ttsAudioEl && ttsAudioEl.paused && !ttsAudioEl.ended && ttsAudioEl.src) {
+      setTimeout(() => {
+        if (ttsShouldBePlaying && !ttsUserExplicitlyPaused && ttsAudioEl && ttsAudioEl.paused && !ttsAudioEl.ended) {
+          ttsAudioEl.play().catch((err) => console.warn('[AudioLifecycle] Interrupted TTS auto-resumed on focus:', err));
+        }
+      }, 350);
     }
   };
 
