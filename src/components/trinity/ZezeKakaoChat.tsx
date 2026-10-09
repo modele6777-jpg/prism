@@ -298,8 +298,8 @@ ${growthResult?.dominant_element ? `(주요 역량 영역: ${growthResult.domina
       });
 
       let cleanRes = res.replace(/```/g, '').trim();
-      if (rawUserName && givenName && rawUserName !== givenName) {
-        cleanRes = cleanRes.replace(new RegExp(rawUserName, 'g'), givenName);
+      if (rawName && chosenName && rawName !== chosenName) {
+        cleanRes = cleanRes.replace(new RegExp(rawName, 'g'), chosenName);
       }
       const botMsg: ChatMessage = {
         id: 'zeze_' + Date.now(),

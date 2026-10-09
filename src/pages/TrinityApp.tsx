@@ -3646,13 +3646,9 @@ ${tailoredGuide.promptTemplate}${binaryChoicePromptAddon}${spreadPromptAddon}${c
                                             </div>
                                           )}
 
-                                          <Streamdown immediate={!isTarotGenerating}>{displayTarotResult || tarotResult || ""}</Streamdown>
-
-
-
-                                          {/* ✨ 리딩 하단 핵심 3줄 요약 강조 그래픽 카드 UI */}
+                                          {/* ✨ 리딩 결과 상단 핵심 3줄 요약 강조 그래픽 카드 UI */}
                                           {conciseSummaryBullets.length > 0 && tarotResult && !isTarotGenerating && (
-                                            <div className="pt-2">
+                                            <div className="pb-3 pt-1">
                                               <TarotSummaryGraphicCard
                                                 bullets={conciseSummaryBullets}
                                                 readingText={displayTarotResult || tarotResult || ""}
@@ -3666,7 +3662,11 @@ ${tailoredGuide.promptTemplate}${binaryChoicePromptAddon}${spreadPromptAddon}${c
                                                 }}
                                               />
                                             </div>
-                                          )}                                          {/* 🌟 그에 맞는 루시의 조언 (TTS 가능) */}
+                                          )}
+
+                                          <Streamdown immediate={!isTarotGenerating}>{displayTarotResult || tarotResult || ""}</Streamdown>
+
+                                          {/* 🌟 그에 맞는 루시의 조언 (TTS 가능) */}
                                           {tarotResult && !isTarotGenerating && (
                                             <div className="pt-2">
                                               <LucyTarotAdviceCard

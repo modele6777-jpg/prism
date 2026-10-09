@@ -204,6 +204,8 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
   const concernText = concern.trim();
   const hasConcern = concernText.length > 0;
   const hasSpreadMeta = spreadName.trim().length > 0;
+
+  const [isMobile, setIsMobile] = useState(false);
   const compactSlots = maxCards >= 4 || isMobile;
   const slotClass = isMobile
     ? compactSlots
@@ -262,7 +264,6 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
   const [wheelReady, setWheelReady] = useState(false);
   const [radius, setRadius] = useState(600);
   const [yOffset, setYOffset] = useState(580);
-  const [isMobile, setIsMobile] = useState(false);
   const [zoomedCard, setZoomedCard] = useState<{ card: TarotCard; slotName?: string } | null>(null);
 
   const rootRef = useRef<HTMLDivElement>(null);
