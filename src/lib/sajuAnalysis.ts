@@ -1333,3 +1333,80 @@ export function generateDailySajuReport(
     speechText,
   };
 }
+
+/**
+ * 🔮 AI 명리 마스터 심층 상담실 전용 맞춤 해설 생성 엔진
+ * 네트워크 지연이나 LLM 오류 시에도 사용자의 4주 8자, 일간 본원, 오행 밸런스, 2026 세운을 바탕으로
+ * 깊이 있고 신뢰할 수 있는 정통 명리학 카운슬링 답변을 즉시 제공합니다.
+ */
+export function generateSajuMasterConsultation(saju: SajuAnalysisResult, question: string): string {
+  const normQ = (question || '').trim().toLowerCase();
+  const dayMaster = saju.dayMaster;
+  const dominant = saju.elements.dominant;
+  const lacking = saju.elements.lacking;
+  const yongsin = saju.yongsin;
+  const annual = saju.annual2026;
+  const wealthScore = saju.webAppParameters.wealthAffinityScore;
+  const driveScore = saju.webAppParameters.driveScore;
+
+  // 1. 직업, 적성, 진로, 사업, 이직, 시험, 합격 관련 질문
+  if (/(?:직업|적성|진로|업무|일|스타일|회사|이직|퇴사|사업|창업|시험|합격|공부|자격증|취업|승진)/.test(normQ)) {
+    const isExam = /(?:시험|합격|공부|자격증|취업)/.test(normQ);
+    const isJobChange = /(?:이직|퇴사|이동|바꾸|옮기)/.test(normQ);
+
+    if (isExam) {
+      return `내담자님의 본원인 **[${dayMaster.hanja} ${dayMaster.symbolName}]**은 본래 높은 집중력과 ${dayMaster.coreKeywords[0] || '탐구심'}을 품고 있어, 목표가 명확할 때 남다른 저력을 발휘합니다.
+사주 4주 원국에서 중심을 잡는 ${dominant.name}의 뚝심을 지렛대 삼고, 부족한 **${lacking.name}** 기운(추천 색상: ${lacking.luckyColor}, 보약 음식: ${lacking.luckyFood})을 학습 환경에 보충하시면 잡념이 걷히고 두뇌 회전이 한층 맑아집니다.
+2026년의 기운(${annual.theme}) 또한 자신의 실력과 노력을 당당히 증명하기에 좋은 형국이니, 조급함에 흔들리지 말고 본인만의 리듬을 믿고 우직하게 나아가세요. 합격과 성취의 서광이 분명히 비추고 있습니다.`;
+    }
+
+    if (isJobChange) {
+      return `사주 원국 상 내담자님은 **'${dayMaster.archetypeTitle}'**의 독자적인 정체성을 지니셨으며, 내면 추진력(${driveScore}점)이 풍부하여 변화에 대한 적응 잠재력이 뛰어납니다.
+원국의 용신 에너지인 **${yongsin.name}**의 조화를 볼 때, 단순한 도피성 이직보다는 내 전문성과 주체성을 주도적으로 발휘할 수 있는 방향으로 확장하는 것이 유리합니다.
+특히 2026년 흐름(${annual.theme})을 감안하면, 서둘러 결론을 내리기보다 차분히 내 실력과 역량을 공고히 다져 타이밍을 조율할 때 귀인의 조력과 최적의 도약 기회를 맞이하게 됩니다.`;
+    }
+
+    return `내담자님의 본원인 **[${dayMaster.hanja} ${dayMaster.symbolName}]**은 본질적으로 **'${dayMaster.archetypeTitle}'**의 탁월한 기질을 품고 있습니다. ${dayMaster.personalityEssence}
+원국의 중심 기운(${dominant.name})과 용신 기운(${yongsin.name})을 고려할 때, 가장 큰 시너지를 내는 업무는 자신의 자율성과 전문성이 존중받으며 구체적인 성과를 일궈낼 수 있는 분야입니다.
+추천 직업 테마로는 기획·분석·전문 연구·조율 및 창의적 프로젝트가 어울리며, 일상에서 부족한 **${lacking.name}** 기운을 책상 주변이나 소품(${lacking.luckyColor} 계열)으로 채워주시면 업무 스트레스가 완화되고 추진력이 배가됩니다.`;
+  }
+
+  // 2. 재물, 돈, 금전, 부자, 투자, 주식, 자산 관련 질문
+  if (/(?:재물|돈|금전|부자|부|자산|투자|주식|부동산|모으|소비|지출|재운|수익)/.test(normQ)) {
+    return `내담자님의 사주 원국에서 재물 친화력 지수는 **${wealthScore}점**으로 분석됩니다. ${dayMaster.symbolName} 본원은 요행이나 투기성 위험에 기대기보다는, 본인의 확실한 실력과 원칙을 세워 차곡차곡 쌓아갈 때 가장 단단하고 흔들리지 않는 부(富)의 토대를 만듭니다.
+원국에서 가장 주의해야 할 점은 중심 기운(${dominant.name})의 과도한 몰입으로 인한 충동적 지출이나 분산 투자이며, 이를 방어하는 열쇠는 결핍된 **${lacking.name}** 기운의 보충입니다.
+일상에서 ${lacking.luckyColor} 계열의 지갑이나 소품을 활용하시고, 안정적인 장기 자산 위주로 자금을 분산 배치하시면 재물의 누수를 막고 풍요로운 흐름을 안전하게 유지하실 수 있습니다.`;
+  }
+
+  // 3. 연애, 사랑, 결혼, 이성, 궁합, 인연 관련 질문
+  if (/(?:연애|사랑|결혼|이성|궁합|애인|인연|남친|여친|배우자|호감|만남)/.test(normQ)) {
+    return `내담자님은 **${dayMaster.symbolName}** 특유의 성향으로, 겉으로 보이는 화려함보다는 내면의 진솔한 신뢰와 깊은 교감을 소중히 여기는 연애 기질을 지니셨습니다. ${dayMaster.personalityEssence}
+사주 원국에서 나를 가장 편안하고 온전하게 채워주는 좋은 인연은, 내담자님에게 부족한 **${lacking.name}** 기운을 넉넉히 품고 있거나 서로의 감정 기복을 부드럽게 감싸주는 상대입니다.
+인연을 마주할 때는 내 기준에 상대를 억지로 맞추려 하기보다, ${lacking.luckyPlace}처럼 편안한 공간에서 자연스럽게 솔직한 대화를 나누며 호흡을 맞추는 것이 행복한 관계를 여는 열쇠입니다.`;
+  }
+
+  // 4. 2026년, 새해, 운세, 터닝포인트, 기회 관련 질문
+  if (/(?:2026|새해|운세|터닝|포인트|기회|흐름|올해|내년|미래|대운|세운|병오)/.test(normQ)) {
+    return `2026년 병오년(丙午年)은 천간과 지지가 강렬한 불꽃(화)으로 공명하는 역동적인 대전환의 해입니다.
+내담자님의 사주 원국과 맞물리는 2026년의 핵심 화두는 **'${annual.theme}'**입니다.
+${annual.advice}
+특히 내담자님의 ${dayMaster.symbolName} 본원이 지닌 고유한 잠재력이 세상 밖으로 드러나는 시기이므로, 마음속으로 망설여왔던 프로젝트나 새로운 도전을 과감하게 실행에 옮기시길 권합니다. 용신(${yongsin.name})의 기운을 기억하며 걸어가신다면 괄목할 성과를 거두실 것입니다.`;
+  }
+
+  // 5. 오행 보충, 결핍, 용신, 개운, 건강, 힐링, 습관 관련 질문
+  if (/(?:오행|부족|결핍|채우|보충|용신|개운|건강|힐링|습관|음식|색상|컬러|팁)/.test(normQ)) {
+    return `내담자님의 사주 원국에서 가장 정성껏 채워주어야 할 생명 에너지는 **${lacking.name}** 기운입니다 (${lacking.remedy}).
+일상에서 가장 쉽고 효과적인 개운(開運) 실천법은 다음과 같습니다:
+• **행운의 색상**: ${lacking.luckyColor} 계열의 의류, 침구, 파우치 활용
+• **개운 보약 음식**: ${lacking.luckyFood}
+• **에너지 충전 장소 & 습관**: ${lacking.luckyPlace}
+이러한 소소한 일상 루틴이 모여 원국의 오행 순환을 맑게 트이게 하고, 피로와 번뇌를 정화하여 본래 타고난 복록(福祿)을 배가시켜 줍니다.`;
+  }
+
+  // 6. 종합 맞춤 통찰 (기타 모든 질문)
+  return `내담자님의 사주 일간인 **[${dayMaster.hanja} ${dayMaster.symbolName}]** 본원을 중심으로 원국 4주 8자를 해독해 드립니다.
+현재 내담자님의 기운은 중심 오행인 **${dominant.name}**의 단단한 힘을 바탕으로 움직이고 있으나, 상대적으로 결핍된 **${lacking.name}**의 조율이 함께 이루어질 때 비로소 진정한 잠재력이 극대화됩니다.
+문의하신 고민에 대해 무리하게 결과를 서두르거나 주변의 속도에 휩쓸리지 마시고, 내 본연의 리듬(${dayMaster.archetypeTitle})에 집중하며 부족한 기운(${lacking.luckyFood}, ${lacking.luckyColor})을 차분히 채워가세요.
+순리와 조화를 따르는 정직한 발걸음 위에 우주와 만세력의 따뜻한 축복이 함께할 것입니다.`;
+}
+

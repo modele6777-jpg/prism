@@ -1699,6 +1699,11 @@ ${content}
         return "오늘 하루도 온 힘을 다해 아름답게 빛나주신 당신께 깊은 감사를 전합니다. 마음에 머물렀던 피로와 작은 불안은 깊어가는 밤하늘의 고요 속으로 가볍게 내려놓고, 평온한 안식 속에서 편안한 잠을 청해 보세요. 내일은 더욱 따뜻하고 찬란한 우주의 축복이 당신을 기다릴 것입니다.";
       }
 
+      // Saju / Myeongli consultation fallback
+      if (wholeStr.includes("사주") || wholeStr.includes("명리") || wholeStr.includes("일간") || wholeStr.includes("오행") || wholeStr.includes("만세력")) {
+        return "내담자님의 사주 4주 8자와 오행의 흐름을 비추어 볼 때, 타고난 본원 에너지의 잠재력과 추진력은 굳건하게 자리하고 있습니다.\n\n중심 기운의 장점을 당당히 발휘하시되, 부족한 오행 기운을 일상의 편안한 휴식과 개운 습관으로 채워가시면 고민하시는 분야의 흐름이 한층 시원하게 트이게 됩니다. 조급함보다는 본연의 리듬을 신뢰하며 나아가시길 진심으로 응원합니다.";
+      }
+
       // Conversational chat fallback
       const personaReplies: Record<string, string> = {
         lucy: "안녕하세요! 오늘 당신의 마음 상태는 어떠신가요? 작은 생각이나 감정도 편안하게 들려주세요. 온 마음으로 귀 기울이고 있습니다.",

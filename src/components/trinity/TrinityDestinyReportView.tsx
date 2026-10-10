@@ -34,6 +34,7 @@ import { useApp, getPersistentUserProfile, setPersistentUserProfile } from '@/co
 import {
   calculateDetailedSaju,
   generateDailySajuReport,
+  generateSajuMasterConsultation,
   ELEMENT_DETAILS,
   BRANCH_KOREAN,
   STEM_KOREAN,
@@ -97,7 +98,7 @@ export function TrinityDestinyReportView({ onConsult }: TrinityDestinyReportView
 
   // AI 질의응답 상태
   const [questionInput, setQuestionInput] = useState('');
-  const [aiAnswers, setAiAnswers] = useState<Array<{ q: string; a: string; time: string }>>([]);
+  const [aiAnswers, setAiAnswers] = useState<Array<{ q: string; a: string; time: string; isLoading?: boolean }>>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [activeConsultTtsIdx, setActiveConsultTtsIdx] = useState<number | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -220,10 +221,24 @@ export function TrinityDestinyReportView({ onConsult }: TrinityDestinyReportView
     const q = (customQ || questionInput).trim();
     if (!q || isAiLoading || !saju) return;
 
+    const time = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: true });
     setQuestionInput('');
     setIsAiLoading(true);
 
+    const pendingIdx = aiAnswers.length;
+    setAiAnswers((prev) => [
+      ...prev,
+      {
+        q,
+        a: '',
+        time,
+        isLoading: true,
+      },
+    ]);
+
     try {
+      let answerText = '';
+
       const systemPrompt = `당신은 대한민국 최고의 정통 사주명리학 대가이자 따뜻한 카운슬러 '루시(Lucy)'입니다.
 다음은 내담자의 정밀 사주 원국과 오행 분석 데이터입니다:
 
@@ -233,24 +248,51 @@ ${saju.systemPromptSummary}
 1. 사주 4주 8자의 음양오행 및 일간(${saju.dayMaster.hanja}), 십신, 신살을 종합적으로 근거로 삼아 명쾌하게 해설하세요.
 2. 미신적이거나 공포를 조장하는 말을 철저히 배제하고, 내담자가 자신의 타고난 잠재력과 결핍된 기운을 지혜롭게 보완할 수 있는 현대적이고 실천적인 조언을 3~4문장(250자 내외)으로 친절하게 답변하세요.`;
 
-      const reply = await invokeLLM({
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: q },
-        ],
-      });
+      try {
+        const reply = await invokeLLM({
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: q },
+          ],
+          timeoutMs: 12000,
+        });
 
-      const cleanReply = reply.replace(/```/g, '').trim();
-      setAiAnswers((prev) => [
-        ...prev,
-        {
-          q,
-          a: cleanReply,
-          time: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: true }),
-        },
-      ]);
+        const cleanReply = (reply || '').replace(/```/g, '').trim();
+        if (
+          cleanReply &&
+          cleanReply.length >= 20 &&
+          !cleanReply.includes('[AI 서비스 안내]') &&
+          !cleanReply.includes('Google Gemini API 키') &&
+          !cleanReply.includes('일시적인 원인으로 인해 응답을 생성하지 못했습니다')
+        ) {
+          answerText = cleanReply;
+        }
+      } catch (llmErr) {
+        console.warn('[TrinityDestinyReportView] invokeLLM failed or timed out, engaging local Saju Master engine:', llmErr);
+      }
+
+      // LLM 응답이 비어있거나 장애/타임아웃 발생 시 자체 정밀 명리 마스터 분석 엔진으로 즉각 완성
+      if (!answerText) {
+        answerText = generateSajuMasterConsultation(saju, q);
+      }
+
+      setAiAnswers((prev) =>
+        prev.map((item, idx) =>
+          idx === pendingIdx || (idx === prev.length - 1 && item.isLoading)
+            ? { ...item, a: answerText, isLoading: false }
+            : item
+        )
+      );
     } catch (err) {
       console.error('Failed to get saju AI advice:', err);
+      const fallbackText = generateSajuMasterConsultation(saju, q);
+      setAiAnswers((prev) =>
+        prev.map((item, idx) =>
+          idx === pendingIdx || (idx === prev.length - 1 && item.isLoading)
+            ? { ...item, a: fallbackText, isLoading: false }
+            : item
+        )
+      );
     } finally {
       setIsAiLoading(false);
     }
@@ -1275,7 +1317,10 @@ ${saju.systemPromptSummary}
       )}
 
       {/* 7. AI 명리 마스터 실시간 1:1 Q&A 상담 (인터랙티브 대화방) */}
-      <div className="rounded-3xl overflow-hidden bg-[#18191c] border border-amber-400/30 shadow-2xl flex flex-col backdrop-blur-xl">
+      <div
+        data-no-swipe="true"
+        className="no-swipe rounded-3xl overflow-hidden bg-[#18191c] border border-amber-400/30 shadow-2xl flex flex-col backdrop-blur-xl"
+      >
         {/* 헤더 */}
         <div className="px-5 py-4 bg-gradient-to-r from-[#212328] via-[#1d1e22] to-[#212328] border-b border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -1309,7 +1354,10 @@ ${saju.systemPromptSummary}
         </div>
 
         {/* 답변 내역 영역 */}
-        <div className="p-4 sm:p-5 space-y-4 max-h-[420px] min-h-[160px] overflow-y-auto bg-gradient-to-b from-[#18191c] to-[#121316]">
+        <div
+          data-no-swipe="true"
+          className="no-swipe p-4 sm:p-5 space-y-4 max-h-[420px] min-h-[160px] overflow-y-auto bg-gradient-to-b from-[#18191c] to-[#121316]"
+        >
           {aiAnswers.length === 0 && !isAiLoading ? (
             <div className="text-center py-8 space-y-2 text-zinc-500">
               <HelpCircle size={28} className="mx-auto text-zinc-600" />
@@ -1341,41 +1389,43 @@ ${saju.systemPromptSummary}
                         <span>명리 마스터 루시</span>
                         <span className="text-zinc-500 font-mono">{item.time}</span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleToggleConsultTts(idx, item.a)}
-                        className={`px-2 py-0.5 rounded-full flex items-center gap-1 text-[10px] font-medium transition-all active:scale-95 cursor-pointer ${
-                          activeConsultTtsIdx === idx && isTTSActive
-                            ? "bg-amber-400/25 text-amber-300 border border-amber-400/50 shadow-sm"
-                            : "bg-white/10 hover:bg-white/20 text-zinc-300 hover:text-white border border-white/10"
-                        }`}
-                        title={activeConsultTtsIdx === idx && isTTSActive ? "낭독 중지" : "답변 음성으로 듣기"}
-                      >
-                        {activeConsultTtsIdx === idx && isTTSActive ? (
-                          <>
-                            <VolumeX size={11} className="text-amber-300 animate-pulse" />
-                            <span>낭독 중지</span>
-                          </>
-                        ) : (
-                          <>
-                            <Volume2 size={11} className="text-amber-400" />
-                            <span>소리로 듣기</span>
-                          </>
-                        )}
-                      </button>
+                      {!item.isLoading && item.a ? (
+                        <button
+                          type="button"
+                          onClick={() => handleToggleConsultTts(idx, item.a)}
+                          className={`px-2 py-0.5 rounded-full flex items-center gap-1 text-[10px] font-medium transition-all active:scale-95 cursor-pointer ${
+                            activeConsultTtsIdx === idx && isTTSActive
+                              ? "bg-amber-400/25 text-amber-300 border border-amber-400/50 shadow-sm"
+                              : "bg-white/10 hover:bg-white/20 text-zinc-300 hover:text-white border border-white/10"
+                          }`}
+                          title={activeConsultTtsIdx === idx && isTTSActive ? "낭독 중지" : "답변 음성으로 듣기"}
+                        >
+                          {activeConsultTtsIdx === idx && isTTSActive ? (
+                            <>
+                              <VolumeX size={11} className="text-amber-300 animate-pulse" />
+                              <span>낭독 중지</span>
+                            </>
+                          ) : (
+                            <>
+                              <Volume2 size={11} className="text-amber-400" />
+                              <span>소리로 듣기</span>
+                            </>
+                          )}
+                        </button>
+                      ) : null}
                     </div>
-                    <p className="whitespace-pre-line break-words">{item.a}</p>
+                    {item.isLoading ? (
+                      <div className="flex items-center gap-2 text-xs text-amber-300 py-2">
+                        <div className="w-2 h-2 rounded-full bg-amber-400 animate-ping shrink-0" />
+                        <span>사주 원국과 오행 흐름을 종합하여 조언을 정리하고 있습니다...</span>
+                      </div>
+                    ) : (
+                      <p className="whitespace-pre-line break-words">{item.a}</p>
+                    )}
                   </div>
                 </div>
               </div>
             ))
-          )}
-
-          {isAiLoading && (
-            <div className="flex items-center gap-2 text-xs text-amber-300 py-3">
-              <div className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-              <span>사주 원국과 오행 흐름을 종합하여 통찰을 정리하고 있습니다...</span>
-            </div>
           )}
 
           <div ref={chatEndRef} />
@@ -1400,11 +1450,12 @@ ${saju.systemPromptSummary}
 
         {/* 질문 폼 */}
         <form
+          data-no-swipe="true"
           onSubmit={(e) => {
             e.preventDefault();
             handleAskAI();
           }}
-          className="p-3 sm:p-4 bg-[#18191c] border-t border-white/10 flex items-center gap-2"
+          className="no-swipe p-3 sm:p-4 bg-[#18191c] border-t border-white/10 flex items-center gap-2"
         >
           <input
             type="text"

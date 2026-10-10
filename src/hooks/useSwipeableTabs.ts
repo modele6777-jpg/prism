@@ -6,6 +6,8 @@ export interface UseSwipeableTabsOptions<T extends string> {
   activeTab: T;
   onTabChange: (newTab: T, direction: 1 | -1) => void;
   minSwipeDistance?: number;
+  minSwipeRatio?: number;
+  requireEdgeReach?: boolean;
   maxPerpendicularRatio?: number;
   enabled?: boolean;
   enableHaptics?: boolean;
@@ -15,8 +17,10 @@ export function useSwipeableTabs<T extends string>({
   tabs,
   activeTab,
   onTabChange,
-  minSwipeDistance = 45,
-  maxPerpendicularRatio = 1.25,
+  minSwipeDistance = 180,
+  minSwipeRatio = 0.55,
+  requireEdgeReach = true,
+  maxPerpendicularRatio = 2.2,
   enabled = true,
   enableHaptics = true,
 }: UseSwipeableTabsOptions<T>) {
@@ -36,9 +40,9 @@ export function useSwipeableTabs<T extends string>({
       const touch = e.touches[0];
       const target = e.target as HTMLElement | null;
 
-      // Ignore touches originating on interactive controls, sliders, text inputs, or horizontal carousels
+      // Ignore touches originating on interactive controls, sliders, text inputs, buttons, or designated no-swipe areas
       const isInteractive = target?.closest(
-        'input, textarea, select, [role="slider"], .no-swipe, [data-no-swipe], audio, video'
+        'input, textarea, select, [role="slider"], .no-swipe, [data-no-swipe], audio, video, button, [role="button"]'
       );
 
       touchStartRef.current = {
@@ -65,19 +69,34 @@ export function useSwipeableTabs<T extends string>({
         return;
       }
 
-      const deltaX = touch.clientX - touchStartRef.current.x;
-      const deltaY = touch.clientY - touchStartRef.current.y;
-      const deltaTime = Date.now() - touchStartRef.current.time;
+      const startX = touchStartRef.current.x;
+      const startY = touchStartRef.current.y;
+      const startTime = touchStartRef.current.time;
       touchStartRef.current = null;
 
-      // Gesture must complete within 800ms
-      if (deltaTime > 800) return;
+      const deltaX = touch.clientX - startX;
+      const deltaY = touch.clientY - startY;
+      const deltaTime = Date.now() - startTime;
+
+      // Gesture must complete within 1000ms and take at least 50ms
+      if (deltaTime > 1000 || deltaTime < 50) return;
 
       const absX = Math.abs(deltaX);
       const absY = Math.abs(deltaY);
 
-      // Must meet distance and be horizontal
-      if (absX >= minSwipeDistance && absX > absY * maxPerpendicularRatio) {
+      const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 390;
+      const effectiveMinDist = Math.max(minSwipeDistance, screenWidth * minSwipeRatio);
+
+      // Must meet distance and be clearly horizontal (prevent diagonal scroll conflict)
+      if (absX >= effectiveMinDist && absX > absY * maxPerpendicularRatio) {
+        // 화면 끝까지 도달해야 넘어가는 안전장치 (Edge Reach Check)
+        if (requireEdgeReach) {
+          const reachedLeftEdge = touch.clientX <= screenWidth * 0.28 || absX >= screenWidth * 0.65;
+          const reachedRightEdge = touch.clientX >= screenWidth * 0.72 || absX >= screenWidth * 0.65;
+          if (deltaX < 0 && !reachedLeftEdge) return;
+          if (deltaX > 0 && !reachedRightEdge) return;
+        }
+
         const currentIndex = tabs.indexOf(activeTab);
         if (currentIndex === -1) return;
 
@@ -104,7 +123,7 @@ export function useSwipeableTabs<T extends string>({
         }
       }
     },
-    [enabled, minSwipeDistance, maxPerpendicularRatio, tabs, activeTab, onTabChange, enableHaptics]
+    [enabled, minSwipeDistance, minSwipeRatio, requireEdgeReach, maxPerpendicularRatio, tabs, activeTab, onTabChange, enableHaptics]
   );
 
   const handleTouchMove = useCallback(
@@ -114,8 +133,8 @@ export function useSwipeableTabs<T extends string>({
       if (!touch) return;
       const deltaX = Math.abs(touch.clientX - touchStartRef.current.x);
       const deltaY = Math.abs(touch.clientY - touchStartRef.current.y);
-      // 수평 스와이프가 지배적일 때 브라우저 뒤로가기/다른 앱 전환 제스처 간섭 방지
-      if (deltaX > 20 && deltaX > deltaY * 1.2 && e.cancelable) {
+      // 오직 뚜렷하고 긴 수평 드래그일 때만 브라우저 뒤로가기 제스처 간섭 방지 (수직 스크롤 방해 금지)
+      if (deltaX > 60 && deltaX > deltaY * 2.5 && e.cancelable) {
         e.preventDefault();
       }
     },

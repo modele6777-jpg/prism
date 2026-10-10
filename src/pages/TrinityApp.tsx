@@ -1483,6 +1483,9 @@ function playDailyCardChimeAsync() {
   const { swipeHandlers: trinitySwipeHandlers } = useSwipeableTabs({
     tabs: trinitySwipeTabs,
     activeTab: currentTrinityTab,
+    minSwipeRatio: 0.58,
+    requireEdgeReach: true,
+    maxPerpendicularRatio: 2.2,
     onTabChange: (newTab) => {
       if (newTab === 'tarot') {
         if (!tarotResult && !isTarotGenerating) {

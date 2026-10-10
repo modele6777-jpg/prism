@@ -972,6 +972,9 @@ export default function HealApp() {
   } = useSwipeableTabs<HealSwipeTab>({
     tabs: HEAL_SWIPE_TABS,
     activeTab: currentSwipeTab,
+    minSwipeRatio: 0.58,
+    requireEdgeReach: true,
+    maxPerpendicularRatio: 2.2,
     enabled: true,
     enableHaptics: true,
     onTabChange: (newTab) => {
