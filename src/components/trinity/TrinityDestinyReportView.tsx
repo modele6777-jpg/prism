@@ -101,7 +101,36 @@ export function TrinityDestinyReportView({ onConsult }: TrinityDestinyReportView
   const [aiAnswers, setAiAnswers] = useState<Array<{ q: string; a: string; time: string; isLoading?: boolean }>>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [activeConsultTtsIdx, setActiveConsultTtsIdx] = useState<number | null>(null);
+  const [isAutoTtsEnabled, setIsAutoTtsEnabled] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('prism_saju_consult_auto_tts');
+      return saved !== null ? saved === 'true' : true; // 기본값: 자동 낭독 ON
+    } catch (_) {
+      return true;
+    }
+  });
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  const toggleAutoTts = () => {
+    setIsAutoTtsEnabled((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('prism_saju_consult_auto_tts', String(next));
+      } catch (_) {}
+      return next;
+    });
+  };
+
+  // 질문 + 답변 자연스러운 음성 대본 생성 헬퍼
+  const buildConsultationSpeechText = (question: string, answer: string): string => {
+    const cleanQ = (question || '').trim();
+    let cleanA = (answer || '').trim();
+
+    // 답변 서두의 중복되는 "질문해주신 '...'에 대하여" 접두어를 깔끔하게 정리하여 자연스러운 구어체로 전환
+    cleanA = cleanA.replace(/^질문해주신\s*["'“‘]?[^"'\n”’]+["'”’]?\s*(?:에\s*대하여|에\s*대한|에\s*대해)?\s*,?\s*/i, '');
+
+    return `질문입니다. ${cleanQ}.\n\n명리 마스터 루시의 조언입니다.\n${cleanA}`;
+  };
 
   // 음성 재생 상태가 끝나면 재생 인덱스 초기화
   useEffect(() => {
@@ -110,8 +139,15 @@ export function TrinityDestinyReportView({ onConsult }: TrinityDestinyReportView
     }
   }, [isTTSActive]);
 
-  // AI 상담 답변 TTS 토글 핸들러
-  const handleToggleConsultTts = async (idx: number, answerText: string) => {
+  // 컴포넌트 언마운트 시 음성 정지
+  useEffect(() => {
+    return () => {
+      stopTTS();
+    };
+  }, []);
+
+  // AI 상담 답변 TTS 토글 핸들러 (질문 + 답변 낭독)
+  const handleToggleConsultTts = async (idx: number, question: string, answerText: string) => {
     if (activeConsultTtsIdx === idx && isTTSActive) {
       stopTTS();
       setActiveConsultTtsIdx(null);
@@ -119,8 +155,9 @@ export function TrinityDestinyReportView({ onConsult }: TrinityDestinyReportView
     }
     stopTTS();
     setActiveConsultTtsIdx(idx);
+    const speechScript = buildConsultationSpeechText(question, answerText);
     try {
-      await playTTSInChunks(answerText, 'Kore', 110, '따뜻함');
+      await playTTSInChunks(speechScript, 'Kore', 110, '따뜻함');
     } finally {
       setActiveConsultTtsIdx((prev) => (prev === idx ? null : prev));
     }
@@ -279,13 +316,24 @@ ${saju.systemPromptSummary}
         answerText = generateSajuMasterConsultation(saju, q);
       }
 
+      const finalAnswer = answerText;
       setAiAnswers((prev) =>
         prev.map((item, idx) =>
           idx === pendingIdx || (idx === prev.length - 1 && item.isLoading)
-            ? { ...item, a: answerText, isLoading: false }
+            ? { ...item, a: finalAnswer, isLoading: false }
             : item
         )
       );
+
+      // 🔊 대답이 나올 때 자동으로 내 질문과 대답 낭독
+      if (isAutoTtsEnabled && finalAnswer) {
+        const speechScript = buildConsultationSpeechText(q, finalAnswer);
+        stopTTS();
+        setActiveConsultTtsIdx(pendingIdx);
+        playTTSInChunks(speechScript, 'Kore', 110, '따뜻함').finally(() => {
+          setActiveConsultTtsIdx((prev) => (prev === pendingIdx ? null : prev));
+        });
+      }
     } catch (err) {
       console.error('Failed to get saju AI advice:', err);
       const fallbackText = generateSajuMasterConsultation(saju, q);
@@ -296,6 +344,16 @@ ${saju.systemPromptSummary}
             : item
         )
       );
+
+      // 🔊 대답이 나올 때 자동으로 내 질문과 대답 낭독
+      if (isAutoTtsEnabled && fallbackText) {
+        const speechScript = buildConsultationSpeechText(q, fallbackText);
+        stopTTS();
+        setActiveConsultTtsIdx(pendingIdx);
+        playTTSInChunks(speechScript, 'Kore', 110, '따뜻함').finally(() => {
+          setActiveConsultTtsIdx((prev) => (prev === pendingIdx ? null : prev));
+        });
+      }
     } finally {
       setIsAiLoading(false);
     }
@@ -1345,15 +1403,41 @@ ${saju.systemPromptSummary}
             </div>
           </div>
 
-          {onConsult && (
+          <div className="flex items-center gap-2">
+            {/* 자동 낭독 토글 스위치 버튼 */}
             <button
-              onClick={() => onConsult(`내 사주 만세력 원국(${saju.dayMaster.hanja} ${saju.dayMaster.symbolName})을 바탕으로 심층 상담을 나누고 싶어!`)}
-              className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-300 text-xs font-bold transition-all flex items-center gap-1"
+              type="button"
+              onClick={toggleAutoTts}
+              className={`px-2.5 py-1.5 rounded-xl border text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
+                isAutoTtsEnabled
+                  ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-400/40 shadow-amber-500/10'
+                  : 'bg-white/5 hover:bg-white/10 text-zinc-400 border-white/10 hover:text-zinc-200'
+              }`}
+              title={isAutoTtsEnabled ? '답변 수신 시 질문과 답변 자동 낭독 활성화됨 (클릭 시 비활성화)' : '답변 수신 시 자동 낭독 꺼짐 (클릭 시 활성화)'}
             >
-              <span>루시 1:1 상담실 연결</span>
-              <ArrowRight size={12} />
+              {isAutoTtsEnabled ? (
+                <>
+                  <Volume2 size={13} className="text-amber-400 animate-pulse" />
+                  <span>자동 낭독 ON</span>
+                </>
+              ) : (
+                <>
+                  <VolumeX size={13} className="text-zinc-400" />
+                  <span>자동 낭독 OFF</span>
+                </>
+              )}
             </button>
-          )}
+
+            {onConsult && (
+              <button
+                onClick={() => onConsult(`내 사주 만세력 원국(${saju.dayMaster.hanja} ${saju.dayMaster.symbolName})을 바탕으로 심층 상담을 나누고 싶어!`)}
+                className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-300 text-xs font-bold transition-all flex items-center gap-1"
+              >
+                <span>루시 1:1 상담실 연결</span>
+                <ArrowRight size={12} />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* 답변 내역 영역 */}
@@ -1395,13 +1479,13 @@ ${saju.systemPromptSummary}
                       {!item.isLoading && item.a ? (
                         <button
                           type="button"
-                          onClick={() => handleToggleConsultTts(idx, item.a)}
+                          onClick={() => handleToggleConsultTts(idx, item.q, item.a)}
                           className={`px-2 py-0.5 rounded-full flex items-center gap-1 text-[10px] font-medium transition-all active:scale-95 cursor-pointer ${
                             activeConsultTtsIdx === idx && isTTSActive
                               ? "bg-amber-400/25 text-amber-300 border border-amber-400/50 shadow-sm"
                               : "bg-white/10 hover:bg-white/20 text-zinc-300 hover:text-white border border-white/10"
                           }`}
-                          title={activeConsultTtsIdx === idx && isTTSActive ? "낭독 중지" : "답변 음성으로 듣기"}
+                          title={activeConsultTtsIdx === idx && isTTSActive ? "낭독 중지" : "질문과 답변 음성으로 듣기"}
                         >
                           {activeConsultTtsIdx === idx && isTTSActive ? (
                             <>
