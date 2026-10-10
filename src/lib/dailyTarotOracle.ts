@@ -1,5 +1,6 @@
 import type { TarotCard } from '@/data/tarotData';
 import type { AuraThemeCard } from '@/lib/auraCards';
+import { getCardSoulBlessing } from '@/lib/tarotBlessings';
 
 interface DailyOracleResult {
   diagnosis: string;
@@ -605,7 +606,7 @@ ${isReversed ? '지금은 억지로 결과를 서두르기보다 마음의 중�
 - **추천 사운드 & 공명 주파수**: **${details.frequency}**의 공명 주파수를 의식하며, 가슴 한가운데 손을 얹고 깊은 복식호흡 3회를 진행해 보세요.
 
 ### ✨ 5. 당신의 길을 축복하는 영혼의 한마디
-> _"나는 오늘 [${cardName}] 카드가 전하는 ${details.symbolWord}의 지혜를 온전히 수용하며, 나에게 주어지는 모든 순간을 감사와 확신으로 맞이합니다."_`;
+> _"${getCardSoulBlessing(card)}"_`;
 
   return {
     diagnosis,

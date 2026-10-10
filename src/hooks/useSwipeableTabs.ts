@@ -107,6 +107,21 @@ export function useSwipeableTabs<T extends string>({
     [enabled, minSwipeDistance, maxPerpendicularRatio, tabs, activeTab, onTabChange, enableHaptics]
   );
 
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent | TouchEvent) => {
+      if (!enabled || !touchStartRef.current || touchStartRef.current.shouldIgnore) return;
+      const touch = e.touches[0];
+      if (!touch) return;
+      const deltaX = Math.abs(touch.clientX - touchStartRef.current.x);
+      const deltaY = Math.abs(touch.clientY - touchStartRef.current.y);
+      // 수평 스와이프가 지배적일 때 브라우저 뒤로가기/다른 앱 전환 제스처 간섭 방지
+      if (deltaX > 20 && deltaX > deltaY * 1.2 && e.cancelable) {
+        e.preventDefault();
+      }
+    },
+    [enabled]
+  );
+
   const changeTabWithDirection = useCallback(
     (newTab: T) => {
       const currentIndex = tabs.indexOf(activeTab);
@@ -124,6 +139,7 @@ export function useSwipeableTabs<T extends string>({
     changeTabWithDirection,
     swipeHandlers: {
       onTouchStart: handleTouchStart,
+      onTouchMove: handleTouchMove,
       onTouchEnd: handleTouchEnd,
     },
   };

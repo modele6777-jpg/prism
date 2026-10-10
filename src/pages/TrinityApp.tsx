@@ -100,6 +100,7 @@ import { TarotSpreadSelectionModal } from "@/components/trinity/TarotSpreadSelec
 import { TarotCardBackCustomizerModal } from "@/components/trinity/TarotCardBackCustomizerModal";
 import { PhysicalTarotInputModal } from "@/components/trinity/PhysicalTarotInputModal";
 import { useTarotCardBack } from "@/hooks/useTarotCardBack";
+import { useSwipeableTabs } from "@/hooks/useSwipeableTabs";
 import { playAudioHaptic } from "@/lib/audioHaptics";
 import { TodayTarotNarrationModal } from "@/components/trinity/TodayTarotNarrationModal";
 import { LucyTarotAdviceCard } from "@/components/trinity/LucyTarotAdviceCard";
@@ -160,6 +161,7 @@ const EnergyAnalysisSchema = z.object({
 });
 
 import { buildSpecificTarotDailyOracle, getTarotCardDetails } from '@/lib/dailyTarotOracle';
+import { getCardSoulBlessing } from '@/lib/tarotBlessings';
 
 function buildLocalTrinityDailyOracle(card: any, mode: string = "oracle") {
   if (card && (card.id || card.nameKo || card.name)) {
@@ -187,7 +189,7 @@ ${isReversed ? '지금은 서두르기보다 주변 상황을 면밀히 살피�
 - **주의할 점**: 사소한 일이나 타인의 말에 감정을 소모하지 않기
 
 ### ✨ 5. 당신의 길을 축복하는 영혼의 한마디
-> _"나는 오늘 [${cardName}] 카드의 조화로운 에너지를 마음에 품고, 나에게 주어지는 모든 순간을 감사와 확신으로 맞이합니다."_`;
+> _"${getCardSoulBlessing(card)}"_`;
 
   return {
     diagnosis,
@@ -815,62 +817,11 @@ function getInitialTrinityDailyResult(uid?: string) {
   return null;
 }
 
-function deduplicateReadingText(text: string): string {
-  if (!text) return text;
-
-  // 1. Check if the entire reading or substantial block is duplicated (e.g. section 1 header repeated)
-  const section1Matches = [...text.matchAll(/###\s*🕯️?\s*1\.\s*카드가\s*비추는/g)];
-  if (section1Matches.length > 1) {
-    const secondIndex = section1Matches[1].index;
-    if (secondIndex && secondIndex > 100) {
-      const firstPart = text.slice(0, secondIndex).trim();
-      const secondPart = text.slice(secondIndex).trim();
-      if (secondPart.length >= firstPart.length && (secondPart.includes('5.') || secondPart.includes('축복'))) {
-        text = secondPart;
-      } else {
-        text = firstPart;
-      }
-    }
-  }
-
-  // 2. Check if text is an exact or near duplicate repetition of two halves (A + A)
-  const trimmedText = text.trim();
-  const halfLen = Math.floor(trimmedText.length / 2);
-  if (halfLen > 150) {
-    const firstHalf = trimmedText.slice(0, halfLen).trim();
-    const secondHalf = trimmedText.slice(halfLen).trim();
-    if (firstHalf === secondHalf || secondHalf.startsWith(firstHalf.slice(0, 100))) {
-      text = firstHalf;
-    }
-  }
-
-  // 3. Line-by-line consecutive deduplication
-  const lines = text.split('\n');
-  const result: string[] = [];
-  let lastNonEmpty = '';
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed) {
-      result.push(line);
-      continue;
-    }
-    // Filter exact consecutive lines or headings
-    if (trimmed === lastNonEmpty) {
-      continue;
-    }
-    result.push(line);
-    lastNonEmpty = trimmed;
-  }
-
-  return result.join('\n');
-}
-
 /**
  * 🚫 타로 결과 음성 낭독 및 본문 표시 시 후행 요약 블록 깔끔하게 정리 & 핵심 3줄 요약 추출 유틸리티
  */
-import { stripSummaryFromTarotText, extractConciseSummary } from '@/lib/tarotSummaryUtils';
-export { stripSummaryFromTarotText, extractConciseSummary };
+import { stripSummaryFromTarotText, extractConciseSummary, deduplicateReadingText } from '@/lib/tarotSummaryUtils';
+export { stripSummaryFromTarotText, extractConciseSummary, deduplicateReadingText };
 
 export default function TrinityApp() {
   const [, navigate] = useLocation();
@@ -1522,6 +1473,28 @@ function playDailyCardChimeAsync() {
   const [dailyChatInput, setDailyChatInput] = useState("");
   const [isDailySubChatGenerating, setIsDailySubChatGenerating] =
     useState(false);
+
+  // 📱 좌우 스와이프 제스처: 다른 앱으로 이탈하지 않고 같은 앱 내에서만 탭 이동 (SAJU <-> TAROT <-> ORACLE)
+  const trinitySwipeTabs = useMemo(() => ['destiny', 'tarot', 'oracle'] as const, []);
+  const currentTrinityTab = (activeMode === 'oracle' || activeMode === 'synergy')
+    ? 'oracle'
+    : (activeMode === 'tarot' ? 'tarot' : 'destiny');
+
+  const { swipeHandlers: trinitySwipeHandlers } = useSwipeableTabs({
+    tabs: trinitySwipeTabs,
+    activeTab: currentTrinityTab,
+    onTabChange: (newTab) => {
+      if (newTab === 'tarot') {
+        if (!tarotResult && !isTarotGenerating) {
+          resetTarotSession(true);
+        }
+        setActiveMode('tarot');
+      } else {
+        setActiveMode(newTab);
+      }
+    },
+    enabled: !tarotVirtualMode && !showDailyModal && !isDailyOracleLoading && !zoomedCard,
+  });
   const [tarotConcern, setTarotConcern] = useState<string>(() => {
     const today = getTodayDateKey();
     const guestLimit = typeof window !== "undefined" ? localStorage.getItem(`limit_daily_trinity_guest_${today}`) : null;
@@ -2244,7 +2217,9 @@ function playDailyCardChimeAsync() {
         }
 
         if (data?.diagnosis) {
+          data.diagnosis = deduplicateReadingText(data.diagnosis);
           data.diagnosis = ensureCompleteTarotReading(data.diagnosis, "오늘의 데일리 타로 리딩", [selectedCard]);
+          data.diagnosis = deduplicateReadingText(data.diagnosis);
         }
 
         const resultWithCard = {
@@ -2533,7 +2508,11 @@ ${tailoredGuide.promptTemplate}${binaryChoicePromptAddon}${spreadPromptAddon}${c
                   finalResponse = chunk;
                 } else if (chunk.length > 20 && finalResponse.endsWith(chunk)) {
                   // Already included
-                } else if (chunk.length > 80 && chunk.includes("### 🕯️ 1.") && finalResponse.includes("### 🕯️ 1.")) {
+                } else if (
+                  chunk.length > 60 &&
+                  /(?:###\s*(?:[✨👑💎🌟⚡🏆💰🌅💌☯️🛤️🕯️☀️🧭]\s*)?1[\.\s]|\[핵심\s*(?:3줄|세줄)?\s*요약\])/i.test(chunk) &&
+                  /(?:###\s*(?:[✨👑💎🌟⚡🏆💰🌅💌☯️🛤️🕯️☀️🧭]\s*)?1[\.\s]|\[핵심\s*(?:3줄|세줄)?\s*요약\])/i.test(finalResponse)
+                ) {
                   // Non-stream or restart fallback emitted full reading text; avoid duplication!
                   finalResponse = chunk;
                 } else {
@@ -2989,8 +2968,12 @@ ${tailoredGuide.promptTemplate}${binaryChoicePromptAddon}${spreadPromptAddon}${c
       </motion.nav>
 
 
-      {/* Main Layout Area */}
-      <main data-app-scroll-root className="flex-1 w-full pt-page pb-page md:pt-page-md md:pb-page-md flex flex-col relative z-10 overflow-y-auto no-scrollbar scroll-smooth text-white">
+      {/* Main Layout Area — 동일 앱 내에서만 탭 스와이프 전환 지원 및 브라우저 외부 이탈 방지 */}
+      <main
+        data-app-scroll-root
+        {...trinitySwipeHandlers}
+        className="flex-1 w-full pt-page pb-page md:pt-page-md md:pb-page-md flex flex-col relative z-10 overflow-y-auto no-scrollbar scroll-smooth text-white touch-pan-y overscroll-x-none"
+      >
         <div className="max-w-5xl w-full mx-auto px-3 sm:px-6 prism-xs-pad flex-1 flex flex-col min-w-0">
           <AnimatePresence mode="wait">
             {activeMode === "oracle" || activeMode === "synergy" ? (

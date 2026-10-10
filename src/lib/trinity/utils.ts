@@ -7,6 +7,7 @@ import { calculateDetailedSaju } from '@/lib/sajuAnalysis';
 import type { UserProfile } from '@/lib/sharedState';
 import { extractConciseSummary, stripSummaryFromTarotText } from '@/lib/tarotSummaryUtils';
 import { getTarotCardDetails } from '@/lib/dailyTarotOracle';
+import { getCardSoulBlessing } from '@/lib/tarotBlessings';
 
 // ✨ Constants
 export const HS = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
@@ -1534,7 +1535,7 @@ ${decisionText}
 - **실천 한 걸음**: 가슴속으로만 맴돌던 생각을 밖으로 꺼내어 작은 실천(메모, 가벼운 대화, 정리 정돈)으로 연결해 보세요. 작은 파동이 큰 대운을 불러옵니다.
 
 ### ✨ 5. 당신의 길을 축복하는 영혼의 한마디
-_"카드는 정해진 운명을 가두는 틀이 아니라, 당신 안의 빛을 깨우는 거울입니다. 당신은 이미 답을 알고 있으며, 길은 당신이 딛는 발걸음마다 환하게 열릴 것입니다."_${photoMode ? '\n\n*(비전 포털 — 인식된 카드의 신비로운 에너지가 함께 투영되었습니다)*' : ''}`;
+> _"${getCardSoulBlessing(cards[cards.length - 1] || leadCard, concern)}"_${photoMode ? '\n\n*(비전 포털 — 인식된 카드의 신비로운 에너지가 함께 투영되었습니다)*' : ''}`;
 }
 
 /**
@@ -1550,11 +1551,11 @@ export function ensureCompleteTarotReading(
   }
 
   let cleaned = text.trim();
-  const localFull = Array.isArray(cards) && cards.length > 0 ? buildLocalTarotReading(concern, cards) : '';
+  const leadCard = cards && cards.length > 0 ? (cards[cards.length - 1] || cards[0]) : null;
 
-  // 1. 4단계 및 5단계 완결성 엄밀 판정
-  const step4Pattern = /(?:###\s*(?:🌿\s*)?4[\.\s]|4단계|운의\s*흐름을\s*바꿀|개운\s*가이드|실천\s*처방)/;
-  const step5Pattern = /(?:###\s*(?:✨\s*)?5[\.\s]|5단계|영혼의\s*한마디|당신의\s*길을\s*축복하는)/;
+  // 1. 4단계 및 5단계 완결성 엄밀 판정 (모든 스프레드 테마별 헤더 포용)
+  const step4Pattern = /(?:###\s*(?:[🌿👑💎🌟⚡🏆💰🌅💌☯️🛤️🕯️☀️🧭]\s*)?4[\.\s]|4단계|운의\s*흐름을\s*바꿀|개운\s*가이드|실천\s*처방|1일\s*1실천|실천\s*행동)/;
+  const step5Pattern = /(?:###\s*(?:[✨👑💎🌟⚡🏆💰🌅💌☯️🛤️🕯️☀️🧭]\s*)?5[\.\s]|5단계|영혼의\s*한마디|당신의\s*길을\s*축복하는|황금빛\s*축복|축복과\s*확언|희망의\s*축복|마스터플랜|최종\s*결실)/;
 
   const hasStep4 = step4Pattern.test(cleaned);
   const hasStep5 = step5Pattern.test(cleaned);
@@ -1563,31 +1564,24 @@ export function ensureCompleteTarotReading(
   if (hasStep5) {
     const step5Idx = cleaned.search(step5Pattern);
     const step5Content = cleaned.slice(step5Idx);
-    // 5단계 헤더 이후 본문 길이가 45자 미만이거나 문장이 중단된 경우
-    if (step5Content.length < 50 || /[,;:—\-\s]$/.test(cleaned) || !/[.!?…"'\*_]$/.test(cleaned)) {
+    // 5단계 헤더 이후 본문 길이가 40자 미만이거나 마침표/인용부호 없이 중단된 경우
+    if (step5Content.length < 45 || /[,;:—\-\s]$/.test(cleaned)) {
       step5IsIncomplete = true;
     }
   }
 
-  // 2. 누락되거나 잘린 섹션을 로컬 오라클로 온전히 보완
-  if (localFull) {
-    if (!hasStep4) {
-      // 4단계와 5단계가 모두 누락된 경우
-      const step4Match = localFull.match(/### 🌿 4\.[\s\S]*/);
-      if (step4Match) {
-        cleaned = cleaned + "\n\n" + step4Match[0];
-      }
-    } else if (!hasStep5 || step5IsIncomplete) {
-      // 4단계는 있으나 5단계가 누락되었거나 끝부분이 중간에 끊긴 경우
-      if (step5IsIncomplete) {
-        const step5Idx = cleaned.search(step5Pattern);
-        cleaned = cleaned.slice(0, step5Idx).trim();
-      }
-      const step5Match = localFull.match(/### ✨ 5\.[\s\S]*/);
-      if (step5Match) {
-        cleaned = cleaned + "\n\n" + step5Match[0];
-      }
+  // 2. 누락되거나 잘린 섹션을 카드 맞춤형으로 온전히 보완
+  if (!hasStep4) {
+    cleaned += `\n\n### 🌿 4. 운의 흐름을 바꿀 마스터의 실천 처방 (개운 가이드)\n- **마음의 정돈**: 타인의 시선이나 조급함에 휘둘리지 말고 내면의 고요한 직관을 신뢰하세요.\n- **오늘의 핵심 실천**: 가벼운 심호흡과 함께 맑은 물 한 잔을 마시며 마음의 중심을 단단히 잡으세요.`;
+  }
+
+  if (!hasStep5 || step5IsIncomplete) {
+    if (step5IsIncomplete) {
+      const step5Idx = cleaned.search(step5Pattern);
+      cleaned = cleaned.slice(0, step5Idx).trim();
     }
+    const dynamicBlessing = getCardSoulBlessing(leadCard, concern);
+    cleaned += `\n\n### ✨ 5. 당신의 길을 축복하는 영혼의 한마디\n> _"${dynamicBlessing}"_`;
   }
 
   // 3. 미완성 마크다운 서식 닫기
@@ -1603,30 +1597,8 @@ export function ensureCompleteTarotReading(
     cleaned += '.';
   }
 
-  // 5. 후행 중복 요약 블록 완전 제거 (본문 하단에 남아 있는 어떠한 형태의 요약 블록도 영구 삭제)
-  const lastSectionMatch = cleaned.match(/(?:###\s*(?:✨\s*)?(?:[3-5][\.\s]|영혼의\s*한마디|당신의\s*길을\s*축복하는|마스터의\s*실천\s*처방|최종\s*결실))/i);
-  const searchStart = lastSectionMatch && lastSectionMatch.index !== undefined
-    ? lastSectionMatch.index + 20
-    : Math.floor(cleaned.length * 0.4);
-
-  const endChunk = cleaned.slice(searchStart);
-  const summaryHeaderMatch = endChunk.match(
-    /(?:\r?\n|^)\s*(?:[-*•·\d.]+\s*)?(?:#{1,6}\s*)?(?:\*{1,2}|_{1,2})?\s*(?:[✨🌟🔮📌💡📋💎⚡🌿🎯]\s*)*\s*(?:[\[【(])?\s*(?:[✨🌟🔮📌💡📋💎⚡🌿🎯]\s*)*\s*(?:핵심\s*(?:3줄|세줄|3대)?\s*요약|3줄\s*(?:핵심\s*)?요약|세줄\s*(?:핵심\s*)?요약|핵심\s*요약|Quick\s*Summary|Executive\s*Summary|3-Line\s*Summary)(?:[\]】)])?\s*(?:\*{1,2}|_{1,2})?\s*(?:[:—\-–~]|—[^\r\n]*)?\s*(?:\r?\n|$)/i
-  );
-
-  if (summaryHeaderMatch && summaryHeaderMatch.index !== undefined) {
-    cleaned = cleaned.slice(0, searchStart + summaryHeaderMatch.index).trim();
-  }
-  cleaned = cleaned.replace(/(?:\r?\n)\s*[-*•·]?\s*\[(?:현재\s*에너지|방향과\s*결단|실천\s*처방|개운\s*처방|오늘의\s*에너지|상황\s*나침반|개운\s*액션|머니\s*마인드셋|현금\s*흐름|부자\s*액션|잠재\s*럭키|기회의\s*문|개운\s*비법|영혼\s*주파수|빛의\s*나침반|천상의\s*은총|상처의\s*자각|내면아이\s*목소리|셀프\s*힐링|신년\s*봄·여름\s*흐름|가을·겨울\s*결실|대운\s*핵심\s*나침반|년·월주\s*사회성|일주\s*본질|시주\s*결실\s*처방|현재\s*딜레마|최종\s*선택\s*판정|결단\s*행동\s*수칙|최종\s*판정\s*\(YES\/NO\)|실행\s*지침|나의\s*속마음|상대의\s*속마음|사랑의\s*해법|현재\s*역량|돌파\s*전략|성공\s*비전|재정\s*상태|막힘\s*해소|유입\s*기회|과거\s*인과|현재\s*타이밍|결정적\s*시점|상황\s*진단|장애물\s*실체|현재와\s*도전|시간과\s*심리\s*축|최종\s*마스터\s*결말|과거\s*원인|현재\s*상황|미래\s*결실)[^\]]*\][^\r\n]*$/gi, "").trim();
-
-  // 6. 핵심 3줄 요약 블록 누락 방지 (리딩 본문 최상단에 요약이 없으면 자동 생성하여 최상단에 배치)
-  const hasSummaryBlock = /(?:\[핵심\s*(?:3줄\s*|세줄\s*)?요약\]|###\s*.*핵심\s*(?:3줄\s*|세줄\s*)?요약|###\s*.*핵심\s*요약|\[핵심\s*요약\])/i.test(cleaned);
-  if (!hasSummaryBlock) {
-    const summaryLines = extractConciseSummary(cleaned, cards?.[0]);
-    if (summaryLines.length === 3) {
-      cleaned = `[핵심 3줄 요약]\n- ${summaryLines[0]}\n- ${summaryLines[1]}\n- ${summaryLines[2]}\n\n` + cleaned;
-    }
-  }
+  // 5. 본문 하단에 남아 있는 어떠한 형태의 후행 요약 블록도 영구 삭제
+  cleaned = stripSummaryFromTarotText(cleaned);
 
   return cleaned;
 }

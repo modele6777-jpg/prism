@@ -37,7 +37,14 @@ export interface UserGoal {
 const STORAGE_KEY = 'luckey_user_goals_v1';
 const STORAGE_DATE_KEY = 'luckey_user_goals_date_v1';
 
-const getTodayKey = () => new Date().toISOString().split('T')[0];
+// 한국 및 사용자 로컬 시간대 기준 YYYY-MM-DD
+const getTodayKey = () => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 const CATEGORY_META: Record<GoalCategory, { label: string; icon: string; defaultColorStart: string; defaultColorEnd: string; glow: string }> = {
   mind: {
@@ -346,28 +353,14 @@ export function GoalProgressRingDashboard() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // If stored on a previous date or if legacy prefilled mock data is detected, reset daily progress to 0
-          const isNewDay = savedDate !== today;
-          const hasLegacyPrefilledMock = parsed.some(
-            (g: UserGoal) =>
-              (g.id === 'goal-wellness' && g.current >= 20) ||
-              (g.id === 'goal-mindfulness' && g.current >= 10) ||
-              (g.id === 'goal-reading' && g.current >= 18)
-          );
-
-          if (isNewDay || hasLegacyPrefilledMock) {
-            const cleanGoals = parsed.map((g: UserGoal) => ({
-              ...g,
-              current: 0,
-              completedAt: undefined,
-            }));
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanGoals));
+          if (!savedDate) {
             localStorage.setItem(STORAGE_DATE_KEY, today);
-            return cleanGoals;
           }
           return parsed;
         }
       }
+      // 최초 실행 시 기본 목표를 로컬 스토리지에 확정 저장하여 새로고침 시 초기화 방지
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_GOALS));
       localStorage.setItem(STORAGE_DATE_KEY, today);
     } catch (e) {
       console.warn('Failed to parse saved user goals:', e);
@@ -396,45 +389,26 @@ export function GoalProgressRingDashboard() {
     }
   }, []);
 
-  // Multi-tab listener & daily midnight/focus reset listener
+  // Multi-tab listener & safe persistence sync (창 포커스 시 임의 초기화 방지)
   useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
       if (e.key === STORAGE_KEY && e.newValue) {
         try {
           const parsed = JSON.parse(e.newValue);
-          if (Array.isArray(parsed)) setGoals(parsed);
+          if (Array.isArray(parsed) && parsed.length > 0) setGoals(parsed);
         } catch (_) {}
       }
     };
     const handleCustomSync = (e: Event) => {
       const detail = (e as CustomEvent).detail;
-      if (Array.isArray(detail)) setGoals(detail);
-    };
-
-    const checkDailyReset = () => {
-      const today = getTodayKey();
-      const savedDate = localStorage.getItem(STORAGE_DATE_KEY);
-      if (savedDate && savedDate !== today) {
-        setGoals((prev) => {
-          const reset = prev.map((g) => ({
-            ...g,
-            current: 0,
-            completedAt: undefined,
-          }));
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(reset));
-          localStorage.setItem(STORAGE_DATE_KEY, today);
-          return reset;
-        });
-      }
+      if (Array.isArray(detail) && detail.length > 0) setGoals(detail);
     };
 
     window.addEventListener('storage', handleStorage);
     window.addEventListener('luckey-goals-sync', handleCustomSync);
-    window.addEventListener('focus', checkDailyReset);
     return () => {
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('luckey-goals-sync', handleCustomSync);
-      window.removeEventListener('focus', checkDailyReset);
     };
   }, []);
 

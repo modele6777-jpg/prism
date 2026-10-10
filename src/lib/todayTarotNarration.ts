@@ -1,7 +1,7 @@
 import { getTodayDateKey } from '@/lib/dailyCache';
 import { getTarotCardImageUrl, TAROT_DECK, type TarotCard } from '@/data/tarotData';
 import { prepareNaturalSpeechText } from '@/utils/speechText';
-import { extractConciseSummary, stripSummaryFromTarotText } from '@/lib/tarotSummaryUtils';
+import { extractConciseSummary, stripSummaryFromTarotText, deduplicateReadingText } from '@/lib/tarotSummaryUtils';
 import { ensureCompleteTarotReading } from '@/lib/trinity/utils';
 
 export interface TarotNarrationChapter {
@@ -134,10 +134,14 @@ export function buildTarotNarrationContent(dailyResult: any): TarotNarrationData
     '오늘 하루는 내면의 직관과 차분한 호흡에 집중할 때 가장 맑고 조화로운 길이 열립니다.'
   ).trim();
 
-  const fullSourceText = ensureCompleteTarotReading(
-    rawSourceText,
-    "오늘의 데일리 타로 리딩",
-    drawnCard ? [drawnCard] : []
+  const dedupedSourceText = deduplicateReadingText(rawSourceText);
+
+  const fullSourceText = deduplicateReadingText(
+    ensureCompleteTarotReading(
+      dedupedSourceText,
+      "오늘의 데일리 타로 리딩",
+      drawnCard ? [drawnCard] : []
+    )
   );
 
   const conciseSummaryBullets = extractConciseSummary(fullSourceText, drawnCard || dailyResult);

@@ -288,6 +288,39 @@ function AppContent() {
     return cleanupListeners;
   }, []);
 
+  // 📱 모바일 브라우저 좌우 가장자리 스와이프 시 브라우저 히스토리/다른 앱으로 이탈하는 제스처 차단
+  React.useEffect(() => {
+    let startX = 0;
+    let startY = 0;
+
+    const handleEdgeTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+      }
+    };
+
+    const handleEdgeTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        const dx = e.touches[0].clientX - startX;
+        const dy = e.touches[0].clientY - startY;
+        // 좌우 가장자리 28px 이내에서 시작된 수평 스와이프의 브라우저 이탈 방지
+        if ((startX < 28 && dx > 8) || (startX > window.innerWidth - 28 && dx < -8)) {
+          if (Math.abs(dx) > Math.abs(dy)) {
+            if (e.cancelable) e.preventDefault();
+          }
+        }
+      }
+    };
+
+    window.addEventListener('touchstart', handleEdgeTouchStart, { passive: true });
+    window.addEventListener('touchmove', handleEdgeTouchMove, { passive: false });
+    return () => {
+      window.removeEventListener('touchstart', handleEdgeTouchStart);
+      window.removeEventListener('touchmove', handleEdgeTouchMove);
+    };
+  }, []);
+
 
   // 잠금 해제 후에만 테마 색 적용 (PIN 배경은 usePinScreenLock이 고정)
   React.useEffect(() => {

@@ -28,6 +28,7 @@ import { TodayTarotShareButton } from './TodayTarotShareModal';
 import { TarotCardZoomModal } from './TarotCardZoomModal';
 import { TarotFlippingCard } from './TarotFlippingCard';
 import { type TodayTarotShareData } from '@/utils/todayTarotExporter';
+import { stripSummaryFromTarotText } from '@/lib/tarotSummaryUtils';
 
 export interface TodayTarotNarrationModalProps {
   isOpen: boolean;
@@ -413,7 +414,7 @@ export function TodayTarotNarrationModal({
                 className="text-white/85 text-sm leading-relaxed relative z-10 w-full font-sans"
                 style={{ wordBreak: 'keep-all' }}
               >
-                <Streamdown immediate>{narrationData.cleanDiagnosis || narrationData.rawDiagnosis}</Streamdown>
+                <Streamdown immediate>{stripSummaryFromTarotText(narrationData.cleanDiagnosis || narrationData.rawDiagnosis || "")}</Streamdown>
               </div>
 
               {/* Planetary / Frequency Harmony Section */}

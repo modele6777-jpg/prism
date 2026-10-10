@@ -931,6 +931,65 @@ ${content}
     }
   });
 
+  function cleanDailyTarotDiagnosis(rawText: string): string {
+    if (!rawText) return "";
+    let text = rawText.trim();
+
+    // 1. 전체 리딩 2회 반복 (중복 생성) 감지 및 단일화
+    const section1Matches = [...text.matchAll(/(?:\r?\n|^)\s*###\s*(?:[✨👑💎🌟⚡🏆💰🌅💌☯️🛤️🕯️☀️🧭]\s*)?1[\.\s][^\r\n]*/gi)];
+    if (section1Matches.length > 1) {
+      const secondIndex = section1Matches[1].index;
+      if (secondIndex && secondIndex > 100) {
+        const firstPart = text.slice(0, secondIndex).trim();
+        const secondPart = text.slice(secondIndex).trim();
+        if (firstPart.includes('5.') || firstPart.includes('축복') || firstPart.includes('영혼의 한마디')) {
+          text = firstPart;
+        } else if (secondPart.includes('5.') || secondPart.includes('축복') || secondPart.includes('영혼의 한마디')) {
+          text = secondPart;
+        } else {
+          text = firstPart;
+        }
+      }
+    }
+
+    // 2. 정확한 2등분 반복 제거 (A + A)
+    const halfLen = Math.floor(text.length / 2);
+    if (halfLen > 120) {
+      const firstHalf = text.slice(0, halfLen).trim();
+      const secondHalf = text.slice(halfLen).trim();
+      if (firstHalf === secondHalf || secondHalf.startsWith(firstHalf.slice(0, 100))) {
+        text = firstHalf;
+      }
+    }
+
+    // 3. 본문 1단계 이후 나타나는 후행 핵심 3줄 요약 블록 절단 (상단 요약 외 하단 중복 방지)
+    const firstSectionIdx = text.search(/(?:\r?\n|^)\s*###\s*(?:[✨👑💎🌟⚡🏆💰🌅💌☯️🛤️🕯️☀️🧭]\s*)?1[\.\s]/);
+    if (firstSectionIdx !== -1) {
+      const bodyPart = text.slice(firstSectionIdx);
+      const trailingSummaryIdx = bodyPart.search(/(?:\r?\n|^)\s*(?:[-*•·\d.]+\s*)?(?:#{1,6}\s*)?(?:\*{1,2}|_{1,2})?\s*(?:[✨🌟🔮📌💡📋💎⚡🌿🎯■]\s*)*\s*(?:[\[【(])?\s*(?:[✨🌟🔮📌💡📋💎⚡🌿🎯■]\s*)*\s*(?:핵심\s*(?:3줄|세줄|3대)?\s*요약|3줄\s*요약|세줄\s*요약|핵심\s*요약|오늘의\s*요약|Quick\s*Summary)[^\]】)\r\n]*(?:[\]】)])?\s*(?:\*{1,2}|_{1,2})?\s*(?:[:—\-–~]|—[^\r\n]*)?(?:\r?\n|$)/i);
+      if (trailingSummaryIdx !== -1) {
+        text = text.slice(0, firstSectionIdx + trailingSummaryIdx).trim();
+      }
+    }
+
+    // 4. 5단계(영혼의 한마디) 이후 잔여 요약 불릿 제거
+    const step5Pattern = /(?:###\s*(?:[✨👑💎🌟⚡🏆💰🌅💌☯️🛤️🕯️☀️🧭]\s*)?5[\.\s]|5단계|영혼의\s*한마디|당신의\s*길을\s*축복하는)/i;
+    const step5Match = text.match(step5Pattern);
+    if (step5Match && step5Match.index !== undefined) {
+      const afterStep5 = text.slice(step5Match.index);
+      const quoteEndMatch = afterStep5.match(/(?:["”'_]\s*(?:\r?\n|$)|[.!?]\s*(?:\r?\n|$))/);
+      if (quoteEndMatch && quoteEndMatch.index !== undefined) {
+        const quoteEndPos = step5Match.index + quoteEndMatch.index + quoteEndMatch[0].length;
+        const remainder = text.slice(quoteEndPos).trim();
+        if (/(?:핵심|요약|\[현재\s*에너지\]|\[방향과\s*결단\]|\[실천\s*처방\]|[-*•]\s*\[|[-*•]\s*현재|[-*•]\s*방향|[-*•]\s*실천)/i.test(remainder)) {
+          text = text.slice(0, quoteEndPos).trim();
+        }
+      }
+    }
+
+    return text;
+  }
+
   // Daily Tarot Oracle Handler
   app.post("/api/ai/daily-tarot", async (req, res) => {
     const { card, mode = "oracle", comfortLevel = 3, profile, touchMetadata } = req.body || {};
@@ -1014,10 +1073,12 @@ ${content}
 - 내담자가 오늘 당장 행운을 끌어당기고 액운을 피할 수 있는 현실적이고 구체적인 행동 처방(마음가짐, 소통 방식, 피해야 할 행동, 행운의 행동 등)을 다정하면서도 명확하게 짚어주십시오.
 
 ### ✨ 5. 당신의 길을 축복하는 영혼의 한마디
-- 내담자가 오늘 하루를 주도적으로 빛낼 수 있도록, 가슴 깊이 간직할 지혜와 따뜻한 용기의 축복을 마스터의 서명처럼 건네며 마무리하십시오.
+- "카드는 정해진 운명을 가두는 틀이 아니라..." 등 기존에 반복되던 진부한 클리셰 문장은 절대 작성하지 마십시오.
+- 오직 오늘 뽑힌 [${cardNameKo}] 카드의 고유한 도상 상징과 원형, 그리고 내담자의 오늘 하루에 꼭 맞는 세상에 단 하나뿐인 시적이고 감동적인 영혼의 축복 문장을 마스터의 서명처럼 건네며 마무리하십시오.
 
-[⚠️ 필수 완결성 원칙 — 리딩 끝까지 완전 작성]
+[⚠️ 필수 완결성 및 요약 중복 배제 원칙]
 - 중간에 서술을 멈추거나 생략하지 마십시오.
+- 본문 마지막(5단계 이후)에 [핵심 3줄 요약]이나 어떠한 형태의 요약 블록도 절대로 다시 작성하지 마십시오.
 - 최상단 [핵심 3줄 요약]부터 1단계~5단계 마지막 축복까지 한 문장도 끊김 없이 끝까지 완결된 형태로 작성하여 주십시오.`;
 
         const config = {
@@ -1054,6 +1115,7 @@ ${content}
         const { response } = (await Promise.race([aiPromise, timeoutPromise])) as any;
         const parsed = JSON.parse(response.text);
         if (parsed?.diagnosis) {
+          parsed.diagnosis = cleanDailyTarotDiagnosis(parsed.diagnosis);
           return res.status(200).json(parsed);
         }
       } catch (err) {

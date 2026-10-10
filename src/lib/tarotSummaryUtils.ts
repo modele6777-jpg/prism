@@ -11,44 +11,114 @@ export function sanitizeTarotDecisionYesNo(text: string): string {
   return text;
 }
 
+/**
+ * 🧹 타로 리딩 본문 중복 서술 및 2회 반복 생성 전면 방지 & 제거
+ */
+export function deduplicateReadingText(text: string): string {
+  if (!text) return text;
+  let resultText = text.trim();
+
+  // 1. 전체 리딩이 2회 반복 생성된 경우 (동일한 두 덩어리 또는 1단계 헤더가 2번 이상 출현)
+  const section1Regex = /(?:\r?\n|^)\s*###\s*(?:[✨👑💎🌟⚡🏆💰🌅💌☯️🛤️🕯️☀️🧭]\s*)?1[\.\s][^\r\n]*/gi;
+  const section1Matches = [...resultText.matchAll(section1Regex)];
+  if (section1Matches.length > 1) {
+    const secondIndex = section1Matches[1].index;
+    if (secondIndex && secondIndex > 100) {
+      const firstPart = resultText.slice(0, secondIndex).trim();
+      const secondPart = resultText.slice(secondIndex).trim();
+      // 5단계 축복이 포함된 완전한 파트를 우선 선택
+      if (firstPart.includes('5.') || firstPart.includes('축복') || firstPart.includes('영혼의 한마디')) {
+        resultText = firstPart;
+      } else if (secondPart.includes('5.') || secondPart.includes('축복') || secondPart.includes('영혼의 한마디')) {
+        resultText = secondPart;
+      } else {
+        resultText = firstPart;
+      }
+    }
+  }
+
+  // 2. 텍스트가 정확히 또는 거의 2등분으로 동일하게 반복된 경우 (A + A)
+  const trimmed = resultText.trim();
+  const halfLen = Math.floor(trimmed.length / 2);
+  if (halfLen > 120) {
+    const firstHalf = trimmed.slice(0, halfLen).trim();
+    const secondHalf = trimmed.slice(halfLen).trim();
+    if (firstHalf === secondHalf || secondHalf.startsWith(firstHalf.slice(0, 100))) {
+      resultText = firstHalf;
+    }
+  }
+
+  // 3. 연속된 중복 라인 또는 헤더 제거
+  const lines = resultText.split('\n');
+  const deduplicatedLines: string[] = [];
+  let lastNonEmpty = '';
+
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    if (!trimmedLine) {
+      deduplicatedLines.push(line);
+      continue;
+    }
+    if (trimmedLine === lastNonEmpty && trimmedLine.length > 5) {
+      continue;
+    }
+    deduplicatedLines.push(line);
+    lastNonEmpty = trimmedLine;
+  }
+
+  return deduplicatedLines.join('\n');
+}
+
 export function stripSummaryFromTarotText(text: string): string {
   if (!text) return "";
-  let cleaned = sanitizeTarotDecisionYesNo(text);
+  let cleaned = deduplicateReadingText(sanitizeTarotDecisionYesNo(text)).trim();
 
   // 1. 선행 핵심 3줄 요약 블록 안전하게 제거 (상단에 그래픽 카드가 별도 렌더링되므로 본문 첫머리 중복 방지)
-  // 단, 본문 내용(### 헤더)이 최소 하나 이상 존재할 때만 선행 요약을 제거하여 조기 빈 화면 방지
-  const hasSubsequentBody = /(?:\r?\n|^)\s*###\s+/m.test(cleaned);
-  if (hasSubsequentBody) {
-    cleaned = cleaned.replace(
-      /^\s*(?:#{1,6}\s*)?(?:\*{1,2}|_{1,2})?\s*(?:[✨🌟🔮📌💡📋💎⚡🌿🎯]\s*)*\s*(?:[\[【(])?\s*(?:[✨🌟🔮📌💡📋💎⚡🌿🎯]\s*)*\s*(?:핵심\s*(?:3줄|세줄|3대)?\s*요약|3줄\s*(?:핵심\s*)?요약|세줄\s*(?:핵심\s*)?요약|핵심\s*요약|Quick\s*Summary|Executive\s*Summary|3-Line\s*Summary)\s*(?:[\]】)])?\s*(?:\*{1,2}|_{1,2})?\s*(?:[:—\-–~]|—[^\r\n]*)?[\r\n]+(?:[\t ]*[-*•·\d.]*?\s*(?:\*{1,2})?\s*\[[^\]]+\][^\r\n]*[\r\n]+){1,6}\s*/i,
-      ""
-    );
+  // 본문 헤더(###)가 최소 하나 이상 존재할 때, 그 이전의 모든 선행 요약 블록을 깔끔히 도려냄
+  const firstHeaderMatch = cleaned.match(/(?:\r?\n|^)\s*###\s+/);
+  if (firstHeaderMatch && firstHeaderMatch.index !== undefined && firstHeaderMatch.index > 0) {
+    const preText = cleaned.slice(0, firstHeaderMatch.index);
+    if (/(?:핵심\s*(?:3줄|세줄|3대)?\s*요약|3줄\s*(?:핵심\s*)?요약|세줄\s*(?:핵심\s*)?요약|핵심\s*요약|Quick\s*Summary|Executive\s*Summary|3-Line\s*Summary)/i.test(preText)) {
+      cleaned = cleaned.slice(firstHeaderMatch.index).trim();
+    }
   }
 
-  // 2. 후행 핵심 3줄 요약 블록 완전 분리 및 영구 제거 (#핵심 3줄요약, [핵심 3줄 요약] 등)
-  // 본문의 중반 이후(최소 30% 이후) 또는 마지막 단계 이후에 위치한 모든 후행 요약 블록 탐색
-  const lastSectionMatch = cleaned.match(/(?:###\s*(?:✨\s*)?(?:[3-5][\.\s]|영혼의\s*한마디|당신의\s*길을\s*축복하는|마스터의\s*실천\s*처방|최종\s*결실))/i);
-  const searchStart = lastSectionMatch && lastSectionMatch.index !== undefined
-    ? lastSectionMatch.index + 20
-    : Math.floor(cleaned.length * 0.35);
+  // 2. 후행 핵심 3줄 요약 블록 완전 분리 및 영구 제거
+  // 본문에서 1단계 헤더 이후 출현하는 어떠한 형태의 요약 헤더도 즉시 하단 절단
+  const trailingSummaryHeaderRegex = /(?:\r?\n|^)\s*(?:[-*•·\d.]+\s*)?(?:#{1,6}\s*)?(?:\*{1,2}|_{1,2})?\s*(?:[✨🌟🔮📌💡📋💎⚡🌿🎯■]\s*)*\s*(?:[\[【(])?\s*(?:[✨🌟🔮📌💡📋💎⚡🌿🎯■]\s*)*\s*(?:핵심\s*(?:3줄|세줄|3대)?\s*요약|3줄\s*(?:핵심\s*)?요약|세줄\s*(?:핵심\s*)?요약|핵심\s*요약|오늘의\s*(?:3줄|세줄)?\s*요약|Quick\s*Summary|Executive\s*Summary|3-Line\s*Summary)[^\]】)\r\n]*(?:[\]】)])?\s*(?:\*{1,2}|_{1,2})?\s*(?:[:—\-–~]|—[^\r\n]*)?(?:\r?\n|$)/i;
 
-  const endChunk = cleaned.slice(searchStart);
-  const summaryHeaderMatch = endChunk.match(
-    /(?:\r?\n|^)\s*(?:[-*•·\d.]+\s*)?(?:#{1,6}\s*)?(?:\*{1,2}|_{1,2})?\s*(?:[✨🌟🔮📌💡📋💎⚡🌿🎯]\s*)*\s*(?:[\[【(])?\s*(?:[✨🌟🔮📌💡📋💎⚡🌿🎯]\s*)*\s*(?:핵심\s*(?:3줄|세줄|3대)?\s*요약|3줄\s*(?:핵심\s*)?요약|세줄\s*(?:핵심\s*)?요약|핵심\s*요약|Quick\s*Summary|Executive\s*Summary|3-Line\s*Summary)(?:[\]】)])?\s*(?:\*{1,2}|_{1,2})?\s*(?:[:—\-–~]|—[^\r\n]*)?\s*(?:\r?\n|$)/i
-  );
-
-  if (summaryHeaderMatch && summaryHeaderMatch.index !== undefined) {
-    const cutPos = searchStart + summaryHeaderMatch.index;
-    cleaned = cleaned.slice(0, cutPos).trim();
+  const headerIdx = cleaned.search(trailingSummaryHeaderRegex);
+  if (headerIdx !== -1) {
+    // 1단계 시작 이후 발견된 요약 헤더는 100% 후행/중복 요약이므로 즉시 자름
+    cleaned = cleaned.slice(0, headerIdx).trim();
   }
 
-  // 3. 본문 끝부분에 말머리 없이 불릿 형태로만 남겨진 잔여 요약 라인 안전하게 정리
-  cleaned = cleaned.replace(/(?:\r?\n)\s*[-*•·]?\s*\[(?:현재\s*에너지|방향과\s*결단|실천\s*처방|개운\s*처방|오늘의\s*에너지|상황\s*나침반|개운\s*액션|머니\s*마인드셋|현금\s*흐름|부자\s*액션|잠재\s*럭키|기회의\s*문|개운\s*비법|영혼\s*주파수|빛의\s*나침반|천상의\s*은총|상처의\s*자각|내면아이\s*목소리|셀프\s*힐링|신년\s*봄·여름\s*흐름|가을·겨울\s*결실|대운\s*핵심\s*나침반|년·월주\s*사회성|일주\s*본질|시주\s*결실\s*처방|현재\s*딜레마|최종\s*선택\s*판정|결단\s*행동\s*수칙|최종\s*판정\s*\(YES\/NO\)|실행\s*지침|나의\s*속마음|상대의\s*속마음|사랑의\s*해법|현재\s*역량|돌파\s*전략|성공\s*비전|재정\s*상태|막힘\s*해소|유입\s*기회|과거\s*인과|현재\s*타이밍|결정적\s*시점|상황\s*진단|장애물\s*실체|현재와\s*도전|시간과\s*심리\s*축|최종\s*마스터\s*결말|과거\s*원인|현재\s*상황|미래\s*결실)\][^\r\n]*$/gi, "").trim();
+  // 3. 5단계(영혼의 한마디) 이후 남아 있는 불필요한 후행 불릿이나 잔여 텍스트 제거
+  const step5Pattern = /(?:###\s*(?:[✨👑💎🌟⚡🏆💰🌅💌☯️🛤️🕯️☀️🧭]\s*)?5[\.\s]|5단계|영혼의\s*한마디|당신의\s*길을\s*축복하는)/i;
+  const step5Match = cleaned.match(step5Pattern);
+  if (step5Match && step5Match.index !== undefined) {
+    const afterStep5 = cleaned.slice(step5Match.index);
+    // 5단계 내부 인용구("> _"..."_") 또는 마지막 축복 문장 끝 탐색
+    const quoteEndMatch = afterStep5.match(/(?:["”'_]\s*(?:\r?\n|$)|[.!?]\s*(?:\r?\n|$))/);
+    if (quoteEndMatch && quoteEndMatch.index !== undefined) {
+      const quoteEndPos = step5Match.index + quoteEndMatch.index + quoteEndMatch[0].length;
+      const remainder = cleaned.slice(quoteEndPos).trim();
+      // 인용구 뒤에 요약이나 불릿 포인트가 달려있으면 잘라냄
+      if (/(?:핵심|요약|\[현재\s*에너지\]|\[방향과\s*결단\]|\[실천\s*처방\]|[-*•]\s*\[|[-*•]\s*현재|[-*•]\s*방향|[-*•]\s*실천)/i.test(remainder)) {
+        cleaned = cleaned.slice(0, quoteEndPos).trim();
+      }
+    }
+  }
 
-  // 4. 리딩 끝에 홀로 남겨진 '# 핵심 3줄 요약' 등 잔여 마크다운 헤더 라인 제거
-  cleaned = cleaned.replace(/(?:\r?\n)\s*(?:#{1,6}\s*)?(?:✨\s*)?(?:\[\s*)?(?:핵심\s*(?:3줄\s*|세줄\s*)?요약|3줄\s*요약|Quick\s*Summary)(?:\])?\s*:?\s*$/gi, "").trim();
+  // 4. 본문 끝에 불릿 형태로만 남겨진 잔여 요약 라인들을 모두 제거 (반복 제거)
+  while (true) {
+    const prevLen = cleaned.length;
+    cleaned = cleaned.replace(/(?:\r?\n)\s*[-*•·\d.]+\s*(?:\*{1,2})?\s*(?:\[[^\]]+\]|현재\s*에너지|방향과\s*결단|실천\s*처방|오늘의\s*에너지|상황\s*나침반|개운\s*액션|머니\s*마인드셋|현금\s*흐름|부자\s*액션|영혼\s*주파수|빛의\s*나침반|과거\s*원인|현재\s*상황|미래\s*결실)[^\r\n]*$/i, '').trim();
+    cleaned = cleaned.replace(/(?:\r?\n)\s*(?:#{1,6}\s*)?(?:[✨🌟🔮📌💡📋💎⚡🌿🎯■]\s*)*\s*(?:\[\s*)?(?:핵심\s*(?:3줄\s*|세줄\s*)?요약|3줄\s*요약|오늘의\s*요약|Quick\s*Summary)[^\r\n]*$/i, '').trim();
+    if (cleaned.length === prevLen) break;
+  }
 
-  return cleaned;
+  return deduplicateReadingText(cleaned);
 }
 
 export function extractConciseSummary(text: string, cardContext?: any): string[] {
