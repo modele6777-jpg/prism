@@ -35,6 +35,9 @@ export interface UserGoal {
 }
 
 const STORAGE_KEY = 'luckey_user_goals_v1';
+const STORAGE_DATE_KEY = 'luckey_user_goals_date_v1';
+
+const getTodayKey = () => new Date().toISOString().split('T')[0];
 
 const CATEGORY_META: Record<GoalCategory, { label: string; icon: string; defaultColorStart: string; defaultColorEnd: string; glow: string }> = {
   mind: {
@@ -79,53 +82,52 @@ const DEFAULT_GOALS: UserGoal[] = [
     id: 'goal-mindfulness',
     title: '내면 호흡 & 15분 명상',
     category: 'mind',
-    current: 10,
+    current: 0,
     target: 15,
     unit: '분',
     colorStart: '#8b5cf6',
     colorEnd: '#6366f1',
     glowColor: 'rgba(139, 92, 246, 0.4)',
-    streakDays: 5,
+    streakDays: 0,
     createdAt: '2026-09-20T00:00:00.000Z',
   },
   {
     id: 'goal-wellness',
     title: '몸을 깨우는 아침 스트레칭',
     category: 'wellness',
-    current: 20,
+    current: 0,
     target: 20,
     unit: '분',
     colorStart: '#10b981',
     colorEnd: '#06b6d4',
     glowColor: 'rgba(16, 185, 129, 0.4)',
-    streakDays: 7,
-    completedAt: '2026-09-24T08:00:00.000Z',
+    streakDays: 0,
     createdAt: '2026-09-18T00:00:00.000Z',
   },
   {
     id: 'goal-reading',
     title: '영혼의 양식 독서 성찰',
     category: 'wisdom',
-    current: 18,
+    current: 0,
     target: 25,
     unit: '쪽',
     colorStart: '#f59e0b',
     colorEnd: '#eab308',
     glowColor: 'rgba(245, 158, 11, 0.4)',
-    streakDays: 3,
+    streakDays: 0,
     createdAt: '2026-09-21T00:00:00.000Z',
   },
   {
     id: 'goal-creation',
     title: '창작 영감 노트 1편 기록',
     category: 'creation',
-    current: 1,
+    current: 0,
     target: 2,
     unit: '편',
     colorStart: '#ec4899',
     colorEnd: '#f43f5e',
     glowColor: 'rgba(236, 72, 153, 0.4)',
-    streakDays: 2,
+    streakDays: 0,
     createdAt: '2026-09-22T00:00:00.000Z',
   },
 ];
@@ -337,12 +339,36 @@ function SingleProgressRing({
 export function GoalProgressRingDashboard() {
   const [goals, setGoals] = useState<UserGoal[]>(() => {
     if (typeof window === 'undefined') return DEFAULT_GOALS;
+    const today = getTodayKey();
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
+      const savedDate = localStorage.getItem(STORAGE_DATE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // If stored on a previous date or if legacy prefilled mock data is detected, reset daily progress to 0
+          const isNewDay = savedDate !== today;
+          const hasLegacyPrefilledMock = parsed.some(
+            (g: UserGoal) =>
+              (g.id === 'goal-wellness' && g.current >= 20) ||
+              (g.id === 'goal-mindfulness' && g.current >= 10) ||
+              (g.id === 'goal-reading' && g.current >= 18)
+          );
+
+          if (isNewDay || hasLegacyPrefilledMock) {
+            const cleanGoals = parsed.map((g: UserGoal) => ({
+              ...g,
+              current: 0,
+              completedAt: undefined,
+            }));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanGoals));
+            localStorage.setItem(STORAGE_DATE_KEY, today);
+            return cleanGoals;
+          }
+          return parsed;
+        }
       }
+      localStorage.setItem(STORAGE_DATE_KEY, today);
     } catch (e) {
       console.warn('Failed to parse saved user goals:', e);
     }
@@ -363,13 +389,14 @@ export function GoalProgressRingDashboard() {
     setGoals(newGoals);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newGoals));
+      localStorage.setItem(STORAGE_DATE_KEY, getTodayKey());
       window.dispatchEvent(new CustomEvent('luckey-goals-sync', { detail: newGoals }));
     } catch (e) {
       console.error('Failed to save user goals to storage:', e);
     }
   }, []);
 
-  // Multi-tab listener
+  // Multi-tab listener & daily midnight/focus reset listener
   useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
       if (e.key === STORAGE_KEY && e.newValue) {
@@ -384,11 +411,30 @@ export function GoalProgressRingDashboard() {
       if (Array.isArray(detail)) setGoals(detail);
     };
 
+    const checkDailyReset = () => {
+      const today = getTodayKey();
+      const savedDate = localStorage.getItem(STORAGE_DATE_KEY);
+      if (savedDate && savedDate !== today) {
+        setGoals((prev) => {
+          const reset = prev.map((g) => ({
+            ...g,
+            current: 0,
+            completedAt: undefined,
+          }));
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(reset));
+          localStorage.setItem(STORAGE_DATE_KEY, today);
+          return reset;
+        });
+      }
+    };
+
     window.addEventListener('storage', handleStorage);
     window.addEventListener('luckey-goals-sync', handleCustomSync);
+    window.addEventListener('focus', checkDailyReset);
     return () => {
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('luckey-goals-sync', handleCustomSync);
+      window.removeEventListener('focus', checkDailyReset);
     };
   }, []);
 
