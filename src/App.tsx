@@ -54,12 +54,12 @@ const LucyStandalonePage = lazyWithRetry(() => import("./pages/LucyStandalonePag
 const HandbookStandalonePage = lazyWithRetry(() => import("./pages/HandbookStandalonePage"));
 const OmniWarpPage = lazyWithRetry(() => import("./pages/OmniWarpPage"));
 const CalmApp = lazyWithRetry(() => import("./pages/CalmApp"));
-// Legacy UnifiedChat replaced by full standalone LucyStandalonePage (/chat)
 import { resetAppScroll } from "./utils/scrollToTop";
 import { useAutoPrismSync } from "./hooks/useAutoPrismSync";
 import { useUpdateNotice } from "./hooks/useUpdateNotice";
 import { UpdateNoticeModal } from "./components/UpdateNoticeModal";
 import SelectionBridgeToolbar from "./components/SelectionBridgeToolbar";
+import { PinLockScreen } from "./components/PinLockScreen";
 import { NotchScrollToTopBar } from "./components/NotchScrollToTopBar";
 import { UPDATE_ACK_KEY } from "./lib/updateNotice";
 import { applyServiceWorkerUpdate, forceAppUpgradeAndReload } from "./lib/prismSync";
@@ -375,6 +375,7 @@ function AppContent() {
 
   return (
     <div className="prism-app-shell relative z-[1] bg-transparent">
+      <NotchScrollToTopBar />
       {/* Draggable & Edge-Dockable Background Music Player */}
       {shouldMountBgMusicPlayer() && (
         <BgMusicPlayer />
