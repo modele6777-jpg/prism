@@ -60,7 +60,7 @@ import { useAutoPrismSync } from "./hooks/useAutoPrismSync";
 import { useUpdateNotice } from "./hooks/useUpdateNotice";
 import { UpdateNoticeModal } from "./components/UpdateNoticeModal";
 import SelectionBridgeToolbar from "./components/SelectionBridgeToolbar";
-import { PinLockScreen } from "./components/PinLockScreen";
+import { NotchScrollToTopBar } from "./components/NotchScrollToTopBar";
 import { UPDATE_ACK_KEY } from "./lib/updateNotice";
 import { applyServiceWorkerUpdate, forceAppUpgradeAndReload } from "./lib/prismSync";
 import { safeLocalStorage, safeSessionStorage } from "./utils/safeStorage";
