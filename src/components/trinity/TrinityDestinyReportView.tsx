@@ -239,14 +239,16 @@ export function TrinityDestinyReportView({ onConsult }: TrinityDestinyReportView
     try {
       let answerText = '';
 
-      const systemPrompt = `당신은 대한민국 최고의 정통 사주명리학 대가이자 따뜻한 카운슬러 '루시(Lucy)'입니다.
+      const systemPrompt = `당신은 대한민국 최고의 정통 사주명리학 대가이자 따뜻하고 직관적인 카운슬러 '루시(Lucy)'입니다.
 다음은 내담자의 정밀 사주 원국과 오행 분석 데이터입니다:
 
 ${saju.systemPromptSummary}
 
-내담자의 질문에 대해:
-1. 사주 4주 8자의 음양오행 및 일간(${saju.dayMaster.hanja}), 십신, 신살을 종합적으로 근거로 삼아 명쾌하게 해설하세요.
-2. 미신적이거나 공포를 조장하는 말을 철저히 배제하고, 내담자가 자신의 타고난 잠재력과 결핍된 기운을 지혜롭게 보완할 수 있는 현대적이고 실천적인 조언을 3~4문장(250자 내외)으로 친절하게 답변하세요.`;
+[명리 AI 마스터 심층 상담실 필수 답변 원칙]:
+1. [질문 최우선 직답]: 내담자가 문의한 구체적 질문("${q}")에 대해 일반론이나 겉도는 인사말을 완전히 생략하고, 반드시 첫 문장부터 해당 질문에 대한 명쾌한 진단과 결론을 직접적으로 제시하세요.
+2. [명리적 근거 명시]: 내담자의 일간 본원([${saju.dayMaster.hanja} ${saju.dayMaster.symbolName}]), 중심 오행(${saju.elements.dominant.name}), 결핍 오행(${saju.elements.lacking.name}), 2026 병오년 흐름(${saju.annual2026.theme}) 중 질문과 직결되는 핵심 요소를 명리적 근거로 명확히 들어 설명하세요.
+3. [구체적 실천 솔루션]: 막연한 덕담 대신, 질문한 고민을 해결하기 위한 실질적이고 구체적인 행동 팁(개운법, 환경 조성, 주의할 점 등)을 불릿 포인트나 명확한 문장으로 제시하세요.
+4. 질문과 무관한 일반론적인 사주 소개나 판에 박힌 상투적 답변은 절대 금지합니다. 단락을 나누어 깔끔하고 신뢰감 있게 답변하세요.`;
 
       try {
         const reply = await invokeLLM({
@@ -258,20 +260,21 @@ ${saju.systemPromptSummary}
         });
 
         const cleanReply = (reply || '').replace(/```/g, '').trim();
-        if (
-          cleanReply &&
-          cleanReply.length >= 20 &&
-          !cleanReply.includes('[AI 서비스 안내]') &&
-          !cleanReply.includes('Google Gemini API 키') &&
-          !cleanReply.includes('일시적인 원인으로 인해 응답을 생성하지 못했습니다')
-        ) {
+        const isCannedOrGeneric =
+          cleanReply.includes('내담자님의 사주 4주 8자와 오행의 흐름을 비추어 볼 때, 타고난 본원 에너지의 잠재력과 추진력은') ||
+          cleanReply.includes('내담자님의 사주 4주 8자와 오행의 흐름을 비추어 볼 때') ||
+          cleanReply.includes('Google Gemini API 키') ||
+          cleanReply.includes('[AI 서비스 안내]') ||
+          cleanReply.includes('일시적인 원인으로 인해 응답을 생성하지 못했습니다');
+
+        if (cleanReply && cleanReply.length >= 20 && !isCannedOrGeneric) {
           answerText = cleanReply;
         }
       } catch (llmErr) {
         console.warn('[TrinityDestinyReportView] invokeLLM failed or timed out, engaging local Saju Master engine:', llmErr);
       }
 
-      // LLM 응답이 비어있거나 장애/타임아웃 발생 시 자체 정밀 명리 마스터 분석 엔진으로 즉각 완성
+      // LLM 응답이 비어있거나 장애/타임아웃 또는 일반론적 폴백 감지 시 자체 정밀 명리 마스터 분석 엔진으로 즉각 완성
       if (!answerText) {
         answerText = generateSajuMasterConsultation(saju, q);
       }
