@@ -542,6 +542,14 @@ function stopTTSKeepAlive() {
   }
 }
 
+export function configureAmbientAudioSession(): void {
+  if (typeof navigator !== 'undefined' && 'audioSession' in navigator) {
+    try {
+      (navigator as any).audioSession.type = 'ambient';
+    } catch (_) {}
+  }
+}
+
 export function getTTSAudioElement(): HTMLAudioElement {
   if (typeof window === 'undefined') {
     throw new Error('HTMLAudioElement is only available in the browser');
@@ -553,6 +561,7 @@ export function getTTSAudioElement(): HTMLAudioElement {
     ttsAudioEl.setAttribute('webkit-playsinline', 'true');
     ttsAudioEl.setAttribute('x-webkit-airplay', 'allow');
   }
+  configureAmbientAudioSession();
   return ttsAudioEl;
 }
 
@@ -891,7 +900,8 @@ export async function playTTSAudio(
     throw new Error('TTS playback is only available in the browser');
   }
 
-  // Pre-wake shared WebAudio context on all devices
+  // Pre-wake shared WebAudio context on all devices & ensure ambient mixing with external music
+  configureAmbientAudioSession();
   try {
     const audioCtx = getSharedAudioContext();
     if (audioCtx.state === 'suspended') {
@@ -1047,6 +1057,7 @@ let ttsLifecycleInitialized = false;
 export function initTTSAudioLifecycle(): void {
   if (ttsLifecycleInitialized || typeof window === 'undefined') return;
   ttsLifecycleInitialized = true;
+  configureAmbientAudioSession();
 
   const handleResume = () => {
     if (document.visibilityState === 'hidden') return;

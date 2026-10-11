@@ -101,7 +101,7 @@ import { TarotCardBackCustomizerModal } from "@/components/trinity/TarotCardBack
 import { PhysicalTarotInputModal } from "@/components/trinity/PhysicalTarotInputModal";
 import { useTarotCardBack } from "@/hooks/useTarotCardBack";
 import { useSwipeableTabs } from "@/hooks/useSwipeableTabs";
-import { playAudioHaptic } from "@/lib/audioHaptics";
+import { playAudioHaptic, playAiResultNotification } from "@/lib/audioHaptics";
 import { TodayTarotNarrationModal } from "@/components/trinity/TodayTarotNarrationModal";
 import { LucyTarotAdviceCard } from "@/components/trinity/LucyTarotAdviceCard";
 import { TarotSummaryGraphicCard } from "@/components/trinity/TarotSummaryGraphicCard";
@@ -1483,9 +1483,6 @@ function playDailyCardChimeAsync() {
   const { swipeHandlers: trinitySwipeHandlers } = useSwipeableTabs({
     tabs: trinitySwipeTabs,
     activeTab: currentTrinityTab,
-    minSwipeRatio: 0.58,
-    requireEdgeReach: true,
-    maxPerpendicularRatio: 2.2,
     onTabChange: (newTab) => {
       if (newTab === 'tarot') {
         if (!tarotResult && !isTarotGenerating) {
@@ -2578,6 +2575,10 @@ ${tailoredGuide.promptTemplate}${binaryChoicePromptAddon}${spreadPromptAddon}${c
             },
           });
         }
+
+        try {
+          playAiResultNotification();
+        } catch (_) {}
 
         if (firebaseUser && finalResponse.trim() && localStorage.getItem('developer_bypass') !== 'true') {
           void addDoc(

@@ -12,6 +12,7 @@ import { TarotSpread, SelectedTarotCardEntry } from './TarotSpread';
 import { Streamdown } from '@/components/Streamdown';
 import { invokeLLM } from '@/lib/ai';
 import { playTTS, playTTSInChunks, prefetchTTS, stopTTS, useTTSActive, useTTSState, prepareNaturalSpeechText } from '@/utils/tts';
+import { playAiResultNotification } from '@/lib/audioHaptics';
 import { LucyTarotAdviceCard } from './LucyTarotAdviceCard';
 import { TarotResultShareButton } from './TodayTarotShareModal';
 import { TarotCardZoomModal } from './TarotCardZoomModal';
@@ -1432,6 +1433,9 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
         };
 
         setHealingResult(finalHealingResult);
+        try {
+          playAiResultNotification();
+        } catch (_) {}
         const savedHealingSession: SavedDailyOracleSession = {
           dateKey: todayDateKey,
           mode: 'healing',
@@ -1566,6 +1570,9 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
         };
 
         setGrowthResult(finalGrowthResult);
+        try {
+          playAiResultNotification();
+        } catch (_) {}
         const savedGrowthSession: SavedDailyOracleSession = {
           dateKey: todayDateKey,
           mode: 'growth',

@@ -10,6 +10,7 @@ import { useApp } from '@/contexts/AppContext';
 import { invokeLLMStructured } from '@/lib/ai';
 import { getTodayDateKey } from '@/lib/sharedStateSync';
 import { recordPrismFeature } from '@/lib/prismOmniSync';
+import { playAiResultNotification } from '@/lib/audioHaptics';
 import { sendDailySecretToLucy } from '@/lib/oracleDeepInsight';
 import { TTSButton } from '@/components/TTSButton';
 import { playTTS, playTTSInChunks, stopTTS, prefetchTTS, useTTSActive, useTTSState, prefetchTTSChunks } from '@/utils/tts';
@@ -1432,6 +1433,9 @@ export function DailySecret() {
             isReceived: true,
           };
           persistSecret(enrichedFinal);
+          try {
+            playAiResultNotification();
+          } catch (_) {}
         }
       } else if (!data) {
         persistSecret(initialData);

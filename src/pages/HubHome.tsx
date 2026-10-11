@@ -22,6 +22,11 @@ import { LucKeyLogoText } from '@/components/LucKeyLogoText';
 import { openChannelIntro } from '@/components/common/ChannelIntroModal';
 import { GoalProgressRingDashboard } from '@/components/goals/GoalProgressRingDashboard';
 import { TodayLucyPersonaCard } from '@/components/TodayLucyPersonaCard';
+import { useSwipeableTabs } from '@/hooks/useSwipeableTabs';
+import { playAiResultNotification } from '@/lib/audioHaptics';
+
+const HUB_SWIPE_TABS = ['universe', 'ecpr', 'todo'] as const;
+type HubSwipeTab = typeof HUB_SWIPE_TABS[number];
 
 const APPS = [
   {
@@ -209,6 +214,22 @@ export default function HubHome() {
     }
   }, [location]);
 
+  const { swipeHandlers: hubSwipeHandlers } = useSwipeableTabs<HubSwipeTab>({
+    tabs: HUB_SWIPE_TABS,
+    activeTab: activeSection,
+    onTabChange: (newTab) => {
+      setActiveSection(newTab);
+      if (newTab === 'ecpr') {
+        navigate('/ecpr');
+      } else if (newTab === 'todo') {
+        navigate('/todo');
+      } else {
+        navigate('/');
+      }
+    },
+    enabled: true,
+  });
+
   // 첫 로그인 시 프로필 미완성이라면 팝업 표시
   useEffect(() => {
     const hasProfile = Boolean(
@@ -346,6 +367,9 @@ export default function HubHome() {
       }));
 
       setGlobalData(data as any);
+      try {
+        playAiResultNotification();
+      } catch (_) {}
       localStorage.setItem("trinity_cached_global_data", JSON.stringify(data));
       localStorage.setItem("trinity_cached_global_data_time", String(Date.now()));
       sessionStorage.removeItem('lastSyncError');
@@ -524,7 +548,7 @@ export default function HubHome() {
         })}
       </motion.nav>
 
-      <div data-app-scroll-root className="flex-1 w-full overflow-x-hidden overflow-y-auto flex flex-col no-scrollbar z-10 pb-28 sm:pb-32">
+      <div data-app-scroll-root {...hubSwipeHandlers} className="flex-1 w-full overflow-x-hidden overflow-y-auto flex flex-col no-scrollbar z-10 pb-28 sm:pb-32">
         {!legacy && <FloatingParticles count={narrow ? 4 : 20} />}
 
         {activeSection === 'ecpr' ? (

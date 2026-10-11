@@ -26,6 +26,7 @@ import {
 import { useApp, getPersistentUserProfile } from '@/contexts/AppContext';
 import { invokeLLM } from '@/lib/ai';
 import { recordPrismFeature } from '@/lib/prismOmniSync';
+import { playAiResultNotification } from '@/lib/audioHaptics';
 import { playTTS, stopTTS, useTTSActive } from '@/utils/tts';
 import { EpilogueAchievementShareModal } from './EpilogueAchievementShareModal';
 import { calculateEpilogueAchievementStats } from '@/types/epilogueAchievement';
@@ -155,7 +156,7 @@ export function EpilogueSynergySection() {
     stopTTS();
 
     const focusObj = COSMIC_FOCUS_OPTIONS.find((f) => f.id === selectedFocus) || COSMIC_FOCUS_OPTIONS[0];
-    const mbti = (userProfile as any)?.psychology?.mbti || 'INFJ';
+    const mbti = userProfile?.psych?.mbti || (userProfile as any)?.psychology?.mbti || 'INFP';
     const rawNick = userProfile?.basic?.nickname?.trim() || userProfile?.basic?.name?.trim();
     const nickname = (rawNick && rawNick !== '여행자') ? rawNick : '제제';
     const insightText = customInsight.trim() || '온 우주와 내가 하나임을 자각하는 깊은 현존';
@@ -229,6 +230,9 @@ export function EpilogueSynergySection() {
       const result = await Promise.race([runAI(), safetyTimeout]);
       setChronicleData(result);
       setIsSynthesized(true);
+      try {
+        playAiResultNotification();
+      } catch (_) {}
 
       // 아카이브에 영구 저장 및 갱신
       const updatedArchive = saveChronicleToArchive(result);

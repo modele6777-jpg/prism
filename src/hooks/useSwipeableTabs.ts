@@ -17,10 +17,10 @@ export function useSwipeableTabs<T extends string>({
   tabs,
   activeTab,
   onTabChange,
-  minSwipeDistance = 180,
-  minSwipeRatio = 0.55,
-  requireEdgeReach = true,
-  maxPerpendicularRatio = 2.2,
+  minSwipeDistance = 60,
+  minSwipeRatio = 0.22,
+  requireEdgeReach = false,
+  maxPerpendicularRatio = 1.3,
   enabled = true,
   enableHaptics = true,
 }: UseSwipeableTabsOptions<T>) {
@@ -133,8 +133,8 @@ export function useSwipeableTabs<T extends string>({
       if (!touch) return;
       const deltaX = Math.abs(touch.clientX - touchStartRef.current.x);
       const deltaY = Math.abs(touch.clientY - touchStartRef.current.y);
-      // 오직 뚜렷하고 긴 수평 드래그일 때만 브라우저 뒤로가기 제스처 간섭 방지 (수직 스크롤 방해 금지)
-      if (deltaX > 60 && deltaX > deltaY * 2.5 && e.cancelable) {
+      // 수평 드래그 감지 즉시 브라우저의 이전/다음 앱 이탈(history navigation) 제스처 차단
+      if (deltaX > 16 && deltaX > deltaY * 1.3 && e.cancelable) {
         e.preventDefault();
       }
     },

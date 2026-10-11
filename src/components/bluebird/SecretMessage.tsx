@@ -29,6 +29,7 @@ import {
 import { useApp } from '@/contexts/AppContext';
 import { invokeLLMStructured } from '@/lib/ai';
 import { recordPrismFeature } from '@/lib/prismOmniSync';
+import { playAiResultNotification } from '@/lib/audioHaptics';
 import { sendSecretNoteToLucy } from '@/lib/oracleDeepInsight';
 import { TTSButton } from '@/components/TTSButton';
 import { z } from 'zod';
@@ -448,17 +449,21 @@ export function SecretMessage({ isOpen, onClose, isModal }: SecretMessageProps =
       }
 
       // 쪽지 카드 내부 상태 및 로컬 스토리지에 축복 문구 반영
-      setNotes((prevNotes) => {
-        const nextNotes = prevNotes.map((n) =>
-          n.id === newNoteId
-            ? { ...n, blessingEcho: blessing, isBlessingLoading: false }
-            : n
-        );
+        setNotes((prevNotes) => {
+          const nextNotes = prevNotes.map((n) =>
+            n.id === newNoteId
+              ? { ...n, blessingEcho: blessing, isBlessingLoading: false }
+              : n
+          );
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(nextNotes));
+          } catch (_) {}
+          return nextNotes;
+        });
+
         try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(nextNotes));
+          playAiResultNotification();
         } catch (_) {}
-        return nextNotes;
-      });
     } finally {
       setIsGeneratingBlessing(false);
     }

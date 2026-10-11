@@ -158,21 +158,17 @@ export function extractConciseSummary(text: string, cardContext?: any): string[]
     cleaned = cleaned.replace(/^(?:현재\s*에너지|방향과\s*결단|실천\s*처방|개운\s*처방|행동\s*처방|실천\s*가이드|개운\s*가이드)\s*[:—\-]\s*/, '');
     cleaned = cleanSentence(cleaned);
 
-    if (cleaned.length > 80) {
-      const idx = cleaned.lastIndexOf('.', 75);
-      if (idx > 30) {
+    // 긴 문장일 때도 문맥과 의미를 훼손하지 않고 자연스러운 완결 문장으로 보존 (최대 135자)
+    if (cleaned.length > 135) {
+      const idx = cleaned.lastIndexOf('.', 130);
+      if (idx > 45) {
         cleaned = cleaned.slice(0, idx + 1);
       } else {
-        const commaIdx = cleaned.indexOf(',');
-        if (commaIdx >= 20 && commaIdx <= 55) {
-          cleaned = cleaned.slice(0, commaIdx) + ' 상태입니다.';
+        const lastSpace = cleaned.lastIndexOf(' ', 125);
+        if (lastSpace > 50) {
+          cleaned = cleaned.slice(0, lastSpace).trim();
         } else {
-          const lastSpace = cleaned.lastIndexOf(' ', 50);
-          if (lastSpace > 20) {
-            cleaned = cleaned.slice(0, lastSpace).trim();
-          } else {
-            cleaned = cleaned.slice(0, 48).trim();
-          }
+          cleaned = cleaned.slice(0, 120).trim();
         }
       }
     }

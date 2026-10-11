@@ -28,6 +28,7 @@ export type AudioHapticType =
   | 'save_success'       // Saved confirmation with radiant double-chime + sharp double pulse
   | 'save_auto'          // Discrete water droplet bell ping for auto-saves
   | 'milestone_success'  // Triumphant multi-stage sharp ripple pulse & golden chord flourish
+  | 'ai_result_chime'    // 은은하고 맑은 약한 종소리 (AI 결과물 생성 완료 알림, 대화 제외)
 
   // --- Breathing category (soft, rhythmic vibration & respiratory bio-harmonics) ---
   | 'breathe_inhale'     // Gentle swelling rhythmic wave [25, 75, 40, 75, 55] + 432Hz breath expansion
@@ -91,6 +92,12 @@ export const HAPTIC_PATTERNS: Record<AudioHapticType, HapticPatternMeta> = {
     category: 'success',
     label: '마일스톤 달성',
     description: '3단 캐스케이드 샤프 펄스와 풍성한 축복 아르페지오',
+  },
+  ai_result_chime: {
+    vibration: [10, 25],
+    category: 'success',
+    label: 'AI 결과 생성 완료 종소리',
+    description: '은은하고 맑은 약한 크리스탈 종소리와 미세 햅틱 진동',
   },
 
   // Breathing (Soft Rhythmic)
@@ -512,6 +519,32 @@ export function playAudioHaptic(type: AudioHapticType, options?: AudioHapticOpti
           gain.connect(bus);
           osc.start(t);
           osc.stop(t + 0.48);
+        });
+        break;
+      }
+
+      case 'ai_result_chime': {
+        // 은은하고 맑은 약한 종소리 (659Hz E5 + 1056Hz C6 + 1318Hz E6 잔향)
+        const harmonics = [
+          { freq: 659.25, gain: 0.08, decay: 1.05 },
+          { freq: 1056.0, gain: 0.045, decay: 0.85 },
+          { freq: 1318.5, gain: 0.025, decay: 0.65 },
+        ];
+
+        harmonics.forEach(({ freq, gain: baseG, decay }) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now);
+
+          gain.gain.setValueAtTime(0.0001, now);
+          gain.gain.linearRampToValueAtTime(baseG * volScale * 0.7, now + 0.025);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + decay);
+
+          osc.connect(gain);
+          gain.connect(bus);
+          osc.start(now);
+          osc.stop(now + decay + 0.05);
         });
         break;
       }
@@ -941,4 +974,18 @@ export function playCardHaptic(
     hover: 'card_hover',
   };
   playAudioHaptic(map[action] || 'card_draw', options);
+}
+
+/**
+ * 🔔 AI 결과물 생성 완료 시 은은하고 맑은 약한 종소리 알림 (대화/채팅 제외)
+ */
+export function playAiResultNotification(options?: AudioHapticOptions): void {
+  try {
+    playAudioHaptic('ai_result_chime', { volume: 0.75, ...options });
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('prism:ai_result_created'));
+    }
+  } catch (e) {
+    console.warn('[AudioHaptics] playAiResultNotification failed:', e);
+  }
 }

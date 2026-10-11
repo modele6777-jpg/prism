@@ -13,7 +13,7 @@ export function setTTSSessionActive(title: string, artist: string = 'PRISM'): vo
         { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
       ],
     });
-    navigator.mediaSession.playbackState = 'playing';
+    // 🎵 외부 음악(Spotify, Apple Music 등)과 동시 청취 가능하도록 독점 playbackState 선점을 배제
   } catch {
     // MediaMetadata unsupported on some browsers
   }

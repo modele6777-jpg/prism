@@ -145,7 +145,7 @@ export function getDynamicSoulChronicle(
   const seed = getDateSeed(`epilogue_chronicle_${focus.id}_${dateStr}`);
   const rawNick = userProfile?.basic?.nickname?.trim() || userProfile?.basic?.name?.trim();
   const nickname = (rawNick && rawNick !== '여행자') ? rawNick : '제제';
-  const mbti = (userProfile as any)?.psychology?.mbti || 'INFJ';
+  const mbti = userProfile?.psych?.mbti || (userProfile as any)?.psychology?.mbti || 'INFP';
   const userText = (customInsight || '').trim();
 
   // Dynamic evolution level keyed by seed

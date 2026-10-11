@@ -121,14 +121,40 @@ export function ImageOutputActions({
               />
             )}
           </div>
-          <div className="absolute top-4 right-4 flex items-center gap-2">
+          <div className="absolute top-4 sm:top-6 right-4 sm:right-6 z-30 flex items-center gap-2">
             {showDownload && (
-              <button type="button" onClick={(event) => { event.stopPropagation(); void downloadImage(src, filename); }} className="p-3 rounded-full bg-white/10 border border-white/15 text-white hover:bg-white/20 transition-all" title="이미지 다운로드" aria-label="이미지 다운로드">
-                <Download size={19} />
+              <button
+                type="button"
+                onClick={(event) => { event.stopPropagation(); void downloadImage(src, filename); }}
+                className="px-3.5 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-lg backdrop-blur-md cursor-pointer"
+                title="이미지 다운로드"
+                aria-label="이미지 다운로드"
+              >
+                <Download size={16} />
+                <span className="hidden sm:inline">다운로드</span>
               </button>
             )}
-            <button type="button" onClick={() => setOpen(false)} className="p-3 rounded-full bg-white/10 border border-white/15 text-white hover:bg-white/20 transition-all" title="크게 보기 닫기" aria-label="크게 보기 닫기">
-              <X size={20} />
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="px-4 py-2 rounded-full bg-white/15 hover:bg-white/25 border border-white/25 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-xl backdrop-blur-md cursor-pointer active:scale-95"
+              title="크게 보기 닫기"
+              aria-label="크게 보기 닫기"
+            >
+              <X size={18} />
+              <span>닫기</span>
+            </button>
+          </div>
+
+          <div className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 pointer-events-auto">
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="px-6 py-2.5 rounded-full bg-zinc-900/90 hover:bg-black border border-white/25 text-white text-xs font-bold shadow-[0_10px_30px_rgba(0,0,0,0.8)] backdrop-blur-xl transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
+              title="크게 보기 닫기"
+            >
+              <X size={16} />
+              <span>닫기</span>
             </button>
           </div>
         </div>,

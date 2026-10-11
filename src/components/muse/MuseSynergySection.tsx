@@ -486,22 +486,11 @@ export function MuseSynergySection() {
 
         {/* 2. 거장의 예술작품: 항시 랜덤 설정 (목록 숨김) */}
         <div className="p-4 sm:p-5 rounded-2xl bg-amber-500/10 border border-amber-500/25 space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
-              <label className="text-xs font-bold text-amber-300 font-mono uppercase tracking-wider">
-                오늘의 선정 명작 · 항시 랜덤 큐레이션 (총 {availableArtworks.length}작품 수록)
-              </label>
-            </div>
-            <button
-              type="button"
-              onClick={handleRollRandomArtwork}
-              title="거장의 다른 대표작 랜덤 추천받기"
-              className="self-start sm:self-auto px-3 py-1.5 rounded-xl border border-amber-400/30 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
-            >
-              <RefreshCw size={12} className="text-amber-400" />
-              <span>다른 작품 랜덤 추천</span>
-            </button>
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
+            <label className="text-xs font-bold text-amber-300 font-mono uppercase tracking-wider">
+              오늘의 선정 명작 · 항시 랜덤 큐레이션 (총 {availableArtworks.length}작품 수록)
+            </label>
           </div>
 
           <div className="flex items-center gap-3.5 p-3 sm:p-3.5 rounded-xl bg-black/40 border border-white/10">
@@ -653,24 +642,13 @@ export function MuseSynergySection() {
             </div>
           </div>
 
-          {/* 선정된 명작 정보 및 다른 작품 랜덤 전환 바 (목록 숨김) */}
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-white/[0.03] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 text-xs text-white/80">
-              <Sparkles size={14} className="text-amber-400 shrink-0" />
-              <span>
-                현재 선정 명작: <strong className="text-white font-bold">{selectedArtwork.piece.split('(')[0].trim()}</strong>
-                <span className="text-white/40 ml-1.5 font-sans text-[11px]">({selectedMaster.name.split('(')[0].trim()}의 {availableArtworks.length}개 대표작 중 항시 랜덤 큐레이션)</span>
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={handleRollRandomArtwork}
-              title="거장의 다른 대표작 랜덤 추천받기"
-              className="self-start sm:self-auto px-3.5 py-1.5 rounded-xl border border-amber-400/30 bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
-            >
-              <RefreshCw size={12} className="text-amber-400" />
-              <span>다른 작품 랜덤 추천</span>
-            </button>
+          {/* 선정된 명작 정보 바 (목록 숨김) */}
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center gap-2.5 text-xs text-white/80">
+            <Sparkles size={14} className="text-amber-400 shrink-0" />
+            <span>
+              현재 선정 명작: <strong className="text-white font-bold">{selectedArtwork.piece.split('(')[0].trim()}</strong>
+              <span className="text-white/40 ml-1.5 font-sans text-[11px]">({selectedMaster.name.split('(')[0].trim()}의 {availableArtworks.length}개 대표작 중 항시 랜덤 큐레이션)</span>
+            </span>
           </div>
 
           {/* 🌟 명곡 / 명시 / 명언 / 명화 분야별 맞춤 감상 섹션 */}

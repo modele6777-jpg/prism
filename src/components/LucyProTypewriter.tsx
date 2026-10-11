@@ -100,7 +100,7 @@ function LucyProImageItem({ src, alt }: { src?: string; alt?: string }) {
             onClick={() => setIsModalOpen(false)}
             className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md p-4 sm:p-8 flex flex-col items-center justify-center select-none"
           >
-            <div className="absolute top-4 right-4 flex items-center gap-2 z-20">
+            <div className="absolute top-4 sm:top-6 right-4 sm:right-6 flex items-center gap-2 z-20">
               <a
                 href={src}
                 target="_blank"
@@ -113,10 +113,13 @@ function LucyProImageItem({ src, alt }: { src?: string; alt?: string }) {
                 <span>저장하기</span>
               </a>
               <button
+                type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="p-2 rounded-xl bg-white/20 hover:bg-white/30 text-white transition-all cursor-pointer shadow-md"
+                className="px-3.5 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-bold transition-all cursor-pointer shadow-md flex items-center gap-1.5 active:scale-95"
+                title="닫기"
               >
-                <X size={18} />
+                <X size={16} />
+                <span>닫기</span>
               </button>
             </div>
 
@@ -133,6 +136,18 @@ function LucyProImageItem({ src, alt }: { src?: string; alt?: string }) {
                 className="max-w-full max-h-[85vh] object-contain rounded-2xl"
               />
             </motion.div>
+
+            <div className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="px-6 py-2.5 rounded-full bg-zinc-900/90 hover:bg-black border border-white/25 text-white text-xs font-bold shadow-2xl backdrop-blur-xl transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
+                title="닫기"
+              >
+                <X size={16} />
+                <span>닫기</span>
+              </button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

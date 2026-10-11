@@ -306,8 +306,8 @@ function AppContent() {
       if (e.touches.length === 1) {
         const dx = e.touches[0].clientX - startX;
         const dy = e.touches[0].clientY - startY;
-        // 좌우 가장자리 28px 이내에서 시작된 수평 스와이프의 브라우저 이탈 방지
-        if ((startX < 28 && dx > 8) || (startX > window.innerWidth - 28 && dx < -8)) {
+        // 좌우 가장자리 48px 이내에서 시작된 수평 스와이프의 브라우저 히스토리/다른 앱 이탈 방지
+        if ((startX < 48 && dx > 8) || (startX > window.innerWidth - 48 && dx < -8)) {
           if (Math.abs(dx) > Math.abs(dy)) {
             if (e.cancelable) e.preventDefault();
           }
