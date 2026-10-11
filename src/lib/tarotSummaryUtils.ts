@@ -385,7 +385,7 @@ export function extractConciseSummary(text: string, cardContext?: any): string[]
 
 export interface OracleConciseSummaryParams {
   message?: string;
-  oracleMode: 'healing' | 'growth';
+  oracleMode: 'healing' | 'growth' | 'miracle';
   cards?: any[];
   saju?: any;
   todayCard?: any;
@@ -402,6 +402,7 @@ export interface OracleConciseSummaryParams {
 export function extractOracleConciseSummary(params: OracleConciseSummaryParams): string[] {
   const { message = '', oracleMode, cards = [], saju, todayCard, microAction, macroFocus, microMission } = params;
   const isHealing = oracleMode === 'healing';
+  const isMiracle = oracleMode === 'miracle';
 
   const clean = (s: string) => {
     return s
@@ -460,10 +461,12 @@ export function extractOracleConciseSummary(params: OracleConciseSummaryParams):
   const c2Name = c2 ? `${c2.nameKo || c2.name}${c2.reversed ? '(역)' : ''}` : '2번 카드';
   const c3Name = c3 ? `${c3.nameKo || c3.name}${c3.reversed ? '(역)' : ''}` : '3번 카드';
 
-  // 1. [현재 에너지] (자기계발 오라클과 동등한 깊이와 분량의 60~85자 심층 진단)
+  // 1. [현재 에너지] (자기계발/기적수업 오라클과 동등한 깊이와 분량의 60~85자 심층 진단)
   let line1 = '';
   if (isHealing) {
     line1 = `사주 본원 [${dayMaster}]과 [${c1Name}], [${c2Name}] 카드가 만나 지나온 시간의 무게와 내면의 깊은 피로가 공명하며 전환기를 맞이했습니다.`;
+  } else if (isMiracle) {
+    line1 = `사주 본원 [${dayMaster}]과 [${c1Name}] 카드가 만나 에고의 무의식적 두려움과 오해된 시선이 마음에 드리워졌음을 알아차립니다.`;
   } else {
     line1 = `사주 [${dayMaster}]의 추진력이 [${c1Name}] 카드와 만나 일시적인 실행 정체에 머물러 있으나 돌파의 잠재력은 충분합니다.`;
   }
@@ -472,6 +475,8 @@ export function extractOracleConciseSummary(params: OracleConciseSummaryParams):
   let line2 = '';
   if (isHealing) {
     line2 = `용신 [${yongsin}]과 [${c3Name}] 카드의 조화로운 안내를 따라 불필요한 집착과 부담을 비워내고 온전한 마음의 회복을 선택할 때입니다.`;
+  } else if (isMiracle) {
+    line2 = `용신 [${yongsin}]과 [${c3Name}] 카드를 통해 판단과 원한을 내려놓고 참된 용서와 하나님의 완전한 평화를 선택할 때입니다.`;
   } else {
     line2 = `용신 [${yongsin}]과 [${c3Name}] 카드를 따라 잔가지를 쳐내고 우선순위 1번에 집중하여 당당하게 실행을 완수하세요.`;
   }
@@ -486,6 +491,8 @@ export function extractOracleConciseSummary(params: OracleConciseSummaryParams):
     line3 = `오늘 일상에서 "${actionText}"을(를) 정성껏 실천하며 내면의 에너지를 순환시키고 충전하기.`;
   } else if (isHealing) {
     line3 = `따뜻한 차 한 잔과 3번의 깊은 복식호흡으로 마음의 긴장을 즉시 비워내고 스스로를 다정하게 안아주기.`;
+  } else if (isMiracle) {
+    line3 = `기적수업 레슨처럼 "나는 이것 대신 평화를 보기를 선택한다"는 마음의 선언으로 거룩한 순간을 회복하기.`;
   } else {
     line3 = `오늘 10분 안에 끝낼 수 있는 가장 작은 행동 과제 1가지를 정해 지금 즉시 행동으로 전환하기.`;
   }

@@ -5,7 +5,7 @@ import {
   MessageCircle, CornerDownLeft, Smile, RefreshCw
 } from 'lucide-react';
 import { TarotCard } from '@/data/tarotData';
-import { HealingResult, GrowthResult } from './TrinityOracleSection';
+import { HealingResult, GrowthResult, MiracleResult } from './TrinityOracleSection';
 import { invokeLLM } from '@/lib/ai';
 import { playTTS, stopTTS, useTTSActive } from '@/utils/tts';
 import { SajuAnalysisResult } from '@/lib/sajuAnalysis';
@@ -20,10 +20,11 @@ export interface ChatMessage {
 }
 
 interface ZezeKakaoChatProps {
-  oracleMode: 'healing' | 'growth';
+  oracleMode: 'healing' | 'growth' | 'miracle';
   drawnCards: TarotCard[];
   healingResult: HealingResult | null;
   growthResult: GrowthResult | null;
+  miracleResult?: MiracleResult | null;
   slotPositions: string[];
   saju?: SajuAnalysisResult | null;
 }
@@ -33,6 +34,7 @@ export function ZezeKakaoChat({
   drawnCards,
   healingResult,
   growthResult,
+  miracleResult,
   slotPositions,
   saju,
 }: ZezeKakaoChatProps) {
@@ -111,7 +113,7 @@ export function ZezeKakaoChat({
       initialMsgs.push({ id: 'init-question', sender: 'zeze', text: msgPrompt, time: nowTime });
 
       setMessages(initialMsgs);
-    } else {
+    } else if (oracleMode === 'growth') {
       const msgText1 = `반가워! 오늘 너의 자기계발과 4원소 역량 성장을 이끌 3장의 카드 [${c1.nameKo}], [${c2.nameKo}], [${c3.nameKo}]의 역할을 정밀하게 분석했어! 하나씩 짚어줄게 ⚡`;
 
       const initialMsgs: ChatMessage[] = [
@@ -162,8 +164,64 @@ export function ZezeKakaoChat({
       initialMsgs.push({ id: 'init-question', sender: 'zeze', text: msgText3, time: nowTime });
 
       setMessages(initialMsgs);
+    } else if (oracleMode === 'miracle') {
+      const msgText1 = `안녕! 오늘 네가 마주한 3장의 카드 [${c1.nameKo}], [${c2.nameKo}], [${c3.nameKo}]를 기적수업(ACIM)의 맑은 빛으로 가만히 바라보고 있어... 🕊️\n에고의 두려움을 내려놓고 참된 용서와 하나님의 평화로 나아가는 길을 내가 함께 걸어줄게.`;
+
+      const initialMsgs: ChatMessage[] = [
+        { id: 'init-1', sender: 'zeze', text: msgText1, time: nowTime },
+      ];
+
+      if (miracleResult?.card_insights && miracleResult.card_insights.length >= 3) {
+        const ins1 = miracleResult.card_insights[0];
+        const ins2 = miracleResult.card_insights[1];
+        const ins3 = miracleResult.card_insights[2];
+
+        initialMsgs.push({
+          id: 'init-card-1',
+          sender: 'zeze',
+          text: `【1번 · 에고의 환영과 두려움: ${c1.nameKo}】\n🏛️ ${ins1.core_meaning}\n🕊️ ${ins1.personal_interpretation}`,
+          time: nowTime,
+        });
+
+        initialMsgs.push({
+          id: 'init-card-2',
+          sender: 'zeze',
+          text: `【2번 · 거룩한 순간과 지각 전환: ${c2.nameKo}】\n🏛️ ${ins2.core_meaning}\n🕊️ ${ins2.personal_interpretation}`,
+          time: nowTime,
+        });
+
+        initialMsgs.push({
+          id: 'init-card-3',
+          sender: 'zeze',
+          text: `【3번 · 참된 용서와 평화의 기적: ${c3.nameKo}】\n🏛️ ${ins3.core_meaning}\n🕊️ ${ins3.personal_interpretation}${ins3.action_guide ? `\n💡 ${ins3.action_guide}` : ''}`,
+          time: nowTime,
+        });
+      }
+
+      if (miracleResult?.saju_tarot_synergy) {
+        initialMsgs.push({
+          id: 'init-saju-synergy',
+          sender: 'zeze',
+          text: `【사주×기적수업 평화 공명】\n사주 본원 [${saju?.dayMaster.hanja || '일간'}]과 기적수업의 영적 공명이야 🕊️\n${miracleResult.saju_tarot_synergy.day_master_resonance}`,
+          time: nowTime,
+        });
+      }
+
+      if (miracleResult?.miracle_lesson) {
+        initialMsgs.push({
+          id: 'init-miracle-lesson',
+          sender: 'zeze',
+          text: `【오늘의 기적수업 선언문】\n"${miracleResult.miracle_lesson.quote}" (${miracleResult.miracle_lesson.source})\n\n${miracleResult.miracle_lesson.application}`,
+          time: nowTime,
+        });
+      }
+
+      const msgText3 = `지금 마음에 걸리는 누군가를 향한 서운함이나, 에고의 두려움이 있다면 편안하게 털어놓아 줘. "나는 이것 대신 평화를 보기를 선택한다"는 시선으로 함께 풀어갈게. 🕊️`;
+      initialMsgs.push({ id: 'init-question', sender: 'zeze', text: msgText3, time: nowTime });
+
+      setMessages(initialMsgs);
     }
-  }, [oracleMode, drawnCards, healingResult, growthResult]);
+  }, [oracleMode, drawnCards, healingResult, growthResult, miracleResult]);
 
   // Auto-scroll to bottom on new message
   useEffect(() => {
@@ -185,6 +243,15 @@ export function ZezeKakaoChat({
         `🎨 내 지친 마음에 맞는 예술 처방과 1분 쉼 알려줘`,
         `🥺 나 오늘 정말 열심히 버텼는데 스스로를 온전히 인정하고 안아주는 법`,
         `💛 제제야, 아무 조건 없이 나를 품어주는 따뜻한 위로 편지 한 줄 들려줘`,
+      ];
+    } else if (oracleMode === 'miracle') {
+      return [
+        `🕊️ 1번 [${c1.nameKo}] 에고의 두려움을 사랑으로 내려놓는 법`,
+        `🌅 2번 [${c2.nameKo}] 거룩한 순간을 열어 내 지각을 평화로 전환하는 법`,
+        `🕊️ 3번 [${c3.nameKo}] 참된 용서로 나와 상대 모두를 해방하는 법`,
+        `✨ "모든 공격은 사랑을 청하는 외침"이라는 가르침을 내 상황에 적용해줘`,
+        `💛 제제야, "나는 이것 대신 평화를 보기를 선택한다"는 기도를 함께해 줘`,
+        `🕊️ 나를 힘들게 한 사람에 대한 원한을 기적수업식으로 흘려보내는 법`,
       ];
     } else {
       return [
@@ -221,8 +288,13 @@ export function ZezeKakaoChat({
         .map((c, i) => `${i + 1}번 [${slotPositions[i]}]: ${c.nameKo} (${c.name}) - ${c.keywords.join(', ')}`)
         .join('\n');
 
-      const insightsContext = (oracleMode === 'healing' ? healingResult?.card_insights : growthResult?.card_insights)
-        ?.map((ci, idx) => `[${idx + 1}번 ${ci.position_name}: ${ci.card_name}]\n- 상징/도상 본래 뜻: ${ci.core_meaning}\n- 심층 리딩: ${ci.personal_interpretation}${ci.action_guide ? `\n- 실천 가이드: ${ci.action_guide}` : ''}`)
+      const insightsContext = (
+        oracleMode === 'healing'
+          ? healingResult?.card_insights
+          : oracleMode === 'miracle'
+          ? miracleResult?.card_insights
+          : growthResult?.card_insights
+      )?.map((ci, idx) => `[${idx + 1}번 ${ci.position_name}: ${ci.card_name}]\n- 상징/도상 본래 뜻: ${ci.core_meaning}\n- 심층 리딩: ${ci.personal_interpretation}${ci.action_guide ? `\n- 실천 가이드: ${ci.action_guide}` : ''}`)
         .join('\n\n');
 
       const userProfile = getPersistentUserProfile();
@@ -240,6 +312,7 @@ export function ZezeKakaoChat({
 - 용신(보약): ${saju.yongsin.name}
 ${oracleMode === 'healing' && healingResult?.saju_tarot_synergy ? `- 사주×타로 융합 공명: ${healingResult.saju_tarot_synergy.day_master_resonance}` : ''}
 ${oracleMode === 'growth' && growthResult?.saju_tarot_synergy ? `- 사주×타로 실행 매트릭스: ${growthResult.saju_tarot_synergy.day_master_resonance}` : ''}
+${oracleMode === 'miracle' && miracleResult?.saju_tarot_synergy ? `- 사주×기적수업 평화 공명: ${miracleResult.saju_tarot_synergy.day_master_resonance}` : ''}
 (※ 답변 시 사용자의 사주 일간 기운과 타로 카드의 상징을 자연스럽게 엮어서 위로와 통찰을 전하세요)
 ` : '';
 
@@ -264,6 +337,30 @@ ${healingResult?.prescribed_art ? `(추천 예술: ${healingResult.prescribed_ar
 - 카톡 메시지처럼 읽기 편하게 2~3개 문장(200~250자 내외)으로 온기 있게 작성하세요.
 - 사용자의 감정을 온전히 수용하고 인정해준 뒤 안도감을 선물하세요.
 - 마지막에는 사용자가 부담 없이 다음 생각을 말할 수 있도록 다정한 질문이나 말을 건네며 끝맺으세요.`
+        : oracleMode === 'miracle'
+        ? `당신의 이름은 기적수업(ACIM) 평화의 동행자 '제제(Zezé)'입니다.
+당신은 헬로우봇(Hellobot) 특유의 사랑스럽고 다정한 카톡 챗봇처럼, 기적수업(A Course in Miracles)의 핵심 지혜와 78장 타로 카드를 결합하여 사용자와 1:1 영적 지각 전환 상담을 진행합니다.
+${sajuPromptSection}
+# 호칭 절대 규칙 (★매우 중요):
+제제는 사용자의 가장 가깝고 다정한 영적 동행자 친구입니다. 본명보다 사용자가 지정한 닉네임/호칭 '${chosenName}'(으)로 다정하게 부르세요 (예: '${formatKoreanVocative(chosenName)}', '${chosenName}이'). 절대 딱딱한 본명이나 성을 붙여 부르지 마세요.
+
+# 상담 페르소나 및 어조:
+- 조심스럽고 다정하며 깊은 평화를 건네는 반말(해체)을 사용합니다. ("~했어?", "~해볼까?", "~해도 괜찮아", "~일지도 몰라")
+- 기적수업 핵심 3대 원리:
+  1) 실재하는 것은 위협받을 수 없으며 실재하지 않는 것은 존재하지 않는다. (우리는 본래 상처받지 않는 거룩한 존재)
+  2) 모든 공격과 갈등은 본질적으로 "사랑을 청하는 외침(A Call for Love)"이다.
+  3) 참된 용서(True Forgiveness)는 상대의 죄가 에고의 환영(꿈)이었음을 알고, 상대를 판단하지 않음으로써 나 자신을 해방하는 것이다.
+  4) "나는 이것 대신 평화를 보기를 선택한다 (Lesson 34)"는 거룩한 순간(Holy Instant)을 선물합니다.
+- [★ 카드 상징과 뜻 중심 답변]: 뽑힌 3장의 카드(1번 에고의 환영과 두려움, 2번 거룩한 순간과 지각 전환, 3번 참된 용서와 평화)의 본래 상징과 뜻을 기적수업의 시선으로 짚어가며 깊은 지각의 전환을 이끌어 주세요.
+
+# 뽑은 3장의 카드 상세 정보 및 리딩:
+${insightsContext || cardContext}
+${miracleResult?.miracle_lesson ? `(오늘의 선언문: "${miracleResult.miracle_lesson.quote}" - ${miracleResult.miracle_lesson.application})` : ''}
+
+# 답변 규칙:
+- [★ 핵심 원칙]: 상대에 대한 원망이나 자기비하를 에고의 환영으로 따뜻하게 감싸 안고, 지금 이 순간 거룩한 평화를 선택하도록 다정하게 손을 잡아주세요.
+- 카톡 메시지처럼 읽기 편하게 2~3개 문장(200~250자 내외)으로 작성하세요.
+- 마지막에는 평화의 마음을 다잡을 수 있는 부드러운 질문이나 선언을 건네며 끝맺으세요.`
         : `당신의 이름은 자기계발 & 역량 코칭 라이프 코치 '제제(Zezé)'입니다.
 당신은 헬로우봇(Hellobot) 특유의 친근하면서도 명쾌한 카톡 코칭 챗봇처럼, 사주 명리학과 3장의 타로 카드를 결합하여 사용자의 '자기계발(Self-Development), 역량 성장, 습관 설계, 생산성 루틴'에 집중하는 1:1 심층 자기계발 코칭을 진행합니다.
 ${sajuPromptSection}
@@ -304,7 +401,7 @@ ${growthResult?.dominant_element ? `(주요 역량 영역: ${growthResult.domina
       const botMsg: ChatMessage = {
         id: 'zeze_' + Date.now(),
         sender: 'zeze',
-        text: cleanRes || (oracleMode === 'healing' ? '네 마음을 언제나 응원해, 힘내자!' : '좋아, 지금 바로 최소 단위부터 실행해 보자!'),
+        text: cleanRes || (oracleMode === 'healing' ? '네 마음을 언제나 응원해, 힘내자!' : oracleMode === 'miracle' ? '너는 결코 상처받지 않는 하나님의 거룩한 평화 그 자체야. 🕊️' : '좋아, 지금 바로 최소 단위부터 실행해 보자!'),
         time: getKoreanTime(),
       };
 
@@ -316,6 +413,8 @@ ${growthResult?.dominant_element ? `(주요 역량 영역: ${growthResult.domina
         sender: 'zeze',
         text: oracleMode === 'healing'
           ? '미안해, 잠시 생각의 숲을 헤매고 있었어... 네가 뽑은 카드의 따뜻한 빛은 언제나 네 곁에 머물고 있어. 다시 이야기해 줄래? 💛'
+          : oracleMode === 'miracle'
+          ? '잠시 생각의 파동이 흩어졌지만, 네 안의 참된 평화는 언제나 안전해. 다시 한번 마음을 들려줄래? 🕊️'
           : '잠시 네트워크 주파수가 흔들렸어! 하지만 네 실행 모멘텀은 멈추지 않아. 다시 한번 들려줘! ⚡',
         time: getKoreanTime(),
       };
@@ -379,7 +478,7 @@ ${growthResult?.dominant_element ? `(주요 역량 영역: ${growthResult.domina
           <div className="relative">
             <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-gradient-to-br from-yellow-300 via-amber-400 to-amber-600 p-[2px] shadow-lg">
               <div className="w-full h-full rounded-full bg-zinc-900 flex items-center justify-center text-xl">
-                {oracleMode === 'healing' ? '👦🌱' : '👦⚡'}
+                {oracleMode === 'healing' ? '👦🌱' : oracleMode === 'miracle' ? '🕊️✨' : '👦⚡'}
               </div>
             </div>
             <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-zinc-900" title="실시간 상담 중" />
@@ -388,9 +487,9 @@ ${growthResult?.dominant_element ? `(주요 역량 영역: ${growthResult.domina
           <div>
             <div className="flex items-center gap-2">
               <h4 className="text-sm sm:text-base font-bold text-white flex items-center gap-1.5">
-                <span>내면아이 제제</span>
+                <span>{oracleMode === 'miracle' ? '평화의 동행자 제제' : '내면아이 제제'}</span>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-400/20 text-yellow-300 border border-yellow-400/30 font-medium">
-                  {oracleMode === 'healing' ? '힐링 상담봇' : '마인드셋 코치'}
+                  {oracleMode === 'healing' ? '힐링 상담봇' : oracleMode === 'miracle' ? '기적수업 동행봇' : '마인드셋 코치'}
                 </span>
               </h4>
             </div>
@@ -548,6 +647,8 @@ ${growthResult?.dominant_element ? `(주요 역량 영역: ${growthResult.domina
             placeholder={
               oracleMode === 'healing'
                 ? '제제에게 털어놓고 싶은 마음이나 고민을 적어봐...'
+                : oracleMode === 'miracle'
+                ? '에고의 갈등이나 용서하고 싶은 마음을 적어줘...'
                 : '오늘 실행하고 싶은 내용이나 극복하고 싶은 점을 적어줘...'
             }
             className="w-full py-3 pl-4 pr-10 rounded-2xl bg-white/[0.07] border border-white/15 focus:border-yellow-400/60 focus:bg-white/[0.1] text-white text-xs sm:text-sm placeholder-zinc-500 focus:outline-none transition-all"

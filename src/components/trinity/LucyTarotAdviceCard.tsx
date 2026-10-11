@@ -29,7 +29,7 @@ export interface LucyTarotAdviceCardProps {
   tarotConcern?: string;
   readingText?: string;
   mode?: 'standard' | 'daily' | 'oracle';
-  oracleMode?: 'healing' | 'growth';
+  oracleMode?: 'healing' | 'growth' | 'miracle';
   saju?: any;
   className?: string;
   onConsultLucy?: () => void;
@@ -139,11 +139,14 @@ export function LucyTarotAdviceCard({
 
   const isHealing = mode === 'oracle' && oracleMode === 'healing';
   const isGrowth = mode === 'oracle' && oracleMode === 'growth';
+  const isMiracle = mode === 'oracle' && oracleMode === 'miracle';
 
   const badgeTitle = isHealing
     ? '사주 ✕ 타로 오라클 마스터 조언'
     : isGrowth
     ? '루시의 그로스 실행 코칭'
+    : isMiracle
+    ? '기적수업 지각전환 마스터 조언'
     : '루시의 특별 맞춤 조언';
 
   const shareData: TarotShareData = useMemo(() => {
@@ -160,7 +163,7 @@ export function LucyTarotAdviceCard({
     const defaultTitle = mode === 'daily'
       ? '오늘의 데일리 타로'
       : mode === 'oracle'
-      ? (oracleMode === 'healing' ? '사주 ✕ 타로 마스터 오라클' : '루시의 성장 오라클')
+      ? (oracleMode === 'healing' ? '사주 ✕ 타로 마스터 오라클' : oracleMode === 'miracle' ? '기적수업 지각전환 오라클' : '루시의 성장 오라클')
       : '78장 타로 마스터 비전';
 
     return {

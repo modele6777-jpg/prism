@@ -18,7 +18,7 @@ export interface LucyTarotAdviceParams {
   readingText?: string;
   nickname?: string;
   mode?: 'standard' | 'daily' | 'oracle';
-  oracleMode?: 'healing' | 'growth';
+  oracleMode?: 'healing' | 'growth' | 'miracle';
   saju?: any;
 }
 
@@ -80,6 +80,19 @@ export function buildDeterministicLucyAdvice(params: LucyTarotAdviceParams): Luc
         actionTip,
         speechText: buildLucyAdviceSpeechText(headline, advice, actionTip),
         keyword: `#마음의안식 #온전한치유`,
+      };
+    } else if (params.oracleMode === 'miracle') {
+      const headline = isReversed
+        ? `${nickVocative}, [${cardName}]의 두려움을 내려놓고 참된 평화를 선택해`
+        : `${nickVocative}, [${cardName}]의 상징처럼 시선을 바꾸면 기적이 일어나`;
+      const advice = `기적수업의 가르침처럼, 실재하는 너의 참된 평화는 세상 그 어떤 일로도 결코 위협받을 수 없어. 일어난 상황을 에고의 두려움 대신 사랑을 청하는 외침으로 바라볼 때, 너의 마음에 기적 같은 고요와 자유가 깃들 거야.`;
+      const actionTip = `마음이 요동칠 때 "나는 이것 대신 평화를 보기를 선택한다"고 가만히 선언하기.`;
+      return {
+        headline,
+        advice,
+        actionTip,
+        speechText: buildLucyAdviceSpeechText(headline, advice, actionTip),
+        keyword: `#지각의전환 #참된용서`,
       };
     } else {
       // Growth Mode
@@ -221,14 +234,15 @@ export async function getEnhancedLucyTarotAdvice(
 
         const isHealingOracle = params.mode === 'oracle' && params.oracleMode === 'healing';
         const isGrowthOracle = params.mode === 'oracle' && params.oracleMode === 'growth';
+        const isMiracleOracle = params.mode === 'oracle' && params.oracleMode === 'miracle';
 
         const cleanConcern = (params.tarotConcern || '')
-          .replace(/^(?:제제의\s*치유\s*오라클|루시의\s*성장\s*오라클)$/, isHealingOracle ? '지친 마음의 온전한 쉼과 내면아이 치유' : '현실적인 성장과 목표 실행')
-          || (isHealingOracle ? '지친 마음의 온전한 쉼과 내면아이 치유' : '오늘의 타로 운세');
+          .replace(/^(?:제제의\s*치유\s*오라클|루시의\s*성장\s*오라클|기적수업\s*지각전환\s*오라클)$/, isHealingOracle ? '지친 마음의 온전한 쉼과 내면아이 치유' : isMiracleOracle ? '기적수업 지각의 전환과 참된 용서' : '현실적인 성장과 목표 실행')
+          || (isHealingOracle ? '지친 마음의 온전한 쉼과 내면아이 치유' : isMiracleOracle ? '기적수업 지각의 전환과 참된 용서' : '오늘의 타로 운세');
 
         const systemPrompt = `당신은 PRISM의 모든 차원을 인도하는 따뜻하고 통찰력 넘치는 AI 마스터 가이드 '루시(Lucy)'입니다.
 질문자가 방금 뽑은 타로/오라클 카드의 파동과 질문 고민에 맞추어, 질문자의 마음을 보듬고 명쾌한 방향성을 전해주는 '루시의 1:1 특별 조언'을 생성하세요.
-
+${isMiracleOracle ? `\n[★ 기적수업(ACIM) 전용 안내]: 질문자가 기적수업 모드를 선택했으므로, 에고의 두려움과 죄책감을 내려놓고, 모든 공격을 '사랑을 청하는 외침(Call for Love)'으로 재해석하며, '참된 용서(True Forgiveness)'와 '거룩한 순간(Holy Instant)'을 통해 하나님의 평화를 선택하도록 깊은 영적 지각 전환의 지혜를 전하세요.\n` : ''}
 [필수 원칙]:
 1. [루시 페르소나 어조]: 질문자(${params.nickname || '여행자'})에게 반말(~해봐, ~야, ~할 거야, ~을 잊지 마)로 100% 다정하고 명쾌하게 이야기하세요. 질문자의 호칭 뒤에 조사를 붙일 때 받침 유무(받침 있으면 '아', 없으면 '야')를 문법에 맞게 정확히 지키세요.
 2. [시스템/기능 명칭 누출 절대 금지]: '오라클', '제제의 치유', '루시의 성장' 같은 기능 명칭이나 시스템 명칭을 문맥 없이 기계적으로 넣지 마십시오.

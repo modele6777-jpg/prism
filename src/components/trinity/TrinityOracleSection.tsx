@@ -41,30 +41,35 @@ import {
   type SajuAnalysisResult,
   type FiveElement
 } from '@/lib/sajuAnalysis';
+import { ACIM_CORE_CANON, ACIM_SACRED_QUOTES } from '@/lib/acimWisdom';
 
 // Local storage keys
 const STORAGE_HEALING_TREASURES = 'prism_oracle_healing_treasures';
 const STORAGE_GROWTH_LOGS = 'prism_oracle_growth_logs';
+const STORAGE_MIRACLE_TREASURES = 'prism_oracle_miracle_treasures';
 const STORAGE_ORACLE_MODE = 'trinity_oracle_mode';
 const STORAGE_ORACLE_MODE_SELECTED = 'trinity_oracle_mode_selected';
 const STORAGE_DAILY_ORACLE_PREFIX = 'prism_oracle_daily_';
 
+export type OracleMode = 'healing' | 'growth' | 'miracle';
+
 export interface SavedDailyOracleSession {
   dateKey: string;
-  mode: 'healing' | 'growth';
+  mode: OracleMode;
   drawnCards: TarotCard[];
   inquiryText?: string;
   healingResult?: HealingResult | null;
   growthResult?: GrowthResult | null;
+  miracleResult?: MiracleResult | null;
   savedAt: string;
 }
 
-export const getDailyOracleStorageKey = (mode: 'healing' | 'growth', dateKey: string) => {
+export const getDailyOracleStorageKey = (mode: OracleMode, dateKey: string) => {
   return `${STORAGE_DAILY_ORACLE_PREFIX}${mode}_${dateKey}`;
 };
 
 export const loadTodayOracleSession = (
-  mode: 'healing' | 'growth',
+  mode: OracleMode,
   dateKey?: string,
   cloudSharedState?: any
 ): SavedDailyOracleSession | null => {
@@ -88,7 +93,7 @@ export const loadTodayOracleSession = (
       const raw = localStorage.getItem(k);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed && (parsed.healingResult || parsed.growthResult || (parsed.drawnCards && parsed.drawnCards.length > 0))) {
+        if (parsed && (parsed.healingResult || parsed.growthResult || parsed.miracleResult || (parsed.drawnCards && parsed.drawnCards.length > 0))) {
           return parsed;
         }
       }
@@ -101,7 +106,7 @@ export const loadTodayOracleSession = (
       const raw = sessionStorage.getItem(k);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed && (parsed.healingResult || parsed.growthResult || (parsed.drawnCards && parsed.drawnCards.length > 0))) {
+        if (parsed && (parsed.healingResult || parsed.growthResult || parsed.miracleResult || (parsed.drawnCards && parsed.drawnCards.length > 0))) {
           return parsed;
         }
       }
@@ -113,7 +118,7 @@ export const loadTodayOracleSession = (
     try {
       const cloudSession = cloudSharedState.oracleSessions?.[`${mode}_${targetDateKey}`]
         || cloudSharedState.oracleSessions?.[`${mode}_${altIsoDateKey}`];
-      if (cloudSession && (cloudSession.healingResult || cloudSession.growthResult || (cloudSession.drawnCards && cloudSession.drawnCards.length > 0))) {
+      if (cloudSession && (cloudSession.healingResult || cloudSession.growthResult || cloudSession.miracleResult || (cloudSession.drawnCards && cloudSession.drawnCards.length > 0))) {
         try {
           localStorage.setItem(getDailyOracleStorageKey(mode, targetDateKey), JSON.stringify(cloudSession));
         } catch (_) {}
@@ -131,7 +136,7 @@ export const loadTodayOracleSession = (
         if (raw) {
           try {
             const parsed = JSON.parse(raw);
-            if (parsed && (parsed.healingResult || parsed.growthResult || (parsed.drawnCards && parsed.drawnCards.length > 0))) {
+            if (parsed && (parsed.healingResult || parsed.growthResult || parsed.miracleResult || (parsed.drawnCards && parsed.drawnCards.length > 0))) {
               return parsed;
             }
           } catch (_) {}
@@ -143,7 +148,7 @@ export const loadTodayOracleSession = (
   return null;
 };
 
-export const saveDailyOracleSession = (mode: 'healing' | 'growth', dateKey: string, session: SavedDailyOracleSession) => {
+export const saveDailyOracleSession = (mode: OracleMode, dateKey: string, session: SavedDailyOracleSession) => {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(getDailyOracleStorageKey(mode, dateKey), JSON.stringify(session));
@@ -213,6 +218,29 @@ export interface GrowthResult {
   };
 }
 
+export interface MiracleResult {
+  message: string;
+  concise_summary?: string[];
+  saju_tarot_synergy?: SajuTarotSynergy;
+  card_insights?: CardInsight[];
+  miracle_lesson?: {
+    source: string;
+    quote: string;
+    application: string;
+  };
+  prescribed_art?: {
+    catalog_id?: string;
+    artwork_title: string;
+    art_quote: string;
+  };
+  micro_action: string;
+  reward_item: {
+    name: string;
+    description: string;
+    icon?: string;
+  };
+}
+
 export interface CollectedTreasure {
   id: string;
   name: string;
@@ -226,7 +254,7 @@ export interface CollectedTreasure {
 export function resolvePrescribedArtForCards(
   cards: TarotCard[],
   saju: SajuAnalysisResult | null,
-  mode: 'healing' | 'growth'
+  mode: OracleMode
 ): { artwork_title: string; art_quote: string; catalog_id: string } {
   if (!cards || cards.length === 0) {
     return {
@@ -474,6 +502,94 @@ ${stage4}
 ${stage5}`;
 }
 
+/**
+ * 🕊️ 오라클 기적수업(ACIM) 5단계 지각전환 마크다운 본문 폴백 생성 함수
+ */
+export function buildFallbackMiracleMessage(
+  cards: SelectedTarotCardEntry[],
+  saju: any,
+  todayCard: TarotCard,
+  recipientName: string,
+  effectiveInquiry?: string,
+  insights?: CardInsight[],
+  miracleLesson?: { source: string; quote: string; application: string },
+  microAction?: any
+): string {
+  const sajuNameStr = saju?.name || recipientName || '빛의 형제';
+  const dayMasterStr = saju ? `${saju.dayMaster.hanja}(${saju.dayMaster.korean} · ${saju.dayMaster.symbolName})` : '본원 생명';
+  const yongsinStr = saju?.yongsin?.name || '평화의 중심';
+
+  const c1 = cards[0];
+  const c2 = cards[1];
+  const c3 = cards[2];
+  const c1Name = c1 ? `${c1.nameKo || c1.name}${c1.reversed ? ' (역방향)' : ' (정방향)'}` : '1번 에고 카드';
+  const c2Name = c2 ? `${c2.nameKo || c2.name}${c2.reversed ? ' (역방향)' : ' (정방향)'}` : '2번 거룩한 순간 카드';
+  const c3Name = c3 ? `${c3.nameKo || c3.name}${c3.reversed ? ' (역방향)' : ' (정방향)'}` : '3번 평화의 기적 카드';
+  const c1Keywords = c1?.keywords ? c1.keywords.slice(0, 3).join(', ') : '두려움의 투사';
+  const c2Keywords = c2?.keywords ? c2.keywords.slice(0, 3).join(', ') : '지각의 전환';
+  const c3Keywords = c3?.keywords ? c3.keywords.slice(0, 3).join(', ') : '참된 용서와 평화';
+
+  const todayCardStr = `[${todayCard.nameKo}] (${todayCard.name}${todayCard.reversed ? ' · 역방향' : ' · 정방향'})`;
+  const inquiryFocus = effectiveInquiry ? `현재 마음을 어지럽히는 "${effectiveInquiry}" 사안` : '지금 마주하신 현실의 갈등과 불안';
+
+  const lessonQuote = miracleLesson?.quote || '기적은 지각의 전환이다. 두려움 대신 사랑을, 죄책감 대신 하나님의 평화를 선택할 때 기적은 이미 일어났다.';
+  const lessonSource = miracleLesson?.source || '기적수업(ACIM) 텍스트 1장';
+  const lessonApp = miracleLesson?.application || '판단을 성령께 온전히 넘겨주고 내면의 무죄성을 선언하십시오.';
+
+  const stage1Text = `${recipientName} 님, 하나님의 거룩한 자녀이신 당신의 내면 깊은 곳에는 세상 그 어떤 풍파나 죄책감으로도 결코 훼손될 수 없는 순결한 하나님의 평화가 이미 깃들어 있습니다. 2026 병오년(丙午年)의 거대한 흐름 속에서, 오늘 당신의 무의식적 시야를 비추는 일일 타로 ${todayCardStr}와 사주 본원 [${dayMasterStr}]의 기운은 지금 마주한 ${inquiryFocus}이 결코 당신을 해칠 수 있는 실체가 아니라, 오직 '에고의 환영에서 깨어나 참된 용서를 선택하라는 성령의 부드러운 초대장'임을 선언하고 있습니다.
+
+기적수업은 가르칩니다. "실재하는 것은 위협받을 수 없으며, 실재하지 않는 것은 존재하지 않는다. 여기에 하나님의 평화가 있다." 오늘의 일일 타로 [${todayCard.nameKo}]가 현실의 표면에 드러낸 요동침은 당신의 영원한 무죄성을 입증하기 위한 거룩한 무대입니다. 에고가 속삭이는 결핍과 분리의 거짓말을 꿰뚫어 보고, 성령의 시선으로 상황을 다시 바라볼 때 고통은 눈 녹듯 사라집니다.
+
+이제 당신이 직접 선택한 3장의 오라클 카드가 에고의 깊은 두려움의 뿌리를 밝히 드러내고, 판단을 멈추는 '거룩한 순간(Holy Instant)'을 거쳐, 온전한 참된 용서와 하나님의 평화로 귀환하는 영적 여정을 장엄하게 안내합니다. 마음의 눈을 열고 성령의 자비로운 음성에 귀를 기울여 주십시오.`;
+
+  const stage2Text = `${insights?.[0]?.personal_interpretation ? `${insights[0].personal_interpretation}\n\n` : ''}첫 번째 에고의 환영과 숨겨진 두려움의 자리에 놓인 [${c1Name}]는 지금 ${recipientName} 님의 마음속에서 무의식적으로 작동하고 있는 결핍과 죄책감의 정체를 투명하게 비춥니다. 카드의 핵심 도상([${c1Keywords}])은 "내가 무언가를 빼앗겼다"거나 "상대방 혹은 환경 때문에 내가 상처받았다"는 에고의 익숙한 희생자 각본을 고스란히 보여줍니다.
+
+기적수업의 형이상학에서 모든 고통의 원인은 외부 세상에 있지 않고, 하나님과 분리되었다는 근원적 두려움을 세상에 투사(Projection)한 결과입니다. [${c1Name}]는 당신이 품고 있던 과거의 상처나 원한, 통제하려는 불안이 사실은 당신 자신을 방어하기 위해 쌓아 올린 에고의 허망한 성벽이었음을 밝힙니다.
+
+그러나 카드는 당신을 질책하지 않습니다. 에고의 정체를 알아차리는 순간, 그 환영은 이미 힘을 잃기 시작합니다. 당신이 경험한 모든 아픔은 실재하는 죄가 아니라 '사랑을 부르는 외침(A Call for Love)'이었을 뿐입니다. 이제 그 낡은 두려움의 옷을 벗고, 스스로에게 씌웠던 모든 자책과 타인을 향한 판단을 성령의 제단 위에 정직하게 내려놓으십시오.`;
+
+  const stage3Text = `${insights?.[1]?.personal_interpretation ? `${insights[1].personal_interpretation}\n\n` : ''}두 번째 거룩한 순간(Holy Instant)과 지각의 전환 자리에 놓인 [${c2Name}]는 이번 오라클 리딩의 가장 거룩한 연금술이 일어나는 축복의 교차로입니다. 카드의 신성한 상징([${c2Keywords}])은 지금 이 순간, 과거에 대한 후회와 미래에 대한 두려움을 단번에 멈추고 시간의 굴레에서 벗어나는 '영원한 지금'으로 당신을 초대합니다.
+
+거룩한 순간이란, 자신의 작은 앎과 판단을 완전히 포기하고 성령께 상황을 전적으로 맡기는 지각의 전환입니다. 사주에서 작용하는 [${yongsinStr}]의 평화로운 중심과 [${c2Name}]의 에너지가 결합하며, 당신에게 "상황을 내 힘으로 바꾸려 애쓰지 말고, 오직 상황을 바라보는 내 마음의 눈을 치유해 달라"고 요청할 것을 가르칩니다.
+
+${effectiveInquiry ? `특히 "${effectiveInquiry}" 사안에 대해 ` : ''}당신이 옳다고 믿었던 모든 판단과 서운함을 내려놓으십시오. "나는 아무것도 알지 못하며, 그러므로 어떻게 판단해야 할지도 모릅니다. 성령이여, 당신의 눈으로 이 형제와 이 상황을 바라보게 하소서." 이 단 한 번의 겸허한 기도가 마음에 임할 때, 차가웠던 판단의 얼음이 녹아내리고 기적이 흘러들 공간이 마련됩니다.`;
+
+  const stage4Text = `${insights?.[2]?.personal_interpretation ? `${insights[2].personal_interpretation}\n\n` : ''}세 번째 참된 용서와 하나님의 평화 자리에 영광스럽게 임재한 [${c3Name}]는 모든 두려움의 꿈에서 깨어난 영혼에게 주어지는 최종 승리의 면류관이자 하나님의 선물입니다. 카드의 초월적 도상([${c3Keywords}])은 기적수업이 말하는 참된 용서가 결코 '상대방의 죄를 너그럽게 봐주는 것'이 아니라, '애초에 죄란 일어나지 않았음을(환영이었음을) 간파하는 것'임을 단호히 증명합니다.
+
+당신을 상처 입힐 수 있는 세상은 결코 존재하지 않습니다. 상처 입은 것은 실재하지 않는 당신의 작은 에고였을 뿐, 하나님의 거룩한 자녀인 당신의 참마음(Christ Self)은 단 한 순간도 다친 적이 없으며 영원히 온전합니다. [${c3Name}]는 오늘의 지배 타로 [${todayCard.nameKo}]가 제시했던 모든 삶의 숙제가 바로 이 참된 용서의 은총 속에서 완벽하게 해소되었음을 선언합니다.
+
+가슴속에 남아 있던 미세한 원한의 찌꺼기마저 하나님의 자비로운 빛 속으로 사라집니다. 당신이 형제를 무죄하게 바라볼 때 당신 자신의 무죄성이 증명되며, 그 자리에는 세상이 결코 빼앗아갈 수 없는 하나님의 완전한 평화(The Peace of God)가 강물처럼 넘쳐흐릅니다. 기적은 이미 성취되었습니다.`;
+
+  const actionStr = typeof microAction === 'string' && microAction.length > 5
+    ? microAction
+    : (microAction?.description || '가슴에 손을 얹고 "나는 하나님께서 창조하신 그대로의 순결한 빛이다"를 3번 선언하기');
+
+  const stage5Text = `${recipientName} 님, 하나님의 사랑 안에서 당신은 영원히 안전하며 무한히 축복받은 존재입니다. 오늘 하루, 에고의 거친 파도가 마음을 흔들려 할 때마다 [${lessonSource}]의 거룩한 가르침을 마음에 닻으로 내리십시오:
+
+> **"${lessonQuote}"**  
+> *— ${lessonApp}*
+
+일상에서 실천할 수 있는 단 하나의 작은 기적의 의식으로, "${actionStr}"을(를) 조용히 행해 보십시오. 숨을 들이쉬며 하나님의 평화를 받아들이고, 숨을 내쉬며 세상에 대한 모든 판단과 원한을 성령께 온전히 넘겨주십시오.
+
+당신은 죄를 지을 수도 없고, 잃어버릴 수도 없으며, 실패할 수도 없는 영원한 생명의 빛입니다. 오늘 마주치는 모든 사람과 상황을 향해 마음속으로 조용히 축복을 건네십시오: "형제여, 당신 안에서 나는 하나님의 거룩함을 봅니다. 당신을 용서함으로 나 자신을 용서합니다." 기적수업의 순결한 진리와 78장 오라클의 자비로운 인도가 당신의 모든 순간을 완전한 평화와 기쁨으로 가득 채우기를 간절히 기도합니다. 샬롬.`;
+
+  return `### 🕊️ 1. 2026 오늘의 일일 타로 [${todayCard.nameKo}]와 성령의 거룩한 초대 (지각의 전환)
+${stage1Text}
+
+### 🌑 2. 에고의 환영과 숨겨진 두려움의 투사 [1번 카드: ${c1Name}]
+${stage2Text}
+
+### 🕯️ 3. 거룩한 순간(Holy Instant)과 지각의 정화 [2번 카드: ${c2Name}]
+${stage3Text}
+
+### 🕊️ 4. 참된 용서와 하나님의 평화 (기적의 선물) [3번 카드: ${c3Name}]
+${stage4Text}
+
+### 🌿 5. 오늘의 기적수업 워크북 선언과 제제의 평화 축복
+${stage5Text}`;
+}
+
+
 export interface TrinityOracleSectionProps {
   onNavigateToTarot?: (focusDaily?: boolean) => void;
 }
@@ -665,23 +781,33 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
     setShowSajuModal(false);
   };
 
-  // 1. Dual Mode State ('healing' | 'growth') with persistence and URL/session support
-  const [oracleMode, setOracleMode] = useState<'healing' | 'growth'>(() => {
+  // 1. Triple Mode State ('healing' | 'growth' | 'miracle') with persistence and URL/session support
+  const [oracleMode, setOracleMode] = useState<OracleMode>(() => {
     if (typeof window !== 'undefined') {
       try {
         const searchParams = new URLSearchParams(window.location.search);
         const urlMode = searchParams.get('mode') || searchParams.get('oracleMode');
-        if (urlMode === 'healing' || urlMode === 'growth') {
+        if (urlMode === 'healing' || urlMode === 'growth' || urlMode === 'miracle') {
           return urlMode;
         }
+        if (urlMode === 'acim') {
+          return 'miracle';
+        }
         const sessionMode = sessionStorage.getItem('prism_oracle_target_mode');
-        if (sessionMode === 'healing' || sessionMode === 'growth') {
+        if (sessionMode === 'healing' || sessionMode === 'growth' || sessionMode === 'miracle') {
           sessionStorage.removeItem('prism_oracle_target_mode');
           return sessionMode;
         }
+        if (sessionMode === 'acim') {
+          sessionStorage.removeItem('prism_oracle_target_mode');
+          return 'miracle';
+        }
         const savedMode = localStorage.getItem(STORAGE_ORACLE_MODE);
-        if (savedMode === 'healing' || savedMode === 'growth') {
+        if (savedMode === 'healing' || savedMode === 'growth' || savedMode === 'miracle') {
           return savedMode;
+        }
+        if (savedMode === 'acim') {
+          return 'miracle';
         }
       } catch (_) {}
     }
@@ -698,9 +824,9 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
       try {
         const searchParams = new URLSearchParams(window.location.search);
         const urlMode = searchParams.get('mode') || searchParams.get('oracleMode');
-        if (urlMode === 'healing' || urlMode === 'growth') return true;
+        if (urlMode === 'healing' || urlMode === 'growth' || urlMode === 'miracle' || urlMode === 'acim') return true;
         const sessionMode = sessionStorage.getItem('prism_oracle_target_mode');
-        if (sessionMode === 'healing' || sessionMode === 'growth') return true;
+        if (sessionMode === 'healing' || sessionMode === 'growth' || sessionMode === 'miracle' || sessionMode === 'acim') return true;
       } catch (_) {}
     }
     return false;
@@ -742,10 +868,12 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
   // 3. Results State
   const [healingResult, setHealingResult] = useState<HealingResult | null>(null);
   const [growthResult, setGrowthResult] = useState<GrowthResult | null>(null);
+  const [miracleResult, setMiracleResult] = useState<MiracleResult | null>(null);
 
   // 4. Mission Completion & Rewards State
   const [isHealingCompleted, setIsHealingCompleted] = useState<boolean>(false);
   const [isGrowthCompleted, setIsGrowthCompleted] = useState<boolean>(false);
+  const [isMiracleCompleted, setIsMiracleCompleted] = useState<boolean>(false);
   const [treasures, setTreasures] = useState<CollectedTreasure[]>([]);
   const [showTreasureModal, setShowTreasureModal] = useState<boolean>(false);
   const [streakCount, setStreakCount] = useState<number>(1);
@@ -766,7 +894,7 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
   const ttsState = useTTSState();
   const [inquiryText, setInquiryText] = useState<string>('');
 
-  // 🌟 오늘의 오라클 당일 1회 세션 및 복원 상태 (힐링/자기계발 둘 다 1일 1회 엄격 적용)
+  // 🌟 오늘의 오라클 당일 1회 세션 및 복원 상태 (힐링/자기계발/기적수업 모두 1일 1회 엄격 적용)
   const [todayDailySession, setTodayDailySession] = useState<SavedDailyOracleSession | null>(() =>
     loadTodayOracleSession(oracleMode, todayDateKey, sharedState)
   );
@@ -779,22 +907,27 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
     () => loadTodayOracleSession('growth', todayDateKey, sharedState),
     [todayDateKey, syncTick, sharedState]
   );
+  const miracleTodaySession = useMemo(
+    () => loadTodayOracleSession('miracle', todayDateKey, sharedState),
+    [todayDateKey, syncTick, sharedState]
+  );
 
   // 모드 변경 또는 마운트 시 당일 저장된 오라클 세션 동기화 (1일 1회 완료된 경우 결과 자동 복원)
   useEffect(() => {
     const saved = loadTodayOracleSession(oracleMode, todayDateKey, sharedState);
     setTodayDailySession(saved);
-    if (saved && (saved.healingResult || saved.growthResult)) {
+    if (saved && (saved.healingResult || saved.growthResult || saved.miracleResult)) {
       if (saved.drawnCards && saved.drawnCards.length > 0) setDrawnCards(saved.drawnCards);
       if (oracleMode === 'healing' && saved.healingResult) setHealingResult(saved.healingResult);
       if (oracleMode === 'growth' && saved.growthResult) setGrowthResult(saved.growthResult);
+      if (oracleMode === 'miracle' && saved.miracleResult) setMiracleResult(saved.miracleResult);
       if (saved.inquiryText) setInquiryText(saved.inquiryText);
       setStage('result');
     }
   }, [oracleMode, todayDateKey, sharedState]);
 
   // 클라우드 실시간 동기화 헬퍼 (PC <-> 모바일 양방향 실시간 보존)
-  const syncOracleSessionToCloud = useCallback((mode: 'healing' | 'growth', session: SavedDailyOracleSession) => {
+  const syncOracleSessionToCloud = useCallback((mode: OracleMode, session: SavedDailyOracleSession) => {
     const sessionKey = `${mode}_${todayDateKey}`;
     try {
       void updateSharedState({
@@ -810,7 +943,7 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
               mode,
               dateKey: todayDateKey,
               cards: session.drawnCards?.map(c => c.nameKo || c.name),
-              summary: mode === 'healing' ? session.healingResult?.message : session.growthResult?.macro_focus,
+              summary: mode === 'healing' ? session.healingResult?.message : mode === 'miracle' ? session.miracleResult?.message : session.growthResult?.macro_focus,
               timestamp: Date.now(),
             }
           }
@@ -818,7 +951,6 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
       }, 'trinity_oracle');
     } catch (_) {}
   }, [sharedState, todayDateKey, updateSharedState]);
-
   // 실시간 기기 간 오라클 세션 수신 리스너 (PC에서 뽑으면 모바일에서도 즉시 반영)
   useEffect(() => {
     const handleOracleSync = () => {
@@ -829,6 +961,7 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
           setDrawnCards(saved.drawnCards);
           if (saved.healingResult && oracleMode === 'healing') setHealingResult(saved.healingResult);
           if (saved.growthResult && oracleMode === 'growth') setGrowthResult(saved.growthResult);
+          if (saved.miracleResult && oracleMode === 'miracle') setMiracleResult(saved.miracleResult);
         }
       }
       try {
@@ -855,7 +988,7 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
   }, [oracleMode, todayDateKey]);
 
   // 오늘 결과 보기 핸들러
-  const handleRestoreTodayOracle = useCallback((targetMode?: 'healing' | 'growth') => {
+  const handleRestoreTodayOracle = useCallback((targetMode?: OracleMode) => {
     const mode = targetMode || oracleMode;
     const saved = loadTodayOracleSession(mode, todayDateKey, sharedState) || todayDailySession;
     if (!saved) return;
@@ -867,6 +1000,8 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
       setHealingResult(saved.healingResult);
     } else if (mode === 'growth' && saved.growthResult) {
       setGrowthResult(saved.growthResult);
+    } else if (mode === 'miracle' && saved.miracleResult) {
+      setMiracleResult(saved.miracleResult);
     }
     setOracleMode(mode);
     setIsModeChosen(true);
@@ -877,7 +1012,7 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
   useEffect(() => {
     if (stage === 'spread') {
       const saved = loadTodayOracleSession(oracleMode, todayDateKey, sharedState);
-      if (saved && (saved.healingResult || saved.growthResult)) {
+      if (saved && (saved.healingResult || saved.growthResult || saved.miracleResult)) {
         handleRestoreTodayOracle();
       }
     }
@@ -886,7 +1021,7 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
   // 🚪 오라클 카드 선택창 닫기 핸들러: 기존 저장된 세션이 있으면 결과창으로, 없으면 모드 선택창으로 안전하게 복귀
   const handleCancelOracleSpread = useCallback(() => {
     const saved = loadTodayOracleSession(oracleMode, todayDateKey, sharedState);
-    if (saved && (saved.healingResult || saved.growthResult)) {
+    if (saved && (saved.healingResult || saved.growthResult || saved.miracleResult)) {
       handleRestoreTodayOracle();
     } else {
       setIsModeChosen(false);
@@ -916,13 +1051,16 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
     }
   }, []);
 
-  // 78-card full deck for both modes
+  // 78-card full deck for all modes
   const fullDeck = useMemo(() => TAROT_DECK, []);
   const activeDeckSource = fullDeck;
 
   const slotPositions = useMemo(() => {
     if (oracleMode === 'healing') {
       return ['과거 / 무의식의 뿌리', '현재 / 상황과 마음의 흐름', '미래 / 조언과 해결의 열쇠'];
+    }
+    if (oracleMode === 'miracle') {
+      return ['에고의 환영과 두려움', '거룩한 순간과 지각의 전환', '참된 용서와 평화의 기적'];
     }
     return ['자기계발 마인드셋', '4원소 역량 영역', '1줄 마이크로 실행'];
   }, [oracleMode]);
@@ -945,6 +1083,20 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
           microAction: healingResult.micro_action || healingResult.reward_item,
         });
       }
+    } else if (oracleMode === 'miracle') {
+      if (!miracleResult) return [];
+      if (miracleResult.concise_summary && miracleResult.concise_summary.length === 3) {
+        rawBullets = miracleResult.concise_summary;
+      } else {
+        rawBullets = extractOracleConciseSummary({
+          message: miracleResult.message,
+          oracleMode: 'miracle',
+          cards: drawnCards,
+          saju,
+          todayCard: todayAnchorCard,
+          microAction: miracleResult.micro_action || miracleResult.reward_item,
+        });
+      }
     } else {
       if (!growthResult) return [];
       if (growthResult.concise_summary && growthResult.concise_summary.length === 3) {
@@ -963,38 +1115,63 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
     }
 
     if (!rawBullets || rawBullets.length === 0) return [];
-    const expectedTags = ['현재 에너지', '방향과 결단', '실천 처방'];
+    const expectedTags = oracleMode === 'miracle'
+      ? ['마음의 환영', '지각의 전환', '기적의 선언']
+      : ['현재 에너지', '방향과 결단', '실천 처방'];
+
     return rawBullets.slice(0, 3).map((bullet, idx) => {
       const match = bullet.match(/^\[([^\]]+)\]\s*(.*)$/);
       let content = match ? match[2].trim() : bullet.trim();
-      // 기존 말줄임표나 불필요한 기호 선제거
       content = content.replace(/[\s.…·,-]+$/, '');
-      // 문장이 지나치게 길어지는 경우(125자 초과)에만 온전한 마침표 단위로 정리 (절대 쉼표 중간 절단이나 '상태입니다' 왜곡 금지)
       if (content.length > 125) {
         const dotIdx = content.lastIndexOf('.', 115);
         if (dotIdx > 45) {
           content = content.slice(0, dotIdx + 1);
         }
       }
-      // 온전한 마침표로 정돈 (절대 ... 말줄임표로 끝나지 않도록 보장)
       content = content.replace(/[\s.…·,-]+$/, '');
       if (!/[.!?]$/.test(content)) content += '.';
       const tag = expectedTags[idx] || '실천 처방';
       return `[${tag}] ${content}`;
     });
-  }, [oracleMode, healingResult, growthResult, drawnCards, saju, todayAnchorCard]);
+  }, [oracleMode, healingResult, growthResult, miracleResult, drawnCards, saju, todayAnchorCard]);
 
   // 🔮 78장 오라클 결과 공유 & 이미지 카드 익스포트 데이터
   const oracleShareData: TarotShareData = useMemo(() => {
-    const activeResult = oracleMode === 'healing' ? healingResult : growthResult;
+    const activeResult = oracleMode === 'healing'
+      ? healingResult
+      : oracleMode === 'miracle'
+      ? miracleResult
+      : growthResult;
+
     const letterMsg = oracleMode === 'healing'
       ? healingResult?.message
+      : oracleMode === 'miracle'
+      ? miracleResult?.message
       : (growthResult?.message || growthResult?.macro_focus);
 
+    const oracleTitle = oracleMode === 'healing'
+      ? '사주 ✕ 타로 콜라보 오라클'
+      : oracleMode === 'miracle'
+      ? '기적수업 지각전환 오라클'
+      : '루시의 4원소 마인드셋 오라클';
+
+    const defaultConcern = oracleMode === 'healing'
+      ? '사주 ✕ 타로 융합 운명 성찰'
+      : oracleMode === 'miracle'
+      ? '에고의 환영을 넘어선 참된 용서'
+      : '현실 성장과 돌파';
+
+    const spreadTitle = oracleMode === 'healing'
+      ? '사주 ✕ 타로 3카드 스프레드 (과거·현재·미래)'
+      : oracleMode === 'miracle'
+      ? '기적수업 3카드 거룩한 순간 스프레드'
+      : '4원소 마인드셋 스프레드 (3장)';
+
     return {
-      title: oracleMode === 'healing' ? '사주 ✕ 타로 콜라보 오라클' : '루시의 4원소 마인드셋 오라클',
-      concern: inquiryText || (oracleMode === 'healing' ? '사주 ✕ 타로 융합 운명 성찰' : '현실 성장과 돌파'),
-      spreadName: oracleMode === 'healing' ? '사주 ✕ 타로 3카드 스프레드 (과거·현재·미래)' : '4원소 마인드셋 스프레드 (3장)',
+      title: oracleTitle,
+      concern: inquiryText || defaultConcern,
+      spreadName: spreadTitle,
       cards: drawnCards.map((c, i) => ({
         id: c.id,
         nameKo: c.nameKo,
@@ -1008,11 +1185,13 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
       diagnosis: letterMsg,
       conciseSummaryBullets: oracleSummaryBullets.length > 0 ? oracleSummaryBullets : undefined,
       adviceHeadline: activeResult?.card_insights?.[2]?.personal_interpretation?.slice(0, 80) || undefined,
-      subtitle: `오늘의 지배 타로 [${todayDailyTarot.nameKo}] · 사주 일진 [${dailySaju?.dayPillar.full || '조화'}] (${dailySaju?.tenGodGan.name || '상생'})`,
+      subtitle: oracleMode === 'miracle'
+        ? `에고의 환영을 넘어 참된 용서와 하나님의 평화로 · 지배 타로 [${todayDailyTarot.nameKo}]`
+        : `오늘의 지배 타로 [${todayDailyTarot.nameKo}] · 사주 일진 [${dailySaju?.dayPillar.full || '조화'}] (${dailySaju?.tenGodGan.name || '상생'})`,
       luckyColor: dailySaju?.remedy?.luckyColor || undefined,
       frequency: saju?.yongsin?.name ? `사주 용신: ${saju.yongsin.name} · 지배 카드: ${todayDailyTarot.nameKo}` : `지배 카드: ${todayDailyTarot.nameKo}`,
     };
-  }, [oracleMode, healingResult, growthResult, inquiryText, drawnCards, slotPositions, saju, oracleSummaryBullets, todayDailyTarot, dailySaju]);
+  }, [oracleMode, healingResult, growthResult, miracleResult, inquiryText, drawnCards, slotPositions, saju, oracleSummaryBullets, todayDailyTarot, dailySaju]);
 
   const displayFullReadingText = useMemo(() => {
     if (oracleMode === 'healing') {
@@ -1032,6 +1211,23 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
         );
       }
       return '';
+    } else if (oracleMode === 'miracle') {
+      const msg = miracleResult?.message?.trim();
+      const hasAllStages = Boolean(msg && msg.includes('1.') && msg.includes('2.') && msg.includes('3.') && msg.includes('4.') && msg.includes('5.'));
+      if (msg && msg.length >= 1000 && hasAllStages) return msg;
+      if (miracleResult) {
+        return buildFallbackMiracleMessage(
+          drawnCards,
+          saju,
+          todayAnchorCard,
+          recipientName,
+          inquiryText,
+          miracleResult.card_insights,
+          miracleResult.miracle_lesson,
+          miracleResult.micro_action
+        );
+      }
+      return '';
     } else {
       const msg = growthResult?.message?.trim() || growthResult?.macro_focus?.trim();
       if (msg && msg.length >= 50) return msg;
@@ -1048,10 +1244,10 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
       }
       return '';
     }
-  }, [oracleMode, healingResult, growthResult, drawnCards, saju, todayAnchorCard, recipientName, inquiryText]);
+  }, [oracleMode, healingResult, growthResult, miracleResult, drawnCards, saju, todayAnchorCard, recipientName, inquiryText]);
 
   // Handle mode switch with persistent saving and daily session restore (1일 1회 원칙: 이미 완료된 경우 결과 즉시 복원)
-  const handleModeSwitch = (mode: 'healing' | 'growth') => {
+  const handleModeSwitch = (mode: OracleMode) => {
     setOracleMode(mode);
     setIsModeChosen(true);
     try {
@@ -1065,12 +1261,13 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
     setSelectedCardIdx(0);
     setShowAllCardsTogether(true);
 
-    if (saved && (saved.healingResult || saved.growthResult)) {
+    if (saved && (saved.healingResult || saved.growthResult || saved.miracleResult)) {
       if (saved.drawnCards && saved.drawnCards.length > 0) {
         setDrawnCards(saved.drawnCards);
       }
       if (mode === 'healing' && saved.healingResult) setHealingResult(saved.healingResult);
       if (mode === 'growth' && saved.growthResult) setGrowthResult(saved.growthResult);
+      if (mode === 'miracle' && saved.miracleResult) setMiracleResult(saved.miracleResult);
       if (saved.inquiryText) setInquiryText(saved.inquiryText);
       setStage('result');
     } else {
@@ -1078,7 +1275,10 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
       setDrawnCards([]);
       setHealingResult(null);
       setGrowthResult(null);
+      setMiracleResult(null);
       setIsHealingCompleted(false);
+      setIsGrowthCompleted(false);
+      setIsMiracleCompleted(false);
     }
   };
 
@@ -1090,17 +1290,20 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
       sessionStorage.removeItem('prism_auto_execute_text');
       setInquiryText(trimmed);
 
-      // Determine intent (healing vs growth)
+      // Determine intent (miracle vs healing vs growth)
+      const isMiracleIntent = /(?:기적수업|기적|acim|용서|지각\s*전환|거룩한\s*순간|에고|원한|속죄|하나님의\s*평화|참마음)/i.test(trimmed);
       const isHealingIntent = /(?:힐링|치유|내면|마음|상처|위로|휴식|쉼|불안|스트레스|우울|눈물|지친|아파)/i.test(trimmed);
       const isGrowthIntent = /(?:성장|계발|실행|목표|사업|역량|커리어|공부|성공|돈|부자|습관|루틴|돌파)/i.test(trimmed);
-      const savedMode = typeof window !== 'undefined' ? (localStorage.getItem(STORAGE_ORACLE_MODE) as 'healing' | 'growth' | null) : null;
-      const targetMode: 'healing' | 'growth' = isHealingIntent
+      const savedMode = typeof window !== 'undefined' ? (localStorage.getItem(STORAGE_ORACLE_MODE) as OracleMode | null) : null;
+      const targetMode: OracleMode = isMiracleIntent
+        ? 'miracle'
+        : isHealingIntent
         ? 'healing'
         : isGrowthIntent
         ? 'growth'
-        : savedMode === 'healing' || savedMode === 'growth'
+        : (savedMode === 'healing' || savedMode === 'growth' || savedMode === 'miracle')
         ? savedMode
-        : 'growth';
+        : 'healing';
 
       setOracleMode(targetMode);
       setIsModeChosen(true);
@@ -1110,10 +1313,11 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
       } catch (_) {}
 
       const existing = loadTodayOracleSession(targetMode, todayDateKey, sharedState);
-      if (existing && (existing.healingResult || existing.growthResult)) {
+      if (existing && (existing.healingResult || existing.growthResult || existing.miracleResult)) {
         if (existing.drawnCards && existing.drawnCards.length > 0) setDrawnCards(existing.drawnCards);
         if (targetMode === 'healing' && existing.healingResult) setHealingResult(existing.healingResult);
         if (targetMode === 'growth' && existing.growthResult) setGrowthResult(existing.growthResult);
+        if (targetMode === 'miracle' && existing.miracleResult) setMiracleResult(existing.miracleResult);
         setStage('result');
         return;
       }
@@ -1157,7 +1361,7 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
   const handleCardsComplete = async (cards: SelectedTarotCardEntry[], queryInquiry?: string) => {
     // 🛡️ 1일 1회 엄격 가드: 이미 당일 완료된 세션이 있는 경우 다시 뽑기/재분석 차단 및 기존 결과 복원
     const existing = loadTodayOracleSession(oracleMode, todayDateKey, sharedState);
-    if (existing && (existing.healingResult || existing.growthResult)) {
+    if (existing && (existing.healingResult || existing.growthResult || existing.miracleResult)) {
       handleRestoreTodayOracle();
       return;
     }
@@ -1447,6 +1651,222 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
         saveDailyOracleSession('healing', todayDateKey, savedHealingSession);
         syncOracleSessionToCloud('healing', savedHealingSession);
         setTodayDailySession(savedHealingSession);
+      } else if (oracleMode === 'miracle') {
+        // [MIRACLE MODE - A Course in Miracles (ACIM) Dedicated Metaphysical Oracle]
+        const miracleInquiryPromptAddon = effectiveInquiry
+          ? `\n\n# [최우선 필수 집중 화두] 질문자가 호소한 구체적인 삶의 갈등/두려움/고민:\n"${effectiveInquiry}"\n★ 절대 지침: 기적수업(ACIM) 오라클 리딩은 질문자의 구체적인 고민("${effectiveInquiry}")을 정중앙에 두고 풀이해야 합니다. 일반적인 세속적 타로 점술이나 막연한 조언을 배제하고, 질문자가 겪고 있는 고통의 본질을 에고의 두려움/죄책감/투사 관점에서 밝히 드러내며, 성령의 지각 전환(Shift in Perception)과 거룩한 순간(Holy Instant), 그리고 참된 용서를 통해 온전한 하나님의 평화로 귀환하는 영적 길을 2500~3500자 이상의 대서사로 인도하십시오.\n`
+          : `\n\n# 질문자의 영적 화두:\n세상의 복잡한 갈등과 에고의 불안 속에서, 마음의 눈을 성령의 시선으로 전환하여 하나님의 온전한 평화와 참된 용서의 기적을 체험하도록 이끌어 주십시오.\n`;
+
+        const systemPrompt = `당신은 『기적수업(A Course in Miracles, ACIM)』의 심원한 비이원론(Non-duality) 형이상학과 내면의 거룩한 평화를 78장 타로 및 사주 명리와 정교하게 융합하는 '기적수업 지각전환 영적 오라클 마스터'입니다.
+
+# 핵심 사명 (Core ACIM Oracle Mission):
+오라클 타로는 일반 타로보다 훨씬 더 길고 자세하며, 방대하고 정밀한 영적/운명적 대서사를 제공하는 최상위 오라클입니다.
+이 리딩의 목적은 질문자가 호소한 구체적인 고민("${effectiveInquiry || '에고의 불안과 내면의 평화'}")을 기적수업의 근본 원리【에고의 환영과 분리감 타파, 죄책감과 원한의 해체, 성령의 지각 전환(Shift in Perception), 거룩한 순간(Holy Instant), 참된 용서(True Forgiveness), 하나님의 평화(Peace of God)】를 바탕으로, 사주 일간 본원(${saju?.dayMaster?.symbolName || '본원 생명'})과 오늘의 일일 타로([${todayAnchorCard.nameKo}])의 배경 파동, 그리고 3장의 오라클 카드(1번 에고의 두려움: ${cards[0]?.nameKo}, 2번 거룩한 순간/지각전환: ${cards[1]?.nameKo}, 3번 참된 용서/평화의 기적: ${cards[2]?.nameKo})와 입체적으로 융합하여, 2,500~3,500자 이상의 압도적이고 눈부신 '5단계 지각전환 대서사 본문'으로 전달하는 것입니다.
+- 형식적인 단문이나 요약식 서술을 철저히 배제합니다.
+- 기적수업의 핵심 금언(예: "실재하는 것은 위협받을 수 없다. 실재하지 않는 것은 존재하지 않는다. 여기에 하나님의 평화가 있다", "기적은 사랑의 자연스러운 표현이다", "용서는 환영을 환영으로 알아보는 것이다")을 유기적으로 녹여내십시오.
+- 성과 경쟁이나 세속적 처세술이 아닌, 두려움의 꿈에서 깨어나 참된 마음(Christ Mind)의 완전한 무죄성과 평온함을 회복하도록 안내해야 합니다.
+- 유치한 반말이나 편지체 사적 잡담을 배제하고, 신성하고 자비로우며 깊은 평화가 깃든 정통 경어체("${recipientName} 님")를 일관되게 사용하십시오.
+
+# 3줄 요약 원칙 (ACIM 지각전환 3요소):
+각 항목당 60~85자 내외의 완성된 문장으로 작성하십시오:
+- [마음의 환영] 1번 카드가 비추는 에고의 결핍/두려움/투사의 본질을 짚어낸 문장 (60~85자)
+- [지각의 전환] 2번 카드가 안내하는 거룩한 순간과 성령께 맡김의 지각 전환 문장 (60~85자)
+- [기적의 선언] 3번 카드가 약속하는 참된 용서와 하나님의 평화를 선언하는 문장 (60~85자)
+
+# message (5단계 대서사 구조 — 각 단계당 2~3개 이상의 긴 단락, 총 2,500~3,500자 이상):
+반드시 다음 5개의 소제목(### 마크다운 헤더)을 갖추어 전개하십시오:
+- ### 🕊️ 1. 2026 오늘의 일일 타로 [${todayAnchorCard.nameKo}]와 성령의 거룩한 초대 (지각의 전환)
+- ### 🌑 2. 에고의 환영과 숨겨진 두려움의 투사 [1번 카드: ${cards[0]?.nameKo}]
+- ### 🕯️ 3. 거룩한 순간(Holy Instant)과 지각의 정화 [2번 카드: ${cards[1]?.nameKo}]
+- ### 🕊️ 4. 참된 용서와 하나님의 평화 (기적의 선물) [3번 카드: ${cards[2]?.nameKo}]
+- ### 🌿 5. 오늘의 기적수업 워크북 선언과 제제의 평화 축복
+
+반드시 마크다운 코드블록 없이 순수 JSON 형식으로만 응답해야 합니다. "message" 필드를 가장 먼저 작성하세요:
+{
+  "message": "2500~3500자 이상의 5단계 지각전환 대서사 본문 (마크다운 포맷)",
+  "concise_summary": [
+    "[마음의 환영] 에고의 투사와 무의식적 죄책감 해독 (60~85자)",
+    "[지각의 전환] 거룩한 순간을 통한 성령의 시선 회복 (60~85자)",
+    "[기적의 선언] 참된 용서와 하나님의 평화 완성 선언 (60~85자)"
+  ],
+  "miracle_lesson": {
+    "source": "기적수업(ACIM) 워크북 레슨 또는 텍스트 장절",
+    "quote": "기적수업 성스러운 핵심 인용문구",
+    "application": "오늘 이 레슨을 마음에 품고 적용하는 영적 지침"
+  },
+  "micro_action": "오늘 실천할 1분 거룩한 순간 심호흡/기도 실천법 (30자 내외)",
+  "reward_item": {
+    "name": "평화의 흰 비둘기",
+    "description": "세상의 모든 두려움을 지워내는 온전한 용서와 은총의 상징"
+  },
+  "prescribed_art": {
+    "artwork_title": "${dynamicPrescribedArt.artwork_title}",
+    "art_quote": "${dynamicPrescribedArt.art_quote}"
+  },
+  "saju_tarot_synergy": {
+    "day_master_resonance": "사주 본원과 기적수업 지각전환의 영적 공명 (2~3문장)",
+    "elemental_balance": {
+      "dominant_harmony": "오행 에너지를 평화의 통로로 정렬하는 지혜",
+      "lacking_remedy": "결핍 오행을 하나님의 충만함으로 채우는 원리"
+    },
+    "destiny_flow_synthesis": "오늘의 일일 타로와 2026 운기가 주는 성스러운 평화의 기회",
+    "saju_oracle_verdict": "지각 전환의 결정적 영적 계시"
+  },
+  "card_insights": [
+    {
+      "card_name": "${cards[0]?.nameKo || '1번 카드'}",
+      "position_name": "에고의 환영과 두려움",
+      "core_meaning": "카드의 상징과 에고의 투사 심층 해독",
+      "saju_resonance": "사주 일간과 에고 두려움의 무의식적 패턴 분석",
+      "personal_interpretation": "고민 맥락에서 에고가 만들어낸 환영의 정체",
+      "action_guide": "이 환영을 성령께 맡기고 내려놓는 태도"
+    },
+    {
+      "card_name": "${cards[1]?.nameKo || '2번 카드'}",
+      "position_name": "거룩한 순간과 지각의 전환",
+      "core_meaning": "시간의 초월과 거룩한 순간의 도상 상징",
+      "saju_resonance": "사주 용신과 성령의 빛이 만나는 정화의 순간",
+      "personal_interpretation": "현재 상황을 성령의 시선으로 다시 바라보는 통찰",
+      "action_guide": "거룩한 순간을 진입하는 내적 기도"
+    },
+    {
+      "card_name": "${cards[2]?.nameKo || '3번 카드'}",
+      "position_name": "참된 용서와 평화의 기적",
+      "core_meaning": "참된 용서와 하나님의 평화 완성의 상징",
+      "saju_resonance": "본원의 온전한 무죄성이 세상에 발현되는 결실",
+      "personal_interpretation": "미래를 여는 완전한 해방과 평화의 선물",
+      "action_guide": "오늘 하루 평화의 사도로 살아가는 구체적 실천"
+    }
+  ]
+}`;
+
+        const prompt = `${sajuContextPrompt}${miracleInquiryPromptAddon}\n\n사용자가 뽑은 3장의 기적수업 오라클 카드:\n${cardDescriptions}\n\n위 질문자(${recipientName} 님)의 사주 명리학 원국과 기적수업 3카드 스프레드를 형이상학적으로 융합하여 온전한 내면의 평화와 지각의 전환을 인도하는 결과를 JSON으로 생성해 주십시오.\n\n★ [작성 지침 - 절대 엄수]:\n1. 'message' 필드는 5개의 소제목(### 1~5단계)을 빠짐없이 갖추고, 각 단계마다 2~3개의 긴 단락(총 2,500~3,500자 이상)으로 풍성하게 서술하십시오.\n2. 3줄 요약('concise_summary')은 각 항목당 60~85자 내외로 [마음의 환영], [지각의 전환], [기적의 선언]의 완성된 문맥으로 작성하십시오.\n3. 'miracle_lesson' 항목을 충실하게 작성해 주십시오.`;
+
+        const res = await invokeLLM({
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: prompt },
+          ],
+          responseFormat: { type: 'json_object' },
+          timeoutMs: 60000,
+        });
+
+        const clean = res.replace(/```json/g, '').replace(/```/g, '').trim();
+        let parsed: any = null;
+        try {
+          parsed = JSON.parse(clean);
+        } catch (jsonErr) {
+          console.warn('Direct JSON parse failed, attempting fallback repair:', jsonErr);
+          const msgMatch = clean.match(/"message"\s*:\s*"((?:[^"\\]|\\.)*)"/s);
+          if (msgMatch) {
+            try {
+              parsed = { message: JSON.parse(`"${msgMatch[1]}"`) };
+            } catch (_) {}
+          }
+        }
+
+        let messageText = '';
+        if (typeof parsed?.message === 'string' && parsed.message.trim().length > 30) {
+          messageText = parsed.message.trim();
+        } else if (typeof parsed?.content === 'string' && parsed.content.trim().length > 30) {
+          messageText = parsed.content.trim();
+        } else if (typeof parsed?.reading === 'string' && parsed.reading.trim().length > 30) {
+          messageText = parsed.reading.trim();
+        } else if (parsed?.message && typeof parsed.message === 'object') {
+          messageText = Object.values(parsed.message).filter((v): v is string => typeof v === 'string').join('\n\n');
+        }
+
+        const enrichedCardInsights: CardInsight[] = cards.map((c, i) => {
+          const role = slotPositions[i] || `${i + 1}번 카드`;
+          const rawInsight = parsed?.card_insights?.[i] || {};
+          const cardKeywords = c.keywords.slice(0, 3).join(', ');
+          const orientationText = c.reversed ? '역방향(내면의 저항과 에고의 미세한 두려움 직면)' : '정방향(직접적인 성령의 빛과 지각전환)';
+          return {
+            card_name: rawInsight.card_name || c.nameKo,
+            position_name: rawInsight.position_name || role,
+            core_meaning: (typeof rawInsight.core_meaning === 'string' && rawInsight.core_meaning.trim().length > 20)
+              ? rawInsight.core_meaning.trim()
+              : `${c.nameKo} 카드는 [${cardKeywords}]의 상징을 품고 있으며, ${orientationText}의 흐름 속에서 에고의 환영을 식별하고 참된 마음의 눈을 뜨도록 이끕니다.`,
+            saju_resonance: (typeof rawInsight.saju_resonance === 'string' && rawInsight.saju_resonance.trim().length > 20)
+              ? rawInsight.saju_resonance.trim()
+              : `질문자의 사주 일간 [${dayMasterStr}] 본원의 신성한 생명력과 만나 오늘의 일일 타로 [${todayAnchorCard.nameKo}]의 현실 장 속에서 두려움을 사랑으로 녹여내는 거룩한 공명을 일으킵니다.`,
+            personal_interpretation: (typeof rawInsight.personal_interpretation === 'string' && rawInsight.personal_interpretation.trim().length > 20)
+              ? rawInsight.personal_interpretation.trim()
+              : `${role}의 자리에서 ${recipientName} 님에게 전하는 메시지로, 마주하신 갈등은 형제나 세상의 죄가 아니라 사랑을 요청하는 외침이었음을 깨닫게 합니다.`,
+            action_guide: (typeof rawInsight.action_guide === 'string' && rawInsight.action_guide.trim().length > 10)
+              ? rawInsight.action_guide.trim()
+              : `오늘 하루, 마음에 서운함이나 불안이 스칠 때마다 "성령이여, 당신의 눈으로 이 순간을 보게 하소서"라는 기도를 조용히 올려보세요.`,
+          };
+        });
+
+        const hasAllStages = Boolean(messageText && messageText.includes('1.') && messageText.includes('2.') && messageText.includes('3.') && messageText.includes('4.') && messageText.includes('5.'));
+        if (!messageText || messageText.length < 1000 || !hasAllStages) {
+          messageText = buildFallbackMiracleMessage(
+            cards,
+            saju,
+            todayAnchorCard,
+            recipientName,
+            effectiveInquiry,
+            enrichedCardInsights,
+            parsed?.miracle_lesson,
+            parsed?.micro_action
+          );
+        }
+
+        let conciseBullets: string[] = [];
+        if (Array.isArray(parsed?.concise_summary) && parsed.concise_summary.length >= 3) {
+          conciseBullets = parsed.concise_summary.slice(0, 3);
+        } else {
+          conciseBullets = extractOracleConciseSummary({
+            message: messageText,
+            oracleMode: 'miracle',
+            cards,
+            saju,
+            todayCard: todayAnchorCard,
+            microAction: parsed?.micro_action,
+          });
+        }
+
+        const finalMiracleResult: MiracleResult = {
+          message: messageText,
+          concise_summary: conciseBullets,
+          saju_tarot_synergy: parsed?.saju_tarot_synergy,
+          card_insights: enrichedCardInsights,
+          miracle_lesson: parsed?.miracle_lesson || {
+            source: '기적수업(ACIM) 텍스트 1장',
+            quote: '실재하는 것은 위협받을 수 없으며, 실재하지 않는 것은 존재하지 않는다. 여기에 하나님의 평화가 있다.',
+            application: '모든 판단을 성령께 넘겨드리고 본연의 온전한 무죄성을 수용하십시오.'
+          },
+          prescribed_art: (parsed?.prescribed_art?.artwork_title && !parsed.prescribed_art.artwork_title.includes('클로드 모네'))
+            ? {
+                ...parsed.prescribed_art,
+                catalog_id: MUSE_ART_CATALOG.find(m => m.title.includes(parsed.prescribed_art.artwork_title) || parsed.prescribed_art.artwork_title.includes(m.title))?.id || dynamicPrescribedArt.catalog_id
+              }
+            : dynamicPrescribedArt,
+          micro_action: typeof parsed?.micro_action === 'string' && parsed.micro_action.length > 5
+            ? parsed.micro_action
+            : '가슴에 손을 얹고 "나는 하나님께서 창조하신 그대로의 순결한 빛이다"를 3번 선언하기',
+          reward_item: parsed?.reward_item || {
+            name: '평화의 흰 비둘기',
+            description: '세상의 모든 두려움을 지워내는 온전한 용서와 은총의 상징'
+          }
+        };
+
+        setMiracleResult(finalMiracleResult);
+        try {
+          playAiResultNotification();
+        } catch (_) {}
+        const savedMiracleSession: SavedDailyOracleSession = {
+          dateKey: todayDateKey,
+          mode: 'miracle',
+          drawnCards: cards,
+          inquiryText: effectiveInquiry,
+          miracleResult: finalMiracleResult,
+          savedAt: new Date().toISOString(),
+        };
+        saveDailyOracleSession('miracle', todayDateKey, savedMiracleSession);
+        syncOracleSessionToCloud('miracle', savedMiracleSession);
+        setTodayDailySession(savedMiracleSession);
       } else {
         // [GROWTH MODE] Extreme Focus on Self-Development, Competence Building, Habit Architecture, and Breakthrough Execution
         const growthInquiryPromptAddon = effectiveInquiry
@@ -1655,6 +2075,77 @@ ${dailyBulletsStr ? `- 오늘의 타로 핵심 요약:\n${dailyBulletsStr}` : ''
         saveDailyOracleSession('healing', todayDateKey, fbHealingSession);
         syncOracleSessionToCloud('healing', fbHealingSession);
         setTodayDailySession(fbHealingSession);
+      } else if (oracleMode === 'miracle') {
+        const miracleFallbackMessage = buildFallbackMiracleMessage(
+          cards,
+          saju,
+          todayDailyTarot,
+          recipientName,
+          effectiveInquiry,
+          undefined,
+          {
+            source: '기적수업(ACIM) 텍스트 1장',
+            quote: '실재하는 것은 위협받을 수 없으며, 실재하지 않는 것은 존재하지 않는다. 여기에 하나님의 평화가 있다.',
+            application: '판단을 성령께 온전히 넘겨주고 내면의 온전한 무죄성을 선언하십시오.'
+          },
+          '가슴에 손을 얹고 "나는 하나님께서 창조하신 그대로의 순결한 빛이다"를 3번 선언하기'
+        );
+
+        const fallbackMiracleResult: MiracleResult = {
+          message: miracleFallbackMessage,
+          concise_summary: [
+            `[마음의 환영] 사주 [${dayMasterStr}]과 [${cards[0]?.nameKo || '1번'}] 카드가 에고의 분리감과 통제 두려움을 비춥니다.`,
+            `[지각의 전환] [${cards[1]?.nameKo || '2번'}] 카드를 통해 판단을 멈추고 거룩한 순간의 평화를 선택하세요.`,
+            `[기적의 선언] [${cards[2]?.nameKo || '3번'}] 카드가 약속하는 참된 용서 안에서 하나님의 완전한 평화가 깃듭니다.`
+          ],
+          miracle_lesson: {
+            source: '기적수업(ACIM) 텍스트 1장',
+            quote: '실재하는 것은 위협받을 수 없으며, 실재하지 않는 것은 존재하지 않는다. 여기에 하나님의 평화가 있다.',
+            application: '판단을 성령께 온전히 넘겨주고 내면의 온전한 무죄성을 선언하십시오.'
+          },
+          prescribed_art: dynamicPrescribedArt,
+          micro_action: '가슴에 손을 얹고 "나는 하나님께서 창조하신 그대로의 순결한 빛이다"를 3번 선언하기',
+          reward_item: {
+            name: '평화의 흰 비둘기',
+            description: '에고의 모든 환영을 녹여내는 하나님의 영원한 평화와 무죄성의 상징'
+          },
+          card_insights: cards.map((c, i) => {
+            const role = slotPositions[i] || `${i + 1}번 카드`;
+            const cardKeywords = c.keywords.slice(0, 3).join(', ');
+            const isRev = c.reversed;
+            const orientationText = isRev ? '역방향(내면의 저항과 에고의 미세한 두려움 직면)' : '정방향(직접적인 성령의 빛과 지각전환)';
+            return {
+              card_name: c.nameKo,
+              position_name: role,
+              core_meaning: `${c.nameKo} 카드는 [${cardKeywords}]의 상징을 품고 있으며, ${orientationText}의 위치에서 에고의 환영을 식별하고 참된 마음의 눈을 뜨도록 이끕니다.`,
+              saju_resonance: `사주 일간 [${dayMasterStr}] 본원의 신성한 생명력과 결합하여, 오늘의 일일 타로 [${todayDailyTarot.nameKo}]와 함께 두려움을 사랑으로 전환하는 성령의 빛을 비춥니다.`,
+              personal_interpretation: `${role}의 자리에서 ${recipientName} 님에게 전하는 메시지로, 마주하신 갈등은 형제나 세상의 죄가 아니라 사랑을 요청하는 외침이었음을 깨닫게 합니다.`,
+              action_guide: '오늘 이 순간 마음의 모든 긴장을 성령께 맡기고 고요한 쉼을 누리세요.'
+            };
+          }),
+          saju_tarot_synergy: {
+            day_master_resonance: `${sajuNameStr} 님의 사주 본원 [${dayMasterStr}]과 오늘의 일일 타로 [${todayDailyTarot.nameKo}], 그리고 [${cards.map(c => c.nameKo).join(' · ')}]의 상징이 어우러져 에고의 환영을 벗겨내고 하나님의 영원한 평화를 증거합니다.`,
+            elemental_balance: {
+              dominant_harmony: `사주의 에너지를 성령의 거룩한 도구로 정렬하여 내면의 갈등을 근원적으로 정화합니다.`,
+              lacking_remedy: `부족한 기운을 하나님의 온전한 은총과 용서의 기적으로 충만하게 채웁니다.`
+            },
+            destiny_flow_synthesis: `오늘의 일일 타로 [${todayDailyTarot.nameKo}]는 두려움 대신 사랑을 선택하기에 가장 성스러운 기적의 타이밍입니다.`,
+            saju_oracle_verdict: `당신은 결코 죄를 지을 수도, 상처받을 수도 없는 하나님의 순결한 자녀입니다.`
+          }
+        };
+
+        setMiracleResult(fallbackMiracleResult);
+        const fbMiracleSession: SavedDailyOracleSession = {
+          dateKey: todayDateKey,
+          mode: 'miracle',
+          drawnCards: cards,
+          inquiryText: effectiveInquiry,
+          miracleResult: fallbackMiracleResult,
+          savedAt: new Date().toISOString(),
+        };
+        saveDailyOracleSession('miracle', todayDateKey, fbMiracleSession);
+        syncOracleSessionToCloud('miracle', fbMiracleSession);
+        setTodayDailySession(fbMiracleSession);
       } else {
         const fallbackGrowthResult: GrowthResult = {
           concise_summary: [
@@ -1773,13 +2264,15 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
   const ORACLE_CAUTION_SPEECH =
     '주의사항을 전해드립니다. 타로는 정해진 미래를 맹목적으로 따르기 위한 것이 아니며, 현재의 마음을 비추고 현명한 선택을 돕는 내면의 성찰 도구입니다. 맹목적인 믿음을 지양하고, 모든 운명의 결정권과 최종 열쇠는 언제나 당신 자신의 주체적인 지혜와 용기에 있음을 기억하세요.';
 
-  // 🎙️ 사주·타로 콜라보 심층 총평 전용 TTS Speech Text (힐링: 사주·타로 마스터 / 자기계발: 루시 + 끝에 주의사항 낭독)
+  // 🎙️ 사주·타로 콜라보 심층 총평 전용 TTS Speech Text (힐링: 사주·타로 마스터 / 기적수업: ACIM 마스터 / 자기계발: 루시 + 끝에 주의사항 낭독)
   const oracleLetterSpeechText = useMemo(() => {
     const message = displayFullReadingText;
     if (!message) return '';
     const recipient = recipientName;
     const intro = oracleMode === 'healing'
       ? `${recipient} 님을 위한 사주와 타로 콜라보 심층 마스터 리딩입니다.`
+      : oracleMode === 'miracle'
+      ? `${recipient} 님을 위한 기적수업 지각 전환과 참된 용서의 심층 오라클 리딩입니다.`
       : `루시가 ${recipient} 님에게 보내는 명쾌한 자기계발 실행 편지입니다.`;
     return prepareNaturalSpeechText(`${intro}\n\n${message}\n\n${ORACLE_CAUTION_SPEECH}`);
   }, [displayFullReadingText, oracleMode, recipientName]);
@@ -1796,7 +2289,7 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
       return;
     }
     if (oracleLetterSpeechText) {
-      const tone = oracleMode === 'healing' ? '따뜻함' : '자신감';
+      const tone = oracleMode === 'healing' || oracleMode === 'miracle' ? '따뜻함' : '자신감';
       await playTTSInChunks(oracleLetterSpeechText, 'Kore', 110, tone);
     }
   };
@@ -1811,6 +2304,8 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
     if (!oracleSummaryBullets || oracleSummaryBullets.length === 0) return '';
     const intro = oracleMode === 'healing'
       ? `${recipientName} 님의 사주 ✕ 타로 오라클 핵심 3줄 요약입니다.`
+      : oracleMode === 'miracle'
+      ? `${recipientName} 님의 기적수업 지각전환 핵심 3줄 요약입니다.`
       : `루시의 성장 오라클 핵심 3줄 요약입니다.`;
     const lines = oracleSummaryBullets.map((b) => {
       return b.replace(/^\[([^\]]+)\]\s*/, '$1. ');
@@ -1830,7 +2325,7 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
       return;
     }
     if (oracleSummarySpeechText) {
-      const tone = oracleMode === 'healing' ? '따뜻함' : '자신감';
+      const tone = oracleMode === 'healing' || oracleMode === 'miracle' ? '따뜻함' : '자신감';
       await playTTSInChunks(oracleSummarySpeechText, 'Kore', 110, tone);
     }
   };
@@ -1849,11 +2344,11 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
       parts.push(`사주 본원 및 오행 공명입니다. ${insight.saju_resonance}`);
     }
     if (insight.personal_interpretation) {
-      const readerTitle = oracleMode === 'healing' ? '사주와 타로 콜라보 심층 해설입니다.' : '루시의 역량 분석 리딩입니다.';
+      const readerTitle = oracleMode === 'healing' ? '사주와 타로 콜라보 심층 해설입니다.' : oracleMode === 'miracle' ? '기적수업 지각전환 심층 해설입니다.' : '루시의 역량 분석 리딩입니다.';
       parts.push(`${readerTitle} ${insight.personal_interpretation}`);
     }
     if (insight.action_guide) {
-      const actionTitle = oracleMode === 'healing' ? '상황을 조화롭게 이끄는 실천 조언입니다.' : '오늘의 1% 실행 팁입니다.';
+      const actionTitle = oracleMode === 'healing' ? '상황을 조화롭게 이끄는 실천 조언입니다.' : oracleMode === 'miracle' ? '기적과 평화를 위한 지각전환 조언입니다.' : '오늘의 1% 실행 팁입니다.';
       parts.push(`${actionTitle} ${insight.action_guide}`);
     }
     return prepareNaturalSpeechText(parts.join(' '));
@@ -1887,10 +2382,13 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
   }, [stage, healingLetterSpeechText]);
 
   // Executive Summary Card (Substantial Saju-Tarot Synthesis Report)
+  // Executive Summary Card (Substantial Saju-Tarot Synthesis Report)
   const renderExecutiveSummaryCard = () => {
-    const synergy = oracleMode === 'healing' ? healingResult?.saju_tarot_synergy : growthResult?.saju_tarot_synergy;
+    const synergy = oracleMode === 'healing' ? healingResult?.saju_tarot_synergy : oracleMode === 'miracle' ? miracleResult?.saju_tarot_synergy : growthResult?.saju_tarot_synergy;
     const verdict = synergy?.saju_oracle_verdict || (oracleMode === 'healing'
       ? `${saju?.name || recipientName || '내담자'} 님의 사주 본원 기운과 3장의 카드가 조화롭게 만나, 삶의 긴장을 덜고 내면의 평온과 지혜를 회복하는 힐링의 관문이 활짝 열렸습니다.`
+      : oracleMode === 'miracle'
+      ? `${saju?.name || recipientName || '내담자'} 님의 에고의 두려움이 온전히 해체되고, 성령의 지각 전환을 통해 하나님의 평화와 참된 용서의 관문이 열렸습니다.`
       : growthResult?.macro_focus);
     const resonance = synergy?.day_master_resonance;
     const flow = synergy?.destiny_flow_synthesis;
@@ -1898,9 +2396,11 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
     const actionTip =
       oracleMode === 'healing'
         ? healingResult?.micro_action
-        : growthResult?.micro_mission
-          ? `${growthResult.micro_mission.title} — ${growthResult.micro_mission.action_tip}`
-          : '';
+        : oracleMode === 'miracle'
+          ? (miracleResult?.micro_action || miracleResult?.miracle_lesson?.application)
+          : growthResult?.micro_mission
+            ? `${growthResult.micro_mission.title} — ${growthResult.micro_mission.action_tip}`
+            : '';
 
     if (!verdict && !resonance) return null;
 
@@ -1918,15 +2418,17 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-mono text-yellow-400 uppercase tracking-widest block">
-                  {oracleMode === 'healing' ? 'SAJU × TAROT COLLABORATION REPORT' : 'SAJU × TAROT SELF-DEVELOPMENT REPORT'}
+                  {oracleMode === 'healing' ? 'SAJU × TAROT COLLABORATION REPORT' : oracleMode === 'miracle' ? 'ACIM × TAROT MIRACLE SHIFT REPORT' : 'SAJU × TAROT SELF-DEVELOPMENT REPORT'}
                 </span>
                 <span className="text-[9px] px-2 py-0.5 rounded-full bg-yellow-400/20 text-yellow-200 font-bold border border-yellow-400/30">
-                  {oracleMode === 'healing' ? '사주 ✕ 타로 융합 마스터 리포트' : '자기계발 실행 마스터 리포트'}
+                  {oracleMode === 'healing' ? '사주 ✕ 타로 융합 마스터 리포트' : oracleMode === 'miracle' ? '기적수업 지각전환 마스터 리포트' : '자기계발 실행 마스터 리포트'}
                 </span>
               </div>
               <h3 className="text-white text-sm sm:text-base font-bold">
                 {oracleMode === 'healing'
                   ? '사주 ✕ 타로 콜라보 종합 마스터 리포트'
+                  : oracleMode === 'miracle'
+                  ? '기적수업 ✕ 타로 지각전환 종합 리포트'
                   : '사주 ✕ 타로 자기계발 종합 마스터 리포트'}
               </h3>
             </div>
@@ -1938,10 +2440,12 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
           <div className="p-4 sm:p-5 rounded-2xl bg-black/50 border border-yellow-400/35 relative z-10 shadow-inner">
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-[10px] font-mono text-yellow-400 uppercase tracking-widest flex items-center gap-1">
-                <span>{oracleMode === 'healing' ? '🔮' : '⚡'}</span>
+                <span>{oracleMode === 'healing' ? '🔮' : oracleMode === 'miracle' ? '🕊️' : '⚡'}</span>
                 <span>
                   {oracleMode === 'healing'
                     ? 'SAJU × TAROT ORACLE VERDICT (사주 ✕ 타로 최종 오라클 계시)'
+                    : oracleMode === 'miracle'
+                    ? 'ACIM MIRACLE VERDICT (기적수업 지각전환 최종 선언)'
                     : 'SELF-GROWTH ORACLE VERDICT (자기계발 돌파 계시)'}
                 </span>
               </span>
@@ -1961,9 +2465,9 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
             <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-400/25 space-y-1">
               <div className="flex items-center gap-1.5 text-amber-300 text-xs font-bold font-serif">
                 <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-400/20 text-amber-200 border border-amber-400/30">
-                  {oracleMode === 'healing' ? '사주 ✕ 타로 본원 공명' : '사주 ✕ 타로 역량 공명'}
+                  {oracleMode === 'healing' ? '사주 ✕ 타로 본원 공명' : oracleMode === 'miracle' ? '마음의 환영과 내면 평화' : '사주 ✕ 타로 역량 공명'}
                 </span>
-                <span>{oracleMode === 'healing' ? '본원 기질과 카드의 조화' : '본원 추진력과 자기계발 모멘텀'}</span>
+                <span>{oracleMode === 'healing' ? '본원 기질과 카드의 조화' : oracleMode === 'miracle' ? '에고의 방어기제와 두려움 직시' : '본원 추진력과 자기계발 모멘텀'}</span>
               </div>
               <p className="text-xs text-zinc-200 leading-relaxed font-sans pt-0.5">
                 {resonance}
@@ -1975,9 +2479,9 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
             <div className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-400/25 space-y-1">
               <div className="flex items-center gap-1.5 text-purple-300 text-xs font-bold font-serif">
                 <span className="px-1.5 py-0.5 rounded text-[10px] bg-purple-400/20 text-purple-200 border border-purple-400/30">
-                  {oracleMode === 'healing' ? '2026 병오년 세운 흐름' : '2026 세운 성장 기회'}
+                  {oracleMode === 'healing' ? '2026 병오년 세운 흐름' : oracleMode === 'miracle' ? '거룩한 순간과 지각 전환' : '2026 세운 성장 기회'}
                 </span>
-                <span>{oracleMode === 'healing' ? '세운 운기와 타이밍' : '역량 레벨업 & 도약 타이밍'}</span>
+                <span>{oracleMode === 'healing' ? '세운 운기와 타이밍' : oracleMode === 'miracle' ? '성령의 눈으로 다시 보기' : '역량 레벨업 & 도약 타이밍'}</span>
               </div>
               <p className="text-xs text-zinc-200 leading-relaxed font-sans pt-0.5">
                 {flow}
@@ -1989,9 +2493,9 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
             <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-400/25 space-y-1">
               <div className="flex items-center gap-1.5 text-emerald-300 text-xs font-bold font-serif">
                 <span className="px-1.5 py-0.5 rounded text-[10px] bg-emerald-400/20 text-emerald-200 border border-emerald-400/30">
-                  {oracleMode === 'healing' ? '오행 ✕ 용신 조화와 보약' : '오행 ✕ 용신 습관 보약'}
+                  {oracleMode === 'healing' ? '오행 ✕ 용신 조화와 보약' : oracleMode === 'miracle' ? '참된 용서와 하나님의 평화' : '오행 ✕ 용신 습관 보약'}
                 </span>
-                <span>{oracleMode === 'healing' ? '결핍 오행 보완 & 처방' : '결핍 보완 생산성 & 루틴 시스템'}</span>
+                <span>{oracleMode === 'healing' ? '결핍 오행 보완 & 처방' : oracleMode === 'miracle' ? '과거 투사 거두기와 무조건적 용서' : '결핍 보완 생산성 & 루틴 시스템'}</span>
               </div>
               <p className="text-xs text-zinc-200 leading-relaxed font-sans pt-0.5">
                 {remedy}
@@ -2003,9 +2507,9 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
             <div className="p-3.5 rounded-2xl bg-white/[0.04] border border-white/15 space-y-1">
               <div className="flex items-center gap-1.5 text-yellow-300 text-xs font-bold font-serif">
                 <span className="px-1.5 py-0.5 rounded text-[10px] bg-yellow-400/20 text-yellow-200 border border-yellow-400/30">
-                  {oracleMode === 'healing' ? '핵심 실천 조언' : '오늘의 자기계발 미션'}
+                  {oracleMode === 'healing' ? '핵심 실천 조언' : oracleMode === 'miracle' ? '오늘의 거룩한 선언' : '오늘의 자기계발 미션'}
                 </span>
-                <span>{oracleMode === 'healing' ? '일상에서 실천할 조화 가이드' : '지금 실천할 1줄 성장 과제'}</span>
+                <span>{oracleMode === 'healing' ? '일상에서 실천할 조화 가이드' : oracleMode === 'miracle' ? '평화의 확신을 주는 오늘 한 줄 선언' : '지금 실천할 1줄 성장 과제'}</span>
               </div>
               <p className="text-xs text-zinc-200 leading-relaxed font-sans pt-0.5">
                 {actionTip}
@@ -2027,8 +2531,18 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
         readingText={displayFullReadingText}
         isTTSActive={isOracleSummaryTTSActive}
         onToggleTTS={oracleSummarySpeechText ? handleToggleOracleSummaryTTS : undefined}
-        title={oracleMode === 'healing' ? '사주 ✕ 타로 융합 핵심 3줄 요약' : '성장 오라클 핵심 3줄 요약'}
-        subtitle="ORACLE ESSENCE · 사주 원국 ✕ 타로 3카드 융합"
+        title={
+          oracleMode === 'healing'
+            ? '사주 ✕ 타로 융합 핵심 3줄 요약'
+            : oracleMode === 'miracle'
+            ? '기적수업 지각전환 핵심 3줄 요약'
+            : '성장 오라클 핵심 3줄 요약'
+        }
+        subtitle={
+          oracleMode === 'miracle'
+            ? 'ACIM ESSENCE · 에고의 환영 해체 ✕ 기적의 지각 전환'
+            : 'ORACLE ESSENCE · 사주 원국 ✕ 타로 3카드 융합'
+        }
         className="my-3"
       />
     );
@@ -2217,7 +2731,7 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
 
   // Toss inspiration to Muse Art Recommendation (Dynamic Art Prescription)
   const handleTossToMuse = () => {
-    const activeResult = oracleMode === 'healing' ? healingResult : growthResult;
+    const activeResult = oracleMode === 'healing' ? healingResult : oracleMode === 'miracle' ? miracleResult : growthResult;
     if (!activeResult) return;
 
     const prescribed =
@@ -2244,7 +2758,7 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
       anchorArtworkTitle: prescribed.artwork_title,
       anchorArtworkCatalogId: prescribed.catalog_id,
       anchorArtQuote: prescribed.art_quote,
-      contextMessage: oracleMode === 'healing' ? healingResult?.message : growthResult?.macro_focus,
+      contextMessage: oracleMode === 'healing' ? healingResult?.message : oracleMode === 'miracle' ? miracleResult?.message : growthResult?.macro_focus,
       tossedAt: Date.now(),
     });
 
@@ -2358,7 +2872,7 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
           {insight.personal_interpretation && (
             <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-400/20 text-xs text-emerald-100 leading-relaxed font-sans md:col-span-2">
               <span className="font-bold text-emerald-300 block mb-1 text-[11px] flex items-center gap-1.5">
-                <span>{oracleMode === 'healing' ? '🔮' : '⚡'}</span> {oracleMode === 'healing' ? '사주 ✕ 타로 콜라보 심층 해설' : '루시의 자기계발 심층 분석 & 역량 가이드'}
+                <span>{oracleMode === 'healing' ? '🔮' : oracleMode === 'miracle' ? '🕊️' : '⚡'}</span> {oracleMode === 'healing' ? '사주 ✕ 타로 콜라보 심층 해설' : oracleMode === 'miracle' ? '기적수업 지각전환 심층 해설' : '루시의 자기계발 심층 분석 & 역량 가이드'}
               </span>
               {insight.personal_interpretation}
             </div>
@@ -2367,7 +2881,7 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
           {insight.action_guide && (
             <div className="p-3.5 rounded-2xl bg-white/[0.04] border border-white/15 text-xs text-zinc-200 leading-relaxed font-sans md:col-span-2">
               <span className="font-bold text-yellow-300 block mb-1 text-[11px] flex items-center gap-1.5">
-                <span>💡</span> {oracleMode === 'healing' ? '상황을 조화롭게 이끄는 실천 조언' : '오늘 즉시 실천할 1% 자기계발 팁'}
+                <span>💡</span> {oracleMode === 'healing' ? '상황을 조화롭게 이끄는 실천 조언' : oracleMode === 'miracle' ? '기적과 평화를 위한 지각전환 조언' : '오늘 즉시 실천할 1% 자기계발 팁'}
               </span>
               {insight.action_guide}
             </div>
@@ -2389,6 +2903,8 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
               <h3 className="text-sm sm:text-base font-bold font-serif text-white">
                 {oracleMode === 'healing'
                   ? '3장의 카드별 심층 분석 (과거 · 현재 · 미래)'
+                  : oracleMode === 'miracle'
+                  ? '3장의 카드별 기적수업 지각전환 분석'
                   : '3장의 카드별 현실 실행 툴킷'}
               </h3>
               <span className="text-[10px] text-zinc-400 font-sans">
@@ -2673,9 +3189,11 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
             </h2>
             <p className="text-xs sm:text-sm text-zinc-300/80 mt-1 font-sans">
               {!isModeChosen
-                ? '원하시는 모드(🌿 힐링 치유 편지 vs ⚡ 자기계발 실행 편지)를 선택하여 시작해 주세요.'
+                ? '원하시는 모드(🌿 힐링 치유 · 🕊️ 기적수업 지각전환 · ⚡ 자기계발 실행)를 선택하여 시작해 주세요.'
                 : oracleMode === 'healing'
                 ? '지친 마음의 치유와 안식을 위해 사주 본원과 78장 풀덱 타로가 전하는 따뜻한 힐링 오라클'
+                : oracleMode === 'miracle'
+                ? '에고의 두려움을 걷어내고 거룩한 순간과 참된 용서를 통해 온전한 평화를 찾는 기적수업 오라클'
                 : '역량 강화와 실질적 성장을 위해 사주 추진력과 78장 타로 4원소가 전하는 자기계발 오라클'}
             </p>
           </div>
@@ -2711,6 +3229,25 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
                 )}
                 <Heart size={14} className="relative z-10 text-rose-300" />
                 <span className="relative z-10">힐링 (78장)</span>
+              </button>
+
+              <button
+                onClick={() => handleModeSwitch('miracle')}
+                className={`relative flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all duration-300 cursor-pointer ${
+                  isModeChosen && oracleMode === 'miracle'
+                    ? 'text-yellow-200 font-bold shadow-lg'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                {isModeChosen && oracleMode === 'miracle' && (
+                  <motion.div
+                    layoutId="oracle-mode-pill"
+                    className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-600/50 via-indigo-600/40 to-amber-600/40 border border-purple-400/50"
+                    transition={{ type: 'spring', stiffness: 350, damping: 28 }}
+                  />
+                )}
+                <Feather size={14} className="relative z-10 text-purple-300" />
+                <span className="relative z-10">기적수업 (78장)</span>
               </button>
 
               <button
@@ -2855,8 +3392,8 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
               <h3 className="text-xl sm:text-2xl font-serif font-black text-white">
                 오라클 타로 모드를 선택해 주세요
               </h3>
-              <p className="text-xs sm:text-sm text-zinc-400 mt-2 max-w-lg mx-auto leading-relaxed">
-                사주 원국과 공명하는 2가지 특화 타로 모드 중 원하시는 방식을 선택하세요.<br className="hidden sm:inline" />
+              <p className="text-xs sm:text-sm text-zinc-400 mt-2 max-w-xl mx-auto leading-relaxed">
+                사주 원국과 공명하는 3가지 특화 타로 모드(🌿 힐링 · 🕊️ 기적수업 · ⚡ 자기계발) 중 원하시는 방식을 선택하세요.<br className="hidden sm:inline" />
                 선택하신 모드는 자동으로 저장되어 다음번에도 그대로 유지됩니다.
               </p>
 
@@ -2873,7 +3410,7 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mt-6 max-w-2xl mx-auto text-left">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 mt-6 max-w-4xl mx-auto text-left">
                 {/* 🌿 Healing Mode Option Card */}
                 <button
                   type="button"
@@ -2896,7 +3433,7 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
 
                     <h4 className="text-base sm:text-lg font-bold text-white group-hover:text-rose-200 transition-colors flex items-center gap-1.5">
                       <span>🌿 힐링 타로</span>
-                      <span className="text-xs font-normal text-rose-300/80">(사주 ✕ 타로 콜라보)</span>
+                      <span className="text-xs font-normal text-rose-300/80">(사주 ✕ 타로)</span>
                     </h4>
                     <p className="text-xs text-zinc-300/90 mt-2 leading-relaxed">
                       사주 원국과 78장 타로의 깊은 조화와 치유.<br />
@@ -2911,6 +3448,46 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
 
                   <div className="mt-5 w-full py-2.5 rounded-xl bg-rose-500/20 group-hover:bg-rose-500/30 border border-rose-400/40 text-rose-200 text-xs font-bold text-center transition-colors">
                     {healingTodaySession?.healingResult ? '✨ 힐링 타로 당일 결과 보기' : '🌿 78장 힐링 타로 덱 펼치기 (1일 1회)'}
+                  </div>
+                </button>
+
+                {/* 🕊️ Miracle Mode Option Card */}
+                <button
+                  type="button"
+                  onClick={() => handleModeSwitch('miracle')}
+                  className={`group relative p-5 sm:p-6 rounded-2xl border transition-all duration-300 flex flex-col justify-between cursor-pointer active:scale-[0.98] ${
+                    oracleMode === 'miracle'
+                      ? 'bg-gradient-to-b from-purple-950/40 via-zinc-900/80 to-black border-purple-400/60 shadow-[0_0_25px_rgba(168,85,247,0.25)]'
+                      : 'bg-zinc-900/60 hover:bg-zinc-900/90 border-white/10 hover:border-purple-400/40'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center">
+                        <Feather size={20} className="text-purple-300 group-hover:scale-110 transition-transform" />
+                      </div>
+                      <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-400/30">
+                        {miracleTodaySession?.miracleResult ? '✓ 오늘 1일 1회 완료' : '78장 풀덱 (1일 1회)'}
+                      </span>
+                    </div>
+
+                    <h4 className="text-base sm:text-lg font-bold text-white group-hover:text-purple-200 transition-colors flex items-center gap-1.5">
+                      <span>🕊️ 기적수업 타로</span>
+                      <span className="text-xs font-normal text-purple-300/80">(ACIM 지각전환)</span>
+                    </h4>
+                    <p className="text-xs text-zinc-300/90 mt-2 leading-relaxed">
+                      에고의 두려움을 걷어내고 온전한 평화로 귀환.<br />
+                      거룩한 순간·참된 용서 3카드와 워크북 선언.
+                    </p>
+
+                    <div className="mt-4 pt-3 border-t border-white/10 flex items-center gap-2 text-[11px] text-zinc-400">
+                      <Sparkles size={13} className="text-purple-400" />
+                      <span>지각 전환 · 참된 용서 · 하나님의 평화</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 w-full py-2.5 rounded-xl bg-purple-500/20 group-hover:bg-purple-500/30 border border-purple-400/40 text-purple-200 text-xs font-bold text-center transition-colors">
+                    {miracleTodaySession?.miracleResult ? '✨ 기적수업 타로 당일 결과 보기' : '🕊️ 78장 기적수업 덱 펼치기 (1일 1회)'}
                   </div>
                 </button>
 
@@ -2969,7 +3546,7 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
               <div className="text-center mb-2">
                 <div className="flex items-center justify-center gap-2 mb-1 flex-wrap">
                   <span className="text-[10px] sm:text-xs font-mono uppercase tracking-widest text-amber-400/80">
-                    {oracleMode === 'healing' ? 'Inner Child Oracle • 78 Full Deck' : 'Mindset Toolkit • 78 Full Deck'}
+                    {oracleMode === 'healing' ? 'Inner Child Oracle • 78 Full Deck' : oracleMode === 'miracle' ? 'A Course in Miracles • 78 Full Deck' : 'Mindset Toolkit • 78 Full Deck'}
                   </span>
                   <button
                     type="button"
@@ -2989,11 +3566,17 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
                   </button>
                 </div>
                 <h3 className="text-lg sm:text-xl font-bold font-serif text-white mt-0.5">
-                  {oracleMode === 'healing' ? '내면의 숨결을 마주할 3장의 카드' : '오늘의 마인드셋을 이끌 3장의 카드'}
+                  {oracleMode === 'healing'
+                    ? '내면의 숨결을 마주할 3장의 카드'
+                    : oracleMode === 'miracle'
+                    ? '거룩한 순간과 지각전환을 위한 3장의 카드'
+                    : '오늘의 마인드셋을 이끌 3장의 카드'}
                 </h3>
                 <p className="text-xs text-zinc-400 mt-1 max-w-md mx-auto">
                   {oracleMode === 'healing'
                     ? '카드를 손가락이나 마우스로 굴려 마음이 이끄는 3장을 천천히 선택해 보세요.'
+                    : oracleMode === 'miracle'
+                    ? '에고의 환영을 벗고 참된 평화를 비출 3장의 카드를 조용히 선택해 주세요.'
                     : '4원소(불·물·공기·흙)의 현실 실행력을 깨울 3장의 도구를 선택해 주세요.'}
                 </p>
 
@@ -3008,6 +3591,8 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
                       placeholder={
                         oracleMode === 'healing'
                           ? "마음속 고민을 입력하면 치유 편지에 깊이 반영됩니다..."
+                          : oracleMode === 'miracle'
+                          ? "마음을 어지럽히는 갈등이나 원한을 입력하면 지각전환 리딩에 깊이 반영됩니다..."
                           : "돌파하고 싶은 성장 고민을 입력하면 실행 편지에 깊이 반영됩니다..."
                       }
                       className="w-full bg-transparent text-xs text-white placeholder-zinc-500 focus:outline-none"
@@ -3060,13 +3645,13 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
               </div>
 
               {/* Native TarotSpread Component Integration (1일 1회 완료 시 안내 카드 표시, 미완료 시에만 덱 펼치기) */}
-              {todayDailySession && (todayDailySession.healingResult || todayDailySession.growthResult) ? (
+              {todayDailySession && (todayDailySession.healingResult || todayDailySession.growthResult || todayDailySession.miracleResult) ? (
                 <div className="my-8 p-6 sm:p-8 rounded-3xl bg-gradient-to-b from-amber-950/30 via-zinc-900/60 to-black border border-amber-400/30 text-center max-w-lg mx-auto shadow-xl">
                   <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center mx-auto mb-4">
                     <Check size={28} className="text-emerald-400" />
                   </div>
                   <h4 className="text-lg font-bold text-white mb-2">
-                    오늘의 {oracleMode === 'healing' ? '힐링 타로' : '자기계발 타로'} 1일 1회 완료
+                    오늘의 {oracleMode === 'healing' ? '힐링 타로' : oracleMode === 'miracle' ? '기적수업 타로' : '자기계발 타로'} 1일 1회 완료
                   </h4>
                   <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed mb-6">
                     오늘 뽑으신 3장의 오라클 카드가 안전하게 보존되어 있습니다.<br />
@@ -3194,10 +3779,12 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
                 <p className="text-sm font-serif text-amber-200 animate-pulse">
                   {oracleMode === 'healing'
                     ? '사주 원국과 78장 타로를 융합하여 심층 오라클 리딩을 작성 중입니다...'
+                    : oracleMode === 'miracle'
+                    ? '기적수업의 거룩한 순간과 78장 타로를 융합하여 지각전환의 평화 리딩을 작성 중입니다...'
                     : '4원소 마인드셋과 질문자의 과제를 융합하여 실행 편지를 작성 중입니다...'}
                 </p>
               </div>
-            ) : (healingResult || growthResult) ? (
+            ) : (healingResult || growthResult || miracleResult) ? (
               /* 2. Unified Glass Reading Card (일반타로와 100% 동일한 구성) */
               <div className="glass p-4 sm:p-6 md:p-7 rounded-2xl sm:rounded-3xl border border-yellow-500/30 shadow-2xl flex flex-col relative overflow-hidden backdrop-blur-xl space-y-4">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 blur-[80px] pointer-events-none rounded-full" />
@@ -3209,6 +3796,8 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
                     <h4 className="text-xs sm:text-sm font-bold tracking-widest uppercase text-white font-serif">
                       {oracleMode === 'healing'
                         ? 'Oracle Trinity’s Saju × Tarot Insight'
+                        : oracleMode === 'miracle'
+                        ? 'Oracle Trinity’s ACIM Miracle Insight'
                         : 'Oracle Lucy’s Self-Growth Insight'}
                     </h4>
                   </div>
@@ -3268,11 +3857,35 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
                     <Streamdown immediate>{displayFullReadingText}</Streamdown>
                   </div>
 
+                  {/* 🕊️ 기적수업 거룩한 선언 & 워크북 레슨 카드 (기적수업 모드 시) */}
+                  {oracleMode === 'miracle' && miracleResult?.miracle_lesson && (
+                    <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-indigo-950/40 via-purple-950/30 to-violet-950/40 border border-violet-400/40 shadow-lg relative overflow-hidden space-y-2.5 my-3">
+                      <div className="flex items-center justify-between gap-2 border-b border-violet-400/20 pb-2">
+                        <div className="flex items-center gap-2 text-violet-300 font-serif font-bold text-xs sm:text-sm">
+                          <Sparkles size={14} className="text-violet-300 animate-pulse" />
+                          <span>🕊️ 기적수업 거룩한 선언 & 워크북 레슨</span>
+                        </div>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-200 border border-violet-400/30">
+                          {miracleResult.miracle_lesson.source || 'ACIM Workbook Lesson'}
+                        </span>
+                      </div>
+                      <blockquote className="italic text-amber-200 text-xs sm:text-sm border-l-2 border-violet-400/60 pl-3 py-1 my-1">
+                        "{miracleResult.miracle_lesson.quote}"
+                      </blockquote>
+                      {miracleResult.miracle_lesson.application && (
+                        <p className="text-white/85 text-[11px] sm:text-xs leading-relaxed pt-1">
+                          <span className="text-violet-300 font-semibold mr-1">✦ 지각 전환의 실천:</span>
+                          {miracleResult.miracle_lesson.application}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   {/* 🌟 그에 맞는 루시의 조언 (TTS 가능) */}
                   <div className="pt-2">
                     <LucyTarotAdviceCard
                       cards={drawnCards}
-                      tarotConcern={inquiryText || (oracleMode === 'healing' ? '사주 명리 및 78장 타로 융합 운명 성찰' : '현실적인 도전과 자기계발 성장 돌파')}
+                      tarotConcern={inquiryText || (oracleMode === 'healing' ? '사주 명리 및 78장 타로 융합 운명 성찰' : oracleMode === 'miracle' ? '에고의 환영 해체 및 기적수업 지각전환' : '현실적인 도전과 자기계발 성장 돌파')}
                       readingText={displayFullReadingText}
                       mode="oracle"
                       oracleMode={oracleMode}
@@ -3298,25 +3911,51 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
                   <div className="flex items-center gap-2 flex-wrap">
                     <div className="inline-flex items-center gap-1.5 py-2 px-3.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[11px] font-medium">
                       <Check size={12} className="text-emerald-400" />
-                      <span>오늘의 {oracleMode === 'healing' ? '힐링' : '자기계발'} 오라클 완료 (1일 1회)</span>
+                      <span>오늘의 {oracleMode === 'healing' ? '힐링' : oracleMode === 'miracle' ? '기적수업' : '자기계발'} 오라클 완료 (1일 1회)</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleModeSwitch(oracleMode === 'healing' ? 'growth' : 'healing')}
-                      className="text-white/90 hover:text-white hover:bg-white/10 transition-all text-[11px] font-bold flex items-center gap-1.5 py-2 px-4 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 cursor-pointer active:scale-95 shadow-sm"
-                      title={oracleMode === 'healing' ? '자기계발 타로 모드로 전환' : '힐링 타로 모드로 전환'}
-                    >
-                      <Layers size={12} className="text-amber-400" />
-                      <span>{oracleMode === 'healing' ? '⚡ 자기계발 타로로 변경' : '🌿 힐링 타로로 변경'}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleResetToModeSelection}
-                      className="text-zinc-400 hover:text-white hover:bg-white/10 transition-all text-[11px] font-medium flex items-center gap-1 py-2 px-3 rounded-full bg-white/5 border border-white/10 cursor-pointer active:scale-95"
-                      title="모드 직접 선택 화면으로 이동"
-                    >
-                      <span>모드 선택 화면</span>
-                    </button>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {oracleMode !== 'healing' && (
+                        <button
+                          type="button"
+                          onClick={() => handleModeSwitch('healing')}
+                          className="text-emerald-300 hover:text-white hover:bg-emerald-500/20 transition-all text-[11px] font-bold flex items-center gap-1 py-1.5 px-3 rounded-full bg-emerald-500/15 border border-emerald-400/30 cursor-pointer active:scale-95 shadow-sm"
+                          title="힐링 타로 모드로 전환"
+                        >
+                          <Layers size={12} className="text-emerald-400" />
+                          <span>🌿 힐링 타로</span>
+                        </button>
+                      )}
+                      {oracleMode !== 'miracle' && (
+                        <button
+                          type="button"
+                          onClick={() => handleModeSwitch('miracle')}
+                          className="text-violet-300 hover:text-white hover:bg-violet-500/20 transition-all text-[11px] font-bold flex items-center gap-1 py-1.5 px-3 rounded-full bg-violet-500/15 border border-violet-400/30 cursor-pointer active:scale-95 shadow-sm"
+                          title="기적수업 타로 모드로 전환"
+                        >
+                          <Layers size={12} className="text-violet-400" />
+                          <span>🕊️ 기적수업</span>
+                        </button>
+                      )}
+                      {oracleMode !== 'growth' && (
+                        <button
+                          type="button"
+                          onClick={() => handleModeSwitch('growth')}
+                          className="text-amber-300 hover:text-white hover:bg-amber-500/20 transition-all text-[11px] font-bold flex items-center gap-1 py-1.5 px-3 rounded-full bg-amber-500/15 border border-amber-400/30 cursor-pointer active:scale-95 shadow-sm"
+                          title="자기계발 타로 모드로 전환"
+                        >
+                          <Layers size={12} className="text-amber-400" />
+                          <span>⚡ 자기계발</span>
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleResetToModeSelection}
+                        className="text-zinc-400 hover:text-white hover:bg-white/10 transition-all text-[11px] font-medium flex items-center gap-1 py-1.5 px-3 rounded-full bg-white/5 border border-white/10 cursor-pointer active:scale-95"
+                        title="모드 직접 선택 화면으로 이동"
+                      >
+                        <span>모드 선택 화면</span>
+                      </button>
+                    </div>
                   </div>
 
                   <TarotResultShareButton
