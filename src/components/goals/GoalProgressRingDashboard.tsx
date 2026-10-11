@@ -16,6 +16,7 @@ import {
   Sun,
   X
 } from 'lucide-react';
+import { useAppContext } from '../../contexts/AppContext';
 
 export type GoalCategory = 'mind' | 'wellness' | 'creation' | 'wisdom' | 'routine';
 
@@ -485,6 +486,7 @@ export function GoalProgressRingDashboard() {
     }
   });
 
+  const { sharedState, updateSharedState } = useAppContext();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [highlightedGoalId, setHighlightedGoalId] = useState<string | null>(null);
 
@@ -494,17 +496,41 @@ export function GoalProgressRingDashboard() {
   const [targetVal, setTargetVal] = useState<number>(15);
   const [unit, setUnit] = useState('분');
 
-  // Sync to localStorage
+  // Real-time bidirectional hydration from cloud / sharedState
+  useEffect(() => {
+    if (sharedState?.userGoals && Array.isArray(sharedState.userGoals) && sharedState.userGoals.length > 0) {
+      const remoteTs = Number(sharedState.userGoalsUpdatedAt || 0);
+      const localTs = Number(localStorage.getItem('luckey_user_goals_updated_at') || 0);
+      if (remoteTs > localTs) {
+        setGoals(sharedState.userGoals);
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(sharedState.userGoals));
+          localStorage.setItem('luckey_user_goals', JSON.stringify(sharedState.userGoals));
+          localStorage.setItem('luckey_user_goals_updated_at', String(remoteTs));
+        } catch (_) {}
+      }
+    }
+  }, [sharedState?.userGoals, sharedState?.userGoalsUpdatedAt]);
+
+  // Sync to localStorage & Real-time Cloud
   const saveGoals = useCallback((newGoals: UserGoal[]) => {
     setGoals(newGoals);
+    const now = Date.now();
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newGoals));
       localStorage.setItem(STORAGE_DATE_KEY, getTodayKey());
+      localStorage.setItem('luckey_user_goals', JSON.stringify(newGoals));
+      localStorage.setItem('luckey_user_goals_updated_at', String(now));
       window.dispatchEvent(new CustomEvent('luckey-goals-sync', { detail: newGoals }));
+      window.dispatchEvent(new CustomEvent('luckey:goals_synced', { detail: newGoals }));
     } catch (e) {
       console.error('Failed to save user goals to storage:', e);
     }
-  }, []);
+    void updateSharedState({
+      userGoals: newGoals,
+      userGoalsUpdatedAt: now,
+    }, 'goals').catch(() => {});
+  }, [updateSharedState]);
 
   // Multi-tab listener & daily midnight/focus/visibility reset listener
   useEffect(() => {
@@ -540,11 +566,13 @@ export function GoalProgressRingDashboard() {
 
     window.addEventListener('storage', handleStorage);
     window.addEventListener('luckey-goals-sync', handleCustomSync);
+    window.addEventListener('luckey:goals_synced', handleCustomSync);
     window.addEventListener('focus', checkDailyReset);
     window.addEventListener('visibilitychange', checkDailyReset);
     return () => {
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('luckey-goals-sync', handleCustomSync);
+      window.removeEventListener('luckey:goals_synced', handleCustomSync);
       window.removeEventListener('focus', checkDailyReset);
       window.removeEventListener('visibilitychange', checkDailyReset);
     };

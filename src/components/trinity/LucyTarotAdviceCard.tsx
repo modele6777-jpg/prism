@@ -23,6 +23,7 @@ import {
   getEnhancedLucyTarotAdvice,
 } from '@/lib/lucyTarotAdvice';
 import { playTTSInChunks, stopTTS, useTTSActive, subscribeTTS } from '@/utils/tts';
+import { TTSHighlightedText } from '@/components/common/TTSHighlightedText';
 
 export interface LucyTarotAdviceCardProps {
   cards?: any[] | null;
@@ -266,7 +267,7 @@ export function LucyTarotAdviceCard({
 
         {/* Advice Paragraph */}
         <p className="text-xs sm:text-[13px] text-white/90 leading-relaxed font-sans pl-1">
-          {advice.advice}
+          <TTSHighlightedText text={advice.advice} />
         </p>
 
         {/* Action Tip Pill */}
@@ -275,7 +276,7 @@ export function LucyTarotAdviceCard({
             오늘의 실천
           </span>
           <p className="text-xs text-white/80 leading-relaxed font-sans">
-            {advice.actionTip}
+            <TTSHighlightedText text={advice.actionTip} />
           </p>
         </div>
 

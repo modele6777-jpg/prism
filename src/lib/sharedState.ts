@@ -241,6 +241,8 @@ export interface SharedState {
   talismanChest?: any[]; // Orange talisman chest
   equippedCharm?: any; // Currently equipped talisman
   rebibleVerses?: any[]; // Re:Bible holy scriptures and annotations across devices
+  userGoals?: any[]; // User goals and concentric progress ring dashboard across devices
+  userGoalsUpdatedAt?: number;
   chatHistory?: any[]; // Unified chat messages across devices
   chatThreads?: Record<string, any[]>; // Unified chat messages across devices
   chatUpdatedAt?: number;

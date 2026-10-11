@@ -524,6 +524,18 @@ export function collectAllLocalActivities(uid?: string | null): Partial<SharedSt
     }
   } catch (_) {}
 
+  // 17. Collect User Goals (목표 링 대시보드)
+  try {
+    const rawGoals = safeLocalStorage.getItem('luckey_user_goals_v2') || safeLocalStorage.getItem('luckey_user_goals');
+    if (rawGoals) {
+      const parsed = JSON.parse(rawGoals);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        result.userGoals = parsed;
+        result.userGoalsUpdatedAt = Number(safeLocalStorage.getItem('luckey_user_goals_updated_at') || Date.now());
+      }
+    }
+  } catch (_) {}
+
   return result;
 }
 
@@ -598,13 +610,14 @@ export function getSharedStateSignature(s: SharedState | null | undefined): stri
   const treasureSummary = `${s.healingTreasures?.length || 0}_${s.growthLogs?.streak || 0}_${s.growthLogs?.completed || false}`;
   const talismanSummary = `${s.talismanChest?.length || 0}_${s.equippedCharm?.id || ''}`;
   const epilogueSummary = `${s.epilogueHistory?.length || 0}_${s.epilogueHistory?.[0]?.dateKey || ''}`;
+  const goalSummary = `${s.userGoals?.length || 0}_${s.userGoalsUpdatedAt || 0}`;
 
   const clientTs = s.clientUpdatedAt || 0;
   const serverTs = (s.updatedAt as any)?.toMillis?.() || s.updatedAt || 0;
 
-  const hLen = `${s.featureHistory?.length || 0}_${s.orangeHistory?.length || 0}_${s.museHistory?.length || 0}_${s.bluebirdHistory?.length || 0}_${s.favoriteInsightIds?.length || 0}_${s.rebibleVerses?.length || 0}_${(s as any).epilogueHistory?.length || 0}`;
+  const hLen = `${s.featureHistory?.length || 0}_${s.orangeHistory?.length || 0}_${s.museHistory?.length || 0}_${s.bluebirdHistory?.length || 0}_${s.favoriteInsightIds?.length || 0}_${s.rebibleVerses?.length || 0}_${(s as any).epilogueHistory?.length || 0}_${s.userGoals?.length || 0}`;
 
-  return `${clientTs}_${serverTs}|${profStr}|${s.themeColor || ''}|${s.currentVibe || ''}|${todayOracleSummary}|${secretSummary}|${luckySummary}|${hopoSummary}|${artSummary}|${chatSummary}|${rebibleSummary}|${featSummary}|${todoSummary}|${ecprSummary}|${oracleSummary}|${treasureSummary}|${talismanSummary}|${epilogueSummary}|${hLen}`;
+  return `${clientTs}_${serverTs}|${profStr}|${s.themeColor || ''}|${s.currentVibe || ''}|${todayOracleSummary}|${secretSummary}|${luckySummary}|${hopoSummary}|${artSummary}|${chatSummary}|${rebibleSummary}|${featSummary}|${todoSummary}|${ecprSummary}|${oracleSummary}|${treasureSummary}|${talismanSummary}|${epilogueSummary}|${goalSummary}|${hLen}`;
 }
 
 let lastHydratedSignature = '';
@@ -1044,6 +1057,24 @@ export function unpackAndHydrateLocalStorage(uid: string | null | undefined, sta
     } catch (_) {}
   }
 
+  // 4k. Hydrate User Goals across devices (PC <-> Mobile)
+  if (Array.isArray(state.userGoals) && state.userGoals.length > 0) {
+    try {
+      const currentLocalTs = Number(safeLocalStorage.getItem('luckey_user_goals_updated_at') || 0);
+      const remoteTs = Number(state.userGoalsUpdatedAt || 0);
+      if (!currentLocalTs || remoteTs >= currentLocalTs || force) {
+        const goalsStr = JSON.stringify(state.userGoals);
+        safeLocalStorage.setItem('luckey_user_goals_v2', goalsStr);
+        safeLocalStorage.setItem('luckey_user_goals', goalsStr);
+        if (remoteTs) {
+          safeLocalStorage.setItem('luckey_user_goals_updated_at', String(remoteTs));
+        }
+        window.dispatchEvent(new CustomEvent('luckey-goals-sync', { detail: state.userGoals }));
+        window.dispatchEvent(new CustomEvent('luckey:goals_synced', { detail: state.userGoals }));
+      }
+    } catch (_) {}
+  }
+
   // 5. Dispatch Custom Events across the whole app to instantly re-render UI
   try {
     window.dispatchEvent(new CustomEvent('prism:daily_oracle_updated', { detail: state.todayOracles }));
@@ -1357,6 +1388,21 @@ export function mergeSharedState(
     const lTime = Number(local.equippedCharm?.timestamp || 0);
     const rTime = Number(remote.equippedCharm?.timestamp || 0);
     merged.equippedCharm = lTime >= rTime ? (local.equippedCharm || remote.equippedCharm) : remote.equippedCharm;
+  }
+
+  // 6k. Merge User Goals across devices with timestamp & id awareness
+  if (local.userGoals || remote.userGoals) {
+    const localTs = Number(local.userGoalsUpdatedAt || 0);
+    const remoteTs = Number(remote.userGoalsUpdatedAt || 0);
+    const goalMap = new Map<string, any>();
+    const newerIsLocal = localTs >= remoteTs;
+    const primary = newerIsLocal ? (local.userGoals || []) : (remote.userGoals || []);
+    const secondary = newerIsLocal ? (remote.userGoals || []) : (local.userGoals || []);
+
+    secondary.forEach((g: any) => { if (g?.id) goalMap.set(g.id, g); });
+    primary.forEach((g: any) => { if (g?.id) goalMap.set(g.id, g); });
+    merged.userGoals = Array.from(goalMap.values());
+    merged.userGoalsUpdatedAt = Math.max(localTs, remoteTs, Date.now());
   }
 
   merged.clientAppVersions = {

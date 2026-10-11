@@ -882,6 +882,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (mergedData.oracleSessions) {
           window.dispatchEvent(new CustomEvent('prism:oracle_session_updated', { detail: mergedData.oracleSessions }));
         }
+        if (mergedData.userGoals) {
+          window.dispatchEvent(new CustomEvent('luckey-goals-sync', { detail: mergedData.userGoals }));
+          window.dispatchEvent(new CustomEvent('luckey:goals_synced', { detail: mergedData.userGoals }));
+        }
+        if (mergedData.epilogueHistory) {
+          window.dispatchEvent(new CustomEvent('epilogue:diary_synced', { detail: { epilogueHistory: mergedData.epilogueHistory } }));
+          window.dispatchEvent(new CustomEvent('luckey:diary_synced', { detail: { epilogueHistory: mergedData.epilogueHistory } }));
+        }
       } else {
         // Document does not exist on Firestore yet: initialize Firestore with persistent profile safely!
         const persistentProfile = getPersistentUserProfile();
@@ -1832,3 +1840,5 @@ export function useApp() {
   if (!ctx) throw new Error('useApp must be used within AppProvider');
   return ctx;
 }
+
+export const useAppContext = useApp;

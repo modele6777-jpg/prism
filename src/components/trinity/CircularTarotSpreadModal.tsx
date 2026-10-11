@@ -55,13 +55,13 @@ export const CircularTarotSpreadModal: React.FC<CircularTarotSpreadModalProps> =
               </div>
               <div>
                 <h3 className="text-base sm:text-lg font-bold text-white font-serif flex items-center gap-2">
-                  <span>원형 에셔 셔터 타로 스프레드</span>
+                  <span>무결점 원형 타로 스프레드</span>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 font-sans">
-                    Escher Iris Loop
+                    Zero-Occlusion Iris
                   </span>
                 </h3>
                 <p className="text-[11px] text-zinc-400 font-sans">
-                  CSS clip-path 이중 레이어 분할 렌더링으로 완성된 균일 겹침 원형 타로 휠
+                  원형 궤도를 온전히 유지하며 이중 가림 없이 모든 카드가 선명하게 펼쳐지는 프리미엄 원형 타로 스프레드
                 </p>
               </div>
             </div>

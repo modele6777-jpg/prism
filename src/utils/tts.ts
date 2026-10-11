@@ -139,7 +139,7 @@ export function playNativeBrowserSpeech(
     }
   }
 
-  updateTTSState({ isLoading: false, isSpeaking: true, activeText: cleanText });
+  updateTTSState({ isLoading: false, isSpeaking: true, activeText: cleanText, currentSentence: cleanText });
   setTTSSessionActive(cleanText);
 
   // Chrome/iOS keepalive timer
@@ -197,6 +197,7 @@ export interface TTSState {
   activeText: string | null;
   activeFullText?: string | null;
   activeSessionId: string | null;
+  currentSentence?: string | null;
 }
 
 let ttsState: TTSState = {
@@ -205,6 +206,7 @@ let ttsState: TTSState = {
   activeText: null,
   activeFullText: null,
   activeSessionId: null,
+  currentSentence: null,
 };
 
 type TTSListener = (state: TTSState) => void;
@@ -326,7 +328,7 @@ export const resumeTTS = (): void => {
 export const stopTTS = () => {
   isPlayingSequence = false;
   activeUtterances.clear();
-  updateTTSState({ isSpeaking: false, isLoading: false, activeText: null, activeFullText: null, activeSessionId: null });
+  updateTTSState({ isSpeaking: false, isLoading: false, activeText: null, activeFullText: null, activeSessionId: null, currentSentence: null });
   stopTTSPlayback();
   clearTTSSession();
   if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -368,11 +370,11 @@ export const playTTS = async (
       primeTTSAudioElement();
       unlockAudioPlayback();
     } catch (_) {}
-    updateTTSState({ isLoading: true, isSpeaking: false, activeText: cleanText, activeFullText: fullTextReference || cleanText, activeSessionId: mySessionId });
+    updateTTSState({ isLoading: true, isSpeaking: false, activeText: cleanText, currentSentence: cleanText, activeFullText: fullTextReference || cleanText, activeSessionId: mySessionId });
   } else {
     // External caller provided a sequenceSessionId directly.
     if (!ttsState.activeSessionId) {
-      updateTTSState({ isLoading: true, isSpeaking: false, activeText: cleanText, activeFullText: fullTextReference || cleanText, activeSessionId: mySessionId });
+      updateTTSState({ isLoading: true, isSpeaking: false, activeText: cleanText, currentSentence: cleanText, activeFullText: fullTextReference || cleanText, activeSessionId: mySessionId });
     }
   }
 
@@ -442,6 +444,7 @@ export const playTTS = async (
       isLoading: false,
       isSpeaking: true,
       activeText: cleanText,
+      currentSentence: cleanText,
       ...(fullTextReference ? { activeFullText: fullTextReference } : {}),
     });
     setTTSSessionActive(cleanText);
@@ -551,7 +554,6 @@ export function splitSpeechIntoChunks(text: string, maxChunkLength = 110): strin
 
   const rawSentences = cleanText.match(/[^.!?。！？\n]+[.!?。！？\n]?/g) || [cleanText];
   const chunks: string[] = [];
-  let currentChunk = '';
 
   for (const sentence of rawSentences) {
     const s = sentence.trim();
@@ -559,41 +561,34 @@ export function splitSpeechIntoChunks(text: string, maxChunkLength = 110): strin
 
     const hasMeaningfulText = /[가-힣a-zA-Z0-9]/.test(s);
     if (!hasMeaningfulText) {
-      currentChunk = currentChunk ? `${currentChunk} ${s}` : s;
+      if (chunks.length > 0) {
+        chunks[chunks.length - 1] += ' ' + s;
+      }
       continue;
     }
 
     if (s.length > maxChunkLength) {
-      if (currentChunk.trim()) {
-        chunks.push(currentChunk.trim());
-        currentChunk = '';
-      }
       const clauses = s.match(/[^,，;；]+[,，;；]?/g) || [s];
+      let currentChunk = '';
       for (const clause of clauses) {
         const c = clause.trim();
         if (!c) continue;
-        if (currentChunk && (currentChunk.length + c.length + 1 > maxChunkLength)) {
+        if (currentChunk && currentChunk.length + c.length + 1 > maxChunkLength) {
           chunks.push(currentChunk.trim());
           currentChunk = c;
         } else {
           currentChunk = currentChunk ? `${currentChunk} ${c}` : c;
         }
       }
-      continue;
-    }
-
-    const next = currentChunk ? `${currentChunk} ${s}` : s;
-    if (currentChunk && next.length > maxChunkLength) {
-      chunks.push(currentChunk.trim());
-      currentChunk = s;
+      if (currentChunk.trim()) {
+        chunks.push(currentChunk.trim());
+      }
     } else {
-      currentChunk = next;
+      // 🌟 각 문장을 1:1 독립 청크로 분리하여 문장 단위 실시간 형광펜 하이라이트 완벽 동기화
+      chunks.push(s);
     }
   }
 
-  if (currentChunk.trim()) {
-    chunks.push(currentChunk.trim());
-  }
   return chunks;
 }
 
@@ -684,6 +679,7 @@ export const playTTSInChunks = async (
     isLoading: true,
     isSpeaking: true,
     activeText: chunks[startChunkIndex] || cleanText.slice(0, 50),
+    currentSentence: chunks[startChunkIndex] || null,
     activeFullText: cleanText,
     activeSessionId: sequenceSessionId,
   });
@@ -721,6 +717,16 @@ export const playTTSInChunks = async (
         updatedAt: Date.now(),
       };
 
+      // 🌟 현재 낭독 중인 문장 상태 실시간 동기화 (형광펜 하이라이트 트리거)
+      updateTTSState({
+        isSpeaking: true,
+        isLoading: false,
+        activeText: chunks[i],
+        currentSentence: chunks[i],
+        activeFullText: cleanText,
+        activeSessionId: sequenceSessionId,
+      });
+
       // Proactively pre-fetch next upcoming 2 chunks in advance (locked to 1.0x)
       if (i + 1 < chunks.length) {
         prefetchTTS(chunks[i + 1], voice, emotion).catch(() => {});
@@ -756,8 +762,10 @@ export const playTTSInChunks = async (
         lastTTSProgress = null;
       }
 
-      // Micro-pause between chunks (60ms) for natural human speech rhythm
+      // 🌟 해당 문장 낭독 완료: 다음 문장 넘어가기 전 이전 형광펜 하이라이트 즉각 해제
       if (!isLastChunk) {
+        updateTTSState({ currentSentence: null });
+        // Micro-pause between chunks (60ms) for natural human speech rhythm
         await new Promise((resolve) => setTimeout(resolve, 60));
       }
     }

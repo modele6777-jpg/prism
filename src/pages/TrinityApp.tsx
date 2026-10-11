@@ -108,6 +108,8 @@ import { TarotSummaryGraphicCard } from "@/components/trinity/TarotSummaryGraphi
 import { TodayTarotShareButton } from "@/components/trinity/TodayTarotShareModal";
 import { TarotCardZoomModal } from "@/components/trinity/TarotCardZoomModal";
 import { TarotFlippingCard } from "@/components/trinity/TarotFlippingCard";
+import { FollowUpTarotTimeline, FollowUpTarotEntry } from "@/components/trinity/FollowUpTarotTimeline";
+import { FollowUpTarotInputBar } from "@/components/trinity/FollowUpTarotInputBar";
 import { triggerTarotScreenVibration } from "@/utils/tarotEffects";
 import { TarotCard, TAROT_DECK, getTarotCardImageUrl } from "@/data/tarotData";
 import { shuffleCardDeck } from "@/lib/cardShuffle";
@@ -1300,6 +1302,10 @@ function playDailyCardChimeAsync() {
   const resetTarotSession = useCallback((preserveDailyIfUnfinished = true) => {
     setDrawnCards(null);
     setTarotResult(null);
+    setFollowUpEntries([]);
+    try {
+      localStorage.removeItem('trinity_followup_tarot_entries');
+    } catch (_) {}
     setTarotSubMessages([]);
     setTarotVirtualMode(false);
     setSmartTarotQuestions([]);
@@ -1458,6 +1464,25 @@ function playDailyCardChimeAsync() {
   const [tarotVirtualMode, setTarotVirtualMode] = useState(false);
   const [tarotResult, setTarotResult] = useState<string | null>(null);
   const [drawnCards, setDrawnCards] = useState<TarotCard[] | null>(null);
+
+  // 🔮 타로 연속 추가 질문 & 잔여 덱 관리 상태 (이미 뽑힌 카드는 제외하고 남은 덱으로만 진행)
+  const [followUpEntries, setFollowUpEntries] = useState<FollowUpTarotEntry[]>(() => {
+    try {
+      const saved = typeof window !== 'undefined' ? localStorage.getItem('trinity_followup_tarot_entries') : null;
+      if (saved) return JSON.parse(saved);
+    } catch (_) {}
+    return [];
+  });
+  const [isFollowUpGenerating, setIsFollowUpGenerating] = useState(false);
+  const [showFollowUpWheelModal, setShowFollowUpWheelModal] = useState(false);
+  const [pendingFollowUpQuestion, setPendingFollowUpQuestion] = useState('');
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('trinity_followup_tarot_entries', JSON.stringify(followUpEntries));
+    } catch (_) {}
+  }, [followUpEntries]);
+
   const [zoomedCard, setZoomedCard] = useState<{ card: TarotCard; slotName?: string } | null>(null);
   const [cardFlipCycle, setCardFlipCycle] = useState(0);
   const [hideTarotPopup, setHideTarotPopup] = useState(false);
@@ -1535,6 +1560,20 @@ function playDailyCardChimeAsync() {
   const tarotSpreadRecommendation = tarotConcernAnalysis.spread;
   const isAutoRecommended = !customSpread;
   const [isTarotGenerating, setIsTarotGenerating] = useState(false);
+
+  // 🌟 잔여 덱 (No Duplicate Draws): 기존에 뽑힌 모든 카드(초기 스프레드 + 데일리 + 이전 추가 질문)를 78장 덱에서 완전히 제외
+  const drawnCardIds = useMemo(() => {
+    const ids = new Set<string>();
+    (drawnCards || []).forEach((c) => ids.add(c.id));
+    if (dailyResult?.drawnCard) ids.add(dailyResult.drawnCard.id);
+    if (dailyDrawnCard) ids.add(dailyDrawnCard.id);
+    followUpEntries.forEach((entry) => ids.add(entry.card.id));
+    return Array.from(ids);
+  }, [drawnCards, dailyResult, dailyDrawnCard, followUpEntries]);
+
+  const remainingDeck = useMemo(() => {
+    return TAROT_DECK.filter((card) => !drawnCardIds.includes(card.id));
+  }, [drawnCardIds]);
 
   // Auto concise 3-bullet summary for tarot readings (항상 명확한 3개 불릿 보장)
   const conciseSummaryBullets = useMemo(() => {
@@ -2744,6 +2783,115 @@ ${tailoredGuide.promptTemplate}${binaryChoicePromptAddon}${spreadPromptAddon}${c
     }
   };
 
+  // 🔮 타로 연속 추가 질문 & 잔여 덱 심층 리딩 실행 엔진
+  const executeFollowUpReading = async (
+    questionText: string,
+    chosenCard: TarotCard,
+    isReversed: boolean,
+  ) => {
+    const newEntryId = `fu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    const newEntry: FollowUpTarotEntry = {
+      id: newEntryId,
+      question: questionText,
+      card: chosenCard,
+      reversed: isReversed,
+      reading: '',
+      isGenerating: true,
+      createdAt: Date.now(),
+    };
+    setFollowUpEntries((prev) => [...prev, newEntry]);
+    setIsFollowUpGenerating(true);
+
+    try {
+      const profile = sharedState?.userProfile || getPersistentUserProfile();
+      const profileContext = profile ? `\n\n${buildDeepSynapseContext(profile)}` : '';
+
+      const previousQAHistory = followUpEntries
+        .map(
+          (e, idx) =>
+            `[추가 질문 #${idx + 1}] "${e.question}"\n[뽑힌 카드] ${e.card.nameKo} (${e.reversed ? '역방향' : '정방향'})\n[해설] ${e.reading.slice(0, 300)}`,
+        )
+        .join('\n\n');
+
+      const messagesForLLM = [
+        {
+          role: 'system',
+          content: `당신은 78장 타로 마스터 '트리니티'입니다. 질문자가 초기 리딩에 이어 78장 덱 중 이미 뽑힌 카드를 제외하고 남은 덱에서 새 카드를 추가로 뽑아 연속 질문을 던졌습니다.
+
+[답변 규정]
+1. 모호한 미사여구나 불필요한 장설, 뜬구름 잡는 우주적 추상주의는 완전히 지양하십시오.
+2. 질문자가 던진 구체적인 질문에 대하여, 새로 뽑힌 추가 카드의 상징과 정/역방향 에너지를 직관적으로 관통하여 날카롭고 똑부러지게 답변하십시오.
+3. 최초 질문 및 초기 리딩의 맥락을 완벽히 계승하되 중복 설명을 피하고, 이번 질문에 대한 즉각적이고 실천 가능한 현실적 해결책과 행동 지침을 제시하십시오.
+4. 한국어로 품격 있고 신뢰감 넘치는 마스터의 어조를 유지하십시오.${profileContext}`,
+        },
+        {
+          role: 'user',
+          content: `[최초 고민] "${tarotConcern}"
+[초기 선택 카드] ${(drawnCards || []).map((c) => `${c.nameKo}(${c.reversed ? '역방향' : '정방향'})`).join(', ')}
+[초기 리딩 요약] ${tarotResult ? tarotResult.slice(0, 500) : ''}
+${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` : ''}
+[새로 뽑힌 추가 카드] ${chosenCard.nameKo} (${chosenCard.name}) - ${isReversed ? '역방향' : '정방향'} / 키워드: ${chosenCard.keywords.join(', ')}
+[이번 추가 질문] "${questionText}"`,
+        },
+      ];
+
+      let currentText = '';
+      await invokeLLMStream({
+        messages: messagesForLLM as any,
+        onChunk: (chunk) => {
+          currentText += chunk;
+          setFollowUpEntries((prev) =>
+            prev.map((e) => (e.id === newEntryId ? { ...e, reading: currentText } : e)),
+          );
+        },
+      });
+
+      setFollowUpEntries((prev) =>
+        prev.map((e) =>
+          e.id === newEntryId ? { ...e, reading: currentText, isGenerating: false } : e,
+        ),
+      );
+      playAudioHaptic('card_draw');
+    } catch (err: any) {
+      setNotice({
+        open: true,
+        title: '추가 리딩 오류',
+        message: err?.message || '추가 리딩을 생성하는 중 오류가 발생했습니다.',
+      });
+      setFollowUpEntries((prev) =>
+        prev.map((e) =>
+          e.id === newEntryId
+            ? { ...e, reading: '해설을 불러오지 못했습니다. 다시 시도해 주세요.', isGenerating: false }
+            : e,
+        ),
+      );
+    } finally {
+      setIsFollowUpGenerating(false);
+    }
+  };
+
+  const handleDirectFollowUpDraw = (questionText: string) => {
+    setPendingFollowUpQuestion(questionText);
+    setShowFollowUpWheelModal(true);
+  };
+
+  const handleAutoFollowUpDraw = (questionText: string) => {
+    if (remainingDeck.length === 0) return;
+    const randomIndex = Math.floor(Math.random() * remainingDeck.length);
+    const chosenCard = remainingDeck[randomIndex];
+    const isReversed = Math.random() < 0.35;
+    playAudioHaptic('card_draw');
+    executeFollowUpReading(questionText, chosenCard, isReversed);
+  };
+
+  const handleFollowUpWheelComplete = (selected: any[]) => {
+    setShowFollowUpWheelModal(false);
+    if (!selected || selected.length === 0) return;
+    const card = selected[0];
+    const reversed = !!card.reversed;
+    executeFollowUpReading(pendingFollowUpQuestion, card, reversed);
+  };
+
   const handleDailySubChatSubmit = async () => {
     if (!dailyChatInput.trim() || isDailySubChatGenerating) return;
 
@@ -3659,6 +3807,26 @@ ${tailoredGuide.promptTemplate}${binaryChoicePromptAddon}${spreadPromptAddon}${c
                                               </p>
                                             </div>
                                           )}
+
+                                          {/* 🔮 연속 추가 질문 및 잔여 덱 심층 리딩 타임라인 영역 (직접 뽑기/자동 뽑기 선택 & 잔여 덱만 사용) */}
+                                          {tarotResult && !isTarotGenerating && (
+                                            <div className="mt-8 pt-6 border-t border-amber-500/20 space-y-6">
+                                              <FollowUpTarotTimeline
+                                                entries={followUpEntries}
+                                                onZoomCard={(data) => setZoomedCard({ card: data.card, slotName: data.slotName })}
+                                              />
+                                              <FollowUpTarotInputBar
+                                                remainingCount={remainingDeck.length}
+                                                totalCount={TAROT_DECK.length}
+                                                drawnCount={drawnCardIds.length}
+                                                initialConcern={tarotConcern}
+                                                drawnCards={drawnCards || []}
+                                                isGenerating={isFollowUpGenerating}
+                                                onDirectDraw={handleDirectFollowUpDraw}
+                                                onAutoDraw={handleAutoFollowUpDraw}
+                                              />
+                                            </div>
+                                          )}
                                         {isTarotGenerating && (
                                           <p className="text-[10px] text-yellow-400/60 uppercase tracking-widest animate-pulse text-center">
                                             리딩 수신 중...
@@ -4330,6 +4498,23 @@ ${tailoredGuide.promptTemplate}${binaryChoicePromptAddon}${spreadPromptAddon}${c
           handleUnifiedReading("tarot", { selectedCards: cards });
         }}
       />
+
+      {/* 🎡 잔여 덱 전용 360도 무결점 타로 휠 수동 선택 모달 */}
+      {showFollowUpWheelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-2 sm:p-4">
+          <div className="relative w-full max-w-5xl h-[88vh] rounded-3xl bg-slate-950/95 border border-amber-500/40 shadow-2xl overflow-hidden flex flex-col">
+            <TarotSpread
+              deckSource={remainingDeck}
+              maxCards={1}
+              concern={pendingFollowUpQuestion}
+              spreadName={`추가 질문 #${followUpEntries.length + 1} 카드 선택`}
+              spreadReason={`기존에 뽑힌 ${drawnCardIds.length}장을 제외한 ${remainingDeck.length}장의 잔여 덱에서 1장을 직접 고릅니다.`}
+              onComplete={handleFollowUpWheelComplete}
+              onCancel={() => setShowFollowUpWheelModal(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

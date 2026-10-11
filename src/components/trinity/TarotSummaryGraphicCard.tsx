@@ -14,6 +14,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { playSuccessHaptic } from '@/lib/audioHaptics';
+import { TTSHighlightedText } from '@/components/common/TTSHighlightedText';
 
 export interface TarotSummaryGraphicCardProps {
   bullets: string[];
@@ -256,7 +257,7 @@ export function TarotSummaryGraphicCard({
                 </div>
 
                 <p className="text-xs sm:text-sm text-white/95 leading-relaxed font-sans font-medium break-keep">
-                  {row.content}
+                  <TTSHighlightedText text={row.content} />
                 </p>
               </div>
             </div>

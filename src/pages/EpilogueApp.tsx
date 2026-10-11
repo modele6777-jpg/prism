@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'wouter';
 import {
@@ -138,12 +138,14 @@ function InputField({
   label,
   value,
   onChange,
+  onBlur,
   type = 'text',
   placeholder,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
+  onBlur?: () => void;
   type?: string;
   placeholder?: string;
 }) {
@@ -156,6 +158,7 @@ function InputField({
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
         placeholder={placeholder}
         className="w-full px-4 py-3.5 rounded-2xl text-sm text-white/95 placeholder-white/20 outline-none transition-all duration-200 bg-white/[0.03] backdrop-blur-md border border-white/10 focus:border-purple-400/60 focus:bg-white/[0.06] focus:shadow-[0_0_20px_rgba(192,132,252,0.15)]"
       />
@@ -390,6 +393,46 @@ export default function EpilogueApp() {
       window.removeEventListener('prism:feature_updated', handleProfileUpdate);
     };
   }, [sharedState?.userProfile]);
+
+  // 실시간 디바운스 자동 저장 (입력 중 1.0초 유휴 시 무소음 자동 동기화)
+  const isInitialMount = useRef(true);
+  const debounceTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    if (debounceTimerRef.current) {
+      window.clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = window.setTimeout(() => {
+      handleSave(true);
+    }, 1000);
+    return () => {
+      if (debounceTimerRef.current) {
+        window.clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [basic, fate, music, psych, art]);
+
+  // 페이지 이탈 또는 백그라운드 전환 시 즉시 저장 플러시
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      handleSave(true);
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        handleSave(true);
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [basic, fate, music, psych, art]);
 
   const handleSave = async (silent = false) => {
     if (!silent) setSaving(true);
@@ -789,6 +832,42 @@ export default function EpilogueApp() {
             </p>
           </div>
         </div>
+      </motion.div>
+
+      {/* Top Right Cloud Sync Status Indicator */}
+      <motion.div
+        initial={{ y: -8, opacity: 0.88 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+        className="fixed top-safe-2 right-2 sm:right-4 md:top-safe-4 md:right-6 pointer-events-auto z-[110] flex items-center gap-2"
+      >
+        <button
+          type="button"
+          onClick={() => {
+            if (activeMode !== 'profile') {
+              setActiveMode('profile');
+              setCurrentSection(0);
+            } else {
+              handleSyncDevices();
+            }
+          }}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-sans font-bold backdrop-blur-xl border transition-all cursor-pointer shadow-lg active:scale-95 ${
+            firebaseUser
+              ? 'bg-emerald-500/10 border-emerald-400/30 text-emerald-300 hover:bg-emerald-500/20'
+              : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'
+          }`}
+          title={firebaseUser ? `${firebaseUser.displayName || '구글 사용자'} 계정으로 실시간 동기화 중 (클릭 시 즉시 동기화)` : '게스트 모드 (클릭하여 계정 연동 및 설정)'}
+        >
+          <span
+            className={`w-2 h-2 rounded-full ${
+              firebaseUser
+                ? 'bg-emerald-400 animate-pulse ring-2 ring-emerald-400/40'
+                : 'bg-amber-400 ring-2 ring-amber-400/40'
+            }`}
+          />
+          <span className="hidden sm:inline">{firebaseUser ? (syncingDevices ? '동기화 중...' : '클라우드 동기화') : '게스트 (동기화 설정)'}</span>
+          <span className="sm:hidden">{firebaseUser ? (syncingDevices ? '동기화...' : '동기화됨') : '게스트'}</span>
+        </button>
       </motion.div>
 
       {/* Navigation Subnav Menu (Diary & Synergy & Profile Sections) */}

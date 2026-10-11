@@ -2,15 +2,12 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { motion } from 'motion/react';
 import { StructuredDataRenderer } from './StructuredDataRenderer';
+import { useTTSState } from '@/utils/tts';
+import { highlightSentencesInChildren } from './common/TTSHighlightedText';
 
 import remarkGfm from 'remark-gfm';
 
-const markdownComponents: any = {
-  p: ({ children }: any) => (
-    <p className="mb-4">
-      {children}
-    </p>
-  ),
+const baseMarkdownComponents: any = {
   input({ type, checked, disabled, ...props }: any) {
     if (type === 'checkbox') {
       return (
@@ -210,9 +207,54 @@ export function Streamdown({
   const isTyping = displayedText.length > 0 && displayedText.length < textContent.length;
   const textWithCursor = isTyping ? displayedText + ' ▍' : displayedText;
 
+  // Dynamic TTS sentence tracking
+  const { isSpeaking, activeText, currentSentence } = useTTSState();
+  const activeTarget = isSpeaking ? (currentSentence || activeText) : null;
+
+  const components = useMemo(() => {
+    return {
+      ...baseMarkdownComponents,
+      p: ({ children }: any) => (
+        <p className="mb-4">
+          {highlightSentencesInChildren(children, activeTarget)}
+        </p>
+      ),
+      li: ({ children }: any) => (
+        <li className="mb-1 text-white/80">
+          {highlightSentencesInChildren(children, activeTarget)}
+        </li>
+      ),
+      blockquote: ({ children }: any) => (
+        <blockquote className="border-l-4 border-yellow-500/50 pl-4 py-1 my-3 bg-white/[0.03] rounded-r-lg italic">
+          {highlightSentencesInChildren(children, activeTarget)}
+        </blockquote>
+      ),
+      h1: ({ children }: any) => (
+        <h1 className="text-white font-bold text-2xl mb-4">
+          {highlightSentencesInChildren(children, activeTarget)}
+        </h1>
+      ),
+      h2: ({ children }: any) => (
+        <h2 className="text-white font-bold text-xl mb-3">
+          {highlightSentencesInChildren(children, activeTarget)}
+        </h2>
+      ),
+      h3: ({ children }: any) => (
+        <h3 className="text-white font-bold text-lg mb-2">
+          {highlightSentencesInChildren(children, activeTarget)}
+        </h3>
+      ),
+      h4: ({ children }: any) => (
+        <h4 className="text-white font-bold text-base mb-2">
+          {highlightSentencesInChildren(children, activeTarget)}
+        </h4>
+      ),
+    };
+  }, [activeTarget]);
+
   return (
     <div className="streamdown-container font-sans text-white/90 prose prose-invert max-w-none prose-p:leading-relaxed prose-p:mb-4 [&_h1]:text-white [&_h1]:font-bold [&_h1]:text-2xl [&_h1]:mb-4 [&_h2]:text-white [&_h2]:font-bold [&_h2]:text-xl [&_h2]:mb-3 [&_h3]:text-white [&_h3]:font-bold [&_h3]:text-lg [&_h3]:mb-2 [&_h4]:text-white [&_h4]:font-bold [&_h4]:text-base [&_h4]:mb-2 [&_strong]:text-blue-100 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-4 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-4 [&_li]:mb-1 [&_li]:text-white/80 [&_p]:mb-4 [&_p]:text-white/90">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
         {textWithCursor}
       </ReactMarkdown>
     </div>

@@ -118,33 +118,42 @@ const DeckWheelCard = React.memo(
     isHovered = false,
     cardBackId,
   }: DeckWheelCardProps) {
-    // Cards distributed continuously along the full 360 degree wheel
-    const step = (2 * Math.PI) / totalCards;
+    // 🌟 360도 완벽하게 이어지는 무결점 원형 휠 + 화면 밖(하단 6시 방향) 위상 반전을 통한 이중 가림 전무 렌더링:
+    // 1. notch 없이 360도(2 * PI) 전 구간에 카드를 빈틈없이 균등 분할(step = 2 * PI / totalCards)하여 완벽한 폐곡선 원형을 형성합니다.
+    // 2. 물리적 폐곡선에서 필연적으로 발생하는 위상 반전점(심, seam)을 사용자의 시야에서 완전히 벗어난 화면 밖 하단(+90도)에 고정하여,
+    //    화면에 노출되는 모든 카드는 단 하나의 방향으로만 단정하게 겹쳐지는 순차 셔터 캐스케이드(좌->우 균일 겹침)를 가집니다.
+    // 3. 3D 면 교차로 인한 이미지 깨짐·절단 아티팩트를 방지하기 위해 평면(tiltDeg = 0)으로 정렬하여 카드 일러스트와 원본 화질을 100% 온전하게 보존합니다.
+    const step = (2 * Math.PI) / Math.max(1, totalCards);
     const localAngle = positionIdx * step + offset.angleOffset;
-    const isSeamCard = positionIdx === 0;
-    // Seam card (card 0) gets a subtle 5px radial lift so its crest and borders remain gracefully visible without being smothered
-    const liftAmount = isHovered ? (isMobile ? 10 : 16) : (isSeamCard ? (isMobile ? 3 : 5) : 0);
+    const liftAmount = isHovered ? (isMobile ? 14 : 24) : 0;
     const finalRadius = radius + offset.radOffset + liftAmount;
     const cardRotate = (localAngle * 180) / Math.PI + 90;
     const x = Math.round(finalRadius * Math.cos(localAngle) * 10) / 10;
     const y = Math.round(finalRadius * Math.sin(localAngle) * 10) / 10;
 
+    // 초기 z-index 계산: 하단 6시 방향(Math.PI / 2)을 심(seam) 기점으로 삼아 화면 상단에 보이는 카드들은 일정한 단방향 캐스케이드를 형성
+    let norm = (localAngle - Math.PI / 2) % (2 * Math.PI);
+    if (norm < 0) norm += 2 * Math.PI;
+    const zIndex = isHovered ? 5000 : 30 + Math.round((norm / (2 * Math.PI)) * 1000);
+
     return (
       <div
         data-card-id={card.id}
+        data-card-local-angle={localAngle}
         className={`absolute left-1/2 top-1/2 w-16 h-28 sm:w-20 sm:h-34 md:w-24 md:h-40 rounded-lg sm:rounded-xl md:rounded-2xl flex items-center justify-center select-none transition-[transform,opacity] duration-200 ease-out overflow-hidden cursor-pointer ${
           isPicked
             ? 'opacity-0 scale-75 pointer-events-none'
             : isHovered
-            ? 'pointer-events-auto border-2 border-amber-300 ring-1 ring-yellow-400/60 shadow-lg shadow-amber-500/25 z-[400] scale-[1.12] bg-zinc-950 tarot-card-border-flicker'
+            ? 'pointer-events-auto border-2 border-amber-300 ring-1 ring-yellow-400/60 shadow-xl shadow-amber-500/30 z-[5000] scale-[1.14] bg-zinc-950 tarot-card-border-flicker'
             : 'pointer-events-auto border border-amber-500/40 shadow-md bg-zinc-950'
         }`}
         style={{
-          transform: `translate3d(-50%, -50%, 0) translate3d(${x}px, ${y}px, 0) rotate(${cardRotate}deg) ${isHovered ? 'translateY(-6px)' : ''}`,
+          transform: `translate3d(-50%, -50%, 0) translate3d(${x}px, ${y}px, 0) rotate(${cardRotate}deg) ${
+            isHovered ? 'translateZ(70px) translateY(-14px)' : 'translateZ(0px)'
+          }`,
           transformOrigin: 'center center',
-          zIndex: isHovered ? 400 : (isSeamCard ? 30 + totalCards + 1 : 30 + positionIdx),
+          zIndex,
           backfaceVisibility: 'hidden',
-          contain: 'layout style paint',
           willChange: isHovered ? 'transform' : 'auto',
         }}
       >
@@ -266,6 +275,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
     [deck, selectedIds],
   );
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
+  const hoveredCardIdRef = useRef<string | null>(null);
   const [wheelReady, setWheelReady] = useState(false);
   const [radius, setRadius] = useState(600);
   const [yOffset, setYOffset] = useState(580);
@@ -314,6 +324,33 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
       rotationRef.current = deg;
       if (wheelLayerRef.current) {
         wheelLayerRef.current.style.transform = buildWheelTransform(deg);
+
+        // 🌟 360도 완벽 연결 원형 + 화면 밖 하단(+90도) 심(seam) 처리를 통한 무결점 단방향 캐스케이드:
+        // 회전 각도(deg)에 따라 각 카드가 화면 상에서 가지는 절대 방사 각도를 실시간 계산하여,
+        // 화면에 노출되는 모든 카드가 완벽히 단방향 순차(좌->우 균일 겹침)로 정렬되도록 z-index를 초고속 직접 동기화합니다.
+        // 이중 가림을 유발하는 위상 반전점은 항상 화면 밖 깊숙한 하단(+90도)에만 머무르므로, 사용자에게는 절대 보이지 않습니다.
+        const cardEls = wheelLayerRef.current.children;
+        const len = cardEls.length;
+        const rotRad = (deg * Math.PI) / 180;
+        const hoveredId = hoveredCardIdRef.current;
+
+        for (let i = 0; i < len; i++) {
+          const el = cardEls[i] as HTMLElement;
+          const cardId = el.getAttribute?.('data-card-id');
+          if (!cardId) continue;
+          if (cardId === hoveredId) {
+            el.style.zIndex = '5000';
+            continue;
+          }
+          const localAngleStr = el.getAttribute('data-card-local-angle');
+          if (!localAngleStr) continue;
+          const localAngle = parseFloat(localAngleStr);
+          const screenAngleRad = localAngle + rotRad;
+          let norm = (screenAngleRad - Math.PI / 2) % (2 * Math.PI);
+          if (norm < 0) norm += 2 * Math.PI;
+          const z = 30 + Math.round((norm / (2 * Math.PI)) * 1000);
+          el.style.zIndex = String(z);
+        }
       }
     },
     [buildWheelTransform],
@@ -390,12 +427,13 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
     };
   }, [stopMomentum]);
 
-  // Synchronize initial wheel position
+  // Synchronize initial wheel position and update on hovered card or active cards change
   useEffect(() => {
+    hoveredCardIdRef.current = hoveredCardId;
     if (wheelReady) {
       applyRotation(rotationRef.current);
     }
-  }, [wheelReady, applyRotation]);
+  }, [wheelReady, hoveredCardId, activeWheelCards, applyRotation]);
 
   // Handle ESC key to cancel/close the card spread window
   useEffect(() => {
@@ -523,13 +561,13 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
       const currentRelativeAngle = pointerAngle - rotationRad;
 
       const total = activeWheelCards.length || TOTAL_WHEEL_SLOTS;
-      const step = (2 * Math.PI) / total;
+      const step = (2 * Math.PI) / Math.max(1, total);
 
       // Normalize currentRelativeAngle to [0, 2*PI)
       let norm = currentRelativeAngle % (2 * Math.PI);
       if (norm < 0) norm += 2 * Math.PI;
 
-      const centerIdx = Math.round(norm / step) % total;
+      const centerIdx = Math.min(total - 1, Math.max(0, Math.round(norm / step)));
 
       // Check centerIdx and nearby neighbors (-3 to +3)
       const candidateIndices = [
@@ -843,7 +881,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
       <div
         ref={containerRef}
         className="flex-1 w-full relative flex items-center justify-center overflow-hidden touch-none select-none cursor-grab active:cursor-grabbing overscroll-none"
-        style={{ touchAction: 'none', overscrollBehavior: 'none' }}
+        style={{ touchAction: 'none', overscrollBehavior: 'none', perspective: '1400px' }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -862,6 +900,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
             transform: buildWheelTransform(0),
             willChange: 'transform',
             transformOrigin: 'center center',
+            transformStyle: 'preserve-3d',
             opacity: wheelReady ? 1 : 0,
           }}
         >

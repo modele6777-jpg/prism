@@ -257,9 +257,13 @@ export function EpilogueDiaryView() {
 
     window.addEventListener('prism:feature_updated', handleFeatureUpdate);
     window.addEventListener('prism:state_changed', handleFeatureUpdate);
+    window.addEventListener('epilogue:diary_synced', handleFeatureUpdate);
+    window.addEventListener('luckey:diary_synced', handleFeatureUpdate);
     return () => {
       window.removeEventListener('prism:feature_updated', handleFeatureUpdate);
       window.removeEventListener('prism:state_changed', handleFeatureUpdate);
+      window.removeEventListener('epilogue:diary_synced', handleFeatureUpdate);
+      window.removeEventListener('luckey:diary_synced', handleFeatureUpdate);
     };
   }, [sharedState?.epilogueHistory]);
 
