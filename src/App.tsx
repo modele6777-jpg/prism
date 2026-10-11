@@ -84,6 +84,7 @@ const ROUTES_MAP = [
   { path: "/epilogue", Component: EpilogueApp },
   { path: "/library", Component: LibraryPage },
   { path: "/profile", Component: EpilogueApp },
+  { path: "/chronicle", Component: EpilogueApp },
   { path: "/handbook", Component: HandbookStandalonePage },
   { path: "/rebible", Component: HandbookStandalonePage },
   { path: "/chat", Component: LucyStandalonePage },
@@ -118,6 +119,7 @@ function ActivePage({ loc }: { loc: string }) {
         <Route path="/epilogue"><EpilogueApp /></Route>
         <Route path="/library"><LibraryPage /></Route>
         <Route path="/profile"><EpilogueApp /></Route>
+        <Route path="/chronicle"><EpilogueApp /></Route>
         <Route path="/handbook"><HandbookStandalonePage /></Route>
         <Route path="/rebible"><HandbookStandalonePage /></Route>
         <Route path="/chat"><LucyStandalonePage /></Route>

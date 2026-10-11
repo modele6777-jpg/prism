@@ -176,12 +176,14 @@ export default function EpilogueApp() {
         return tab;
       }
     }
-    return location === '/profile' ? 'profile' : 'diary';
+    return location === '/profile' ? 'profile' : (location === '/chronicle' ? 'synergy' : 'diary');
   });
 
   useEffect(() => {
     if (location === '/profile') {
       setActiveMode('profile');
+    } else if (location === '/chronicle') {
+      setActiveMode('synergy');
     }
   }, [location]);
 
@@ -202,7 +204,7 @@ export default function EpilogueApp() {
     const handleNavClick = (e: Event) => {
       const customEvent = e as CustomEvent;
       const path = customEvent.detail?.path || '';
-      if (path.startsWith('/epilogue') || path.startsWith('/profile')) {
+      if (path.startsWith('/epilogue') || path.startsWith('/profile') || path.startsWith('/chronicle')) {
         let tab = customEvent.detail?.tab;
         if (!tab && path.includes('?')) {
           try {
@@ -216,6 +218,8 @@ export default function EpilogueApp() {
           setActiveMode('diary');
         } else if (path === '/profile') {
           setActiveMode('profile');
+        } else if (path === '/chronicle') {
+          setActiveMode('synergy');
         }
       }
     };
@@ -780,8 +784,8 @@ export default function EpilogueApp() {
       >
         {[
           { id: 'diary', icon: BookOpen, label: 'Diary' },
-          { id: 'profile', icon: User, label: 'Profile' },
           { id: 'synergy', icon: Sparkles, label: 'CHRONICLE' },
+          { id: 'profile', icon: User, label: 'Profile' },
         ].map((item) => {
           const isActive = activeMode === item.id;
           const Icon = item.icon;
