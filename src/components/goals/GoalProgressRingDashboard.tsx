@@ -161,13 +161,26 @@ function ConcentricProgressRings({
   highlightedGoalId?: string | null;
   onRingClick?: (goalId: string) => void;
 }) {
-  const size = 220;
+  const size = 236;
   const center = size / 2;
-  const baseStrokeWidth = 8;
-  const ringGap = 13;
+  
+  // Support up to 6 goals dynamically for the concentric rings
+  const maxRings = 6;
+  const activeGoals = goals.slice(0, maxRings);
+  const ringCount = Math.max(1, activeGoals.length);
 
-  // Use top 4 goals for the concentric rings to maintain visual balance
-  const activeGoals = goals.slice(0, 4);
+  // Dynamic stroke & gap based on goal count
+  const strokeWidth = ringCount <= 3 ? 9 : ringCount === 4 ? 8 : ringCount === 5 ? 7 : 6;
+  const ringGap = ringCount <= 3 ? 15 : ringCount === 4 ? 13 : ringCount === 5 ? 11 : 9.5;
+
+  const highlightedGoal = goals.find((g) => g.id === highlightedGoalId);
+  const highlightedIndex = highlightedGoal ? activeGoals.findIndex((g) => g.id === highlightedGoal.id) : -1;
+
+  const totalGoals = goals.length;
+  const completedGoalsCount = goals.filter((g) => g.current >= g.target).length;
+  const averageProgress = totalGoals > 0
+    ? Math.round(goals.reduce((acc, g) => acc + Math.min(100, (g.current / g.target) * 100), 0) / totalGoals)
+    : 0;
 
   return (
     <div className="relative flex items-center justify-center select-none">
@@ -175,7 +188,7 @@ function ConcentricProgressRings({
         width={size}
         height={size}
         viewBox={`0 0 ${size} ${size}`}
-        className="transform -rotate-90 filter drop-shadow-[0_0_20px_rgba(0,0,0,0.5)]"
+        className="transform -rotate-90 filter drop-shadow-[0_0_20px_rgba(0,0,0,0.5)] cursor-pointer"
       >
         <defs>
           {activeGoals.map((goal) => {
@@ -197,6 +210,7 @@ function ConcentricProgressRings({
           const percent = Math.min(100, Math.max(0, (goal.current / goal.target) * 100));
           const strokeDashoffset = circumference - (percent / 100) * circumference;
           const isHighlighted = highlightedGoalId === goal.id;
+          const isAnyHighlighted = Boolean(highlightedGoalId);
           const isCompleted = percent >= 100;
 
           return (
@@ -205,17 +219,18 @@ function ConcentricProgressRings({
               className="cursor-pointer transition-opacity duration-300"
               onClick={() => onRingClick && onRingClick(goal.id)}
             >
-              {/* Background Track - always clean and visible */}
+              {/* Background Track */}
               <circle
                 cx={center}
                 cy={center}
                 r={radius}
                 fill="none"
-                stroke="rgba(255, 255, 255, 0.07)"
-                strokeWidth={baseStrokeWidth}
+                stroke={isHighlighted ? `${goal.colorStart}35` : "rgba(255, 255, 255, 0.07)"}
+                strokeWidth={strokeWidth}
+                className="transition-colors duration-200"
               />
 
-              {/* Progress Foreground Track - ONLY rendered when user has actual progress */}
+              {/* Progress Foreground Track */}
               {percent > 0 && (
                 <motion.circle
                   cx={center}
@@ -223,19 +238,18 @@ function ConcentricProgressRings({
                   r={radius}
                   fill="none"
                   stroke={`url(#ring-grad-${goal.id})`}
-                  strokeWidth={isHighlighted ? baseStrokeWidth + 2 : baseStrokeWidth}
+                  strokeWidth={isHighlighted ? strokeWidth + 2.5 : strokeWidth}
                   strokeLinecap="round"
                   strokeDasharray={`${circumference} ${circumference}`}
-                  strokeDashoffset={strokeDashoffset}
-                  initial={{ strokeDashoffset: circumference }}
+                  initial={false}
                   animate={{ strokeDashoffset }}
-                  transition={{ duration: 1.35, ease: [0.16, 1, 0.3, 1], delay: index * 0.08 }}
+                  transition={{ duration: 1.0, ease: [0.16, 1, 0.3, 1] }}
+                  opacity={isAnyHighlighted && !isHighlighted ? 0.35 : 1}
                   style={{
-                    strokeDashoffset: `${strokeDashoffset}px`,
                     filter: isCompleted
                       ? `drop-shadow(0 0 6px ${goal.glowColor}) drop-shadow(0 0 14px ${goal.glowColor}90)`
                       : isHighlighted
-                      ? `drop-shadow(0 0 8px ${goal.glowColor}) drop-shadow(0 0 16px ${goal.glowColor}80)`
+                      ? `drop-shadow(0 0 8px ${goal.glowColor}) drop-shadow(0 0 16px ${goal.glowColor}95)`
                       : `drop-shadow(0 0 4px ${goal.glowColor}55) drop-shadow(0 0 10px ${goal.glowColor}30)`,
                   }}
                 />
@@ -245,22 +259,84 @@ function ConcentricProgressRings({
         })}
       </svg>
 
-      {/* Center Core HUD */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center p-4">
-        <Target size={20} className="text-amber-300/80 mb-0.5 animate-pulse" />
-        <span className="text-[10px] text-white/40 font-mono uppercase tracking-widest leading-none">
-          OVERALL
-        </span>
-        <span className="text-2xl font-bold font-mono tracking-tight text-white mt-0.5">
-          {Math.round(
-            goals.length > 0
-              ? goals.reduce((acc, g) => acc + Math.min(100, (g.current / g.target) * 100), 0) / goals.length
-              : 0
-          )}%
-        </span>
-        <span className="text-[9px] text-white/50 font-sans mt-0.5">
-          {goals.filter(g => g.current >= g.target).length}/{goals.length} 달성
-        </span>
+      {/* Dynamic Synchronized Center Core HUD */}
+      <div 
+        className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 cursor-pointer"
+        onClick={() => {
+          if (highlightedGoalId && onRingClick) {
+            onRingClick(highlightedGoalId);
+          }
+        }}
+      >
+        <AnimatePresence mode="wait">
+          {highlightedGoal ? (
+            <motion.div
+              key={highlightedGoal.id}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.18 }}
+              className="flex flex-col items-center justify-center pointer-events-none max-w-[125px]"
+            >
+              <div className="flex items-center gap-1 mb-0.5">
+                <span className="text-[10px] text-white/50 font-mono font-bold">
+                  {highlightedIndex >= 0 ? `링 ${highlightedIndex + 1}` : '목표'}
+                </span>
+                <span className="text-[10px]">{CATEGORY_META[highlightedGoal.category]?.icon || '✨'}</span>
+              </div>
+              
+              <span className="text-[11px] font-bold text-white/95 truncate w-full px-1 mb-0.5 leading-tight">
+                {highlightedGoal.title}
+              </span>
+
+              <span 
+                className="text-2xl font-black font-mono tracking-tight"
+                style={{ color: highlightedGoal.colorStart }}
+              >
+                {Math.round(Math.min(100, (highlightedGoal.current / highlightedGoal.target) * 100))}%
+              </span>
+
+              <span className="text-[10px] font-mono text-white/90 font-bold mt-0.5">
+                {highlightedGoal.current} / {highlightedGoal.target} {highlightedGoal.unit}
+              </span>
+
+              <div className="mt-1">
+                {highlightedGoal.current >= highlightedGoal.target ? (
+                  <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 rounded-full flex items-center gap-0.5">
+                    <Check size={9} /> 완수
+                  </span>
+                ) : (
+                  <span className="text-[9px] text-amber-300/90 font-mono font-medium">
+                    {Math.max(0, highlightedGoal.target - highlightedGoal.current)}{highlightedGoal.unit} 남음
+                  </span>
+                )}
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="overall-hud"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.18 }}
+              className="flex flex-col items-center justify-center pointer-events-none"
+            >
+              <Target size={18} className="text-amber-300/80 mb-0.5 animate-pulse" />
+              <span className="text-[9px] text-white/40 font-mono uppercase tracking-widest leading-none">
+                OVERALL
+              </span>
+              <span className="text-2xl font-bold font-mono tracking-tight text-white mt-0.5">
+                {averageProgress}%
+              </span>
+              <span className="text-[10px] text-white/60 font-medium mt-0.5">
+                {completedGoalsCount}/{totalGoals} 달성 완료
+              </span>
+              <span className="text-[8px] text-white/35 mt-1 font-sans">
+                링/카드 터치 시 상세
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
@@ -325,12 +401,10 @@ function SingleProgressRing({
             strokeWidth={strokeWidth}
             strokeLinecap="round"
             strokeDasharray={`${circumference} ${circumference}`}
-            strokeDashoffset={strokeDashoffset}
-            initial={{ strokeDashoffset: circumference }}
+            initial={false}
             animate={{ strokeDashoffset }}
-            transition={{ duration: 1.05, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
             style={{
-              strokeDashoffset: `${strokeDashoffset}px`,
               filter: isCompleted
                 ? `drop-shadow(0 0 6px ${glowColor}) drop-shadow(0 0 12px ${glowColor}80)`
                 : `drop-shadow(0 0 4px ${glowColor}50) drop-shadow(0 0 8px ${glowColor}25)`,
@@ -646,33 +720,72 @@ export function GoalProgressRingDashboard() {
               onRingClick={(id) => setHighlightedGoalId(id === highlightedGoalId ? null : id)}
             />
 
-            <div className="mt-4 text-center space-y-1">
-              <p className="text-xs text-white/70 font-medium">
-                {isAllAchieved 
-                  ? '오늘의 모든 목표를 완벽하게 달성했습니다! 멋진 하루입니다.' 
-                  : `평균 목표 달성률 ${averageProgress}% · 작은 실행이 큰 변화를 만듭니다.`}
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-2 pt-2 text-[10px] text-white/40 font-mono">
-                {goals.slice(0, 4).map((g) => {
-                  const isDone = g.current >= g.target;
+            <div className="mt-4 w-full space-y-2">
+              <div className="flex items-center justify-between text-xs px-1 text-white/60 font-medium">
+                <span className="flex items-center gap-1">
+                  <span>목표 링별 상세 수치</span>
+                  <span className="text-[10px] text-white/40">({Math.min(goals.length, 6)}개 링 동기화)</span>
+                </span>
+                <span className="font-mono text-[11px] text-amber-300/80">
+                  평균 {averageProgress}% · {completedGoalsCount}/{totalGoals} 완료
+                </span>
+              </div>
+
+              {/* Synchronized Legend List with exact numbers and percentages */}
+              <div className="grid grid-cols-1 gap-1.5 w-full pt-1">
+                {goals.slice(0, 6).map((g, idx) => {
+                  const percent = Math.min(100, Math.max(0, (g.current / g.target) * 100));
+                  const isDone = percent >= 100;
+                  const isSelected = highlightedGoalId === g.id;
+
                   return (
-                    <div 
-                      key={g.id} 
-                      className={`flex items-center gap-1.5 px-2 py-1 rounded-lg cursor-pointer transition-all ${
-                        highlightedGoalId === g.id ? 'bg-white/15 text-white' : 'hover:bg-white/5'
+                    <div
+                      key={g.id}
+                      onClick={() => setHighlightedGoalId(isSelected ? null : g.id)}
+                      onMouseEnter={() => setHighlightedGoalId(g.id)}
+                      onMouseLeave={() => setHighlightedGoalId(null)}
+                      className={`flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer text-xs transition-all border ${
+                        isSelected
+                          ? 'bg-white/15 border-white/30 shadow-md text-white scale-[1.01]'
+                          : 'bg-white/[0.03] hover:bg-white/[0.07] border-white/5 text-white/75'
                       }`}
-                      onClick={() => setHighlightedGoalId(highlightedGoalId === g.id ? null : g.id)}
+                      title={`${g.title} (${g.current}/${g.target}${g.unit})`}
                     >
-                      <span 
-                        className="w-2 h-2 rounded-full shrink-0" 
-                        style={{ backgroundColor: g.colorStart }} 
-                      />
-                      <span className="truncate max-w-[100px]">{g.title}</span>
-                      {isDone && <Check size={10} className="text-emerald-400" />}
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm"
+                          style={{ backgroundColor: g.colorStart }}
+                        />
+                        <span className="text-[10px] font-mono text-white/40 shrink-0 font-bold">
+                          링 {idx + 1}
+                        </span>
+                        <span className="truncate max-w-[120px] font-medium text-left">
+                          {g.title}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0 font-mono text-[11px]">
+                        <span className={isDone ? 'text-emerald-400 font-bold' : 'text-white/80'}>
+                          {g.current}/{g.target}{g.unit}
+                        </span>
+                        <span
+                          className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
+                            isDone
+                              ? 'bg-emerald-500/20 text-emerald-300'
+                              : 'bg-white/10 text-white/90'
+                          }`}
+                        >
+                          {Math.round(percent)}%
+                        </span>
+                        {isDone && <Check size={12} className="text-emerald-400 shrink-0" />}
+                      </div>
                     </div>
                   );
                 })}
               </div>
+
+              <p className="text-[10px] text-white/40 text-center pt-1 font-sans">
+                💡 링이나 목표를 터치하면 중앙 HUD에 실시간 상세 수치가 표시됩니다.
+              </p>
             </div>
           </div>
 
@@ -704,14 +817,17 @@ export function GoalProgressRingDashboard() {
                   <motion.div
                     key={goal.id}
                     layout
+                    onClick={() => setHighlightedGoalId(isSelected ? null : goal.id)}
                     onMouseEnter={() => setHighlightedGoalId(goal.id)}
                     onMouseLeave={() => setHighlightedGoalId(null)}
-                    className={`p-4 rounded-[22px] border transition-all duration-300 flex items-center justify-between gap-4 ${
+                    className={`p-4 rounded-[22px] border transition-all duration-300 flex items-center justify-between gap-4 cursor-pointer select-none ${
                       isDone
-                        ? 'bg-emerald-950/10 border-emerald-500/30'
+                        ? isSelected
+                          ? 'bg-emerald-950/25 border-emerald-400/80 shadow-[0_0_15px_rgba(16,185,129,0.3)] scale-[1.01]'
+                          : 'bg-emerald-950/10 border-emerald-500/30 hover:bg-emerald-950/20'
                         : isSelected
-                        ? 'bg-white/[0.08] border-indigo-400/50 shadow-lg scale-[1.01]'
-                        : 'bg-white/[0.03] hover:bg-white/[0.05] border-white/10'
+                        ? 'bg-white/[0.09] border-indigo-400/60 shadow-[0_0_15px_rgba(99,102,241,0.25)] scale-[1.01]'
+                        : 'bg-white/[0.03] hover:bg-white/[0.06] border-white/10'
                     }`}
                   >
                     {/* Ring Indicator */}
@@ -744,6 +860,9 @@ export function GoalProgressRingDashboard() {
                         <span className="text-xs font-mono font-bold text-white/80">
                           {goal.current} <span className="text-white/40 font-normal">/ {goal.target} {goal.unit}</span>
                         </span>
+                        <span className="text-xs font-mono font-bold text-indigo-300/90">
+                          ({Math.round(percent)}%)
+                        </span>
                         {isDone && (
                           <span className="text-[10px] text-emerald-400 font-bold font-sans">
                             ✓ 완수
@@ -753,11 +872,14 @@ export function GoalProgressRingDashboard() {
                     </div>
 
                     {/* Stepper & Action Controls */}
-                    <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
                       {/* Decrement Button */}
                       <button
                         type="button"
-                        onClick={() => handleDecrement(goal.id, step)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDecrement(goal.id, step);
+                        }}
                         disabled={goal.current <= 0}
                         className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 disabled:opacity-30 disabled:pointer-events-none text-white/70 hover:text-white flex items-center justify-center font-mono font-bold text-xs transition-all cursor-pointer"
                         title={`-${step} ${goal.unit}`}
@@ -768,7 +890,10 @@ export function GoalProgressRingDashboard() {
                       {/* Increment Button */}
                       <button
                         type="button"
-                        onClick={() => handleIncrement(goal.id, step)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleIncrement(goal.id, step);
+                        }}
                         className="w-8 h-8 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 active:scale-95 border border-indigo-400/30 text-indigo-200 hover:text-white flex items-center justify-center font-mono font-bold text-xs transition-all cursor-pointer"
                         title={`+${step} ${goal.unit}`}
                       >
@@ -778,7 +903,10 @@ export function GoalProgressRingDashboard() {
                       {/* Quick Complete / Reset Checkmark */}
                       <button
                         type="button"
-                        onClick={() => handleToggleComplete(goal.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleComplete(goal.id);
+                        }}
                         className={`w-8 h-8 rounded-xl flex items-center justify-center border transition-all cursor-pointer ${
                           isDone
                             ? 'bg-emerald-500 border-emerald-400 text-white shadow-[0_0_10px_rgba(16,185,129,0.4)]'
@@ -792,7 +920,10 @@ export function GoalProgressRingDashboard() {
                       {/* Delete */}
                       <button
                         type="button"
-                        onClick={() => handleDeleteGoal(goal.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteGoal(goal.id);
+                        }}
                         className="w-7 h-7 rounded-lg text-white/30 hover:text-rose-400 hover:bg-white/5 flex items-center justify-center transition-colors cursor-pointer"
                         title="목표 삭제"
                       >
