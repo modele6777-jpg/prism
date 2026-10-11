@@ -1410,7 +1410,7 @@ export function generateSajuMasterConsultation(saju: SajuAnalysisResult, questio
 
 2026년 병오년은 천간과 지지가 강렬한 불꽃(화)으로 공명하는 역동적인 대전환의 해입니다. 내담자님의 사주 원국과 맞물리는 2026년의 핵심 테마는 바로 **'${annual.theme}'**입니다.
 
-• **핵심 전환점과 기회**: ${annual.advice}
+• **핵심 전환점과 기회**: ${annual.keyOpportunity}
 • **잠재력의 발현**: 내담자님의 ${dayMaster.symbolName} 본원이 품고 있던 숨은 잠재력과 전문성이 세상 밖으로 드러나는 시기입니다. 마음속으로 오래 구상해 온 프로젝트나 결단을 과감하게 실행에 옮길 최적기입니다.
 • **성공을 위한 개운 행동**: 용신 에너지인 **${yongsin.name}**을 중심에 두고 일관된 페이스를 유지하신다면, 2026년은 인생의 중대한 도약을 이루는 뜻깊은 결실의 해가 될 것입니다.`;
   }

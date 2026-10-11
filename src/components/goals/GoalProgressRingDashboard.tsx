@@ -34,8 +34,9 @@ export interface UserGoal {
   createdAt: string;
 }
 
-const STORAGE_KEY = 'luckey_user_goals_v1';
-const STORAGE_DATE_KEY = 'luckey_user_goals_date_v1';
+const STORAGE_KEY = 'luckey_user_goals_v2';
+const STORAGE_DATE_KEY = 'luckey_user_goals_date_v2';
+const LEGACY_STORAGE_KEYS = ['luckey_user_goals_v1', 'luckey_user_goals_date_v1'];
 
 // 한국 및 사용자 로컬 시간대 기준 YYYY-MM-DD
 const getTodayKey = () => {
@@ -204,7 +205,7 @@ function ConcentricProgressRings({
               className="cursor-pointer transition-opacity duration-300"
               onClick={() => onRingClick && onRingClick(goal.id)}
             >
-              {/* Background Track */}
+              {/* Background Track - always clean and visible */}
               <circle
                 cx={center}
                 cy={center}
@@ -214,27 +215,31 @@ function ConcentricProgressRings({
                 strokeWidth={baseStrokeWidth}
               />
 
-              {/* Progress Foreground Track */}
-              <motion.circle
-                cx={center}
-                cy={center}
-                r={radius}
-                fill="none"
-                stroke={`url(#ring-grad-${goal.id})`}
-                strokeWidth={isHighlighted ? baseStrokeWidth + 2 : baseStrokeWidth}
-                strokeLinecap="round"
-                strokeDasharray={circumference}
-                initial={{ strokeDashoffset: circumference }}
-                animate={{ strokeDashoffset }}
-                transition={{ duration: 1.35, ease: [0.16, 1, 0.3, 1], delay: index * 0.08 }}
-                style={{
-                  filter: isCompleted
-                    ? `drop-shadow(0 0 6px ${goal.glowColor}) drop-shadow(0 0 14px ${goal.glowColor}90)`
-                    : isHighlighted
-                    ? `drop-shadow(0 0 8px ${goal.glowColor}) drop-shadow(0 0 16px ${goal.glowColor}80)`
-                    : `drop-shadow(0 0 4px ${goal.glowColor}55) drop-shadow(0 0 10px ${goal.glowColor}30)`,
-                }}
-              />
+              {/* Progress Foreground Track - ONLY rendered when user has actual progress */}
+              {percent > 0 && (
+                <motion.circle
+                  cx={center}
+                  cy={center}
+                  r={radius}
+                  fill="none"
+                  stroke={`url(#ring-grad-${goal.id})`}
+                  strokeWidth={isHighlighted ? baseStrokeWidth + 2 : baseStrokeWidth}
+                  strokeLinecap="round"
+                  strokeDasharray={`${circumference} ${circumference}`}
+                  strokeDashoffset={strokeDashoffset}
+                  initial={{ strokeDashoffset: circumference }}
+                  animate={{ strokeDashoffset }}
+                  transition={{ duration: 1.35, ease: [0.16, 1, 0.3, 1], delay: index * 0.08 }}
+                  style={{
+                    strokeDashoffset: `${strokeDashoffset}px`,
+                    filter: isCompleted
+                      ? `drop-shadow(0 0 6px ${goal.glowColor}) drop-shadow(0 0 14px ${goal.glowColor}90)`
+                      : isHighlighted
+                      ? `drop-shadow(0 0 8px ${goal.glowColor}) drop-shadow(0 0 16px ${goal.glowColor}80)`
+                      : `drop-shadow(0 0 4px ${goal.glowColor}55) drop-shadow(0 0 10px ${goal.glowColor}30)`,
+                  }}
+                />
+              )}
             </g>
           );
         })}
@@ -309,25 +314,29 @@ function SingleProgressRing({
           strokeWidth={strokeWidth}
         />
 
-        {/* Animated Progress */}
-        <motion.circle
-          cx={center}
-          cy={center}
-          r={radius}
-          fill="none"
-          stroke={`url(#${gradId})`}
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          initial={{ strokeDashoffset: circumference }}
-          animate={{ strokeDashoffset }}
-          transition={{ duration: 1.05, ease: [0.16, 1, 0.3, 1] }}
-          style={{
-            filter: isCompleted
-              ? `drop-shadow(0 0 6px ${glowColor}) drop-shadow(0 0 12px ${glowColor}80)`
-              : `drop-shadow(0 0 4px ${glowColor}50) drop-shadow(0 0 8px ${glowColor}25)`,
-          }}
-        />
+        {/* Animated Progress - ONLY rendered when user has actual progress */}
+        {percent > 0 && (
+          <motion.circle
+            cx={center}
+            cy={center}
+            r={radius}
+            fill="none"
+            stroke={`url(#${gradId})`}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            strokeDasharray={`${circumference} ${circumference}`}
+            strokeDashoffset={strokeDashoffset}
+            initial={{ strokeDashoffset: circumference }}
+            animate={{ strokeDashoffset }}
+            transition={{ duration: 1.05, ease: [0.16, 1, 0.3, 1] }}
+            style={{
+              strokeDashoffset: `${strokeDashoffset}px`,
+              filter: isCompleted
+                ? `drop-shadow(0 0 6px ${glowColor}) drop-shadow(0 0 12px ${glowColor}80)`
+                : `drop-shadow(0 0 4px ${glowColor}50) drop-shadow(0 0 8px ${glowColor}25)`,
+            }}
+          />
+        )}
       </svg>
 
       <div className="absolute inset-0 flex items-center justify-center text-center">
@@ -348,24 +357,58 @@ export function GoalProgressRingDashboard() {
     if (typeof window === 'undefined') return DEFAULT_GOALS;
     const today = getTodayKey();
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      const savedDate = localStorage.getItem(STORAGE_DATE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
+      // 1. Check v2 storage
+      const savedV2 = localStorage.getItem(STORAGE_KEY);
+      const savedDateV2 = localStorage.getItem(STORAGE_DATE_KEY);
+      if (savedV2) {
+        const parsed = JSON.parse(savedV2);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          if (!savedDate) {
+          // If stored on a previous date, reset daily current progress to 0
+          if (savedDateV2 !== today) {
+            const cleanGoals = parsed.map((g: UserGoal) => ({
+              ...g,
+              current: 0,
+              completedAt: undefined,
+            }));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanGoals));
             localStorage.setItem(STORAGE_DATE_KEY, today);
+            return cleanGoals;
           }
           return parsed;
         }
       }
-      // 최초 실행 시 기본 목표를 로컬 스토리지에 확정 저장하여 새로고침 시 초기화 방지
+
+      // 2. Migration from legacy v1 storage: unconditionally reset current to 0
+      const legacySaved = localStorage.getItem('luckey_user_goals_v1');
+      if (legacySaved) {
+        try {
+          const legacyParsed = JSON.parse(legacySaved);
+          if (Array.isArray(legacyParsed) && legacyParsed.length > 0) {
+            const migratedGoals = legacyParsed.map((g: UserGoal) => ({
+              ...g,
+              current: 0,
+              completedAt: undefined,
+              streakDays: 0,
+            }));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(migratedGoals));
+            localStorage.setItem(STORAGE_DATE_KEY, today);
+            LEGACY_STORAGE_KEYS.forEach((k) => localStorage.removeItem(k));
+            return migratedGoals;
+          }
+        } catch (_) {}
+      }
+
+      // Clean up legacy keys
+      LEGACY_STORAGE_KEYS.forEach((k) => localStorage.removeItem(k));
+
+      // 3. Fallback to fresh DEFAULT_GOALS with 0 progress
       localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_GOALS));
       localStorage.setItem(STORAGE_DATE_KEY, today);
+      return DEFAULT_GOALS;
     } catch (e) {
       console.warn('Failed to parse saved user goals:', e);
+      return DEFAULT_GOALS;
     }
-    return DEFAULT_GOALS;
   });
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -389,7 +432,7 @@ export function GoalProgressRingDashboard() {
     }
   }, []);
 
-  // Multi-tab listener & safe persistence sync (창 포커스 시 임의 초기화 방지)
+  // Multi-tab listener & daily midnight/focus/visibility reset listener
   useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
       if (e.key === STORAGE_KEY && e.newValue) {
@@ -404,11 +447,32 @@ export function GoalProgressRingDashboard() {
       if (Array.isArray(detail) && detail.length > 0) setGoals(detail);
     };
 
+    const checkDailyReset = () => {
+      const today = getTodayKey();
+      const savedDate = localStorage.getItem(STORAGE_DATE_KEY);
+      if (savedDate && savedDate !== today) {
+        setGoals((prev) => {
+          const reset = prev.map((g) => ({
+            ...g,
+            current: 0,
+            completedAt: undefined,
+          }));
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(reset));
+          localStorage.setItem(STORAGE_DATE_KEY, today);
+          return reset;
+        });
+      }
+    };
+
     window.addEventListener('storage', handleStorage);
     window.addEventListener('luckey-goals-sync', handleCustomSync);
+    window.addEventListener('focus', checkDailyReset);
+    window.addEventListener('visibilitychange', checkDailyReset);
     return () => {
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('luckey-goals-sync', handleCustomSync);
+      window.removeEventListener('focus', checkDailyReset);
+      window.removeEventListener('visibilitychange', checkDailyReset);
     };
   }, []);
 
@@ -435,9 +499,11 @@ export function GoalProgressRingDashboard() {
     saveGoals(
       goals.map((g) => {
         if (g.id === id) {
+          const nextVal = Math.max(0, g.current - step);
           return {
             ...g,
-            current: Math.max(0, g.current - step),
+            current: nextVal,
+            completedAt: nextVal < g.target ? undefined : g.completedAt,
           };
         }
         return g;
@@ -454,6 +520,7 @@ export function GoalProgressRingDashboard() {
             ...g,
             current: isDone ? 0 : g.target,
             completedAt: isDone ? undefined : new Date().toISOString(),
+            streakDays: isDone ? Math.max(0, g.streakDays - 1) : g.streakDays + 1,
           };
         }
         return g;
@@ -466,7 +533,7 @@ export function GoalProgressRingDashboard() {
   };
 
   const handleResetDefaults = () => {
-    if (window.confirm('기본 추천 목표 세트로 초기화하시겠습니까?')) {
+    if (window.confirm('기본 추천 목표 세트로 초기화하시겠습니까? (진행도는 0으로 초기화됩니다)')) {
       saveGoals(DEFAULT_GOALS);
     }
   };
@@ -486,7 +553,7 @@ export function GoalProgressRingDashboard() {
       colorStart: meta.defaultColorStart,
       colorEnd: meta.defaultColorEnd,
       glowColor: meta.glow,
-      streakDays: 1,
+      streakDays: 0,
       createdAt: new Date().toISOString(),
     };
 
