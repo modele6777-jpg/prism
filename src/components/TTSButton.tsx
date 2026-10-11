@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Volume2, VolumeX, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { normalizeTextForSpeech, playTTS, playTTSInChunks, stopTTS, subscribeTTS, prefetchTTS } from '../utils/tts';
+import { normalizeTextForSpeech, playTTS, playTTSInChunks, splitSpeechIntoChunks, stopTTS, subscribeTTS, prefetchTTS } from '../utils/tts';
 
 interface TTSButtonProps {
   text: string;
@@ -59,9 +59,10 @@ export const TTSButton: React.FC<TTSButtonProps> = ({ text, voice = 'Kore', clas
       console.warn('[TTSButton] onPlay/onClick error:', e);
     }
 
-    // If the text is long (e.g. Tarot results, comprehensive guide, multi-sentence reading),
-    // stream smoothly in chunked sentences to prevent browser cutoffs, skips, and API timeouts.
-    if (cleanText.length > 130 || cleanText.includes('\n')) {
+    // If text contains multiple sentences, stream sequentially sentence-by-sentence
+    // for seamless real-time sentence highlighting and zero audio cutoffs.
+    const sentences = splitSpeechIntoChunks(cleanText);
+    if (sentences.length > 1) {
       playTTSInChunks(cleanText, voice, 140, emotion);
     } else {
       playTTS(cleanText, voice, false, emotion);

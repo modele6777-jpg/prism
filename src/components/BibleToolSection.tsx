@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { TTSHighlightText } from '@/utils/ttsHighlight';
 
 export interface BibleToolSectionProps {
   title: string;
@@ -38,7 +39,9 @@ export const BibleToolSection: React.FC<BibleToolSectionProps> = ({ title, subti
             {principles.map((p, i) => (
               <div key={i} className="flex items-start gap-3 sm:gap-4 text-sm sm:text-base md:text-lg text-white/90 leading-relaxed font-sans break-keep break-words">
                 <div className={cn("w-2 h-2 rounded-full mt-2 shrink-0 opacity-80", bgColor)} />
-                <span className="flex-1 min-w-0">{p}</span>
+                <span className="flex-1 min-w-0">
+                  <TTSHighlightText text={p} />
+                </span>
               </div>
             ))}
           </div>

@@ -13,10 +13,25 @@ export function setTTSSessionActive(title: string, artist: string = 'PRISM'): vo
         { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
       ],
     });
-    // 🎵 외부 음악(Spotify, Apple Music 등)과 동시 청취 가능하도록 독점 playbackState 선점을 배제
+    // 백그라운드 재생 지속(화면 꺼짐 및 타 앱 전환 시 오디오 유지)을 위한 공식 playbackState 선언
+    navigator.mediaSession.playbackState = 'playing';
   } catch {
     // MediaMetadata unsupported on some browsers
   }
+}
+
+export function pauseTTSSession(): void {
+  if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
+  try {
+    navigator.mediaSession.playbackState = 'paused';
+  } catch {}
+}
+
+export function resumeTTSSession(): void {
+  if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
+  try {
+    navigator.mediaSession.playbackState = 'playing';
+  } catch {}
 }
 
 export function clearTTSSession(): void {
@@ -30,7 +45,11 @@ export function clearTTSSession(): void {
   }
 }
 
-export function initTTSSessionHandlers(onStop: () => void): void {
+export function initTTSSessionHandlers(
+  onStop: () => void,
+  onPause?: () => void,
+  onResume?: () => void
+): void {
   if (handlersBound || typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
   handlersBound = true;
 
@@ -43,9 +62,6 @@ export function initTTSSessionHandlers(onStop: () => void): void {
   };
 
   bind('stop', onStop);
-  bind('pause', onStop);
-
-  bind('play', () => {
-    // resume handled by visibility lifecycle; no-op here
-  });
-}
+  bind('pause', onPause || onStop);
+  bind('play', onResume || null);
+}

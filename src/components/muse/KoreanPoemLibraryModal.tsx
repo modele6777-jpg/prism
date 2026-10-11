@@ -21,6 +21,7 @@ import {
 } from "@/lib/koreanFamousPoems";
 import { buildPoemGoogleAiSearchUrl, buildPoemGoogleArtsAndCultureSearchUrl } from "@/utils/artSearchQuery";
 import { TTSButton } from "@/components/TTSButton";
+import { TTSHighlightText } from "@/utils/ttsHighlight";
 
 interface KoreanPoemLibraryModalProps {
   isOpen: boolean;
@@ -263,7 +264,7 @@ export const KoreanPoemLibraryModal: React.FC<KoreanPoemLibraryModalProps> = ({
                   {/* Poem Excerpt Full Card */}
                   <div className="p-6 rounded-3xl bg-zinc-950/80 border-l-4 border-emerald-400 border border-white/5 shadow-xl">
                     <p className="text-base md:text-lg text-zinc-100 font-serif whitespace-pre-line leading-relaxed italic">
-                      "{activePoem.excerpt}"
+                      &ldquo;<TTSHighlightText text={activePoem.excerpt} />&rdquo;
                     </p>
                   </div>
 

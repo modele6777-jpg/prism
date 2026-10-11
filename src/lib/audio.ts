@@ -523,7 +523,9 @@ function startTTSKeepAlive() {
       ttsKeepAliveEl.loop = true;
       ttsKeepAliveEl.volume = 0.001;
       ttsKeepAliveEl.setAttribute('playsinline', 'true');
+      ttsKeepAliveEl.setAttribute('webkit-playsinline', 'true');
     }
+    configurePlaybackAudioSession();
     if (ttsKeepAliveEl.paused) {
       ttsKeepAliveEl.play().catch(() => {});
     }
@@ -550,6 +552,14 @@ export function configureAmbientAudioSession(): void {
   }
 }
 
+export function configurePlaybackAudioSession(): void {
+  if (typeof navigator !== 'undefined' && 'audioSession' in navigator) {
+    try {
+      (navigator as any).audioSession.type = 'playback';
+    } catch (_) {}
+  }
+}
+
 export function getTTSAudioElement(): HTMLAudioElement {
   if (typeof window === 'undefined') {
     throw new Error('HTMLAudioElement is only available in the browser');
@@ -561,7 +571,7 @@ export function getTTSAudioElement(): HTMLAudioElement {
     ttsAudioEl.setAttribute('webkit-playsinline', 'true');
     ttsAudioEl.setAttribute('x-webkit-airplay', 'allow');
   }
-  configureAmbientAudioSession();
+  configurePlaybackAudioSession();
   return ttsAudioEl;
 }
 
@@ -682,6 +692,7 @@ export function stopTTSAudio(): void {
       // ignore
     }
   }
+  configureAmbientAudioSession();
 }
 
 /** Stops both HTML5 TTS playback and legacy Web Audio TTS sources. */
@@ -900,8 +911,8 @@ export async function playTTSAudio(
     throw new Error('TTS playback is only available in the browser');
   }
 
-  // Pre-wake shared WebAudio context on all devices & ensure ambient mixing with external music
-  configureAmbientAudioSession();
+  // Pre-wake shared WebAudio context on all devices & ensure playback session for background audio continuity
+  configurePlaybackAudioSession();
   try {
     const audioCtx = getSharedAudioContext();
     if (audioCtx.state === 'suspended') {

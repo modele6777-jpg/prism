@@ -4,6 +4,7 @@ import remarkGfm from 'remark-gfm';
 import { Download, Maximize2, X, ExternalLink, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { isMobileDevice, isPerfReduced } from '@/lib/perfMode';
+import { useTTSCurrentSentence, renderWithSentenceHighlight } from '@/utils/ttsHighlight';
 
 interface LucyProTypewriterProps {
   content: string;
@@ -216,6 +217,25 @@ export function LucyProTypewriter({
     return content.slice(0, displayedLength);
   }, [content, displayedLength, shouldAnimate]);
 
+  const { isSpeaking, activeSentence, activeFullText } = useTTSCurrentSentence();
+
+  const isCurrentlyRead = useMemo(() => {
+    if (!isSpeaking || !activeSentence) return false;
+    if (content.includes(activeSentence)) return true;
+    if (activeFullText) {
+      const cleanContent = content.replace(/[.!?。！？\s]/g, '');
+      const cleanFull = activeFullText.replace(/[.!?。！？\s]/g, '');
+      if (cleanFull.includes(cleanContent) || cleanContent.includes(cleanFull)) {
+        return true;
+      }
+    }
+    const cleanContent = content.replace(/[.!?。！？\s]/g, '');
+    const cleanSentence = activeSentence.replace(/[.!?。！？\s]/g, '');
+    return cleanContent.includes(cleanSentence);
+  }, [isSpeaking, activeSentence, activeFullText, content]);
+
+  const targetSentence = isCurrentlyRead ? activeSentence : null;
+
   const isTyping = isGenerating || (shouldAnimate && displayedLength < content.length);
 
   return (
@@ -225,9 +245,18 @@ export function LucyProTypewriter({
         components={{
           p: ({ node, children, ...props }) => (
             <div className="mb-2.5 last:mb-0 leading-relaxed font-sans" {...props}>
-              {children}
+              {renderWithSentenceHighlight(children, targetSentence, true)}
             </div>
           ),
+          li: ({ node, children, ...props }) => (
+            <li className="mb-1" {...props}>
+              {renderWithSentenceHighlight(children, targetSentence, true)}
+            </li>
+          ),
+          h1: ({ children }) => <h1 className="text-slate-900 font-bold text-lg mb-2">{renderWithSentenceHighlight(children, targetSentence, true)}</h1>,
+          h2: ({ children }) => <h2 className="text-slate-900 font-bold text-base mb-2">{renderWithSentenceHighlight(children, targetSentence, true)}</h2>,
+          h3: ({ children }) => <h3 className="text-slate-900 font-semibold text-sm mb-1.5">{renderWithSentenceHighlight(children, targetSentence, true)}</h3>,
+          blockquote: ({ children }) => <blockquote className="border-l-4 border-amber-400 pl-3 italic text-slate-600 my-2">{renderWithSentenceHighlight(children, targetSentence, true)}</blockquote>,
           img: ({ node, ...props }) => (
             <LucyProImageItem src={props.src} alt={props.alt} />
           ),

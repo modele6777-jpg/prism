@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Streamdown } from '@/components/Streamdown';
 import { playTTSInChunks, stopTTS, useTTSActive, useTTSState } from '@/utils/tts';
+import { TTSHighlightText } from '@/utils/ttsHighlight';
 import {
   buildTarotNarrationContent,
   type TarotNarrationChapter,
@@ -432,7 +433,7 @@ export function TodayTarotNarrationModal({
                 </div>
                 {narrationData.rawBlessing && (
                   <p className="text-xs text-stone-300 font-sans italic leading-relaxed">
-                    &quot;{narrationData.rawBlessing}&quot;
+                    &quot;<TTSHighlightText text={narrationData.rawBlessing} />&quot;
                   </p>
                 )}
               </div>

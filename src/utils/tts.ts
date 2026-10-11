@@ -13,7 +13,7 @@ import {
   analyzeTextEmotion,
   duckAmbientAudio,
 } from '../lib/audio';
-import { setTTSSessionActive, clearTTSSession, initTTSSessionHandlers } from '../lib/ttsMediaSession';
+import { setTTSSessionActive, clearTTSSession, initTTSSessionHandlers, pauseTTSSession, resumeTTSSession } from '../lib/ttsMediaSession';
 import { acquireScreenWakeLock, releaseScreenWakeLock } from '../lib/wakeLock';
 import { prepareNaturalSpeechText } from './speechText';
 export { prepareNaturalSpeechText };
@@ -139,7 +139,15 @@ export function playNativeBrowserSpeech(
     }
   }
 
-  updateTTSState({ isLoading: false, isSpeaking: true, activeText: cleanText, currentSentence: cleanText });
+  updateTTSState({
+    isLoading: false,
+    isSpeaking: true,
+    activeText: cleanText,
+    currentSentence: cleanText,
+    activeSentence: cleanText,
+    activeSentenceIndex: 0,
+    totalSentences: 1,
+  });
   setTTSSessionActive(cleanText);
 
   // Chrome/iOS keepalive timer
@@ -198,6 +206,9 @@ export interface TTSState {
   activeFullText?: string | null;
   activeSessionId: string | null;
   currentSentence?: string | null;
+  activeSentence?: string | null;
+  activeSentenceIndex?: number;
+  totalSentences?: number;
 }
 
 let ttsState: TTSState = {
@@ -207,6 +218,9 @@ let ttsState: TTSState = {
   activeFullText: null,
   activeSessionId: null,
   currentSentence: null,
+  activeSentence: null,
+  activeSentenceIndex: -1,
+  totalSentences: 0,
 };
 
 type TTSListener = (state: TTSState) => void;
@@ -306,12 +320,13 @@ function ensureTTSLifecycle() {
   if (ttsLifecycleReady || typeof window === 'undefined') return;
   ttsLifecycleReady = true;
   initTTSAudioLifecycle();
-  initTTSSessionHandlers(stopTTS);
+  initTTSSessionHandlers(stopTTS, pauseTTS, resumeTTS);
 }
 
 export const pauseTTS = (): void => {
   updateTTSState({ isSpeaking: false, isLoading: false });
   pauseTTSAudio();
+  pauseTTSSession();
   if (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis.speaking) {
     window.speechSynthesis.pause();
   }
@@ -320,6 +335,7 @@ export const pauseTTS = (): void => {
 export const resumeTTS = (): void => {
   updateTTSState({ isSpeaking: true, isLoading: false });
   resumeTTSAudio();
+  resumeTTSSession();
   if (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis.paused) {
     window.speechSynthesis.resume();
   }
@@ -328,7 +344,17 @@ export const resumeTTS = (): void => {
 export const stopTTS = () => {
   isPlayingSequence = false;
   activeUtterances.clear();
-  updateTTSState({ isSpeaking: false, isLoading: false, activeText: null, activeFullText: null, activeSessionId: null, currentSentence: null });
+  updateTTSState({
+    isSpeaking: false,
+    isLoading: false,
+    activeText: null,
+    activeFullText: null,
+    activeSessionId: null,
+    currentSentence: null,
+    activeSentence: null,
+    activeSentenceIndex: -1,
+    totalSentences: 0,
+  });
   stopTTSPlayback();
   clearTTSSession();
   if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -370,11 +396,31 @@ export const playTTS = async (
       primeTTSAudioElement();
       unlockAudioPlayback();
     } catch (_) {}
-    updateTTSState({ isLoading: true, isSpeaking: false, activeText: cleanText, currentSentence: cleanText, activeFullText: fullTextReference || cleanText, activeSessionId: mySessionId });
+    updateTTSState({
+      isLoading: true,
+      isSpeaking: false,
+      activeText: cleanText,
+      currentSentence: cleanText,
+      activeSentence: cleanText,
+      activeSentenceIndex: 0,
+      totalSentences: 1,
+      activeFullText: fullTextReference || cleanText,
+      activeSessionId: mySessionId,
+    });
   } else {
     // External caller provided a sequenceSessionId directly.
     if (!ttsState.activeSessionId) {
-      updateTTSState({ isLoading: true, isSpeaking: false, activeText: cleanText, currentSentence: cleanText, activeFullText: fullTextReference || cleanText, activeSessionId: mySessionId });
+      updateTTSState({
+        isLoading: true,
+        isSpeaking: false,
+        activeText: cleanText,
+        currentSentence: cleanText,
+        activeSentence: cleanText,
+        activeSentenceIndex: 0,
+        totalSentences: 1,
+        activeFullText: fullTextReference || cleanText,
+        activeSessionId: mySessionId,
+      });
     }
   }
 
@@ -445,6 +491,7 @@ export const playTTS = async (
       isSpeaking: true,
       activeText: cleanText,
       currentSentence: cleanText,
+      activeSentence: cleanText,
       ...(fullTextReference ? { activeFullText: fullTextReference } : {}),
     });
     setTTSSessionActive(cleanText);
@@ -546,50 +593,49 @@ export const playTTS = async (
 };
 
 /**
- * Splits text into optimal, sentence-safe chunks for sequential TTS streaming.
+ * Splits text into optimal, pure sentence chunks for sequential TTS streaming and real-time sentence highlighting.
  */
-export function splitSpeechIntoChunks(text: string, maxChunkLength = 110): string[] {
+export function splitSpeechIntoSentences(text: string): string[] {
   const cleanText = prepareNaturalSpeechText(text);
   if (!cleanText) return [];
 
-  const rawSentences = cleanText.match(/[^.!?。！？\n]+[.!?。！？\n]?/g) || [cleanText];
-  const chunks: string[] = [];
+  // Match sentences ending with ., !, ?, 。, ！, ？, or newline, including trailing quotes
+  const sentenceRegex = /[^.!?。！？\n]+(?:[.!?。！？\n]+["'”’]?|\s*$)/g;
+  const rawSentences = cleanText.match(sentenceRegex) || [cleanText];
+  const sentences: string[] = [];
 
-  for (const sentence of rawSentences) {
-    const s = sentence.trim();
+  for (const raw of rawSentences) {
+    const s = raw.trim();
     if (!s) continue;
+    if (!/[가-힣a-zA-Z0-9]/.test(s)) continue;
 
-    const hasMeaningfulText = /[가-힣a-zA-Z0-9]/.test(s);
-    if (!hasMeaningfulText) {
-      if (chunks.length > 0) {
-        chunks[chunks.length - 1] += ' ' + s;
-      }
-      continue;
-    }
-
-    if (s.length > maxChunkLength) {
-      const clauses = s.match(/[^,，;；]+[,，;；]?/g) || [s];
-      let currentChunk = '';
+    // If an individual sentence is extraordinarily long (>140 chars), split by clauses for natural pacing
+    if (s.length > 140) {
+      const clauseRegex = /[^,，;；\n]+(?:[,，;；\n]+|\s*$)/g;
+      const clauses = s.match(clauseRegex) || [s];
+      let cur = '';
       for (const clause of clauses) {
         const c = clause.trim();
         if (!c) continue;
-        if (currentChunk && currentChunk.length + c.length + 1 > maxChunkLength) {
-          chunks.push(currentChunk.trim());
-          currentChunk = c;
+        if (cur && cur.length + c.length > 120) {
+          sentences.push(cur);
+          cur = c;
         } else {
-          currentChunk = currentChunk ? `${currentChunk} ${c}` : c;
+          cur = cur ? `${cur} ${c}` : c;
         }
       }
-      if (currentChunk.trim()) {
-        chunks.push(currentChunk.trim());
-      }
+
+      if (cur) sentences.push(cur);
     } else {
-      // 🌟 각 문장을 1:1 독립 청크로 분리하여 문장 단위 실시간 형광펜 하이라이트 완벽 동기화
-      chunks.push(s);
+      sentences.push(s);
     }
   }
 
-  return chunks;
+  return sentences.length > 0 ? sentences : [cleanText];
+}
+
+export function splitSpeechIntoChunks(text: string, _maxChunkLength = 110): string[] {
+  return splitSpeechIntoSentences(text);
 }
 
 /**
@@ -680,6 +726,9 @@ export const playTTSInChunks = async (
     isSpeaking: true,
     activeText: chunks[startChunkIndex] || cleanText.slice(0, 50),
     currentSentence: chunks[startChunkIndex] || null,
+    activeSentence: chunks[startChunkIndex] || cleanText.slice(0, 50),
+    activeSentenceIndex: startChunkIndex,
+    totalSentences: chunks.length,
     activeFullText: cleanText,
     activeSessionId: sequenceSessionId,
   });
@@ -708,6 +757,18 @@ export const playTTSInChunks = async (
       if (ttsState.activeSessionId !== sequenceSessionId || !isPlayingSequence) {
         break;
       }
+
+      // Update active sentence and index for real-time highlighting
+      updateTTSState({
+        isLoading: false,
+        isSpeaking: true,
+        activeText: chunks[i],
+        activeSentence: chunks[i],
+        activeSentenceIndex: i,
+        totalSentences: chunks.length,
+        activeFullText: cleanText,
+        activeSessionId: sequenceSessionId,
+      });
 
       // 현재 진행 중인 청크 위치 저장 (중간에 알림으로 끊기더라도 다음 재생 시 여기서부터 이어듣기)
       lastTTSProgress = {
@@ -877,24 +938,21 @@ export const playQAndATTS = async (
         onSpeakerChange('user', { text: cleanQuestion, id: question.id });
       }
 
-      // 질문 텍스트 청크 분할 (보통 1~2개)
-      const qChunks: string[] = [];
-      const qSentences = cleanQuestion.match(/[^.!?。！？\n]+[.!?。！？\n]?/g) || [cleanQuestion];
-      let curQ = '';
-      for (const sent of qSentences) {
-        const s = sent.trim();
-        if (!s) continue;
-        if (curQ && curQ.length + s.length > 150) {
-          qChunks.push(curQ);
-          curQ = s;
-        } else {
-          curQ = curQ ? `${curQ} ${s}` : s;
-        }
-      }
-      if (curQ) qChunks.push(curQ);
+      // 질문 텍스트 문장 단위 분할
+      const qChunks = splitSpeechIntoSentences(cleanQuestion);
 
       for (let i = 0; i < qChunks.length; i++) {
         if (ttsState.activeSessionId !== sequenceSessionId || !isPlayingSequence) break;
+        updateTTSState({
+          isLoading: false,
+          isSpeaking: true,
+          activeText: qChunks[i],
+          activeSentence: qChunks[i],
+          activeSentenceIndex: i,
+          totalSentences: qChunks.length,
+          activeFullText: cleanQuestion,
+          activeSessionId: sequenceSessionId,
+        });
         await playTTS(qChunks[i], userVoice, true, undefined, sequenceSessionId, true, cleanQuestion);
         if (i < qChunks.length - 1) {
           await new Promise((r) => setTimeout(r, 60));
@@ -913,48 +971,7 @@ export const playQAndATTS = async (
         onSpeakerChange('assistant', { text: cleanAnswer, id: answer.id });
       }
 
-      const rawSentences = cleanAnswer.match(/[^.!?。！？\n]+[.!?。！？\n]?/g) || [cleanAnswer];
-      const aChunks: string[] = [];
-      let currentChunk = '';
-      const maxChunkLength = 150;
-
-      for (const sentence of rawSentences) {
-        const s = sentence.trim();
-        if (!s) continue;
-        const hasMeaningfulText = /[가-힣a-zA-Z0-9]/.test(s);
-        if (!hasMeaningfulText) {
-          currentChunk = currentChunk ? `${currentChunk} ${s}` : s;
-          continue;
-        }
-        if (s.length > maxChunkLength) {
-          if (currentChunk.trim()) {
-            aChunks.push(currentChunk.trim());
-            currentChunk = '';
-          }
-          const clauses = s.match(/[^,，;；]+[,，;；]?/g) || [s];
-          for (const clause of clauses) {
-            const c = clause.trim();
-            if (!c) continue;
-            if (currentChunk && (currentChunk.length + c.length + 1 > maxChunkLength)) {
-              aChunks.push(currentChunk.trim());
-              currentChunk = c;
-            } else {
-              currentChunk = currentChunk ? `${currentChunk} ${c}` : c;
-            }
-          }
-          continue;
-        }
-        const next = currentChunk ? `${currentChunk} ${s}` : s;
-        if (currentChunk && next.length > maxChunkLength) {
-          aChunks.push(currentChunk.trim());
-          currentChunk = s;
-        } else {
-          currentChunk = next;
-        }
-      }
-      if (currentChunk.trim()) {
-        aChunks.push(currentChunk.trim());
-      }
+      const aChunks = splitSpeechIntoSentences(cleanAnswer);
 
       // Pre-warm audio and prefetch
       try {
@@ -968,6 +985,16 @@ export const playQAndATTS = async (
 
       for (let i = 0; i < aChunks.length; i++) {
         if (ttsState.activeSessionId !== sequenceSessionId || !isPlayingSequence) break;
+        updateTTSState({
+          isLoading: false,
+          isSpeaking: true,
+          activeText: aChunks[i],
+          activeSentence: aChunks[i],
+          activeSentenceIndex: i,
+          totalSentences: aChunks.length,
+          activeFullText: cleanAnswer,
+          activeSessionId: sequenceSessionId,
+        });
         if (i + 1 < aChunks.length) prefetchTTS(aChunks[i + 1], aiVoice, '다정').catch(() => {});
         if (i + 2 < aChunks.length) prefetchTTS(aChunks[i + 2], aiVoice, '다정').catch(() => {});
 

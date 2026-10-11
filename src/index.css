@@ -1698,4 +1698,23 @@ h1, h2, h3, h4, h5, h6, p, span, label, blockquote {
   will-change: transform;
 }
 
+/* 🌟 Real-time TTS Sentence-by-Sentence Synchronized Glow Highlight */
+@keyframes tts-sentence-pulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.28);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(251, 191, 36, 0.42);
+  }
+}
+
+.tts-active-sentence-highlight {
+  display: inline;
+  border-radius: 4px;
+  animation: tts-sentence-pulse 2.2s ease-in-out infinite;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+
 

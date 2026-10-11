@@ -57,7 +57,6 @@ const baseMarkdownComponents: any = {
     );
   },
 };
-
 function replaceEmotionWithEmoji(text: string): string {
   if (typeof text !== 'string') return text;
   
@@ -128,6 +127,7 @@ export function Streamdown({
     }
     return replaceEmotionWithEmoji(rawText);
   }, [children]);
+
 
   const [displayedText, setDisplayedText] = useState(() => (immediate || typewriterSpeed <= 0 ? textContent : ''));
   
