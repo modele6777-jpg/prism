@@ -126,10 +126,12 @@ export function TrinityDestinyReportView({ onConsult }: TrinityDestinyReportView
     const cleanQ = (question || '').trim();
     let cleanA = (answer || '').trim();
 
-    // 답변 서두의 중복되는 "질문해주신 '...'에 대하여" 접두어를 깔끔하게 정리하여 자연스러운 구어체로 전환
-    cleanA = cleanA.replace(/^질문해주신\s*["'“‘]?[^"'\n”’]+["'”’]?\s*(?:에\s*대하여|에\s*대한|에\s*대해)?\s*,?\s*/i, '');
+    cleanA = cleanA
+      .replace(/^질문해주신\s*["'“‘]?[^"'\n”’]+["'”’]?\s*(?:에\s*대하여|에\s*대한|에\s*대해)?\s*,?\s*/i, '')
+      .replace(/^(?:안녕하세요\s*[,.]?\s*|반갑습니다\s*[,.]?\s*)/i, '')
+      .trim();
 
-    return `질문입니다. ${cleanQ}.\n\n명리 마스터 루시의 조언입니다.\n${cleanA}`;
+    return `${cleanQ}.\n\n루시의 답변입니다.\n${cleanA}`;
   };
 
   // 음성 재생 상태가 끝나면 재생 인덱스 초기화
@@ -276,16 +278,14 @@ export function TrinityDestinyReportView({ onConsult }: TrinityDestinyReportView
     try {
       let answerText = '';
 
-      const systemPrompt = `당신은 대한민국 최고의 정통 사주명리학 대가이자 따뜻하고 직관적인 카운슬러 '루시(Lucy)'입니다.
-다음은 내담자의 정밀 사주 원국과 오행 분석 데이터입니다:
+      const systemPrompt = `당신은 대한민국 최고의 정통 사주명리학 대가이자 직관적인 카운슬러 '루시(Lucy)'입니다.
+내담자의 사주 원국: [일간] ${saju.dayMaster.hanja} (${saju.dayMaster.symbolName}, ${saju.dayMaster.archetypeTitle}) / [오행] 중심 ${saju.elements.dominant.name}, 결핍 ${saju.elements.lacking.name}
 
-${saju.systemPromptSummary}
-
-[명리 AI 마스터 심층 상담실 필수 답변 원칙]:
-1. [질문 최우선 직답]: 내담자가 문의한 구체적 질문("${q}")에 대해 일반론이나 겉도는 인사말을 완전히 생략하고, 반드시 첫 문장부터 해당 질문에 대한 명쾌한 진단과 결론을 직접적으로 제시하세요.
-2. [명리적 근거 명시]: 내담자의 일간 본원([${saju.dayMaster.hanja} ${saju.dayMaster.symbolName}]), 중심 오행(${saju.elements.dominant.name}), 결핍 오행(${saju.elements.lacking.name}), 2026 병오년 흐름(${saju.annual2026.theme}) 중 질문과 직결되는 핵심 요소를 명리적 근거로 명확히 들어 설명하세요.
-3. [구체적 실천 솔루션]: 막연한 덕담 대신, 질문한 고민을 해결하기 위한 실질적이고 구체적인 행동 팁(개운법, 환경 조성, 주의할 점 등)을 불릿 포인트나 명확한 문장으로 제시하세요.
-4. 질문과 무관한 일반론적인 사주 소개나 판에 박힌 상투적 답변은 절대 금지합니다. 단락을 나누어 깔끔하고 신뢰감 있게 답변하세요.`;
+[명리 AI 마스터 심층 상담실 절대 준수 원칙]:
+1. [오직 질문에만 직접 답변]: 내담자가 문의한 구체적 질문("${q}")에 대해서만 즉시 직접 답변하세요.
+2. [묻지 않은 내용 일체 생략]: 질문에서 묻지 않은 사주 원국 설명, 오행 구성 나열, 2026년 세운 해설, 개운 음식/색상/장소 나열 등을 절대 덧붙이지 마세요.
+3. [초간결 2~3문장 엄수]: 인사말("안녕하세요", "질문해주신 ~에 대하여" 등)이나 형식적인 서론, 긴 불릿 포인트 목록 없이, 질문에 대한 명쾌한 결론과 핵심 조언만 공백 포함 2~3문장(최대 150자 내외)으로 명확히 답하세요.
+4. [단도직입적 명쾌함]: 두루뭉술하거나 장황한 덕담을 늘어놓지 말고, 질문한 문제에 대한 명리학적 판단(가능 여부, 유리한 시기, 주의할 점 등)을 시원하게 결론지어 제시하세요.`;
 
       try {
         const reply = await invokeLLM({
@@ -296,7 +296,7 @@ ${saju.systemPromptSummary}
           timeoutMs: 12000,
         });
 
-        const cleanReply = (reply || '').replace(/```/g, '').trim();
+        let cleanReply = (reply || '').replace(/```/g, '').trim();
         const isCannedOrGeneric =
           cleanReply.includes('내담자님의 사주 4주 8자와 오행의 흐름을 비추어 볼 때, 타고난 본원 에너지의 잠재력과 추진력은') ||
           cleanReply.includes('내담자님의 사주 4주 8자와 오행의 흐름을 비추어 볼 때') ||
@@ -304,7 +304,13 @@ ${saju.systemPromptSummary}
           cleanReply.includes('[AI 서비스 안내]') ||
           cleanReply.includes('일시적인 원인으로 인해 응답을 생성하지 못했습니다');
 
-        if (cleanReply && cleanReply.length >= 20 && !isCannedOrGeneric) {
+        // 서두 상투적 접두어 정리
+        cleanReply = cleanReply
+          .replace(/^질문해주신\s*["'“‘]?[^"'\n”’]+["'”’]?\s*(?:에\s*대하여|에\s*대한|에\s*대해)?\s*,?\s*/i, '')
+          .replace(/^(?:안녕하세요\s*[,.]?\s*|반갑습니다\s*[,.]?\s*)/i, '')
+          .trim();
+
+        if (cleanReply && cleanReply.length >= 10 && !isCannedOrGeneric) {
           answerText = cleanReply;
         }
       } catch (llmErr) {
