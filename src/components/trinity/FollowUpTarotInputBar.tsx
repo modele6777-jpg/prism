@@ -23,6 +23,10 @@ export interface FollowUpTarotInputBarProps {
   onDirectDraw: (question: string) => void;
   onAutoDraw: (question: string) => void;
   className?: string;
+  customChips?: string[];
+  placeholder?: string;
+  title?: string;
+  subtitle?: string;
 }
 
 export const FollowUpTarotInputBar: React.FC<FollowUpTarotInputBarProps> = ({
@@ -35,11 +39,18 @@ export const FollowUpTarotInputBar: React.FC<FollowUpTarotInputBarProps> = ({
   onDirectDraw,
   onAutoDraw,
   className = '',
+  customChips,
+  placeholder,
+  title,
+  subtitle,
 }) => {
   const [question, setQuestion] = useState('');
 
   // 💡 Generate context-aware smart recommendation chips
   const recommendedQuestions = useMemo(() => {
+    if (customChips && customChips.length > 0) {
+      return customChips;
+    }
     const concernLower = initialConcern.toLowerCase();
     const isLove = /연애|사랑|남친|여친|이별|재회|썸|마음|그사람|속마음|짝사랑|인연/.test(concernLower);
     const isCareerOrMoney = /이직|취업|사업|금전|돈|시험|합격|승진|직장|투자|계약|회사/.test(concernLower);
@@ -66,7 +77,7 @@ export const FollowUpTarotInputBar: React.FC<FollowUpTarotInputBarProps> = ({
         '에너지의 정체를 뚫고 운을 열어줄 구체적 실천은?',
       ];
     }
-  }, [initialConcern]);
+  }, [initialConcern, customChips]);
 
   const handleChipClick = (chipText: string) => {
     playAudioHaptic('tap_light');
@@ -97,11 +108,11 @@ export const FollowUpTarotInputBar: React.FC<FollowUpTarotInputBarProps> = ({
           </div>
           <div>
             <h4 className="text-sm font-bold text-white tracking-tight flex items-center gap-1.5">
-              <span>추가 질문 & 연속 리딩</span>
+              <span>{title || '추가 질문 & 연속 리딩'}</span>
               <span className="text-[10px] text-amber-400 font-normal">심층 확장</span>
             </h4>
             <p className="text-[11px] text-white/60 font-sans">
-              원하는 질문을 적고 남은 덱에서 카드를 뽑아 리딩을 이어가세요.
+              {subtitle || '원하는 질문을 적고 남은 덱에서 카드를 뽑아 리딩을 이어가세요.'}
             </p>
           </div>
         </div>
@@ -152,7 +163,7 @@ export const FollowUpTarotInputBar: React.FC<FollowUpTarotInputBarProps> = ({
             placeholder={
               isExhausted
                 ? '모든 타로 카드가 소진되었습니다.'
-                : '궁금한 점을 직접 질문하세요 (예: 그 선택의 결과는?, 주의할 점은?)'
+                : (placeholder || '궁금한 점을 직접 질문하세요 (예: 그 선택의 결과는?, 주의할 점은?)')
             }
             className="w-full bg-black/60 border border-white/15 focus:border-amber-400/70 rounded-xl px-3.5 py-2.5 pr-16 text-xs sm:text-sm text-white placeholder-white/35 outline-none transition-all focus:ring-1 focus:ring-amber-400/40 disabled:opacity-40"
           />

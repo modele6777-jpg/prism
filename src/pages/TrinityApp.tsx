@@ -137,6 +137,8 @@ import {
   type OracleDeepInsightSendOpts,
 } from "@/lib/oracleDeepInsight";
 import { DailyOracleLoadingOverlay } from "@/components/DailyOracleLoadingOverlay";
+import { useSmartScroll } from "@/hooks/useSmartScroll";
+import { SmartScrollResumeButton } from "@/components/common/SmartScrollResumeButton";
 
 const EnergyAnalysisSchema = z.object({
   luckScore: z
@@ -1499,6 +1501,17 @@ function playDailyCardChimeAsync() {
   const [isDailySubChatGenerating, setIsDailySubChatGenerating] =
     useState(false);
 
+  // 🧭 메인 전체 화면 스마트 스크롤 엔진 (TTS 하이라이트 문장 뷰포트 중앙 추적 & 3초 수동 스크롤 분리)
+  const {
+    isUserOverriding: isMainUserOverriding,
+    remainingSeconds: mainRemainingSeconds,
+    resumeAutoScroll: resumeMainAutoScroll,
+    hasActiveHighlight: hasMainActiveHighlight,
+  } = useSmartScroll({
+    enabled: !showDailyModal && !showFollowUpWheelModal && !zoomedCard,
+    resumeDelayMs: 3000,
+  });
+
   // 📱 좌우 스와이프 제스처: 다른 앱으로 이탈하지 않고 같은 앱 내에서만 탭 이동 (SAJU <-> TAROT <-> ORACLE)
   const trinitySwipeTabs = useMemo(() => ['destiny', 'tarot', 'oracle'] as const, []);
   const currentTrinityTab = (activeMode === 'oracle' || activeMode === 'synergy')
@@ -2813,6 +2826,12 @@ ${tailoredGuide.promptTemplate}${binaryChoicePromptAddon}${spreadPromptAddon}${c
         )
         .join('\n\n');
 
+      const effectiveConcern = tarotConcern || (dailyResult ? '오늘의 데일리 타로' : '타로 리딩');
+      const effectiveDrawnCards = (drawnCards && drawnCards.length > 0)
+        ? drawnCards
+        : (dailyResult?.drawnCard ? [dailyResult.drawnCard] : (dailyDrawnCard ? [dailyDrawnCard] : []));
+      const effectiveInitialSummary = tarotResult || dailyResult?.diagnosis || dailyResult?.summary || '';
+
       const messagesForLLM = [
         {
           role: 'system',
@@ -2826,9 +2845,9 @@ ${tailoredGuide.promptTemplate}${binaryChoicePromptAddon}${spreadPromptAddon}${c
         },
         {
           role: 'user',
-          content: `[최초 고민] "${tarotConcern}"
-[초기 선택 카드] ${(drawnCards || []).map((c) => `${c.nameKo}(${c.reversed ? '역방향' : '정방향'})`).join(', ')}
-[초기 리딩 요약] ${tarotResult ? tarotResult.slice(0, 500) : ''}
+          content: `[최초 고민] "${effectiveConcern}"
+[초기 선택 카드] ${effectiveDrawnCards.map((c: any) => `${c.nameKo}(${c.reversed ? '역방향' : '정방향'})`).join(', ')}
+[초기 리딩 요약] ${effectiveInitialSummary ? effectiveInitialSummary.slice(0, 500) : ''}
 ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` : ''}
 [새로 뽑힌 추가 카드] ${chosenCard.nameKo} (${chosenCard.name}) - ${isReversed ? '역방향' : '정방향'} / 키워드: ${chosenCard.keywords.join(', ')}
 [이번 추가 질문] "${questionText}"`,
@@ -4501,7 +4520,7 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
 
       {/* 🎡 잔여 덱 전용 360도 무결점 타로 휠 수동 선택 모달 */}
       {showFollowUpWheelModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-2 sm:p-4">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/85 backdrop-blur-md p-2 sm:p-4">
           <div className="relative w-full max-w-5xl h-[88vh] rounded-3xl bg-slate-950/95 border border-amber-500/40 shadow-2xl overflow-hidden flex flex-col">
             <TarotSpread
               deckSource={remainingDeck}
@@ -4515,6 +4534,13 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
           </div>
         </div>
       )}
+      {/* 📍 메인 전체 화면 스마트 스크롤 수동 조작 시 낭독 위치 즉시 복귀 플로팅 버튼 */}
+      <SmartScrollResumeButton
+        isVisible={isMainUserOverriding && isTTSActive && hasMainActiveHighlight}
+        onResume={resumeMainAutoScroll}
+        remainingSeconds={mainRemainingSeconds}
+        fixed
+      />
     </div>
   );
 }

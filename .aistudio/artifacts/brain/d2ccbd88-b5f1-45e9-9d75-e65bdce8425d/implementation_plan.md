@@ -1,99 +1,94 @@
-# TTS 텍스트 감정 분석 기반 동적 음성 톤(pitch & rate) 조절 로직 구현 계획
+# [구현 계획] TTS 하이라이트 스마트스크롤 및 수동 조작 분리 연동 시스템
 
-사용자의 요구사항 및 피드백에 따라, TTS 음성 낭독 시 현재 텍스트의 감정 분석 결과를 기반으로 음성의 톤(pitch: 음높이)과 템포(rate: 속도)를 문장별로 자연스럽고 섬세하게 동적 조절하는 로직을 구현합니다.
-
----
-
-## User Review & Critical Decisions
-
-> [!IMPORTANT]
-> 사용자가 Phase 1 질문에서 확정한 선택 사항을 바탕으로 시스템을 설계합니다.
-
-- **[확정] 톤/속도 조절 강도**: **자연스러운 미세 조절 (속도 0.92~1.06배, 음높이 -2Hz~+2Hz)**
-  - 기계적이거나 과장되지 않고, 실제 전문 성우나 아나운서가 감정 뉘앙스를 살려 낭독하는 수준의 부드럽고 세련된 prosody 제어를 적용합니다.
-  - 슬픔/위로/평온/명상: 속도 0.92~0.96배(rate: `-8%` ~ `-4%`), pitch `-1.5Hz` ~ `-0.8Hz`
-  - 기쁨/환희/활력: 속도 1.04~1.06배(rate: `+4%` ~ `+6%`), pitch `+1.2Hz` ~ `+1.8Hz`
-  - 확신/강조/통찰: 속도 0.98배(rate: `-2%`), pitch `-0.5Hz` (단단하고 묵직한 톤)
-  - 신비/오라클/타로: 속도 0.95배(rate: `-5%`), pitch `+0.5Hz` (몽환적이고 차분한 울림)
-  - 중립/일반: 표준 1.00배(rate: `+0%`), pitch `+0Hz`
-- **[확정] 적용 기준 단위**: **문장별 자동 분석 및 실시간 전환**
-  - 긴 본문이나 타로 리딩, 일일 명상, 시 낭독 시 한 문장마다 독립적으로 감정을 분석하여 문장의 호흡과 감정 곡선에 따라 pitch와 rate를 실시간 전환합니다.
-- **[확정] 감정 우선순위**: **자동 분석 기본 + 명시적 감정 태그/프롬프트 우선**
-  - 명시적 감정 지정(`[EMOTION:...]` 태그 또는 파라미터로 전달된 emotion)이 있을 경우 이를 최우선으로 반영하고, 없는 문장은 키워드 및 문장 기호(! ? 등) 기반 자동 감정 분석 엔진을 실행합니다.
+사용자가 TTS 음성 낭독을 들을 때, 현재 읽고 있는 **형광펜 하이라이트 문장을 시야의 중앙에 항상 자연스럽게 유지**해 주고, 사용자가 직접 마우스 휠이나 터치로 다른 내용을 탐색할 때 자동 스크롤과 충돌하지 않도록 **수동 조작을 똑똑하게 분리·감지(Smart Scroll)**하여 부드러운 화면 이동 경험을 제공합니다.
 
 ---
 
-## 1. 아키텍처 및 시스템 흐름
+## 1. 확정된 사용자 요구사항 및 스펙
+
+1. **하이라이트 추적 위치**: 현재 낭독 중인 하이라이트 문장이 **스크롤 뷰포트의 정중앙(`block: 'center'`)**에 부드럽게 정렬되도록 오토 스크롤.
+2. **스마트스크롤(수동 vs 자동 구분)**:
+   - 사용자가 마우스 휠(`wheel`), 터치 드래그(`touchmove`), 키보드 스크롤(`keydown`), 스크롤바 조작 시 즉시 **수동 모드(User Override)**로 전환되어 오토 스크롤을 즉시 일시 정지.
+   - 사용자 스크롤 중단 후 **3초 동안 추가 조작이 없으면** 다시 하이라이트 문장 위치로 자연스럽게 오토 스크롤 복귀.
+   - 수동 모드 중 화면 하단에 튀지 않고 세련된 **'낭독 위치로 이동(재개)' 플로팅 버튼**을 제공하여 원터치 즉시 복귀도 지원.
+3. **적용 범위**:
+   - 🌟 **모달 창 전체**: 오늘의 데일리 타로 모달(`TodayTarotNarrationModal`), 타로 카드 확대 모달 등 스크롤 가능한 모든 모달.
+   - 🌟 **메인 전체 화면**: 일반 타로 결과 뷰, 사주✕타로 융합 오라클 3종 결과 뷰(`TrinityOracleSection`), 타임라인 연속 리딩 뷰.
+
+---
+
+## 2. 시스템 아키텍처 및 흐름도
 
 ```
-[텍스트 입력 (타로 리딩, 조언, 일일 사주, 시 낭독 등)]
-                    │
-                    ▼
-[splitSpeechIntoSentences() - 문장 단위 분할]
-                    │
-                    ▼ (각 문장 순회)
-┌────────────────────────────────────────────────────────┐
-│  문장별 감정 분석 (Sentence Emotion Analyzer)           │
-│  1. 명시적 감정 파라미터 / [EMOTION:...] 태그 확인      │
-│  2. 감정 키워드 스코어링 (기쁨, 평온, 명상, 슬픔, 신비, 활력) │
-│  3. 문장부호 분석 (! ? 온점 등)                         │
-│  => 감정 프로필 결정: { emotion, rateStr, pitchStr, speed }  │
-└───────────────────────────┬────────────────────────────┘
-                            │
-       ┌────────────────────┴────────────────────┐
-       ▼                                         ▼
-[서버 EdgeTTS 엔진 (/api/ai/tts)]     [브라우저 Web Speech 엔진 fallback]
- - rate: "-6%", pitch: "-1.2Hz"       - utterance.rate: 0.94
- - 자연스러운 한국어 신경망 음성       - utterance.pitch: 0.96
- - 감정별 캐시 키 (rate, pitch 포함)  - 모바일 WebAudio / HTML5 Audio
-       │                                         │
-       └────────────────────┬────────────────────┘
-                            │
-                            ▼
-      [실시간 문장 형광펜 하이라이트 동기화]
-      - 문장 전환 시 이전 형광펜 즉시 소멸 & 현재 문장 골드 하이라이트
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           TTS Audio & Speech State                          │
+│               activeSentence / activeText / isSpeaking                      │
+└──────────────────────────────────────┬──────────────────────────────────────┘
+                                       │ (1) Active Sentence Broadcast
+                                       ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                 Universal Smart Scroll Engine (Hook & Controller)            │
+│                 useSmartScroll / SmartScrollProvider                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  [사용자 제스처 감지기 (User Gesture Detector)]                                │
+│   - Event Listeners: wheel, touchmove, pointerdown on scroll container       │
+│   - Programmatic Scroll Flag: 오토 스크롤 중 발생한 scroll 이벤트는 무시        │
+│                                                                             │
+│  [상태 머신 (State Machine)]                                                 │
+│   - AUTO_FOLLOWING: 하이라이트 문장 변경 시 컨테이너 중앙으로 smooth scroll       │
+│   - USER_PAUSED: 수동 스크롤 감지 시 즉시 전환 (3초 타이머 시작 + 플로팅 버튼 노출)│
+│   - RESUMING: 3초 타임아웃 또는 복귀 버튼 클릭 시 AUTO_FOLLOWING 복귀          │
+└──────────────────────────────────────┬──────────────────────────────────────┘
+                                       │
+        ┌──────────────────────────────┴──────────────────────────────┐
+        ▼                                                             ▼
+ [모달 스크롤 뷰포트]                                           [메인 페이지 뷰포트]
+ TodayTarotNarrationModal                                      TrinityApp / OracleSection
+ Container: max-h-[90vh] overflow-y-auto                       Container: window / document.body
+ Target: .tts-active-sentence-highlight                        Target: .tts-active-sentence-highlight
 ```
 
 ---
 
-## 2. 변경 대상 모듈 및 작업 내용
+## 3. 세부 작업 항목
 
-### 1) 감정 프로필 및 파라미터 매핑 엔진 확장 (`src/lib/audio.ts`)
-- `TTSEmotionProfile` 인터페이스에 EdgeTTS 규격 문자열(`rateStr`, `pitchStr`) 및 Web Speech/HTMLAudio 규격 배율(`speedMultiplier`, `pitchMultiplier`) 확장
-- 사용자가 선택한 **자연스러운 미세 조절 범위**(-8%~+6% rate, -2Hz~+2Hz pitch)로 프로필 재조정:
-  - `meditation` (명상/호흡): rate `-8%` (0.92x), pitch `-1.8Hz` (0.95x)
-  - `calm` (평온/안식): rate `-5%` (0.95x), pitch `-1.0Hz` (0.97x)
-  - `sadness` (슬픔/위로): rate `-6%` (0.94x), pitch `-1.5Hz` (0.96x)
-  - `emphasis` (강조/확신): rate `-3%` (0.97x), pitch `-0.6Hz` (0.98x)
-  - `mystic` (신비/오라클): rate `-5%` (0.95x), pitch `+0.5Hz` (1.02x)
-  - `joy` (기쁨/환희): rate `+5%` (1.05x), pitch `+1.5Hz` (1.05x)
-  - `vitality` (활력/생기): rate `+6%` (1.06x), pitch `+1.8Hz` (1.06x)
-  - `neutral` (중립/일반): rate `+0%` (1.00x), pitch `+0Hz` (1.00x)
-- `analyzeTextEmotion(text, explicitEmotion)` 함수 개선: 문장의 텍스트 뉘앙스를 정교하게 가중치 채점하여 최적의 프로필 반환
+### Task 1: 스마트스크롤 코어 훅 및 유틸리티 개발 (`src/hooks/useSmartScroll.ts`)
+- **수동 스크롤 감지 알고리즘**:
+  - `wheel`, `touchmove`, `touchstart` 이벤트를 캡처하여 사용자가 의도적으로 개입했는지를 0.05초 내 즉시 판별.
+  - 프로그램에 의한 `scrollIntoView` 또는 `scrollTo` 동작 중 발생하는 브라우저 기본 스크롤 이벤트와 사용자 제스처를 `isProgrammaticScrollingRef` 플래그로 완벽 분리.
+- **오토 리줌(3초 딜레이) & 수동 리줌 인터페이스**:
+  - 사용자 조작이 멈추면 3,000ms 디바운스 타이머 가동 후 부드럽게 자동 추적 복구.
+  - `resumeAutoScroll()` 함수를 외부로 노출하여 플로팅 버튼에서도 즉각 호출 가능하게 설계.
+- **중앙 배치 계산 수학 (Viewport Math)**:
+  - 타겟 요소(`mark.tts-active-sentence-highlight`)의 상대 높이와 스크롤 컨테이너의 뷰포트 높이를 계산하여, 급격한 도약 없이 컨테이너의 50% 지점에 위치하도록 `scroll({ top: targetOffset, behavior: 'smooth' })` 실행.
 
-### 2) 클라이언트 TTS 스트리밍 큐 및 캐시 키 연동 (`src/utils/tts.ts`)
-- `prefetchTTS` 및 `playTTS`에서 감정 분석 결과의 `rate`와 `pitch`를 추출하여 `/api/ai/tts` 페이로드로 전송
-- `getTTSCacheKey`: 텍스트, 보이스뿐만 아니라 동적 감정/rate/pitch를 포함하도록 캐시 키 고도화
-- `playTTSInChunks`: 각 문장 청크(`chunks[i]`)마다 독립적으로 `analyzeTextEmotion(chunks[i], emotion)`을 수행하여, 문장 단위로 동적 감정과 톤을 개별 산출하여 스트리밍 재생
-- 브라우저 Web Speech Fallback(`playNativeBrowserSpeech`)에서도 해당 감정 프로필의 `playbackRate`와 `pitch`를 `utterance`에 동적 바인딩
+### Task 2: 하이라이트 마크 컴포넌트 고도화 (`TTSHighlightedText.tsx` & `ttsHighlight.tsx`)
+- `Streamdown` 마크다운 본문과 일반 텍스트 렌더러에서 생성되는 모든 `<mark>` 요소에 스마트 스크롤 타깃 클래스 및 데이터 속성(`data-tts-active="true"`) 부여.
+- 이전 문장에서 다음 문장으로 넘어갈 때 중복 점프 방지(동일 문장 debounce 처리).
+- 컨테이너가 `window`인 경우와 내부 스크롤 컨테이너(모달의 `overflow-y-auto` 엘리먼트)인 경우 모두 자동으로 가장 가까운 스크롤 부모(`closestScrollableElement`)를 찾아내어 올바른 컨테이너를 스크롤하도록 구현.
 
-### 3) 백엔드 TTS 핸들러 고도화 (`server/api-lib/ttsHandler.ts` & `server.ts`)
-- 프론트엔드에서 전달된 감정 및 rate, pitch 파라미터를 EdgeTTS 인스턴스에 온전히 반영
-- 서버 단에서도 감정이 직접 지정되지 않은 단독 호출 시 `analyzeTextEmotion`을 거쳐 지능적으로 rate/pitch를 계산
-- 서버 인메모리 캐시 키에 `rate`와 `pitch`를 정확히 반영하여 음성 왜곡 없이 초고속 서빙
+### Task 3: 낭독 위치 복귀 플로팅 컨트롤러 (`SmartScrollResumeButton.tsx`)
+- 사용자가 수동 스크롤 중일 때만 화면 우측 하단(또는 모달 하단)에 아주 은은하고 세련된 미니멀 버튼 표출:
+  - `[ 📍 낭독 위치로 이동 (3초 후 자동 복귀) ]`
+  - 터치 시 햅틱 피드백과 함께 즉시 현재 낭독 중인 문장으로 부드럽게 이동하고 자동 추적 재개.
+  - 방해되지 않도록 유리 질감(Glassmorphism)과 앰버 골드 엑센트로 안티-슬롭 디자인 원칙 준수.
 
-### 4) 실시간 문장 형광펜 하이라이트 동기화 검증
-- 문장별 rate와 pitch가 변하더라도 `activeSentence` 및 `TTSHighlightText` / `Streamdown` 하이라이트가 음성 재생 시작/끝 타이밍에 정확히 일치하는지 검증
-- 오디오 종료(`ended`) 및 세션 전환 이벤트 흐름 무결성 확인
+### Task 4: 모달(`TodayTarotNarrationModal`) 및 메인 뷰포트 연동
+- 오늘의 데일리 타로 모달 내부의 긴 5단계 리딩 스크롤 영역에 `useSmartScroll` 적용.
+- 일반 타로 결과 및 오라클 3종 뷰포트에 동일 훅 연동.
 
 ---
 
-## 3. 검증 계획 (Verification Plan)
+## 4. 검증 및 배포 계획
 
-1. **감정별 Rate/Pitch 계산 단위 테스트 (`npx tsx`)**:
-   - 기쁨, 슬픔, 평온, 명상, 신비 문장 각각에 대해 `analyzeTextEmotion`이 올바른 rate/pitch 값을 산출하는지 확인
-2. **빌드 및 린트 검증**:
-   - `npm run lint` 및 `npm run build`를 실행하여 타입 에러, 빌드 실패 없는지 확인
-3. **버전 관리 및 배포 규칙 준수 (AGENTS.md)**:
-   - `package.json` 패치 버전 업데이트 (1.4.236 -> 1.4.237)
+1. **컴파일 & 린트 통과**: `tsc --noEmit` 타입 에러 0건 및 프로덕션 빌드 통과.
+2. **동작 테스트**:
+   - [x] TTS 전체 낭독 시작 시 첫 문장부터 화면 중앙으로 매끄럽게 자동 스크롤 이동.
+   - [x] 사용자가 마우스 휠이나 터치로 다른 곳을 올려보거나 내려볼 때 화면이 강제로 끌려가지 않고 멈춤.
+   - [x] 3초간 가만히 있으면 현재 읽는 위치로 부드럽게 복귀.
+   - [x] '낭독 위치로 이동' 버튼 클릭 시 즉각 복귀.
+   - [x] 모달 창 내부와 메인 페이지 전체에서 모두 일관되게 작동.
+3. **규정 준수**:
+   - `package.json` 버전 패치 업데이트 (`1.4.239` -> `1.4.240`)
    - `public/version.json` 및 `public/changelog.json` 업데이트
+   - `git add .` 및 `git commit` 생성

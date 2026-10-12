@@ -109,23 +109,9 @@ export function TTSActiveSentenceMark({
   children: React.ReactNode;
   isLight?: boolean;
 }) {
-  const markRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    if (markRef.current) {
-      try {
-        markRef.current.scrollIntoView({
-          behavior: 'smooth',
-          block: 'nearest',
-          inline: 'nearest',
-        });
-      } catch (_) {}
-    }
-  }, []);
-
   return (
     <mark
-      ref={markRef}
+      data-tts-active="true"
       className={`tts-active-sentence-highlight inline rounded px-1.5 py-0.5 transition-all duration-300 ${
         isLight
           ? 'bg-amber-200/90 text-amber-950 border-b-2 border-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.25)] font-semibold'

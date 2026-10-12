@@ -10,13 +10,15 @@ import {
 import { TAROT_DECK, TarotCard, getTarotCardImageUrl } from '@/data/tarotData';
 import { TarotSpread, SelectedTarotCardEntry } from './TarotSpread';
 import { Streamdown } from '@/components/Streamdown';
-import { invokeLLM } from '@/lib/ai';
+import { invokeLLM, invokeLLMStream } from '@/lib/ai';
 import { playTTS, playTTSInChunks, prefetchTTS, stopTTS, useTTSActive, useTTSState, prepareNaturalSpeechText } from '@/utils/tts';
-import { playAiResultNotification } from '@/lib/audioHaptics';
+import { playAiResultNotification, playAudioHaptic } from '@/lib/audioHaptics';
 import { LucyTarotAdviceCard } from './LucyTarotAdviceCard';
 import { TarotResultShareButton } from './TodayTarotShareModal';
 import { TarotCardZoomModal } from './TarotCardZoomModal';
 import { TarotFlippingCard } from './TarotFlippingCard';
+import { FollowUpTarotTimeline, FollowUpTarotEntry } from './FollowUpTarotTimeline';
+import { FollowUpTarotInputBar } from './FollowUpTarotInputBar';
 import { TarotCardBackCustomizerModal } from './TarotCardBackCustomizerModal';
 import { useTarotCardBack } from '@/hooks/useTarotCardBack';
 import { getTodayAnchorTarotCard } from '@/lib/todayTarotNarration';
@@ -1245,6 +1247,161 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
       return '';
     }
   }, [oracleMode, healingResult, growthResult, miracleResult, drawnCards, saju, todayAnchorCard, recipientName, inquiryText]);
+
+  // 🔮 오라클 연속 추가 질문 & 잔여 덱 관리 엔진 (모드별 독립 보존)
+  const oracleFollowUpStorageKey = `prism_oracle_followup_${oracleMode}_${todayDateKey}`;
+
+  const [oracleFollowUpEntries, setOracleFollowUpEntries] = useState<FollowUpTarotEntry[]>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const cached = localStorage.getItem(`prism_oracle_followup_${oracleMode}_${todayDateKey}`);
+        if (cached) return JSON.parse(cached);
+      }
+    } catch (_) {}
+    return [];
+  });
+
+  const [isOracleFollowUpGenerating, setIsOracleFollowUpGenerating] = useState<boolean>(false);
+  const [showOracleFollowUpWheelModal, setShowOracleFollowUpWheelModal] = useState<boolean>(false);
+  const [pendingOracleFollowUpQuestion, setPendingOracleFollowUpQuestion] = useState<string>('');
+
+  // Persist oracle follow-up entries on change
+  useEffect(() => {
+    try {
+      localStorage.setItem(oracleFollowUpStorageKey, JSON.stringify(oracleFollowUpEntries));
+    } catch (_) {}
+  }, [oracleFollowUpEntries, oracleFollowUpStorageKey]);
+
+  // Synchronize follow-up entries on mode or date change
+  useEffect(() => {
+    try {
+      const cached = localStorage.getItem(`prism_oracle_followup_${oracleMode}_${todayDateKey}`);
+      if (cached) {
+        setOracleFollowUpEntries(JSON.parse(cached));
+      } else {
+        setOracleFollowUpEntries([]);
+      }
+    } catch (_) {
+      setOracleFollowUpEntries([]);
+    }
+  }, [oracleMode, todayDateKey]);
+
+  // 잔여 덱 무결성 보장: 이미 뽑힌 3장의 카드 + 누적된 추가 질문 카드들을 완전 제외
+  const oracleDrawnCardIds = useMemo(() => {
+    const ids = new Set<string>();
+    drawnCards.forEach((c) => ids.add(c.id));
+    oracleFollowUpEntries.forEach((entry) => ids.add(entry.card.id));
+    return ids;
+  }, [drawnCards, oracleFollowUpEntries]);
+
+  const oracleRemainingDeck = useMemo(() => {
+    return TAROT_DECK.filter((c) => !oracleDrawnCardIds.has(c.id));
+  }, [oracleDrawnCardIds]);
+
+  // 🔮 오라클 연속 심층 리딩 실행기 (사주 + 모드별 특화 LLM 스트리밍)
+  const executeOracleFollowUpReading = useCallback(async (
+    questionText: string,
+    chosenCard: TarotCard,
+    isReversed: boolean,
+  ) => {
+    const newEntryId = `fu_oracle_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    const newEntry: FollowUpTarotEntry = {
+      id: newEntryId,
+      question: questionText,
+      card: chosenCard,
+      reversed: isReversed,
+      reading: '',
+      isGenerating: true,
+      createdAt: Date.now(),
+    };
+    setOracleFollowUpEntries((prev) => [...prev, newEntry]);
+    setIsOracleFollowUpGenerating(true);
+
+    try {
+      const modeKorean = oracleMode === 'healing' ? '힐링 타로' : oracleMode === 'miracle' ? '기적수업 타로' : '자기계발 타로';
+      const initialCardsDesc = drawnCards.map((c) => `${c.nameKo}(${c.reversed ? '역방향' : '정방향'})`).join(', ');
+      const sajuContext = saju?.dayMaster ? `\n[사주 일간] ${saju.dayMaster.korean || saju.dayMaster.gan} (${saju.dayMaster.element} 오행)` : '';
+
+      const previousQAHistory = oracleFollowUpEntries
+        .map(
+          (e, idx) =>
+            `[추가 질문 #${idx + 1}] "${e.question}"\n[뽑힌 카드] ${e.card.nameKo} (${e.reversed ? '역방향' : '정방향'})\n[해설] ${e.reading.slice(0, 250)}`,
+        )
+        .join('\n\n');
+
+      const messagesForLLM = [
+        {
+          role: 'system',
+          content: `당신은 사주 명리학과 78장 타로, 오라클 심층 성찰을 융합하는 '트리니티 오라클 마스터'입니다. 질문자가 ${modeKorean}(3카드 스프레드) 리딩을 마친 후, 이미 뽑힌 카드를 제외하고 남은 잔여 덱에서 새로운 카드를 추가로 뽑아 심층 연속 질문을 던졌습니다.${sajuContext}
+
+[답변 규정]
+1. 질문자의 구체적인 추가 질문에 대하여, 새로 뽑힌 잔여 덱 추가 카드의 도상 상징과 정/역방향 에너지를 직관적으로 관통하여 날카롭고 똑부러지게 답변하십시오.
+2. 질문자의 사주 원국 본원 기운과 이번 ${modeKorean}의 핵심 지혜(${oracleMode === 'healing' ? '정서 치유와 수용' : oracleMode === 'miracle' ? '에고의 환영 해체와 평화의 지각전환' : '현실적 성장과 4원소 실행력'})를 결합하여 지금 당장 실천할 수 있는 구체적 행동 지침을 제시하십시오.
+3. 한국어로 품격 있고 신뢰감 넘치는 정통 마스터의 어조를 유지하십시오.`,
+        },
+        {
+          role: 'user',
+          content: `[오라클 모드] ${modeKorean}
+[내담자 고민/의제] "${inquiryText || '오라클 심층 성찰'}"
+[초기 3장의 오라클 카드] ${initialCardsDesc}
+[초기 리딩 요약] ${displayFullReadingText ? displayFullReadingText.slice(0, 500) : ''}
+${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` : ''}
+[새로 뽑힌 잔여 덱 추가 카드] ${chosenCard.nameKo} (${chosenCard.name}) - ${isReversed ? '역방향' : '정방향'} / 키워드: ${chosenCard.keywords.join(', ')}
+[이번 추가 질문] "${questionText}"`,
+        },
+      ];
+
+      let currentText = '';
+      await invokeLLMStream({
+        messages: messagesForLLM as any,
+        onChunk: (chunk) => {
+          currentText += chunk;
+          setOracleFollowUpEntries((prev) =>
+            prev.map((e) => (e.id === newEntryId ? { ...e, reading: currentText } : e)),
+          );
+        },
+      });
+
+      setOracleFollowUpEntries((prev) =>
+        prev.map((e) =>
+          e.id === newEntryId ? { ...e, reading: currentText, isGenerating: false } : e,
+        ),
+      );
+      playAudioHaptic('card_draw');
+    } catch (err: any) {
+      setOracleFollowUpEntries((prev) =>
+        prev.map((e) =>
+          e.id === newEntryId
+            ? { ...e, reading: '추가 오라클 해설을 생성하는 중 일시적인 오류가 발생했습니다. 다시 시도해 주세요.', isGenerating: false }
+            : e,
+        ),
+      );
+    } finally {
+      setIsOracleFollowUpGenerating(false);
+    }
+  }, [oracleMode, drawnCards, saju, inquiryText, displayFullReadingText, oracleFollowUpEntries]);
+
+  const handleOracleDirectFollowUpDraw = useCallback((questionText: string) => {
+    setPendingOracleFollowUpQuestion(questionText);
+    setShowOracleFollowUpWheelModal(true);
+  }, []);
+
+  const handleOracleAutoFollowUpDraw = useCallback((questionText: string) => {
+    if (oracleRemainingDeck.length === 0) return;
+    const randomIndex = Math.floor(Math.random() * oracleRemainingDeck.length);
+    const chosenCard = oracleRemainingDeck[randomIndex];
+    const isReversed = Math.random() < 0.35;
+    playAudioHaptic('card_draw');
+    executeOracleFollowUpReading(questionText, chosenCard, isReversed);
+  }, [oracleRemainingDeck, executeOracleFollowUpReading]);
+
+  const handleOracleFollowUpWheelComplete = useCallback((selected: any[]) => {
+    setShowOracleFollowUpWheelModal(false);
+    if (!selected || selected.length === 0) return;
+    const card = selected[0];
+    const reversed = !!card.reversed;
+    executeOracleFollowUpReading(pendingOracleFollowUpQuestion, card, reversed);
+  }, [pendingOracleFollowUpQuestion, executeOracleFollowUpReading]);
 
   // Handle mode switch with persistent saving and daily session restore (1일 1회 원칙: 이미 완료된 경우 결과 즉시 복원)
   const handleModeSwitch = (mode: OracleMode) => {
@@ -3904,6 +4061,51 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
                       타로는 미래를 결정짓는 절대적 예언이 아니라, 자신의 내면을 성찰하고 더 나은 선택을 돕는 지혜의 나침반입니다. 맹목적인 믿음을 지양하고, 모든 운명의 결정권과 최종 열쇠는 언제나 당신 자신의 주체적인 의지와 지혜에 있습니다.
                     </p>
                   </div>
+
+                  {/* 🔮 오라클 연속 추가 질문 & 잔여 덱 심층 리딩 타임라인 영역 */}
+                  <div className="mt-6 pt-6 border-t border-amber-500/25 space-y-5">
+                    {oracleFollowUpEntries.length > 0 && (
+                      <FollowUpTarotTimeline
+                        entries={oracleFollowUpEntries}
+                        onZoomCard={(data) => setZoomedCard({ card: data.card, slotName: data.slotName })}
+                      />
+                    )}
+                    <FollowUpTarotInputBar
+                      remainingCount={oracleRemainingDeck.length}
+                      totalCount={TAROT_DECK.length}
+                      drawnCount={oracleDrawnCardIds.size}
+                      initialConcern={inquiryText || (oracleMode === 'healing' ? '마음 치유와 회복' : oracleMode === 'miracle' ? '기적수업과 내면의 평화' : '자기계발과 성장 돌파')}
+                      drawnCards={drawnCards}
+                      isGenerating={isOracleFollowUpGenerating}
+                      onDirectDraw={handleOracleDirectFollowUpDraw}
+                      onAutoDraw={handleOracleAutoFollowUpDraw}
+                      title={`${oracleMode === 'healing' ? '🌿 힐링 오라클' : oracleMode === 'miracle' ? '🕊️ 기적수업 오라클' : '⚡ 자기계발 오라클'} 추가 질문 & 연속 리딩`}
+                      subtitle={`초기 3장을 제외한 남은 ${oracleRemainingDeck.length}장의 잔여 덱에서 카드를 뽑아 추가 통찰을 얻으세요.`}
+                      customChips={
+                        oracleMode === 'healing'
+                          ? [
+                              '이 상처를 온전히 흘려보내기 위해 지금 필요한 마음가짐은?',
+                              '내 안의 치유 에너지를 깨우는 구체적인 사랑의 행동은?',
+                              '이 감정이 진정으로 원하는 내면아이의 메시지는 무엇인가요?',
+                              '오늘 밤 편안한 수면과 휴식을 돕는 마음의 처방은?',
+                            ]
+                          : oracleMode === 'miracle'
+                          ? [
+                              '이 두려움을 참된 용서로 전환하는 거룩한 순간은?',
+                              '에고의 환상을 내려놓고 성령의 시선으로 바라보는 법은?',
+                              '지금 내 마음에 필요한 기적수업의 평화 원리는 무엇인가요?',
+                              '판단과 분리를 멈추고 온전한 사랑을 선택하는 구체적 길은?',
+                            ]
+                          : [
+                              '이 목표를 달성하기 위해 오늘 실행할 가장 강력한 1가지 루틴은?',
+                              '나의 숨겨진 잠재력을 폭발시킬 돌파구는 무엇인가?',
+                              '결정적 성장을 가로막는 무의식적 한계 신념을 깨는 법은?',
+                              '앞으로 30일 내 가장 폭발적인 성과를 낼 우선순위는?',
+                            ]
+                      }
+                      placeholder="오라클 리딩에 대해 더 궁금한 점을 질문하세요"
+                    />
+                  </div>
                 </div>
 
                 {/* 3. Bottom Actions: 1-per-day badge, Mode Switch, Share */}
@@ -4134,6 +4336,25 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
         isOpen={showCardBackModal}
         onClose={() => setShowCardBackModal(false)}
       />
+
+      {/* 🎡 오라클 잔여 덱 전용 360도 원형 휠 선택 모달 */}
+      {showOracleFollowUpWheelModal && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/90 backdrop-blur-md p-2 sm:p-4">
+          <div className="relative w-full max-w-5xl h-[88vh] rounded-3xl bg-slate-950/95 border border-amber-500/40 shadow-2xl overflow-hidden flex flex-col">
+            <TarotSpread
+              deckSource={oracleRemainingDeck}
+              maxCards={1}
+              cardBackId={cardBackId}
+              allowReversed={true}
+              concern={pendingOracleFollowUpQuestion}
+              spreadName={`오라클 추가 질문 #${oracleFollowUpEntries.length + 1}`}
+              spreadReason={`초기 3장을 제외한 ${oracleRemainingDeck.length}장의 잔여 덱에서 1장을 직접 고릅니다.`}
+              onComplete={handleOracleFollowUpWheelComplete}
+              onCancel={() => setShowOracleFollowUpWheelModal(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

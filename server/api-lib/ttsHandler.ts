@@ -22,6 +22,7 @@ export interface TTSHandlerOptions {
   rate?: string;
   pitch?: string;
   speed?: number;
+  language?: string;
 }
 
 export interface TTSHandlerResult {
@@ -191,7 +192,7 @@ export function analyzeServerTextEmotion(text: string, explicitEmotion?: string)
 }
 
 export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerResult> {
-  const { text, voice = "Kore", emotion, speed } = options;
+  const { text, voice = "Kore", emotion, speed, language } = options;
   if (!text) {
     throw new Error("Empty speech text");
   }
@@ -202,8 +203,8 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
   }
 
   const resolvedVoiceKey = voice || "Kore";
+  const normVoice = (voice || "").toLowerCase();
 
-  const isKorean = /[가-힣]/.test(cleanText);
   const isMaleVoice =
     voice === "Fenrir" ||
     voice === "Charon" ||
@@ -212,38 +213,52 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
     voice === "onyx" ||
     voice === "user" ||
     voice === "male" ||
-    voice === "ko-KR-InJoonNeural" ||
-    voice === "en-US-GuyNeural";
+    normVoice.includes("injoon") ||
+    normVoice.includes("guy") ||
+    normVoice.includes("fenrir") ||
+    normVoice.includes("charon") ||
+    normVoice.includes("michael") ||
+    normVoice.includes("bongjin") ||
+    normVoice.includes("gookmin");
 
-  let voiceName = "ko-KR-SunHiNeural";
-  if (voice && (voice.includes("Neural") || voice.startsWith("ko-KR-") || voice.startsWith("en-US-"))) {
-    if (voice.includes("SoonBok") || voice.includes("soonbok") || voice.includes("Zephyr") || voice.includes("zephyr")) {
-      voiceName = "ko-KR-SunHiNeural"; // SoonBok은 EdgeTTS 미지원 음성이므로 최고 품질 명상 특화 SunHi로 안전 매핑
-    } else if (voice.includes("InJoon") || voice.includes("injoon") || voice.includes("Puck")) {
+  // Determine language context: keep Korean neural voice consistent throughout the session,
+  // even if an individual chunk consists of numbers, English terms, or symbols.
+  const hasKoreanInText = /[가-힣]/.test(cleanText);
+  const isExplicitEnglishVoice =
+    voice.startsWith("en-US-") ||
+    voice.startsWith("en-GB-") ||
+    ((normVoice === "guy" || normVoice === "jenny" || normVoice === "aria") && language === "en");
+
+  let lang = "ko-KR";
+  let voiceName = isMaleVoice ? "ko-KR-InJoonNeural" : "ko-KR-SunHiNeural";
+
+  if (isExplicitEnglishVoice && !hasKoreanInText) {
+    lang = "en-US";
+    voiceName = isMaleVoice ? "en-US-GuyNeural" : "en-US-AriaNeural";
+  } else if (voice && (voice.includes("Neural") || voice.startsWith("ko-KR-"))) {
+    if (voice.includes("SoonBok") || normVoice.includes("soonbok") || normVoice.includes("zephyr")) {
+      voiceName = "ko-KR-SunHiNeural";
+    } else if (normVoice.includes("injoon") || normVoice.includes("puck")) {
       voiceName = "ko-KR-InJoonNeural";
-    } else if (voice.includes("Hyunsu") || voice.includes("hyunsu")) {
+    } else if (normVoice.includes("hyunsu")) {
       voiceName = "ko-KR-HyunsuNeural";
-    } else if (voice.includes("SunHi") || voice.includes("sunhi") || voice.includes("Kore")) {
+    } else if (normVoice.includes("sunhi") || normVoice.includes("kore")) {
       voiceName = "ko-KR-SunHiNeural";
     } else {
       voiceName = isMaleVoice ? "ko-KR-InJoonNeural" : "ko-KR-SunHiNeural";
     }
-  } else if (voice === "SoonBok" || voice === "soonbok" || voice === "Zephyr" || voice === "zephyr") {
-    voiceName = "ko-KR-SunHiNeural"; // 차분한 명상 특화
-  } else if (voice === "Hyunsu" || voice === "hyunsu") {
+  } else if (normVoice.includes("soonbok") || normVoice.includes("zephyr")) {
+    voiceName = "ko-KR-SunHiNeural";
+  } else if (normVoice.includes("hyunsu")) {
     voiceName = "ko-KR-HyunsuNeural";
-  } else if (voice === "InJoon" || voice === "injoon" || voice === "Puck" || voice === "puck") {
+  } else if (normVoice.includes("injoon") || normVoice.includes("puck")) {
     voiceName = "ko-KR-InJoonNeural";
-  } else if (voice === "SunHi" || voice === "sunhi" || voice === "Kore" || voice === "kore" || voice === "Lucy" || voice === "lucy") {
+  } else if (normVoice.includes("sunhi") || normVoice.includes("kore") || normVoice.includes("lucy")) {
     voiceName = "ko-KR-SunHiNeural";
   } else if (isMaleVoice) {
     voiceName = "ko-KR-InJoonNeural";
-  }
-
-  let lang = "ko-KR";
-  if (!isKorean) {
-    lang = "en-US";
-    voiceName = isMaleVoice ? "en-US-GuyNeural" : "en-US-AriaNeural";
+  } else {
+    voiceName = "ko-KR-SunHiNeural";
   }
 
   // 🌟 문장의 감정 분석 결과 기반 동적 음성 톤 (pitch, rate) 미세 조절
@@ -406,9 +421,10 @@ function stripID3Header(buf: Buffer): Buffer {
 }
 
   // 3. High-speed Direct Fallback: Google TTS (ultra-fast, 100% reliable on Vercel / serverless)
+  const googleLang = lang.startsWith("ko") ? "ko" : "en";
   try {
     const results = await googleTTS.getAllAudioBase64(cleanText, {
-      lang: isKorean ? "ko" : "en",
+      lang: googleLang,
       slow: false,
       host: "https://translate.google.com",
       splitPunct: ",.?!;:\n",
@@ -439,12 +455,11 @@ function stripID3Header(buf: Buffer): Buffer {
 
   // 3.5. Direct HTTP Stream Fallback (Bypasses library limitations on Vercel Serverless)
   try {
-    const lang = isKorean ? "ko" : "en";
     const chunks = cleanText.match(/.{1,180}(\s|$)|.+/g) || [cleanText];
     const bufferPromises = chunks.map(async (chunk) => {
       const trimmed = chunk.trim();
       if (!trimmed) return Buffer.alloc(0);
-      const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(trimmed)}&tl=${lang}&client=tw-ob`;
+      const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(trimmed)}&tl=${googleLang}&client=tw-ob`;
       const res = await fetch(url, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',

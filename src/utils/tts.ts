@@ -33,6 +33,45 @@ if (typeof window !== 'undefined') {
   (window as any).__prismActiveUtterances = activeUtterances;
 }
 
+export interface SessionVoiceInfo {
+  voice: string;
+  isMale: boolean;
+  primaryLang: 'ko' | 'en';
+}
+
+export function resolveSessionVoice(text: string, requestedVoice?: string): SessionVoiceInfo {
+  const req = (requestedVoice || '').trim();
+  const norm = req.toLowerCase();
+  const hasKorean = /[가-힣]/.test(text);
+
+  const isMale =
+    req === 'Fenrir' ||
+    req === 'Charon' ||
+    req === 'Michael' ||
+    req === 'Guy' ||
+    req === 'onyx' ||
+    req === 'user' ||
+    req === 'male' ||
+    norm.includes('injoon') ||
+    norm.includes('guy') ||
+    norm.includes('fenrir') ||
+    norm.includes('charon') ||
+    norm.includes('michael') ||
+    norm.includes('bongjin') ||
+    norm.includes('gookmin');
+
+  let resolvedVoice = req;
+  if (!resolvedVoice) {
+    resolvedVoice = isMale ? 'Fenrir' : 'Kore';
+  }
+
+  // If text contains Korean or voice is Korean persona, lock primaryLang as 'ko'
+  const isExplicitEnglish = req.startsWith('en-US-') || req.startsWith('en-GB-');
+  const primaryLang: 'ko' | 'en' = (!hasKorean && isExplicitEnglish) ? 'en' : 'ko';
+
+  return { voice: resolvedVoice, isMale, primaryLang };
+}
+
 export function playNativeBrowserSpeech(
   cleanText: string,
   wait: boolean = false,
@@ -41,6 +80,7 @@ export function playNativeBrowserSpeech(
   voiceNameOrType: string = 'Kore',
   speedMultiplier?: number,
   pitchMultiplier?: number,
+  sessionLang?: 'ko' | 'en',
 ): Promise<void> {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
     return Promise.resolve();
@@ -61,16 +101,7 @@ export function playNativeBrowserSpeech(
     } catch (_) {}
   }
 
-  const isKorean = /[가-힣]/.test(cleanText);
-  const utterance = new SpeechSynthesisUtterance(cleanText);
-  activeUtterances.add(utterance);
-  utterance.lang = isKorean ? 'ko-KR' : 'en-US';
-
-  const profile = analyzeTextEmotion(cleanText);
-  // 🌟 문장의 감정에 맞춘 섬세하고 자연스러운 미세 음높이 및 속도 실시간 전환
-  utterance.rate = speedMultiplier !== undefined ? speedMultiplier : profile.playbackRate;
-  utterance.pitch = pitchMultiplier !== undefined ? pitchMultiplier : profile.pitchMultiplier;
-
+  const normVoice = (voiceNameOrType || 'Kore').toLowerCase();
   const isMale =
     voiceNameOrType === 'Fenrir' ||
     voiceNameOrType === 'Charon' ||
@@ -79,13 +110,32 @@ export function playNativeBrowserSpeech(
     voiceNameOrType === 'onyx' ||
     voiceNameOrType === 'user' ||
     voiceNameOrType === 'male' ||
-    voiceNameOrType === 'ko-KR-InJoonNeural' ||
-    voiceNameOrType === 'en-US-GuyNeural';
+    normVoice.includes('injoon') ||
+    normVoice.includes('guy') ||
+    normVoice.includes('fenrir') ||
+    normVoice.includes('charon') ||
+    normVoice.includes('michael') ||
+    normVoice.includes('bongjin') ||
+    normVoice.includes('gookmin');
+
+  const hasKoreanInChunk = /[가-힣]/.test(cleanText);
+  // Maintain Korean voice context unless session is explicitly English
+  const isKoreanContext = sessionLang === 'ko' || hasKoreanInChunk || (!normVoice.startsWith('en-') && normVoice !== 'guy' && normVoice !== 'david');
+
+  const utterance = new SpeechSynthesisUtterance(cleanText);
+  activeUtterances.add(utterance);
+  utterance.lang = isKoreanContext ? 'ko-KR' : 'en-US';
+
+  const profile = analyzeTextEmotion(cleanText);
+  // 🌟 문장의 감정에 맞춘 섬세하고 자연스러운 미세 음높이 및 속도 실시간 전환
+  let targetRate = speedMultiplier !== undefined ? speedMultiplier : profile.playbackRate;
+  let targetPitch = pitchMultiplier !== undefined ? pitchMultiplier : profile.pitchMultiplier;
 
   const voicesList = window.speechSynthesis.getVoices();
-  const langCode = isKorean ? 'ko' : 'en';
+  const langCode = isKoreanContext ? 'ko' : 'en';
   const langVoices = voicesList.filter((v) => v.lang.toLowerCase().startsWith(langCode));
 
+  let matchedVoice: SpeechSynthesisVoice | null = null;
   if (langVoices.length > 0) {
     const getVoiceScore = (voiceItem: SpeechSynthesisVoice) => {
       const name = voiceItem.name.toLowerCase();
@@ -96,6 +146,9 @@ export function playNativeBrowserSpeech(
         name.includes('guy') ||
         name.includes('mark') ||
         name.includes('george') ||
+        name.includes('bongjin') ||
+        name.includes('gookmin') ||
+        name.includes('koc') ||
         name.includes('male') ||
         name.includes('남성');
 
@@ -113,13 +166,23 @@ export function playNativeBrowserSpeech(
         name.includes('kore') ||
         name.includes('aoede') ||
         name.includes('clara') ||
-        name.includes('zira');
+        name.includes('zira') ||
+        name.includes('ism');
+
+      const isNatural =
+        name.includes('natural') ||
+        name.includes('neural') ||
+        name.includes('online') ||
+        name.includes('enhanced') ||
+        name.includes('premium');
 
       if (isMale) {
-        // User voice: Prioritize MALE voices
+        // User voice: Prioritize MALE voices strictly
         if (isMaleVoiceName) {
-          if (name.includes('injoon') || name.includes('guy')) return 120;
-          return 100;
+          let score = 100;
+          if (name.includes('injoon') || name.includes('minsu') || name.includes('guy')) score += 50;
+          if (isNatural) score += 30;
+          return score;
         }
         if (isFemaleVoiceName) return -1000;
         return 10;
@@ -127,18 +190,31 @@ export function playNativeBrowserSpeech(
         // Lucy voice: MUST ALWAYS BE STRICTLY FEMALE!
         if (isMaleVoiceName) return -1000; // STRICTLY BAN male voices for Lucy
         if (isFemaleVoiceName) {
-          if (name.includes('sunhi') || name.includes('heami') || name.includes('yuna') || name.includes('seoyeon') || name.includes('siri')) return 120;
-          return 100;
+          let score = 100;
+          if (name.includes('sunhi') || name.includes('heami') || name.includes('yuna') || name.includes('seoyeon') || name.includes('siri')) score += 50;
+          if (isNatural) score += 30;
+          return score;
         }
-        return 10;
+        return isNatural ? 60 : 30;
       }
     };
 
     const sorted = langVoices.sort((a, b) => getVoiceScore(b) - getVoiceScore(a));
     if (sorted.length > 0 && getVoiceScore(sorted[0]) > -500) {
-      utterance.voice = sorted[0];
+      matchedVoice = sorted[0];
+      utterance.voice = matchedVoice;
     }
   }
+
+  // 성별 일관성 보정: 기기(단일 기본 음성만 제공)에서 남성 음성 선택 시 피치를 차분하게 보정
+  if (isMale) {
+    if (!matchedVoice || (!matchedVoice.name.toLowerCase().includes('injoon') && !matchedVoice.name.toLowerCase().includes('minsu') && !matchedVoice.name.toLowerCase().includes('남성') && !matchedVoice.name.toLowerCase().includes('male'))) {
+      targetPitch = Math.max(0.68, targetPitch * 0.85);
+    }
+  }
+
+  utterance.rate = targetRate;
+  utterance.pitch = targetPitch;
 
   updateTTSState({
     isLoading: false,
@@ -266,7 +342,14 @@ export function getTTSCacheKey(text: string, voice?: string, emotion?: string, r
   return `${voice || 'default'}_${emo}_${r}_${p}_${clean}`;
 }
 
-export function prefetchTTS(text: string, voice?: string, emotion?: string, rateOverride?: string, pitchOverride?: string): Promise<TTSAudioData | null> {
+export function prefetchTTS(
+  text: string,
+  voice?: string,
+  emotion?: string,
+  rateOverride?: string,
+  pitchOverride?: string,
+  language?: 'ko' | 'en',
+): Promise<TTSAudioData | null> {
   const cleanText = normalizeTextForSpeech(text);
   if (!cleanText) return Promise.resolve(null);
 
@@ -294,6 +377,7 @@ export function prefetchTTS(text: string, voice?: string, emotion?: string, rate
           rate,
           pitch,
           speed: profile.playbackRate,
+          language,
         }),
         signal: controller.signal,
       });
@@ -385,6 +469,7 @@ export const playTTS = async (
   fullTextReference?: string,
   rateOverride?: string,
   pitchOverrideOrSpeed?: string | number,
+  sessionLang?: 'ko' | 'en',
 ): Promise<void> => {
   ensureTTSLifecycle();
   const cleanText = normalizeTextForSpeech(text);
@@ -470,6 +555,7 @@ export const playTTS = async (
           rate,
           pitch,
           speed: profile.playbackRate,
+          language: sessionLang,
         }),
         signal: controller.signal,
       });
@@ -579,6 +665,7 @@ export const playTTS = async (
               rate,
               pitch,
               speed: profile.playbackRate,
+              language: sessionLang,
             }),
             signal: retryController.signal,
           });
@@ -605,11 +692,11 @@ export const playTTS = async (
       }
       // Fall back directly to native browser speech synthesis to maintain continuous speech flow
       console.warn('[TTS] Sequence chunk API failed, falling back to Native Browser Speech to maintain continuous speech flow');
-      return playNativeBrowserSpeech(cleanText, wait, sessionToVerify, isSequenceChunk, voice, profile.playbackRate, profile.pitchMultiplier);
+      return playNativeBrowserSpeech(cleanText, wait, sessionToVerify, isSequenceChunk, voice, profile.playbackRate, profile.pitchMultiplier, sessionLang);
     }
 
     console.warn('[TTS] API generation failed, falling back to Native Browser Speech...', error);
-    return playNativeBrowserSpeech(cleanText, wait, sessionToVerify, isSequenceChunk, voice, profile.playbackRate, profile.pitchMultiplier);
+    return playNativeBrowserSpeech(cleanText, wait, sessionToVerify, isSequenceChunk, voice, profile.playbackRate, profile.pitchMultiplier, sessionLang);
   }
 };
 
@@ -671,9 +758,10 @@ export function prefetchTTSChunks(
   try {
     const chunks = splitSpeechIntoChunks(text, maxChunkLength);
     if (chunks.length > 0) {
-      prefetchTTS(chunks[0], voice, emotion).catch(() => {});
+      const sessionInfo = resolveSessionVoice(text, voice);
+      prefetchTTS(chunks[0], sessionInfo.voice, emotion, undefined, undefined, sessionInfo.primaryLang).catch(() => {});
       if (chunks.length > 1) {
-        prefetchTTS(chunks[1], voice, emotion).catch(() => {});
+        prefetchTTS(chunks[1], sessionInfo.voice, emotion, undefined, undefined, sessionInfo.primaryLang).catch(() => {});
       }
     }
   } catch (_) {}
@@ -726,6 +814,11 @@ export const playTTSInChunks = async (
   const chunks = splitSpeechIntoChunks(cleanText, maxChunkLength);
   if (chunks.length === 0) return;
 
+  // 🌟 세션 보이스 및 주 언어 강제 고정 (시작 시 결정된 보이스를 세션 전체에 불변 고정)
+  const sessionInfo = resolveSessionVoice(cleanText, voice);
+  const sessionVoice = sessionInfo.voice;
+  const sessionLang = sessionInfo.primaryLang;
+
   // 알림이나 일시정지로 인해 중간에 끊겼던 경우, 처음부터 다시 듣지 않고 중단 지점부터 이어듣기
   let startChunkIndex = 0;
   if (
@@ -736,7 +829,7 @@ export const playTTSInChunks = async (
     Date.now() - lastTTSProgress.updatedAt < 15 * 60 * 1000
   ) {
     startChunkIndex = lastTTSProgress.chunkIndex;
-    console.log(`[TTS] Resuming playback from interrupted chunk ${startChunkIndex + 1}/${chunks.length}`);
+    console.log(`[TTS] Resuming playback from interrupted chunk ${startChunkIndex + 1}/${chunks.length} with voice ${sessionVoice}`);
   }
 
   // Start sequence session
@@ -766,12 +859,12 @@ export const playTTSInChunks = async (
       primeTTSAudioElement();
     } catch (_) {}
 
-    // Pre-fetch the upcoming 2 chunks ahead of playback (locked to 1.0x)
+    // Pre-fetch the upcoming 2 chunks ahead of playback (locked to session voice & lang)
     if (startChunkIndex + 1 < chunks.length) {
-      prefetchTTS(chunks[startChunkIndex + 1], voice, emotion).catch(() => {});
+      prefetchTTS(chunks[startChunkIndex + 1], sessionVoice, emotion, undefined, undefined, sessionLang).catch(() => {});
     }
     if (startChunkIndex + 2 < chunks.length) {
-      prefetchTTS(chunks[startChunkIndex + 2], voice, emotion).catch(() => {});
+      prefetchTTS(chunks[startChunkIndex + 2], sessionVoice, emotion, undefined, undefined, sessionLang).catch(() => {});
     }
 
     for (let i = startChunkIndex; i < chunks.length; i++) {
@@ -809,12 +902,12 @@ export const playTTSInChunks = async (
         activeSessionId: sequenceSessionId,
       });
 
-      // Proactively pre-fetch next upcoming 2 chunks in advance
+      // Proactively pre-fetch next upcoming 2 chunks in advance with session voice
       if (i + 1 < chunks.length) {
-        prefetchTTS(chunks[i + 1], voice, emotion).catch(() => {});
+        prefetchTTS(chunks[i + 1], sessionVoice, emotion, undefined, undefined, sessionLang).catch(() => {});
       }
       if (i + 2 < chunks.length) {
-        prefetchTTS(chunks[i + 2], voice, emotion).catch(() => {});
+        prefetchTTS(chunks[i + 2], sessionVoice, emotion, undefined, undefined, sessionLang).catch(() => {});
       }
 
       const chunkProfile = analyzeTextEmotion(chunks[i], emotion);
@@ -822,7 +915,7 @@ export const playTTSInChunks = async (
       try {
         await playTTS(
           chunks[i],
-          voice,
+          sessionVoice,
           true,
           emotion,
           sequenceSessionId,
@@ -830,11 +923,12 @@ export const playTTSInChunks = async (
           cleanText,    // preserve activeFullText for UI synchronization
           chunkProfile.rateStr,
           chunkProfile.pitchStr,
+          sessionLang,
         );
       } catch (chunkErr) {
         console.warn(`[TTS] Sequence chunk ${i + 1}/${chunks.length} error, recovering with fallback:`, chunkErr);
         if (ttsState.activeSessionId === sequenceSessionId && isPlayingSequence) {
-          await playNativeBrowserSpeech(chunks[i], true, sequenceSessionId, !isLastChunk, voice, chunkProfile.playbackRate, chunkProfile.pitchMultiplier).catch(() => {});
+          await playNativeBrowserSpeech(chunks[i], true, sequenceSessionId, !isLastChunk, sessionVoice, chunkProfile.playbackRate, chunkProfile.pitchMultiplier, sessionLang).catch(() => {});
         }
       }
 
@@ -891,14 +985,15 @@ export const playConversation = async (
       if (ttsState.activeSessionId !== mySessionId) break;
       const m = messages[i];
       const isUser = m.role === 'user';
-      const voice = isUser ? resolvedUserVoice : resolvedAiVoice;
+      const rawVoice = isUser ? resolvedUserVoice : resolvedAiVoice;
+      const turnVoiceInfo = resolveSessionVoice(m.content, rawVoice);
 
       if (onMessageStart) {
         onMessageStart(i, m);
       }
 
       const isLastMsg = i === messages.length - 1;
-      await playTTS(m.content, voice, true, undefined, mySessionId, !isLastMsg);
+      await playTTS(m.content, turnVoiceInfo.voice, true, undefined, mySessionId, !isLastMsg, undefined, undefined, undefined, turnVoiceInfo.primaryLang);
       if (ttsState.activeSessionId !== mySessionId) break;
 
       // Natural pause between speaker turns
@@ -962,6 +1057,7 @@ export const playQAndATTS = async (
         onSpeakerChange('user', { text: cleanQuestion, id: question.id });
       }
 
+      const qVoiceInfo = resolveSessionVoice(cleanQuestion, userVoice || 'Fenrir');
       // 질문 텍스트 문장 단위 분할
       const qChunks = splitSpeechIntoSentences(cleanQuestion);
 
@@ -978,7 +1074,7 @@ export const playQAndATTS = async (
           activeSessionId: sequenceSessionId,
         });
         const qProfile = analyzeTextEmotion(qChunks[i]);
-        await playTTS(qChunks[i], userVoice, true, undefined, sequenceSessionId, true, cleanQuestion, qProfile.rateStr, qProfile.pitchStr);
+        await playTTS(qChunks[i], qVoiceInfo.voice, true, undefined, sequenceSessionId, true, cleanQuestion, qProfile.rateStr, qProfile.pitchStr, qVoiceInfo.primaryLang);
         if (i < qChunks.length - 1) {
           await new Promise((r) => setTimeout(r, 60));
         }
@@ -996,6 +1092,7 @@ export const playQAndATTS = async (
         onSpeakerChange('assistant', { text: cleanAnswer, id: answer.id });
       }
 
+      const aVoiceInfo = resolveSessionVoice(cleanAnswer, aiVoice || 'Kore');
       const aChunks = splitSpeechIntoSentences(cleanAnswer);
 
       // Pre-warm audio and prefetch
@@ -1005,8 +1102,8 @@ export const playQAndATTS = async (
         primeTTSAudioElement();
       } catch (_) {}
 
-      if (aChunks.length > 1) prefetchTTS(aChunks[1], aiVoice, '다정').catch(() => {});
-      if (aChunks.length > 2) prefetchTTS(aChunks[2], aiVoice, '다정').catch(() => {});
+      if (aChunks.length > 1) prefetchTTS(aChunks[1], aVoiceInfo.voice, '다정', undefined, undefined, aVoiceInfo.primaryLang).catch(() => {});
+      if (aChunks.length > 2) prefetchTTS(aChunks[2], aVoiceInfo.voice, '다정', undefined, undefined, aVoiceInfo.primaryLang).catch(() => {});
 
       for (let i = 0; i < aChunks.length; i++) {
         if (ttsState.activeSessionId !== sequenceSessionId || !isPlayingSequence) break;
@@ -1020,17 +1117,17 @@ export const playQAndATTS = async (
           activeFullText: cleanAnswer,
           activeSessionId: sequenceSessionId,
         });
-        if (i + 1 < aChunks.length) prefetchTTS(aChunks[i + 1], aiVoice, '다정').catch(() => {});
-        if (i + 2 < aChunks.length) prefetchTTS(aChunks[i + 2], aiVoice, '다정').catch(() => {});
+        if (i + 1 < aChunks.length) prefetchTTS(aChunks[i + 1], aVoiceInfo.voice, '다정', undefined, undefined, aVoiceInfo.primaryLang).catch(() => {});
+        if (i + 2 < aChunks.length) prefetchTTS(aChunks[i + 2], aVoiceInfo.voice, '다정', undefined, undefined, aVoiceInfo.primaryLang).catch(() => {});
 
         const aProfile = analyzeTextEmotion(aChunks[i], '다정');
         const isLastChunk = i === aChunks.length - 1;
         try {
-          await playTTS(aChunks[i], aiVoice, true, '다정', sequenceSessionId, !isLastChunk, cleanAnswer, aProfile.rateStr, aProfile.pitchStr);
+          await playTTS(aChunks[i], aVoiceInfo.voice, true, '다정', sequenceSessionId, !isLastChunk, cleanAnswer, aProfile.rateStr, aProfile.pitchStr, aVoiceInfo.primaryLang);
         } catch (chunkErr) {
           console.warn(`[TTS] QA chunk ${i + 1}/${aChunks.length} error, recovering:`, chunkErr);
           if (ttsState.activeSessionId === sequenceSessionId && isPlayingSequence) {
-            await playNativeBrowserSpeech(aChunks[i], true, sequenceSessionId, !isLastChunk, aiVoice, aProfile.playbackRate, aProfile.pitchMultiplier).catch(() => {});
+            await playNativeBrowserSpeech(aChunks[i], true, sequenceSessionId, !isLastChunk, aVoiceInfo.voice, aProfile.playbackRate, aProfile.pitchMultiplier, aVoiceInfo.primaryLang).catch(() => {});
           }
         }
 

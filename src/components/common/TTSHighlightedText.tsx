@@ -42,7 +42,7 @@ export function isSentenceActive(sentence: string, activeText: string | null | u
  * Highlighter styling: authentic yellow/gold highlighter marker with glowing accent
  */
 export const TTS_HIGHLIGHT_CLASS =
-  'bg-amber-400/35 text-amber-50 px-1 py-0.5 rounded-sm border-b-2 border-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.35)] font-medium inline transition-all duration-300';
+  'tts-active-sentence-highlight bg-amber-400/35 text-amber-50 px-1 py-0.5 rounded-sm border-b-2 border-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.35)] font-medium inline transition-all duration-300';
 
 /**
  * Recursively scans React children and wraps any sentence matching the currently spoken TTS text with a highlighter marker.
@@ -61,7 +61,11 @@ export function highlightSentencesInChildren(
     const rawTokens = children.split(/([.!?。！？\n]+)/);
     if (rawTokens.length <= 1) {
       if (isSentenceActive(children, activeSentence)) {
-        return <mark className={TTS_HIGHLIGHT_CLASS}>{children}</mark>;
+        return (
+          <mark className={TTS_HIGHLIGHT_CLASS} data-tts-active="true">
+            {children}
+          </mark>
+        );
       }
       return children;
     }
@@ -80,7 +84,7 @@ export function highlightSentencesInChildren(
         {sentences.map((sent, idx) => {
           if (isSentenceActive(sent, activeSentence)) {
             return (
-              <mark key={idx} className={TTS_HIGHLIGHT_CLASS}>
+              <mark key={idx} className={TTS_HIGHLIGHT_CLASS} data-tts-active="true">
                 {sent}
               </mark>
             );
