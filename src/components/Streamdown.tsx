@@ -249,6 +249,41 @@ export function Streamdown({
           {highlightSentencesInChildren(children, activeTarget)}
         </h4>
       ),
+      h5: ({ children }: any) => (
+        <h5 className="text-white font-bold text-sm mb-1.5">
+          {highlightSentencesInChildren(children, activeTarget)}
+        </h5>
+      ),
+      h6: ({ children }: any) => (
+        <h6 className="text-white font-semibold text-xs mb-1">
+          {highlightSentencesInChildren(children, activeTarget)}
+        </h6>
+      ),
+      strong: ({ children }: any) => (
+        <strong className="text-blue-100 font-bold">
+          {highlightSentencesInChildren(children, activeTarget)}
+        </strong>
+      ),
+      b: ({ children }: any) => (
+        <b className="font-bold">
+          {highlightSentencesInChildren(children, activeTarget)}
+        </b>
+      ),
+      em: ({ children }: any) => (
+        <em className="italic">
+          {highlightSentencesInChildren(children, activeTarget)}
+        </em>
+      ),
+      th: ({ children }: any) => (
+        <th className="p-2 border border-white/10 font-bold">
+          {highlightSentencesInChildren(children, activeTarget)}
+        </th>
+      ),
+      td: ({ children }: any) => (
+        <td className="p-2 border border-white/10">
+          {highlightSentencesInChildren(children, activeTarget)}
+        </td>
+      ),
     };
   }, [activeTarget]);
 

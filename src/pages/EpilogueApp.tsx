@@ -788,14 +788,7 @@ export default function EpilogueApp() {
       <div className="fixed -bottom-40 -right-40 w-96 h-96 rounded-full bg-pink-600/15 blur-[120px] pointer-events-none z-0" />
       <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-indigo-900/10 blur-[150px] pointer-events-none z-0" />
 
-      {/* Background Texture Mask */}
-      <div
-        className="fixed inset-0 pointer-events-none opacity-[0.03] z-0"
-        style={{
-          backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
-          backgroundSize: '40px 40px',
-        }}
-      />
+      {/* Seamless cosmic gradient background (grid-free) */}
 
       {/* Header Info Bar (Matching other channels) */}
       <motion.div

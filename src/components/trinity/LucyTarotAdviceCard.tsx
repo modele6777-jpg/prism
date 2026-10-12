@@ -262,7 +262,7 @@ export function LucyTarotAdviceCard({
         {/* Headline Quote */}
         <div className="flex items-start gap-2 text-yellow-300 font-bold text-xs sm:text-sm font-sans leading-snug">
           <Lightbulb size={16} className="text-yellow-400 shrink-0 mt-0.5" />
-          <span>&ldquo;{advice.headline}&rdquo;</span>
+          <span>&ldquo;<TTSHighlightedText text={advice.headline} />&rdquo;</span>
         </div>
 
         {/* Advice Paragraph */}
@@ -273,7 +273,7 @@ export function LucyTarotAdviceCard({
         {/* Action Tip Pill */}
         <div className="p-3 rounded-xl bg-black/40 border border-yellow-500/25 flex items-start gap-2.5">
           <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-500/20 text-yellow-300 border border-yellow-400/30 shrink-0 mt-0.5">
-            오늘의 실천
+            <TTSHighlightedText text="오늘의 실천" />
           </span>
           <p className="text-xs text-white/80 leading-relaxed font-sans">
             <TTSHighlightedText text={advice.actionTip} />

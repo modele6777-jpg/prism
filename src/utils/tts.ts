@@ -44,32 +44,23 @@ export function resolveSessionVoice(text: string, requestedVoice?: string): Sess
   const norm = req.toLowerCase();
   const hasKorean = /[가-힣]/.test(text);
 
-  const isMale =
-    req === 'Fenrir' ||
-    req === 'Charon' ||
-    req === 'Michael' ||
-    req === 'Guy' ||
-    req === 'onyx' ||
-    req === 'user' ||
-    req === 'male' ||
-    norm.includes('injoon') ||
-    norm.includes('guy') ||
-    norm.includes('fenrir') ||
-    norm.includes('charon') ||
-    norm.includes('michael') ||
-    norm.includes('bongjin') ||
-    norm.includes('gookmin');
+  // 🌟 Strict female-only voice enforcement per user instruction
+  const isMale = false;
 
-  let resolvedVoice = req;
-  if (!resolvedVoice) {
-    resolvedVoice = isMale ? 'Fenrir' : 'Kore';
+  let resolvedVoice = 'Kore';
+  if (norm.includes('sunhi') || norm.includes('lucy')) {
+    resolvedVoice = 'Lucy';
+  } else if (norm.includes('kore')) {
+    resolvedVoice = 'Kore';
+  } else if (req.startsWith('en-US-') || req.startsWith('en-GB-')) {
+    resolvedVoice = 'en-US-AriaNeural';
   }
 
   // If text contains Korean or voice is Korean persona, lock primaryLang as 'ko'
   const isExplicitEnglish = req.startsWith('en-US-') || req.startsWith('en-GB-');
   const primaryLang: 'ko' | 'en' = (!hasKorean && isExplicitEnglish) ? 'en' : 'ko';
 
-  return { voice: resolvedVoice, isMale, primaryLang };
+  return { voice: resolvedVoice, isMale: false, primaryLang };
 }
 
 export function playNativeBrowserSpeech(
@@ -176,27 +167,15 @@ export function playNativeBrowserSpeech(
         name.includes('enhanced') ||
         name.includes('premium');
 
-      if (isMale) {
-        // User voice: Prioritize MALE voices strictly
-        if (isMaleVoiceName) {
-          let score = 100;
-          if (name.includes('injoon') || name.includes('minsu') || name.includes('guy')) score += 50;
-          if (isNatural) score += 30;
-          return score;
-        }
-        if (isFemaleVoiceName) return -1000;
-        return 10;
-      } else {
-        // Lucy voice: MUST ALWAYS BE STRICTLY FEMALE!
-        if (isMaleVoiceName) return -1000; // STRICTLY BAN male voices for Lucy
-        if (isFemaleVoiceName) {
-          let score = 100;
-          if (name.includes('sunhi') || name.includes('heami') || name.includes('yuna') || name.includes('seoyeon') || name.includes('siri')) score += 50;
-          if (isNatural) score += 30;
-          return score;
-        }
-        return isNatural ? 60 : 30;
+      // STRICTLY FEMALE VOICES ONLY per user instruction
+      if (isMaleVoiceName) return -1000;
+      if (isFemaleVoiceName) {
+        let score = 100;
+        if (name.includes('sunhi') || name.includes('heami') || name.includes('yuna') || name.includes('seoyeon') || name.includes('siri')) score += 50;
+        if (isNatural) score += 30;
+        return score;
       }
+      return isNatural ? 60 : 30;
     };
 
     const sorted = langVoices.sort((a, b) => getVoiceScore(b) - getVoiceScore(a));

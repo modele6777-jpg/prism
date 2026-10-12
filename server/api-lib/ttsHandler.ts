@@ -31,6 +31,10 @@ export interface TTSHandlerResult {
   sampleRate?: number;
 }
 
+// Circuit breakers to prevent repeated 403/429 spam and latency when upstream endpoints block or exhaust quota
+let edgeTtsBlockedUntil = 0;
+let geminiTtsQuotaBlockedUntil = 0;
+
 export function analyzeServerTextEmotion(text: string, explicitEmotion?: string): { emotion: string; rate: string; pitch: string } {
   let declared = explicitEmotion ? String(explicitEmotion).trim() : '';
   if (!declared && text) {
@@ -202,24 +206,11 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
     throw new Error("Empty speech text");
   }
 
-  const resolvedVoiceKey = voice || "Kore";
+  const resolvedVoiceKey = "Kore";
   const normVoice = (voice || "").toLowerCase();
 
-  const isMaleVoice =
-    voice === "Fenrir" ||
-    voice === "Charon" ||
-    voice === "Michael" ||
-    voice === "Guy" ||
-    voice === "onyx" ||
-    voice === "user" ||
-    voice === "male" ||
-    normVoice.includes("injoon") ||
-    normVoice.includes("guy") ||
-    normVoice.includes("fenrir") ||
-    normVoice.includes("charon") ||
-    normVoice.includes("michael") ||
-    normVoice.includes("bongjin") ||
-    normVoice.includes("gookmin");
+  // 🌟 Strict female-only voice enforcement across all engines per user instruction
+  const isMaleVoice = false;
 
   // Determine language context: keep Korean neural voice consistent throughout the session,
   // even if an individual chunk consists of numbers, English terms, or symbols.
@@ -227,38 +218,14 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
   const isExplicitEnglishVoice =
     voice.startsWith("en-US-") ||
     voice.startsWith("en-GB-") ||
-    ((normVoice === "guy" || normVoice === "jenny" || normVoice === "aria") && language === "en");
+    ((normVoice === "jenny" || normVoice === "aria") && language === "en");
 
   let lang = "ko-KR";
-  let voiceName = isMaleVoice ? "ko-KR-InJoonNeural" : "ko-KR-SunHiNeural";
+  let voiceName = "ko-KR-SunHiNeural"; // Consistent, warm Korean female neural voice
 
   if (isExplicitEnglishVoice && !hasKoreanInText) {
     lang = "en-US";
-    voiceName = isMaleVoice ? "en-US-GuyNeural" : "en-US-AriaNeural";
-  } else if (voice && (voice.includes("Neural") || voice.startsWith("ko-KR-"))) {
-    if (voice.includes("SoonBok") || normVoice.includes("soonbok") || normVoice.includes("zephyr")) {
-      voiceName = "ko-KR-SunHiNeural";
-    } else if (normVoice.includes("injoon") || normVoice.includes("puck")) {
-      voiceName = "ko-KR-InJoonNeural";
-    } else if (normVoice.includes("hyunsu")) {
-      voiceName = "ko-KR-HyunsuNeural";
-    } else if (normVoice.includes("sunhi") || normVoice.includes("kore")) {
-      voiceName = "ko-KR-SunHiNeural";
-    } else {
-      voiceName = isMaleVoice ? "ko-KR-InJoonNeural" : "ko-KR-SunHiNeural";
-    }
-  } else if (normVoice.includes("soonbok") || normVoice.includes("zephyr")) {
-    voiceName = "ko-KR-SunHiNeural";
-  } else if (normVoice.includes("hyunsu")) {
-    voiceName = "ko-KR-HyunsuNeural";
-  } else if (normVoice.includes("injoon") || normVoice.includes("puck")) {
-    voiceName = "ko-KR-InJoonNeural";
-  } else if (normVoice.includes("sunhi") || normVoice.includes("kore") || normVoice.includes("lucy")) {
-    voiceName = "ko-KR-SunHiNeural";
-  } else if (isMaleVoice) {
-    voiceName = "ko-KR-InJoonNeural";
-  } else {
-    voiceName = "ko-KR-SunHiNeural";
+    voiceName = "en-US-AriaNeural"; // Warm English female neural voice
   }
 
   // 🌟 문장의 감정 분석 결과 기반 동적 음성 톤 (pitch, rate) 미세 조절
@@ -267,7 +234,7 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
   const rate = options.rate && options.rate.trim() ? options.rate.trim() : analyzed.rate;
   const pitch = options.pitch && options.pitch.trim() ? options.pitch.trim() : analyzed.pitch;
 
-  const cacheKey = `${resolvedVoiceKey}_${resolvedEmotion}_${rate}_${pitch}_${cleanText}`;
+  const cacheKey = `female_${resolvedVoiceKey}_${resolvedEmotion}_${rate}_${pitch}_${cleanText}`;
 
   // Check in-memory cache
   const cached = ttsServerCache.get(cacheKey);
@@ -279,92 +246,96 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
     };
   }
 
-  // Primary Engine: Edge Neural TTS (100% consistent timbre and prosody across sequential chunks)
-  try {
-
-    const generateWithEdgeTTS = async (textToSpeak: string): Promise<Buffer | null> => {
-      // Strip any stray emojis or non-speech symbols that might disrupt EdgeTTS websocket
-      const safeText = textToSpeak
-        .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}]/gu, '')
-        .replace(/[【】★☆✦✧🌙🔮✨⭐※▶◆◇■□▲△▼▽“”‘’`~]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-
-      if (!safeText) return null;
-
-      const tts = new EdgeTTS({
-        voice: voiceName,
-        lang,
-        rate,
-        pitch,
-        outputFormat: "audio-24khz-96kbitrate-mono-mp3",
-      });
-
-      const tempPath = path.join(os.tmpdir(), `tts-${Date.now()}-${Math.random().toString(36).substring(7)}.mp3`);
-
-      // Generous timeout to avoid mid-sequence engine switches that cause voice changes
-      const edgeTimeoutMs = Math.max(10000, Math.min(24000, safeText.length * 45));
-
-      try {
-        await Promise.race([
-          tts.ttsPromise(safeText, tempPath),
-          new Promise((_, reject) => setTimeout(() => reject(new Error(`EdgeTTS timeout (${edgeTimeoutMs}ms)`)), edgeTimeoutMs)),
-        ]);
-
-        const buf = await fsPromises.readFile(tempPath);
-        await fsPromises.unlink(tempPath).catch(() => undefined);
-        return buf && buf.length > 0 ? buf : null;
-      } catch (err) {
-        await fsPromises.unlink(tempPath).catch(() => undefined);
-        throw err;
-      }
-    };
-
-    let finalBuffer: Buffer | null = null;
+  // Primary Engine: Edge Neural TTS (with circuit-breaker for 403 blocks)
+  if (Date.now() >= edgeTtsBlockedUntil) {
     try {
-      finalBuffer = await generateWithEdgeTTS(cleanText);
-    } catch (attemptErr) {
-      console.warn(`[TTS] EdgeTTS attempt 1 notice, retrying EdgeTTS once to preserve voice consistency:`, attemptErr);
-      try {
-        await new Promise((r) => setTimeout(r, 200));
-        finalBuffer = await generateWithEdgeTTS(cleanText);
-      } catch (retryErr) {
-        console.warn(`[TTS] EdgeTTS retry also failed, falling back:`, retryErr);
-      }
-    }
+      const generateWithEdgeTTS = async (textToSpeak: string): Promise<Buffer | null> => {
+        // Strip any stray emojis or non-speech symbols that might disrupt EdgeTTS websocket
+        const safeText = textToSpeak
+          .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}]/gu, '')
+          .replace(/[【】★☆✦✧🌙🔮✨⭐※▶◆◇■□▲△▼▽“”‘’`~]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
 
-    if (finalBuffer && finalBuffer.length > 0) {
-      const base64 = finalBuffer.toString("base64");
-      if (ttsServerCache.size > 500) {
-        const oldestKey = ttsServerCache.keys().next().value;
-        if (oldestKey) ttsServerCache.delete(oldestKey);
-      }
-      ttsServerCache.set(cacheKey, { base64, encoding: "mp3", sampleRate: 24000, timestamp: Date.now() });
+        if (!safeText) return null;
 
-      return {
-        audioContent: base64,
-        encoding: "mp3",
+        const tts = new EdgeTTS({
+          voice: voiceName,
+          lang,
+          rate,
+          pitch,
+          outputFormat: "audio-24khz-96kbitrate-mono-mp3",
+        });
+
+        const tempPath = path.join(os.tmpdir(), `tts-${Date.now()}-${Math.random().toString(36).substring(7)}.mp3`);
+        const edgeTimeoutMs = Math.max(10000, Math.min(24000, safeText.length * 45));
+
+        try {
+          await Promise.race([
+            tts.ttsPromise(safeText, tempPath),
+            new Promise((_, reject) => setTimeout(() => reject(new Error(`EdgeTTS timeout (${edgeTimeoutMs}ms)`)), edgeTimeoutMs)),
+          ]);
+
+          const buf = await fsPromises.readFile(tempPath);
+          await fsPromises.unlink(tempPath).catch(() => undefined);
+          return buf && buf.length > 0 ? buf : null;
+        } catch (err) {
+          await fsPromises.unlink(tempPath).catch(() => undefined);
+          throw err;
+        }
       };
+
+      let finalBuffer: Buffer | null = null;
+      try {
+        finalBuffer = await generateWithEdgeTTS(cleanText);
+      } catch (attemptErr: any) {
+        const errMsg = String(attemptErr?.message || attemptErr);
+        if (errMsg.includes('403') || errMsg.includes('Forbidden')) {
+          edgeTtsBlockedUntil = Date.now() + 10 * 60 * 1000;
+        } else {
+          try {
+            await new Promise((r) => setTimeout(r, 200));
+            finalBuffer = await generateWithEdgeTTS(cleanText);
+          } catch (retryErr: any) {
+            const retryMsg = String(retryErr?.message || retryErr);
+            if (retryMsg.includes('403') || retryMsg.includes('Forbidden')) {
+              edgeTtsBlockedUntil = Date.now() + 10 * 60 * 1000;
+            }
+          }
+        }
+      }
+
+      if (finalBuffer && finalBuffer.length > 0) {
+        const base64 = finalBuffer.toString("base64");
+        if (ttsServerCache.size > 500) {
+          const oldestKey = ttsServerCache.keys().next().value;
+          if (oldestKey) ttsServerCache.delete(oldestKey);
+        }
+        ttsServerCache.set(cacheKey, { base64, encoding: "mp3", sampleRate: 24000, timestamp: Date.now() });
+
+        return {
+          audioContent: base64,
+          encoding: "mp3",
+        };
+      }
+    } catch (_edgeError: any) {
+      // Gracefully fall through to Google / Gemini engines
     }
-  } catch (edgeError: any) {
-    console.warn("[TTS] EdgeTTS notice, trying Gemini / Google TTS fallback:", edgeError?.message || edgeError);
   }
 
-  // 3. Secondary Engine: Google AI Studio Gemini Flash TTS via official @google/genai SDK
+  // 2. Secondary Engine: Google AI Studio Gemini Flash TTS via official @google/genai SDK
   const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY || process.env.AI_API_KEY;
-  if (geminiApiKey) {
+  if (geminiApiKey && Date.now() >= geminiTtsQuotaBlockedUntil) {
     try {
       const { GoogleGenAI } = await import("@google/genai");
       const ai = new GoogleGenAI({ apiKey: geminiApiKey });
-      const selectedVoice = isMaleVoice ? "Fenrir" : "Kore";
+      const selectedVoice = "Kore"; // Guaranteed female voice
 
-      const prompt = isMaleVoice
-        ? `Read the following text aloud in Korean at natural standard 1.0x pace with a clear, comfortable male voice:\n\n${cleanText}`
-        : `Read the following text aloud in Korean at natural standard 1.0x pace with a warm, clear, comfortable female voice:\n\n${cleanText}`;
+      const prompt = `Read the following text aloud in Korean at natural standard 1.0x pace with a warm, clear, comfortable female voice (여성 목소리):\n\n${cleanText}`;
 
       const geminiResponse = await Promise.race([
         ai.models.generateContent({
-          model: "gemini-3.1-flash-tts-preview",
+          model: "gemini-3.8-flash-lite-tts",
           contents: [{ parts: [{ text: prompt }] }],
           config: {
             responseModalities: ["AUDIO"],
@@ -405,7 +376,10 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
         };
       }
     } catch (geminiErr: any) {
-      console.warn("[TTS] Gemini AI Studio voice fallback notice:", geminiErr?.message || geminiErr);
+      const gMsg = String(geminiErr?.message || geminiErr);
+      if (gMsg.includes('429') || gMsg.includes('RESOURCE_EXHAUSTED') || gMsg.includes('quota')) {
+        geminiTtsQuotaBlockedUntil = Date.now() + 15 * 60 * 1000; // 15 min cooldown on quota exhaustion
+      }
     }
   }
 

@@ -402,15 +402,13 @@ export async function invokeLLM(params: { messages: Message[], responseFormat?: 
 
 export async function textToSpeech(text: string, voice: string = 'Kore') {
   const isMale = voice === 'Fenrir' || voice === 'Charon' || voice === 'user' || voice === 'male';
-  const selectedVoice = isMale ? (voice === 'Charon' ? 'Charon' : 'Fenrir') : 'Kore';
-  const voiceInstruction = isMale
-    ? `Read the following Korean text aloud with a natural, confident, clear male voice (남성 목소리) without adding any commentary:\n\n${text}`
-    : `Read the following Korean text aloud with a warm, gentle, clear female voice (여성 목소리) without adding any commentary:\n\n${text}`;
+  const selectedVoice = 'Kore';
+  const voiceInstruction = `Read the following Korean text aloud with a warm, gentle, clear female voice (여성 목소리) without adding any commentary:\n\n${text}`;
 
   if (genAI) {
     try {
       const response = await genAI.models.generateContent({
-        model: "gemini-3.1-flash-tts-preview",
+        model: "gemini-3.8-flash-lite-tts",
         contents: [{ parts: [{ text: voiceInstruction }] }],
         config: {
           responseModalities: [Modality.AUDIO],
@@ -424,8 +422,8 @@ export async function textToSpeech(text: string, voice: string = 'Kore') {
 
       const audioData = response.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData?.mimeType?.startsWith('audio/'))?.inlineData?.data;
       if (audioData) return audioData;
-    } catch (error) {
-      console.warn("[textToSpeech] Direct Gemini AI Studio TTS failed, falling back to server endpoint:", error);
+    } catch (_error) {
+      // Gracefully fall back to server endpoint
     }
   }
 

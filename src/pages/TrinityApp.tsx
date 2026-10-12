@@ -139,6 +139,7 @@ import {
 import { DailyOracleLoadingOverlay } from "@/components/DailyOracleLoadingOverlay";
 import { useSmartScroll } from "@/hooks/useSmartScroll";
 import { SmartScrollResumeButton } from "@/components/common/SmartScrollResumeButton";
+import { TTSHighlightText } from "@/utils/ttsHighlight";
 
 const EnergyAnalysisSchema = z.object({
   luckScore: z
@@ -3777,7 +3778,7 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
                                                 </div>
                                                 <div>
                                                   <div className="flex items-center gap-2">
-                                                    <span className="text-[10px] sm:text-xs uppercase tracking-widest font-bold text-white/60 font-sans">마스터 최종 판정</span>
+                                                    <span className="text-[10px] sm:text-xs uppercase tracking-widest font-bold text-white/60 font-sans"><TTSHighlightText text="마스터 최종 판정" /></span>
                                                     <span className={`text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full border ${
                                                       tarotYesNoVerdict.type === 'NO'
                                                         ? 'bg-rose-500/20 text-rose-300 border-rose-400/30'
@@ -3785,10 +3786,10 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
                                                           ? 'bg-amber-500/20 text-amber-300 border-amber-400/30'
                                                           : 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30'
                                                     }`}>
-                                                      {tarotYesNoVerdict.label}
+                                                      <TTSHighlightText text={tarotYesNoVerdict.label} />
                                                     </span>
                                                   </div>
-                                                  <p className="text-xs text-white/90 mt-1 font-sans font-medium">{tarotYesNoVerdict.badgeText}</p>
+                                                  <p className="text-xs text-white/90 mt-1 font-sans font-medium"><TTSHighlightText text={tarotYesNoVerdict.badgeText} /></p>
                                                 </div>
                                               </div>
                                               <div className={`text-2xl sm:text-3xl font-black shrink-0 tracking-tight ${

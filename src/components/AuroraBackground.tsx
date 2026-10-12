@@ -528,17 +528,14 @@ const AuroraBackgroundComponent: React.FC = () => {
       {!isMobile && <ConstellationsLayer />}
       {!isMobile && <ShootingStars count={shootingStarCount} />}
 
-      {!isMobile && (
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            opacity: legacy ? 0.08 : 0.06,
-            backgroundImage:
-              'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.95) 0.75px, transparent 0)',
-            backgroundSize: legacy ? '36px 36px' : '42px 42px',
-          }}
-        />
-      )}
+      {/* Subtle organic cosmic nebula vignette without artificial grid/graph-paper pattern */}
+      <div
+        className="absolute inset-0 pointer-events-none mix-blend-screen opacity-50"
+        style={{
+          background:
+            'radial-gradient(ellipse 90% 60% at 50% -15%, rgba(139, 92, 246, 0.12), transparent 70%), radial-gradient(ellipse 70% 50% at 90% 80%, rgba(245, 158, 11, 0.08), transparent 60%)',
+        }}
+      />
     </div>
   );
 };

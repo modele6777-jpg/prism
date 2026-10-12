@@ -95,6 +95,18 @@ export function matchSentenceInString(
     }
   }
 
+  // 5. Title / Subtitle containment match:
+  // When source is a title, subtitle, or label that is contained within the active spoken sentence
+  const trimmedSource = source.trim();
+  if (trimmedSource.length >= 2) {
+    const cleanS = trimmedSource.replace(/[^가-힣a-zA-Z0-9]/g, '').toLowerCase();
+    const cleanT = trimmedTarget.replace(/[^가-힣a-zA-Z0-9]/g, '').toLowerCase();
+    if (cleanS.length >= 2 && (cleanT.includes(cleanS) || cleanS.includes(cleanT))) {
+      const start = source.indexOf(trimmedSource);
+      return { start: Math.max(0, start), end: Math.max(0, start) + trimmedSource.length };
+    }
+  }
+
   return null;
 }
 

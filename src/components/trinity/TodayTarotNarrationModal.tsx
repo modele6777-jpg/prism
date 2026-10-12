@@ -370,7 +370,7 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
                 <span className="truncate">오늘의 타로 오라클 (Today&apos;s Tarot Oracle)</span>
               </div>
               <h2 className="text-base sm:text-lg font-display font-bold text-white tracking-tight flex items-center gap-2 truncate">
-                <span>오늘의 타로 리딩 & 음성 낭독</span>
+                <span><TTSHighlightText text="오늘의 타로 리딩 & 음성 낭독" /></span>
               </h2>
             </div>
 
@@ -438,15 +438,15 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
               <div className="space-y-1.5 text-center sm:text-left flex-1 min-w-0">
                 <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
                   <span className="text-[10px] font-mono uppercase tracking-widest text-yellow-400/80 font-bold">
-                    COSMIC ANCHOR
+                    <TTSHighlightText text="COSMIC ANCHOR" />
                   </span>
                   <span className="text-[9px] px-2 py-0.5 rounded-full bg-yellow-400/20 text-yellow-200 border border-yellow-400/30 font-semibold">
-                    {card.reversed ? '역방향 (Reversed)' : '정방향 (Upright)'}
+                    <TTSHighlightText text={card.reversed ? '역방향 (Reversed)' : '정방향 (Upright)'} />
                   </span>
                 </div>
                 <div className="flex items-center justify-center sm:justify-start gap-2.5 flex-wrap">
                   <h3 className="text-lg sm:text-xl font-bold text-white tracking-wide">
-                    {card.nameKo} <span className="text-xs text-white/50 font-mono font-normal">({card.name})</span>
+                    <TTSHighlightText text={card.nameKo} /> <span className="text-xs text-white/50 font-mono font-normal">({card.name})</span>
                   </h3>
                   <button
                     type="button"
@@ -603,13 +603,13 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
               <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10 space-y-2 mt-2">
                 <div className="flex items-center gap-2 text-xs font-mono text-yellow-300/90 flex-wrap">
                   <span className="px-2 py-0.5 rounded-md bg-yellow-400/10 border border-yellow-400/20">
-                    주파수: {narrationData.frequency}
+                    <TTSHighlightText text={`주파수: ${narrationData.frequency}`} />
                   </span>
                   <span className="px-2 py-0.5 rounded-md bg-yellow-400/10 border border-yellow-400/20">
-                    행운수: {narrationData.luckyNumber}
+                    <TTSHighlightText text={`행운수: ${narrationData.luckyNumber}`} />
                   </span>
                   <span className="px-2 py-0.5 rounded-md bg-yellow-400/10 border border-yellow-400/20">
-                    행운색: {narrationData.luckyColor}
+                    <TTSHighlightText text={`행운색: ${narrationData.luckyColor}`} />
                   </span>
                 </div>
                 {narrationData.rawBlessing && (

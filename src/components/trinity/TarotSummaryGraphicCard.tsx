@@ -161,11 +161,11 @@ export function TarotSummaryGraphicCard({
             <div className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping inline-block" />
               <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-amber-300/80 font-sans">
-                {subtitle}
+                <TTSHighlightedText text={subtitle} />
               </span>
             </div>
             <h4 className="text-sm sm:text-base font-black text-white tracking-tight flex items-center gap-1.5">
-              <span>{title}</span>
+              <span><TTSHighlightedText text={title} /></span>
             </h4>
           </div>
         </div>
@@ -242,10 +242,10 @@ export function TarotSummaryGraphicCard({
                   <span
                     className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${row.theme.badgeBg} ${row.theme.badgeBorder} ${row.theme.accentText}`}
                   >
-                    {row.tag}
+                    <TTSHighlightedText text={row.tag} />
                   </span>
                   <span className="text-[11px] font-semibold text-white/50 font-sans hidden sm:inline">
-                    {row.label}
+                    <TTSHighlightedText text={row.label} />
                   </span>
                   {row.highlightBadge && (
                     <span
