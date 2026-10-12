@@ -49,43 +49,39 @@ function spreadAt(index: number, salt: number, max: number): number {
   return ((index * 37 + salt * 17) % 1000) / 1000 * max;
 }
 
-const METEOR_SEQUENCE_CYCLE_S = 12;
+const METEOR_SEQUENCE_CYCLE_S = 10;
 
 function ShootingStars({ count }: { count: number }) {
   const meteors = useMemo(
     () =>
-      Array.from({ length: count }, (_, i) => {
-        // Left edge columns + full-height lanes so meteors spawn across the screen, not one corner.
-        const laneCols = Math.min(4, Math.max(2, Math.ceil(count / 3)));
-        const laneRows = Math.ceil(count / laneCols);
-        const col = i % laneCols;
-        const row = Math.floor(i / laneCols) % laneRows;
+      Array.from({ length: Math.max(count, 5) }, (_, i) => {
+        const effectiveCount = Math.max(count, 5);
+        // Distribute starting points across the upper and left zones of the sky
+        const startLeft = -5 + (i * 20) % 85 + spreadAt(i, 1, 8);
+        const startTop = 2 + (i * 15) % 62 + spreadAt(i, 2, 6);
 
-        const startLeft = -6 + col * (28 / Math.max(laneCols - 1, 1)) + spreadAt(i, 1, 4);
-        const startTop = 4 + row * (72 / Math.max(laneRows - 1, 1)) + spreadAt(i, 2, 6);
+        // Travel diagonally (top-left to bottom-right)
+        const endX = 70 + spreadAt(i, 3, 28);
+        const endY = 22 + spreadAt(i, 4, 28) + (i % 3) * 6;
 
-        // Travel left → right with a gentle downward arc.
-        const endX = 68 + spreadAt(i, 3, 34);
-        const endY = 12 + spreadAt(i, 4, 28) + col * 3;
-
-        const stagger = (METEOR_SEQUENCE_CYCLE_S * 0.88) / Math.max(count, 1);
+        const stagger = (METEOR_SEQUENCE_CYCLE_S * 0.92) / effectiveCount;
         return {
           id: i,
           startLeft,
           startTop,
-          trail: 64 + spreadAt(i, 5, 48),
+          trail: 95 + spreadAt(i, 5, 50),
           angle: meteorFlightAngle(endX, endY),
           endX,
           endY,
           cycle: METEOR_SEQUENCE_CYCLE_S,
-          delay: i * stagger + spreadAt(i, 6, 2.4),
+          delay: (i * stagger) % METEOR_SEQUENCE_CYCLE_S + spreadAt(i, 6, 1.2),
         };
       }),
     [count],
   );
 
   return (
-    <div className="absolute inset-0 overflow-hidden" aria-hidden>
+    <div className="absolute inset-0 overflow-hidden pointer-events-none z-[1]" aria-hidden>
       {meteors.map((meteor) => (
         <div
           key={meteor.id}
@@ -435,7 +431,7 @@ const AuroraBackgroundComponent: React.FC = () => {
   const nebulaBlur = isXS ? 26 : legacy ? 48 : foldCover ? 82 : profile === 'full' || galaxy ? 104 : 72;
   const animateOrbs = !isMobile && (profile === 'full' || (galaxy && !foldCover));
   const staticStarCount = isMobile ? 20 : isXS ? 18 : legacy ? 28 : foldCover ? 32 : 36;
-  const shootingStarCount = isXS ? 1 : legacy ? 2 : foldCover ? 3 : profile === 'full' ? 5 : galaxy ? 4 : 3;
+  const shootingStarCount = isXS ? 4 : legacy ? 4 : foldCover ? 5 : profile === 'full' ? 8 : galaxy ? 6 : 5;
 
   return (
     <div
@@ -524,9 +520,10 @@ const AuroraBackgroundComponent: React.FC = () => {
         </>
       )}
 
-      {!isMobile && <Starfield density={starDensity} minSize={minStarSize} />}
-      {!isMobile && <ConstellationsLayer />}
-      {!isMobile && <ShootingStars count={shootingStarCount} />}
+      {/* Dynamic Starfield, Constellations & Shooting Stars (rendered on all devices) */}
+      <Starfield density={starDensity} minSize={minStarSize} />
+      <ConstellationsLayer />
+      <ShootingStars count={shootingStarCount} />
     </div>
   );
 };

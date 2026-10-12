@@ -969,31 +969,33 @@ html.perf-reduced .cosmic-star-twinkle {
   animation: none !important;
 }
 
-/* 별똥별: 좌상단 → 우하단, 빠른 직선 비행 + 긴 꼬리 */
+/* 별똥별: 좌상단 → 우하단, 빠른 직선 비행 + 긴 꼬리 + 눈부신 헤드 광채 */
 .cosmic-meteor {
   position: absolute;
   opacity: 0;
   pointer-events: none;
-  animation: cosmic-meteor-fly var(--meteor-cycle, 12s) linear var(--meteor-delay, 0s) infinite;
+  animation: cosmic-meteor-fly var(--meteor-cycle, 10s) linear var(--meteor-delay, 0s) infinite;
   will-change: transform, opacity;
+  z-index: 1;
 }
 
 .cosmic-meteor__streak {
   position: relative;
   display: block;
-  width: var(--meteor-trail, 90px);
-  height: 1px;
-  border-radius: 1px;
+  width: var(--meteor-trail, 110px);
+  height: 1.5px;
+  border-radius: 9999px;
   transform: rotate(var(--meteor-angle, 38deg));
   transform-origin: 100% 50%;
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255, 255, 255, 0) 12%,
-    rgba(200, 220, 255, 0.2) 50%,
-    rgba(255, 255, 255, 0.85) 88%,
-    #fff 100%
+    rgba(255, 255, 255, 0) 6%,
+    rgba(180, 220, 255, 0.45) 45%,
+    rgba(255, 255, 255, 0.95) 86%,
+    #ffffff 100%
   );
+  filter: drop-shadow(0 0 3px rgba(180, 220, 255, 0.8));
 }
 
 .cosmic-meteor__streak::after {
@@ -1001,14 +1003,15 @@ html.perf-reduced .cosmic-star-twinkle {
   position: absolute;
   right: -1px;
   top: 50%;
-  width: 2px;
-  height: 2px;
+  width: 3.5px;
+  height: 3.5px;
   border-radius: 50%;
-  background: #fff;
+  background: #ffffff;
   transform: translateY(-50%);
   box-shadow:
-    0 0 4px 1px rgba(255, 255, 255, 0.95),
-    0 0 10px 3px rgba(180, 210, 255, 0.55);
+    0 0 6px 2px rgba(255, 255, 255, 1),
+    0 0 12px 4px rgba(160, 215, 255, 0.85),
+    0 0 20px 6px rgba(254, 240, 138, 0.5);
 }
 
 @keyframes cosmic-meteor-fly {
@@ -1016,19 +1019,19 @@ html.perf-reduced .cosmic-star-twinkle {
     opacity: 0;
     transform: translate3d(0, 0, 0);
   }
-  0.4% {
+  0.3% {
     opacity: 1;
     transform: translate3d(0, 0, 0);
   }
-  4.2% {
-    opacity: 0.9;
+  5.5% {
+    opacity: 0.95;
     transform: translate3d(var(--meteor-end-x, 92vw), var(--meteor-end-y, 68vh), 0);
   }
-  5.2% {
+  6.8% {
     opacity: 0;
     transform: translate3d(var(--meteor-end-x, 92vw), var(--meteor-end-y, 68vh), 0);
   }
-  5.21%,
+  6.81%,
   100% {
     opacity: 0;
     transform: translate3d(0, 0, 0);
@@ -1036,8 +1039,9 @@ html.perf-reduced .cosmic-star-twinkle {
 }
 
 html.perf-legacy .prism-aura-bg .cosmic-meteor,
+html.perf-mobile .prism-aura-bg .cosmic-meteor,
 html.perf-reduced .prism-aura-bg .cosmic-meteor {
-  animation: cosmic-meteor-fly var(--meteor-cycle, 12s) linear var(--meteor-delay, 0s) infinite !important;
+  animation: cosmic-meteor-fly var(--meteor-cycle, 10s) linear var(--meteor-delay, 0s) infinite !important;
 }
 
 /* 별자리 (Constellations): 우아하고 은은한 성도 선 및 알파 성급 반짝임 */
