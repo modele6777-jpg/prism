@@ -39,7 +39,8 @@ export function playNativeBrowserSpeech(
   sessionToVerify?: string | null,
   isSequenceChunk: boolean = false,
   voiceNameOrType: string = 'Kore',
-  speed?: number,
+  speedMultiplier?: number,
+  pitchMultiplier?: number,
 ): Promise<void> {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
     return Promise.resolve();
@@ -65,10 +66,10 @@ export function playNativeBrowserSpeech(
   activeUtterances.add(utterance);
   utterance.lang = isKorean ? 'ko-KR' : 'en-US';
 
-  const isMeditation = /(?:명상|호흡|들숨|날숨|방하착)/.test(cleanText);
-  // 🌟 모든 음성 낭독을 1.0 배속 표준 속도로 고정
-  utterance.rate = 1.0;
-  utterance.pitch = isMeditation ? 0.98 : 1.0;
+  const profile = analyzeTextEmotion(cleanText);
+  // 🌟 문장의 감정에 맞춘 섬세하고 자연스러운 미세 음높이 및 속도 실시간 전환
+  utterance.rate = speedMultiplier !== undefined ? speedMultiplier : profile.playbackRate;
+  utterance.pitch = pitchMultiplier !== undefined ? pitchMultiplier : profile.pitchMultiplier;
 
   const isMale =
     voiceNameOrType === 'Fenrir' ||
@@ -257,23 +258,24 @@ export interface TTSAudioData {
 
 const ttsCache = new Map<string, Promise<TTSAudioData | null>>();
 
-export function getTTSCacheKey(text: string, voice?: string, emotion?: string, _rate?: string, _speed?: number): string {
+export function getTTSCacheKey(text: string, voice?: string, emotion?: string, rate?: string, pitch?: string): string {
   const clean = normalizeTextForSpeech(text);
-  // 🌟 모든 TTS 재생 및 캐시는 1.0 배속 표준 속도로 영구 고정
-  return `${voice || 'default'}_${emotion || 'none'}_1.0_${clean}`;
+  const emo = emotion || 'none';
+  const r = rate || '+0%';
+  const p = pitch || '+0Hz';
+  return `${voice || 'default'}_${emo}_${r}_${p}_${clean}`;
 }
 
-export function prefetchTTS(text: string, voice?: string, emotion?: string, _rate?: string, _speed?: number): Promise<TTSAudioData | null> {
+export function prefetchTTS(text: string, voice?: string, emotion?: string, rateOverride?: string, pitchOverride?: string): Promise<TTSAudioData | null> {
   const cleanText = normalizeTextForSpeech(text);
   if (!cleanText) return Promise.resolve(null);
 
-  let activeEmotion = emotion;
-  if (!activeEmotion) {
-    const emotionMatch = text.match(/\[EMOTION:\s*([^\]]+)\]/i);
-    if (emotionMatch) activeEmotion = emotionMatch[1].trim();
-  }
+  const profile = analyzeTextEmotion(cleanText, emotion);
+  const activeEmotion = emotion || profile.emotion;
+  const rate = rateOverride || profile.rateStr;
+  const pitch = pitchOverride || profile.pitchStr;
 
-  const key = getTTSCacheKey(text, voice, activeEmotion);
+  const key = getTTSCacheKey(text, voice, activeEmotion, rate, pitch);
   if (ttsCache.has(key)) {
     return ttsCache.get(key)!;
   }
@@ -285,7 +287,14 @@ export function prefetchTTS(text: string, voice?: string, emotion?: string, _rat
       const response = await fetch('/api/ai/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: cleanText, voice, emotion: activeEmotion, rate: '+0%', speed: 1.0 }),
+        body: JSON.stringify({
+          text: cleanText,
+          voice,
+          emotion: activeEmotion,
+          rate,
+          pitch,
+          speed: profile.playbackRate,
+        }),
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
@@ -374,8 +383,8 @@ export const playTTS = async (
   sequenceSessionId?: string,
   isSequenceChunk: boolean = false,
   fullTextReference?: string,
-  _rate?: string,
-  _speed?: number,
+  rateOverride?: string,
+  pitchOverrideOrSpeed?: string | number,
 ): Promise<void> => {
   ensureTTSLifecycle();
   const cleanText = normalizeTextForSpeech(text);
@@ -426,14 +435,12 @@ export const playTTS = async (
 
   const sessionToVerify = mySessionId;
 
-  // Auto-extract emotion tag if not explicitly provided
-  let activeEmotion = emotion;
-  if (!activeEmotion) {
-    const emotionMatch = text.match(/\[EMOTION:\s*([^\]]+)\]/i);
-    if (emotionMatch) {
-      activeEmotion = emotionMatch[1].trim();
-    }
-  }
+  // Dynamic sentence emotion analysis & rate/pitch prosody resolution
+  const profile = analyzeTextEmotion(cleanText, emotion);
+  const activeEmotion = emotion || profile.emotion;
+  const rate = rateOverride || profile.rateStr;
+  const pitchOverride = typeof pitchOverrideOrSpeed === 'string' ? pitchOverrideOrSpeed : undefined;
+  const pitch = pitchOverride || profile.pitchStr;
 
   try {
     // Synchronously unlock audio during user gesture (required for mobile iOS/Android WebAudio playback)
@@ -443,7 +450,7 @@ export const playTTS = async (
       console.warn("[TTS] Failed to warm up audio systems:", e);
     }
 
-    const cacheKey = getTTSCacheKey(text, voice, activeEmotion);
+    const cacheKey = getTTSCacheKey(text, voice, activeEmotion, rate, pitch);
     let data: TTSAudioData | null = null;
     if (ttsCache.has(cacheKey)) {
       data = await ttsCache.get(cacheKey)!;
@@ -456,7 +463,14 @@ export const playTTS = async (
       const response = await fetch('/api/ai/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: cleanText, voice, emotion: activeEmotion, rate: '+0%', speed: 1.0 }),
+        body: JSON.stringify({
+          text: cleanText,
+          voice,
+          emotion: activeEmotion,
+          rate,
+          pitch,
+          speed: profile.playbackRate,
+        }),
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
@@ -504,7 +518,7 @@ export const playTTS = async (
             data!.audioContent,
             encoding,
             data!.sampleRate ?? 24000,
-            activeEmotion || cleanText,
+            profile,
             isSequenceChunk,
             1.0,
           );
@@ -558,7 +572,14 @@ export const playTTS = async (
           const retryRes = await fetch('/api/ai/tts', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: cleanText, voice, emotion: activeEmotion, rate: '+0%', speed: 1.0 }),
+            body: JSON.stringify({
+              text: cleanText,
+              voice,
+              emotion: activeEmotion,
+              rate,
+              pitch,
+              speed: profile.playbackRate,
+            }),
             signal: retryController.signal,
           });
           clearTimeout(retryTimeoutId);
@@ -574,7 +595,7 @@ export const playTTS = async (
               });
               setTTSSessionActive(cleanText);
               const encoding = retryData.encoding === 'pcm' ? 'pcm' : 'mp3';
-              await playTTSAudio(retryData.audioContent, encoding, retryData.sampleRate ?? 24000, activeEmotion || cleanText, isSequenceChunk, 1.0);
+              await playTTSAudio(retryData.audioContent, encoding, retryData.sampleRate ?? 24000, profile, isSequenceChunk, 1.0);
               return;
             }
           }
@@ -582,13 +603,13 @@ export const playTTS = async (
           console.warn(`[TTS] Sequence chunk quick retry ${retryCount} error:`, retryErr);
         }
       }
-      // Fall back directly to native browser speech synthesis to prevent long silent freezes
+      // Fall back directly to native browser speech synthesis to maintain continuous speech flow
       console.warn('[TTS] Sequence chunk API failed, falling back to Native Browser Speech to maintain continuous speech flow');
-      return playNativeBrowserSpeech(cleanText, wait, sessionToVerify, isSequenceChunk, voice, 1.0);
+      return playNativeBrowserSpeech(cleanText, wait, sessionToVerify, isSequenceChunk, voice, profile.playbackRate, profile.pitchMultiplier);
     }
 
     console.warn('[TTS] API generation failed, falling back to Native Browser Speech...', error);
-    return playNativeBrowserSpeech(cleanText, wait, sessionToVerify, isSequenceChunk, voice, 1.0);
+    return playNativeBrowserSpeech(cleanText, wait, sessionToVerify, isSequenceChunk, voice, profile.playbackRate, profile.pitchMultiplier);
   }
 };
 
@@ -788,7 +809,7 @@ export const playTTSInChunks = async (
         activeSessionId: sequenceSessionId,
       });
 
-      // Proactively pre-fetch next upcoming 2 chunks in advance (locked to 1.0x)
+      // Proactively pre-fetch next upcoming 2 chunks in advance
       if (i + 1 < chunks.length) {
         prefetchTTS(chunks[i + 1], voice, emotion).catch(() => {});
       }
@@ -796,6 +817,7 @@ export const playTTSInChunks = async (
         prefetchTTS(chunks[i + 2], voice, emotion).catch(() => {});
       }
 
+      const chunkProfile = analyzeTextEmotion(chunks[i], emotion);
       const isLastChunk = i === chunks.length - 1;
       try {
         await playTTS(
@@ -806,11 +828,13 @@ export const playTTSInChunks = async (
           sequenceSessionId,
           true, // keep sequence session context intact across all chunks; cleanup is handled in sequence finally block
           cleanText,    // preserve activeFullText for UI synchronization
+          chunkProfile.rateStr,
+          chunkProfile.pitchStr,
         );
       } catch (chunkErr) {
         console.warn(`[TTS] Sequence chunk ${i + 1}/${chunks.length} error, recovering with fallback:`, chunkErr);
         if (ttsState.activeSessionId === sequenceSessionId && isPlayingSequence) {
-          await playNativeBrowserSpeech(chunks[i], true, sequenceSessionId, !isLastChunk, voice, 1.0).catch(() => {});
+          await playNativeBrowserSpeech(chunks[i], true, sequenceSessionId, !isLastChunk, voice, chunkProfile.playbackRate, chunkProfile.pitchMultiplier).catch(() => {});
         }
       }
 
@@ -953,7 +977,8 @@ export const playQAndATTS = async (
           activeFullText: cleanQuestion,
           activeSessionId: sequenceSessionId,
         });
-        await playTTS(qChunks[i], userVoice, true, undefined, sequenceSessionId, true, cleanQuestion);
+        const qProfile = analyzeTextEmotion(qChunks[i]);
+        await playTTS(qChunks[i], userVoice, true, undefined, sequenceSessionId, true, cleanQuestion, qProfile.rateStr, qProfile.pitchStr);
         if (i < qChunks.length - 1) {
           await new Promise((r) => setTimeout(r, 60));
         }
@@ -998,13 +1023,14 @@ export const playQAndATTS = async (
         if (i + 1 < aChunks.length) prefetchTTS(aChunks[i + 1], aiVoice, '다정').catch(() => {});
         if (i + 2 < aChunks.length) prefetchTTS(aChunks[i + 2], aiVoice, '다정').catch(() => {});
 
+        const aProfile = analyzeTextEmotion(aChunks[i], '다정');
         const isLastChunk = i === aChunks.length - 1;
         try {
-          await playTTS(aChunks[i], aiVoice, true, '다정', sequenceSessionId, !isLastChunk, cleanAnswer);
+          await playTTS(aChunks[i], aiVoice, true, '다정', sequenceSessionId, !isLastChunk, cleanAnswer, aProfile.rateStr, aProfile.pitchStr);
         } catch (chunkErr) {
           console.warn(`[TTS] QA chunk ${i + 1}/${aChunks.length} error, recovering:`, chunkErr);
           if (ttsState.activeSessionId === sequenceSessionId && isPlayingSequence) {
-            await playNativeBrowserSpeech(aChunks[i], true, sequenceSessionId, !isLastChunk, aiVoice).catch(() => {});
+            await playNativeBrowserSpeech(aChunks[i], true, sequenceSessionId, !isLastChunk, aiVoice, aProfile.playbackRate, aProfile.pitchMultiplier).catch(() => {});
           }
         }
 

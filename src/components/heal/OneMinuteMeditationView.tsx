@@ -204,7 +204,7 @@ export function OneMinuteMeditationView({ onClose, isModal = false }: OneMinuteM
         affirmationLoopSessionIdRef.current === sessionId
       ) {
         try {
-          await playTTS(affirmation, 'Kore', true, '명상', undefined, false, undefined, undefined, 1.0);
+          await playTTS(affirmation, 'Kore', true, '명상');
         } catch (err) {
           console.warn('[Meditation] Affirmation loop TTS error:', err);
         }

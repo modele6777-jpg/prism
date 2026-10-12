@@ -27,12 +27,15 @@ export default async function handler(req: { method?: string; body?: unknown }, 
     const text = String(body.text || "");
     const voice = body.voice ? String(body.voice) : undefined;
     const emotion = body.emotion ? String(body.emotion) : undefined;
+    const rate = body.rate ? String(body.rate) : undefined;
+    const pitch = body.pitch ? String(body.pitch) : undefined;
+    const speed = typeof body.speed === "number" ? body.speed : undefined;
 
     if (!text.trim()) {
       return res.status(400).json({ error: "Empty speech text" });
     }
 
-    const result = await handleTTS({ text, voice, emotion });
+    const result = await handleTTS({ text, voice, emotion, rate, pitch, speed });
     return res.status(200).json(result);
   } catch (err: unknown) {
     console.error("[ai/tts] Vercel error:", err);
