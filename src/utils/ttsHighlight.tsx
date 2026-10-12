@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { subscribeTTS, TTSState } from './tts';
+import {
+  cleanSentenceForMatching,
+  isSentenceActive,
+  extractTextContent,
+} from '@/components/common/TTSHighlightedText';
 
 /**
  * Hook to track current TTS speech state and the specific sentence currently being spoken.
@@ -35,11 +40,11 @@ export function useTTSCurrentSentence() {
 /**
  * Robust sentence matching helper.
  * Finds the exact start and end offset of targetSentence within source string,
- * handling differences in trailing punctuation, quotes, and whitespace.
+ * handling differences in ordinals (첫째 vs 1.), trailing punctuation, quotes, and whitespace.
  */
 export function matchSentenceInString(
   source: string,
-  targetSentence: string
+  targetSentence: string,
 ): { start: number; end: number } | null {
   if (!source || !targetSentence) return null;
 
@@ -70,41 +75,9 @@ export function matchSentenceInString(
     }
   }
 
-  // 4. Normalized quotes and whitespace matching
-  const normalizeQuotes = (str: string) =>
-    str
-      .replace(/[\u2018\u2019]/g, "'")
-      .replace(/[\u201C\u201D]/g, '"')
-      .replace(/\s+/g, ' ');
-
-  const normSource = normalizeQuotes(source);
-  const normTarget = normalizeQuotes(trimmedTarget);
-  const normIdx = normSource.indexOf(normTarget);
-  if (normIdx !== -1 && normTarget.length >= 3) {
-    // Estimate corresponding location in original source
-    const approxStart = Math.max(0, normIdx - 2);
-    const searchSlice = source.slice(approxStart, approxStart + normTarget.length + 8);
-    const subIdx = searchSlice.indexOf(noPunctTarget);
-    if (subIdx !== -1) {
-      const start = approxStart + subIdx;
-      let end = start + noPunctTarget.length;
-      while (end < source.length && /[.!?。！？\s]/.test(source[end])) {
-        end++;
-      }
-      return { start, end };
-    }
-  }
-
-  // 5. Title / Subtitle containment match:
-  // When source is a title, subtitle, or label that is contained within the active spoken sentence
-  const trimmedSource = source.trim();
-  if (trimmedSource.length >= 2) {
-    const cleanS = trimmedSource.replace(/[^가-힣a-zA-Z0-9]/g, '').toLowerCase();
-    const cleanT = trimmedTarget.replace(/[^가-힣a-zA-Z0-9]/g, '').toLowerCase();
-    if (cleanS.length >= 2 && (cleanT.includes(cleanS) || cleanS.includes(cleanT))) {
-      const start = source.indexOf(trimmedSource);
-      return { start: Math.max(0, start), end: Math.max(0, start) + trimmedSource.length };
-    }
+  // 4. Normalized fuzzy match (handles ordinals '첫째' <-> '1.', quotes, whitespace)
+  if (isSentenceActive(source, targetSentence)) {
+    return { start: 0, end: source.length };
   }
 
   return null;
@@ -121,13 +94,27 @@ export function TTSActiveSentenceMark({
   children: React.ReactNode;
   isLight?: boolean;
 }) {
+  const markRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (markRef.current) {
+      try {
+        markRef.current.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'nearest',
+        });
+      } catch (_) {}
+    }
+  }, []);
+
   return (
     <mark
-      data-tts-active="true"
+      ref={markRef}
       className={`tts-active-sentence-highlight inline rounded px-1.5 py-0.5 transition-all duration-300 ${
         isLight
-          ? 'bg-amber-200/90 text-amber-950 border-b-2 border-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.25)] font-semibold'
-          : 'bg-amber-400/28 text-amber-100 border-b-2 border-amber-400 shadow-[0_0_14px_rgba(251,191,36,0.35)] font-medium'
+          ? 'bg-amber-200/90 text-amber-950 border-b-2 border-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.3)] font-semibold'
+          : 'bg-amber-400/35 text-amber-100 border-b-2 border-amber-400 shadow-[0_0_14px_rgba(251,191,36,0.4)] font-medium'
       }`}
     >
       {children}
@@ -137,14 +124,30 @@ export function TTSActiveSentenceMark({
 
 /**
  * Recursively parses React children or string, locating targetSentence and wrapping it in TTSActiveSentenceMark.
+ * If isHeading is true, matches the whole heading title holistically.
  */
 export function renderWithSentenceHighlight(
   children: React.ReactNode,
   activeSentence: string | null | undefined,
-  isLight: boolean = false
+  isLight: boolean = false,
+  isHeading: boolean = false,
 ): React.ReactNode {
   if (!activeSentence || !children) {
     return children;
+  }
+
+  // 🌟 If this element is a heading (h1~h6), match the aggregated title text holistically
+  if (isHeading) {
+    const fullHeadingText = extractTextContent(children);
+    if (fullHeadingText && isSentenceActive(fullHeadingText, activeSentence)) {
+      return <TTSActiveSentenceMark isLight={isLight}>{children}</TTSActiveSentenceMark>;
+    }
+  }
+
+  // Check if the entire node text matches
+  const aggregated = extractTextContent(children);
+  if (aggregated && isSentenceActive(aggregated, activeSentence)) {
+    return <TTSActiveSentenceMark isLight={isLight}>{children}</TTSActiveSentenceMark>;
   }
 
   let hasHighlighted = false;
@@ -207,7 +210,8 @@ export const TTSHighlightText: React.FC<{
   text: string;
   isLight?: boolean;
   className?: string;
-}> = ({ text, isLight = false, className = '' }) => {
+  isHeading?: boolean;
+}> = ({ text, isLight = false, className = '', isHeading = false }) => {
   const { isSpeaking, activeSentence, activeFullText } = useTTSCurrentSentence();
 
   const isMatching = useMemo(() => {
@@ -216,13 +220,11 @@ export const TTSHighlightText: React.FC<{
     if (activeFullText && (activeFullText.includes(text) || text.includes(activeFullText))) {
       return true;
     }
-    const cleanText = text.replace(/[.!?。！？\s]/g, '');
-    const cleanSentence = activeSentence.replace(/[.!?。！？\s]/g, '');
-    return cleanText.includes(cleanSentence) || cleanSentence.includes(cleanText);
+    return isSentenceActive(text, activeSentence);
   }, [isSpeaking, activeSentence, activeFullText, text]);
 
   const targetSentence = isMatching ? activeSentence : null;
-  const content = renderWithSentenceHighlight(text, targetSentence, isLight);
+  const content = renderWithSentenceHighlight(text, targetSentence, isLight, isHeading);
 
   return <span className={className}>{content}</span>;
 };

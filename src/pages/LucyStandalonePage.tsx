@@ -730,7 +730,7 @@ export default function LucyStandalonePage() {
           playQAndATTS(
             { text: cleanQuestion, id: prevUserMsg?.id },
             { text: cleanAnswer, id: lastMsg.id },
-            'Fenrir',
+            'Kore',
             'Kore',
             (_speaker, msg) => {
               if (msg.id) setPlayingMsgId(msg.id);
@@ -1030,7 +1030,7 @@ export default function LucyStandalonePage() {
               await playQAndATTS(
                 { text: cleanQuestion, id: undefined },
                 { text: cleanAnswer, id: replyMsgId },
-                'Fenrir',
+                'Kore',
                 'Kore',
                 (_speaker, msg) => {
                   if (msg.id) setPlayingMsgId(msg.id);
@@ -1556,7 +1556,7 @@ export default function LucyStandalonePage() {
                       {copiedId === msgId ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                     </button>
                     <button
-                      onClick={() => handleVoicePlay(msgId, textContent, isUser ? 'Fenrir' : 'Kore')}
+                      onClick={() => handleVoicePlay(msgId, textContent, 'Kore')}
                       className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
                         playingMsgId === msgId && (ttsInfo.isSpeaking || ttsInfo.isLoading)
                           ? 'text-amber-600 bg-amber-50'

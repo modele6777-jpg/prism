@@ -119,7 +119,7 @@ export const ROLE_MODELS: Record<RoleModelType, RoleModelDef> = {
     name: 'Michael Jackson',
     desc: '따뜻하고 순수한 힐링 메이트 (Gentle)',
     tagline: '사소한 이야기도 귀 기울여주는 포근하고 다정한 쉼터',
-    voice: 'Fenrir',
+    voice: 'Kore',
     theme: 'bg-amber-950/50 border-amber-500/30 text-amber-50',
     userTheme: 'bg-gradient-to-r from-amber-600 to-yellow-600 text-white border-amber-400/30',
     badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
@@ -448,7 +448,7 @@ export function RoleModelModal({ isOpen = true, onClose, isInline = false }: Rol
         <div className="flex items-center gap-2 shrink-0">
           {selectedModel && (
             <button
-              onClick={() => playConversation(activeMessages.map(m => ({ role: m.role, content: m.content })), modelDef?.voice || 'Kore', 'Fenrir')}
+              onClick={() => playConversation(activeMessages.map(m => ({ role: m.role, content: m.content })), modelDef?.voice || 'Kore', 'Kore')}
               title={isTTSActive ? "오디오 멈추기" : "대화 전체 오디오 듣기"}
               className={`p-2 sm:px-3.5 sm:py-2 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 text-xs font-semibold ${
                 isTTSActive 

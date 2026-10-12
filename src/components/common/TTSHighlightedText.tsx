@@ -1,27 +1,64 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useEffect } from 'react';
 import { useTTSState } from '@/utils/tts';
 
 /**
- * Clean string for fuzzy speech-to-text sentence alignment.
- * Strips all whitespace, punctuation, quotes, markdown formatting, emojis.
+ * Recursively extracts plain text content from any React node tree.
  */
-export function cleanSentenceForMatching(s: string): string {
-  if (!s) return '';
-  return s
-    .replace(/\[(?:EMOTION|YOUTUBE|TOOL|IMAGE|PROMPT|STAGE|SOUL_UPDATE|CARD_DRAWN|SYSTEM):[\s\S]*?\]/gi, '')
-    .replace(/[*_~`#>\[\]():;·•|/\\-]/g, ' ')
-    .replace(/(?:첫\s*번째|첫째|제\s*1\s*장|1\s*번|1\s*단계|챕터\s*1)/gi, '1')
-    .replace(/(?:두\s*번째|둘째|제\s*2\s*장|2\s*번|2\s*단계|챕터\s*2)/gi, '2')
-    .replace(/(?:세\s*번째|셋째|제\s*3\s*장|3\s*번|3\s*단계|챕터\s*3)/gi, '3')
-    .replace(/(?:네\s*번째|넷째|제\s*4\s*장|4\s*번|4\s*단계|챕터\s*4)/gi, '4')
-    .replace(/(?:다섯\s*번째|다섯째|제\s*5\s*장|5\s*번|5\s*단계|챕터\s*5)/gi, '5')
-    .replace(/[^가-힣a-zA-Z0-9]/g, '')
-    .toLowerCase();
+export function extractTextContent(node: React.ReactNode): string {
+  if (node === null || node === undefined || typeof node === 'boolean') {
+    return '';
+  }
+  if (typeof node === 'string' || typeof node === 'number') {
+    return String(node);
+  }
+  if (Array.isArray(node)) {
+    return node.map(extractTextContent).join('');
+  }
+  if (React.isValidElement(node)) {
+    const props = node.props as { children?: React.ReactNode };
+    if (props && props.children !== undefined) {
+      return extractTextContent(props.children);
+    }
+  }
+  return '';
 }
 
 /**
- * Tests whether a given sentence segment matches the currently active TTS sentence/chunk.
- * Supports full sentences, titles (제목), subtitles (부제목), and section labels.
+ * Clean string for fuzzy speech-to-text sentence alignment.
+ * Normalizes ordinals/cardinals, speech idioms, punctuation, emojis, quotes, whitespace.
+ */
+export function cleanSentenceForMatching(s: string): string {
+  if (!s) return '';
+  let str = String(s)
+    .replace(/\[(?:EMOTION|YOUTUBE|TOOL|IMAGE|PROMPT|STAGE|SOUL_UPDATE|CARD_DRAWN|SYSTEM):[\s\S]*?\]/gi, '')
+    .replace(/[*_~`#>\[\]()]/g, '');
+
+  // 1. Ordinals & Numbers bidirectional normalization (TTS: 첫째, 1번 <-> UI: 1, 1.)
+  str = str
+    .replace(/(?:첫째|첫번째|1번|일번)/g, '1')
+    .replace(/(?:둘째|두번째|2번|이번)/g, '2')
+    .replace(/(?:셋째|세번째|3번|삼번)/g, '3')
+    .replace(/(?:넷째|네번째|4번|사번)/g, '4')
+    .replace(/(?:다섯째|다섯번째|5번|오번)/g, '5')
+    .replace(/(?:여섯째|여섯번째|6번|육번)/g, '6')
+    .replace(/(?:일곱째|일곱번째|7번|칠번)/g, '7')
+    .replace(/(?:여덟째|여덟번째|8번|팔번)/g, '8')
+    .replace(/(?:아홉째|아홉번째|9번|구번)/g, '9')
+    .replace(/(?:열째|열번째|10번|십번)/g, '10');
+
+  // 2. Acronyms normalization
+  str = str
+    .replace(/에이아이/gi, 'ai')
+    .replace(/유아이/gi, 'ui')
+    .replace(/유엑스/gi, 'ux')
+    .replace(/넘버/gi, 'no');
+
+  // 3. Keep only alphanumeric Korean/English/Numbers
+  return str.replace(/[^가-힣a-zA-Z0-9]/g, '').toLowerCase();
+}
+
+/**
+ * Tests whether a given sentence or heading matches the currently active TTS sentence/chunk.
  */
 export function isSentenceActive(sentence: string, activeText: string | null | undefined): boolean {
   if (!activeText || !sentence) return false;
@@ -29,20 +66,34 @@ export function isSentenceActive(sentence: string, activeText: string | null | u
   const cleanA = cleanSentenceForMatching(activeText);
   if (cleanS.length < 2 || cleanA.length < 2) return false;
 
-  // 1. Direct containment in either direction
+  // 1. Direct containment
   if (cleanS.includes(cleanA) || cleanA.includes(cleanS)) return true;
 
-  // 2. High partial overlap for titles, subtitles & tags
-  const minLen = Math.min(cleanS.length, cleanA.length);
-  if (minLen >= 3) {
-    const windowSize = Math.min(4, minLen);
-    for (let i = 0; i <= cleanA.length - windowSize; i++) {
-      const sub = cleanA.slice(i, i + windowSize);
-      if (cleanS.includes(sub)) return true;
-    }
-    for (let i = 0; i <= cleanS.length - windowSize; i++) {
-      const sub = cleanS.slice(i, i + windowSize);
-      if (cleanA.includes(sub)) return true;
+  // 2. Substring & prefix alignment (handles slight TTS normalizations or trailing words)
+  if (cleanS.length >= 5 && cleanA.length >= 5) {
+    const minLen = Math.min(10, cleanS.length, cleanA.length);
+    const subA = cleanA.slice(0, minLen);
+    if (cleanS.includes(subA)) return true;
+    const subS = cleanS.slice(0, minLen);
+    if (cleanA.includes(subS)) return true;
+  }
+
+  // 3. Key phrase token overlap (for headings or sentences with slight grammar variations)
+  if (cleanS.length >= 6 && cleanA.length >= 6) {
+    const tokensS = sentence
+      .replace(/[^가-힣a-zA-Z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .map(cleanSentenceForMatching)
+      .filter((t) => t.length >= 2);
+
+    if (tokensS.length > 0) {
+      let matchedCount = 0;
+      for (const tok of tokensS) {
+        if (cleanA.includes(tok)) matchedCount += 1;
+      }
+      if (matchedCount / tokensS.length >= 0.6) {
+        return true;
+      }
     }
   }
 
@@ -50,34 +101,91 @@ export function isSentenceActive(sentence: string, activeText: string | null | u
 }
 
 /**
- * Highlighter styling: authentic yellow/gold highlighter marker with glowing accent
+ * Premium highlighter marker styling:
+ * Vivid warm amber glow that works gorgeously on both dark & light backgrounds,
+ * perfectly readable across all typography sizes (headings h1~h6 to small body text).
  */
 export const TTS_HIGHLIGHT_CLASS =
-  'tts-active-sentence-highlight bg-amber-400/35 text-amber-50 px-1 py-0.5 rounded-sm border-b-2 border-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.35)] font-medium inline transition-all duration-300';
+  'tts-active-sentence-highlight bg-amber-400/35 text-amber-100 px-1.5 py-0.5 rounded border-b-2 border-amber-400 shadow-[0_0_14px_rgba(251,191,36,0.4)] font-medium inline transition-all duration-300';
 
 /**
- * Recursively scans React children and wraps any sentence matching the currently spoken TTS text with a highlighter marker.
+ * Active Sentence Mark element with auto-scroll into view
+ */
+export function TTSHighlightMark({
+  children,
+  className = '',
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const markRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (markRef.current) {
+      try {
+        markRef.current.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'nearest',
+        });
+      } catch (_) {}
+    }
+  }, []);
+
+  return (
+    <mark ref={markRef} className={`${TTS_HIGHLIGHT_CLASS} ${className}`}>
+      {children}
+    </mark>
+  );
+}
+
+/**
+ * Specialized high-fidelity highlighter for markdown headings (h1, h2, h3, h4, h5, h6).
+ * Analyzes the entire aggregated heading text to highlight the entire title seamlessly when spoken.
+ */
+export function highlightHeading(
+  children: React.ReactNode,
+  activeSentence: string | null | undefined,
+): React.ReactNode {
+  if (!activeSentence || !children) return children;
+
+  const fullText = extractTextContent(children);
+  if (!fullText.trim()) return children;
+
+  if (isSentenceActive(fullText, activeSentence)) {
+    return <TTSHighlightMark>{children}</TTSHighlightMark>;
+  }
+
+  return children;
+}
+
+/**
+ * Recursively scans React children and wraps any sentence or heading matching the currently spoken TTS text with a highlighter marker.
  * When the active sentence changes or ends, previous highlighters are immediately cleared.
  */
 export function highlightSentencesInChildren(
   children: React.ReactNode,
   activeSentence: string | null | undefined,
+  isHeading: boolean = false,
 ): React.ReactNode {
   if (!activeSentence) return children;
+
+  // If this block is a heading or subheading, treat as a single holistic title
+  if (isHeading) {
+    return highlightHeading(children, activeSentence);
+  }
 
   if (typeof children === 'string') {
     if (!children.trim()) return children;
 
+    // Check if the entire string node matches directly
+    if (isSentenceActive(children, activeSentence)) {
+      return <TTSHighlightMark>{children}</TTSHighlightMark>;
+    }
+
     // Split text into sentence tokens preserving delimiters (. ! ? \n)
     const rawTokens = children.split(/([.!?。！？\n]+)/);
     if (rawTokens.length <= 1) {
-      if (isSentenceActive(children, activeSentence)) {
-        return (
-          <mark className={TTS_HIGHLIGHT_CLASS} data-tts-active="true">
-            {children}
-          </mark>
-        );
-      }
       return children;
     }
 
@@ -94,11 +202,7 @@ export function highlightSentencesInChildren(
       <>
         {sentences.map((sent, idx) => {
           if (isSentenceActive(sent, activeSentence)) {
-            return (
-              <mark key={idx} className={TTS_HIGHLIGHT_CLASS} data-tts-active="true">
-                {sent}
-              </mark>
-            );
+            return <TTSHighlightMark key={idx}>{sent}</TTSHighlightMark>;
           }
           return <React.Fragment key={idx}>{sent}</React.Fragment>;
         })}
@@ -107,7 +211,15 @@ export function highlightSentencesInChildren(
   }
 
   if (Array.isArray(children)) {
-    return React.Children.map(children, (child) => highlightSentencesInChildren(child, activeSentence));
+    // Check if the whole combined text matches (e.g. paragraph with mixed inline bold/em tags)
+    const combinedText = extractTextContent(children);
+    if (combinedText && isSentenceActive(combinedText, activeSentence)) {
+      return <TTSHighlightMark>{children}</TTSHighlightMark>;
+    }
+
+    return React.Children.map(children, (child) =>
+      highlightSentencesInChildren(child, activeSentence, false),
+    );
   }
 
   if (React.isValidElement(children)) {
@@ -115,7 +227,7 @@ export function highlightSentencesInChildren(
     const element = children as React.ReactElement<any>;
     if (element.props && element.props.children) {
       return React.cloneElement(element, {
-        children: highlightSentencesInChildren(element.props.children, activeSentence),
+        children: highlightSentencesInChildren(element.props.children, activeSentence, false),
       });
     }
   }

@@ -400,15 +400,14 @@ export async function invokeLLM(params: { messages: Message[], responseFormat?: 
   throw new Error("AI request failed across all providers. Engaging automatic schema fallback.");
 }
 
-export async function textToSpeech(text: string, voice: string = 'Kore') {
-  const isMale = voice === 'Fenrir' || voice === 'Charon' || voice === 'user' || voice === 'male';
+export async function textToSpeech(text: string, _voice: string = 'Kore') {
   const selectedVoice = 'Kore';
   const voiceInstruction = `Read the following Korean text aloud with a warm, gentle, clear female voice (여성 목소리) without adding any commentary:\n\n${text}`;
 
   if (genAI) {
     try {
       const response = await genAI.models.generateContent({
-        model: "gemini-3.8-flash-lite-tts",
+        model: "gemini-3.1-flash-tts-preview",
         contents: [{ parts: [{ text: voiceInstruction }] }],
         config: {
           responseModalities: [Modality.AUDIO],
@@ -422,8 +421,8 @@ export async function textToSpeech(text: string, voice: string = 'Kore') {
 
       const audioData = response.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData?.mimeType?.startsWith('audio/'))?.inlineData?.data;
       if (audioData) return audioData;
-    } catch (_error) {
-      // Gracefully fall back to server endpoint
+    } catch (error) {
+      console.warn("[textToSpeech] Direct Gemini AI Studio TTS failed, falling back to server endpoint:", error);
     }
   }
 
@@ -431,7 +430,7 @@ export async function textToSpeech(text: string, voice: string = 'Kore') {
     const res = await fetch(`${getApiBaseUrl()}/api/ai/tts`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, voice }),
+      body: JSON.stringify({ text, voice: selectedVoice }),
     });
     if (res.ok) {
       const data = await res.json();

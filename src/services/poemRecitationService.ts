@@ -209,7 +209,7 @@ class PoemRecitationService {
 
     // Prepare speech text
     const textToRecite = formatPoemRecitationText(poem, targetInsight);
-    const voiceApiName = targetVoice === "male" ? "Fenrir" : "Kore";
+    const voiceApiName = "Kore";
 
     try {
       // Chunked streaming recitation with prefetching for seamless listening

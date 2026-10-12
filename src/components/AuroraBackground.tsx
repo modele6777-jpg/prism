@@ -300,9 +300,9 @@ function ConstellationsLayer() {
         y1="255"
         x2="460"
         y2="65"
-        stroke="rgba(254, 240, 138, 0.16)"
-        strokeWidth="0.75"
-        strokeDasharray="3 5"
+        stroke="rgba(254, 240, 138, 0.1)"
+        strokeWidth="0.6"
+        strokeDasharray="2 4"
       />
 
       {CONSTELLATIONS.map((constellation) => {
@@ -322,9 +322,9 @@ function ConstellationsLayer() {
                   y1={starA.y}
                   x2={starB.x}
                   y2={starB.y}
-                  stroke="rgba(255, 255, 255, 0.18)"
-                  strokeWidth="0.8"
-                  strokeDasharray="2 3"
+                  stroke="rgba(255, 255, 255, 0.11)"
+                  strokeWidth="0.6"
+                  strokeDasharray="1.5 2.5"
                 />
               );
             })}
@@ -527,15 +527,6 @@ const AuroraBackgroundComponent: React.FC = () => {
       {!isMobile && <Starfield density={starDensity} minSize={minStarSize} />}
       {!isMobile && <ConstellationsLayer />}
       {!isMobile && <ShootingStars count={shootingStarCount} />}
-
-      {/* Subtle organic cosmic nebula vignette without artificial grid/graph-paper pattern */}
-      <div
-        className="absolute inset-0 pointer-events-none mix-blend-screen opacity-50"
-        style={{
-          background:
-            'radial-gradient(ellipse 90% 60% at 50% -15%, rgba(139, 92, 246, 0.12), transparent 70%), radial-gradient(ellipse 70% 50% at 90% 80%, rgba(245, 158, 11, 0.08), transparent 60%)',
-        }}
-      />
     </div>
   );
 };

@@ -253,10 +253,15 @@ export function LucyProTypewriter({
               {renderWithSentenceHighlight(children, targetSentence, true)}
             </li>
           ),
-          h1: ({ children }) => <h1 className="text-slate-900 font-bold text-lg mb-2">{renderWithSentenceHighlight(children, targetSentence, true)}</h1>,
-          h2: ({ children }) => <h2 className="text-slate-900 font-bold text-base mb-2">{renderWithSentenceHighlight(children, targetSentence, true)}</h2>,
-          h3: ({ children }) => <h3 className="text-slate-900 font-semibold text-sm mb-1.5">{renderWithSentenceHighlight(children, targetSentence, true)}</h3>,
-          blockquote: ({ children }) => <blockquote className="border-l-4 border-amber-400 pl-3 italic text-slate-600 my-2">{renderWithSentenceHighlight(children, targetSentence, true)}</blockquote>,
+          h1: ({ children }) => <h1 className="text-slate-900 font-bold text-lg mb-2">{renderWithSentenceHighlight(children, targetSentence, true, true)}</h1>,
+          h2: ({ children }) => <h2 className="text-slate-900 font-bold text-base mb-2">{renderWithSentenceHighlight(children, targetSentence, true, true)}</h2>,
+          h3: ({ children }) => <h3 className="text-slate-900 font-semibold text-sm mb-1.5">{renderWithSentenceHighlight(children, targetSentence, true, true)}</h3>,
+          h4: ({ children }) => <h4 className="text-slate-900 font-semibold text-xs mb-1.5">{renderWithSentenceHighlight(children, targetSentence, true, true)}</h4>,
+          h5: ({ children }) => <h5 className="text-slate-900 font-medium text-xs mb-1">{renderWithSentenceHighlight(children, targetSentence, true, true)}</h5>,
+          h6: ({ children }) => <h6 className="text-slate-900 font-medium text-[11px] mb-1">{renderWithSentenceHighlight(children, targetSentence, true, true)}</h6>,
+          blockquote: ({ children }) => <blockquote className="border-l-4 border-amber-400 pl-3 italic text-slate-600 my-2">{renderWithSentenceHighlight(children, targetSentence, true, false)}</blockquote>,
+          th: ({ children }) => <th className="px-2.5 py-1.5 text-left font-bold text-xs border-b border-slate-200">{renderWithSentenceHighlight(children, targetSentence, true, false)}</th>,
+          td: ({ children }) => <td className="px-2.5 py-1.5 text-xs border-b border-slate-100">{renderWithSentenceHighlight(children, targetSentence, true, false)}</td>,
           img: ({ node, ...props }) => (
             <LucyProImageItem src={props.src} alt={props.alt} />
           ),

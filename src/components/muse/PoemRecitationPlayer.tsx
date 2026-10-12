@@ -156,7 +156,7 @@ export const PoemRecitationPlayer: React.FC<PoemRecitationPlayerProps> = ({
 
         {/* Right: Voice Switcher & Options */}
         <div className="flex flex-wrap items-center gap-2 text-xs">
-          {/* Voice Switcher (서정 여성 / 차분 남성) */}
+          {/* Voice Switcher (서정 여성 / 온화 여성) */}
           <div className="flex items-center bg-black/50 border border-white/10 rounded-xl p-0.5">
             <button
               type="button"
@@ -173,16 +173,16 @@ export const PoemRecitationPlayer: React.FC<PoemRecitationPlayerProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => setVoice("male")}
-              title="차분한 남성 음성 (InJoon / Fenrir)"
+              onClick={() => setVoice("female")}
+              title="온화하고 맑은 여성 음성 (SunHi / Kore)"
               className={`px-2 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1 ${
-                voice === "male"
+                voice !== "female"
                   ? "bg-emerald-500/30 text-emerald-200 border border-emerald-500/40 shadow-sm"
                   : "text-zinc-400 hover:text-white"
               }`}
             >
               <span>🌿</span>
-              <span>차분 남성</span>
+              <span>온화 여성</span>
             </button>
           </div>
 

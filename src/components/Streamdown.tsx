@@ -216,72 +216,57 @@ export function Streamdown({
       ...baseMarkdownComponents,
       p: ({ children }: any) => (
         <p className="mb-4">
-          {highlightSentencesInChildren(children, activeTarget)}
+          {highlightSentencesInChildren(children, activeTarget, false)}
         </p>
       ),
       li: ({ children }: any) => (
         <li className="mb-1 text-white/80">
-          {highlightSentencesInChildren(children, activeTarget)}
+          {highlightSentencesInChildren(children, activeTarget, false)}
         </li>
       ),
       blockquote: ({ children }: any) => (
         <blockquote className="border-l-4 border-yellow-500/50 pl-4 py-1 my-3 bg-white/[0.03] rounded-r-lg italic">
-          {highlightSentencesInChildren(children, activeTarget)}
+          {highlightSentencesInChildren(children, activeTarget, false)}
         </blockquote>
       ),
       h1: ({ children }: any) => (
         <h1 className="text-white font-bold text-2xl mb-4">
-          {highlightSentencesInChildren(children, activeTarget)}
+          {highlightSentencesInChildren(children, activeTarget, true)}
         </h1>
       ),
       h2: ({ children }: any) => (
         <h2 className="text-white font-bold text-xl mb-3">
-          {highlightSentencesInChildren(children, activeTarget)}
+          {highlightSentencesInChildren(children, activeTarget, true)}
         </h2>
       ),
       h3: ({ children }: any) => (
         <h3 className="text-white font-bold text-lg mb-2">
-          {highlightSentencesInChildren(children, activeTarget)}
+          {highlightSentencesInChildren(children, activeTarget, true)}
         </h3>
       ),
       h4: ({ children }: any) => (
         <h4 className="text-white font-bold text-base mb-2">
-          {highlightSentencesInChildren(children, activeTarget)}
+          {highlightSentencesInChildren(children, activeTarget, true)}
         </h4>
       ),
       h5: ({ children }: any) => (
         <h5 className="text-white font-bold text-sm mb-1.5">
-          {highlightSentencesInChildren(children, activeTarget)}
+          {highlightSentencesInChildren(children, activeTarget, true)}
         </h5>
       ),
       h6: ({ children }: any) => (
-        <h6 className="text-white font-semibold text-xs mb-1">
-          {highlightSentencesInChildren(children, activeTarget)}
+        <h6 className="text-white font-bold text-xs mb-1">
+          {highlightSentencesInChildren(children, activeTarget, true)}
         </h6>
       ),
-      strong: ({ children }: any) => (
-        <strong className="text-blue-100 font-bold">
-          {highlightSentencesInChildren(children, activeTarget)}
-        </strong>
-      ),
-      b: ({ children }: any) => (
-        <b className="font-bold">
-          {highlightSentencesInChildren(children, activeTarget)}
-        </b>
-      ),
-      em: ({ children }: any) => (
-        <em className="italic">
-          {highlightSentencesInChildren(children, activeTarget)}
-        </em>
-      ),
       th: ({ children }: any) => (
-        <th className="p-2 border border-white/10 font-bold">
-          {highlightSentencesInChildren(children, activeTarget)}
+        <th className="px-3 py-2 text-left font-bold border-b border-white/20">
+          {highlightSentencesInChildren(children, activeTarget, false)}
         </th>
       ),
       td: ({ children }: any) => (
-        <td className="p-2 border border-white/10">
-          {highlightSentencesInChildren(children, activeTarget)}
+        <td className="px-3 py-2 border-b border-white/10">
+          {highlightSentencesInChildren(children, activeTarget, false)}
         </td>
       ),
     };

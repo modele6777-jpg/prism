@@ -561,7 +561,6 @@ export default function HubHome() {
           </div>
         ) : (
           <div className="flex-1 w-full max-w-5xl mx-auto flex flex-col relative text-white font-sans">
-            {/* Seamless cosmic gradient background (grid-free) */}
             
             {/* 프로필 설정 유도 모달 */}
             <AnimatePresence>
