@@ -1,13 +1,13 @@
 {
   "name": "luckey",
-  "version": "1.4.242",
-  "summary": "배경 모눈종이 격자 제거 및 심우주 오로라 텍스처 개선, 전역 TTS 여성 전용 음성 통일, 제목·부제목·내용 불문 실시간 문장 하이라이트 전면 고도화",
-  "builtAt": "2026-10-12T14:10:00.000Z",
+  "version": "1.4.243",
+  "summary": "오라클 타로 기적수업(ACIM) 모드 실시간 저장 및 기기 간 클라우드 양방향 연동 전면 고도화",
+  "builtAt": "2026-10-12T14:40:00.000Z",
   "items": [
-    "배경 모눈종이 격자 제거 및 유기적 심우주 텍스처 개선: AuroraBackground, HubHome, EpilogueApp에 걸쳐 적용되어 있던 40px/42px 바둑판식 도트 그리드(모눈종이/방안지 패턴)를 완전히 제거하고 부드럽고 몽환적인 코스믹 오로라 성운과 은은한 성간선으로 고급화",
-    "TTS 음성 낭독 전역 여성 음성 일원화: 백엔드(EdgeTTS ko-KR-SunHiNeural, Gemini Flash Kore, OpenAI nova) 및 프론트엔드 브라우저 음성, Q&A, 대화 낭독 등 전 시스템에서 남성 보이스 분기를 전면 차단하고 맑고 따뜻한 최고 품질 여성 음성으로 통일",
-    "제목·부제목·본문 내용 불문 전역 실시간 하이라이트 고도화: 대제목(h1), 중제목(h2), 소제목(h3~h6), 본문(p), 목록(li), 인용구(blockquote), 표(th, td) 등 마크다운 구조와 상관없이 읽는 순간 실시간 골드 앰버 형광펜 하이라이트 완벽 동기화",
-    "서수/기수 및 자연 발화 역정규화(Fuzzy Normalizer) 탑재: TTS에서 '첫째', '둘째'로 발화되는 번호와 본문 마크다운의 '1.', '2.' 간의 번호 매칭 불일치를 완전 해소하고, 제목 전체를 하나로 인식하는 Heading Smart Matcher 적용"
+    "오라클 타로 기적수업(ACIM) 모드 실시간 로컬 저장 복원: 기적수업 모드 카드 3장 리딩 완료 시 prism_oracle_daily_, prism_trinity_oracle_session_, prism_oracle_ 등 모든 영구 스토리지 키에 즉시 삼중 저장 및 새로고침/재진입 시 1일 1회 완료 결과 완벽 복원",
+    "기적수업 타로 기기 간 클라우드 실시간 양방향 동기화: PC와 모바일 간 Firestore sharedState.oracleSessions 및 todayOracles 양방향 동기화 파이프라인에 miracle 모드를 완벽 통합하여 타 기기에서 뽑은 즉시 실시간 리스너를 통해 결과 자동 반영",
+    "sharedStateSync 수집·수화 파이프라인 전면 개편: collectAllLocalActivities 및 unpackAndHydrateLocalStorage에 miracle 세션 수집 및 수화 로직을 힐링·자기계발과 동등하게 구축",
+    "오라클 타로 기적수업 전용 상태 배너 및 스프레드 UI 정교화: 기적수업 모드 진입 시 상단에 전용 평화의 기적 배너를 표시하고, 스프레드 안내 문구 및 질문 표시창을 기적수업 지각전환 테마에 맞추어 일관되게 정렬"
   ],
   "author": "Antigravity AI Agent",
   "buildEnvironment": "cloud-run"

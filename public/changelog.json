@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.4.243",
+    "summary": "오라클 타로 기적수업(ACIM) 모드 실시간 저장 및 기기 간 클라우드 양방향 연동 전면 고도화",
+    "builtAt": "2026-10-12T14:40:00.000Z",
+    "items": [
+      "오라클 타로 기적수업(ACIM) 모드 실시간 로컬 저장 복원: 기적수업 모드 카드 3장 리딩 완료 시 prism_oracle_daily_, prism_trinity_oracle_session_, prism_oracle_ 등 모든 영구 스토리지 키에 즉시 삼중 저장 및 새로고침/재진입 시 1일 1회 완료 결과 완벽 복원",
+      "기적수업 타로 기기 간 클라우드 실시간 양방향 동기화: PC와 모바일 간 Firestore sharedState.oracleSessions 및 todayOracles 양방향 동기화 파이프라인에 miracle 모드를 완벽 통합하여 타 기기에서 뽑은 즉시 실시간 리스너를 통해 결과 자동 반영",
+      "sharedStateSync 수집·수화 파이프라인 전면 개편: collectAllLocalActivities 및 unpackAndHydrateLocalStorage에 miracle 세션 수집 및 수화 로직을 힐링·자기계발과 동등하게 구축",
+      "오라클 타로 기적수업 전용 상태 배너 및 스프레드 UI 정교화: 기적수업 모드 진입 시 상단에 전용 평화의 기적 배너를 표시하고, 스프레드 안내 문구 및 질문 표시창을 기적수업 지각전환 테마에 맞추어 일관되게 정렬"
+    ]
+  },
+  {
     "version": "1.4.242",
     "summary": "배경 모눈종이 격자 제거 및 심우주 오로라 텍스처 개선, 전역 TTS 여성 전용 음성 통일, 제목·부제목·내용 불문 실시간 문장 하이라이트 전면 고도화",
     "builtAt": "2026-10-12T14:10:00.000Z",

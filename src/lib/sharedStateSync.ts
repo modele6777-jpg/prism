@@ -451,30 +451,51 @@ export function collectAllLocalActivities(uid?: string | null): Partial<SharedSt
     }
   } catch (_) {}
 
-  // 13. Collect Oracle Tarot Sessions (힐링 타로, 자기계발 타로)
+  // 13. Collect Oracle Tarot Sessions (힐링 타로, 자기계발 타로, 기적수업 타로)
   try {
     const oracleSessions: Record<string, any> = {};
-    const healingKey = `prism_trinity_oracle_session_healing_${todayKey}`;
-    const growthKey = `prism_trinity_oracle_session_growth_${todayKey}`;
-    const rawHealing = safeLocalStorage.getItem(healingKey);
-    const rawGrowth = safeLocalStorage.getItem(growthKey);
-    if (rawHealing) {
-      try { oracleSessions[`healing_${todayKey}`] = JSON.parse(rawHealing); } catch (_) {}
-    }
-    if (rawGrowth) {
-      try { oracleSessions[`growth_${todayKey}`] = JSON.parse(rawGrowth); } catch (_) {}
+    const modes = ['healing', 'growth', 'miracle'];
+    for (const m of modes) {
+      const keys = [
+        `prism_trinity_oracle_session_${m}_${todayKey}`,
+        `prism_oracle_daily_${m}_${todayKey}`,
+        `prism_oracle_${m}_${todayKey}`,
+      ];
+      for (const k of keys) {
+        const raw = safeLocalStorage.getItem(k);
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            if (parsed && (parsed.healingResult || parsed.growthResult || parsed.miracleResult || (parsed.drawnCards && parsed.drawnCards.length > 0))) {
+              oracleSessions[`${m}_${todayKey}`] = parsed;
+              break;
+            }
+          } catch (_) {}
+        }
+      }
     }
     if (typeof localStorage !== 'undefined') {
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
-        if (k && k.startsWith('prism_trinity_oracle_session_')) {
-          const subKey = k.replace('prism_trinity_oracle_session_', '');
-          if (!oracleSessions[subKey]) {
-            try {
-              const v = localStorage.getItem(k);
-              if (v) oracleSessions[subKey] = JSON.parse(v);
-            } catch (_) {}
-          }
+        if (!k) continue;
+        let subKey: string | null = null;
+        if (k.startsWith('prism_trinity_oracle_session_')) {
+          subKey = k.replace('prism_trinity_oracle_session_', '');
+        } else if (k.startsWith('prism_oracle_daily_')) {
+          subKey = k.replace('prism_oracle_daily_', '');
+        } else if (k.startsWith('prism_oracle_') && !k.startsWith('prism_oracle_mode') && !k.startsWith('prism_oracle_healing_') && !k.startsWith('prism_oracle_growth_') && !k.startsWith('prism_oracle_miracle_treasures')) {
+          subKey = k.replace('prism_oracle_', '');
+        }
+        if (subKey && !oracleSessions[subKey]) {
+          try {
+            const v = localStorage.getItem(k);
+            if (v) {
+              const parsed = JSON.parse(v);
+              if (parsed && (parsed.healingResult || parsed.growthResult || parsed.miracleResult || (parsed.drawnCards && parsed.drawnCards.length > 0))) {
+                oracleSessions[subKey] = parsed;
+              }
+            }
+          } catch (_) {}
         }
       }
     }
@@ -1015,10 +1036,14 @@ export function unpackAndHydrateLocalStorage(uid: string | null | undefined, sta
     try {
       Object.entries(state.oracleSessions).forEach(([subKey, session]) => {
         if (session) {
-          safeLocalStorage.setItem(`prism_trinity_oracle_session_${subKey}`, JSON.stringify(session));
+          const jsonStr = JSON.stringify(session);
+          safeLocalStorage.setItem(`prism_trinity_oracle_session_${subKey}`, jsonStr);
+          safeLocalStorage.setItem(`prism_oracle_daily_${subKey}`, jsonStr);
+          safeLocalStorage.setItem(`prism_oracle_${subKey}`, jsonStr);
         }
       });
       window.dispatchEvent(new CustomEvent('prism:oracle_session_updated', { detail: state.oracleSessions }));
+      window.dispatchEvent(new CustomEvent('prism:realtime_sync', { detail: { oracleSessions: state.oracleSessions } }));
     } catch (_) {}
   }
 
@@ -1333,7 +1358,7 @@ export function mergeSharedState(
     }
   }
 
-  // 6g. Merge Oracle Tarot Sessions (healing & growth sessions)
+  // 6g. Merge Oracle Tarot Sessions (healing, growth, miracle sessions)
   const mergedOracleSessions: Record<string, any> = {
     ...(remote.oracleSessions || {}),
     ...(local.oracleSessions || {}),

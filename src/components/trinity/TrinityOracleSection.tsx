@@ -84,9 +84,12 @@ export const loadTodayOracleSession = (
     getDailyOracleStorageKey(mode, altIsoDateKey),
     `prism_oracle_daily_${mode}_${targetDateKey}`,
     `prism_oracle_daily_${mode}_${altIsoDateKey}`,
+    `prism_trinity_oracle_session_${mode}_${targetDateKey}`,
+    `prism_trinity_oracle_session_${mode}_${altIsoDateKey}`,
     `prism_oracle_${mode}_${targetDateKey}`,
     `prism_oracle_${mode}_${altIsoDateKey}`,
     `trinity_oracle_session_${mode}_${targetDateKey}`,
+    `trinity_oracle_session_${mode}_${altIsoDateKey}`,
     `trinity_daily_oracle_${mode}_${targetDateKey}`,
   ];
 
@@ -122,7 +125,10 @@ export const loadTodayOracleSession = (
         || cloudSharedState.oracleSessions?.[`${mode}_${altIsoDateKey}`];
       if (cloudSession && (cloudSession.healingResult || cloudSession.growthResult || cloudSession.miracleResult || (cloudSession.drawnCards && cloudSession.drawnCards.length > 0))) {
         try {
-          localStorage.setItem(getDailyOracleStorageKey(mode, targetDateKey), JSON.stringify(cloudSession));
+          const jsonStr = JSON.stringify(cloudSession);
+          localStorage.setItem(getDailyOracleStorageKey(mode, targetDateKey), jsonStr);
+          localStorage.setItem(`prism_trinity_oracle_session_${mode}_${targetDateKey}`, jsonStr);
+          localStorage.setItem(`prism_oracle_${mode}_${targetDateKey}`, jsonStr);
         } catch (_) {}
         return cloudSession;
       }
@@ -153,8 +159,18 @@ export const loadTodayOracleSession = (
 export const saveDailyOracleSession = (mode: OracleMode, dateKey: string, session: SavedDailyOracleSession) => {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(getDailyOracleStorageKey(mode, dateKey), JSON.stringify(session));
-    window.dispatchEvent(new CustomEvent('prism:oracle_session_updated', { detail: { mode, dateKey } }));
+    const jsonStr = JSON.stringify(session);
+    const primaryKey = getDailyOracleStorageKey(mode, dateKey);
+    localStorage.setItem(primaryKey, jsonStr);
+    localStorage.setItem(`prism_trinity_oracle_session_${mode}_${dateKey}`, jsonStr);
+    localStorage.setItem(`prism_oracle_${mode}_${dateKey}`, jsonStr);
+    sessionStorage.setItem(primaryKey, jsonStr);
+    window.dispatchEvent(new CustomEvent('prism:oracle_session_updated', {
+      detail: { mode, dateKey, session, oracleSessions: { [`${mode}_${dateKey}`]: session } }
+    }));
+    window.dispatchEvent(new CustomEvent('prism:realtime_sync', {
+      detail: { oracleSessions: { [`${mode}_${dateKey}`]: session } }
+    }));
   } catch (e) {
     console.warn('[Oracle] Failed to save daily session:', e);
   }
@@ -932,6 +948,19 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
   const syncOracleSessionToCloud = useCallback((mode: OracleMode, session: SavedDailyOracleSession) => {
     const sessionKey = `${mode}_${todayDateKey}`;
     try {
+      const jsonStr = JSON.stringify(session);
+      localStorage.setItem(getDailyOracleStorageKey(mode, todayDateKey), jsonStr);
+      localStorage.setItem(`prism_trinity_oracle_session_${mode}_${todayDateKey}`, jsonStr);
+      localStorage.setItem(`prism_oracle_${mode}_${todayDateKey}`, jsonStr);
+      sessionStorage.setItem(getDailyOracleStorageKey(mode, todayDateKey), jsonStr);
+
+      window.dispatchEvent(new CustomEvent('prism:oracle_session_updated', {
+        detail: { mode, dateKey: todayDateKey, session, oracleSessions: { [sessionKey]: session } }
+      }));
+      window.dispatchEvent(new CustomEvent('prism:realtime_sync', {
+        detail: { oracleSessions: { [sessionKey]: session } }
+      }));
+
       void updateSharedState({
         oracleSessions: {
           ...(sharedState?.oracleSessions || {}),
@@ -953,10 +982,23 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
       }, 'trinity_oracle');
     } catch (_) {}
   }, [sharedState, todayDateKey, updateSharedState]);
+
   // 실시간 기기 간 오라클 세션 수신 리스너 (PC에서 뽑으면 모바일에서도 즉시 반영)
   useEffect(() => {
-    const handleOracleSync = () => {
-      const saved = loadTodayOracleSession(oracleMode, todayDateKey);
+    const handleOracleSync = (e?: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      let directSession: SavedDailyOracleSession | null = null;
+      if (detail) {
+        if (detail.session && detail.mode === oracleMode) {
+          directSession = detail.session;
+        } else if (detail.oracleSessions?.[`${oracleMode}_${todayDateKey}`]) {
+          directSession = detail.oracleSessions[`${oracleMode}_${todayDateKey}`];
+        } else if (detail[`${oracleMode}_${todayDateKey}`]) {
+          directSession = detail[`${oracleMode}_${todayDateKey}`];
+        }
+      }
+
+      const saved = directSession || loadTodayOracleSession(oracleMode, todayDateKey, sharedState);
       if (saved) {
         setTodayDailySession(saved);
         if (saved.drawnCards && saved.drawnCards.length > 0) {
@@ -987,7 +1029,7 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
       window.removeEventListener('prism:oracle_session_updated', handleOracleSync);
       window.removeEventListener('prism:realtime_sync', handleOracleSync);
     };
-  }, [oracleMode, todayDateKey]);
+  }, [oracleMode, todayDateKey, sharedState]);
 
   // 오늘 결과 보기 핸들러
   const handleRestoreTodayOracle = useCallback((targetMode?: OracleMode) => {
@@ -3496,6 +3538,11 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
                 <Sparkles size={13} className="text-amber-400" />
                 <span>오라클 보물상자 ({treasures.length})</span>
               </button>
+            ) : oracleMode === 'miracle' ? (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-400/30 text-purple-300">
+                <Feather size={13} className="text-purple-400" />
+                <span>평화의 기적 {miracleTodaySession?.miracleResult ? '완료' : '성찰'}</span>
+              </div>
             ) : (
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-amber-300">
                 <Flame size={13} className="text-orange-400" />
@@ -3832,7 +3879,7 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
                     deckSource={activeDeckSource}
                     cardBackId={cardBackId}
                     allowReversed={true}
-                    spreadName={oracleMode === 'healing' ? '내면아이 쉼 스프레드' : '4원소 마인드셋 스프레드'}
+                    spreadName={oracleMode === 'healing' ? '내면아이 쉼 스프레드' : oracleMode === 'miracle' ? '기적수업 지각전환 스프레드' : '4원소 마인드셋 스프레드'}
                     onComplete={handleCardsComplete}
                     onCancel={handleCancelOracleSpread}
                   />
@@ -3855,7 +3902,7 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
                 <Sparkles size={16} className="text-purple-400 shrink-0 animate-pulse" />
                 <div className="flex-1 min-w-0">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-purple-300 block">
-                    {oracleMode === 'healing' ? '내담자의 마음 치유 고민' : '내담자의 자기계발 돌파 과제'}
+                    {oracleMode === 'healing' ? '내담자의 마음 치유 고민' : oracleMode === 'miracle' ? '내담자의 용서와 평화 성찰' : '내담자의 자기계발 돌파 과제'}
                   </span>
                   <p className="text-xs sm:text-sm font-semibold text-white truncate">"{inquiryText}"</p>
                 </div>
@@ -3867,7 +3914,7 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
               <div className="flex items-center justify-between gap-2 flex-wrap px-1 text-center">
                 <p className="text-[10px] text-yellow-500/80 font-bold uppercase tracking-widest flex items-center gap-1.5">
                   <Sparkles size={11} className="text-yellow-400 animate-pulse" />
-                  <span>{oracleMode === 'healing' ? '사주 ✕ 타로 3카드 힐링 스프레드' : '4원소 마인드셋 3카드 스프레드'}</span>
+                  <span>{oracleMode === 'healing' ? '사주 ✕ 타로 3카드 힐링 스프레드' : oracleMode === 'miracle' ? '기적수업 3카드 지각전환 스프레드' : '4원소 마인드셋 3카드 스프레드'}</span>
                 </p>
                 <div className="flex items-center gap-2">
                   <button
