@@ -1707,8 +1707,10 @@ function playDailyCardChimeAsync() {
 
   const isFullReadingTTSActive = useMemo(() => {
     if (!isTTSActive || !tarotSpeechReadingText) return false;
-    return !isSummaryTTSActive;
-  }, [isTTSActive, tarotSpeechReadingText, isSummaryTTSActive]);
+    if (isSummaryTTSActive) return false;
+    const cleanReading = prepareNaturalSpeechText(tarotSpeechReadingText);
+    return !ttsState.activeFullText || ttsState.activeFullText === cleanReading;
+  }, [isTTSActive, tarotSpeechReadingText, isSummaryTTSActive, ttsState.activeFullText]);
 
   // Auto-prefetch TTS for reading & summary when generated
   useEffect(() => {
@@ -3838,10 +3840,10 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
                                             <div className="mt-4 p-4 rounded-2xl bg-amber-500/[0.08] border border-amber-500/30 space-y-1.5 text-xs text-white/85 shadow-sm">
                                               <div className="flex items-center gap-1.5 font-bold text-amber-300 text-xs">
                                                 <AlertCircle size={14} className="text-amber-400 shrink-0" />
-                                                <span>타로 성찰 주의사항 (맹목적 믿음 지양)</span>
+                                                <span><TTSHighlightText text="타로 성찰 주의사항 (맹목적 믿음 지양)" enabled={isFullReadingTTSActive} /></span>
                                               </div>
                                               <p className="leading-relaxed text-white/70 break-keep text-[11px] sm:text-xs">
-                                                타로는 미래를 결정짓는 절대적 예언이 아니라, 자신의 내면을 성찰하고 더 나은 선택을 돕는 지혜의 나침반입니다. 맹목적인 믿음을 지양하고, 모든 운명의 결정권과 최종 열쇠는 언제나 당신 자신의 주체적인 의지와 지혜에 있습니다.
+                                                <TTSHighlightText text="타로는 미래를 결정짓는 절대적 예언이 아니라, 자신의 내면을 성찰하고 더 나은 선택을 돕는 지혜의 나침반입니다. 맹목적인 믿음을 지양하고, 모든 운명의 결정권과 최종 열쇠는 언제나 당신 자신의 주체적인 의지와 지혜에 있습니다." enabled={isFullReadingTTSActive} />
                                               </p>
                                             </div>
                                           )}

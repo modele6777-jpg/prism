@@ -66,20 +66,24 @@ export function isSentenceActive(sentence: string, activeText: string | null | u
   const cleanA = cleanSentenceForMatching(activeText);
   if (cleanS.length < 2 || cleanA.length < 2) return false;
 
-  // 1. Direct containment
-  if (cleanS.includes(cleanA) || cleanA.includes(cleanS)) return true;
+  // 1. Direct equality
+  if (cleanS === cleanA) return true;
 
-  // 2. Substring & prefix alignment (handles slight TTS normalizations or trailing words)
+  // 2. Direct containment with length safety (prevents whole paragraphs from matching a single short sentence)
+  if (cleanA.includes(cleanS) && cleanS.length >= 3) return true;
+  if (cleanS.includes(cleanA) && cleanS.length <= Math.max(cleanA.length * 1.35, cleanA.length + 12)) return true;
+
+  // 3. Substring & prefix alignment (handles slight TTS normalizations or trailing words)
   if (cleanS.length >= 5 && cleanA.length >= 5) {
     const minLen = Math.min(10, cleanS.length, cleanA.length);
     const subA = cleanA.slice(0, minLen);
-    if (cleanS.includes(subA)) return true;
+    if (cleanS.includes(subA) && Math.abs(cleanS.length - cleanA.length) <= 15) return true;
     const subS = cleanS.slice(0, minLen);
-    if (cleanA.includes(subS)) return true;
+    if (cleanA.includes(subS) && Math.abs(cleanS.length - cleanA.length) <= 15) return true;
   }
 
-  // 3. Key phrase token overlap (for headings or sentences with slight grammar variations)
-  if (cleanS.length >= 6 && cleanA.length >= 6) {
+  // 4. Key phrase token overlap (for headings or sentences with slight grammar variations)
+  if (cleanS.length >= 6 && cleanA.length >= 6 && Math.abs(cleanS.length - cleanA.length) <= 15) {
     const tokensS = sentence
       .replace(/[^가-힣a-zA-Z0-9\s]/g, ' ')
       .split(/\s+/)
@@ -125,7 +129,7 @@ export function TTSHighlightMark({
       try {
         markRef.current.scrollIntoView({
           behavior: 'smooth',
-          block: 'nearest',
+          block: 'center',
           inline: 'nearest',
         });
       } catch (_) {}
@@ -178,14 +182,12 @@ export function highlightSentencesInChildren(
   if (typeof children === 'string') {
     if (!children.trim()) return children;
 
-    // Check if the entire string node matches directly
-    if (isSentenceActive(children, activeSentence)) {
-      return <TTSHighlightMark>{children}</TTSHighlightMark>;
-    }
-
     // Split text into sentence tokens preserving delimiters (. ! ? \n)
     const rawTokens = children.split(/([.!?。！？\n]+)/);
     if (rawTokens.length <= 1) {
+      if (isSentenceActive(children, activeSentence)) {
+        return <TTSHighlightMark>{children}</TTSHighlightMark>;
+      }
       return children;
     }
 
@@ -211,10 +213,13 @@ export function highlightSentencesInChildren(
   }
 
   if (Array.isArray(children)) {
-    // Check if the whole combined text matches (e.g. paragraph with mixed inline bold/em tags)
+    // If the combined text has only 1 sentence or is short, check holistic match
     const combinedText = extractTextContent(children);
-    if (combinedText && isSentenceActive(combinedText, activeSentence)) {
-      return <TTSHighlightMark>{children}</TTSHighlightMark>;
+    if (combinedText) {
+      const sentenceCount = combinedText.split(/[.!?。！？\n]+/).filter((s) => s.trim().length > 0).length;
+      if (sentenceCount <= 1 && isSentenceActive(combinedText, activeSentence)) {
+        return <TTSHighlightMark>{children}</TTSHighlightMark>;
+      }
     }
 
     return React.Children.map(children, (child) =>

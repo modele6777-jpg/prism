@@ -210,26 +210,13 @@ export function Streamdown({
   const textWithCursor = isTyping ? displayedText + ' ▍' : displayedText;
 
   // Dynamic TTS sentence tracking (strictly isolated to matching reading context)
-  const { isSpeaking, activeText, currentSentence, activeFullText } = useTTSState();
+  const { isSpeaking, activeText, currentSentence } = useTTSState();
   const rawTarget = (enableTTSHighlight && isSpeaking) ? (currentSentence || activeText) : null;
 
   const activeTarget = useMemo(() => {
     if (!rawTarget || !enableTTSHighlight) return null;
-    if (activeFullText && textContent) {
-      const cleanA = activeFullText.replace(/[^가-힣a-zA-Z0-9]/g, '');
-      const cleanT = textContent.replace(/[^가-힣a-zA-Z0-9]/g, '');
-      // If active spoken speech is long enough and completely outside this container, reject highlight
-      if (
-        cleanA.length >= 12 &&
-        cleanT.length >= 12 &&
-        !cleanT.includes(cleanA.slice(0, 16)) &&
-        !cleanA.includes(cleanT.slice(0, 16))
-      ) {
-        return null;
-      }
-    }
     return rawTarget;
-  }, [rawTarget, enableTTSHighlight, activeFullText, textContent]);
+  }, [rawTarget, enableTTSHighlight]);
 
   const components = useMemo(() => {
     return {

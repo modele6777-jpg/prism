@@ -211,17 +211,14 @@ export const TTSHighlightText: React.FC<{
   isLight?: boolean;
   className?: string;
   isHeading?: boolean;
-}> = ({ text, isLight = false, className = '', isHeading = false }) => {
-  const { isSpeaking, activeSentence, activeFullText } = useTTSCurrentSentence();
+  enabled?: boolean;
+}> = ({ text, isLight = false, className = '', isHeading = false, enabled = true }) => {
+  const { isSpeaking, activeSentence } = useTTSCurrentSentence();
 
   const isMatching = useMemo(() => {
-    if (!isSpeaking || !activeSentence || !text) return false;
-    if (text.includes(activeSentence)) return true;
-    if (activeFullText && (activeFullText.includes(text) || text.includes(activeFullText))) {
-      return true;
-    }
+    if (!enabled || !isSpeaking || !activeSentence || !text) return false;
     return isSentenceActive(text, activeSentence);
-  }, [isSpeaking, activeSentence, activeFullText, text]);
+  }, [enabled, isSpeaking, activeSentence, text]);
 
   const targetSentence = isMatching ? activeSentence : null;
   const content = renderWithSentenceHighlight(text, targetSentence, isLight, isHeading);
