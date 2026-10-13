@@ -121,8 +121,43 @@ export function stripSummaryFromTarotText(text: string): string {
   return deduplicateReadingText(cleaned);
 }
 
+export interface TarotSummaryContext {
+  cards?: any[];
+  card?: any;
+  saju?: any;
+  concern?: string;
+  theme?: string;
+  kind?: string;
+  remedy?: string;
+  nameKo?: string;
+}
+
 export function extractConciseSummary(text: string, cardContext?: any): string[] {
   if (!text || text.trim().length < 40) return [];
+
+  const isEnrichedContext =
+    cardContext &&
+    typeof cardContext === 'object' &&
+    ('cards' in cardContext || 'saju' in cardContext || 'card' in cardContext || 'concern' in cardContext || 'theme' in cardContext);
+
+  const contextCards: any[] = isEnrichedContext
+    ? (cardContext.cards || (cardContext.card ? [cardContext.card] : []))
+    : (Array.isArray(cardContext) ? cardContext : (cardContext ? [cardContext] : []));
+  const sajuObj: any = isEnrichedContext ? cardContext.saju : null;
+  const isYesNoContext =
+    (isEnrichedContext && (cardContext.kind === 'yes_no' || cardContext.theme === 'yes_no')) ||
+    /\b(YES|NO)\b/i.test(text);
+
+  const dayMaster = sajuObj?.dayMaster?.symbolName || sajuObj?.dayMaster?.name || '';
+  const yongsin = sajuObj?.yongsin?.name || '';
+
+  const c1 = contextCards[0];
+  const c2 = contextCards[1];
+  const c3 = contextCards[2];
+
+  const c1Name = c1 ? `${c1.nameKo || c1.name || ''}${c1.reversed ? '(역)' : ''}` : (cardContext?.nameKo || '');
+  const c2Name = c2 ? `${c2.nameKo || c2.name || ''}${c2.reversed ? '(역)' : ''}` : '';
+  const c3Name = c3 ? `${c3.nameKo || c3.name || ''}${c3.reversed ? '(역)' : ''}` : '';
 
   const cleanSentence = (s: string) => {
     return s
@@ -152,26 +187,67 @@ export function extractConciseSummary(text: string, cardContext?: any): string[]
     );
   };
 
-  const formatSummaryLine = (tag: string, content: string): string => {
+  const formatSummaryLine = (tag: string, content: string, rowIdx: number): string => {
     let cleaned = stripGreetingFromText(content);
     cleaned = cleaned.replace(/^\[(?!YES\b|NO\b|조건부\s*YES)[^\]]+\]\s*(:|-|—)?\s*/i, '');
-    cleaned = cleaned.replace(/^(?:현재\s*에너지|방향과\s*결단|실천\s*처방|개운\s*처방|행동\s*처방|실천\s*가이드|개운\s*가이드)\s*[:—\-]\s*/, '');
+    cleaned = cleaned.replace(/^(?:현재\s*에너지|방향과\s*결단|실천\s*처방|개운\s*처방|행동\s*처방|실천\s*가이드|개운\s*가이드|상황\s*진단)\s*[:—\-]\s*/, '');
     cleaned = cleanSentence(cleaned);
 
-    // 긴 문장일 때도 문맥과 의미를 훼손하지 않고 자연스러운 완결 문장으로 보존 (최대 135자)
-    if (cleaned.length > 135) {
-      const idx = cleaned.lastIndexOf('.', 130);
-      if (idx > 45) {
-        cleaned = cleaned.slice(0, idx + 1);
+    // 50~70자 내외 최적화 (장문일 때 의미를 온전히 살리며 자연스러운 문장/어절 단위 압축)
+    if (cleaned.length > 76) {
+      const dotIdx = cleaned.slice(0, 74).lastIndexOf('.');
+      const exclIdx = cleaned.slice(0, 74).lastIndexOf('!');
+      const bestPunct = Math.max(dotIdx, exclIdx);
+      if (bestPunct >= 48) {
+        cleaned = cleaned.slice(0, bestPunct + 1);
       } else {
-        const lastSpace = cleaned.lastIndexOf(' ', 125);
-        if (lastSpace > 50) {
+        const lastSpace = cleaned.lastIndexOf(' ', 72);
+        if (lastSpace >= 48) {
           cleaned = cleaned.slice(0, lastSpace).trim();
         } else {
-          cleaned = cleaned.slice(0, 120).trim();
+          cleaned = cleaned.slice(0, 70).trim();
         }
       }
     }
+
+    // 지나치게 짧고 무성의한 문장(38자 미만)일 경우 카드 상징/사주 기운으로 50~70자 심층 보강
+    if (cleaned.length < 38) {
+      const baseClean = cleaned.replace(/[.!?]+$/, '').trim();
+      if (rowIdx === 0) {
+        if (dayMaster && c1Name) {
+          cleaned = `사주 본원 [${dayMaster}]과 [${c1Name}] 카드가 만나 ${baseClean} 흐름 속에서 내면의 새로운 전환점을 맞이했습니다.`;
+        } else if (c1Name) {
+          cleaned = `[${c1Name}] 카드의 도상 상징이 비추듯 ${baseClean} 내면의 직관을 차분히 회복하며 새로운 방향을 탐색할 때입니다.`;
+        } else {
+          cleaned = `내면의 무의식적 흐름을 성찰하며 ${baseClean} 마음의 중심을 단단히 세우고 새로운 전환점을 맞이하세요.`;
+        }
+      } else if (rowIdx === 1) {
+        if (yongsin && (c2Name || c1Name)) {
+          cleaned = `용신 [${yongsin}]과 [${c2Name || c1Name}] 카드의 안내를 따라 ${baseClean} 확신을 갖고 우선순위에 집중해 나아가세요.`;
+        } else if (c2Name || c1Name) {
+          cleaned = `[${c2Name || c1Name}] 카드가 가리키듯 ${baseClean} 두려움을 비워내고 명확한 결단으로 중심을 잡을 타이밍입니다.`;
+        } else {
+          cleaned = `불필요한 망설임을 내려놓고 ${baseClean} 내면의 나침반을 신뢰하며 당당한 결단으로 전진할 때입니다.`;
+        }
+      } else {
+        if (baseClean.length >= 6) {
+          cleaned = `오늘 일상에서 "${baseClean}" 실천 과제를 정성껏 실행하여 정체된 에너지를 순환시키고 긍정 운을 활짝 열기.`;
+        } else {
+          cleaned = `오늘 일상에서 미뤄둔 핵심 과제 1가지를 정해 20분간 온전히 몰입해 즉시 완수하고 맑은 운의 파동을 일으키기.`;
+        }
+      }
+
+      // 보강 후에도 74자 이내로 정돈
+      if (cleaned.length > 76) {
+        const lastSpace = cleaned.lastIndexOf(' ', 72);
+        if (lastSpace >= 48) {
+          cleaned = cleaned.slice(0, lastSpace).trim();
+        } else {
+          cleaned = cleaned.slice(0, 70).trim();
+        }
+      }
+    }
+
     cleaned = cleaned.replace(/[\s.…·,-]+$/, '');
     if (!/[.!?]$/.test(cleaned)) {
       cleaned += '.';
@@ -205,13 +281,13 @@ export function extractConciseSummary(text: string, cardContext?: any): string[]
 
       if (
         /\[(?:현재\s*에너지|현재\s*상황|내면\s*에너지|상황\s*진단|현재|에너지|상황)\]/i.test(line) ||
-        (!p1Current && /^(?:현재\s*에너지|현재\s*상황|내면|에너지)/i.test(line))
+        (!p1Current && /^(?:현재\s*에너지|현재\s*상황|내면|에너지|상황\s*진단)/i.test(line))
       ) {
         if (!p1Current) { p1Current = cleaned; tag1 = rowTag; continue; }
       }
       if (
-        /\[(?:방향과\s*결단|결단\s*(?:및|&)?\s*방향(?:성)?|방향성|결단|선택|판정|미래\s*흐름)\]/i.test(line) ||
-        (!p1Decision && /^(?:방향과\s*결단|결단|방향|선택|판정)/i.test(line))
+        /\[(?:방향과\s*결단|결단\s*(?:및|&)?\s*방향(?:성)?|방향성|결단|선택|판정|미래\s*흐름|전환점)\]/i.test(line) ||
+        (!p1Decision && /^(?:방향과\s*결단|결단|방향|선택|판정|전환점)/i.test(line))
       ) {
         if (!p1Decision) { p1Decision = cleaned; tag2 = rowTag; continue; }
       }
@@ -260,7 +336,8 @@ export function extractConciseSummary(text: string, cardContext?: any): string[]
       (headerLine.includes('1.') ||
         headerLine.includes('마음') ||
         headerLine.includes('현재') ||
-        headerLine.includes('에너지'))
+        headerLine.includes('에너지') ||
+        headerLine.includes('상황'))
     ) {
       const sentences = body
         .split(/(?:[\n\r]+|(?<=[.!?])\s+)/)
@@ -342,44 +419,56 @@ export function extractConciseSummary(text: string, cardContext?: any): string[]
     .map(stripGreetingFromText)
     .filter((s) => s.length >= 12 && !isGreetingOrMeta(s));
 
-  const fallbackCurrent =
-    p1Current ||
-    secCurrent ||
-    allSentences.find((s) => /현재|지금|마음|에너지|상황|갈림길|파동|내면/.test(s)) ||
-    allSentences[0] ||
-    (cardContext?.nameKo ? `[${cardContext.nameKo}] 카드의 고유 파동이 오늘 하루 중심 흐름을 이끕니다.` : '내면의 직관과 평온한 중심을 유지하며 하루를 시작하세요.');
+  // Fallback high-density synthesis (사주 원국 ✕ 타로 도상 상징 융합 50~70자)
+  let fallbackCurrent = p1Current || secCurrent;
+  if (!fallbackCurrent) {
+    if (dayMaster && c1Name) {
+      fallbackCurrent = `사주 본원 [${dayMaster}]과 [${c1Name}] 카드의 도상이 만나 복잡한 고민의 본질을 꿰뚫고 새로운 통찰의 전환점을 맞이했습니다.`;
+    } else if (c1Name) {
+      fallbackCurrent = `[${c1Name}] 카드의 도상 상징이 가리키듯, 오랜 내면의 혼란을 걷어내고 직관의 나침반을 회복하며 새로운 전환점을 맞이하는 흐름입니다.`;
+    } else {
+      const matched = allSentences.find((s) => /현재|지금|마음|에너지|상황|갈림길|파동|내면/.test(s));
+      fallbackCurrent = matched || '내면의 무의식적 불안을 비워내고 고유한 직관의 나침반을 신뢰하며 고요한 중심을 회복하는 전환기입니다.';
+    }
+  }
 
-  const fallbackDecision =
-    p1Decision ||
-    secDecision ||
-    allSentences.find(
-      (s) =>
-        s !== fallbackCurrent &&
-        /결단|선택|판정|방향|흐름|YES|NO|기회|타이밍|추진|점검/.test(s)
-    ) ||
-    allSentences[Math.floor(allSentences.length / 2)] ||
-    '내면의 나침반을 신뢰하고 흔들림 없이 한 걸음 나아가세요.';
+  let fallbackDecision = p1Decision || secDecision;
+  if (!fallbackDecision) {
+    const isYesNo = isYesNoContext || /YES|NO/i.test(text);
+    const isNo = /단호한\s*NO|\bNO\b/i.test(text);
+    if (isYesNo) {
+      fallbackDecision = isNo
+        ? '최종 판정은 [NO]이며, 무리한 확장보다 숨은 변수를 꼼꼼히 점검하고 내실을 다져 한 템포 호흡을 조절해야 할 신중한 타이밍입니다.'
+        : `최종 판정은 [YES]이며, [${c2Name || c1Name || '운명의 카드'}] 카드의 밝은 생명력을 신뢰하고 준비해 온 결실을 당당히 거둘 때입니다.`;
+    } else if (yongsin && (c2Name || c1Name)) {
+      fallbackDecision = `용신 [${yongsin}]과 [${c2Name || c1Name}] 카드를 따라 잔가지를 과감히 쳐내고 핵심 목표 1번에 온전히 집중할 타이밍입니다.`;
+    } else if (c2Name || c1Name) {
+      fallbackDecision = `[${c2Name || c1Name}] 카드의 확신 있는 에너지처럼, 두려움을 비워내고 명확한 우선순위에 집중하여 결단할 때입니다.`;
+    } else {
+      const matched = allSentences.find((s) => s !== fallbackCurrent && /결단|선택|판정|방향|흐름|기회|타이밍|추진|점검/.test(s));
+      fallbackDecision = matched || '운의 흐름은 정체를 지나 명확한 결단의 타이밍을 가리키고 있으니 흔들림 없이 한 걸음 나아가세요.';
+    }
+  }
 
-  const fallbackAction =
-    p1Action ||
-    secAction ||
-    (cardContext?.remedy ? cardContext.remedy : '') ||
-    allSentences
-      .slice()
-      .reverse()
-      .find(
-        (s) =>
-          s !== fallbackCurrent &&
-          s !== fallbackDecision &&
-          /실천|행동|처방|조언|오늘|개운|시작|호흡|정돈/.test(s)
-      ) ||
-    '맑은 물 한 잔과 깊은 호흡으로 마음의 평온을 지키기.';
+  let fallbackAction = p1Action || secAction;
+  if (!fallbackAction) {
+    const actionSentence = allSentences.slice().reverse().find(
+      (s) => s !== fallbackCurrent && s !== fallbackDecision && /실천|행동|처방|조언|오늘|개운|시작|호흡|정돈/.test(s)
+    );
+    if (actionSentence && actionSentence.length >= 15 && actionSentence.length <= 60) {
+      fallbackAction = actionSentence;
+    } else if (cardContext?.remedy && typeof cardContext.remedy === 'string' && cardContext.remedy.length >= 15) {
+      fallbackAction = cardContext.remedy;
+    } else {
+      fallbackAction = '오늘 일상에서 미뤄둔 핵심 과제 1가지를 정해 20분간 몰입해 즉시 완수하고 맑은 물 한 잔으로 기운을 순환시키기.';
+    }
+  }
 
   // 🌟 ALWAYS RETURN EXACTLY 3 BULLETS (Currently, Direction, Action)
   return [
-    formatSummaryLine(tag1 || '현재 에너지', fallbackCurrent),
-    formatSummaryLine(tag2 || '방향과 결단', fallbackDecision),
-    formatSummaryLine(tag3 || '실천 처방', fallbackAction),
+    formatSummaryLine(tag1 || '현재 에너지', fallbackCurrent, 0),
+    formatSummaryLine(tag2 || '방향과 결단', fallbackDecision, 1),
+    formatSummaryLine(tag3 || '실천 처방', fallbackAction, 2),
   ];
 }
 

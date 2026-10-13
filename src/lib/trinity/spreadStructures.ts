@@ -812,7 +812,16 @@ export const THEME_STRUCTURES: Record<TarotConcernTheme, (spread: TarotSpreadRec
 export function buildSpreadTailoredReadingGuide(
   theme: TarotConcernTheme,
   spread: TarotSpreadRecommendation,
-  opts?: { optionA?: string; optionB?: string; concern?: string }
+  opts?: {
+    optionA?: string;
+    optionB?: string;
+    concern?: string;
+    sajuSummary?: string;
+    dayMaster?: string;
+    yongsin?: string;
+    dominantEl?: string;
+    lackingEl?: string;
+  }
 ): {
   structure: SpreadThemeStructure;
   promptTemplate: string;
@@ -845,19 +854,25 @@ export function buildSpreadTailoredReadingGuide(
   const step2Title = findStepTitleForTag(tag2, Math.min(1, structure.steps.length - 1));
   const step3Title = findStepTitleForTag(tag3, Math.min(3, structure.steps.length - 1));
 
+  const sajuDirective = opts?.dayMaster || opts?.yongsin
+    ? `\n- [사주 원국 연계]: 질문자의 사주 본원 [${opts.dayMaster || '본원 기질'}]${opts.yongsin ? ` 및 용신 [${opts.yongsin}]` : ''} 기운을 뽑힌 카드의 도상과 유기적으로 결합하여 서술하십시오.`
+    : '';
+
   const promptTemplate = `[✨ 테마 특화 리딩 구성 형식 — 반드시 아래 순서대로 감동적이고 흡입력 있게 전개하세요]
 
 [✨ 핵심 3줄 요약 — 리딩 결과의 최상단에 질문자의 마음에 깊은 울림과 명쾌함을 주는 고밀도 3줄 요약을 반드시 가장 먼저 작성하십시오]
 [핵심 3줄 요약]
-- [${tag1}] 질문자의 현재 마음결과 무의식, 직면한 상황의 본질을 카드의 도상과 결합하여 깊이 있게 꿰뚫어 보는 통찰 (형식적 요약 금지, 완결된 1문장)
-- [${tag2}] ${step2Title}의 핵심을 바탕으로 앞으로 나아가야 할 명확한 운명의 나침반과 결단의 기준을 제시하는 깊은 해답 (완결된 1문장)
-- [${tag3}] ${step3Title}의 핵심을 바탕으로 오늘 질문자가 당장 일상에서 실천하여 긍정적인 운의 파동을 일으킬 수 있는 구체적이고 현실적인 행동 처방 (완결된 1문장)
+- [${tag1}] 뽑힌 카드의 구체적 도상 상징(카드 명칭 및 시각적 모티브)과 사주 기운(본원/오행)을 결합하여, 질문자의 현재 상황과 내면 흐름을 날카롭게 짚어낸 심층 진단 (형식적 요약 절대 금지, 공백 포함 50~70자 내외의 명료한 완결된 1문장)
+- [${tag2}] ${step2Title}의 핵심을 바탕으로 카드의 교훈과 사주 전환점의 지혜(용신/행운)를 융합하여 앞으로 나아갈 운명의 나침반을 명쾌하게 선언하는 깊은 해답 (공백 포함 50~70자 내외의 명료한 완결된 1문장)
+- [${tag3}] ${step3Title}의 핵심을 바탕으로 오늘 질문자가 일상생활에서 즉시 실천할 수 있는 구체적이고 현실적인 행동 처방 (공백 포함 50~70자 내외의 명료한 완결된 1문장, 추상적 다짐 금지)
 
-[★ 요약 작성 대원칙 — 성의 없는 요약 절대 금지]
-- 대충 얼버무리거나 뻔한 말로 형식적으로 요약하지 마십시오. 각 줄마다 질문자의 고민과 뽑힌 카드의 고유한 상징을 입체적으로 엮어 정곡을 찌르는 깊이 있고 성숙한 문장(각 줄당 60~120자 내외)으로 온전하게 작성하십시오.
-- [핵심 3줄 요약] 블록은 오직 리딩 결과의 최상단에 단 1회만 출력해야 합니다.
-- 요약 블록 출력 후에는 해당 요약 내용을 중복 기입하지 마십시오.
-- 이어지는 본문 단계(1단계~${structure.steps.length}단계) 내부나 리딩 맨 마지막(끝부분)에 [핵심 3줄 요약] 또는 요약 블록을 절대로 다시 작성하거나 중복 기입해서는 안 됩니다. 리딩 본문 마지막에는 어떠한 형태의 요약 블록도 절대 기재하지 마십시오.
+[★ 핵심 3줄 요약 작성 대원칙 — 성의 없는 요약 절대 금지]
+1. [카드 상징 ✕ 사주 결합 심층 서술]: 단순한 상황 요약이나 뻔한 위로가 아닌, 뽑힌 카드의 고유 도상 상징(지팡이/컵/검/펜타클 또는 메이저 카드의 시각적 상징물)과 사주 원국 기운(일간 본원, 오행 균형, 용신)을 명확히 맞물려 고밀도로 통찰하십시오.${sajuDirective}
+2. [각 줄당 50~70자 분량 엄수]: 너무 짧아 무성의해 보이거나(35자 미만 금지) 너무 길어 늘어지지 않도록, 각 항목당 핵심을 날카롭게 압축한 공백 포함 50~70자 내외의 품격 있는 완결 문장으로 작성하십시오.
+3. [오늘 즉시 실천 처방 필수]: 세 번째 줄([${tag3}])은 모호한 마음가짐이 아니라, 질문자가 오늘 당장 생활 속에서 실행할 수 있는 현실적이고 구체적인 행동 미션(행동·시간·방식 명시)을 반드시 처방하십시오.
+4. [핵심 3줄 요약] 블록은 오직 리딩 결과의 최상단에 단 1회만 출력해야 합니다.
+5. 요약 블록 출력 후에는 해당 요약 내용을 중복 기입하지 마십시오.
+6. 이어지는 본문 단계(1단계~${structure.steps.length}단계) 내부나 리딩 맨 마지막(끝부분)에 [핵심 3줄 요약] 또는 요약 블록을 절대로 다시 작성하거나 중복 기입해서는 안 됩니다. 리딩 본문 마지막에는 어떠한 형태의 요약 블록도 절대 기재하지 마십시오.
 
 [✨ 본문 심층 리딩 — 최상단 3줄 요약 출력 완료 후, 아래 ${structure.steps.length}단계 맞춤 마크다운 구조로 순서대로 전개하세요]
 

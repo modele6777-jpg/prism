@@ -580,10 +580,14 @@ export function buildSpecificTarotDailyOracle(card: TarotCard, mode: string = "o
     ? `상대방의 사소한 말 한마디에 민감하게 반응하기보다, 한 템포 쉬어가는 여유를 가지세요. 내면의 평온이 대인관계의 마찰을 사전에 예방합니다.`
     : `밝고 진솔한 태도로 주변 사람들에게 온기를 건네보세요. 긍정적인 감정 교류가 당신의 운을 더욱 크고 환하게 열어줍니다.`;
 
+  const actionPrescription = luckyAction && luckyAction.length >= 2
+    ? `오늘 일상에서 "${luckyAction}"을(를) 정성껏 실천하여 내면의 에너지를 순환시키고 긍정 운을 활짝 열기.`
+    : '오늘 일상에서 미뤄둔 핵심 과제 1가지를 정해 20분간 몰입해 완수하고 맑은 운의 파동을 일으키기.';
+
   const diagnosis = `[핵심 3줄 요약]
 - [현재 에너지] ${isReversed ? `[${cardName}] 카드의 역방향 에너지로 내면의 성찰과 차분한 정돈이 필요한 하루입니다.` : `[${cardName}] 카드의 정방향 에너지로 활기찬 생명력과 긍정적인 파동이 충만한 하루입니다.`}
 - [방향과 결단] ${isReversed ? '조급함을 내려놓고 기존의 결함을 점검하며 신중하게 나아가는 것이 최선의 선택입니다.' : '내면의 직관과 잠재력을 믿고 자신감 있게 적극적인 행동을 취할 때입니다.'}
-- [실천 처방] ${luckyAction}
+- [실천 처방] ${actionPrescription}
 
 ### 🕯️ 1. 카드가 비추는 당신의 마음과 현재 에너지
 ${cardMeaning}

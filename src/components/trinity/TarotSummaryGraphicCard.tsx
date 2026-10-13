@@ -50,7 +50,7 @@ export function TarotSummaryGraphicCard({
   onToggleTTS,
   className = '',
   title = '타로 리딩 핵심 3줄 요약',
-  subtitle = 'EXECUTIVE SUMMARY · 3대 차원 정밀 요약',
+  subtitle = 'CARD SYMBOLISM ✕ SAJU ESSENCE · 고밀도 3대 차원 심층 요약',
 }: TarotSummaryGraphicCardProps) {
   const [copied, setCopied] = useState(false);
 
@@ -75,7 +75,7 @@ export function TarotSummaryGraphicCard({
     if (idx === 0 || /현재|에너지|상황|진단/i.test(rawTag)) {
       return {
         step: '01',
-        label: '현재의 내면 에너지 & 흐름',
+        label: '카드 도상 상징 & 사주 본원 진단',
         tag: rawTag || '현재 에너지',
         content: rawContent,
         highlightBadge,
@@ -89,10 +89,10 @@ export function TarotSummaryGraphicCard({
           dotColor: 'bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.6)]',
         },
       };
-    } else if (idx === 1 || /방향|결단|선택|판정/i.test(rawTag)) {
+    } else if (idx === 1 || /방향|결단|선택|판정|전환점/i.test(rawTag)) {
       return {
         step: '02',
-        label: '운의 방향성 & 마스터 결단',
+        label: '심층 통찰 & 운의 전환점 나침반',
         tag: rawTag || '방향과 결단',
         content: rawContent,
         highlightBadge,
@@ -109,7 +109,7 @@ export function TarotSummaryGraphicCard({
     } else {
       return {
         step: '03',
-        label: '오늘을 바꾸는 실천 처방',
+        label: '오늘 즉시 실천 행동 처방',
         tag: rawTag || '실천 처방',
         content: rawContent,
         highlightBadge,
@@ -269,7 +269,7 @@ export function TarotSummaryGraphicCard({
       <div className="relative z-10 pt-1 flex items-center justify-between text-[11px] text-white/45 font-sans border-t border-white/5">
         <span className="flex items-center gap-1.5">
           <ShieldCheck size={12} className="text-amber-400/80" />
-          <span>78장 타로 상징과 내면 원형을 압축한 핵심 정수입니다.</span>
+          <span>뽑힌 카드의 도상 상징과 사주 본원 기운을 융합한 즉시 실천 행동 처방입니다.</span>
         </span>
         <span className="text-[10px] text-white/30 hidden sm:inline">Trinitas Wisdom Essence</span>
       </div>

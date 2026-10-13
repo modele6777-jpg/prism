@@ -1589,11 +1589,24 @@ function playDailyCardChimeAsync() {
     return TAROT_DECK.filter((card) => !drawnCardIds.includes(card.id));
   }, [drawnCardIds]);
 
-  // Auto concise 3-bullet summary for tarot readings (항상 명확한 3개 불릿 보장)
+  // Auto concise 3-bullet summary for tarot readings (카드 상징과 사주를 결합한 50~70자 명확한 3개 불릿 보장)
   const conciseSummaryBullets = useMemo(() => {
     if (!tarotResult || tarotResult.trim().length < 40) return [];
-    return extractConciseSummary(tarotResult, dailyResult?.drawnCard || dailyDrawnCard);
-  }, [tarotResult, dailyResult, dailyDrawnCard]);
+    const profile = sharedState?.userProfile || getPersistentUserProfile();
+    const sajuInfo = calculateDetailedSaju(profile);
+    const contextCards = drawnCards && drawnCards.length > 0
+      ? drawnCards
+      : (dailyResult?.drawnCard ? [dailyResult.drawnCard] : (dailyDrawnCard ? [dailyDrawnCard] : []));
+
+    return extractConciseSummary(tarotResult, {
+      cards: contextCards,
+      card: contextCards[0] || dailyResult?.drawnCard || dailyDrawnCard,
+      saju: sajuInfo,
+      concern: tarotConcern,
+      theme: tarotConcernAnalysis.theme,
+      kind: tarotConcernAnalysis.kind,
+    });
+  }, [tarotResult, drawnCards, dailyResult, dailyDrawnCard, sharedState, tarotConcern, tarotConcernAnalysis]);
 
   // 🎯 예/아니오 (YES or NO) 타로 최종 판정 추출
   const tarotYesNoVerdict = useMemo(() => {
@@ -2494,6 +2507,11 @@ function playDailyCardChimeAsync() {
               optionA: concernAnalysis.optionA,
               optionB: concernAnalysis.optionB,
               concern: tarotConcern,
+              sajuSummary: sajuData,
+              dayMaster: sajuInfo?.dayMaster?.symbolName || sajuInfo?.dayMaster?.korean,
+              yongsin: sajuInfo?.yongsin?.name,
+              dominantEl: sajuInfo?.elements?.dominant?.name,
+              lackingEl: sajuInfo?.elements?.lacking?.name,
             }
           );
 
