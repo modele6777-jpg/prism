@@ -2848,7 +2848,7 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
 
         <div className="mt-4 p-6 sm:p-8 rounded-2xl bg-black/50 border border-amber-400/20 relative z-10 space-y-5 shadow-inner">
           <div className="text-sm sm:text-base text-zinc-100 leading-relaxed oracle-markdown-body font-serif">
-            <Streamdown immediate>{message}</Streamdown>
+            <Streamdown immediate enableTTSHighlight={isOracleLetterTTSActive}>{message}</Streamdown>
           </div>
 
           {/* 리딩 하단 액션 툴바 */}
@@ -4058,7 +4058,7 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
 
                   {/* 📜 Streamdown 기반 정통 마크다운 본문 리딩 */}
                   <div className="text-white/90 leading-relaxed font-sans text-xs sm:text-sm pt-2">
-                    <Streamdown immediate>{displayFullReadingText}</Streamdown>
+                    <Streamdown immediate enableTTSHighlight={isOracleLetterTTSActive}>{displayFullReadingText}</Streamdown>
                   </div>
 
                   {/* 🕊️ 기적수업 거룩한 선언 & 워크북 레슨 카드 (기적수업 모드 시) */}

@@ -105,11 +105,13 @@ export function Streamdown({
   typewriterSpeed = 15,
   fixedChunkSize,
   immediate = false,
+  enableTTSHighlight = true,
 }: {
   children?: string;
   typewriterSpeed?: number;
   fixedChunkSize?: number;
   immediate?: boolean;
+  enableTTSHighlight?: boolean;
 }) {
   const textContent = useMemo(() => {
     if (children === null || children === undefined) return '';
@@ -207,9 +209,27 @@ export function Streamdown({
   const isTyping = displayedText.length > 0 && displayedText.length < textContent.length;
   const textWithCursor = isTyping ? displayedText + ' ▍' : displayedText;
 
-  // Dynamic TTS sentence tracking
-  const { isSpeaking, activeText, currentSentence } = useTTSState();
-  const activeTarget = isSpeaking ? (currentSentence || activeText) : null;
+  // Dynamic TTS sentence tracking (strictly isolated to matching reading context)
+  const { isSpeaking, activeText, currentSentence, activeFullText } = useTTSState();
+  const rawTarget = (enableTTSHighlight && isSpeaking) ? (currentSentence || activeText) : null;
+
+  const activeTarget = useMemo(() => {
+    if (!rawTarget || !enableTTSHighlight) return null;
+    if (activeFullText && textContent) {
+      const cleanA = activeFullText.replace(/[^가-힣a-zA-Z0-9]/g, '');
+      const cleanT = textContent.replace(/[^가-힣a-zA-Z0-9]/g, '');
+      // If active spoken speech is long enough and completely outside this container, reject highlight
+      if (
+        cleanA.length >= 12 &&
+        cleanT.length >= 12 &&
+        !cleanT.includes(cleanA.slice(0, 16)) &&
+        !cleanA.includes(cleanT.slice(0, 16))
+      ) {
+        return null;
+      }
+    }
+    return rawTarget;
+  }, [rawTarget, enableTTSHighlight, activeFullText, textContent]);
 
   const components = useMemo(() => {
     return {

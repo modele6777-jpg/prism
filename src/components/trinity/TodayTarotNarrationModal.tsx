@@ -596,7 +596,7 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
                 className="text-white/85 text-sm leading-relaxed relative z-10 w-full font-sans"
                 style={{ wordBreak: 'keep-all' }}
               >
-                <Streamdown immediate>{stripSummaryFromTarotText(narrationData.cleanDiagnosis || narrationData.rawDiagnosis || "")}</Streamdown>
+                <Streamdown immediate enableTTSHighlight={isFullPlaying}>{stripSummaryFromTarotText(narrationData.cleanDiagnosis || narrationData.rawDiagnosis || "")}</Streamdown>
               </div>
 
               {/* Planetary / Frequency Harmony Section */}

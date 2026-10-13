@@ -241,16 +241,19 @@ export function highlightSentencesInChildren(
 export function TTSHighlightedText({
   text,
   className = '',
+  enabled = true,
 }: {
   text: string;
   className?: string;
+  enabled?: boolean;
 }) {
   const { isSpeaking, activeText, currentSentence } = useTTSState();
-  const activeTarget = isSpeaking ? (currentSentence || activeText) : null;
+  const activeTarget = (enabled && isSpeaking) ? (currentSentence || activeText) : null;
 
   const content = useMemo(() => {
+    if (!enabled || !activeTarget) return text;
     return highlightSentencesInChildren(text, activeTarget);
-  }, [text, activeTarget]);
+  }, [text, activeTarget, enabled]);
 
   return <span className={className}>{content}</span>;
 }

@@ -3818,7 +3818,7 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
                                             </div>
                                           )}
 
-                                          <Streamdown immediate={!isTarotGenerating}>{displayTarotResult || stripSummaryFromTarotText(tarotResult || "")}</Streamdown>
+                                          <Streamdown immediate={!isTarotGenerating} enableTTSHighlight={isFullReadingTTSActive}>{displayTarotResult || stripSummaryFromTarotText(tarotResult || "")}</Streamdown>
                                           {/* 🌟 그에 맞는 루시의 조언 (TTS 가능) */}
                                           {tarotResult && !isTarotGenerating && (
                                             <div className="pt-2">
