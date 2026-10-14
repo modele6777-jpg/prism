@@ -1716,8 +1716,8 @@ function playDailyCardChimeAsync() {
   useEffect(() => {
     if (tarotSpeechReadingText && !isTarotGenerating && tarotSpeechReadingText.trim().length >= 80) {
       const chunks = splitSpeechIntoChunks(tarotSpeechReadingText, 110);
-      if (chunks[0]) prefetchTTS(chunks[0], 'Kore', '신비').catch(() => {});
-      if (chunks[1]) prefetchTTS(chunks[1], 'Kore', '신비').catch(() => {});
+      if (chunks[0]) prefetchTTS(chunks[0], 'Kore').catch(() => {});
+      if (chunks[1]) prefetchTTS(chunks[1], 'Kore').catch(() => {});
     }
   }, [tarotSpeechReadingText, isTarotGenerating]);
   const [chatInput, setChatInput] = useState("");
@@ -3727,7 +3727,7 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
                                           if (isFullReadingTTSActive) {
                                             stopTTS();
                                           } else if (tarotSpeechReadingText) {
-                                            await playTTSInChunks(tarotSpeechReadingText, 'Kore', 110, '신비');
+                                            await playTTSInChunks(tarotSpeechReadingText, 'Kore', 110);
                                           }
                                         }}
                                         className={`px-2.5 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
@@ -3771,7 +3771,7 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
                                                 if (isSummaryTTSActive) {
                                                   stopTTS();
                                                 } else if (summarySpeechText) {
-                                                  await playTTSInChunks(summarySpeechText, 'Kore', 110, '신비');
+                                                  await playTTSInChunks(summarySpeechText, 'Kore', 110);
                                                 }
                                               }}
                                             />

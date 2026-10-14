@@ -65,10 +65,9 @@ export function playNativeBrowserSpeech(
   activeUtterances.add(utterance);
   utterance.lang = isKorean ? 'ko-KR' : 'en-US';
 
-  const isMeditation = /(?:명상|호흡|들숨|날숨|방하착)/.test(cleanText);
-  // 🌟 모든 음성 낭독을 1.0 배속 표준 속도로 고정
+  // 🌟 모든 음성 낭독을 유니버스 인사이트 명언과 동일한 1.0 배속 표준 속도로 고정
   utterance.rate = 1.0;
-  utterance.pitch = isMeditation ? 0.98 : 1.0;
+  utterance.pitch = 1.0;
 
   const voicesList = window.speechSynthesis.getVoices();
   const langCode = isKorean ? 'ko' : 'en';
@@ -254,10 +253,10 @@ export interface TTSAudioData {
 
 const ttsCache = new Map<string, Promise<TTSAudioData | null>>();
 
-export function getTTSCacheKey(text: string, voice?: string, emotion?: string, _rate?: string, _speed?: number): string {
+export function getTTSCacheKey(text: string, _voice?: string, _emotion?: string, _rate?: string, _speed?: number): string {
   const clean = normalizeTextForSpeech(text);
-  // 🌟 모든 TTS 재생 및 캐시는 차분하고 따뜻한 여성 표준 음성(Gemini Kore Female v4) 1.0 배속 표준 속도로 영구 고정
-  return `gemini_kore_female_v4_${voice || 'default'}_${emotion || 'none'}_1.0_${clean}`;
+  // 🌟 모든 TTS 재생 및 캐시는 유니버스 인사이트 명언의 단일 여성 표준 음성(Gemini Kore Female v5) 1.0 배속 표준 속도로 영구 고정
+  return `universe_kore_female_v5_${clean}`;
 }
 
 export function prefetchTTS(text: string, voice?: string, emotion?: string, _rate?: string, _speed?: number): Promise<TTSAudioData | null> {
@@ -1001,10 +1000,7 @@ export const playQAndATTS = async (
         try {
           await playTTS(aChunks[i], aiVoice, true, '다정', sequenceSessionId, !isLastChunk, cleanAnswer);
         } catch (chunkErr) {
-          console.warn(`[TTS] QA chunk ${i + 1}/${aChunks.length} error, recovering:`, chunkErr);
-          if (ttsState.activeSessionId === sequenceSessionId && isPlayingSequence) {
-            await playNativeBrowserSpeech(aChunks[i], true, sequenceSessionId, !isLastChunk, aiVoice).catch(() => {});
-          }
+          console.warn(`[TTS] QA chunk ${i + 1}/${aChunks.length} error, maintaining voice consistency:`, chunkErr);
         }
 
         if (ttsState.activeSessionId !== sequenceSessionId || !isPlayingSequence) break;

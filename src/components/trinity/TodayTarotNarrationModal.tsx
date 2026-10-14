@@ -258,9 +258,8 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
     if (!narrationData.fullSpeech) return;
 
     setActiveSpeechType('full');
-    const voiceName = selectedVoice === 'Lucy' ? 'Lucy' : 'Kore';
-    await playTTSInChunks(narrationData.fullSpeech, voiceName, 110, '신비');
-  }, [isTTSActive, activeSpeechType, narrationData.fullSpeech, selectedVoice]);
+    await playTTSInChunks(narrationData.fullSpeech, 'Kore', 110);
+  }, [isTTSActive, activeSpeechType, narrationData.fullSpeech]);
 
   // Summary TTS Playback
   const handlePlaySummary = useCallback(async () => {
@@ -272,9 +271,8 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
     if (!narrationData.summarySpeechText) return;
 
     setActiveSpeechType('summary');
-    const voiceName = selectedVoice === 'Lucy' ? 'Lucy' : 'Kore';
-    await playTTSInChunks(narrationData.summarySpeechText, voiceName, 110, '신비');
-  }, [isTTSActive, activeSpeechType, narrationData.summarySpeechText, selectedVoice]);
+    await playTTSInChunks(narrationData.summarySpeechText, 'Kore', 110);
+  }, [isTTSActive, activeSpeechType, narrationData.summarySpeechText]);
 
   const handleCopyText = useCallback(() => {
     if (!narrationData.cleanDiagnosis && !narrationData.rawDiagnosis) return;

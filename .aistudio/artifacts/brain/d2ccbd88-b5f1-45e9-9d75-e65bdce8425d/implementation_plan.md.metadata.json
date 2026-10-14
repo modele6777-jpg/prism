@@ -1,6 +1,6 @@
 {
-  "summary": "TTS 음성 낭독 중 목소리 톤 변동 및 엔진 교차 현상 해결 계획\n- 낭독 중 음색이 교차되는 근본 원인(EdgeTTS 403 및 Gemini 쿼터 한도 초과로 인한 타임아웃 및 WebSpeech 교차 전환) 차단\n- 차분하고 따뜻한 여성 표준 음성(고속 안정 Google TTS 엔진)을 단일 고정 주력 엔진으로 확정\n- 시퀀스 재생 중 엔진 호핑(voice hopping) 방지 락 도입 및 동일 엔진 재시도 일관성 보장",
-  "updatedAt": "2026-10-14T00:33:37.605082577Z",
+  "summary": "앱 내 모든 TTS 음성을 유니버스 인사이트 명언의 단일 여성 표준 음성(Gemini Kore)으로 100% 일원화하고, 피치 편차 및 엔진 불일치를 원천 제거하기 위한 구현 계획",
+  "updatedAt": "2026-10-14T02:50:01.215909680Z",
   "requestFeedback": true,
   "userFacing": true
 }

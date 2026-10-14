@@ -130,7 +130,7 @@ export const FollowUpTarotTimeline: React.FC<FollowUpTarotTimelineProps> = ({
                           if (isEntryTTSActive) {
                             stopTTS();
                           } else if (entry.reading) {
-                            await playTTSInChunks(entry.reading, 'Kore', 110, '신비');
+                            await playTTSInChunks(entry.reading, 'Kore', 110);
                           }
                         }}
                         disabled={entry.isGenerating || !entry.reading}

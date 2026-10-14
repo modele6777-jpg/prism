@@ -2,7 +2,7 @@ import { prepareNaturalSpeechText } from "./speechText";
 import * as os from "os";
 import * as fs from "fs";
 import * as path from "path";
-import googleTTS from "google-tts-api";
+import * as googleTTS from "google-tts-api";
 import { EdgeTTS } from "node-edge-tts";
 
 const fsPromises = fs.promises;
@@ -59,25 +59,9 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
     voiceName = "en-US-AriaNeural";
   }
 
-  if (emotion) {
-    const emo = String(emotion).trim().toLowerCase();
-    const meditationList = ["명상", "meditation", "호흡", "breathing", "방하착", "이완", "마인드풀", "zen", "relaxation"];
-    const slowHealingList = ["공감", "위로", "치유", "차분", "평온", "슬픔", "따뜻", "empathy", "comfort", "healing", "calm", "peace", "sadness", "sad", "warm"];
-    const brightJoyList = ["기쁨", "응원", "설렘", "위트", "밝음", "재미", "신남", "joy", "cheer", "cheering", "excited", "witty", "happy", "fun", "bright"];
-    const mysteryTarotList = ["신비", "진지", "경고", "몽환", "mystery", "serious", "warning", "dreamy", "mystic"];
-
-    if (meditationList.some((item) => emo.includes(item))) {
-      pitch = "-0.8Hz";
-    } else if (slowHealingList.some((item) => emo.includes(item))) {
-      pitch = "-0.4Hz";
-    } else if (brightJoyList.some((item) => emo.includes(item))) {
-      pitch = "+1.5Hz";
-    } else if (mysteryTarotList.some((item) => emo.includes(item))) {
-      pitch = "-0.5Hz";
-    }
-  }
-
-  const cacheKey = `${resolvedVoiceKey}_${emotion || ""}_${rate}_${cleanText}`;
+  // 🌟 모든 낭독은 유니버스 인사이트 명언과 동일한 맑고 따뜻한 단일 표준 음정(+0Hz, 1.0x)으로 100% 일원화
+  // 감정 태그에 따른 인위적 피치 저하(-0.8Hz, -0.5Hz 등 남성적 저음 왜곡)를 전면 배제합니다.
+  const cacheKey = `universe_kore_female_v5_${cleanText}`;
 
   // Check in-memory cache
   const cached = ttsServerCache.get(cacheKey);
@@ -153,13 +137,38 @@ function stripID3Header(buf: Buffer): Buffer {
     throw new Error("Google TTS generated empty audio buffer");
   }
 
-  // 1. Primary Engine: Google AI Studio Gemini Flash Lite Voice (Voice: "Kore" - Warm, clear, standard Korean female voice)
+  // 1. Primary Engine: Google Standard Warm Female Voice (Fast ~200ms, 100% identical timbre with Universe Insight)
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const audioBuffer = await generateGoogleTTS(cleanText, isKorean);
+      const base64 = audioBuffer.toString("base64");
+
+      if (ttsServerCache.size > 500) {
+        const oldestKey = ttsServerCache.keys().next().value;
+        if (oldestKey) ttsServerCache.delete(oldestKey);
+      }
+      ttsServerCache.set(cacheKey, { base64, encoding: "mp3", sampleRate: 24000, timestamp: Date.now() });
+
+      return {
+        audioContent: base64,
+        encoding: "mp3",
+        sampleRate: 24000,
+      };
+    } catch (err: any) {
+      console.warn(`[TTS] Google TTS primary attempt ${attempt} notice:`, err?.message || err);
+      if (attempt < 3) {
+        await new Promise((r) => setTimeout(r, 120));
+      }
+    }
+  }
+
+  // 2. Secondary Engine: Google AI Studio Gemini Voice (Voice: "Kore")
   const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY || process.env.AI_API_KEY;
   if (geminiApiKey) {
     try {
       const { GoogleGenAI } = await import("@google/genai");
       const ai = new GoogleGenAI({ apiKey: geminiApiKey });
-      const selectedVoice = "Kore"; // Official standard warm female voice
+      const selectedVoice = "Kore";
 
       const ttsModels = ["gemini-3.8-flash-lite-tts", "gemini-3.8-flash-tts"];
       for (const modelName of ttsModels) {
@@ -177,7 +186,7 @@ function stripID3Header(buf: Buffer): Buffer {
                 },
               },
             }),
-            new Promise<any>((_, reject) => setTimeout(() => reject(new Error(`Gemini TTS timeout (${modelName})`)), 5500)),
+            new Promise<any>((_, reject) => setTimeout(() => reject(new Error(`Gemini TTS timeout (${modelName})`)), 5000)),
           ]);
 
           const candidate = geminiResponse?.candidates?.[0];
@@ -204,35 +213,11 @@ function stripID3Header(buf: Buffer): Buffer {
             };
           }
         } catch (mErr: any) {
-          console.warn(`[TTS] ${modelName} attempt notice:`, mErr?.message || mErr);
+          console.warn(`[TTS] ${modelName} fallback attempt notice:`, mErr?.message || mErr);
         }
       }
     } catch (geminiErr: any) {
       console.warn("[TTS] Gemini AI Studio voice fallback notice:", geminiErr?.message || geminiErr);
-    }
-  }
-
-  // 2. Secondary Fallback: Direct Google HTTP Stream
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    try {
-      const audioBuffer = await generateGoogleTTS(cleanText, isKorean);
-      const base64 = audioBuffer.toString("base64");
-
-      if (ttsServerCache.size > 500) {
-        const oldestKey = ttsServerCache.keys().next().value;
-        if (oldestKey) ttsServerCache.delete(oldestKey);
-      }
-      ttsServerCache.set(cacheKey, { base64, encoding: "mp3", sampleRate: 24000, timestamp: Date.now() });
-
-      return {
-        audioContent: base64,
-        encoding: "mp3",
-      };
-    } catch (err: any) {
-      console.warn(`[TTS] Google TTS fallback attempt ${attempt} notice:`, err?.message || err);
-      if (attempt < 2) {
-        await new Promise((r) => setTimeout(r, 150));
-      }
     }
   }
 

@@ -1153,7 +1153,7 @@ export default function LucyStandalonePage() {
     setTimeout(() => setCopiedId(null), 1500);
   };
 
-  const handleVoicePlay = (id: string, text: string, voice: string = 'Kore') => {
+  const handleVoicePlay = (id: string, text: string, _voice?: string) => {
     const clean = normalizeTextForSpeech(text);
     if (playingMsgId === id && (ttsInfo.isSpeaking || ttsInfo.isLoading)) {
       stopTTS();
@@ -1161,7 +1161,7 @@ export default function LucyStandalonePage() {
     } else {
       stopTTS();
       setPlayingMsgId(id);
-      playTTSInChunks(clean, voice, 350, '다정');
+      playTTSInChunks(clean, 'Kore', 110);
     }
   };
 
