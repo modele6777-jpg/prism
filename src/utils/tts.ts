@@ -239,8 +239,8 @@ const ttsCache = new Map<string, Promise<TTSAudioData | null>>();
 
 export function getTTSCacheKey(text: string, voice?: string, emotion?: string, _rate?: string, _speed?: number): string {
   const clean = normalizeTextForSpeech(text);
-  // 🌟 모든 TTS 재생 및 캐시는 1.0 배속 표준 속도로 영구 고정
-  return `${voice || 'default'}_${emotion || 'none'}_1.0_${clean}`;
+  // 🌟 모든 TTS 재생 및 캐시는 차분하고 따뜻한 여성 표준 음성(female_v2) 1.0 배속 표준 속도로 영구 고정
+  return `female_v2_${voice || 'default'}_${emotion || 'none'}_1.0_${clean}`;
 }
 
 export function prefetchTTS(text: string, voice?: string, emotion?: string, _rate?: string, _speed?: number): Promise<TTSAudioData | null> {
@@ -530,14 +530,16 @@ export const playTTS = async (
   } catch (error) {
     if (sessionToVerify && ttsState.activeSessionId !== sessionToVerify) return;
 
-    if (sequenceSessionId) {
-      // In sequence streaming mode, attempt 2 quick retries (8s) before falling back to browser speech to prevent voice hopping
-      for (let retryCount = 1; retryCount <= 2; retryCount++) {
+    if (sequenceSessionId || isSequenceChunk) {
+      // 🌟 단일 여성 표준 음성 일관성 유지 원칙:
+      // 시퀀스 낭독 도중 목소리가 임의로 바뀌는 현상을 막기 위해 브라우저 음성으로 교차 전환하지 않고,
+      // 동일 음성 엔드포인트(/api/ai/tts)로 최대 3회 재시도합니다.
+      for (let retryCount = 1; retryCount <= 3; retryCount++) {
         if (sessionToVerify && ttsState.activeSessionId !== sessionToVerify) return;
         try {
           await new Promise((r) => setTimeout(r, 200 * retryCount));
           const retryController = new AbortController();
-          const retryTimeoutId = setTimeout(() => retryController.abort(), 8500);
+          const retryTimeoutId = setTimeout(() => retryController.abort(), 6000);
           const retryRes = await fetch('/api/ai/tts', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -562,15 +564,15 @@ export const playTTS = async (
             }
           }
         } catch (retryErr) {
-          console.warn(`[TTS] Sequence chunk quick retry ${retryCount} error:`, retryErr);
+          console.warn(`[TTS] Sequence chunk same-voice retry ${retryCount} error:`, retryErr);
         }
       }
-      // Fall back directly to native browser speech synthesis to prevent long silent freezes
-      console.warn('[TTS] Sequence chunk API failed, falling back to Native Browser Speech to maintain continuous speech flow');
-      return playNativeBrowserSpeech(cleanText, wait, sessionToVerify, isSequenceChunk, targetVoice, 1.0);
+      // 동일 음성 3회 재시도 실패 시, 이질적인 브라우저 음색으로 교차 전환(Voice Hopping)하지 않고 조용히 청크를 스킵하여 음색 통일성을 엄격히 보호합니다.
+      console.warn('[TTS] Sequence chunk failed after 3 same-voice retries, skipping chunk without switching voices');
+      return;
     }
 
-    console.warn('[TTS] API generation failed, falling back to Native Browser Speech...', error);
+    console.warn('[TTS] Single-play API generation failed, falling back to Native Browser Speech...', error);
     return playNativeBrowserSpeech(cleanText, wait, sessionToVerify, isSequenceChunk, targetVoice, 1.0);
   }
 };
@@ -791,10 +793,7 @@ export const playTTSInChunks = async (
           cleanText,    // preserve activeFullText for UI synchronization
         );
       } catch (chunkErr) {
-        console.warn(`[TTS] Sequence chunk ${i + 1}/${chunks.length} error, recovering with fallback:`, chunkErr);
-        if (ttsState.activeSessionId === sequenceSessionId && isPlayingSequence) {
-          await playNativeBrowserSpeech(chunks[i], true, sequenceSessionId, !isLastChunk, voice, 1.0).catch(() => {});
-        }
+        console.warn(`[TTS] Sequence chunk ${i + 1}/${chunks.length} error, maintaining voice consistency:`, chunkErr);
       }
 
       if (ttsState.activeSessionId !== sequenceSessionId || !isPlayingSequence) {

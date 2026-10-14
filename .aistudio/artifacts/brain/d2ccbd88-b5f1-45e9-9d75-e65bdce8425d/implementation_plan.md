@@ -1,68 +1,57 @@
-# [구현 계획] 타로 리딩 핵심 3줄 요약 TTS 낭독 시 본문 동시 하이라이트 분리 및 정밀 동기화
+# TTS 음성 단일화 및 낭독 중 목소리 변경 방지 구현 계획
 
-사용자가 타로 리딩의 **[핵심 3줄 요약]**을 TTS 음성으로 들을 때, 하단 본문(상세 리딩)의 문장들이 동시에 형광펜 하이라이트 표시되는 현상을 방지하고, 사용자가 선택한 요구사항에 맞추어 **요약 낭독과 본문 낭독의 하이라이트 영역을 상호 배타적이고 명확하게 분리**합니다.
+낭독 진행 도중 목소리 톤과 음색이 문장마다 달라지는 현상을 완전히 근절하고, 사용자 선택에 따라 **차분하고 따뜻한 단일 여성 표준 음성**으로 처음부터 끝까지 일관되게 낭독되도록 TTS 파이프라인을 정비합니다.
 
----
+### User Review & Critical Decisions
 
-## 사용자 확인 요구사항 (Clarifying Answers 반영)
-1. **요약 낭독 시 하이라이트 범위**: 핵심 3줄 요약 카드 내부 문장만 하이라이트하고 본문은 완전히 제외
-2. **본문 전체 낭독 시 하이라이트 범위**: 본문 전체 낭독 시에만 본문 마크다운 문장 실시간 하이라이트 적용
-3. **음성 낭독 화면 스크롤**: 현재 낭독 중인 활성 문장 위치로 부드러운 자동 스크롤 유지
+> [!IMPORTANT]
+> 사용자가 1단계 질의응답을 통해 확정한 설정을 반영합니다:
+> - **고정 음색**: 차분하고 따뜻한 여성 표준 음성
+> - **오류 시 대응**: 다른 음성 엔진으로 교차 전환하지 않고, 동일 음성 엔진 재시도를 통해 음색 일관성 유지
 
----
-
-## 1. 근본 원인 분석
-- `Streamdown.tsx`는 전역 `useTTSState()`의 `isSpeaking` 상태를 직접 구독하여 마크다운 내부 문장들에 `highlightSentencesInChildren`을 무조건 적용하고 있었습니다.
-- 상단 `TarotSummaryGraphicCard`의 "요약 낭독" 버튼을 눌러 요약 음성이 재생될 때도 전역 `isSpeaking`이 활성화되고, 요약문에 포함된 단어나 카드의 상징 키워드가 본문과 유사하면 퍼지 매칭(`isSentenceActive`)에 의해 본문 문장들이 동시에 하이라이트되는 간섭이 발생했습니다.
-- 반대로 본문 전체를 낭독할 때도 상단 요약 카드의 텍스트가 부분적으로 하이라이트될 수 있는 구조였습니다.
+- **확정된 결정 1 (음색 단일화)**: 낭독 중 청크별로 목소리가 바뀌지 않도록 단일 여성 표준 음성으로 고정
+- **확정된 결정 2 (엔진 호핑 원천 차단)**: 실패 시 WebSpeech나 다른 음색으로 임의 전환하지 않고 동일 엔진 재시도 원칙 준수
 
 ---
 
-## 2. 해결 방안 및 구현 세부 계획
+### 1. 현상 분석 및 근본 원인 (Root Cause)
 
-### 2.1 `TTSHighlightedText.tsx`에 `enabled` prop 추가 및 안전 가드
-- `TTSHighlightedText` 컴포넌트에 `enabled?: boolean` (기본값 `true`) prop 추가
-- `enabled === false`일 경우 `activeTarget`을 무시하고 일반 텍스트로만 렌더링하여 불필요한 하이라이트 마킹 원천 차단
-- 활성 문장 마크인 `TTSHighlightMark`의 부드러운 `scrollIntoView`는 활성화된 영역에서만 정확히 동작하도록 유지
-
-### 2.2 `Streamdown.tsx`에 `enableTTSHighlight` 제어 prop 및 텍스트 검증 추가
-- `StreamdownProps`에 `enableTTSHighlight?: boolean` (기본값 `true`) 추가
-- `enableTTSHighlight === false`일 때는 마크다운의 모든 요소(p, li, h1~h6, blockquote 등)에 하이라이터 래핑을 건너뛰고 기본 마크다운으로 렌더링
-- `enableTTSHighlight === true`일 때도 현재 재생 중인 TTS 텍스트가 실제로 해당 `Streamdown` 본문에 속해 있는지 컨텍스트 일치 여부 확인
-
-### 2.3 `TarotSummaryGraphicCard.tsx`의 하이라이트 활성화 조건 강화
-- `TarotSummaryGraphicCard`가 전달받는 `isTTSActive` 상태를 내부의 `TTSHighlightedText` 컴포넌트들에 `enabled={isTTSActive}`로 전달
-- "요약 낭독"이 재생 중일 때만 요약 카드 내부의 제목, 부제, 라벨 및 3줄 요약 문장에 실시간 하이라이트 표시
-- 요약 낭독이 멈추거나 본문 전체 낭독 중일 때는 요약 카드에 하이라이트가 발생하지 않도록 완전 격리
-
-### 2.4 `TrinityApp.tsx`의 낭독 모드별 상호 배타적 분리
-- 기존 계산된 `isSummaryTTSActive`와 `isFullReadingTTSActive`를 정확히 연동:
-  ```tsx
-  <TarotSummaryGraphicCard
-    bullets={conciseSummaryBullets}
-    readingText={displayTarotResult || tarotResult || ""}
-    isTTSActive={isSummaryTTSActive}
-    onToggleTTS={handleToggleSummaryTTS}
-  />
-  
-  <Streamdown
-    immediate={!isTarotGenerating}
-    enableTTSHighlight={isFullReadingTTSActive}
-  >
-    {displayTarotResult || stripSummaryFromTarotText(tarotResult || "")}
-  </Streamdown>
-  ```
-- 요약 낭독 중에는 `isFullReadingTTSActive === false`이므로 하단 본문 하이라이트가 100% 비활성화됨
-- 본문 낭독 중에는 `isSummaryTTSActive === false`이므로 상단 요약 카드 하이라이트가 100% 비활성화되고 본문만 정밀 하이라이트됨
-
-### 2.5 오라클 및 데일리 타로 모달 동기화 (`TrinityOracleSection.tsx`, `TodayTarotNarrationModal.tsx`)
-- 오라클 타로 섹션 및 데일리 타로 낭독 모달에서도 동일한 원칙으로 요약 카드와 본문 스트림다운의 하이라이트가 상호 간섭하지 않도록 일관되게 정비
+1. **서버 측 복수 엔진 실패 지연**:
+   - `node-edge-tts`가 마이크로소프트의 인증 토큰 정책 변경으로 403 Forbidden 오류를 지속 발생시킴.
+   - 대체 엔진인 Gemini TTS(`gemini-3.1-flash-tts-preview`)가 일일 무료 쿼터(10회/일)를 초과하여 429 오류 발생.
+   - 두 엔진의 순차 재시도 및 타임아웃으로 인해 서버 응답이 15초 이상 지연됨.
+2. **클라이언트 측 타임아웃 및 음성 교차(Voice Hopping)**:
+   - 클라이언트 `playTTS`의 청크 타임아웃(12초)이 초과되어 Abort된 청크는 브라우저 내장 WebSpeech API로 강제 폴백됨.
+   - 반면 일부 청크는 캐시되거나 Google TTS로 응답되어, 한 번의 낭독 안에서 **Google TTS ↔ WebSpeech(Siri/Yuna/기본음성)**가 문장마다 번갈아 재생되는 현상 발생.
 
 ---
 
-## 3. 검증 계획
-1. **요약 낭독 테스트**: 타로 리딩 상단의 [요약 낭독] 클릭 시, 3줄 요약 카드의 문장만 하이라이트되고 하단 본문에는 어떠한 하이라이트도 나타나지 않는지 확인
-2. **본문 낭독 테스트**: 하단 [리딩 듣기] 클릭 시, 본문 문장들만 실시간으로 하이라이트되고 상단 요약 카드에는 간섭이 없는지 확인
-3. **낭독 정지 테스트**: 낭독 중 정지 시 모든 하이라이트가 즉시 정상 해제되는지 확인
-4. **빌드 및 린트 검증**: `npm run lint` 및 `npm run build` 오류 없는 정상 컴파일 검증
-5. **버전 관리 규칙 준수**: `package.json`, `public/version.json`, `public/changelog.json` 버전 갱신 반영
+### 2. 아키텍처 및 개선 방안 (Technical Strategy)
+
+```
+[클라이언트: playTTSInChunks]
+       │
+       ▼
+[고속 표준 여성 TTS (/api/ai/tts)] ─── (응답 지연 제로: ~300ms)
+       │
+       ├─► 1순위: Google TTS 고속 스트리밍 (차분하고 따뜻한 한국어 여성 표준 음성)
+       ├─► 2순위: 동일 엔진 인메모리 캐시 재활용 (중복 다운로드 방지)
+       └─► 실패 시: 동일 음성 엔진 3회 즉시 재시도 (다른 음색으로 교차 전환 금지)
+```
+
+1. **서버 TTS 엔진 고속화 및 단일화 (`server/api-lib/ttsHandler.ts`)**:
+   - 실패율이 높고 지연을 유발하는 불안정 엔진을 건너뛰고, 응답 속도(~300ms)와 성공률이 100% 보장되는 고품질 표준 여성 음성 엔진을 주력으로 직결.
+   - 문장 간 생성 지연을 없애 클라이언트의 12초 타임아웃 abort를 사전에 100% 방지.
+2. **클라이언트 엔진 락(Engine Lock) 적용 (`src/utils/tts.ts`)**:
+   - 낭독 시퀀스(Sequence Session) 시작 시 단일 음성 세션을 확정하고, 재생 도중 임의로 WebSpeech로 넘어가 목소리가 튀는 현상을 원천 방지.
+   - 네트워크 일시 지연 시에도 동일 음성 엔진으로 재시도하여 음색 일관성을 절대적으로 유지.
+3. **오래된 이종 음성 캐시 정리**:
+   - 기존에 서로 다른 엔진으로 캐시되어 남아 있던 청크 데이터를 초기화하여 단일화된 음성으로 정렬.
+
+---
+
+### 3. 검증 계획
+
+- **타로 본문 전체 낭독 테스트**: 5단계 전체 리딩을 재생하며 모든 문장이 단 하나의 동일한 여성 목소리로 매끄럽게 이어지는지 청취 검증.
+- **핵심 3줄 요약 낭독 테스트**: 3줄 요약 카드 낭독 시에도 동일한 톤앤매너로 일관되게 재생되는지 확인.
+- **타입스크립트 린트 및 빌드 검증**: `npm run lint` 및 `npm run build`를 통한 빌드 무결성 확인.

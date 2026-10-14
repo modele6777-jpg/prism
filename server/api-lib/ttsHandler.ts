@@ -89,62 +89,77 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
     };
   }
 
-  // Primary Engine: Edge Neural TTS (100% consistent timbre and prosody across sequential chunks)
-  try {
+function stripID3Header(buf: Buffer): Buffer {
+  if (buf.length >= 10 && buf[0] === 0x49 && buf[1] === 0x44 && buf[2] === 0x33) { // 'ID3'
+    const size = ((buf[6] & 0x7f) << 21) | ((buf[7] & 0x7f) << 14) | ((buf[8] & 0x7f) << 7) | (buf[9] & 0x7f);
+    const totalHeaderLen = 10 + size;
+    if (buf.length > totalHeaderLen) {
+      return buf.subarray(totalHeaderLen);
+    }
+  }
+  return buf;
+}
 
-    const generateWithEdgeTTS = async (textToSpeak: string): Promise<Buffer | null> => {
-      // Strip any stray emojis or non-speech symbols that might disrupt EdgeTTS websocket
-      const safeText = textToSpeak
-        .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}]/gu, '')
-        .replace(/[【】★☆✦✧🌙🔮✨⭐※▶◆◇■□▲△▼▽“”‘’`~]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-
-      if (!safeText) return null;
-
-      const tts = new EdgeTTS({
-        voice: voiceName,
+  // Helper to generate speech using Google Standard Female Voice
+  async function generateGoogleTTS(textToSpeak: string, koreanLang: boolean): Promise<Buffer> {
+    const lang = koreanLang ? "ko" : "en";
+    
+    // Attempt A: google-tts-api
+    try {
+      const results = await googleTTS.getAllAudioBase64(textToSpeak, {
         lang,
-        rate,
-        pitch,
-        outputFormat: "audio-24khz-96kbitrate-mono-mp3",
+        slow: false,
+        host: "https://translate.google.com",
+        splitPunct: ",.?!;:\n",
       });
 
-      const tempPath = path.join(os.tmpdir(), `tts-${Date.now()}-${Math.random().toString(36).substring(7)}.mp3`);
-
-      // Generous timeout to avoid mid-sequence engine switches that cause voice changes
-      const edgeTimeoutMs = Math.max(10000, Math.min(24000, safeText.length * 45));
-
-      try {
-        await Promise.race([
-          tts.ttsPromise(safeText, tempPath),
-          new Promise((_, reject) => setTimeout(() => reject(new Error(`EdgeTTS timeout (${edgeTimeoutMs}ms)`)), edgeTimeoutMs)),
-        ]);
-
-        const buf = await fsPromises.readFile(tempPath);
-        await fsPromises.unlink(tempPath).catch(() => undefined);
-        return buf && buf.length > 0 ? buf : null;
-      } catch (err) {
-        await fsPromises.unlink(tempPath).catch(() => undefined);
-        throw err;
+      const buffers = results.map((r: any, idx: number) => {
+        const b = Buffer.from(r.base64, "base64");
+        return idx === 0 ? b : stripID3Header(b);
+      });
+      const combined = Buffer.concat(buffers);
+      if (combined.length > 200) {
+        return combined;
       }
-    };
-
-    let finalBuffer: Buffer | null = null;
-    try {
-      finalBuffer = await generateWithEdgeTTS(cleanText);
-    } catch (attemptErr) {
-      console.warn(`[TTS] EdgeTTS attempt 1 notice, retrying EdgeTTS once to preserve voice consistency:`, attemptErr);
-      try {
-        await new Promise((r) => setTimeout(r, 200));
-        finalBuffer = await generateWithEdgeTTS(cleanText);
-      } catch (retryErr) {
-        console.warn(`[TTS] EdgeTTS retry also failed, falling back:`, retryErr);
-      }
+    } catch (e: any) {
+      console.warn("[TTS] google-tts-api attempt failed, trying direct HTTP stream:", e?.message);
     }
 
-    if (finalBuffer && finalBuffer.length > 0) {
-      const base64 = finalBuffer.toString("base64");
+    // Attempt B: Direct HTTP stream chunks
+    const chunks = textToSpeak.match(/.{1,180}(\s|$)|.+/g) || [textToSpeak];
+    const bufferPromises = chunks.map(async (chunk) => {
+      const trimmed = chunk.trim();
+      if (!trimmed) return Buffer.alloc(0);
+      const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(trimmed)}&tl=${lang}&client=tw-ob`;
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          'Referer': 'https://translate.google.com/'
+        }
+      });
+      if (!res.ok) throw new Error(`Google TTS status ${res.status}`);
+      const ab = await res.arrayBuffer();
+      return Buffer.from(ab);
+    });
+
+    const fetchedBuffers = await Promise.all(bufferPromises);
+    const validBuffers = fetchedBuffers.filter((b) => b.length > 0);
+    const strippedBuffers = validBuffers.map((b, idx) => (idx === 0 ? b : stripID3Header(b)));
+    const combined = Buffer.concat(strippedBuffers);
+    if (combined.length > 200) {
+      return combined;
+    }
+
+    throw new Error("Google TTS generated empty audio buffer");
+  }
+
+  // 1. Primary Engine: High-Speed Standard Female Voice (Google Korean Standard)
+  // Highly consistent, warm, calm, zero-quota limitation, responds in ~200ms
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const audioBuffer = await generateGoogleTTS(cleanText, isKorean);
+      const base64 = audioBuffer.toString("base64");
+
       if (ttsServerCache.size > 500) {
         const oldestKey = ttsServerCache.keys().next().value;
         if (oldestKey) ttsServerCache.delete(oldestKey);
@@ -155,12 +170,15 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
         audioContent: base64,
         encoding: "mp3",
       };
+    } catch (err: any) {
+      console.warn(`[TTS] Standard female TTS attempt ${attempt} notice:`, err?.message || err);
+      if (attempt < 3) {
+        await new Promise((r) => setTimeout(r, 150));
+      }
     }
-  } catch (edgeError: any) {
-    console.warn("[TTS] EdgeTTS notice, trying Gemini / Google TTS fallback:", edgeError?.message || edgeError);
   }
 
-  // 3. Secondary Engine: Google AI Studio Gemini Flash TTS via official @google/genai SDK
+  // 2. Secondary Emergency Backup: Google AI Studio Gemini Flash Voice (if API key available)
   const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY || process.env.AI_API_KEY;
   if (geminiApiKey) {
     try {
@@ -182,7 +200,7 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
             },
           },
         }),
-        new Promise<any>((_, reject) => setTimeout(() => reject(new Error("Gemini TTS timeout (8000ms)")), 8000)),
+        new Promise<any>((_, reject) => setTimeout(() => reject(new Error("Gemini TTS timeout (4000ms)")), 4000)),
       ]);
 
       const candidate = geminiResponse?.candidates?.[0];
@@ -200,10 +218,6 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
           if (match) sampleRate = parseInt(match[1], 10);
         }
 
-        if (ttsServerCache.size > 500) {
-          const oldestKey = ttsServerCache.keys().next().value;
-          if (oldestKey) ttsServerCache.delete(oldestKey);
-        }
         ttsServerCache.set(cacheKey, { base64, encoding, sampleRate, timestamp: Date.now() });
         return {
           audioContent: base64,
@@ -216,107 +230,5 @@ export async function handleTTS(options: TTSHandlerOptions): Promise<TTSHandlerR
     }
   }
 
-function stripID3Header(buf: Buffer): Buffer {
-  if (buf.length >= 10 && buf[0] === 0x49 && buf[1] === 0x44 && buf[2] === 0x33) { // 'ID3'
-    const size = ((buf[6] & 0x7f) << 21) | ((buf[7] & 0x7f) << 14) | ((buf[8] & 0x7f) << 7) | (buf[9] & 0x7f);
-    const totalHeaderLen = 10 + size;
-    if (buf.length > totalHeaderLen) {
-      return buf.subarray(totalHeaderLen);
-    }
-  }
-  return buf;
-}
-
-  // 3. High-speed Direct Fallback: Google TTS (ultra-fast, 100% reliable on Vercel / serverless)
-  try {
-    const results = await googleTTS.getAllAudioBase64(cleanText, {
-      lang: isKorean ? "ko" : "en",
-      slow: false,
-      host: "https://translate.google.com",
-      splitPunct: ",.?!;:\n",
-    });
-
-    const buffers = results.map((r: any, idx: number) => {
-      const b = Buffer.from(r.base64, "base64");
-      return idx === 0 ? b : stripID3Header(b);
-    });
-    const combinedBuffer = Buffer.concat(buffers);
-    const base64 = combinedBuffer.toString("base64");
-
-    if (base64.length > 500) {
-      if (ttsServerCache.size > 500) {
-        const oldestKey = ttsServerCache.keys().next().value;
-        if (oldestKey) ttsServerCache.delete(oldestKey);
-      }
-      ttsServerCache.set(cacheKey, { base64, encoding: "mp3", sampleRate: 24000, timestamp: Date.now() });
-
-      return {
-        audioContent: base64,
-        encoding: "mp3",
-      };
-    }
-  } catch (googleError: any) {
-    console.warn("[TTS] google-tts-api fallback attempt 1, trying direct HTTP stream:", googleError?.message || googleError);
-  }
-
-  // 3.5. Direct HTTP Stream Fallback (Bypasses library limitations on Vercel Serverless)
-  try {
-    const lang = isKorean ? "ko" : "en";
-    const chunks = cleanText.match(/.{1,180}(\s|$)|.+/g) || [cleanText];
-    const bufferPromises = chunks.map(async (chunk) => {
-      const trimmed = chunk.trim();
-      if (!trimmed) return Buffer.alloc(0);
-      const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(trimmed)}&tl=${lang}&client=tw-ob`;
-      const res = await fetch(url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-          'Referer': 'https://translate.google.com/'
-        }
-      });
-      if (!res.ok) throw new Error(`Google TTS status ${res.status}`);
-      const ab = await res.arrayBuffer();
-      return Buffer.from(ab);
-    });
-
-    const fetchedBuffers = await Promise.all(bufferPromises);
-    const validBuffers = fetchedBuffers.filter((b) => b.length > 0);
-    const strippedBuffers = validBuffers.map((b, idx) => (idx === 0 ? b : stripID3Header(b)));
-    const combined = Buffer.concat(strippedBuffers);
-    if (combined.length > 500) {
-      const base64 = combined.toString("base64");
-      ttsServerCache.set(cacheKey, { base64, encoding: "mp3", sampleRate: 24000, timestamp: Date.now() });
-      return {
-        audioContent: base64,
-        encoding: "mp3",
-      };
-    }
-  } catch (directError: any) {
-    console.error("[TTS] Direct Google TTS HTTP fallback error:", directError?.message || directError);
-  }
-
-  // 4. OpenAI TTS Fallback (if configured)
-  if (process.env.OPENAI_API_KEY) {
-    try {
-      const openaiModule = await import("openai");
-      const OpenAIClass = (openaiModule as any).default || openaiModule.OpenAI || openaiModule;
-      const openai = new OpenAIClass({ apiKey: process.env.OPENAI_API_KEY });
-      const mp3 = await openai.audio.speech.create({
-        model: "tts-1",
-        voice: "nova",
-        input: cleanText,
-      });
-      const buffer = Buffer.from(await mp3.arrayBuffer());
-      const base64 = buffer.toString("base64");
-
-      ttsServerCache.set(cacheKey, { base64, encoding: "mp3", sampleRate: 24000, timestamp: Date.now() });
-      return {
-        audioContent: base64,
-        encoding: "mp3",
-      };
-    } catch (openaiError: any) {
-      console.error("[TTS] OpenAI TTS fallback failed:", openaiError);
-    }
-  }
-
-  throw new Error("All TTS engines failed to generate audio.");
+  throw new Error("TTS generation failed after retries.");
 }
