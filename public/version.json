@@ -1,13 +1,13 @@
 {
   "name": "luckey",
-  "version": "1.4.257",
-  "summary": "개발 서버 기동 실패 오류 긴급 수정 (tsx 글로벌 __dirname 오염 정화, Node 24 createRequire 호환성 확보 및 개발/프로덕션 엔트리포인트 안정화)",
-  "builtAt": "2026-10-14T11:27:00.000Z",
+  "version": "1.4.258",
+  "summary": "오늘의 타로 및 타로 카드 선택 창을 다른 선택창과 동일한 대형 프리미엄 모달(max-w-5xl, h-[88vh])로 전면 업그레이드",
+  "builtAt": "2026-10-14T11:59:00.000Z",
   "items": [
-    "Vite 개발 서버 기동 크래시(TypeError: createRequire '.' 에러) 완전 해결: tsx 실행 환경에서 globalThis.__dirname에 주입되는 '.' 값으로 인해 vite-plugin-pwa가 Node 24 환경에서 모듈 로더 예외를 발생시키던 문제를 글로벌 스코프 사전 정화 및 vite.config.ts currentDir 리팩터링으로 근본 차단",
-    "서버 엔트리포인트(server.ts 및 server.app.ts) 실행 환경 분기 최적화: 개발 모드에서 server.app.ts와 Vite 미들웨어가 즉각 구동되도록 보정",
-    "포트 3000 점유 프로세스 해제 및 클린 바인딩 복원: 개발 서버가 0.0.0.0:3000에서 정상 수신하도록 정리",
-    "TypeScript 컴파일 및 린트 최적화: tsconfig.json에 dist 및 node_modules 제외 설정을 보강하여 빌드 아티팩트 중복 검사 차단"
+    "오늘의 타로 카드 선택 창 대형 모달화: 기존 인라인 페이지 카드 내부에 갇혀 좁게 표시되던 타로 가상 선택 모드를 다른 선택창(잔여 덱 휠, 오라클 휠 모달 등)과 동일한 최상위 대형 모달(w-full max-w-5xl h-[88vh] rounded-3xl bg-slate-950/95 border border-amber-500/40)로 승격",
+    "TodayTarotNarrationModal(오늘의 타로 통합 결과 및 낭독 모달) 내 원클릭 360도 휠 직접 선택 지원: 미추첨 상태에서도 페이지 이탈 없이 즉시 대형 모달에서 78장 타로 휠로 오늘의 카드를 선택하고 즉각 결과 동기화",
+    "TarotSpread 반응형 뷰포트 및 슬롯 크기 시각적 대형화: 단일 카드(원카드/오늘의 타로) 선택 시 슬롯 크기를 모바일(w-20 h-32 이상) 및 데스크톱(w-28 h-44 이상)으로 대폭 확대하여 압도적인 시인성과 몰입감 제공",
+    "모달 컨테이너 바운드 동적 추적: 부모 컨테이너 크기에 맞춰 360도 휠의 반경과 Y축 오프셋을 자동 캘리브레이션하여 모달 창 내 여백과 카드 궤도를 완벽 정렬"
   ],
   "author": "Antigravity AI Agent",
   "buildEnvironment": "cloud-run"

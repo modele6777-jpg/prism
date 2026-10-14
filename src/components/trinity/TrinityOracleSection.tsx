@@ -3884,7 +3884,7 @@ ${recipientName} 님, 성장은 생각의 깊이가 아니라 행동의 빈도�
                   </button>
                 </div>
               ) : (
-                <div className="w-full min-h-[440px] md:min-h-[480px] relative">
+                <div className="w-full h-[520px] md:h-[600px] relative flex flex-col">
                   <TarotSpread
                     key={`oracle-spread-${oracleMode}-${cardBackId}`}
                     maxCards={3}

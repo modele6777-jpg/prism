@@ -220,14 +220,19 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
     return maxCards === 1 || isDailyTarotConcern(concern) || isDailyTarotConcern(spreadName);
   }, [maxCards, concern, spreadName]);
 
-  const compactSlots = maxCards >= 4 || isMobile;
+  const isOneCard = maxCards === 1 || isDaily;
+  const compactSlots = maxCards >= 4 || (isMobile && !isOneCard);
   const slotClass = isMobile
-    ? compactSlots
-      ? 'w-12 h-18 sm:w-14 sm:h-21'
-      : 'w-15 h-23 sm:w-18 sm:h-28'
-    : compactSlots
-      ? 'w-16 h-24 sm:w-20 sm:h-30 md:w-24 md:h-36'
-      : 'w-22 h-34 md:w-30 md:h-46';
+    ? isOneCard
+      ? 'w-20 h-32 sm:w-24 sm:h-38'
+      : compactSlots
+        ? 'w-12 h-18 sm:w-14 sm:h-21'
+        : 'w-15 h-23 sm:w-18 sm:h-28'
+    : isOneCard
+      ? 'w-28 h-44 sm:w-32 sm:h-50 md:w-36 md:h-56'
+      : compactSlots
+        ? 'w-16 h-24 sm:w-20 sm:h-30 md:w-24 md:h-36'
+        : 'w-22 h-34 md:w-30 md:h-46';
   const slotsWrapClass = isMobile
     ? 'flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 max-w-[96vw]'
     : compactSlots
@@ -390,20 +395,21 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
   // Responsive layout calibration
   useEffect(() => {
     const updateRadius = () => {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
+      const container = containerRef.current;
+      const w = container ? container.clientWidth : window.innerWidth;
+      const h = container ? container.clientHeight : window.innerHeight;
       if (w < 480) {
         // Calibrated for mobile to keep wheel cards completely visible & unoccluded
         setRadius(Math.max(280, Math.min(340, Math.round(h * 0.40))));
         setYOffset(Math.max(300, Math.min(370, Math.round(h * 0.45))));
         setIsMobile(true);
       } else if (w < 768) {
-        setRadius(460);
-        setYOffset(540);
+        setRadius(Math.max(380, Math.min(480, Math.round(h * 0.48))));
+        setYOffset(Math.max(440, Math.min(560, Math.round(h * 0.55))));
         setIsMobile(true);
       } else {
-        setRadius(640);
-        setYOffset(740);
+        setRadius(Math.max(540, Math.min(660, Math.round(h * 0.58))));
+        setYOffset(Math.max(620, Math.min(760, Math.round(h * 0.65))));
         setIsMobile(false);
       }
     };
@@ -819,7 +825,7 @@ export const TarotSpread: React.FC<TarotSpreadProps> = ({
     <div
       ref={rootRef}
       id="tarot-stage-container"
-      className="fixed inset-0 z-[300] bg-zinc-950 overflow-hidden flex flex-col items-center justify-between font-sans select-none touch-none overscroll-none tarot-spread-stage-root"
+      className="relative w-full h-full flex-1 bg-zinc-950 overflow-hidden flex flex-col items-center justify-between font-sans select-none touch-none overscroll-none tarot-spread-stage-root"
       style={{
         touchAction: 'none',
         overscrollBehavior: 'none',

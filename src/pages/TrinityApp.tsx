@@ -2012,8 +2012,10 @@ function playDailyCardChimeAsync() {
       restoreTodayDailyResult();
     };
     window.addEventListener('prism:daily_oracle_updated', handleDailyOracleUpdated);
+    window.addEventListener('trinity-daily-card-drawn', handleDailyOracleUpdated);
     return () => {
       window.removeEventListener('prism:daily_oracle_updated', handleDailyOracleUpdated);
+      window.removeEventListener('trinity-daily-card-drawn', handleDailyOracleUpdated);
     };
   }, [restoreTodayDailyResult]);
 
@@ -3251,22 +3253,6 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
                   </div>
 
                   <div className="relative w-full">
-                  {tarotVirtualMode && (
-                    <TarotSpread
-                      maxCards={tarotSpreadRecommendation.cardCount}
-                      positions={tarotSpreadRecommendation.positions}
-                      spreadName={tarotSpreadRecommendation.name}
-                      spreadReason={tarotSpreadRecommendation.reason}
-                      concern={tarotConcern}
-                      onCancel={() => setTarotVirtualMode(false)}
-                      onComplete={(cards) => {
-                        setTarotVirtualMode(false);
-                        setDrawnCards(cards);
-                        setHideTarotPopup(false);
-                        handleUnifiedReading("tarot", { selectedCards: cards });
-                      }}
-                    />
-                  )}
                   <div className="relative z-10 w-full scroll-smooth flex flex-col">
                       <div className="space-y-6 flex-1 flex flex-col justify-between w-full">
                         {!drawnCards &&
@@ -4550,6 +4536,28 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
           handleUnifiedReading("tarot", { selectedCards: cards });
         }}
       />
+
+      {/* 🎡 360도 무결점 타로 휠 카드 선택 모달 (다른 선택창과 통일된 대형 프리미엄 모달) */}
+      {tarotVirtualMode && (
+        <div className="fixed inset-0 z-[280] flex items-center justify-center bg-black/90 backdrop-blur-md p-2 sm:p-4">
+          <div className="relative w-full max-w-5xl h-[88vh] rounded-3xl bg-slate-950/95 border border-amber-500/40 shadow-2xl overflow-hidden flex flex-col">
+            <TarotSpread
+              maxCards={tarotSpreadRecommendation.cardCount}
+              positions={tarotSpreadRecommendation.positions}
+              spreadName={isDailyTarotConcern(tarotConcern) ? "☀️ 오늘의 타로 (원카드)" : tarotSpreadRecommendation.name}
+              spreadReason={isDailyTarotConcern(tarotConcern) ? "오늘 하루의 무의식과 우주적 기운을 안내하는 데일리 지배 카드를 선택합니다." : tarotSpreadRecommendation.reason}
+              concern={tarotConcern}
+              onCancel={() => setTarotVirtualMode(false)}
+              onComplete={(cards) => {
+                setTarotVirtualMode(false);
+                setDrawnCards(cards);
+                setHideTarotPopup(false);
+                handleUnifiedReading("tarot", { selectedCards: cards });
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* 🎡 잔여 덱 전용 360도 무결점 타로 휠 수동 선택 모달 */}
       {showFollowUpWheelModal && (

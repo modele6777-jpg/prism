@@ -39,6 +39,7 @@ import { playAudioHaptic } from '@/lib/audioHaptics';
 import { getTodayDateKey } from '@/lib/dailyCache';
 import { useSmartScroll } from '@/hooks/useSmartScroll';
 import { SmartScrollResumeButton } from '@/components/common/SmartScrollResumeButton';
+import { buildSpecificTarotDailyOracle } from '@/lib/dailyTarotOracle';
 
 export interface TodayTarotNarrationModalProps {
   isOpen: boolean;
@@ -60,6 +61,12 @@ export function TodayTarotNarrationModal({
   const [activeSpeechType, setActiveSpeechType] = useState<'full' | 'summary' | null>(null);
   const [isCopied, setIsCopied] = useState(false);
   const [isCardZoomOpen, setIsCardZoomOpen] = useState(false);
+  const [activeDailyResult, setActiveDailyResult] = useState(dailyResult);
+  const [showInitialWheelModal, setShowInitialWheelModal] = useState(false);
+
+  useEffect(() => {
+    setActiveDailyResult(dailyResult);
+  }, [dailyResult]);
 
   // 🔮 오늘의 데일리 타로 연속 추가 질문 & 잔여 덱 관리 엔진
   const todayKey = useMemo(() => getTodayDateKey(), []);
@@ -103,8 +110,8 @@ export function TodayTarotNarrationModal({
   });
 
   const narrationData = useMemo(() => {
-    return buildTarotNarrationContent(dailyResult);
-  }, [dailyResult]);
+    return buildTarotNarrationContent(activeDailyResult);
+  }, [activeDailyResult]);
 
   // 잔여 덱 계산 (오늘의 타로 1장 + 누적된 추가 질문 카드들 완전 제외)
   const dailyDrawnCardIds = useMemo(() => {
@@ -234,6 +241,38 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
     setPendingFollowUpQuestion('');
     executeDailyFollowUpReading(q, card, reversed);
   }, [pendingFollowUpQuestion, executeDailyFollowUpReading]);
+
+  const handleInitialWheelComplete = useCallback((selected: any[]) => {
+    setShowInitialWheelModal(false);
+    if (!selected || selected.length === 0) return;
+    const card = selected[0];
+    const isReversed = !!card.reversed;
+    const today = getTodayDateKey();
+    const localDaily = buildSpecificTarotDailyOracle(card, 'oracle');
+    const fullDailyResult = {
+      ...localDaily,
+      drawnCard: {
+        ...card,
+        reversed: isReversed,
+      },
+      dateKey: today,
+    };
+    setActiveDailyResult(fullDailyResult);
+
+    try {
+      if (typeof window !== 'undefined') {
+        const uid = localStorage.getItem('trinity_last_uid') || 'guest';
+        localStorage.setItem(`limit_daily_trinity_${uid}_${today}`, 'true');
+        localStorage.setItem(`limit_daily_trinity_guest_${today}`, 'true');
+        localStorage.setItem(`trinity_daily_result_${uid}`, JSON.stringify(fullDailyResult));
+        localStorage.setItem('trinity_daily_result_guest', JSON.stringify(fullDailyResult));
+        window.dispatchEvent(new CustomEvent('trinity-daily-card-drawn', { detail: fullDailyResult }));
+        window.dispatchEvent(new CustomEvent('prism:daily_oracle_updated'));
+        window.dispatchEvent(new Event('unlock-bgm-audio'));
+      }
+    } catch (_) {}
+    playAudioHaptic('save_success', { volume: 0.9 });
+  }, []);
 
   const shareData: TodayTarotShareData = useMemo(() => ({
     title: '오늘의 데일리 타로',
@@ -419,19 +458,16 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
                   오늘 하루의 우주적 기운과 배경 에너지를 담은 데일리 타로 카드를 아직 뽑지 않았습니다.
                 </p>
               </div>
-              {onGoToTarotWheel && (
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
                 <button
                   type="button"
-                  onClick={() => {
-                    handleClose();
-                    onGoToTarotWheel();
-                  }}
-                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-bold text-xs flex items-center justify-center gap-2 mx-auto shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                  onClick={() => setShowInitialWheelModal(true)}
+                  className="px-6 py-3 rounded-2xl bg-gradient-to-r from-yellow-500 via-amber-500 to-yellow-600 hover:from-yellow-400 hover:to-amber-400 text-black font-extrabold text-xs sm:text-sm tracking-wider flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(234,179,8,0.4)] transition-all cursor-pointer active:scale-95"
                 >
-                  <Sparkles size={14} />
-                  <span>오늘의 타로 1장 뽑기 (DRAW 1 CARD)</span>
+                  <Sparkles size={16} />
+                  <span>🌟 360도 무결점 휠로 오늘의 타로 1장 뽑기</span>
                 </button>
-              )}
+              </div>
             </div>
           ) : (
             <motion.div
@@ -770,23 +806,40 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
             />
           )}
 
-          {/* 🎡 잔여 덱 전용 360도 원형 휠 선택 모달 */}
-          {showFollowUpWheelModal && (
-            <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/90 backdrop-blur-md p-2 sm:p-4">
-              <div className="relative w-full max-w-5xl h-[88vh] rounded-3xl bg-slate-950/95 border border-amber-500/40 shadow-2xl overflow-hidden flex flex-col">
-                <TarotSpread
-                  deckSource={dailyRemainingDeck}
-                  maxCards={1}
-                  concern={pendingFollowUpQuestion}
-                  spreadName={`오늘의 타로 추가 질문 #${dailyFollowUpEntries.length + 1}`}
-                  spreadReason={`오늘의 타로를 제외한 ${dailyRemainingDeck.length}장의 잔여 덱에서 1장을 직접 고릅니다.`}
-                  onComplete={handleFollowUpWheelComplete}
-                  onCancel={() => setShowFollowUpWheelModal(false)}
-                />
-              </div>
-            </div>
-          )}
         </motion.div>
+
+        {/* 🎡 오늘의 타로 원카드 360도 휠 직접 선택 대형 모달 */}
+        {showInitialWheelModal && (
+          <div className="fixed inset-0 z-[160] flex items-center justify-center bg-black/90 backdrop-blur-md p-2 sm:p-4">
+            <div className="relative w-full max-w-5xl h-[88vh] rounded-3xl bg-slate-950/95 border border-amber-500/40 shadow-2xl overflow-hidden flex flex-col">
+              <TarotSpread
+                maxCards={1}
+                concern="오늘의 타로"
+                spreadName="☀️ 오늘의 타로 · 일일 우주 계시"
+                spreadReason="오늘 하루의 무의식과 우주적 기운을 안내하는 데일리 지배 카드를 선택합니다."
+                onComplete={handleInitialWheelComplete}
+                onCancel={() => setShowInitialWheelModal(false)}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* 🎡 잔여 덱 전용 360도 원형 휠 선택 모달 (대형 풀사이즈 팝업) */}
+        {showFollowUpWheelModal && (
+          <div className="fixed inset-0 z-[160] flex items-center justify-center bg-black/90 backdrop-blur-md p-2 sm:p-4">
+            <div className="relative w-full max-w-5xl h-[88vh] rounded-3xl bg-slate-950/95 border border-amber-500/40 shadow-2xl overflow-hidden flex flex-col">
+              <TarotSpread
+                deckSource={dailyRemainingDeck}
+                maxCards={1}
+                concern={pendingFollowUpQuestion}
+                spreadName={`오늘의 타로 추가 질문 #${dailyFollowUpEntries.length + 1}`}
+                spreadReason={`오늘의 타로를 제외한 ${dailyRemainingDeck.length}장의 잔여 덱에서 1장을 직접 고릅니다.`}
+                onComplete={handleFollowUpWheelComplete}
+                onCancel={() => setShowFollowUpWheelModal(false)}
+              />
+            </div>
+          </div>
+        )}
       </motion.div>
     </AnimatePresence>
   );
