@@ -1,5 +1,15 @@
 [
   {
+    "version": "1.4.261",
+    "summary": "LUCKEY 브랜드 로고 텍스트 컬러 디자인 개편 (K, Y 에메랄드 초록색 적용, E 골드 노란색 단독 강조)",
+    "builtAt": "2026-10-14T12:40:00.000Z",
+    "items": [
+      "LUCKEY 브랜드 로고 컬러 팔레트 리파인: LucKeyLogoText에서 L, U, C에 이어 K와 Y를 에메랄드 그린 그라데이션(from-emerald-400 via-green-400 to-teal-300)으로 일원화",
+      "E(Imperial Gold) 단독 포인트 강조: 가운데 글자인 'E'만을 황금빛 옐로우 그라데이션(from-amber-300 via-yellow-300 to-amber-400)으로 고정하여 독창적인 아이덴티티와 시각적 균형감 완성",
+      "전역 헤더 및 로더 일괄 반영: HubHome, Trinity, Muse, Heal, Bluebird, Orange, Epilogue 및 로더/로그인 화면의 모든 로고에 자동 적용"
+    ]
+  },
+  {
     "version": "1.4.260",
     "summary": "타로 리딩 결과 도출 즉시 핵심 세줄요약 TTS 자동 재생 엔진 탑재 및 오디오 라이프사이클 최적화",
     "builtAt": "2026-10-14T12:30:00.000Z",
