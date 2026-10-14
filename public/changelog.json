@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.4.257",
+    "summary": "개발 서버 기동 실패 오류 긴급 수정 (tsx 글로벌 __dirname 오염 정화, Node 24 createRequire 호환성 확보 및 개발/프로덕션 엔트리포인트 안정화)",
+    "builtAt": "2026-10-14T11:27:00.000Z",
+    "items": [
+      "Vite 개발 서버 기동 크래시(TypeError: createRequire '.' 에러) 완전 해결: tsx 실행 환경에서 globalThis.__dirname에 주입되는 '.' 값으로 인해 vite-plugin-pwa가 Node 24 환경에서 모듈 로더 예외를 발생시키던 문제를 글로벌 스코프 사전 정화 및 vite.config.ts currentDir 리팩터링으로 근본 차단",
+      "서버 엔트리포인트(server.ts 및 server.app.ts) 실행 환경 분기 최적화: 개발 모드에서 server.app.ts와 Vite 미들웨어가 즉각 구동되도록 보정",
+      "포트 3000 점유 프로세스 해제 및 클린 바인딩 복원: 개발 서버가 0.0.0.0:3000에서 정상 수신하도록 정리",
+      "TypeScript 컴파일 및 린트 최적화: tsconfig.json에 dist 및 node_modules 제외 설정을 보강하여 빌드 아티팩트 중복 검사 차단"
+    ]
+  },
+  {
     "version": "1.4.256",
     "summary": "클라우드 런 배포 런타임 호환성 복구 (server.ts 진입점 및 server.app.ts esbuild 빌드 파이프라인 정상화)",
     "builtAt": "2026-10-14T10:33:00.000Z",

@@ -1,20 +1,27 @@
+// Clean up tsx / runner global pollution so Vite plugins resolve paths via import.meta.url
+if (typeof (globalThis as any).__dirname !== 'undefined' && (globalThis as any).__dirname === '.') {
+  delete (globalThis as any).__dirname;
+}
+if (typeof (global as any).__dirname !== 'undefined' && (global as any).__dirname === '.') {
+  delete (global as any).__dirname;
+}
+
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { execSync } from 'child_process';
-import {defineConfig, loadEnv, type Plugin} from 'vite';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const packageJson = JSON.parse(
-  fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'),
+  fs.readFileSync(path.resolve(currentDir, 'package.json'), 'utf-8'),
 ) as { version: string };
 
 function readChangelogSummary(version: string): string | undefined {
   try {
-    const changelogPath = path.resolve(__dirname, 'public/changelog.json');
+    const changelogPath = path.resolve(currentDir, 'public/changelog.json');
     const entries = JSON.parse(fs.readFileSync(changelogPath, 'utf-8')) as Array<{
       version?: string;
       summary?: string;
@@ -37,8 +44,8 @@ function prismVersionPlugin(version: string): Plugin {
     try {
       const payload = buildVersionPayload(version);
       const serialized = `${JSON.stringify(payload, null, 2)}\n`;
-      fs.mkdirSync(path.resolve(__dirname, 'dist'), { recursive: true });
-      fs.writeFileSync(path.resolve(__dirname, 'dist/version.json'), serialized);
+      fs.mkdirSync(path.resolve(currentDir, 'dist'), { recursive: true });
+      fs.writeFileSync(path.resolve(currentDir, 'dist/version.json'), serialized);
     } catch (e) {
       console.warn('[prismVersionPlugin] Warning writing version.json:', e);
     }
@@ -185,15 +192,15 @@ export default defineConfig(({mode}) => {
     },
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, './src'),
+        '@': path.resolve(currentDir, './src'),
       },
     },
     build: {
       rollupOptions: {
         input: {
-          main: path.resolve(__dirname, 'index.html'),
-          chat: path.resolve(__dirname, 'chat.html'),
-          handbook: path.resolve(__dirname, 'handbook.html'),
+          main: path.resolve(currentDir, 'index.html'),
+          chat: path.resolve(currentDir, 'chat.html'),
+          handbook: path.resolve(currentDir, 'handbook.html'),
         },
       },
     },

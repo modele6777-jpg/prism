@@ -1,3 +1,11 @@
+// Clean up tsx / runner global pollution so ESM libraries (e.g. vite-plugin-pwa) correctly use import.meta.url in Node 24
+if (typeof (globalThis as any).__dirname !== "undefined" && (globalThis as any).__dirname === ".") {
+  delete (globalThis as any).__dirname;
+}
+if (typeof (global as any).__dirname !== "undefined" && (global as any).__dirname === ".") {
+  delete (global as any).__dirname;
+}
+
 import dotenv from "dotenv";
 dotenv.config();
 dotenv.config({ path: ".env.local", override: true });
