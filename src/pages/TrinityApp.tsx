@@ -826,10 +826,11 @@ function getInitialTrinityDailyResult(uid?: string) {
  * 🚫 타로 결과 음성 낭독 및 본문 표시 시 후행 요약 블록 깔끔하게 정리 & 핵심 3줄 요약 추출 유틸리티
  */
 import { stripSummaryFromTarotText, extractConciseSummary, deduplicateReadingText } from '@/lib/tarotSummaryUtils';
+import { getTodayTrinityDailyResult, getTodayAnchorTarotCard } from '@/lib/todayTarotNarration';
 export { stripSummaryFromTarotText, extractConciseSummary, deduplicateReadingText };
 
 export default function TrinityApp() {
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const isTTSActive = useTTSActive();
   const ttsState = useTTSState();
   const { firebaseUser, sharedState, updateSharedState, isChatOpen, setIsChatOpen, sendUnifiedMessage, openLucyChat, personaMessages, isGenerating } = useApp();
@@ -2006,6 +2007,40 @@ function playDailyCardChimeAsync() {
     return false;
   }, [firebaseUser?.uid, sharedState?.todayOracles, sharedState?.latestDailyOracles, trinityOracleHistory, applyDailyResultState, dailyDrawnCard, isTrinityDailyLockedToday]);
 
+  // 🔮 유니버스 및 외부 진입 시 팝업 모달 창을 띄우지 않고 트리니티 타로 결과 화면 직접 전개
+  const showTodayDailyTarotResult = useCallback(() => {
+    setShowDailyModal(false);
+    setShowTarot(false);
+    setShowTarotCardBackModal(false);
+    setShowPhysicalTarotModal(false);
+    setIsChatOpen(false);
+    setActiveMode('tarot');
+    setCustomSpread(null);
+    setFollowUpEntries([]);
+    setIsTarotGenerating(false);
+    setStage('landing');
+    restoreTodayDailyResult();
+
+    const uid = firebaseUser?.uid || 'guest';
+    const stored = (getTodayTrinityDailyResult(uid) || dailyResult || getInitialTrinityDailyResult(uid)) as any;
+    const targetCard = stored?.drawnCard || dailyDrawnCard || getTodayAnchorTarotCard(uid);
+    const diagnosis = stored?.diagnosis || stored?.summary || stored?.prescription || stored?.reading || (dailyResult as any)?.diagnosis || (dailyResult as any)?.summary;
+
+    setTarotConcern("오늘의 타로");
+    if (targetCard) {
+      setDrawnCards([targetCard]);
+      if (diagnosis) {
+        setTarotResult(diagnosis);
+      } else {
+        const synthesized = buildLocalTrinityDailyOracle(targetCard, "oracle");
+        setTarotResult(synthesized.diagnosis || (synthesized as any)?.summary || "");
+      }
+    }
+    setHideTarotPopup(false);
+    setCardFlipCycle((prev) => prev + 1);
+    resetAppScroll();
+  }, [dailyResult, dailyDrawnCard, restoreTodayDailyResult, firebaseUser?.uid, setIsChatOpen]);
+
   // Listen for real-time daily oracle updates across devices
   useEffect(() => {
     const handleDailyOracleUpdated = () => {
@@ -2074,21 +2109,14 @@ function playDailyCardChimeAsync() {
 
   useEffect(() => {
     const handleOpenDailyTarotEvent = () => {
-      setActiveMode('tarot');
-      setTarotConcern('오늘의 타로');
-      setCustomSpread(null);
-      restoreTodayDailyResult();
-      const targetCard = dailyResult?.drawnCard || dailyDrawnCard;
-      if (targetCard) {
-        setShowDailyModal(true);
-      }
+      showTodayDailyTarotResult();
     };
 
     window.addEventListener('trinity:open_daily_tarot', handleOpenDailyTarotEvent);
     return () => {
       window.removeEventListener('trinity:open_daily_tarot', handleOpenDailyTarotEvent);
     };
-  }, [dailyResult, dailyDrawnCard, restoreTodayDailyResult]);
+  }, [showTodayDailyTarotResult]);
 
   useEffect(() => {
     if (localHistory && localHistory.length > 0) {
@@ -2110,19 +2138,17 @@ function playDailyCardChimeAsync() {
   }, [dailyResult, dailyDrawnCard]);
 
   useEffect(() => {
-    if (activeMode === "tarot" && typeof window !== "undefined" && sessionStorage.getItem('prism_tarot_focus_daily')) {
+    if (typeof window === 'undefined') return;
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    const viewParam = urlParams.get('view');
+    const isFocusDaily = sessionStorage.getItem('prism_tarot_focus_daily') === 'true';
+
+    if ((tabParam === 'tarot' && viewParam === 'daily') || (activeMode === 'tarot' && isFocusDaily)) {
       sessionStorage.removeItem('prism_tarot_focus_daily');
-      resetTarotSession(true);
-      setTarotConcern("오늘의 타로");
-      restoreTodayDailyResult();
-      const targetCard = dailyResult?.drawnCard || dailyDrawnCard;
-      if (targetCard) {
-        setDrawnCards([targetCard]);
-        setTarotResult(dailyResult?.diagnosis || dailyResult?.summary || "");
-        setHideTarotPopup(false);
-      }
+      showTodayDailyTarotResult();
     }
-  }, [activeMode, dailyResult, dailyDrawnCard, restoreTodayDailyResult, resetTarotSession]);
+  }, [location, activeMode, showTodayDailyTarotResult]);
 
   const handleSend = async (customMsg?: string, sendOpts?: OracleDeepInsightSendOpts) => {
     const userMsg = (customMsg || chatInput).trim();
@@ -3284,16 +3310,7 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
                                   <button
                                     type="button"
                                     onClick={() => {
-                                      restoreTodayDailyResult();
-                                      const targetCard = dailyResult?.drawnCard || dailyDrawnCard;
-                                      if (targetCard) {
-                                        setTarotConcern("오늘의 타로");
-                                        setDrawnCards([targetCard]);
-                                        setTarotResult(dailyResult?.diagnosis || dailyResult?.summary || "");
-                                        setHideTarotPopup(false);
-                                      } else {
-                                        setShowDailyModal(true);
-                                      }
+                                      showTodayDailyTarotResult();
                                     }}
                                     className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-yellow-500/25 to-amber-500/20 hover:from-yellow-500/35 hover:to-amber-500/30 border border-yellow-400/40 text-[11px] text-yellow-200 font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
                                     title="오늘의 타로 결과 및 음성 낭독 보기"
@@ -3327,7 +3344,7 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
                                       setCustomSpread(null);
                                       const targetCard = dailyResult?.drawnCard || dailyDrawnCard;
                                       if (targetCard) {
-                                        setShowDailyModal(true);
+                                        showTodayDailyTarotResult();
                                       } else {
                                         handleUnifiedReading("tarot");
                                       }
@@ -3581,16 +3598,7 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
                                   <button
                                     type="button"
                                     onClick={() => {
-                                      restoreTodayDailyResult();
-                                      const targetCard = dailyResult?.drawnCard || dailyDrawnCard;
-                                      if (targetCard) {
-                                        setTarotConcern("오늘의 타로");
-                                        setDrawnCards([targetCard]);
-                                        setTarotResult(dailyResult?.diagnosis || dailyResult?.summary || "");
-                                        setHideTarotPopup(false);
-                                      } else {
-                                        setShowDailyModal(true);
-                                      }
+                                      showTodayDailyTarotResult();
                                     }}
                                     className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-yellow-500 via-amber-500 to-yellow-600 hover:from-yellow-400 hover:to-amber-400 text-black font-extrabold tracking-wider flex items-center justify-center gap-2 transition-all shadow-[0_0_25px_rgba(234,179,8,0.4)] cursor-pointer text-xs"
                                     title="오늘의 타로 결과 및 음성 낭독 보기"

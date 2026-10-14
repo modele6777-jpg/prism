@@ -542,11 +542,21 @@ export function TodayLucyPersonaCard({
           )}
         </AnimatePresence>
 
-        {/* 🌟 5. 오늘의 타로 결과 데일리 배너 & 낭독 버전 바로듣기 (오늘 뽑은 카드가 있을 때 노출) */}
+        {/* 🌟 5. 오늘의 타로 결과 데일리 배너 (트리니티 타로 결과 화면 직접 이동) */}
         {todayTarotResult?.drawnCard && (
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-purple-950/20 border border-yellow-500/30 text-xs text-white/90 shadow-inner">
+          <div
+            onClick={() => {
+              sessionStorage.setItem('prism_target_tab', 'tarot');
+              sessionStorage.setItem('prism_tarot_focus_daily', 'true');
+              navigate('/trinity?tab=tarot&view=daily');
+              window.dispatchEvent(new CustomEvent('prism-tab-change', { detail: { tab: 'tarot', focusDaily: true } }));
+              window.dispatchEvent(new CustomEvent('trinity:open_daily_tarot'));
+            }}
+            className="cursor-pointer flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-purple-950/20 hover:from-amber-500/20 hover:via-yellow-500/15 hover:to-purple-950/30 border border-yellow-500/30 transition-all text-xs text-white/90 shadow-inner group"
+            title="트리니티 오늘의 타로 결과 화면으로 이동"
+          >
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-yellow-400/20 border border-yellow-400/40 flex items-center justify-center text-yellow-300 shrink-0 shadow-[0_0_10px_rgba(234,179,8,0.25)]">
+              <div className="w-8 h-8 rounded-xl bg-yellow-400/20 border border-yellow-400/40 flex items-center justify-center text-yellow-300 shrink-0 shadow-[0_0_10px_rgba(234,179,8,0.25)] group-hover:scale-105 transition-transform">
                 <Sparkles size={15} className="animate-pulse" />
               </div>
               <div className="min-w-0">
@@ -566,9 +576,16 @@ export function TodayLucyPersonaCard({
 
             <button
               type="button"
-              onClick={() => setIsTarotNarrationOpen(true)}
+              onClick={(e) => {
+                e.stopPropagation();
+                sessionStorage.setItem('prism_target_tab', 'tarot');
+                sessionStorage.setItem('prism_tarot_focus_daily', 'true');
+                navigate('/trinity?tab=tarot&view=daily');
+                window.dispatchEvent(new CustomEvent('prism-tab-change', { detail: { tab: 'tarot', focusDaily: true } }));
+                window.dispatchEvent(new CustomEvent('trinity:open_daily_tarot'));
+              }}
               className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-bold text-xs flex items-center justify-center gap-1.5 shadow-[0_0_12px_rgba(234,179,8,0.3)] transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer shrink-0 font-sans"
-              title="오늘의 타로 결과 및 음성 낭독 보기"
+              title="트리니티 오늘의 타로 결과 화면으로 이동"
             >
               <Sparkles size={13} />
               <span>오늘의 타로 결과 보기</span>
