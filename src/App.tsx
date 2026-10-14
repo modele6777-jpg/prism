@@ -23,6 +23,7 @@ import { initTTSAudioLifecycle, unlockAudioPlayback, getSharedAudioContext } fro
 import { shouldUsePageTransitions, shouldMountBgMusicPlayer } from "./lib/perfMode";
 import AuroraBackground from "./components/AuroraBackground";
 import HubHome from "./pages/HubHome";
+import { LucKeySidebar } from "./components/navigation/LucKeySidebar";
 
 function lazyWithRetry<T extends React.ComponentType<any>>(
   componentImport: () => Promise<{ default: T }>
@@ -68,9 +69,10 @@ import { usePinScreenLock } from "./hooks/usePinScreenLock";
 import { resolveCanonicalPath } from "./lib/prismRouteRegistry";
 
 const ROUTES_MAP = [
-  { path: "/", Component: HubHome },
+  { path: "/", Component: LucyStandalonePage },
   { path: "/prologue", Component: HubHome },
   { path: "/universe", Component: HubHome },
+  { path: "/hub", Component: HubHome },
   { path: "/ecpr", Component: HubHome },
   { path: "/todo", Component: HubHome },
   { path: "/mission", Component: HubHome },
@@ -103,9 +105,10 @@ function ActivePage({ loc }: { loc: string }) {
   return (
     <React.Suspense fallback={<PageLoader />}>
       <Switch location={cleanLoc}>
-        <Route path="/"><HubHome /></Route>
+        <Route path="/"><LucyStandalonePage /></Route>
         <Route path="/prologue"><HubHome /></Route>
         <Route path="/universe"><HubHome /></Route>
+        <Route path="/hub"><HubHome /></Route>
         <Route path="/ecpr"><HubHome /></Route>
         <Route path="/todo"><HubHome /></Route>
         <Route path="/mission"><HubHome /></Route>
@@ -335,10 +338,27 @@ function AppContent() {
     }
   }, [isUnlocked, sharedState?.themeColor]);
 
-  const isStandaloneChat = location === '/chat' || location === '/lucy' || location === '/handbook' || location === '/rebible' || location === '/orb' || location === '/gateway' || location === '/crystal' || location === '/key' || location === '/calm';
+  const isStandaloneChat = location === '/' || location === '/chat' || location === '/lucy' || location === '/handbook' || location === '/rebible' || location === '/orb' || location === '/gateway' || location === '/crystal' || location === '/key' || location === '/calm';
   const isOrbSite = location === '/orb' || location === '/gateway' || location === '/crystal';
   const isCalmSite = location === '/calm' || location === '/key';
-  const isChatView = location === '/chat' || location === '/lucy';
+  const isChatView = location === '/' || location === '/chat' || location === '/lucy';
+
+  // ⌨️ Ctrl+K / Cmd+K: 새 대화 (New Chat) 즉시 단축키
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        if (location !== '/') {
+          navigate('/');
+        }
+        window.setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('prism:reset_lucy_chat'));
+        }, 80);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [location, navigate]);
 
   // Standalone routes bypass full auth gating immediately so they never hang on key/calm/chat entry
   if ((!isAuthReady || !appEntranceDone) && !isStandaloneChat) {
@@ -376,13 +396,15 @@ function AppContent() {
   }
 
   return (
-    <div className="prism-app-shell relative z-[1] bg-transparent">
+    <div className="prism-app-shell relative z-[1] bg-transparent flex flex-row w-full h-full min-h-0 overflow-hidden">
       <NotchScrollToTopBar />
       {/* Draggable & Edge-Dockable Background Music Player */}
       {shouldMountBgMusicPlayer() && (
         <BgMusicPlayer />
       )}
 
+      {/* 🧭 LucKey Left Sidebar (hori.chat style) */}
+      <LucKeySidebar />
 
       <AnimatePresence>
         {updateMessage && (
@@ -398,7 +420,7 @@ function AppContent() {
         )}
       </AnimatePresence>
 
-      <main className="flex-1 min-h-0 overflow-x-hidden flex flex-col relative w-full">
+      <main className="flex-1 min-h-0 min-w-0 overflow-x-hidden flex flex-col relative w-full h-full">
         <motion.div
           key={location ? location.split('?')[0].split('#')[0] : '/'}
           initial={{ opacity: 0.88 }}

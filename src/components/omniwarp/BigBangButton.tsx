@@ -56,9 +56,14 @@ export function BigBangButton() {
     ));
 
   const isChatView =
+    location === '/' ||
     location === '/chat' ||
     location === '/lucy' ||
-    (typeof window !== 'undefined' && window.location.pathname.includes('chat'));
+    (typeof window !== 'undefined' && (
+      window.location.pathname === '/' ||
+      window.location.pathname.includes('chat') ||
+      window.location.pathname.includes('lucy')
+    ));
 
   const [isPressing, setIsPressing] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -978,10 +983,13 @@ export function BigBangButton() {
 
     setTimeout(() => {
       if (isChatView && !textToToss) {
-        // 채팅 화면에서 홀드 시 이전 페이지 귀환
-        const returnPath = safeSessionStorage.getItem('prism_chat_return_path') || '/';
+        // 채팅 화면에서 홀드 시 프롤로그 종합 허브(/prologue)로 이동
+        const returnPath = safeSessionStorage.getItem('prism_chat_return_path') || '/prologue';
         safeSessionStorage.removeItem('prism_chat_return_path');
-        const finalDest = returnPath.includes('chat') ? '/' : returnPath;
+        const finalDest =
+          returnPath === '/' || returnPath.includes('chat') || returnPath.includes('lucy')
+            ? '/prologue'
+            : returnPath;
         if (isKeySite) {
           window.location.href = finalDest;
         } else {

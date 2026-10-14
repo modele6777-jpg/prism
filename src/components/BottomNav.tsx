@@ -6,7 +6,7 @@ import { useNarrowPhone } from '@/hooks/useNarrowPhone';
 import { isLegacyMobile } from '@/lib/perfMode';
 
 const NAV_ITEMS = [
-  { path: '/', icon: Sun, label: 'PROLOGUE', color: 'oklch(0.60 0.22 15)', isHome: true },
+  { path: '/prologue', icon: Sun, label: 'PROLOGUE', color: 'oklch(0.60 0.22 15)', isHome: true },
   { path: '/orange', icon: TreeDeciduous, label: 'ORANGE', color: 'oklch(0.72 0.18 55)' },
   { path: '/trinity', icon: Sparkles, label: 'TRINITY', color: 'oklch(0.85 0.15 90)' },
   { path: '/heal', icon: Activity, label: 'AURA', color: 'oklch(0.70 0.15 150)' },
@@ -15,7 +15,7 @@ const NAV_ITEMS = [
   { path: '/epilogue', icon: Moon, label: 'EPILOGUE', color: 'oklch(0.65 0.25 310)' },
 ];
 
-const PROLOGUE_SUBPATHS = ['/', '/universe', '/ecpr', '/todo', '/mission', '/synergy', '/aegis'];
+const PROLOGUE_SUBPATHS = ['/prologue', '/universe', '/hub', '/ecpr', '/todo', '/mission', '/synergy', '/aegis'];
 
 export default function BottomNav() {
   const [location, navigate] = useLocation();

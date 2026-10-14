@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Send, Trash2, Search, X, ChevronDown, Check, Volume2, VolumeX, Square,
   Download, User, Sparkles, Sun, TreeDeciduous, Activity, Bird, Music, Zap, Flame, Compass,
-  Loader2, Copy, RefreshCw, Camera, MicOff, Mic, BookOpen, BookMarked
+  Loader2, Copy, RefreshCw, Camera, MicOff, Mic, BookOpen, BookMarked, Menu
 } from 'lucide-react';
 import { useApp, PersonaType } from '@/contexts/AppContext';
 import { useLocation } from 'wouter';
@@ -1141,11 +1141,22 @@ export default function LucyStandalonePage() {
 
     window.addEventListener('lucy-inject-message', handleDynamicInject);
     window.addEventListener('prism:selection_saved', handleDynamicSelection);
+
+    const handleResetChatEvent = () => {
+      abortGenerating('lucy');
+      stopTTS();
+      clearPersonaMessages('lucy');
+      setResetToast('대화가 깨끗하게 초기화되었습니다.');
+      setTimeout(() => setResetToast(null), 3000);
+    };
+    window.addEventListener('prism:reset_lucy_chat', handleResetChatEvent);
+
     return () => {
       window.removeEventListener('lucy-inject-message', handleDynamicInject);
       window.removeEventListener('prism:selection_saved', handleDynamicSelection);
+      window.removeEventListener('prism:reset_lucy_chat', handleResetChatEvent);
     };
-  }, []);
+  }, [abortGenerating, clearPersonaMessages]);
 
   const handleCopy = (id: string, text: string) => {
     navigator.clipboard.writeText(text);
@@ -1225,39 +1236,52 @@ export default function LucyStandalonePage() {
         className="w-full px-3.5 sm:px-8 lg:px-12 pb-3 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs flex flex-col gap-2.5 z-40 shrink-0 relative"
       >
         <div className="flex items-center justify-between gap-2 min-w-0">
-          {/* Brand Logo & Tagline */}
-          <div
-            onClick={() => navigate('/')}
-            className="flex items-center gap-2 sm:gap-3 min-w-0 cursor-pointer group select-none"
-            role="button"
-            tabIndex={0}
-            title="허브 홈으로 이동"
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate('/'); }}
-          >
-            <div className="relative group">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-amber-500 via-amber-400 to-yellow-300 flex items-center justify-center text-white shadow-sm font-bold text-base sm:text-lg shrink-0 ring-2 ring-amber-400/30 group-hover:scale-105 transition-transform">
-                <Sparkles size={18} className="text-white" />
+          {/* Mobile Sidebar Hamburger & Brand Logo */}
+          <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+            <button
+              type="button"
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('prism:toggle_sidebar'));
+              }}
+              className="p-2 -ml-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 transition-colors cursor-pointer shrink-0 lg:hidden flex items-center justify-center border border-slate-200/60"
+              title="사이드바 메뉴 열기"
+              aria-label="메뉴 열기"
+            >
+              <Menu size={18} />
+            </button>
+            <div
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2 sm:gap-3 min-w-0 cursor-pointer group select-none"
+              role="button"
+              tabIndex={0}
+              title="루시 홈"
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate('/'); }}
+            >
+              <div className="relative group">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-amber-500 via-amber-400 to-yellow-300 flex items-center justify-center text-white shadow-sm font-bold text-base sm:text-lg shrink-0 ring-2 ring-amber-400/30 group-hover:scale-105 transition-transform">
+                  <Sparkles size={18} className="text-white" />
+                </div>
+                <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white ring-1 ring-emerald-300 animate-pulse" title="Lucy 엔진 실시간 온라인" />
               </div>
-              <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white ring-1 ring-emerald-300 animate-pulse" title="Lucy 엔진 실시간 온라인" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <h1 className="text-sm sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-1.5">
-                  Lucy
-                </h1>
-                <span className="text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-violet-600/10 via-purple-600/10 to-indigo-600/10 text-indigo-600 border border-indigo-200/60 flex items-center gap-1">
-                  <Sparkles size={10} className="text-indigo-500 animate-spin" />
-                  AI 자동 감지
-                </span>
-                {autoDetectedTitle && (
-                  <span className="text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200/80">
-                    {autoDetectedTitle}
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <h1 className="text-sm sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-1.5">
+                    Lucy
+                  </h1>
+                  <span className="text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-violet-600/10 via-purple-600/10 to-indigo-600/10 text-indigo-600 border border-indigo-200/60 flex items-center gap-1">
+                    <Sparkles size={10} className="text-indigo-500 animate-spin" />
+                    AI 자동 감지
                   </span>
-                )}
+                  {autoDetectedTitle && (
+                    <span className="text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200/80">
+                      {autoDetectedTitle}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium truncate">
+                  {autoDetectedTitle ? `${autoDetectedTitle} · 실시간 맞춤 지능 응답 가동 중` : '대화 내용과 맥락에 맞춰 최적의 지능 모드가 실시간 자동 감지됩니다.'}
+                </p>
               </div>
-              <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium truncate">
-                {autoDetectedTitle ? `${autoDetectedTitle} · 실시간 맞춤 지능 응답 가동 중` : '대화 내용과 맥락에 맞춰 최적의 지능 모드가 실시간 자동 감지됩니다.'}
-              </p>
             </div>
           </div>
 
