@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Sparkles,
   Send,
@@ -98,6 +98,11 @@ export const FollowUpTarotInputBar: React.FC<FollowUpTarotInputBarProps> = ({
     onAutoDraw(q);
   };
 
+  // 🌟 카드가 추가로 뽑혀 잔여 덱 및 카운트가 갱신될 때마다 고민 입력창을 완벽 초기화
+  useEffect(() => {
+    setQuestion('');
+  }, [drawnCount]);
+
   const isExhausted = remainingCount <= 0;
 
   return (
@@ -161,6 +166,12 @@ export const FollowUpTarotInputBar: React.FC<FollowUpTarotInputBarProps> = ({
             type="text"
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !isGenerating && !isExhausted) {
+                e.preventDefault();
+                handleAutoClick();
+              }
+            }}
             disabled={isGenerating || isExhausted}
             placeholder={
               isExhausted
