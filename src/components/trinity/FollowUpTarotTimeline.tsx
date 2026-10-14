@@ -49,7 +49,8 @@ export const FollowUpTarotTimeline: React.FC<FollowUpTarotTimelineProps> = ({
 
   const handleCopy = async (entry: FollowUpTarotEntry) => {
     try {
-      const textToCopy = `【추가 질문: ${entry.question}】\n뽑힌 카드: ${entry.card.nameKo} (${entry.reversed ? '역방향' : '정방향'})\n\n[트리니티 마스터 심층 해설]\n${entry.reading}`;
+      const cardName = entry.card?.nameKo || entry.card?.name || '타로 카드';
+      const textToCopy = `【추가 질문: ${entry.question || ''}】\n뽑힌 카드: ${cardName} (${entry.reversed ? '역방향' : '정방향'})\n\n[트리니티 마스터 심층 해설]\n${entry.reading || ''}`;
       await navigator.clipboard.writeText(textToCopy);
       playSuccessHaptic();
       setCopiedId(entry.id);
@@ -165,13 +166,13 @@ export const FollowUpTarotTimeline: React.FC<FollowUpTarotTimelineProps> = ({
                   <div className="p-3 sm:p-3.5 rounded-xl bg-black/40 border border-white/10 flex items-center gap-3.5 sm:gap-4">
                     <button
                       type="button"
-                      onClick={() => onZoomCard({ card: entry.card, slotName: `추가 질문 #${index + 1}` })}
+                      onClick={() => entry.card && onZoomCard({ card: entry.card, slotName: `추가 질문 #${index + 1}` })}
                       className="relative shrink-0 w-16 h-24 sm:w-20 sm:h-30 rounded-lg overflow-hidden border border-amber-400/40 group/card shadow-md cursor-zoom-in hover:scale-105 active:scale-95 transition-transform"
                       title="카드 크게 보기"
                     >
                       <img
-                        src={getTarotCardImageUrl(entry.card)}
-                        alt={entry.card.nameKo}
+                        src={entry.card ? getTarotCardImageUrl(entry.card) : '/placeholder-card.png'}
+                        alt={entry.card?.nameKo || '타로 카드'}
                         className={`w-full h-full object-cover transition-transform duration-300 ${
                           entry.reversed ? 'rotate-180' : ''
                         }`}
@@ -185,11 +186,13 @@ export const FollowUpTarotTimeline: React.FC<FollowUpTarotTimelineProps> = ({
                     <div className="flex-1 min-w-0 space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs sm:text-sm font-bold text-amber-300">
-                          {entry.card.nameKo}
+                          {entry.card?.nameKo || entry.card?.name || '타로 카드'}
                         </span>
-                        <span className="text-[10px] text-white/50 font-mono hidden sm:inline">
-                          {entry.card.name}
-                        </span>
+                        {entry.card?.name && (
+                          <span className="text-[10px] text-white/50 font-mono hidden sm:inline">
+                            {entry.card.name}
+                          </span>
+                        )}
                         <span
                           className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${
                             entry.reversed
@@ -202,7 +205,7 @@ export const FollowUpTarotTimeline: React.FC<FollowUpTarotTimelineProps> = ({
                       </div>
 
                       <p className="text-[11px] sm:text-xs text-white/70 line-clamp-2 break-keep font-sans">
-                        {entry.card.keywords.join(' · ')}
+                        {Array.isArray(entry.card?.keywords) ? entry.card.keywords.join(' · ') : ''}
                       </p>
 
                       <div className="text-[10px] text-amber-400/80 font-sans pt-1 flex items-center gap-1">

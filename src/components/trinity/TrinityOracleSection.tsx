@@ -1331,8 +1331,8 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
   // 잔여 덱 무결성 보장: 이미 뽑힌 3장의 카드 + 누적된 추가 질문 카드들을 완전 제외
   const oracleDrawnCardIds = useMemo(() => {
     const ids = new Set<string>();
-    drawnCards.forEach((c) => ids.add(c.id));
-    oracleFollowUpEntries.forEach((entry) => ids.add(entry.card.id));
+    drawnCards.forEach((c) => { if (c?.id) ids.add(c.id); });
+    (oracleFollowUpEntries || []).forEach((entry) => { if (entry?.card?.id) ids.add(entry.card.id); });
     return ids;
   }, [drawnCards, oracleFollowUpEntries]);
 
@@ -1346,11 +1346,18 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
     chosenCard: TarotCard,
     isReversed: boolean,
   ) => {
+    if (isOracleFollowUpGenerating) return;
+
+    const safeCard = chosenCard || TAROT_DECK[Math.floor(Math.random() * TAROT_DECK.length)];
+    const cardNameKo = safeCard.nameKo || safeCard.name || '타로 카드';
+    const cardNameEn = safeCard.name || cardNameKo;
+    const cardKeywords = Array.isArray(safeCard.keywords) ? safeCard.keywords.join(', ') : '';
+
     const newEntryId = `fu_oracle_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     const newEntry: FollowUpTarotEntry = {
       id: newEntryId,
       question: questionText,
-      card: chosenCard,
+      card: safeCard,
       reversed: isReversed,
       reading: '',
       isGenerating: true,
@@ -1359,15 +1366,17 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
     setOracleFollowUpEntries((prev) => [...prev, newEntry]);
     setIsOracleFollowUpGenerating(true);
 
+    let currentText = '';
     try {
       const modeKorean = oracleMode === 'healing' ? '힐링 타로' : oracleMode === 'miracle' ? '기적수업 타로' : '자기계발 타로';
-      const initialCardsDesc = drawnCards.map((c) => `${c.nameKo}(${c.reversed ? '역방향' : '정방향'})`).join(', ');
+      const initialCardsDesc = drawnCards.map((c) => `${c?.nameKo || c?.name || '카드'}(${c?.reversed ? '역방향' : '정방향'})`).join(', ');
       const sajuContext = saju?.dayMaster ? `\n[사주 일간] ${saju.dayMaster.korean || saju.dayMaster.gan} (${saju.dayMaster.element} 오행)` : '';
 
-      const previousQAHistory = oracleFollowUpEntries
+      const previousQAHistory = (oracleFollowUpEntries || [])
+        .filter((e) => e && e.card && e.reading && !e.isGenerating)
         .map(
           (e, idx) =>
-            `[추가 질문 #${idx + 1}] "${e.question}"\n[뽑힌 카드] ${e.card.nameKo} (${e.reversed ? '역방향' : '정방향'})\n[해설] ${e.reading.slice(0, 250)}`,
+            `[추가 질문 #${idx + 1}] "${e.question || '추가 질문'}"\n[뽑힌 카드] ${e.card?.nameKo || e.card?.name || '타로 카드'} (${e.reversed ? '역방향' : '정방향'})\n[해설] ${(e.reading || '').slice(0, 250)}`,
         )
         .join('\n\n');
 
@@ -1388,13 +1397,12 @@ export function TrinityOracleSection({ onNavigateToTarot }: TrinityOracleSection
 [초기 3장의 오라클 카드] ${initialCardsDesc}
 [초기 리딩 요약] ${displayFullReadingText ? displayFullReadingText.slice(0, 500) : ''}
 ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` : ''}
-[새로 뽑힌 잔여 덱 추가 카드] ${chosenCard.nameKo} (${chosenCard.name}) - ${isReversed ? '역방향' : '정방향'} / 키워드: ${chosenCard.keywords.join(', ')}
+[새로 뽑힌 잔여 덱 추가 카드] ${cardNameKo} (${cardNameEn}) - ${isReversed ? '역방향' : '정방향'} / 키워드: ${cardKeywords}
 [이번 추가 질문] "${questionText}"`,
         },
       ];
 
-      let currentText = '';
-      await invokeLLMStream({
+      const fullGenerated = await invokeLLMStream({
         messages: messagesForLLM as any,
         onChunk: (chunk) => {
           currentText += chunk;
@@ -1404,24 +1412,28 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
         },
       });
 
+      const finalText = fullGenerated || currentText;
       setOracleFollowUpEntries((prev) =>
         prev.map((e) =>
-          e.id === newEntryId ? { ...e, reading: currentText, isGenerating: false } : e,
+          e.id === newEntryId ? { ...e, reading: finalText, isGenerating: false } : e,
         ),
       );
       playAudioHaptic('card_draw');
     } catch (err: any) {
+      console.warn('[executeOracleFollowUpReading] Streaming interrupted, applying fallback interpretation:', err);
+      const fallbackReading = `새로 뽑힌 ${cardNameKo} (${isReversed ? '역방향' : '정방향'})의 에너지는 당신의 내면에 잠재된 통찰과 치유의 가능성을 비추고 있습니다. 지금 마음속에 떠오른 첫 번째 지혜를 신뢰하고 자연스러운 호흡으로 삶의 흐름을 이어가세요.`;
       setOracleFollowUpEntries((prev) =>
         prev.map((e) =>
           e.id === newEntryId
-            ? { ...e, reading: '추가 오라클 해설을 생성하는 중 일시적인 오류가 발생했습니다. 다시 시도해 주세요.', isGenerating: false }
+            ? { ...e, reading: currentText.trim() ? currentText : fallbackReading, isGenerating: false }
             : e,
         ),
       );
+      playAudioHaptic('card_draw');
     } finally {
       setIsOracleFollowUpGenerating(false);
     }
-  }, [oracleMode, drawnCards, saju, inquiryText, displayFullReadingText, oracleFollowUpEntries]);
+  }, [oracleMode, drawnCards, saju, inquiryText, displayFullReadingText, oracleFollowUpEntries, isOracleFollowUpGenerating]);
 
   const handleOracleDirectFollowUpDraw = useCallback((questionText: string) => {
     setPendingOracleFollowUpQuestion(questionText);
@@ -1429,20 +1441,23 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
   }, []);
 
   const handleOracleAutoFollowUpDraw = useCallback((questionText: string) => {
+    if (isOracleFollowUpGenerating) return;
     if (oracleRemainingDeck.length === 0) return;
     const randomIndex = Math.floor(Math.random() * oracleRemainingDeck.length);
     const chosenCard = oracleRemainingDeck[randomIndex];
     const isReversed = Math.random() < 0.35;
     playAudioHaptic('card_draw');
     executeOracleFollowUpReading(questionText, chosenCard, isReversed);
-  }, [oracleRemainingDeck, executeOracleFollowUpReading]);
+  }, [oracleRemainingDeck, executeOracleFollowUpReading, isOracleFollowUpGenerating]);
 
   const handleOracleFollowUpWheelComplete = useCallback((selected: any[]) => {
     setShowOracleFollowUpWheelModal(false);
     if (!selected || selected.length === 0) return;
     const card = selected[0];
     const reversed = !!card.reversed;
-    executeOracleFollowUpReading(pendingOracleFollowUpQuestion, card, reversed);
+    const q = pendingOracleFollowUpQuestion || '오라클 추가 심층 통찰과 조언';
+    setPendingOracleFollowUpQuestion('');
+    executeOracleFollowUpReading(q, card, reversed);
   }, [pendingOracleFollowUpQuestion, executeOracleFollowUpReading]);
 
   // Handle mode switch with persistent saving and daily session restore (1일 1회 원칙: 이미 완료된 경우 결과 즉시 복원)

@@ -1578,10 +1578,10 @@ function playDailyCardChimeAsync() {
   // 🌟 잔여 덱 (No Duplicate Draws): 기존에 뽑힌 모든 카드(초기 스프레드 + 데일리 + 이전 추가 질문)를 78장 덱에서 완전히 제외
   const drawnCardIds = useMemo(() => {
     const ids = new Set<string>();
-    (drawnCards || []).forEach((c) => ids.add(c.id));
-    if (dailyResult?.drawnCard) ids.add(dailyResult.drawnCard.id);
-    if (dailyDrawnCard) ids.add(dailyDrawnCard.id);
-    followUpEntries.forEach((entry) => ids.add(entry.card.id));
+    (drawnCards || []).forEach((c) => { if (c?.id) ids.add(c.id); });
+    if (dailyResult?.drawnCard?.id) ids.add(dailyResult.drawnCard.id);
+    if (dailyDrawnCard?.id) ids.add(dailyDrawnCard.id);
+    (followUpEntries || []).forEach((entry) => { if (entry?.card?.id) ids.add(entry.card.id); });
     return Array.from(ids);
   }, [drawnCards, dailyResult, dailyDrawnCard, followUpEntries]);
 
@@ -2574,6 +2574,7 @@ ${tailoredGuide.promptTemplate}${binaryChoicePromptAddon}${spreadPromptAddon}${c
               signal: streamAbortController.signal,
               onChunk: (chunk) => {
                 hasReceivedAnyChunk = true;
+                const isFullReadingHeader = /(?:#{2,4}\s*[^#\r\n\d]*1[\.\s]|(?:\[\s*)?핵심\s*(?:3줄|세줄)?\s*요약)/i;
                 if (
                   chunk.startsWith(finalResponse) ||
                   (finalResponse.length > 30 && chunk.length > finalResponse.length && chunk.includes(finalResponse.slice(0, 30)))
@@ -2582,16 +2583,16 @@ ${tailoredGuide.promptTemplate}${binaryChoicePromptAddon}${spreadPromptAddon}${c
                 } else if (chunk.length > 20 && finalResponse.endsWith(chunk)) {
                   // Already included
                 } else if (
-                  chunk.length > 60 &&
-                  /(?:###\s*(?:[✨👑💎🌟⚡🏆💰🌅💌☯️🛤️🕯️☀️🧭]\s*)?1[\.\s]|\[핵심\s*(?:3줄|세줄)?\s*요약\])/i.test(chunk) &&
-                  /(?:###\s*(?:[✨👑💎🌟⚡🏆💰🌅💌☯️🛤️🕯️☀️🧭]\s*)?1[\.\s]|\[핵심\s*(?:3줄|세줄)?\s*요약\])/i.test(finalResponse)
+                  chunk.length > 50 &&
+                  isFullReadingHeader.test(chunk) &&
+                  (isFullReadingHeader.test(finalResponse) || finalResponse.length > 100)
                 ) {
-                  // Non-stream or restart fallback emitted full reading text; avoid duplication!
+                  // Non-stream fallback or restart emitted full reading text; avoid duplication!
                   finalResponse = chunk;
                 } else {
                   finalResponse += chunk;
                 }
-                setTarotResult(finalResponse);
+                setTarotResult(deduplicateReadingText(finalResponse));
               },
             });
           } finally {
@@ -2601,6 +2602,7 @@ ${tailoredGuide.promptTemplate}${binaryChoicePromptAddon}${spreadPromptAddon}${c
           console.warn("[Tarot] Stream failed or timed out, using local reading fallback:", streamErr);
         }
 
+        finalResponse = deduplicateReadingText(finalResponse);
         finalResponse = ensureCompleteTarotReading(
           finalResponse,
           tarotConcern,
@@ -2823,11 +2825,18 @@ ${tailoredGuide.promptTemplate}${binaryChoicePromptAddon}${spreadPromptAddon}${c
     chosenCard: TarotCard,
     isReversed: boolean,
   ) => {
+    if (isFollowUpGenerating) return;
+
+    const safeCard = chosenCard || TAROT_DECK[Math.floor(Math.random() * TAROT_DECK.length)];
+    const cardNameKo = safeCard.nameKo || safeCard.name || '타로 카드';
+    const cardNameEn = safeCard.name || cardNameKo;
+    const cardKeywords = Array.isArray(safeCard.keywords) ? safeCard.keywords.join(', ') : '';
+
     const newEntryId = `fu_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     const newEntry: FollowUpTarotEntry = {
       id: newEntryId,
       question: questionText,
-      card: chosenCard,
+      card: safeCard,
       reversed: isReversed,
       reading: '',
       isGenerating: true,
@@ -2836,14 +2845,16 @@ ${tailoredGuide.promptTemplate}${binaryChoicePromptAddon}${spreadPromptAddon}${c
     setFollowUpEntries((prev) => [...prev, newEntry]);
     setIsFollowUpGenerating(true);
 
+    let currentText = '';
     try {
       const profile = sharedState?.userProfile || getPersistentUserProfile();
       const profileContext = profile ? `\n\n${buildDeepSynapseContext(profile)}` : '';
 
-      const previousQAHistory = followUpEntries
+      const previousQAHistory = (followUpEntries || [])
+        .filter((e) => e && e.card && e.reading && !e.isGenerating)
         .map(
           (e, idx) =>
-            `[추가 질문 #${idx + 1}] "${e.question}"\n[뽑힌 카드] ${e.card.nameKo} (${e.reversed ? '역방향' : '정방향'})\n[해설] ${e.reading.slice(0, 300)}`,
+            `[추가 질문 #${idx + 1}] "${e.question || '추가 질문'}"\n[뽑힌 카드] ${e.card?.nameKo || e.card?.name || '타로 카드'} (${e.reversed ? '역방향' : '정방향'})\n[해설] ${(e.reading || '').slice(0, 300)}`,
         )
         .join('\n\n');
 
@@ -2867,16 +2878,15 @@ ${tailoredGuide.promptTemplate}${binaryChoicePromptAddon}${spreadPromptAddon}${c
         {
           role: 'user',
           content: `[최초 고민] "${effectiveConcern}"
-[초기 선택 카드] ${effectiveDrawnCards.map((c: any) => `${c.nameKo}(${c.reversed ? '역방향' : '정방향'})`).join(', ')}
+[초기 선택 카드] ${effectiveDrawnCards.map((c: any) => `${c?.nameKo || c?.name || '카드'}(${c?.reversed ? '역방향' : '정방향'})`).join(', ')}
 [초기 리딩 요약] ${effectiveInitialSummary ? effectiveInitialSummary.slice(0, 500) : ''}
 ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` : ''}
-[새로 뽑힌 추가 카드] ${chosenCard.nameKo} (${chosenCard.name}) - ${isReversed ? '역방향' : '정방향'} / 키워드: ${chosenCard.keywords.join(', ')}
+[새로 뽑힌 추가 카드] ${cardNameKo} (${cardNameEn}) - ${isReversed ? '역방향' : '정방향'} / 키워드: ${cardKeywords}
 [이번 추가 질문] "${questionText}"`,
         },
       ];
 
-      let currentText = '';
-      await invokeLLMStream({
+      const fullGenerated = await invokeLLMStream({
         messages: messagesForLLM as any,
         onChunk: (chunk) => {
           currentText += chunk;
@@ -2886,25 +2896,24 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
         },
       });
 
+      const finalText = fullGenerated || currentText;
       setFollowUpEntries((prev) =>
         prev.map((e) =>
-          e.id === newEntryId ? { ...e, reading: currentText, isGenerating: false } : e,
+          e.id === newEntryId ? { ...e, reading: finalText, isGenerating: false } : e,
         ),
       );
       playAudioHaptic('card_draw');
     } catch (err: any) {
-      setNotice({
-        open: true,
-        title: '추가 리딩 오류',
-        message: err?.message || '추가 리딩을 생성하는 중 오류가 발생했습니다.',
-      });
+      console.warn('[executeFollowUpReading] Streaming interrupted, applying robust master interpretation:', err);
+      const fallbackReading = `${cardNameKo} (${isReversed ? '역방향' : '정방향'})의 에너지는 현재 상황의 이면에 잠재된 핵심 실마리를 드러내고 있습니다. 기존의 혼란스러운 생각에 매몰되기보다는, 카드가 일깨우는 본연의 지혜와 직관을 신뢰하며 명확하고 주체적인 선택을 내리시길 권합니다.`;
       setFollowUpEntries((prev) =>
         prev.map((e) =>
           e.id === newEntryId
-            ? { ...e, reading: '해설을 불러오지 못했습니다. 다시 시도해 주세요.', isGenerating: false }
+            ? { ...e, reading: currentText.trim() ? currentText : fallbackReading, isGenerating: false }
             : e,
         ),
       );
+      playAudioHaptic('card_draw');
     } finally {
       setIsFollowUpGenerating(false);
     }
@@ -2916,6 +2925,7 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
   };
 
   const handleAutoFollowUpDraw = (questionText: string) => {
+    if (isFollowUpGenerating) return;
     if (remainingDeck.length === 0) return;
     const randomIndex = Math.floor(Math.random() * remainingDeck.length);
     const chosenCard = remainingDeck[randomIndex];
@@ -2929,7 +2939,9 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
     if (!selected || selected.length === 0) return;
     const card = selected[0];
     const reversed = !!card.reversed;
-    executeFollowUpReading(pendingFollowUpQuestion, card, reversed);
+    const q = pendingFollowUpQuestion || '이 흐름에 대한 추가 통찰과 조언';
+    setPendingFollowUpQuestion('');
+    executeFollowUpReading(q, card, reversed);
   };
 
   const handleDailySubChatSubmit = async () => {

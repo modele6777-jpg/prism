@@ -87,12 +87,14 @@ export const FollowUpTarotInputBar: React.FC<FollowUpTarotInputBarProps> = ({
   const handleDirectClick = () => {
     const q = question.trim() || '이 흐름에 대한 추가 통찰과 조언';
     playAudioHaptic('tap_light');
+    setQuestion('');
     onDirectDraw(q);
   };
 
   const handleAutoClick = () => {
     const q = question.trim() || '이 흐름에 대한 추가 통찰과 조언';
     playAudioHaptic('card_draw');
+    setQuestion('');
     onAutoDraw(q);
   };
 

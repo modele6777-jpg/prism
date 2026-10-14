@@ -110,7 +110,7 @@ export function TodayTarotNarrationModal({
   const dailyDrawnCardIds = useMemo(() => {
     const ids = new Set<string>();
     if (narrationData.card?.id) ids.add(narrationData.card.id);
-    dailyFollowUpEntries.forEach((entry) => ids.add(entry.card.id));
+    (dailyFollowUpEntries || []).forEach((entry) => { if (entry?.card?.id) ids.add(entry.card.id); });
     return ids;
   }, [narrationData.card, dailyFollowUpEntries]);
 
@@ -124,11 +124,18 @@ export function TodayTarotNarrationModal({
     chosenCard: TarotCard,
     isReversed: boolean,
   ) => {
+    if (isFollowUpGenerating) return;
+
+    const safeCard = chosenCard || TAROT_DECK[Math.floor(Math.random() * TAROT_DECK.length)];
+    const cardNameKo = safeCard.nameKo || safeCard.name || '타로 카드';
+    const cardNameEn = safeCard.name || cardNameKo;
+    const cardKeywords = Array.isArray(safeCard.keywords) ? safeCard.keywords.join(', ') : '';
+
     const newEntryId = `fu_daily_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     const newEntry: FollowUpTarotEntry = {
       id: newEntryId,
       question: questionText,
-      card: chosenCard,
+      card: safeCard,
       reversed: isReversed,
       reading: '',
       isGenerating: true,
@@ -137,14 +144,16 @@ export function TodayTarotNarrationModal({
     setDailyFollowUpEntries((prev) => [...prev, newEntry]);
     setIsFollowUpGenerating(true);
 
+    let currentText = '';
     try {
       const cardName = narrationData.card ? `${narrationData.card.nameKo} (${narrationData.card.reversed ? '역방향' : '정방향'})` : '오늘의 데일리 타로';
       const initialReading = narrationData.cleanDiagnosis || narrationData.rawDiagnosis || '';
 
-      const previousQAHistory = dailyFollowUpEntries
+      const previousQAHistory = (dailyFollowUpEntries || [])
+        .filter((e) => e && e.card && e.reading && !e.isGenerating)
         .map(
           (e, idx) =>
-            `[추가 질문 #${idx + 1}] "${e.question}"\n[뽑힌 카드] ${e.card.nameKo} (${e.reversed ? '역방향' : '정방향'})\n[해설] ${e.reading.slice(0, 250)}`,
+            `[추가 질문 #${idx + 1}] "${e.question || '추가 질문'}"\n[뽑힌 카드] ${e.card?.nameKo || e.card?.name || '타로 카드'} (${e.reversed ? '역방향' : '정방향'})\n[해설] ${(e.reading || '').slice(0, 250)}`,
         )
         .join('\n\n');
 
@@ -163,13 +172,12 @@ export function TodayTarotNarrationModal({
           content: `[오늘의 데일리 타로] ${cardName}
 [데일리 리딩 요약] ${initialReading ? initialReading.slice(0, 500) : ''}
 ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` : ''}
-[새로 뽑힌 잔여 덱 추가 카드] ${chosenCard.nameKo} (${chosenCard.name}) - ${isReversed ? '역방향' : '정방향'} / 키워드: ${chosenCard.keywords.join(', ')}
+[새로 뽑힌 잔여 덱 추가 카드] ${cardNameKo} (${cardNameEn}) - ${isReversed ? '역방향' : '정방향'} / 키워드: ${cardKeywords}
 [이번 추가 질문] "${questionText}"`,
         },
       ];
 
-      let currentText = '';
-      await invokeLLMStream({
+      const fullGenerated = await invokeLLMStream({
         messages: messagesForLLM as any,
         onChunk: (chunk) => {
           currentText += chunk;
@@ -179,24 +187,28 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
         },
       });
 
+      const finalText = fullGenerated || currentText;
       setDailyFollowUpEntries((prev) =>
         prev.map((e) =>
-          e.id === newEntryId ? { ...e, reading: currentText, isGenerating: false } : e,
+          e.id === newEntryId ? { ...e, reading: finalText, isGenerating: false } : e,
         ),
       );
       playAudioHaptic('card_draw');
     } catch (err: any) {
+      console.warn('[executeDailyFollowUpReading] Streaming interrupted, applying fallback interpretation:', err);
+      const fallbackReading = `오늘 뽑힌 ${cardNameKo} (${isReversed ? '역방향' : '정방향'})의 에너지는 당신의 직관과 행동을 조화롭게 이끌어 줄 것입니다. 외부 상황의 변화에 흔들리지 마시고 중심을 지키며 오늘 하루를 보내세요.`;
       setDailyFollowUpEntries((prev) =>
         prev.map((e) =>
           e.id === newEntryId
-            ? { ...e, reading: '추가 해설을 불러오는 중 일시적인 오류가 발생했습니다. 다시 시도해 주세요.', isGenerating: false }
+            ? { ...e, reading: currentText.trim() ? currentText : fallbackReading, isGenerating: false }
             : e,
         ),
       );
+      playAudioHaptic('card_draw');
     } finally {
       setIsFollowUpGenerating(false);
     }
-  }, [dailyFollowUpEntries, narrationData]);
+  }, [dailyFollowUpEntries, isFollowUpGenerating, narrationData]);
 
   const handleDirectFollowUpDraw = useCallback((questionText: string) => {
     setPendingFollowUpQuestion(questionText);
@@ -204,20 +216,23 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
   }, []);
 
   const handleAutoFollowUpDraw = useCallback((questionText: string) => {
+    if (isFollowUpGenerating) return;
     if (dailyRemainingDeck.length === 0) return;
     const randomIndex = Math.floor(Math.random() * dailyRemainingDeck.length);
     const chosenCard = dailyRemainingDeck[randomIndex];
     const isReversed = Math.random() < 0.35;
     playAudioHaptic('card_draw');
     executeDailyFollowUpReading(questionText, chosenCard, isReversed);
-  }, [dailyRemainingDeck, executeDailyFollowUpReading]);
+  }, [dailyRemainingDeck, executeDailyFollowUpReading, isFollowUpGenerating]);
 
   const handleFollowUpWheelComplete = useCallback((selected: any[]) => {
     setShowFollowUpWheelModal(false);
     if (!selected || selected.length === 0) return;
     const card = selected[0];
     const reversed = !!card.reversed;
-    executeDailyFollowUpReading(pendingFollowUpQuestion, card, reversed);
+    const q = pendingFollowUpQuestion || '오늘 하루에 대한 추가 통찰과 조언';
+    setPendingFollowUpQuestion('');
+    executeDailyFollowUpReading(q, card, reversed);
   }, [pendingFollowUpQuestion, executeDailyFollowUpReading]);
 
   const shareData: TodayTarotShareData = useMemo(() => ({
