@@ -548,9 +548,10 @@ export function TodayLucyPersonaCard({
             onClick={() => {
               sessionStorage.setItem('prism_target_tab', 'tarot');
               sessionStorage.setItem('prism_tarot_focus_daily', 'true');
+              sessionStorage.setItem('prism_tarot_auto_play_summary', 'true');
               navigate('/trinity?tab=tarot&view=daily');
-              window.dispatchEvent(new CustomEvent('prism-tab-change', { detail: { tab: 'tarot', focusDaily: true } }));
-              window.dispatchEvent(new CustomEvent('trinity:open_daily_tarot'));
+              window.dispatchEvent(new CustomEvent('prism-tab-change', { detail: { tab: 'tarot', focusDaily: true, autoPlaySummary: true } }));
+              window.dispatchEvent(new CustomEvent('trinity:open_daily_tarot', { detail: { autoPlaySummary: true } }));
             }}
             className="cursor-pointer flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-purple-950/20 hover:from-amber-500/20 hover:via-yellow-500/15 hover:to-purple-950/30 border border-yellow-500/30 transition-all text-xs text-white/90 shadow-inner group"
             title="트리니티 오늘의 타로 결과 화면으로 이동"
@@ -580,9 +581,10 @@ export function TodayLucyPersonaCard({
                 e.stopPropagation();
                 sessionStorage.setItem('prism_target_tab', 'tarot');
                 sessionStorage.setItem('prism_tarot_focus_daily', 'true');
+                sessionStorage.setItem('prism_tarot_auto_play_summary', 'true');
                 navigate('/trinity?tab=tarot&view=daily');
-                window.dispatchEvent(new CustomEvent('prism-tab-change', { detail: { tab: 'tarot', focusDaily: true } }));
-                window.dispatchEvent(new CustomEvent('trinity:open_daily_tarot'));
+                window.dispatchEvent(new CustomEvent('prism-tab-change', { detail: { tab: 'tarot', focusDaily: true, autoPlaySummary: true } }));
+                window.dispatchEvent(new CustomEvent('trinity:open_daily_tarot', { detail: { autoPlaySummary: true } }));
               }}
               className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black font-bold text-xs flex items-center justify-center gap-1.5 shadow-[0_0_12px_rgba(234,179,8,0.3)] transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer shrink-0 font-sans"
               title="트리니티 오늘의 타로 결과 화면으로 이동"
