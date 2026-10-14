@@ -1,11 +1,11 @@
 {
   "name": "luckey",
-  "version": "1.4.265",
-  "summary": "Cloud Build CI/CD 배포 패키지 락 동기화 및 npm ci 의존성 정합성 복구",
-  "builtAt": "2026-10-14T14:02:00.000Z",
+  "version": "1.4.266",
+  "summary": "Cloud Run 배포 빌드팩 스크립트(gcp-build) 표준화 및 Cloud Run 배포 상태 안정화",
+  "builtAt": "2026-10-14T14:17:00.000Z",
   "items": [
-    "Cloud Build Linux 환경 npm ci 호환성 복구: package-lock.json에 누락되었던 플랫폼별 선택적 의존성(@rollup/rollup-linux 등)을 완벽 동기화하여 CI/CD 빌드 실패 원인 해결",
-    "cloudbuild.yaml 장애 복구 안전망 구축: npm ci 실패 시 npm install로 자동 폴백(npm ci || npm install) 처리하여 클라우드 런 배포 중단 방지"
+    "Google Cloud Buildpacks 호환용 gcp-build 스크립트 명시: Cloud Run 및 Applet 소스 배포 시 빌드팩이 자동으로 vite & esbuild 번들을 실행하도록 package.json에 gcp-build 표준 등록",
+    "Cloud Run 배포 Precondition check 오류 대응 및 클라우드 런 서비스 갱신 안정화"
   ],
   "author": "Antigravity AI Agent",
   "buildEnvironment": "cloud-run"
