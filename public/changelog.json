@@ -1,5 +1,26 @@
 [
   {
+    "version": "1.4.256",
+    "summary": "클라우드 런 배포 런타임 호환성 복구 (server.ts 진입점 및 server.app.ts esbuild 빌드 파이프라인 정상화)",
+    "builtAt": "2026-10-14T10:33:00.000Z",
+    "items": [
+      "server.app.ts를 기반으로 esbuild 번들(dist/server.cjs) 생성 파이프라인 정상 연결",
+      "package.json build 스크립트 내 진입점 누락 오류(server.dev.ts) 해결",
+      "표준 start 스크립트 'node server.ts' 실행 시 dist/server.cjs를 동적으로 안전하게 기동하도록 진입점 분기 구현",
+      "npm run build 및 npm run lint 검증 완료"
+    ]
+  },
+  {
+    "version": "1.4.255",
+    "summary": "배포 환경 표준 start 스크립트 규격 준수 (node server.ts) 및 프로덕션 번들 델리게이터 구성",
+    "builtAt": "2026-10-14T10:24:00.000Z",
+    "items": [
+      "AI Studio 클라우드 런 배포 런타임 제약 조건 준수: package.json start 스크립트를 'node server.ts'로 동기화",
+      "프로덕션 환경(Cloud Run)에서 dist/server.cjs를 무결하게 로드하고, 개발 환경(Vite Dev Server)에서는 tsx/server.dev.ts로 유연하게 동작하도록 진입점 구조화",
+      "빌드 번들(esbuild server.dev.ts) 및 compile_applet 검증 완료"
+    ]
+  },
+  {
     "version": "1.4.254",
     "summary": "오늘의 타로 모달 내 React 훅 순서 오류(규칙 위반 #310) 완전 해결 및 연속 리딩 에러 원천 차단",
     "builtAt": "2026-10-14T10:17:00.000Z",

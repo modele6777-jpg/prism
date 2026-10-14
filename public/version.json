@@ -1,11 +1,12 @@
 {
   "name": "luckey",
-  "version": "1.4.254",
-  "summary": "오늘의 타로 모달 내 React 훅 순서 오류(규칙 위반 #310) 완전 해결 및 연속 리딩 에러 원천 차단",
-  "builtAt": "2026-10-14T10:17:00.000Z",
+  "version": "1.4.256",
+  "summary": "클라우드 런 배포 런타임 호환성 복구 (server.ts 진입점 및 server.app.ts esbuild 빌드 파이프라인 정상화)",
+  "builtAt": "2026-10-14T10:33:00.000Z",
   "items": [
-    "TodayTarotNarrationModal 내 조기 반환(if (!isOpen) return null) 아래에 위치하던 useMemo 훅을 최상단으로 재배치하여 React Hook 순서 규칙 위반(Error 310 / 화면을 불러오는 중 문제가 발생했습니다) 원천 박멸",
-    "모달 개폐 및 오늘의 타로 추가 리딩 진입 시 렌더링 훅 일관성 100% 보장",
-    "추가 리딩 연속 호출 시 덱 카운트 갱신과 고민 입력창 초기화 안정성 보장"
+    "server.app.ts를 기반으로 esbuild 번들(dist/server.cjs) 생성 파이프라인 정상 연결",
+    "package.json build 스크립트 내 진입점 누락 오류(server.dev.ts) 해결",
+    "표준 start 스크립트 'node server.ts' 실행 시 dist/server.cjs를 동적으로 안전하게 기동하도록 진입점 분기 구현",
+    "npm run build 및 npm run lint 검증 완료"
   ]
 }
