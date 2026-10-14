@@ -5,7 +5,6 @@ import {
   Plus, 
   Check, 
   Sparkles, 
-  Trash2, 
   RotateCcw, 
   Flame, 
   ChevronRight, 
@@ -630,10 +629,6 @@ export function GoalProgressRingDashboard() {
     );
   };
 
-  const handleDeleteGoal = (id: string) => {
-    saveGoals(goals.filter((g) => g.id !== id));
-  };
-
   const handleResetDefaults = () => {
     if (window.confirm('기본 추천 목표 세트로 초기화하시겠습니까? (진행도는 0으로 초기화됩니다)')) {
       saveGoals(DEFAULT_GOALS);
@@ -943,19 +938,6 @@ export function GoalProgressRingDashboard() {
                         title={isDone ? '목표 진행 초기화' : '목표 100% 즉시 완료'}
                       >
                         <Check size={14} className={isDone ? 'stroke-[3]' : 'opacity-60'} />
-                      </button>
-
-                      {/* Delete */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteGoal(goal.id);
-                        }}
-                        className="w-7 h-7 rounded-lg text-white/30 hover:text-rose-400 hover:bg-white/5 flex items-center justify-center transition-colors cursor-pointer"
-                        title="목표 삭제"
-                      >
-                        <Trash2 size={13} />
                       </button>
                     </div>
                   </motion.div>

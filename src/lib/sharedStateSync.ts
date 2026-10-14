@@ -272,7 +272,7 @@ export function collectAllLocalActivities(uid?: string | null): Partial<SharedSt
     const favs = safeLocalStorage.getItem('prism_universe_insight_favorites');
     if (favs) {
       const parsed = JSON.parse(favs);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         result.favoriteInsightIds = parsed;
       }
     }
@@ -1290,12 +1290,15 @@ export function mergeSharedState(
     }
   }
 
-  // 6b. Merge Universal Insight Favorite IDs
-  const localFavs = Array.isArray(local.favoriteInsightIds) ? local.favoriteInsightIds : [];
-  const remoteFavs = Array.isArray(remote.favoriteInsightIds) ? remote.favoriteInsightIds : [];
-  const combinedFavs = Array.from(new Set([...localFavs, ...remoteFavs]));
-  if (combinedFavs.length > 0) {
-    merged.favoriteInsightIds = combinedFavs;
+  // 6b. Merge Universal Insight Favorite IDs (honor newer state so deletions are not resurrected)
+  if (Array.isArray(remote.favoriteInsightIds) && Array.isArray(local.favoriteInsightIds)) {
+    merged.favoriteInsightIds = newerIsLocal ? local.favoriteInsightIds : remote.favoriteInsightIds;
+  } else if (Array.isArray(remote.favoriteInsightIds)) {
+    merged.favoriteInsightIds = remote.favoriteInsightIds;
+  } else if (Array.isArray(local.favoriteInsightIds)) {
+    merged.favoriteInsightIds = local.favoriteInsightIds;
+  } else {
+    merged.favoriteInsightIds = [];
   }
 
   // 6c. Merge Re:Bible Verses (lossless union by ID, newest recordedAt/updatedAt first)

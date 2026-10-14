@@ -153,9 +153,67 @@ function stripID3Header(buf: Buffer): Buffer {
     throw new Error("Google TTS generated empty audio buffer");
   }
 
-  // 1. Primary Engine: High-Speed Standard Female Voice (Google Korean Standard)
-  // Highly consistent, warm, calm, zero-quota limitation, responds in ~200ms
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  // 1. Primary Engine: Google AI Studio Gemini Flash Lite Voice (Voice: "Kore" - Warm, clear, standard Korean female voice)
+  const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY || process.env.AI_API_KEY;
+  if (geminiApiKey) {
+    try {
+      const { GoogleGenAI } = await import("@google/genai");
+      const ai = new GoogleGenAI({ apiKey: geminiApiKey });
+      const selectedVoice = "Kore"; // Official standard warm female voice
+
+      const ttsModels = ["gemini-3.8-flash-lite-tts", "gemini-3.8-flash-tts"];
+      for (const modelName of ttsModels) {
+        try {
+          const geminiResponse = await Promise.race([
+            ai.models.generateContent({
+              model: modelName,
+              contents: [{ parts: [{ text: cleanText }] }],
+              config: {
+                responseModalities: ["AUDIO"],
+                speechConfig: {
+                  voiceConfig: {
+                    prebuiltVoiceConfig: { voiceName: selectedVoice },
+                  },
+                },
+              },
+            }),
+            new Promise<any>((_, reject) => setTimeout(() => reject(new Error(`Gemini TTS timeout (${modelName})`)), 5500)),
+          ]);
+
+          const candidate = geminiResponse?.candidates?.[0];
+          const audioPart = candidate?.content?.parts?.find((p: any) => p.inlineData?.mimeType?.startsWith("audio/"));
+          if (audioPart?.inlineData?.data) {
+            const base64 = audioPart.inlineData.data;
+            const mimeType = String(audioPart.inlineData.mimeType || "").toLowerCase();
+            let encoding: "pcm" | "mp3" = "mp3";
+            let sampleRate = 24000;
+            if (mimeType.includes("rate=")) {
+              const match = mimeType.match(/rate=(\d+)/);
+              if (match) sampleRate = parseInt(match[1], 10);
+            }
+
+            if (ttsServerCache.size > 500) {
+              const oldestKey = ttsServerCache.keys().next().value;
+              if (oldestKey) ttsServerCache.delete(oldestKey);
+            }
+            ttsServerCache.set(cacheKey, { base64, encoding, sampleRate, timestamp: Date.now() });
+            return {
+              audioContent: base64,
+              encoding,
+              sampleRate,
+            };
+          }
+        } catch (mErr: any) {
+          console.warn(`[TTS] ${modelName} attempt notice:`, mErr?.message || mErr);
+        }
+      }
+    } catch (geminiErr: any) {
+      console.warn("[TTS] Gemini AI Studio voice fallback notice:", geminiErr?.message || geminiErr);
+    }
+  }
+
+  // 2. Secondary Fallback: Direct Google HTTP Stream
+  for (let attempt = 1; attempt <= 2; attempt++) {
     try {
       const audioBuffer = await generateGoogleTTS(cleanText, isKorean);
       const base64 = audioBuffer.toString("base64");
@@ -171,62 +229,10 @@ function stripID3Header(buf: Buffer): Buffer {
         encoding: "mp3",
       };
     } catch (err: any) {
-      console.warn(`[TTS] Standard female TTS attempt ${attempt} notice:`, err?.message || err);
-      if (attempt < 3) {
+      console.warn(`[TTS] Google TTS fallback attempt ${attempt} notice:`, err?.message || err);
+      if (attempt < 2) {
         await new Promise((r) => setTimeout(r, 150));
       }
-    }
-  }
-
-  // 2. Secondary Emergency Backup: Google AI Studio Gemini Flash Voice (if API key available)
-  const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY || process.env.AI_API_KEY;
-  if (geminiApiKey) {
-    try {
-      const { GoogleGenAI } = await import("@google/genai");
-      const ai = new GoogleGenAI({ apiKey: geminiApiKey });
-      const selectedVoice = "Kore";
-      const prompt = `Read the following text aloud in Korean at natural standard 1.0x pace with a warm, clear, comfortable female voice:\n\n${cleanText}`;
-
-      const geminiResponse = await Promise.race([
-        ai.models.generateContent({
-          model: "gemini-3.1-flash-tts-preview",
-          contents: [{ parts: [{ text: prompt }] }],
-          config: {
-            responseModalities: ["AUDIO"],
-            speechConfig: {
-              voiceConfig: {
-                prebuiltVoiceConfig: { voiceName: selectedVoice },
-              },
-            },
-          },
-        }),
-        new Promise<any>((_, reject) => setTimeout(() => reject(new Error("Gemini TTS timeout (4000ms)")), 4000)),
-      ]);
-
-      const candidate = geminiResponse?.candidates?.[0];
-      const audioPart = candidate?.content?.parts?.find((p: any) => p.inlineData?.mimeType?.startsWith("audio/"));
-      if (audioPart?.inlineData?.data) {
-        const base64 = audioPart.inlineData.data;
-        const mimeType = String(audioPart.inlineData.mimeType || "").toLowerCase();
-        let encoding: "pcm" | "mp3" = "pcm";
-        if (mimeType.includes("mp3") || mimeType.includes("mpeg") || mimeType.includes("wav")) {
-          encoding = "mp3";
-        }
-        let sampleRate = 24000;
-        if (mimeType.includes("rate=")) {
-          const match = mimeType.match(/rate=(\d+)/);
-          if (match) sampleRate = parseInt(match[1], 10);
-        }
-
-        ttsServerCache.set(cacheKey, { base64, encoding, sampleRate, timestamp: Date.now() });
-        return {
-          audioContent: base64,
-          encoding,
-          sampleRate,
-        };
-      }
-    } catch (geminiErr: any) {
-      console.warn("[TTS] Gemini AI Studio voice fallback notice:", geminiErr?.message || geminiErr);
     }
   }
 

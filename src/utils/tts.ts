@@ -116,7 +116,24 @@ export function playNativeBrowserSpeech(
     const sorted = langVoices.sort((a, b) => getVoiceScore(b) - getVoiceScore(a));
     if (sorted.length > 0 && getVoiceScore(sorted[0]) > -500) {
       utterance.voice = sorted[0];
+      const chosenName = sorted[0].name.toLowerCase();
+      const isKnownFemale =
+        chosenName.includes('sunhi') ||
+        chosenName.includes('heami') ||
+        chosenName.includes('yuna') ||
+        chosenName.includes('narae') ||
+        chosenName.includes('seoyeon') ||
+        chosenName.includes('siri') ||
+        chosenName.includes('female') ||
+        chosenName.includes('여성') ||
+        chosenName.includes('aria');
+      // 🌟 남성 음성 방지: 확실한 여성 음색이 아니거나 시스템 기본 음성(Google 한국의 등)일 경우 피치를 1.28로 조정하여 명확한 여성 톤 보장
+      utterance.pitch = isKnownFemale ? 1.05 : 1.28;
+    } else {
+      utterance.pitch = 1.28;
     }
+  } else {
+    utterance.pitch = 1.28;
   }
 
   updateTTSState({
@@ -239,8 +256,8 @@ const ttsCache = new Map<string, Promise<TTSAudioData | null>>();
 
 export function getTTSCacheKey(text: string, voice?: string, emotion?: string, _rate?: string, _speed?: number): string {
   const clean = normalizeTextForSpeech(text);
-  // 🌟 모든 TTS 재생 및 캐시는 차분하고 따뜻한 여성 표준 음성(female_v2) 1.0 배속 표준 속도로 영구 고정
-  return `female_v2_${voice || 'default'}_${emotion || 'none'}_1.0_${clean}`;
+  // 🌟 모든 TTS 재생 및 캐시는 차분하고 따뜻한 여성 표준 음성(Gemini Kore Female v4) 1.0 배속 표준 속도로 영구 고정
+  return `gemini_kore_female_v4_${voice || 'default'}_${emotion || 'none'}_1.0_${clean}`;
 }
 
 export function prefetchTTS(text: string, voice?: string, emotion?: string, _rate?: string, _speed?: number): Promise<TTSAudioData | null> {

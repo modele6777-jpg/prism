@@ -55,10 +55,11 @@ export function saveFavoriteInsightIds(
  */
 export function toggleInsightFavorite(
   id: string,
-  updateCloud?: (ids: string[]) => void
+  updateCloud?: (ids: string[]) => void,
+  currentList?: string[]
 ): boolean {
   if (!id) return false;
-  const current = getFavoriteInsightIds();
+  const current = Array.isArray(currentList) ? currentList : getFavoriteInsightIds();
   const exists = current.includes(id);
   const next = exists ? current.filter((item) => item !== id) : [...current, id];
   saveFavoriteInsightIds(next, updateCloud);
@@ -81,24 +82,22 @@ export function useUniverseInsightFavorites(
   onUpdateCloud?: (ids: string[]) => void
 ) {
   const [favoriteIds, setFavoriteIds] = useState<string[]>(() => {
-    const local = getFavoriteInsightIds();
-    if (Array.isArray(cloudIds) && cloudIds.length > 0) {
-      return Array.from(new Set([...local, ...cloudIds]));
+    if (Array.isArray(cloudIds)) {
+      return cloudIds;
     }
-    return local;
+    return getFavoriteInsightIds();
   });
 
   // Sync when cloudIds prop updates
   useEffect(() => {
-    if (Array.isArray(cloudIds) && cloudIds.length > 0) {
-      setFavoriteIds((prev) => {
-        const merged = Array.from(new Set([...prev, ...cloudIds]));
-        if (merged.length !== prev.length) {
-          saveFavoriteInsightIds(merged);
-          return merged;
-        }
-        return prev;
-      });
+    if (Array.isArray(cloudIds)) {
+      setFavoriteIds(cloudIds);
+      const local = getFavoriteInsightIds();
+      if (JSON.stringify(local) !== JSON.stringify(cloudIds)) {
+        try {
+          safeLocalStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(cloudIds));
+        } catch (_) {}
+      }
     }
   }, [cloudIds]);
 
@@ -129,10 +128,10 @@ export function useUniverseInsightFavorites(
 
   const toggle = useCallback(
     (id: string) => {
-      const isNowFav = toggleInsightFavorite(id, onUpdateCloud);
+      const isNowFav = toggleInsightFavorite(id, onUpdateCloud, favoriteIds);
       return isNowFav;
     },
-    [onUpdateCloud]
+    [onUpdateCloud, favoriteIds]
   );
 
   const isFav = useCallback(
