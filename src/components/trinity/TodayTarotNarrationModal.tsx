@@ -322,8 +322,6 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
     onConsultLucy(context);
   }, [onConsultLucy, narrationData, handleClose]);
 
-  if (!isOpen) return null;
-
   const card = narrationData.card;
   const isFullPlaying = isTTSActive && activeSpeechType === 'full';
   const isSummaryPlaying = isTTSActive && activeSpeechType === 'summary';
@@ -346,6 +344,8 @@ ${previousQAHistory ? `\n[이전 추가질문 이력]\n${previousQAHistory}\n` :
       description: '',
     } as TarotCard;
   }, [card]);
+
+  if (!isOpen) return null;
 
   return (
     <AnimatePresence>
