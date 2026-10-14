@@ -11,11 +11,9 @@ import path from "node:path";
 import { createRequire } from "node:module";
 
 const distServer = path.join(process.cwd(), "dist", "server.cjs");
-const isProduction =
-  process.env.NODE_ENV === "production" ||
-  (process.env.npm_lifecycle_event === "start" && fs.existsSync(distServer));
+const isDev = process.env.npm_lifecycle_event === "dev" || process.env.NODE_ENV === "development";
 
-if (isProduction && fs.existsSync(distServer)) {
+if (fs.existsSync(distServer) && !isDev) {
   const require = createRequire(import.meta.url);
   require(distServer);
 } else {
