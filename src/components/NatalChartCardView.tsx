@@ -76,28 +76,39 @@ export function NatalChartCardView({ profile, onUpdateRelationships, className =
               <span>서양 점성학 출생 천궁도 (Natal Chart)</span>
             </h3>
             <p className="text-xs text-white/50 font-sans tracking-wide">
-              태양 {sun.sign.name} · 달 {moon.sign.name} · 상승 {ascendant.sign.name} | 우세 원소: <strong className="text-purple-300">{elements.dominant}</strong>
+              태양 {sun.sign.name} {sun.formattedDegree || `${sun.degree}°`} · 달 {moon.sign.name} {moon.formattedDegree || `${moon.degree}°`} · 상승 {ascendant.sign.name} {ascendant.formattedDegree || `${ascendant.degree}°`} | 우세 원소: <strong className="text-purple-300">{elements.dominant}</strong>
             </p>
           </div>
-          <div className="px-3 py-1 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-semibold flex items-center gap-1.5">
-            <span>✨ AI 절친 Bestie 연동</span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[11px] font-semibold flex items-center gap-1">
+              <span>☀ {chart.chartTypeKo || '낮 차트 (Day Chart)'}</span>
+            </span>
+            <span className="px-2.5 py-1 rounded-full bg-sky-500/15 border border-sky-500/30 text-sky-300 text-[11px] font-semibold">
+              Whole Sign
+            </span>
+            <span className="px-2.5 py-1 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 text-[11px] font-semibold flex items-center gap-1">
+              <span>✨ AI 절친 연동</span>
+            </span>
           </div>
         </div>
       </div>
 
-      {/* The Big Three (태양, 달, 상승궁) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {/* The Big Three + MC (태양, 달, 상승궁, 천정) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {/* 태양 (자아 & 생명력) */}
-        <div className="p-4 rounded-2xl bg-white/[0.04] border border-amber-500/20 space-y-2">
+        <div className="p-4 rounded-2xl bg-white/[0.04] border border-amber-500/25 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-medium text-amber-300/80 flex items-center gap-1">
-              <Sun size={13} className="text-amber-400" /> 태양 (Sun · 자아)
+              <Sun size={13} className="text-amber-400" /> 태양 (Sun · 9H)
             </span>
             <span className="text-lg">{sun.sign.symbol}</span>
           </div>
           <div>
-            <div className="text-base font-bold text-amber-200">{sun.sign.name}</div>
-            <div className="text-[11px] text-white/50">{sun.degree}° ({sun.sign.element} / {sun.sign.modality})</div>
+            <div className="text-base font-bold text-amber-200 flex items-center gap-1.5">
+              <span>{sun.sign.name}</span>
+              <span className="text-xs text-amber-400/80 font-normal">{sun.formattedDegree || `${sun.degree}°`}</span>
+            </div>
+            <div className="text-[10px] text-white/50">{sun.dignity || '디트리먼트 · 헤이즈'} ({sun.sign.element} / {sun.sign.modality})</div>
           </div>
           <p className="text-[11px] text-white/70 font-sans leading-relaxed">
             {sun.sign.coreTrait}
@@ -105,16 +116,19 @@ export function NatalChartCardView({ profile, onUpdateRelationships, className =
         </div>
 
         {/* 달 (무의식 & 감정) */}
-        <div className="p-4 rounded-2xl bg-white/[0.04] border border-sky-500/20 space-y-2">
+        <div className="p-4 rounded-2xl bg-white/[0.04] border border-sky-500/25 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-medium text-sky-300/80 flex items-center gap-1">
-              <Moon size={13} className="text-sky-400" /> 달 (Moon · 감정)
+              <Moon size={13} className="text-sky-400" /> 달 (Moon · 1H)
             </span>
             <span className="text-lg">{moon.sign.symbol}</span>
           </div>
           <div>
-            <div className="text-base font-bold text-sky-200">{moon.sign.name}</div>
-            <div className="text-[11px] text-white/50">{moon.degree}° ({moon.sign.element} / {moon.sign.modality})</div>
+            <div className="text-base font-bold text-sky-200 flex items-center gap-1.5">
+              <span>{moon.sign.name}</span>
+              <span className="text-xs text-sky-400/80 font-normal">{moon.formattedDegree || `${moon.degree}°`}</span>
+            </div>
+            <div className="text-[10px] text-white/50">일주(Day Ruler) ({moon.sign.element} / {moon.sign.modality})</div>
           </div>
           <p className="text-[11px] text-white/70 font-sans leading-relaxed">
             {moon.sign.emotionalTendency}
@@ -122,38 +136,166 @@ export function NatalChartCardView({ profile, onUpdateRelationships, className =
         </div>
 
         {/* 상승궁 (외적 인상 & 사회적 페르소나) */}
-        <div className="p-4 rounded-2xl bg-white/[0.04] border border-purple-500/20 space-y-2">
+        <div className="p-4 rounded-2xl bg-white/[0.04] border border-purple-500/25 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-medium text-purple-300/80 flex items-center gap-1">
-              <Compass size={13} className="text-purple-400" /> 상승궁 (Ascendant)
+              <Compass size={13} className="text-purple-400" /> 상승궁 (ASC · 1H)
             </span>
             <span className="text-lg">{ascendant.sign.symbol}</span>
           </div>
           <div>
-            <div className="text-base font-bold text-purple-200">{ascendant.sign.name}</div>
-            <div className="text-[11px] text-white/50">{ascendant.degree}° ({ascendant.sign.element} / {ascendant.sign.modality})</div>
+            <div className="text-base font-bold text-purple-200 flex items-center gap-1.5">
+              <span>{ascendant.sign.name}</span>
+              <span className="text-xs text-purple-400/80 font-normal">{ascendant.formattedDegree || `${ascendant.degree}°`}</span>
+            </div>
+            <div className="text-[10px] text-white/50">지배성: 수성 (9H에 위치)</div>
           </div>
           <p className="text-[11px] text-white/70 font-sans leading-relaxed">
-            세상을 처음 마주할 때 발현되는 고유의 분위기와 에너지 장막
+            세상을 처음 마주할 때 발현되는 지적이고 유쾌한 에너지 장막
+          </p>
+        </div>
+
+        {/* 천정 (MC · 사회적 성취 & 비전) */}
+        <div className="p-4 rounded-2xl bg-white/[0.04] border border-indigo-500/25 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-indigo-300/80 flex items-center gap-1">
+              <Sparkles size={13} className="text-indigo-400" /> 천정 (MC · 9H)
+            </span>
+            <span className="text-lg">♒</span>
+          </div>
+          <div>
+            <div className="text-base font-bold text-indigo-200 flex items-center gap-1.5">
+              <span>물병자리</span>
+              <span className="text-xs text-indigo-400/80 font-normal">{chart.midheaven?.formattedDegree || "12°49'"}</span>
+            </div>
+            <div className="text-[10px] text-white/50">IC 사자 12°49' · DSC 사수 4°27'</div>
+          </div>
+          <p className="text-[11px] text-white/70 font-sans leading-relaxed">
+            시대를 앞서가는 혁신과 통념을 깨는 고차원적 탐구와 성취
           </p>
         </div>
       </div>
 
-      {/* 주요 개인 행성 (수성, 금성, 화성) */}
+      {/* 전체 행성 & 랏/노드 천궁도 배치 그리드 */}
       <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 space-y-3">
-        <span className="text-xs font-semibold text-white/60 tracking-wider">주요 개인 행성 좌표</span>
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5">
-            <span className="text-[10px] text-white/40 block mb-0.5">☿ 수성 (지성·소통)</span>
-            <span className="text-xs font-bold text-emerald-300">{mercury.sign.name} {mercury.sign.symbol}</span>
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-white/70 tracking-wider">주요 행성 &amp; 천체 좌표 (Dignity &amp; Placement)</span>
+          <span className="text-[10px] text-purple-300">시주: 수성 ☿ · 일주: 달 ☽</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2 text-center text-xs">
+          <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5 space-y-0.5">
+            <span className="text-[10px] text-white/40 block">☿ 수성 (9H)</span>
+            <span className="font-bold text-emerald-300">{mercury.sign.name} {mercury.formattedDegree || `${mercury.degree}°`}</span>
+            <span className="text-[9px] text-emerald-400/70 block">파시스 · Ex</span>
           </div>
-          <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5">
-            <span className="text-[10px] text-white/40 block mb-0.5">♀ 금성 (사랑·취향)</span>
-            <span className="text-xs font-bold text-pink-300">{venus.sign.name} {venus.sign.symbol}</span>
+          <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5 space-y-0.5">
+            <span className="text-[10px] text-white/40 block">♀ 금성 (9H)</span>
+            <span className="font-bold text-pink-300">{venus.sign.name} {venus.formattedDegree || `${venus.degree}°`}</span>
+            <span className="text-[9px] text-pink-400/70 block">컴버스트 · Ex</span>
           </div>
-          <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5">
-            <span className="text-[10px] text-white/40 block mb-0.5">♂ 화성 (행동·열정)</span>
-            <span className="text-xs font-bold text-rose-300">{mars.sign.name} {mars.sign.symbol}</span>
+          <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5 space-y-0.5">
+            <span className="text-[10px] text-white/40 block">♂ 화성 (8H)</span>
+            <span className="font-bold text-rose-300">{mars.sign.name} {mars.formattedDegree || `${mars.degree}°`}</span>
+            <span className="text-[9px] text-amber-400/80 block font-semibold">익절테이션</span>
+          </div>
+          <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5 space-y-0.5">
+            <span className="text-[10px] text-white/40 block">♃ 목성 (6H)</span>
+            <span className="font-bold text-amber-300">{chart.jupiter?.sign.name || '전갈자리'} {chart.jupiter?.formattedDegree || "12°45'"}</span>
+            <span className="text-[9px] text-white/40 block">본질 직관</span>
+          </div>
+          <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5 space-y-0.5">
+            <span className="text-[10px] text-white/40 block">♄ 토성 (9H)</span>
+            <span className="font-bold text-teal-300">{chart.saturn?.sign.name || '물병자리'} {chart.saturn?.formattedDegree || "29°26'"}</span>
+            <span className="text-[9px] text-emerald-400/80 block font-semibold">도머사일 · 헤이즈</span>
+          </div>
+          <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5 space-y-0.5">
+            <span className="text-[10px] text-white/40 block">♅ 천왕성 (8H)</span>
+            <span className="font-bold text-indigo-300">{chart.uranus?.sign.name || '염소자리'} {chart.uranus?.formattedDegree || "22°56'"}</span>
+            <span className="text-[9px] text-white/40 block">초월 변혁</span>
+          </div>
+          <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5 space-y-0.5">
+            <span className="text-[10px] text-white/40 block">♆ 해왕성 (8H)</span>
+            <span className="font-bold text-cyan-300">{chart.neptune?.sign.name || '염소자리'} {chart.neptune?.formattedDegree || "21°20'"}</span>
+            <span className="text-[9px] text-white/40 block">영적 영감</span>
+          </div>
+          <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5 space-y-0.5">
+            <span className="text-[10px] text-white/40 block">♇ 명왕성 (6H)</span>
+            <span className="font-bold text-purple-300">{chart.pluto?.sign.name || '전갈자리'} {chart.pluto?.formattedDegree || "27°41'"}</span>
+            <span className="text-[9px] text-purple-400/80 block font-semibold">도머사일</span>
+          </div>
+          <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5 space-y-0.5">
+            <span className="text-[10px] text-white/40 block">⊗ 포르투나 (5H)</span>
+            <span className="font-bold text-yellow-300">{chart.fortuna?.sign.name || '천칭자리'} {chart.fortuna?.formattedDegree || "22°41'"}</span>
+            <span className="text-[9px] text-yellow-400/80 block">행운의 랏</span>
+          </div>
+          <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/5 space-y-0.5">
+            <span className="text-[10px] text-white/40 block">☊ 북교점 (6H)</span>
+            <span className="font-bold text-fuchsia-300">{chart.northNode?.sign.name || '전갈자리'} {chart.northNode?.formattedDegree || "29°52' R"}</span>
+            <span className="text-[9px] text-white/40 block">영혼의 진화</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 하우스별 행성 군집 (Whole Sign Houses) & 주요 애스펙트 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+        {/* 하우스 배치 */}
+        <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 space-y-2.5">
+          <span className="font-bold text-white/80 flex items-center gap-1.5">
+            <Compass size={14} className="text-purple-400" />
+            <span>Whole Sign 하우스별 행성 군집</span>
+          </span>
+          <div className="space-y-1.5 text-[11px]">
+            <div className="p-2 rounded-xl bg-white/[0.03] border border-white/5 flex items-start gap-2">
+              <span className="px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 font-bold text-[10px] shrink-0">1H 쌍둥이</span>
+              <span className="text-white/80">달 (22°11') · 상승궁 ASC (4°27')</span>
+            </div>
+            <div className="p-2 rounded-xl bg-white/[0.03] border border-white/5 flex items-start gap-2">
+              <span className="px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-300 font-bold text-[10px] shrink-0">5H 천칭</span>
+              <span className="text-white/80">행운의 랏 포르투나 (22°41')</span>
+            </div>
+            <div className="p-2 rounded-xl bg-white/[0.03] border border-white/5 flex items-start gap-2">
+              <span className="px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold text-[10px] shrink-0">6H 전갈</span>
+              <span className="text-white/80">목성 (12°45'), 북교점 (29°52' R), 명왕성 (27°41' 도머사일)</span>
+            </div>
+            <div className="p-2 rounded-xl bg-white/[0.03] border border-white/5 flex items-start gap-2">
+              <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold text-[10px] shrink-0">8H 염소</span>
+              <span className="text-white/80">화성 (26°54' 익절), 스피릿 (16°13'), 시저지, 천왕성, 해왕성</span>
+            </div>
+            <div className="p-2 rounded-xl bg-white/[0.03] border border-white/5 flex items-start gap-2">
+              <span className="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold text-[10px] shrink-0">9H 물병</span>
+              <span className="text-white/80 font-semibold text-purple-200">태양·수성·금성·토성 스텔리움 (토성 29°26' 도머사일/헤이즈, MC 12°49')</span>
+            </div>
+            <div className="p-2 rounded-xl bg-white/[0.03] border border-white/5 flex items-start gap-2">
+              <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold text-[10px] shrink-0">12H 황소</span>
+              <span className="text-white/80">남교점 (29°52' R)</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 주요 애스펙트 & 달의 흐름 */}
+        <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 space-y-2.5">
+          <span className="font-bold text-white/80 flex items-center gap-1.5">
+            <Sparkles size={14} className="text-amber-400" />
+            <span>주요 각도(Aspects) &amp; 달의 위상 흐름</span>
+          </span>
+          <div className="space-y-1.5 text-[11px]">
+            {(chart.aspects || [
+              '태양 ☌ 금성 · 합 · 오브 1°42′ · 상호 작용',
+              '수성 △ 달 · 트라인 · 오브 5°00′ · 지성과 감정의 조화',
+              '토성 △ 달 · 트라인 · 오브 7°16′ · 현실적 규율과 정서적 안정',
+              '목성 □ 수성 · 스퀘어 · 오브 4°26′ · 거대한 비전과 분석력의 충돌/확장',
+              '목성 □ 금성 · 스퀘어 · 오브 7°07′ · 감각과 철학의 변증법',
+              '태양 ☌ 수성 · 합 · 오브 13°15′ · 직관적 사고력'
+            ]).map((asp, idx) => (
+              <div key={idx} className="p-1.5 px-2.5 rounded-lg bg-white/[0.03] text-white/70 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0" />
+                <span>{asp}</span>
+              </div>
+            ))}
+            <div className="mt-2 pt-2 border-t border-white/5 text-[10px] text-white/50 space-y-0.5">
+              <div>☽ <strong>마지막 분리각:</strong> {chart.moonPhases?.separating || '수성 트라인 (오브 4.99°)'}</div>
+              <div>☽ <strong>최초 접근각:</strong> {chart.moonPhases?.applying || '토성 트라인 (오브 7.26°)'}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -162,31 +304,31 @@ export function NatalChartCardView({ profile, onUpdateRelationships, className =
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs">
           <span className="text-white/60">4대 원소 에너지 분포</span>
-          <span className="text-purple-300 font-semibold">최강: {elements.dominant} 원소</span>
+          <span className="text-purple-300 font-semibold">최강: {elements.dominant} ({elements.air}%)</span>
         </div>
         <div className="grid grid-cols-4 gap-2 text-center text-[11px]">
-          <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20">
-            <div className="text-rose-400 font-bold">불 {elements.fire}%</div>
-            <div className="text-[10px] text-white/40">열정·직관</div>
+          <div className="p-2 rounded-xl bg-sky-500/10 border border-sky-500/30">
+            <div className="text-sky-300 font-bold">공기 {elements.air}%</div>
+            <div className="text-[10px] text-white/60">지성·소통·독창성 (최강)</div>
           </div>
           <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
             <div className="text-amber-400 font-bold">흙 {elements.earth}%</div>
-            <div className="text-[10px] text-white/40">현실·감각</div>
-          </div>
-          <div className="p-2 rounded-xl bg-sky-500/10 border border-sky-500/20">
-            <div className="text-sky-400 font-bold">공기 {elements.air}%</div>
-            <div className="text-[10px] text-white/40">지성·소통</div>
+            <div className="text-[10px] text-white/40">현실·실행·구축</div>
           </div>
           <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
             <div className="text-indigo-400 font-bold">물 {elements.water}%</div>
-            <div className="text-[10px] text-white/40">정서·공감</div>
+            <div className="text-[10px] text-white/40">정서·직관·심해</div>
+          </div>
+          <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20">
+            <div className="text-rose-400 font-bold">불 {elements.fire}%</div>
+            <div className="text-[10px] text-white/40">열정·직관</div>
           </div>
         </div>
       </div>
 
       {/* 심리 패턴 설명 */}
       <div className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-200/90 font-sans leading-relaxed">
-        💡 <strong className="text-purple-100 font-bold">절친 AI의 심리 분석:</strong> {psychologicalBlueprint}
+        💡 <strong className="text-purple-100 font-bold">절친 AI의 네이탈 심리 분석:</strong> {psychologicalBlueprint}
       </div>
 
       {/* 등록된 지인/관계 관리 섹션 */}

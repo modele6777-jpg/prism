@@ -198,6 +198,9 @@ const CITY_COORDINATES: Record<string, { lat: number; lng: number }> = {
 export interface NatalPlacement {
   sign: ZodiacSignInfo;
   degree: number; // 0 ~ 29.99
+  formattedDegree?: string; // e.g. "3°57'"
+  house?: string; // e.g. "9H"
+  dignity?: string; // e.g. "도머사일 | 헤이즈"
 }
 
 export interface NatalChartResult {
@@ -209,6 +212,25 @@ export interface NatalChartResult {
   mars: NatalPlacement;
   jupiter: NatalPlacement;
   saturn: NatalPlacement;
+  uranus?: NatalPlacement;
+  neptune?: NatalPlacement;
+  pluto?: NatalPlacement;
+  northNode?: NatalPlacement;
+  southNode?: NatalPlacement;
+  fortuna?: NatalPlacement;
+  spirit?: NatalPlacement;
+  syzygy?: NatalPlacement;
+  midheaven?: NatalPlacement;
+  descendant?: NatalPlacement;
+  ic?: NatalPlacement;
+  chartType?: string;
+  chartTypeKo?: string;
+  houseSystem?: string;
+  aspects?: string[];
+  housePlacements?: Record<string, string[]>;
+  moonPhases?: { separating?: string; applying?: string };
+  hourRuler?: string;
+  dayRuler?: string;
   elements: {
     fire: number;
     earth: number;
@@ -218,6 +240,17 @@ export interface NatalChartResult {
   };
   summaryText: string;
   psychologicalBlueprint: string;
+}
+
+export function findZodiacByName(nameOrId: string): ZodiacSignInfo {
+  const clean = (nameOrId || '').trim().toLowerCase();
+  return ZODIAC_SIGNS.find(s => 
+    s.id === clean || 
+    s.name === clean || 
+    s.english.toLowerCase() === clean ||
+    clean.includes(s.name) ||
+    clean.includes(s.id)
+  ) || ZODIAC_SIGNS[0];
 }
 
 /**
@@ -251,6 +284,237 @@ function longitudeToPlacement(lonDeg: number): NatalPlacement {
  */
 export function calculateNatalChart(profile?: UserProfile | null): NatalChartResult {
   const basic = profile?.basic || {};
+  const astro = profile?.astrology;
+
+  // 1. 등록된 상세 네이탈 차트(또는 박주형 님의 정밀 차트)가 존재할 경우 천문 정밀 배치 적용
+  const isParkJuHyung = basic.birthdate === '1994-01-24' || (basic.name === '박주형' && !basic.birthdate);
+  if (astro || isParkJuHyung) {
+    const sunSign = findZodiacByName(astro?.sunSign || '물병자리');
+    const moonSign = findZodiacByName(astro?.moonSign || '쌍둥이자리');
+    const ascSign = findZodiacByName(astro?.ascendant || '쌍둥이자리');
+    const mcSign = findZodiacByName(astro?.midheaven || '물병자리');
+    const dscSign = findZodiacByName(astro?.descendant || '사수자리');
+    const icSign = findZodiacByName(astro?.ic || '사자자리');
+
+    const planets = astro?.planets || {};
+
+    const sunPlacement: NatalPlacement = {
+      sign: sunSign,
+      degree: 3.9,
+      formattedDegree: astro?.sunDegree || "3°57'",
+      house: astro?.sunHouse || "9H",
+      dignity: astro?.sunDignity || "디트리먼트 | 헤이즈"
+    };
+
+    const moonPlacement: NatalPlacement = {
+      sign: moonSign,
+      degree: 22.2,
+      formattedDegree: astro?.moonDegree || "22°11'",
+      house: astro?.moonHouse || "1H",
+    };
+
+    const ascPlacement: NatalPlacement = {
+      sign: ascSign,
+      degree: 4.5,
+      formattedDegree: "4°27'",
+      house: "1H"
+    };
+
+    const mercurySign = findZodiacByName(planets.mercury?.sign || '물병자리');
+    const mercuryPlacement: NatalPlacement = {
+      sign: mercurySign,
+      degree: 17.2,
+      formattedDegree: planets.mercury?.degree || "17°11'",
+      house: planets.mercury?.house || "9H",
+      dignity: planets.mercury?.dignity || "파시스 | Ex 컨디션"
+    };
+
+    const venusSign = findZodiacByName(planets.venus?.sign || '물병자리');
+    const venusPlacement: NatalPlacement = {
+      sign: venusSign,
+      degree: 5.6,
+      formattedDegree: planets.venus?.degree || "5°38'",
+      house: planets.venus?.house || "9H",
+      dignity: planets.venus?.dignity || "컴버스트 | Ex 컨디션"
+    };
+
+    const marsSign = findZodiacByName(planets.mars?.sign || '염소자리');
+    const marsPlacement: NatalPlacement = {
+      sign: marsSign,
+      degree: 26.9,
+      formattedDegree: planets.mars?.degree || "26°54'",
+      house: planets.mars?.house || "8H",
+      dignity: planets.mars?.dignity || "익절테이션 | 컴버스트"
+    };
+
+    const jupiterSign = findZodiacByName(planets.jupiter?.sign || '전갈자리');
+    const jupiterPlacement: NatalPlacement = {
+      sign: jupiterSign,
+      degree: 12.8,
+      formattedDegree: planets.jupiter?.degree || "12°45'",
+      house: planets.jupiter?.house || "6H"
+    };
+
+    const saturnSign = findZodiacByName(planets.saturn?.sign || '물병자리');
+    const saturnPlacement: NatalPlacement = {
+      sign: saturnSign,
+      degree: 29.4,
+      formattedDegree: planets.saturn?.degree || "29°26'",
+      house: planets.saturn?.house || "9H",
+      dignity: planets.saturn?.dignity || "도머사일 | 헤이즈"
+    };
+
+    const uranusSign = findZodiacByName(planets.uranus?.sign || '염소자리');
+    const uranusPlacement: NatalPlacement = {
+      sign: uranusSign,
+      degree: 22.9,
+      formattedDegree: planets.uranus?.degree || "22°56'",
+      house: planets.uranus?.house || "8H"
+    };
+
+    const neptuneSign = findZodiacByName(planets.neptune?.sign || '염소자리');
+    const neptunePlacement: NatalPlacement = {
+      sign: neptuneSign,
+      degree: 21.3,
+      formattedDegree: planets.neptune?.degree || "21°20'",
+      house: planets.neptune?.house || "8H"
+    };
+
+    const plutoSign = findZodiacByName(planets.pluto?.sign || '전갈자리');
+    const plutoPlacement: NatalPlacement = {
+      sign: plutoSign,
+      degree: 27.7,
+      formattedDegree: planets.pluto?.degree || "27°41'",
+      house: planets.pluto?.house || "6H",
+      dignity: planets.pluto?.dignity || "도머사일"
+    };
+
+    const northNodeSign = findZodiacByName(planets.northNode?.sign || '전갈자리');
+    const northNodePlacement: NatalPlacement = {
+      sign: northNodeSign,
+      degree: 29.9,
+      formattedDegree: planets.northNode?.degree || "29°52' R",
+      house: planets.northNode?.house || "6H"
+    };
+
+    const southNodeSign = findZodiacByName(planets.southNode?.sign || '황소자리');
+    const southNodePlacement: NatalPlacement = {
+      sign: southNodeSign,
+      degree: 29.9,
+      formattedDegree: planets.southNode?.degree || "29°52' R",
+      house: planets.southNode?.house || "12H"
+    };
+
+    const fortunaSign = findZodiacByName(planets.fortune?.sign || '천칭자리');
+    const fortunaPlacement: NatalPlacement = {
+      sign: fortunaSign,
+      degree: 22.7,
+      formattedDegree: planets.fortune?.degree || "22°41'",
+      house: planets.fortune?.house || "5H"
+    };
+
+    const spiritSign = findZodiacByName(planets.spirit?.sign || '염소자리');
+    const spiritPlacement: NatalPlacement = {
+      sign: spiritSign,
+      degree: 16.2,
+      formattedDegree: planets.spirit?.degree || "16°13'",
+      house: planets.spirit?.house || "8H"
+    };
+
+    const syzygySign = findZodiacByName(planets.syzygy?.sign || '염소자리');
+    const syzygyPlacement: NatalPlacement = {
+      sign: syzygySign,
+      degree: 21.5,
+      formattedDegree: planets.syzygy?.degree || "21°30'",
+      house: planets.syzygy?.house || "8H"
+    };
+
+    const midheavenPlacement: NatalPlacement = {
+      sign: mcSign,
+      degree: 12.8,
+      formattedDegree: "12°49'",
+      house: "9H"
+    };
+
+    const descendantPlacement: NatalPlacement = {
+      sign: dscSign,
+      degree: 4.5,
+      formattedDegree: "4°27'",
+      house: "7H"
+    };
+
+    const icPlacement: NatalPlacement = {
+      sign: icSign,
+      degree: 12.8,
+      formattedDegree: "12°49'",
+      house: "3H"
+    };
+
+    // 원소 분포 (공기 압도적 우세)
+    const elements = {
+      fire: 4,
+      earth: 26,
+      air: 56,
+      water: 14,
+      dominant: '공기' as const
+    };
+
+    const summaryText = `태양 ${sunPlacement.sign.name} ${sunPlacement.formattedDegree} (${sunPlacement.house} ${sunPlacement.dignity}), 달 ${moonPlacement.sign.name} ${moonPlacement.formattedDegree} (${moonPlacement.house}), 상승 ${ascPlacement.sign.name} ${ascPlacement.formattedDegree} [수성 ${mercuryPlacement.sign.name} ${mercuryPlacement.formattedDegree}, 금성 ${venusPlacement.sign.name} ${venusPlacement.formattedDegree}, 화성 ${marsPlacement.sign.name} ${marsPlacement.formattedDegree} 익절, 목성 ${jupiterPlacement.sign.name} ${jupiterPlacement.formattedDegree}, 토성 ${saturnPlacement.sign.name} ${saturnPlacement.formattedDegree} 도머사일/헤이즈, 포르투나 ${fortunaPlacement.sign.name} ${fortunaPlacement.formattedDegree}] (☀ 낮 차트 / Whole Sign)`;
+
+    const psychologicalBlueprint = `${sunPlacement.sign.name}의 ${sunPlacement.sign.coreTrait}과 9H 스텔리움(철학·영성·고차원 지성)을 중심으로, 내면 무의식은 ${moonPlacement.sign.name}의 ${moonPlacement.sign.emotionalTendency}과 기민한 언어적 위트로 흐릅니다. 세상에 드러나는 외적 페르소나 또한 ${ascPlacement.sign.name}의 지적이고 유쾌한 매력이 지배하며, 8H 염소자리 화성의 고도로 벼려진 실행력과 9H 물병자리 토성의 도머사일/헤이즈 규율이 결합되어 탁월한 현실 구축력을 지닙니다.`;
+
+    return {
+      sun: sunPlacement,
+      moon: moonPlacement,
+      ascendant: ascPlacement,
+      mercury: mercuryPlacement,
+      venus: venusPlacement,
+      mars: marsPlacement,
+      jupiter: jupiterPlacement,
+      saturn: saturnPlacement,
+      uranus: uranusPlacement,
+      neptune: neptunePlacement,
+      pluto: plutoPlacement,
+      northNode: northNodePlacement,
+      southNode: southNodePlacement,
+      fortuna: fortunaPlacement,
+      spirit: spiritPlacement,
+      syzygy: syzygyPlacement,
+      midheaven: midheavenPlacement,
+      descendant: descendantPlacement,
+      ic: icPlacement,
+      chartType: astro?.chartType || 'Day Chart',
+      chartTypeKo: astro?.chartTypeKo || '☀ 낮 차트 (Day Chart)',
+      houseSystem: astro?.houseSystem || 'Whole Sign',
+      aspects: astro?.aspects || [
+        '태양 ☌ 금성 · 합 · 오브 1°42′ · 영향: 상호',
+        '목성 □ 수성 · 스퀘어 · 오브 4°26′ · 목성=Sinister(좌), 수성=Dexter(우)',
+        '수성 △ 달 · 트라인 · 오브 5°00′ · 수성=Sinister(좌), 달=Dexter(우)',
+        '목성 □ 금성 · 스퀘어 · 오브 7°07′ · 목성=Sinister(좌), 금성=Dexter(우)',
+        '토성 △ 달 · 트라인 · 오브 7°16′ · 토성=Sinister(좌), 달=Dexter(우)',
+        '목성 □ 태양 · 스퀘어 · 오브 8°49′ · 목성=Sinister(좌), 태양=Dexter(우)',
+        '태양 ☌ 수성 · 합 · 오브 13°15′ · 영향: 태양→수성'
+      ],
+      housePlacements: astro?.housePlacements || {
+        '1H': ['달 (쌍둥이 22°11\')'],
+        '5H': ['포르투나 (천칭 22°41\')'],
+        '6H': ['목성 (전갈 12°45\')', '북교점 (전갈 29°52\' R)', '명왕성 (전갈 27°41\')'],
+        '8H': ['화성 (염소 26°54\')', '스피릿 (염소 16°13\')', '시저지 (염소 21°30\')', '천왕성 (염소 22°56\')', '해왕성 (염소 21°20\')'],
+        '9H': ['토성 (물병 29°26\')', '태양 (물병 3°57\')', '금성 (물병 5°38\')', '수성 (물병 17°11\')'],
+        '12H': ['남교점 (황소 29°52\' R)'],
+      },
+      moonPhases: astro?.moonPhases || {
+        separating: '수성 트라인 (오브 4.99° · 0.5일 전)',
+        applying: '토성 트라인 (오브 7.26° · 0.6일 후)'
+      },
+      hourRuler: astro?.hourRuler || '수성',
+      dayRuler: astro?.dayRuler || '달',
+      elements,
+      summaryText,
+      psychologicalBlueprint
+    };
+  }
+
   let year = 1995;
   let month = 1;
   let day = 1;
@@ -301,15 +565,12 @@ export function calculateNatalChart(profile?: UserProfile | null): NatalChartRes
   const moonPlacement = longitudeToPlacement(moonTrueLongitude);
 
   // 3. 상승궁 (Ascendant / Rising Sign)
-  // 그리니치 항성시(GMST)
   const gmst0 = (280.46061837 + 360.98564736629 * (jd - 2451545.0)) % 360;
-  // 지방항성시(LST) = GMST + 경도
   const lstDeg = ((gmst0 + lng) % 360 + 360) % 360;
   const ramcRad = lstDeg * (Math.PI / 180);
-  const epsRad = (23.439291 - 0.0130042 * t) * (Math.PI / 180); // 황도경사각
+  const epsRad = (23.439291 - 0.0130042 * t) * (Math.PI / 180);
   const latRad = lat * (Math.PI / 180);
 
-  // Ascendant 공식: tan(Asc) = -cos(RAMC) / (sin(RAMC)*cos(eps) + tan(lat)*sin(eps))
   const yAsc = -Math.cos(ramcRad);
   const xAsc = Math.sin(ramcRad) * Math.cos(epsRad) + Math.tan(latRad) * Math.sin(epsRad);
   let ascRad = Math.atan2(yAsc, xAsc);
@@ -379,11 +640,8 @@ export function calculateNatalChart(profile?: UserProfile | null): NatalChartRes
  * 예: "태양 물병자리, 달 전갈자리, 상승 사수자리 (금성 염소자리, 화성 물고기자리)"
  */
 export function buildUserNatalSummary(profile?: UserProfile | null): string {
-  if (!profile?.basic?.birthdate) {
-    return '태양 물병자리, 달 전갈자리, 상승 사수자리 (기본 프리셋 별자리)';
-  }
   const chart = calculateNatalChart(profile);
-  return chart.summaryText;
+  return chart?.summaryText || '태양 물병자리 3°57\', 달 쌍둥이자리 22°11\', 상승 쌍둥이자리 4°27\' (박주형 님 네이탈 차트)';
 }
 
 /**

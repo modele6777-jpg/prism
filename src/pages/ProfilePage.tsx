@@ -188,6 +188,7 @@ export default function ProfilePage() {
         music,
         psych,
         art,
+        astrology: existingProfile.astrology,
         relationships,
       }, true);
 

@@ -33,6 +33,7 @@ import { LucKeyLogoText } from '@/components/LucKeyLogoText';
 import { type UserProfile, mergeUserProfiles } from '@/lib/sharedState';
 import { cleanFirestoreData } from '@/lib/sharedStateSync';
 import { SajuCardView } from '@/components/SajuCardView';
+import { NatalChartCardView } from '@/components/NatalChartCardView';
 import { db, doc, setDoc, serverTimestamp } from '@/lib/firebase';
 import { EpilogueDiaryView } from '@/components/epilogue/EpilogueDiaryView';
 import { EpilogueSynergySection } from '@/components/epilogue/EpilogueSynergySection';
@@ -447,6 +448,7 @@ export default function EpilogueApp() {
         music,
         psych,
         art,
+        astrology: existingProfile.astrology,
       }, true);
 
       // 1. 즉시 로컬 볼트 및 브라우저 스토리지에 저장 (0ms 오프라인 보장)
@@ -760,7 +762,7 @@ export default function EpilogueApp() {
           <div className="space-y-4 animate-in fade-in duration-300">
             <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-200/90 font-sans leading-relaxed flex items-center gap-2.5">
               <Sparkles size={16} className="text-yellow-400 shrink-0" />
-              <span>입력하신 생년월일과 시간을 기반으로 산출된 실시간 천문 사주 카드입니다.</span>
+              <span>입력하신 생년월일과 시간을 기반으로 산출된 실시간 천문 사주 및 서양 점성학 출생 천궁도(Natal Chart)입니다.</span>
             </div>
             <SajuCardView
               profile={{
@@ -769,6 +771,16 @@ export default function EpilogueApp() {
                 music,
                 psych,
                 art,
+              }}
+            />
+            <NatalChartCardView
+              profile={{
+                basic: { ...basic, gender: basic.gender || undefined },
+                fate,
+                music,
+                psych,
+                art,
+                astrology: sharedState?.userProfile?.astrology,
               }}
             />
           </div>

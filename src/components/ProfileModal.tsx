@@ -197,6 +197,7 @@ export default function ProfileModal({ isOpen, onClose }: { isOpen: boolean; onC
         music,
         psych,
         art,
+        astrology: existingProfile.astrology,
         relationships,
       }, true);
       

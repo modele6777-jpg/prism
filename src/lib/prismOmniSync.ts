@@ -1,6 +1,7 @@
 import { type SharedState } from './sharedState';
 import { auth, db, doc, setDoc, serverTimestamp } from './firebase';
 import { calculateDetailedSaju } from './sajuAnalysis';
+import { calculateNatalChart } from './astrologyAnalysis';
 import { cleanFirestoreData } from './sharedStateSync';
 import { getPairedVaultId, pushToPairedVault } from './serverSyncClient';
 
@@ -367,6 +368,27 @@ export function buildPrismOmniscientContext(sharedState?: SharedState | null, ui
       const saju = calculateDetailedSaju(profile);
       if (saju) {
         sections.push(`🌟 [사용자의 사주명리학 본원 및 오행 밸런스 브리핑]\n${saju.systemPromptSummary}`);
+      }
+    }
+
+    // 0-b. 서양 점성학(Western Astrology) 및 출생 천궁도(Natal Chart) 브리핑 주입
+    if (profile?.basic?.birthdate || profile?.astrology) {
+      const natal = calculateNatalChart(profile);
+      if (natal) {
+        let astroBriefing = `🪐 [사용자의 서양 점성학(Natal Chart) 본원 브리핑]\n`;
+        astroBriefing += `- 실명/닉네임: ${profile?.basic?.name || '박주형'}\n`;
+        astroBriefing += `- 차트 유형: ${natal.chartTypeKo || '☀ 낮 차트 (Day Chart)'} (${natal.houseSystem || 'Whole Sign'})\n`;
+        astroBriefing += `- 주요 3궁(Big 3): 태양 ${natal.sun.sign.name} ${natal.sun.formattedDegree || natal.sun.degree + '°'} (${natal.sun.house || '9H'} ${natal.sun.dignity || ''}) | 달 ${natal.moon.sign.name} ${natal.moon.formattedDegree || natal.moon.degree + '°'} (${natal.moon.house || '1H'}) | 상승궁(ASC) ${natal.ascendant.sign.name} ${natal.ascendant.formattedDegree || natal.ascendant.degree + '°'}\n`;
+        astroBriefing += `- 차트 요약: ${natal.summaryText}\n`;
+        astroBriefing += `- 4대 원소 밸런스: 공기 ${natal.elements.air}% (우세), 흙 ${natal.elements.earth}%, 물 ${natal.elements.water}%, 불 ${natal.elements.fire}%\n`;
+        astroBriefing += `- 심리 청사진: ${natal.psychologicalBlueprint}\n`;
+        if (profile?.astrology?.rawChartText) {
+          astroBriefing += `- 천궁도 상세 배치:\n${profile.astrology.rawChartText}\n`;
+        }
+        if (profile?.astrology?.aspects?.length) {
+          astroBriefing += `- 주요 애스펙트: ${profile.astrology.aspects.join(', ')}\n`;
+        }
+        sections.push(astroBriefing);
       }
     }
 

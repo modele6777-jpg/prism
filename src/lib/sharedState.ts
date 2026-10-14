@@ -70,12 +70,50 @@ export interface RelationshipEntry {
   dynamics?: string;       // 관계 역학 메모 또는 고민
 }
 
+// 섹션6: 서양 점성학(Western Astrology) 및 출생 천궁도(Natal Chart) 정보
+export interface ProfileAstrologyPlanet {
+  name: string;
+  sign: string;
+  degree: string;
+  house: string;
+  dignity?: string;
+}
+
+export interface ProfileAstrology {
+  chartType?: string;            // 'Day Chart' | 'Night Chart'
+  chartTypeKo?: string;          // '낮 차트 (Day Chart)'
+  houseSystem?: string;          // 'Whole Sign'
+  sunSign?: string;              // '물병자리'
+  sunDegree?: string;            // "3°57'"
+  sunHouse?: string;             // '9H'
+  sunDignity?: string;           // '디트리먼트 | 헤이즈'
+  moonSign?: string;             // '쌍둥이자리'
+  moonDegree?: string;           // "22°11'"
+  moonHouse?: string;            // '1H'
+  ascendant?: string;            // '쌍둥이자리 4°27\' (64.5°)'
+  descendant?: string;           // '사수자리 4°27\' (244.5°)'
+  midheaven?: string;            // '물병자리 12°49\' (312.8°)'
+  ic?: string;                   // '사자자리 12°49\' (132.8°)'
+  hourRuler?: string;            // '수성'
+  dayRuler?: string;             // '달'
+  planets?: Record<string, ProfileAstrologyPlanet>;
+  housePlacements?: Record<string, string[]>;
+  aspects?: string[];
+  moonPhases?: {
+    separating?: string;
+    applying?: string;
+  };
+  rawChartText?: string;
+  notes?: string;
+}
+
 export interface UserProfile {
   basic?: ProfileBasic;
   fate?: ProfileFate;
   music?: ProfileMusic;
   psych?: ProfilePsych;
   art?: ProfileArt;
+  astrology?: ProfileAstrology;
   relationships?: RelationshipEntry[];
   completedAt?: any;
 }
@@ -159,6 +197,7 @@ export function mergeUserProfiles(base?: UserProfile, incoming?: UserProfile, pr
     music: mergeSectionSafely(base.music, incoming.music, preferIncoming),
     psych: mergeSectionSafely(base.psych, incoming.psych, preferIncoming),
     art: mergeSectionSafely(base.art, incoming.art, preferIncoming),
+    astrology: mergeSectionSafely(base.astrology, incoming.astrology, preferIncoming),
     relationships: preferIncoming
       ? (incoming.relationships && incoming.relationships.length > 0 ? incoming.relationships : base.relationships)
       : (base.relationships && base.relationships.length > 0 ? base.relationships : incoming.relationships),
