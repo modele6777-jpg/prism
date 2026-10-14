@@ -1,11 +1,11 @@
 {
   "name": "luckey",
-  "version": "1.4.264",
-  "summary": "Cloud Run 컨테이너 기동 안정성 강화 (server.ts 프로덕션 번들 우선 로드 보장 및 환경변수 호환)",
-  "builtAt": "2026-10-14T13:50:00.000Z",
+  "version": "1.4.265",
+  "summary": "Cloud Build CI/CD 배포 패키지 락 동기화 및 npm ci 의존성 정합성 복구",
+  "builtAt": "2026-10-14T14:02:00.000Z",
   "items": [
-    "Cloud Run 프로덕션 런타임 진입점 안정화: server.ts에서 dist/server.cjs 번들이 존재할 경우 환경변수 설정 여부와 무관하게 즉시 CJS 번들을 구동하여 Node 24 ESM 모듈 해석 오류 원천 차단",
-    "개발 모드(npm run dev)와 프로덕션(Cloud Run/Docker) 간 격리 명확화: npm_lifecycle_event=dev 또는 NODE_ENV=development일 때만 server.app.ts를 불러오도록 가드 강화"
+    "Cloud Build Linux 환경 npm ci 호환성 복구: package-lock.json에 누락되었던 플랫폼별 선택적 의존성(@rollup/rollup-linux 등)을 완벽 동기화하여 CI/CD 빌드 실패 원인 해결",
+    "cloudbuild.yaml 장애 복구 안전망 구축: npm ci 실패 시 npm install로 자동 폴백(npm ci || npm install) 처리하여 클라우드 런 배포 중단 방지"
   ],
   "author": "Antigravity AI Agent",
   "buildEnvironment": "cloud-run"
