@@ -144,7 +144,7 @@ export function loadProfileFromAllVaults(): UserProfile | undefined {
       if (raw) {
         const parsed = JSON.parse(raw) as UserProfile;
         if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
-          merged = mergeUserProfiles(merged, parsed);
+          merged = mergeUserProfiles(merged, parsed, true);
         }
       }
     } catch (_) {}
@@ -156,13 +156,13 @@ export function loadProfileFromAllVaults(): UserProfile | undefined {
     if (sessionRaw) {
       const sessionParsed = JSON.parse(sessionRaw) as UserProfile;
       if (sessionParsed && typeof sessionParsed === 'object') {
-        merged = mergeUserProfiles(merged, sessionParsed);
+        merged = mergeUserProfiles(merged, sessionParsed, true);
       }
     }
   } catch (_) {}
 
-  // DEFAULT_USER_PROFILE과 무손실 병합 (사용자의 기존 커스텀 편집값 보존 + 기본/누락 필드 완벽 채움)
-  const finalProfile = mergeUserProfiles(DEFAULT_USER_PROFILE, merged, false);
+  // DEFAULT_USER_PROFILE과 무손실 병합 (사용자의 변경된 커스텀 편집값(MBTI 등)을 100% 최우선 보존 + 누락 필드 완벽 채움)
+  const finalProfile = mergeUserProfiles(DEFAULT_USER_PROFILE, merged, true);
 
   // 로컬 볼트에 아직 정식 시딩되지 않았거나 업데이트가 필요한 경우 자동 1회 동기화
   if (typeof window !== 'undefined') {
@@ -203,6 +203,11 @@ export function saveProfileToAllVaults(profile: UserProfile | undefined): void {
     try {
       safeSessionStorage.setItem('prism_user_profile_session_vault', serialized);
     } catch (_) {}
+
+    // 3. 브라우저 전역 프로필 갱신 브로드캐스트 (실시간 UI 및 사이드바 동기화)
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('prism:profile_updated', { detail: finalMerged }));
+    }
   } catch (e) {
     console.warn('[ProfileVault] Save error:', e);
   }

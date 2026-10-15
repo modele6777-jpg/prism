@@ -128,6 +128,8 @@ function mergeProfileSection<T extends any>(baseSection?: T, incomingSection?: T
         result[key] = bStr;
       } else if (preferIncoming) {
         result[key] = iStr;
+      } else if (key === 'mbti' && iStr) {
+        result[key] = iStr;
       } else {
         result[key] = iStr.length >= bStr.length ? iStr : bStr;
       }

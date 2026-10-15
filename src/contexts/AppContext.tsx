@@ -1124,10 +1124,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     let finalMerged: SharedState | null = null;
     
     setSharedState(prev => {
+      const now = Date.now();
       const persistentProfile = getPersistentUserProfile();
       const existingProfile = mergeUserProfiles(
         persistentProfile,
-        prev?.userProfile
+        prev?.userProfile,
+        true
       );
       const updatedProfile = updates.userProfile 
         ? mergeUserProfiles(existingProfile, updates.userProfile, true)
@@ -1139,11 +1141,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           ...updates,
           ...(updatedProfile && Object.keys(updatedProfile).length > 0 ? { userProfile: updatedProfile } : {}),
           sourceApp,
-          clientUpdatedAt: Date.now(),
+          profileUpdatedAt: updates.userProfile ? now : (prev?.profileUpdatedAt || now),
+          clientUpdatedAt: now,
         }
       );
 
+      // Explicitly guarantee updatedProfile (including MBTI) is preserved
       if (updatedProfile && Object.keys(updatedProfile).length > 0) {
+        finalMerged.userProfile = updatedProfile;
         setPersistentUserProfile(updatedProfile);
         saveProfileToAllVaults(updatedProfile);
       }

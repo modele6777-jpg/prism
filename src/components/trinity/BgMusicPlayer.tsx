@@ -178,10 +178,9 @@ export function BgMusicPlayer() {
     try {
       const saved = localStorage.getItem('prism_bgm_playing');
       if (saved !== null) return saved === 'true';
-      if (isMobileDevice() || isPerfReduced()) return false;
       return true;
     } catch {
-      return false;
+      return true;
     }
   });
   const isPlayingRef = useRef(isPlaying);
@@ -1069,6 +1068,13 @@ export function BgMusicPlayer() {
   const handlePlayToggle = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     if (isDraggingRef.current || dragJustEndedRef.current) return;
+    try {
+      const ctx = getSharedAudioContext();
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
+    } catch (_) {}
+
     if (isPlayingRef.current) {
       pausePlayback();
       return;
@@ -1551,24 +1557,33 @@ export function BgMusicPlayer() {
   useEffect(() => {
     let unlocked = false;
     const unlockAudioContext = () => {
-      if (unlocked) return;
       try {
         const ctx = getSharedAudioContext();
         if (ctx.state === 'suspended') {
-          ctx.resume().catch(() => {});
+          ctx.resume().then(() => {
+            if (isPlayingRef.current) {
+              const currentIdx = shuffledIndicesRef.current[queueIndexRef.current] ?? activeTrackIndexRef.current;
+              playTrackDirectly(currentIdx, true);
+            }
+          }).catch(() => {});
+        } else if (isPlayingRef.current && activeVoiceCountRef.current === 0) {
+          const currentIdx = shuffledIndicesRef.current[queueIndexRef.current] ?? activeTrackIndexRef.current;
+          playTrackDirectly(currentIdx, true);
         }
         unlocked = true;
       } catch (_) {}
     };
 
-    window.addEventListener("click", unlockAudioContext, { passive: true, once: true });
-    window.addEventListener("touchstart", unlockAudioContext, { passive: true, once: true });
-    window.addEventListener("keydown", unlockAudioContext, { passive: true, once: true });
+    window.addEventListener("click", unlockAudioContext, { passive: true });
+    window.addEventListener("touchstart", unlockAudioContext, { passive: true });
+    window.addEventListener("keydown", unlockAudioContext, { passive: true });
+    window.addEventListener("prism:user_interaction", unlockAudioContext);
 
     return () => {
       window.removeEventListener("click", unlockAudioContext);
       window.removeEventListener("touchstart", unlockAudioContext);
       window.removeEventListener("keydown", unlockAudioContext);
+      window.removeEventListener("prism:user_interaction", unlockAudioContext);
     };
   }, []);
 

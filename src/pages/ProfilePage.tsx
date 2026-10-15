@@ -344,7 +344,17 @@ export default function ProfilePage() {
               <label className="block text-xs text-white/40 mb-2 tracking-wider">MBTI</label>
               <div className="grid grid-cols-4 gap-2">
                 {MBTI_LIST.map(m => (
-                  <button key={m} type="button" onClick={() => setPsych(p => ({ ...p, mbti: m }))}
+                  <button key={m} type="button" onClick={() => {
+                    const updatedPsych = { ...psych, mbti: m };
+                    setPsych(updatedPsych);
+                    try {
+                      const existing = sharedState?.userProfile || loadProfileFromAllVaults() || getPersistentUserProfile() || {};
+                      const merged = mergeUserProfiles(existing, { psych: updatedPsych }, true);
+                      saveProfileToAllVaults(merged);
+                      setPersistentUserProfile(merged);
+                      updateSharedState({ userProfile: merged }, 'profile').catch(() => {});
+                    } catch (_) {}
+                  }}
                     className="py-2 rounded-xl text-xs font-medium transition-all"
                     style={{
                       background: psych.mbti === m ? 'oklch(0.72 0.18 55 / 0.25)' : 'oklch(0.14 0.015 270)',

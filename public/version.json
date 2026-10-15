@@ -1,12 +1,12 @@
 {
   "name": "luckey",
-  "version": "1.4.266",
-  "summary": "Cloud Run 배포 빌드팩 스크립트(gcp-build) 표준화 및 Cloud Run 배포 상태 안정화",
-  "builtAt": "2026-10-14T14:17:00.000Z",
+  "version": "1.4.269",
+  "summary": "루시 첫 인사말 말풍선 내 '루시 인사말 음성 듣기 🔊' 바로듣기 버튼 제거 및 깔끔한 메시지 UI 정리",
+  "builtAt": "2026-10-15T09:16:00.000Z",
   "items": [
-    "Google Cloud Buildpacks 호환용 gcp-build 스크립트 명시: Cloud Run 및 Applet 소스 배포 시 빌드팩이 자동으로 vite & esbuild 번들을 실행하도록 package.json에 gcp-build 표준 등록",
-    "Cloud Run 배포 Precondition check 오류 대응 및 클라우드 런 서비스 갱신 안정화"
+    "루시 첫 인사말 말풍선 내부의 '루시 인사말 음성 듣기 🔊' 바로듣기 버튼 전면 제거",
+    "메시지 하단 표준 컨트롤(복사 및 볼륨 아이콘 TTS 버튼)을 통한 깔끔하고 일관된 음성 청취 환경 유지"
   ],
-  "author": "Antigravity AI Agent",
+  "author": "Antigravity Senior Software Engineer",
   "buildEnvironment": "cloud-run"
 }

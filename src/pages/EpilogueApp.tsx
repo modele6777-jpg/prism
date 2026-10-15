@@ -675,7 +675,17 @@ export default function EpilogueApp() {
                   <button
                     key={type}
                     type="button"
-                    onClick={() => setPsych((p) => ({ ...p, mbti: type }))}
+                    onClick={() => {
+                      const updatedPsych = { ...psych, mbti: type };
+                      setPsych(updatedPsych);
+                      try {
+                        const existing = sharedState?.userProfile || loadProfileFromAllVaults() || getPersistentUserProfile() || {};
+                        const merged = mergeUserProfiles(existing, { psych: updatedPsych }, true);
+                        saveProfileToAllVaults(merged);
+                        setPersistentUserProfile(merged);
+                        updateSharedState({ userProfile: merged }, 'profile').catch(() => {});
+                      } catch (_) {}
+                    }}
                     className="py-2.5 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer backdrop-blur-md"
                     style={{
                       background: psych.mbti === type ? 'rgba(249, 115, 22, 0.25)' : 'rgba(255, 255, 255, 0.03)',

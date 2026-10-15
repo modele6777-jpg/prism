@@ -28,7 +28,7 @@ export interface PrismRouteDefinition {
 export const INITIAL_PRISM_ROUTES: PrismRouteDefinition[] = [
   {
     id: 'lucy',
-    name: '루시 홈 (Lucy Chat)',
+    name: 'Lucy ai',
     subName: '영혼의 가이드와 올인원 1:1 대화',
     path: '/',
     aliases: ['/chat', '/lucy'],

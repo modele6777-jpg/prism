@@ -173,6 +173,9 @@ function mergeSectionSafely<T extends any>(baseSection?: T, incomingSection?: T,
         res[k] = bStr;
       } else if (preferIncoming) {
         res[k] = iStr;
+      } else if (k === 'mbti' && iStr) {
+        // MBTI 변경 시 신규 설정값 우선 적용
+        res[k] = iStr;
       } else {
         res[k] = iStr.length >= bStr.length ? iStr : bStr;
       }

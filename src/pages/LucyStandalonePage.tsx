@@ -8,7 +8,7 @@ import {
 import { useApp, PersonaType } from '@/contexts/AppContext';
 import { useLocation } from 'wouter';
 import { playTTS, playTTSInChunks, playQAndATTS, stopTTS, useTTSActive, subscribeTTS, prefetchTTS, normalizeTextForSpeech } from '@/utils/tts';
-import { unlockAudioPlayback, primeTTSAudioElement } from '@/lib/audio';
+import { unlockAudioPlayback, primeTTSAudioElement, getSharedAudioContext } from '@/lib/audio';
 import { calculateDetailedSaju } from '@/lib/sajuAnalysis';
 import { getLocalDateKey } from '@/lib/rebibleStorage';
 import ReactMarkdown from 'react-markdown';
@@ -707,6 +707,69 @@ export default function LucyStandalonePage() {
     });
   }, []);
 
+  // 🔊 최초 입장 시 루시 첫 인사말 자동 음성 낭독 (첫 터치/클릭 시 자동 재생 잠금 해제 & 발성 보장)
+  const hasSpokenWelcomeRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    if (!isAutoTtsRef.current || hasSpokenWelcomeRef.current || lucyMessages.length === 0) return;
+    const greetingMsg = lucyMessages.find((m) => m.role === 'model' && m.content);
+    if (!greetingMsg) return;
+    const rawGreetingContent = typeof greetingMsg.content === 'string'
+      ? greetingMsg.content
+      : Array.isArray(greetingMsg.content)
+      ? greetingMsg.content.find((c: any) => c.type === 'text')?.text || ''
+      : '';
+    if (!rawGreetingContent.trim()) return;
+
+    const playWelcomeAudio = () => {
+      if (hasSpokenWelcomeRef.current) return;
+      hasSpokenWelcomeRef.current = true;
+      unlockAudioPlayback();
+      primeTTSAudioElement();
+      try {
+        const ctx = getSharedAudioContext();
+        if (ctx.state === 'suspended') {
+          ctx.resume().catch(() => {});
+        }
+      } catch (_) {}
+
+      const cleanText = normalizeTextForSpeech(rawGreetingContent);
+      if (!cleanText) return;
+
+      stopTTS();
+      setPlayingMsgId(greetingMsg.id);
+      playTTS(cleanText, 'Kore', true, '다정').catch((err) => {
+        console.warn('[Welcome TTS] Speech failed:', err);
+      });
+    };
+
+    // 브라우저가 자동재생을 허용하는 경우(데스크탑 등)를 위해 600ms 후 1회 시도
+    const autoTimer = setTimeout(() => {
+      playWelcomeAudio();
+    }, 600);
+
+    // 모바일 브라우저 autoplay 방어: 첫 터치/클릭 발생 시 즉시 발성
+    const onFirstUserGesture = () => {
+      playWelcomeAudio();
+      cleanup();
+    };
+
+    const cleanup = () => {
+      window.removeEventListener('click', onFirstUserGesture);
+      window.removeEventListener('touchstart', onFirstUserGesture);
+      window.removeEventListener('pointerdown', onFirstUserGesture);
+    };
+
+    window.addEventListener('click', onFirstUserGesture, { passive: true, once: true });
+    window.addEventListener('touchstart', onFirstUserGesture, { passive: true, once: true });
+    window.addEventListener('pointerdown', onFirstUserGesture, { passive: true, once: true });
+
+    return () => {
+      clearTimeout(autoTimer);
+      cleanup();
+    };
+  }, [lucyMessages]);
+
   // 🔊 자동 음성 재생(Auto-TTS) 안전 백업 감시자: 새 어시스턴트 메시지 도착 시 바로재생 보장
   useEffect(() => {
     if (!isAutoTtsRef.current || isLucyGenerating || lucyMessages.length === 0) return;
@@ -747,7 +810,7 @@ export default function LucyStandalonePage() {
   //  Dynamic PWA Manifest & iOS Home-screen Metadata Switcher
   useEffect(() => {
     const prevTitle = document.title;
-    document.title = 'Lucy';
+    document.title = 'Lucy ai';
 
     let manifestTag = document.querySelector('link[rel="manifest"]') as HTMLLinkElement | null;
     const prevManifestHref = manifestTag ? manifestTag.getAttribute('href') : null;
@@ -1254,19 +1317,19 @@ export default function LucyStandalonePage() {
               className="flex items-center gap-2 sm:gap-3 min-w-0 cursor-pointer group select-none"
               role="button"
               tabIndex={0}
-              title="루시 홈"
+              title="Lucy ai"
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate('/'); }}
             >
               <div className="relative group">
                 <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-amber-500 via-amber-400 to-yellow-300 flex items-center justify-center text-white shadow-sm font-bold text-base sm:text-lg shrink-0 ring-2 ring-amber-400/30 group-hover:scale-105 transition-transform">
                   <Sparkles size={18} className="text-white" />
                 </div>
-                <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white ring-1 ring-emerald-300 animate-pulse" title="Lucy 엔진 실시간 온라인" />
+                <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white ring-1 ring-emerald-300 animate-pulse" title="Lucy ai 실시간 온라인" />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 sm:gap-2">
                   <h1 className="text-sm sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-1.5">
-                    Lucy
+                    Lucy ai
                   </h1>
                   <span className="text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-violet-600/10 via-purple-600/10 to-indigo-600/10 text-indigo-600 border border-indigo-200/60 flex items-center gap-1">
                     <Sparkles size={10} className="text-indigo-500 animate-spin" />
@@ -1566,6 +1629,7 @@ export default function LucyStandalonePage() {
                             </div>
                           );
                         })()}
+
                       </>
                     )}
                   </div>

@@ -109,14 +109,18 @@ export function BigBangButton() {
   const lastUpdateGaugeRef = useRef<number>(0);
   const lastStateUpdateTimeRef = useRef<number>(0);
 
-  // ⚡ 더블탭 감지용 타이머 및 이전 탭 타임스탬프 ref
+  // ⚡ 더블탭 및 홀드 감지용 타이머
   const lastTapTimeRef = useRef<number>(0);
   const singleTapTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     return () => {
       if (singleTapTimerRef.current) {
         clearTimeout(singleTapTimerRef.current);
+      }
+      if (holdTimerRef.current) {
+        clearTimeout(holdTimerRef.current);
       }
     };
   }, []);
@@ -554,6 +558,18 @@ export function BigBangButton() {
     omniWarpAudio.playWhiteHole();
     triggerHaptic('whitehole');
 
+    // 🎙️ 빅뱅 버튼 500ms 홀드 시 어디서든 루시 AI 실시간 음성모드 자동 가동
+    if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+    holdTimerRef.current = setTimeout(() => {
+      if (touchStartRef.current && !isAborted) {
+        triggerHaptic('whitehole');
+        omniWarpAudio.playWhiteHole();
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('prism:open_lucy_voice_mode'));
+        }
+      }
+    }, 500);
+
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(updateLoop);
   };
@@ -680,6 +696,10 @@ export function BigBangButton() {
   }, [location, navigate, getActiveSelectionText, isKeySite]);
 
   const handlePointerUp = (e: React.PointerEvent<HTMLButtonElement> | PointerEvent) => {
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
     cleanupGlobalPointerListeners();
     if (!touchStartRef.current) return;
 
@@ -840,8 +860,8 @@ export function BigBangButton() {
     // [2] 홀드 (300ms 이상) 또는 드래그 릴리즈 분기
     const textToToss = touchStartSelectionRef.current || getActiveSelectionText();
 
-    // 🔑 [드래그: dist >= 20] ➔ Key (마음약방 & 40가지 연습) 도약!
-    if (dist >= 20) {
+    // 🔑 [의도적인 원거리 드래그: dist >= 55] ➔ Key (마음약방 & 40가지 연습) 도약!
+    if (dist >= 55) {
       triggerHaptic('blackhole');
       omniWarpAudio.playBlackHole();
 
@@ -928,9 +948,13 @@ export function BigBangButton() {
       return;
     }
 
-    // 💬 [홀드: dist < 20] ➔ 루시 (/chat 1:1 대화) 소환!
+    // 🎙️ [홀드: dist < 20] ➔ 루시 AI 음성모드(여성 목소리 실시간 대화) 즉시 연결!
     triggerHaptic('whitehole');
     omniWarpAudio.playWhiteHole();
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('prism:open_lucy_voice_mode'));
+    }
 
     // 🌟 텍스트 드래그(선택) 연동: 글자를 스크롤/선택한 상태에서 빅뱅 홀드 ➔ 루시에게 즉시 토스!
     if (textToToss) {
@@ -965,13 +989,13 @@ export function BigBangButton() {
           detail: {
             phase: 'whitehole',
             target: {
-              id: 'lucy',
-              name: '루시 1:1 대화',
-              destinationPath: '/chat',
-              themeColor: '#fde68a',
+              id: 'lucy_voice',
+              name: 'Lucy AI 음성모드',
+              destinationPath: '/',
+              themeColor: '#34d399',
               eventHorizonMode: 'whitehole',
-              previewLabel: '[홀드 소환] 루시 1:1 대화',
-              previewDescription: '마음의 안식처 루시와 나누는 따뜻한 대화와 지혜 조언',
+              previewLabel: '[홀드 실행] Lucy AI 실시간 음성모드',
+              previewDescription: '루시와 나누는 여성 음성 실시간 대화 모드 연결',
             },
             context,
             metrics: { ...metrics, phase: 'whitehole' },
@@ -980,36 +1004,6 @@ export function BigBangButton() {
         })
       );
     }
-
-    setTimeout(() => {
-      if (isChatView && !textToToss) {
-        // 채팅 화면에서 홀드 시 프롤로그 종합 허브(/prologue)로 이동
-        const returnPath = safeSessionStorage.getItem('prism_chat_return_path') || '/prologue';
-        safeSessionStorage.removeItem('prism_chat_return_path');
-        const finalDest =
-          returnPath === '/' || returnPath.includes('chat') || returnPath.includes('lucy')
-            ? '/prologue'
-            : returnPath;
-        if (isKeySite) {
-          window.location.href = finalDest;
-        } else {
-          navigate(finalDest);
-          window.dispatchEvent(new CustomEvent('prism-navigate', { detail: { path: finalDest } }));
-          window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: finalDest } }));
-        }
-      } else {
-        // 루시 채팅방으로 입장
-        const currentPath = location || '/';
-        safeSessionStorage.setItem('prism_chat_return_path', currentPath);
-        if (isKeySite) {
-          window.location.href = '/chat';
-        } else {
-          navigate('/chat');
-          window.dispatchEvent(new CustomEvent('prism-navigate', { detail: { path: '/chat' } }));
-          window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: '/chat' } }));
-        }
-      }
-    }, 240);
 
     touchStartSelectionRef.current = '';
     setActivePhase('idle');

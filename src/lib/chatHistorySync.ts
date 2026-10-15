@@ -238,3 +238,16 @@ export function forceResetUnifiedChatHistory(targetPersona: PersonaType = 'lucy'
   }
   return greeting;
 }
+
+/**
+ * 실시간 음성 모드 또는 외부 질의 메시지를 통합 대화 기록에 안전하게 추가
+ */
+export function appendSavedUnifiedMessage(msg: UnifiedMessage): void {
+  try {
+    const current = loadSavedUnifiedMessages();
+    current.push(msg);
+    saveUnifiedMessagesSafely(current);
+  } catch (err) {
+    console.warn('[ChatSync] Failed to append message:', err);
+  }
+}

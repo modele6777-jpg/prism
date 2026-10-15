@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { useApp, getPersistentUserProfile, setPersistentUserProfile } from '@/contexts/AppContext';
 import { type UserProfile, mergeUserProfiles } from '@/lib/sharedState';
-import { loadProfileFromAllVaults } from '@/lib/profileVault';
+import { loadProfileFromAllVaults, saveProfileToAllVaults } from '@/lib/profileVault';
 import { APP_VERSION, fetchDeployedAppVersion, compareVersions } from '@/lib/appVersion';
 import { forceAppUpgradeAndReload } from '@/lib/prismSync';
 import { SajuCardView } from './SajuCardView';
@@ -333,7 +333,17 @@ export default function ProfileModal({ isOpen, onClose }: { isOpen: boolean; onC
               <label className="block text-xs text-white/40 mb-1.5 tracking-wider">MBTI</label>
               <div className="grid grid-cols-4 gap-2">
                 {MBTI_LIST.map(m => (
-                  <button key={m} type="button" onClick={() => setPsych(p => ({ ...p, mbti: m }))}
+                  <button key={m} type="button" onClick={() => {
+                    const updatedPsych = { ...psych, mbti: m };
+                    setPsych(updatedPsych);
+                    try {
+                      const existing = sharedState?.userProfile || loadProfileFromAllVaults() || getPersistentUserProfile() || {};
+                      const merged = mergeUserProfiles(existing, { psych: updatedPsych }, true);
+                      saveProfileToAllVaults(merged);
+                      setPersistentUserProfile(merged);
+                      updateSharedState({ userProfile: merged }, 'profile').catch(() => {});
+                    } catch (_) {}
+                  }}
                     className="py-2 rounded-xl text-xs font-medium transition-all bg-white/5 border border-white/10"
                     style={{
                       borderColor: psych.mbti === m ? 'oklch(0.72 0.18 55 / 0.6)' : '',

@@ -5,7 +5,7 @@ import { LogOut, User, Volume2, VolumeX, Download, Triangle, RefreshCw, HelpCirc
 
 import { AppProvider, useApp } from "./contexts/AppContext";
 import { LoginScreen } from "./components/LoginScreen";
-import BottomNav from "./components/BottomNav";
+import { LucyVoiceModeModal } from "./components/LucyVoiceModeModal";
 import { BigBangButton } from "./components/omniwarp/BigBangButton";
 import { BigBangExpansionOverlay } from "./components/omniwarp/BigBangExpansionOverlay";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -267,6 +267,21 @@ function AppContent() {
 
   React.useEffect(() => {
     initTTSAudioLifecycle();
+    const handleFirstUserGesture = () => {
+      unlockAudioPlayback();
+      const ctx = getSharedAudioContext();
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
+    };
+    window.addEventListener('click', handleFirstUserGesture, { passive: true });
+    window.addEventListener('touchstart', handleFirstUserGesture, { passive: true });
+    window.addEventListener('pointerdown', handleFirstUserGesture, { passive: true });
+    return () => {
+      window.removeEventListener('click', handleFirstUserGesture);
+      window.removeEventListener('touchstart', handleFirstUserGesture);
+      window.removeEventListener('pointerdown', handleFirstUserGesture);
+    };
   }, []);
 
   // Unlock Web Audio from real user gesture once, and detach listeners immediately
@@ -431,7 +446,7 @@ function AppContent() {
           <ActivePage loc={location} />
         </motion.div>
       </main>
-      {!isChatOpen && !isStandaloneChat && <BottomNav />}
+      <LucyVoiceModeModal />
       <BigBangButton />
       <BigBangExpansionOverlay />
 
