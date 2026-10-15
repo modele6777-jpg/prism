@@ -392,7 +392,7 @@ export function LucKeySidebar({ className = '' }: LucKeySidebarProps) {
     <>
       {/* 🧭 Collapsible Icon Sidebar (Closed by default) */}
       <aside
-        className={`flex flex-col shrink-0 h-full bg-[#080A12]/95 backdrop-blur-2xl border-slate-800/80 shadow-[4px_0_30px_rgba(0,0,0,0.5)] z-40 transition-all duration-300 ease-in-out relative ${
+        className={`flex flex-col shrink-0 h-full bg-[#080A12]/95 backdrop-blur-2xl border-slate-800/80 shadow-[4px_0_30px_rgba(0,0,0,0.5)] z-50 transition-all duration-300 ease-in-out relative ${
           isOpen
             ? 'w-[58px] sm:w-[62px] border-r opacity-100'
             : 'w-0 border-r-0 overflow-hidden opacity-0 pointer-events-none'
@@ -406,7 +406,7 @@ export function LucKeySidebar({ className = '' }: LucKeySidebarProps) {
         <button
           type="button"
           onClick={toggleSidebar}
-          className="fixed bottom-4 left-4 z-40 w-11 h-11 rounded-2xl bg-[#080A12]/92 backdrop-blur-xl border border-white/10 text-slate-300 hover:text-white hover:border-emerald-400/50 hover:shadow-[0_0_22px_rgba(52,211,153,0.35)] shadow-2xl flex items-center justify-center transition-all duration-200 cursor-pointer group active:scale-95"
+          className="fixed bottom-4 left-4 z-50 w-11 h-11 rounded-2xl bg-[#080A12]/92 backdrop-blur-xl border border-white/10 text-slate-300 hover:text-white hover:border-emerald-400/50 hover:shadow-[0_0_22px_rgba(52,211,153,0.35)] shadow-2xl flex items-center justify-center transition-all duration-200 cursor-pointer group active:scale-95"
           title="사이드바 열기 (LucKey Navigation)"
           aria-label="사이드바 열기"
         >

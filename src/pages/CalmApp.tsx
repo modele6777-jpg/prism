@@ -149,7 +149,7 @@ export default function CalmApp() {
   const iframeSrc = `/calm/index.html${searchParams ? searchParams + '&v=38.0' : '?v=38.0'}`;
 
   return (
-    <div className="fixed inset-0 w-full h-[100dvh] bg-[#fcf9f5] z-40 overflow-hidden flex flex-col">
+    <div className="h-app-full w-full flex flex-col relative bg-[#fcf9f5] overflow-hidden">
       <AnimatePresence mode="wait">
         {isLoading && (
           <motion.div
