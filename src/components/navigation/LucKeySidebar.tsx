@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLocation } from 'wouter';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   MessageSquarePlus,
   MessageCircle,
@@ -12,14 +11,14 @@ import {
   Music,
   Moon,
   Sun,
+  Mic,
+  BookMarked,
+  Library,
   ChevronLeft,
   ChevronRight,
   RefreshCw,
-  Layers,
-  Mic,
 } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
-import { LucKeyLogoText } from '@/components/LucKeyLogoText';
 import { safeLocalStorage } from '@/utils/safeStorage';
 import { loadProfileFromAllVaults } from '@/lib/profileVault';
 
@@ -33,19 +32,25 @@ interface NavItemDef {
   subtitle: string;
   path: string;
   matchPaths?: string[];
+  onClick?: () => void;
   icon: React.ElementType;
   accentColor: string;
   badge?: string;
   badgeColor?: string;
-  onClick?: () => void;
 }
 
 export function LucKeySidebar({ className = '' }: LucKeySidebarProps) {
   const [location, navigate] = useLocation();
   const { firebaseUser, sharedState, syncPrismDevices } = useApp();
 
-  // Navigation sidebar collapsed state: DEFAULT TO COLLAPSED (접힌 상태 기본 고정)
-  const [isCollapsed, setIsCollapsed] = useState<boolean>(true);
+  // Desktop sidebar open state (default: false = closed per user request)
+  const [isOpen, setIsOpen] = useState<boolean>(() => {
+    try {
+      return safeLocalStorage.getItem('luckey_sidebar_open') === 'true';
+    } catch {
+      return false;
+    }
+  });
 
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
 
@@ -59,16 +64,32 @@ export function LucKeySidebar({ className = '' }: LucKeySidebarProps) {
     };
   }, [sharedState?.userProfile, firebaseUser?.displayName]);
 
-  // Handle sidebar collapse toggle
-  const toggleCollapse = useCallback(() => {
-    setIsCollapsed((prev) => !prev);
+  // Toggle sidebar open/closed
+  const toggleSidebar = useCallback(() => {
+    setIsOpen((prev) => {
+      const next = !prev;
+      try {
+        safeLocalStorage.setItem('luckey_sidebar_open', String(next));
+      } catch (_) {}
+      return next;
+    });
   }, []);
 
   // Listen for global toggle/open/close events
   useEffect(() => {
-    const handleToggle = () => toggleCollapse();
-    const handleOpen = () => setIsCollapsed(false);
-    const handleClose = () => setIsCollapsed(true);
+    const handleToggle = () => toggleSidebar();
+    const handleOpen = () => {
+      setIsOpen(true);
+      try {
+        safeLocalStorage.setItem('luckey_sidebar_open', 'true');
+      } catch (_) {}
+    };
+    const handleClose = () => {
+      setIsOpen(false);
+      try {
+        safeLocalStorage.setItem('luckey_sidebar_open', 'false');
+      } catch (_) {}
+    };
 
     window.addEventListener('prism:toggle_sidebar', handleToggle);
     window.addEventListener('prism:open_sidebar', handleOpen);
@@ -79,7 +100,7 @@ export function LucKeySidebar({ className = '' }: LucKeySidebarProps) {
       window.removeEventListener('prism:open_sidebar', handleOpen);
       window.removeEventListener('prism:close_sidebar', handleClose);
     };
-  }, [toggleCollapse]);
+  }, [toggleSidebar]);
 
   // Reset or Start New Chat
   const handleNewChat = useCallback(() => {
@@ -106,7 +127,12 @@ export function LucKeySidebar({ className = '' }: LucKeySidebarProps) {
     [location]
   );
 
-  // 1. Core Gateways: Lucy ai & Key & Lucy AI Voice Mode
+  const isProfileActive = useMemo(() => {
+    const cleanLoc = location ? location.split('?')[0].split('#')[0] : '/';
+    return cleanLoc === '/profile' || cleanLoc === '/chronicle' || cleanLoc.startsWith('/profile/');
+  }, [location]);
+
+  // 1. Core Gateways: Lucy ai & Lucy Voice Mode & Key
   const CORE_ITEMS: NavItemDef[] = useMemo(
     () => [
       {
@@ -215,34 +241,34 @@ export function LucKeySidebar({ className = '' }: LucKeySidebarProps) {
     []
   );
 
+  // 3. Wisdom items
+  const WISDOM_ITEMS: NavItemDef[] = useMemo(
+    () => [
+      {
+        id: 'handbook',
+        title: '지혜 & 성서 핸드북',
+        subtitle: 'ReBible 오디오북 · 40기법 사전',
+        path: '/handbook',
+        matchPaths: ['/handbook', '/rebible'],
+        icon: BookMarked,
+        accentColor: 'cyan',
+      },
+      {
+        id: 'library',
+        title: '소울 라이브러리',
+        subtitle: '통합 지혜 & 독서 아카이브',
+        path: '/library',
+        icon: Library,
+        accentColor: 'emerald',
+      },
+    ],
+    []
+  );
+
   // Helper renderer for item row
-  const renderItemRow = (item: NavItemDef, compact = false) => {
+  const renderItemRow = (item: NavItemDef) => {
     const active = isItemActive(item);
     const Icon = item.icon;
-
-    if (compact) {
-      return (
-        <button
-          key={item.id}
-          type="button"
-          onClick={() => {
-            if (item.onClick) item.onClick();
-            else navigate(item.path);
-          }}
-          title={`${item.title} — ${item.subtitle}`}
-          className={`w-10 h-10 mx-auto rounded-2xl flex items-center justify-center transition-all duration-200 relative group cursor-pointer ${
-            active
-              ? 'bg-gradient-to-tr from-emerald-500/25 to-teal-400/20 text-emerald-300 border border-emerald-400/50 shadow-[0_0_16px_rgba(52,211,153,0.35)]'
-              : 'text-slate-400 hover:text-slate-100 hover:bg-white/5 border border-transparent'
-          }`}
-        >
-          <Icon size={18} className="transition-transform group-hover:scale-110" />
-          {active && (
-            <span className="absolute -right-1 top-1/2 -translate-y-1/2 w-1.5 h-4 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
-          )}
-        </button>
-      );
-    }
 
     return (
       <button
@@ -252,240 +278,157 @@ export function LucKeySidebar({ className = '' }: LucKeySidebarProps) {
           if (item.onClick) item.onClick();
           else navigate(item.path);
         }}
-        className={`w-full px-3 py-2.5 rounded-2xl flex items-center gap-3 transition-all duration-200 group text-left cursor-pointer border ${
+        title={`${item.title} — ${item.subtitle}`}
+        aria-label={item.title}
+        className={`w-10 h-10 mx-auto rounded-2xl flex items-center justify-center transition-all duration-200 relative group cursor-pointer ${
           active
-            ? 'bg-gradient-to-r from-emerald-500/20 via-teal-500/15 to-transparent text-white border-emerald-500/40 shadow-[0_0_20px_rgba(52,211,153,0.18)] ring-1 ring-emerald-400/30'
-            : 'border-transparent text-slate-300 hover:text-white hover:bg-white/5 hover:border-white/10'
+            ? 'bg-gradient-to-tr from-emerald-500/25 to-teal-400/20 text-emerald-300 border border-emerald-400/50 shadow-[0_0_16px_rgba(52,211,153,0.35)]'
+            : 'text-slate-400 hover:text-slate-100 hover:bg-white/5 border border-transparent'
         }`}
       >
-        <div
-          className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all ${
-            active
-              ? 'bg-emerald-400/20 text-emerald-300 border border-emerald-400/40 shadow-[0_0_12px_rgba(52,211,153,0.4)]'
-              : 'bg-white/5 text-slate-400 group-hover:text-slate-200 group-hover:bg-white/10'
-          }`}
-        >
-          <Icon size={16} className="transition-transform group-hover:scale-110" />
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-1">
-            <span
-              className={`text-xs sm:text-[13px] font-bold tracking-tight truncate ${
-                active ? 'text-white' : 'text-slate-200 group-hover:text-white'
-              }`}
-            >
-              {item.title}
-            </span>
-            {item.badge && (
-              <span
-                className={`text-[9px] font-black px-1.5 py-0.5 rounded-full border shrink-0 ${
-                  item.badgeColor || 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                }`}
-              >
-                {item.badge}
-              </span>
-            )}
-          </div>
-          <p className="text-[10px] sm:text-[11px] text-slate-400 truncate mt-0.5 group-hover:text-slate-300">
-            {item.subtitle}
-          </p>
-        </div>
-
+        <Icon size={18} className="transition-transform group-hover:scale-110" />
         {active && (
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] shrink-0" />
+          <span className="absolute -right-1 top-1/2 -translate-y-1/2 w-1.5 h-4 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
         )}
       </button>
     );
   };
 
-  const sidebarBody = (compact: boolean) => (
+  const sidebarBody = () => (
     <div className="flex flex-col h-full select-none justify-between overflow-hidden">
       {/* Top Header & New Chat */}
       <div className="flex flex-col shrink-0">
-        <div
-          className={`flex items-center justify-between border-b border-white/10 transition-all ${
-            compact ? 'px-1.5 py-3 justify-center' : 'px-3.5 py-3'
-          }`}
-        >
-          <div
+        <div className="flex items-center justify-center border-b border-white/10 px-1.5 py-3">
+          <button
+            type="button"
             onClick={() => navigate('/')}
-            className="flex items-center gap-2 cursor-pointer group min-w-0"
-            title="Lucy ai로 이동"
+            className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 font-black shadow-[0_0_14px_rgba(52,211,153,0.4)] cursor-pointer hover:scale-105 active:scale-95 transition-all border border-emerald-300/30"
+            title="Lucy ai (루시 홈)"
+            aria-label="Lucy ai"
           >
-            {compact ? (
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 font-black shadow-[0_0_14px_rgba(52,211,153,0.4)]">
-                🍀
-              </div>
-            ) : (
-              <>
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 font-black shadow-[0_0_12px_rgba(52,211,153,0.4)] shrink-0">
-                  🍀
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <LucKeyLogoText size="sm" />
-                  <span className="text-[9px] text-emerald-400/80 font-bold tracking-widest uppercase">
-                    Lucy ai · 7 Studios
-                  </span>
-                </div>
-              </>
-            )}
-          </div>
-
-          {!compact && (
-            <button
-              type="button"
-              onClick={toggleCollapse}
-              className="p-1.5 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
-              title="사이드바 접기"
-            >
-              <ChevronLeft size={16} />
-            </button>
-          )}
+            🍀
+          </button>
         </div>
 
         {/* New Chat Button */}
-        <div className={`shrink-0 ${compact ? 'p-1.5' : 'px-3 py-2.5'}`}>
-          {compact ? (
-            <button
-              type="button"
-              onClick={handleNewChat}
-              className="w-10 h-10 mx-auto rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-500 hover:scale-105 active:scale-95 text-slate-950 font-black flex items-center justify-center shadow-[0_0_18px_rgba(52,211,153,0.45)] transition-all cursor-pointer"
-              title="새 대화 시작"
-            >
-              <MessageSquarePlus size={18} />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleNewChat}
-              className="w-full py-2 px-3 rounded-2xl bg-gradient-to-r from-emerald-500/25 via-teal-500/20 to-cyan-500/25 hover:from-emerald-500/35 hover:to-cyan-500/35 border border-emerald-400/40 text-emerald-200 hover:text-white font-bold text-xs flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(52,211,153,0.2)] active:scale-98 transition-all cursor-pointer group"
-            >
-              <MessageSquarePlus
-                size={16}
-                className="text-emerald-400 group-hover:rotate-12 transition-transform"
-              />
-              <span>+ 새 대화 시작</span>
-            </button>
-          )}
+        <div className="shrink-0 p-1.5">
+          <button
+            type="button"
+            onClick={handleNewChat}
+            className="w-10 h-10 mx-auto rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-500 hover:scale-105 active:scale-95 text-slate-950 font-black flex items-center justify-center shadow-[0_0_18px_rgba(52,211,153,0.45)] transition-all cursor-pointer group"
+            title="새 대화 시작"
+            aria-label="새 대화 시작"
+          >
+            <MessageSquarePlus size={18} className="group-hover:rotate-12 transition-transform" />
+          </button>
         </div>
       </div>
 
-      {/* Navigation Links (Core + 7 Studios only; Wisdom & Profile removed) */}
-      <div className="flex-1 overflow-y-auto px-1.5 py-1 space-y-3 no-scrollbar">
+      {/* Navigation Links (Core + 7 Studios + Wisdom) */}
+      <div className="flex-1 overflow-y-auto px-1.5 py-1 space-y-2.5 no-scrollbar">
         {/* Core Gateways */}
         <div className="space-y-1">
-          {!compact && (
-            <div className="px-2 py-0.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles size={10} className="text-emerald-400" />
-              <span>핵심 게이트웨이</span>
-            </div>
-          )}
-          {CORE_ITEMS.map((item) => renderItemRow(item, compact))}
+          {CORE_ITEMS.map((item) => renderItemRow(item))}
         </div>
 
         {/* 7 Studios */}
-        <div className="space-y-1">
-          {!compact && (
-            <div className="px-2 pt-1 pb-0.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 border-t border-white/5">
-              <Layers size={10} className="text-amber-400" />
-              <span>7대 전문 스튜디오</span>
-            </div>
-          )}
-          {STUDIOS_ITEMS.map((item) => renderItemRow(item, compact))}
+        <div className="space-y-1 pt-1.5 border-t border-white/5">
+          {STUDIOS_ITEMS.map((item) => renderItemRow(item))}
+        </div>
+
+        {/* Wisdom & Library */}
+        <div className="space-y-1 pt-1.5 border-t border-white/5">
+          {WISDOM_ITEMS.map((item) => renderItemRow(item))}
         </div>
       </div>
 
-      {/* Footer: Expand / Collapse Button & Minimal Status */}
-      <div className="shrink-0 border-t border-white/10 bg-black/40 backdrop-blur-md p-1.5 sm:p-2">
-        {compact ? (
-          <div className="flex flex-col items-center gap-2">
-            <button
-              type="button"
-              onClick={toggleCollapse}
-              className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer border border-white/10"
-              title="사이드바 펼치기"
-            >
-              <ChevronRight size={18} />
-            </button>
+      {/* Footer: Profile Button (맨 아래메뉴 프로필 단추) & Sync & Collapse Arrow */}
+      <div className="shrink-0 border-t border-white/10 bg-black/40 backdrop-blur-md p-1.5 sm:p-2 flex flex-col items-center gap-2">
+        {/* Profile Button (맨 아래메뉴 프로필 단추) */}
+        <button
+          type="button"
+          onClick={() => navigate('/profile')}
+          className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-200 relative group cursor-pointer ${
+            isProfileActive
+              ? 'bg-gradient-to-tr from-emerald-500/25 to-teal-400/20 text-emerald-300 border border-emerald-400/50 shadow-[0_0_16px_rgba(52,211,153,0.35)]'
+              : 'text-slate-400 hover:text-slate-100 hover:bg-white/5 border border-transparent'
+          }`}
+          title={`내 정보 & 프로필 (${profile.nickname} 님 — ${profile.mbti})`}
+          aria-label="내 프로필"
+        >
+          <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-amber-500 via-amber-400 to-yellow-300 text-slate-950 font-black flex items-center justify-center text-xs shadow-sm ring-1 ring-amber-400/40 group-hover:scale-110 transition-transform">
+            {profile.nickname.slice(0, 1)}
           </div>
-        ) : (
-          <div className="flex items-center justify-between gap-2 px-1">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 flex items-center justify-center text-xs font-bold shrink-0">
-                {profile.nickname.slice(0, 1)}
-              </div>
-              <div className="min-w-0">
-                <span className="text-[11px] font-bold text-white truncate block">
-                  {profile.nickname}
-                </span>
-                <span className="text-[9px] text-emerald-400/80 font-mono">
-                  {profile.mbti}
-                </span>
-              </div>
-            </div>
+          {isProfileActive && (
+            <span className="absolute -right-1 top-1/2 -translate-y-1/2 w-1.5 h-4 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
+          )}
+        </button>
 
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={async () => {
-                  setSyncNotice('동기화 중...');
-                  try {
-                    await syncPrismDevices();
-                    setSyncNotice('동기화 완료!');
-                  } catch {
-                    setSyncNotice('동기화 완료');
-                  }
-                  setTimeout(() => setSyncNotice(null), 1800);
-                }}
-                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-emerald-400 transition-all cursor-pointer border border-white/5"
-                title={syncNotice || '클라우드 동기화'}
-              >
-                <RefreshCw
-                  size={13}
-                  className={syncNotice === '동기화 중...' ? 'animate-spin text-emerald-400' : ''}
-                />
-              </button>
+        {/* Sync Button */}
+        <button
+          type="button"
+          onClick={async () => {
+            setSyncNotice('동기화 중...');
+            try {
+              await syncPrismDevices();
+              setSyncNotice('동기화 완료!');
+            } catch {
+              setSyncNotice('동기화 완료');
+            }
+            setTimeout(() => setSyncNotice(null), 1800);
+          }}
+          className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-emerald-400 transition-all cursor-pointer border border-white/5"
+          title={syncNotice || '클라우드 동기화'}
+          aria-label="클라우드 동기화"
+        >
+          <RefreshCw
+            size={13}
+            className={syncNotice === '동기화 중...' ? 'animate-spin text-emerald-400' : ''}
+          />
+        </button>
 
-              <button
-                type="button"
-                onClick={toggleCollapse}
-                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all cursor-pointer border border-white/5"
-                title="사이드바 접기"
-              >
-                <ChevronLeft size={14} />
-              </button>
-            </div>
-          </div>
-        )}
+        {/* Arrow Button to Close Sidebar */}
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer border border-white/10 group"
+          title="사이드바 닫기"
+          aria-label="사이드바 닫기"
+        >
+          <ChevronLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+        </button>
       </div>
     </div>
   );
 
   return (
     <>
-      {/* 🧭 Always Fixed Left Navigation Bar (Collapsed by default) */}
+      {/* 🧭 Collapsible Icon Sidebar (Closed by default) */}
       <aside
-        className={`flex flex-col shrink-0 h-full bg-[#080A12]/95 backdrop-blur-2xl border-r border-slate-800/80 shadow-[4px_0_30px_rgba(0,0,0,0.5)] z-40 transition-all duration-300 ease-in-out relative ${
-          isCollapsed ? 'w-[58px] sm:w-[62px]' : 'w-[250px] sm:w-[268px]'
+        className={`flex flex-col shrink-0 h-full bg-[#080A12]/95 backdrop-blur-2xl border-slate-800/80 shadow-[4px_0_30px_rgba(0,0,0,0.5)] z-40 transition-all duration-300 ease-in-out relative ${
+          isOpen
+            ? 'w-[58px] sm:w-[62px] border-r opacity-100'
+            : 'w-0 border-r-0 overflow-hidden opacity-0 pointer-events-none'
         } ${className}`}
       >
-        {sidebarBody(isCollapsed)}
+        {sidebarBody()}
       </aside>
 
-      {/* Backdrop overlay for mobile screens when expanded to prevent content obstruction */}
-      <AnimatePresence>
-        {!isCollapsed && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            onClick={() => setIsCollapsed(true)}
-            className="lg:hidden fixed inset-0 z-30 bg-black/60 backdrop-blur-xs"
+      {/* 🧭 Floating Arrow Button when Sidebar is Closed (기본상태 맨밑 화살표) */}
+      {!isOpen && (
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          className="fixed bottom-4 left-4 z-40 w-11 h-11 rounded-2xl bg-[#080A12]/92 backdrop-blur-xl border border-white/10 text-slate-300 hover:text-white hover:border-emerald-400/50 hover:shadow-[0_0_22px_rgba(52,211,153,0.35)] shadow-2xl flex items-center justify-center transition-all duration-200 cursor-pointer group active:scale-95"
+          title="사이드바 열기 (LucKey Navigation)"
+          aria-label="사이드바 열기"
+        >
+          <ChevronRight
+            size={20}
+            className="text-emerald-400 group-hover:translate-x-0.5 transition-transform"
           />
-        )}
-      </AnimatePresence>
+        </button>
+      )}
     </>
   );
 }
