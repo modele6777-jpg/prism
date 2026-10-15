@@ -71,12 +71,16 @@ export function LucKeySidebar({ className = '' }: LucKeySidebarProps) {
   const [location, navigate] = useLocation();
   const { firebaseUser, sharedState, syncPrismDevices } = useApp();
 
-  // Desktop sidebar open state (default: false = closed per user request)
+  // Desktop sidebar open state (default: open on desktop >=1024px unless user explicitly closed)
   const [isOpen, setIsOpen] = useState<boolean>(() => {
     try {
-      return safeLocalStorage.getItem('luckey_sidebar_open') === 'true';
+      const saved = safeLocalStorage.getItem('luckey_sidebar_open');
+      if (saved !== null) {
+        return saved === 'true';
+      }
+      return typeof window !== 'undefined' && window.innerWidth >= 1024;
     } catch {
-      return false;
+      return typeof window !== 'undefined' && window.innerWidth >= 1024;
     }
   });
 

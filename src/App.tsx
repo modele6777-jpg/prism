@@ -137,7 +137,7 @@ function ActivePage({ loc }: { loc: string }) {
         <Route path="/calm"><CalmApp /></Route>
         <Route path="/key"><CalmApp /></Route>
         {/* Fallback to Lucy home for unmatched paths */}
-        <Route><LucyStandalonePage /></Route>
+        <Route path="*"><LucyStandalonePage /></Route>
       </Switch>
     </React.Suspense>
   );

@@ -533,13 +533,10 @@ export default function LucyStandalonePage() {
   const [isUserScrolledUp, setIsUserScrolledUp] = useState(false);
   const isUserScrolledUpRef = useRef(false);
 
-  // Dedicated Lucy entrance aura loader
-  const [isLucyReady, setIsLucyReady] = useState(false);
+  // Dedicated Lucy entrance ready state (instant 0ms render without screen blocking)
+  const [isLucyReady, setIsLucyReady] = useState(true);
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLucyReady(true);
-    }, 800);
-    return () => clearTimeout(timer);
+    setIsLucyReady(true);
   }, []);
 
 
@@ -1303,7 +1300,7 @@ export default function LucyStandalonePage() {
   }
 
   return (
-    <div className="h-full min-h-0 flex-1 w-full max-w-full overflow-hidden flex flex-col items-center justify-center bg-transparent p-0 sm:p-2.5 md:p-4 text-slate-100 font-sans select-text relative">
+    <div className="h-app-full w-full max-w-full overflow-hidden flex flex-col items-center justify-center bg-transparent p-0 sm:p-2.5 md:p-4 text-slate-100 font-sans select-text relative">
       {/* Mode Switch Toast */}
       <AnimatePresence>
         {modeSwitchToast && (
@@ -1320,7 +1317,7 @@ export default function LucyStandalonePage() {
       </AnimatePresence>
 
       {/* 🌟 Translucent Glassmorphism Chatroom Window Frame */}
-      <div className="w-full max-w-5xl h-full flex flex-col bg-[#0b0f19]/75 backdrop-blur-2xl sm:rounded-3xl sm:border sm:border-white/10 sm:shadow-[0_20px_70px_rgba(0,0,0,0.65)] overflow-hidden relative">
+      <div className="w-full max-w-5xl h-full min-h-0 flex flex-col bg-[#0b0f19]/85 backdrop-blur-2xl sm:rounded-3xl sm:border sm:border-white/10 sm:shadow-[0_20px_70px_rgba(0,0,0,0.65)] overflow-hidden relative">
         {/* PRO Top Glass Header Bar */}
         <header 
           style={{ paddingTop: 'max(12px, calc(env(safe-area-inset-top, 0px) + 8px))' }}
@@ -1495,7 +1492,7 @@ export default function LucyStandalonePage() {
         </header>
 
         {/* Chat Messages Stream */}
-        <main ref={messagesContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-6 w-full select-text">
+        <main ref={messagesContainerRef} onScroll={handleScroll} className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-5 lg:p-6 w-full select-text">
           <div ref={messagesWrapperRef} className="space-y-3 sm:space-y-4 pb-28 sm:pb-32">
             {filteredMessages.length === 0 && (
               <div className="text-center py-10 sm:py-16 px-4 space-y-6 max-w-xl mx-auto">
