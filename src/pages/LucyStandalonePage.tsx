@@ -1324,12 +1324,7 @@ export default function LucyStandalonePage() {
                 title="Lucy ai"
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate('/'); }}
               >
-                <div className="relative group">
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-amber-500 via-amber-400 to-yellow-300 flex items-center justify-center text-slate-950 shadow-md font-bold text-base sm:text-lg shrink-0 ring-2 ring-amber-400/40 group-hover:scale-105 transition-transform">
-                    <Sparkles size={18} className="text-slate-950" />
-                  </div>
-                  <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-slate-900 ring-1 ring-emerald-300 animate-pulse" title="Lucy ai 실시간 온라인" />
-                </div>
+                <div className="w-9 h-9 sm:w-10 sm:h-10 shrink-0" style={{ visibility: 'hidden', pointerEvents: 'none' }} aria-hidden="true" />
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 sm:gap-2">
                     <h1 className="text-sm sm:text-lg font-black text-white tracking-tight flex items-center gap-1.5">
