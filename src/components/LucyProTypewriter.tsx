@@ -11,6 +11,7 @@ interface LucyProTypewriterProps {
   isLatest?: boolean;
   isGenerating?: boolean;
   typewriterSpeed?: number;
+  darkMode?: boolean;
 }
 
 function LucyProImageItem({ src, alt }: { src?: string; alt?: string }) {
@@ -161,6 +162,7 @@ export function LucyProTypewriter({
   isLatest = false,
   isGenerating = false,
   typewriterSpeed = 32,
+  darkMode = true,
 }: LucyProTypewriterProps) {
   const isMobile = typeof window !== 'undefined' && (isMobileDevice() || isPerfReduced());
   // On mobile, render streamed content directly to prevent 80-markdown-parses-per-second CPU lag.
@@ -239,29 +241,83 @@ export function LucyProTypewriter({
   const isTyping = isGenerating || (shouldAnimate && displayedLength < content.length);
 
   return (
-    <div className="prose prose-slate max-w-none text-slate-800 leading-relaxed font-sans [&_h1]:text-slate-900 [&_h1]:font-bold [&_h1]:text-lg [&_h1]:mb-2 [&_h2]:text-slate-900 [&_h2]:font-bold [&_h2]:text-base [&_h2]:mb-2 [&_h3]:text-slate-900 [&_h3]:font-semibold [&_h3]:text-sm [&_h3]:mb-1.5 [&_strong]:text-amber-900 [&_strong]:font-bold [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2 [&_li]:mb-1 [&_blockquote]:border-l-4 [&_blockquote]:border-amber-400 [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:text-slate-600 [&_blockquote]:my-2 [&_code]:bg-amber-50 [&_code]:text-amber-800 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_pre]:bg-slate-900 [&_pre]:text-slate-100 [&_pre]:p-3.5 [&_pre]:rounded-xl [&_p]:mb-2.5 [&_p:last-child]:mb-0">
+    <div
+      className={`prose max-w-none leading-relaxed font-sans ${
+        darkMode
+          ? 'prose-invert text-slate-100 [&_h1]:text-white [&_h1]:font-bold [&_h1]:text-lg [&_h1]:mb-2 [&_h2]:text-white [&_h2]:font-bold [&_h2]:text-base [&_h2]:mb-2 [&_h3]:text-white [&_h3]:font-semibold [&_h3]:text-sm [&_h3]:mb-1.5 [&_strong]:text-amber-300 [&_strong]:font-bold [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2 [&_li]:mb-1 [&_blockquote]:border-l-4 [&_blockquote]:border-amber-400 [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:text-slate-300 [&_blockquote]:my-2 [&_code]:bg-white/10 [&_code]:text-amber-300 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_pre]:bg-black/60 [&_pre]:text-slate-100 [&_pre]:p-3.5 [&_pre]:rounded-xl [&_p]:mb-2.5 [&_p:last-child]:mb-0'
+          : 'prose-slate text-slate-800 [&_h1]:text-slate-900 [&_h1]:font-bold [&_h1]:text-lg [&_h1]:mb-2 [&_h2]:text-slate-900 [&_h2]:font-bold [&_h2]:text-base [&_h2]:mb-2 [&_h3]:text-slate-900 [&_h3]:font-semibold [&_h3]:text-sm [&_h3]:mb-1.5 [&_strong]:text-amber-900 [&_strong]:font-bold [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2 [&_li]:mb-1 [&_blockquote]:border-l-4 [&_blockquote]:border-amber-400 [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:text-slate-600 [&_blockquote]:my-2 [&_code]:bg-amber-50 [&_code]:text-amber-800 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_pre]:bg-slate-900 [&_pre]:text-slate-100 [&_pre]:p-3.5 [&_pre]:rounded-xl [&_p]:mb-2.5 [&_p:last-child]:mb-0'
+      }`}
+    >
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
           p: ({ node, children, ...props }) => (
             <div className="mb-2.5 last:mb-0 leading-relaxed font-sans" {...props}>
-              {renderWithSentenceHighlight(children, targetSentence, true)}
+              {renderWithSentenceHighlight(children, targetSentence, !darkMode)}
             </div>
           ),
           li: ({ node, children, ...props }) => (
             <li className="mb-1" {...props}>
-              {renderWithSentenceHighlight(children, targetSentence, true)}
+              {renderWithSentenceHighlight(children, targetSentence, !darkMode)}
             </li>
           ),
-          h1: ({ children }) => <h1 className="text-slate-900 font-bold text-lg mb-2">{renderWithSentenceHighlight(children, targetSentence, true, true)}</h1>,
-          h2: ({ children }) => <h2 className="text-slate-900 font-bold text-base mb-2">{renderWithSentenceHighlight(children, targetSentence, true, true)}</h2>,
-          h3: ({ children }) => <h3 className="text-slate-900 font-semibold text-sm mb-1.5">{renderWithSentenceHighlight(children, targetSentence, true, true)}</h3>,
-          h4: ({ children }) => <h4 className="text-slate-900 font-semibold text-xs mb-1.5">{renderWithSentenceHighlight(children, targetSentence, true, true)}</h4>,
-          h5: ({ children }) => <h5 className="text-slate-900 font-medium text-xs mb-1">{renderWithSentenceHighlight(children, targetSentence, true, true)}</h5>,
-          h6: ({ children }) => <h6 className="text-slate-900 font-medium text-[11px] mb-1">{renderWithSentenceHighlight(children, targetSentence, true, true)}</h6>,
-          blockquote: ({ children }) => <blockquote className="border-l-4 border-amber-400 pl-3 italic text-slate-600 my-2">{renderWithSentenceHighlight(children, targetSentence, true, false)}</blockquote>,
-          th: ({ children }) => <th className="px-2.5 py-1.5 text-left font-bold text-xs border-b border-slate-200">{renderWithSentenceHighlight(children, targetSentence, true, false)}</th>,
-          td: ({ children }) => <td className="px-2.5 py-1.5 text-xs border-b border-slate-100">{renderWithSentenceHighlight(children, targetSentence, true, false)}</td>,
+          h1: ({ children }) => (
+            <h1 className={`font-bold text-lg mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+              {renderWithSentenceHighlight(children, targetSentence, !darkMode, true)}
+            </h1>
+          ),
+          h2: ({ children }) => (
+            <h2 className={`font-bold text-base mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+              {renderWithSentenceHighlight(children, targetSentence, !darkMode, true)}
+            </h2>
+          ),
+          h3: ({ children }) => (
+            <h3 className={`font-semibold text-sm mb-1.5 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+              {renderWithSentenceHighlight(children, targetSentence, !darkMode, true)}
+            </h3>
+          ),
+          h4: ({ children }) => (
+            <h4 className={`font-semibold text-xs mb-1.5 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+              {renderWithSentenceHighlight(children, targetSentence, !darkMode, true)}
+            </h4>
+          ),
+          h5: ({ children }) => (
+            <h5 className={`font-medium text-xs mb-1 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+              {renderWithSentenceHighlight(children, targetSentence, !darkMode, true)}
+            </h5>
+          ),
+          h6: ({ children }) => (
+            <h6 className={`font-medium text-[11px] mb-1 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+              {renderWithSentenceHighlight(children, targetSentence, !darkMode, true)}
+            </h6>
+          ),
+          blockquote: ({ children }) => (
+            <blockquote
+              className={`border-l-4 border-amber-400 pl-3 italic my-2 ${
+                darkMode ? 'text-slate-300' : 'text-slate-600'
+              }`}
+            >
+              {renderWithSentenceHighlight(children, targetSentence, !darkMode, false)}
+            </blockquote>
+          ),
+          th: ({ children }) => (
+            <th
+              className={`px-2.5 py-1.5 text-left font-bold text-xs border-b ${
+                darkMode ? 'border-white/10 text-slate-200' : 'border-slate-200 text-slate-800'
+              }`}
+            >
+              {renderWithSentenceHighlight(children, targetSentence, !darkMode, false)}
+            </th>
+          ),
+          td: ({ children }) => (
+            <td
+              className={`px-2.5 py-1.5 text-xs border-b ${
+                darkMode ? 'border-white/5 text-slate-300' : 'border-slate-100 text-slate-700'
+              }`}
+            >
+              {renderWithSentenceHighlight(children, targetSentence, !darkMode, false)}
+            </td>
+          ),
           img: ({ node, ...props }) => (
             <LucyProImageItem src={props.src} alt={props.alt} />
           ),
@@ -273,7 +329,7 @@ export function LucyProTypewriter({
       {/* 🌟 Glowing Typewriter Cursor Indicator */}
       {isTyping && (
         <span
-          className="inline-block w-1.5 h-4 ml-1 bg-amber-500 rounded-xs animate-pulse align-middle shadow-xs"
+          className="inline-block w-1.5 h-4 ml-1 bg-amber-400 rounded-xs animate-pulse align-middle shadow-[0_0_8px_#f59e0b]"
           title="루시가 답변을 작성 중입니다..."
         />
       )}

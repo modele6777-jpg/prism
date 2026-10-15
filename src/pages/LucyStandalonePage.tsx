@@ -1277,7 +1277,7 @@ export default function LucyStandalonePage() {
   }
 
   return (
-    <div className="h-full min-h-0 flex-1 w-full max-w-full overflow-hidden flex flex-col bg-[#FAFAF9] text-slate-800 font-sans select-text relative">
+    <div className="h-full min-h-0 flex-1 w-full max-w-full overflow-hidden flex flex-col items-center justify-center bg-transparent p-0 sm:p-2.5 md:p-4 text-slate-100 font-sans select-text relative">
       {/* Mode Switch Toast */}
       <AnimatePresence>
         {modeSwitchToast && (
@@ -1285,7 +1285,7 @@ export default function LucyStandalonePage() {
             initial={{ opacity: 0, y: -30, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -30, scale: 0.95 }}
-            className="fixed top-5 left-1/2 -translate-x-1/2 z-[100] px-4 py-2 rounded-full bg-slate-900/95 text-white shadow-xl border border-amber-400/40 flex items-center gap-2 font-sans text-xs sm:text-sm backdrop-blur-md font-bold"
+            className="fixed top-5 left-1/2 -translate-x-1/2 z-[100] px-4 py-2 rounded-full bg-slate-900/90 text-white shadow-2xl border border-amber-400/50 flex items-center gap-2 font-sans text-xs sm:text-sm backdrop-blur-xl font-bold"
           >
             <Sparkles size={14} className="text-amber-400 animate-spin" />
             <span>{modeSwitchToast}</span>
@@ -1293,683 +1293,710 @@ export default function LucyStandalonePage() {
         )}
       </AnimatePresence>
 
-      {/* PRO Top Header Bar */}
-      <header 
-        style={{ paddingTop: 'max(14px, calc(env(safe-area-inset-top, 0px) + 10px))' }}
-        className="w-full px-3.5 sm:px-8 lg:px-12 pb-3 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs flex flex-col gap-2.5 z-40 shrink-0 relative"
-      >
-        <div className="flex items-center justify-between gap-2 min-w-0">
-          {/* Mobile Sidebar Hamburger & Brand Logo */}
-          <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
-            <button
-              type="button"
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent('prism:toggle_sidebar'));
-              }}
-              className="p-2 -ml-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 transition-colors cursor-pointer shrink-0 lg:hidden flex items-center justify-center border border-slate-200/60"
-              title="사이드바 메뉴 열기"
-              aria-label="메뉴 열기"
-            >
-              <Menu size={18} />
-            </button>
-            <div
-              onClick={() => navigate('/')}
-              className="flex items-center gap-2 sm:gap-3 min-w-0 cursor-pointer group select-none"
-              role="button"
-              tabIndex={0}
-              title="Lucy ai"
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate('/'); }}
-            >
-              <div className="relative group">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-amber-500 via-amber-400 to-yellow-300 flex items-center justify-center text-white shadow-sm font-bold text-base sm:text-lg shrink-0 ring-2 ring-amber-400/30 group-hover:scale-105 transition-transform">
-                  <Sparkles size={18} className="text-white" />
+      {/* 🌟 Translucent Glassmorphism Chatroom Window Frame */}
+      <div className="w-full max-w-5xl h-full flex flex-col bg-[#0b0f19]/75 backdrop-blur-2xl sm:rounded-3xl sm:border sm:border-white/10 sm:shadow-[0_20px_70px_rgba(0,0,0,0.65)] overflow-hidden relative">
+        {/* PRO Top Glass Header Bar */}
+        <header 
+          style={{ paddingTop: 'max(12px, calc(env(safe-area-inset-top, 0px) + 8px))' }}
+          className="w-full px-3.5 sm:px-6 py-2.5 sm:py-3 bg-white/[0.04] backdrop-blur-xl border-b border-white/10 shadow-xs flex flex-col gap-2.5 z-40 shrink-0 relative"
+        >
+          <div className="flex items-center justify-between gap-2 min-w-0">
+            {/* Mobile Sidebar Hamburger & Brand Logo */}
+            <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+              <button
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('prism:toggle_sidebar'));
+                }}
+                className="p-2 -ml-1 rounded-xl bg-white/10 hover:bg-white/15 text-slate-200 hover:text-white transition-colors cursor-pointer shrink-0 lg:hidden flex items-center justify-center border border-white/10"
+                title="사이드바 메뉴 열기"
+                aria-label="메뉴 열기"
+              >
+                <Menu size={18} />
+              </button>
+              <div
+                onClick={() => navigate('/')}
+                className="flex items-center gap-2 sm:gap-3 min-w-0 cursor-pointer group select-none"
+                role="button"
+                tabIndex={0}
+                title="Lucy ai"
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate('/'); }}
+              >
+                <div className="relative group">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-amber-500 via-amber-400 to-yellow-300 flex items-center justify-center text-slate-950 shadow-md font-bold text-base sm:text-lg shrink-0 ring-2 ring-amber-400/40 group-hover:scale-105 transition-transform">
+                    <Sparkles size={18} className="text-slate-950" />
+                  </div>
+                  <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-slate-900 ring-1 ring-emerald-300 animate-pulse" title="Lucy ai 실시간 온라인" />
                 </div>
-                <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white ring-1 ring-emerald-300 animate-pulse" title="Lucy ai 실시간 온라인" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <h1 className="text-sm sm:text-lg font-black text-slate-900 tracking-tight flex items-center gap-1.5">
-                    Lucy ai
-                  </h1>
-                  <span className="text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-violet-600/10 via-purple-600/10 to-indigo-600/10 text-indigo-600 border border-indigo-200/60 flex items-center gap-1">
-                    <Sparkles size={10} className="text-indigo-500 animate-spin" />
-                    AI 자동 감지
-                  </span>
-                  {autoDetectedTitle && (
-                    <span className="text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200/80">
-                      {autoDetectedTitle}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <h1 className="text-sm sm:text-lg font-black text-white tracking-tight flex items-center gap-1.5">
+                      Lucy ai
+                    </h1>
+                    <span className="text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 flex items-center gap-1">
+                      <Sparkles size={10} className="text-indigo-400 animate-spin" />
+                      AI 자동 감지
                     </span>
-                  )}
+                    {autoDetectedTitle && (
+                      <span className="text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/40">
+                        {autoDetectedTitle}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">
+                    {autoDetectedTitle ? `${autoDetectedTitle} · 실시간 맞춤 지능 응답 가동 중` : '대화 내용과 맥락에 맞춰 최적의 지능 모드가 실시간 자동 감지됩니다.'}
+                  </p>
                 </div>
-                <p className="text-[10px] sm:text-[11px] text-slate-500 font-medium truncate">
-                  {autoDetectedTitle ? `${autoDetectedTitle} · 실시간 맞춤 지능 응답 가동 중` : '대화 내용과 맥락에 맞춰 최적의 지능 모드가 실시간 자동 감지됩니다.'}
-                </p>
               </div>
+            </div>
+
+            {/* Right Action Tools: 1. 검색 -> 2. 자동 읽기 -> 3. 초기화 */}
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              {/* 1. 검색 (Search Toggle) */}
+              <button
+                onClick={() => setIsSearchOpen(!isSearchOpen)}
+                className={`p-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center border ${
+                  isSearchOpen ? 'bg-amber-500/20 text-amber-300 border-amber-400/50' : 'bg-white/10 hover:bg-white/15 text-slate-300 border-white/10'
+                }`}
+                title="대화 내역 검색"
+                aria-label="대화 검색"
+              >
+                <Search size={16} />
+              </button>
+
+              {/* 🔊 루시 답변 자동 음성 읽기 (Auto-TTS 바로재생 토글 버튼) */}
+              <button
+                type="button"
+                onClick={toggleAutoTts}
+                className={`p-2 rounded-xl transition-all shadow-xs active:scale-95 cursor-pointer shrink-0 flex items-center gap-1.5 border ${
+                  isAutoTts
+                    ? 'bg-gradient-to-r from-emerald-500/25 to-teal-500/25 text-emerald-300 border-emerald-400/50 shadow-sm font-semibold'
+                    : 'bg-white/10 text-slate-400 hover:text-slate-200 border-white/10'
+                }`}
+                title={isAutoTts ? '루시 답변 자동 음성 읽기 켜짐 - 클릭하여 끄기' : '자동 음성 읽기 꺼짐 - 클릭하여 켜기'}
+                aria-label={isAutoTts ? '루시 답변 자동 음성 읽기 켜짐' : '자동 음성 읽기 꺼짐'}
+              >
+                {isAutoTts ? (
+                  <>
+                    <Volume2 size={16} className="text-emerald-400 animate-pulse" />
+                    <span className="text-[11px] font-bold text-emerald-300 hidden sm:inline">자동 읽기</span>
+                  </>
+                ) : (
+                  <>
+                    <VolumeX size={16} className="text-slate-400" />
+                    <span className="text-[11px] font-medium text-slate-400 hidden sm:inline">자동 읽기 OFF</span>
+                  </>
+                )}
+              </button>
+
+              {/* 초기화 (Clear / Reset Chat) */}
+              {lucyMessages.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setIsResetConfirmOpen(true)}
+                  className="p-2 rounded-xl bg-white/10 hover:bg-rose-500/20 hover:text-rose-300 text-slate-400 hover:border-rose-400/40 border border-white/10 transition-all cursor-pointer flex items-center justify-center shrink-0"
+                  title="대화 초기화 (새 대화 시작)"
+                  aria-label="대화 초기화"
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
+
+              {/* 📥 Export Chat */}
+              {lucyMessages.length > 0 && (
+                <button
+                  onClick={handleExportChat}
+                  className="p-2 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 border border-white/10 text-xs font-semibold transition-all cursor-pointer hidden xs:flex items-center justify-center"
+                  title="대화 내역 Markdown으로 내보내기"
+                  aria-label="대화 내보내기"
+                >
+                  <Download size={15} />
+                </button>
+              )}
+
+              {/* 로그인 버튼 (비로그인 상태일 때만 표시) */}
+              {!firebaseUser && (
+                <button
+                  onClick={() => signInWithGoogle()}
+                  className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-xs font-bold text-amber-200 transition-colors cursor-pointer"
+                >
+                  로그인
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Right Action Tools: 1. 검색 -> 2. 자동 읽기 -> 3. 초기화 */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            {/* 1. 검색 (Search Toggle) */}
-            <button
-              onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className={`p-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center ${
-                isSearchOpen ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
-              }`}
-              title="대화 내역 검색"
-              aria-label="대화 검색"
-            >
-              <Search size={16} />
-            </button>
-
-            {/* 🔊 루시 답변 자동 음성 읽기 (Auto-TTS 바로재생 토글 버튼) */}
-            <button
-              type="button"
-              onClick={toggleAutoTts}
-              className={`p-2 rounded-xl transition-all shadow-xs active:scale-95 cursor-pointer shrink-0 flex items-center gap-1.5 ${
-                isAutoTts
-                  ? 'bg-gradient-to-r from-emerald-50 to-teal-100/80 text-emerald-800 border border-emerald-300 shadow-2xs font-semibold'
-                  : 'bg-slate-100/90 text-slate-400 hover:text-slate-600 border border-slate-200/80'
-              }`}
-              title={isAutoTts ? '질문자(남성) 및 루시 답변(여성) 연속 자동 음성 읽기 켜짐 - 클릭하여 끄기' : '자동 음성 읽기 꺼짐 - 클릭하여 켜기'}
-              aria-label={isAutoTts ? '질문·답변 연속 자동 음성 읽기 켜짐' : '자동 음성 읽기 꺼짐'}
-            >
-              {isAutoTts ? (
-                <>
-                  <Volume2 size={16} className="text-emerald-600 animate-pulse" />
-                  <span className="text-[11px] font-bold text-emerald-800 hidden sm:inline">자동 읽기</span>
-                </>
-              ) : (
-                <>
-                  <VolumeX size={16} className="text-slate-400" />
-                  <span className="text-[11px] font-medium text-slate-500 hidden sm:inline">자동 읽기 OFF</span>
-                </>
-              )}
-            </button>
-
-            {/* 초기화 (Clear / Reset Chat) */}
-            {lucyMessages.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setIsResetConfirmOpen(true)}
-                className="p-2 rounded-xl bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-500 hover:border-rose-200 transition-all cursor-pointer flex items-center justify-center shrink-0"
-                title="대화 초기화 (새 대화 시작)"
-                aria-label="대화 초기화"
+          {/* 🔍 Search Input Dropdown */}
+          <AnimatePresence>
+            {isSearchOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden"
               >
-                <Trash2 size={16} />
-              </button>
+                <div className="flex items-center gap-2 bg-white/10 border border-white/15 rounded-xl px-3 py-1.5 focus-within:border-amber-400/60 focus-within:bg-white/15 transition-all">
+                  <Search size={14} className="text-slate-400 shrink-0" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="대화 내용 검색 (키워드 입력)..."
+                    className="flex-1 bg-transparent text-xs sm:text-sm text-slate-100 placeholder-slate-400 outline-none"
+                    autoFocus
+                  />
+                  {searchQuery && (
+                    <span className="text-[11px] font-medium text-amber-300 bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-400/30">
+                      {filteredMessages.length}개 발견
+                    </span>
+                  )}
+                  <button 
+                    onClick={() => { setSearchQuery(''); setIsSearchOpen(false); }}
+                    className="text-slate-400 hover:text-slate-200 p-1 cursor-pointer"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </header>
+
+        {/* Chat Messages Stream */}
+        <main ref={messagesContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-6 w-full select-text">
+          <div ref={messagesWrapperRef} className="space-y-3 sm:space-y-4 pb-28 sm:pb-32">
+            {filteredMessages.length === 0 && (
+              <div className="text-center py-10 sm:py-16 px-4 space-y-6 max-w-xl mx-auto">
+                <div className="relative inline-block">
+                  <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-amber-500/20 via-yellow-500/20 to-emerald-500/20 text-amber-400 flex items-center justify-center mx-auto shadow-xl ring-1 ring-white/20 backdrop-blur-md">
+                    <Sparkles size={38} className="text-amber-300 animate-pulse" />
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500/90 border-2 border-slate-900 flex items-center justify-center text-[10px] shadow-sm">
+                    🍀
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                    안녕하세요, {userDisplayName} 님! LucKey Lucy예요.
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-md mx-auto">
+                    어떤 이야기든 자유롭게 시작해 보세요.<br />
+                    대화의 결에 맞춰 사주·전략·치유·호흡·창의 등 최적의 전문 지능이 실시간으로 조율됩니다.
+                  </p>
+                </div>
+
+                {/* 4가지 추천 즉시 시작 질문 칩 그리드 */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 text-left">
+                  {[
+                    { icon: '🍀', text: '오늘 나를 위한 행운의 주파수와 조언을 들려줘' },
+                    { icon: '✨', text: '지금 내 마음의 불안과 긴장을 편안하게 녹여줘' },
+                    { icon: '🧭', text: '앞으로 마주할 중요한 결정의 실마리를 짚어줘' },
+                    { icon: '💡', text: '새로운 영감과 아이디어를 위한 신선한 발상을 던져줘' }
+                  ].map((item, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleSend(item.text)}
+                      className="p-3.5 rounded-2xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 hover:border-amber-400/40 text-xs text-slate-200 hover:text-white transition-all text-left flex items-start gap-2.5 group cursor-pointer shadow-sm active:scale-98"
+                    >
+                      <span className="text-base shrink-0 group-hover:scale-110 transition-transform">{item.icon}</span>
+                      <span className="leading-snug">{item.text}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
 
-            {/*  Export Chat */}
-            {lucyMessages.length > 0 && (
-              <button
-                onClick={handleExportChat}
-                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold transition-all cursor-pointer hidden xs:flex items-center justify-center"
-                title="대화 내역 Markdown으로 내보내기"
-                aria-label="대화 내보내기"
-              >
-                <Download size={15} />
-              </button>
-            )}
+            {filteredMessages.map((msg, index) => {
+              const isUser = msg.role === 'user';
+              const msgId = String(msg.id || index);
+              const rawContent = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content);
+              const timeStr = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '';
+              const hasImage = Array.isArray(msg.content) && msg.content.some((item: any) => item.type === 'image_url');
+              const imageUrl = hasImage ? (msg.content as any[]).find((item: any) => item.type === 'image_url')?.image_url?.url : null;
+              const rawTextContent = Array.isArray(msg.content) ? (msg.content as any[]).find((item: any) => item.type === 'text')?.text || '' : rawContent;
+              const textContent = isUser ? cleanUserMessageDisplay(rawTextContent) : rawTextContent;
+              const msgModeInfo = resolveMessageModeAndChannels(msg, filteredMessages, index);
 
-            {/* 로그인 버튼 (비로그인 상태일 때만 표시) */}
-            {!firebaseUser && (
-              <button
-                onClick={() => signInWithGoogle()}
-                className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs font-bold text-slate-700 transition-colors cursor-pointer"
-              >
-                로그인
-              </button>
+              return (
+                <motion.div
+                  key={msgId}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
+                >
+                  {/* Speaker Label, Mode Badge Pill (Clickable) & Timestamp */}
+                  <div className="flex items-center gap-1.5 mb-1.5 px-1 text-[11px] flex-wrap">
+                    {!isUser ? (
+                      <span className="font-bold text-amber-300 flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                        Lucy
+                      </span>
+                    ) : (
+                      <span className="font-bold text-indigo-300 flex items-center gap-1">
+                        <User size={12} className="text-indigo-400" />
+                        {userDisplayName}
+                      </span>
+                    )}
+
+                    {/* Clickable Mode Badge Pill */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleActivateMessageMode(msgModeInfo.channels, msgModeInfo.isMaster, msgModeInfo.badgeLabel);
+                      }}
+                      className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border border-white/15 bg-white/10 hover:bg-white/15 text-slate-200 transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                      title={`클릭 시 [${msgModeInfo.badgeLabel}] 모드로 즉각 전환됩니다.`}
+                    >
+                      <span>{msgModeInfo.badgeIcon}</span>
+                      <span>{msgModeInfo.badgeLabel}</span>
+                      <span className="text-[9px] opacity-75 font-normal">모드 ON</span>
+                    </button>
+
+                    <span className="text-[10px] text-slate-400">{timeStr}</span>
+                  </div>
+
+                  <div className="relative group max-w-[92%] sm:max-w-[85%] lg:max-w-[80%]">
+                    {/* Attached Image Preview */}
+                    {(() => {
+                      const cardImageToDisplay = isUser ? imageUrl : (imageUrl || null);
+                      if (!cardImageToDisplay) return null;
+                      return (
+                        <div className="mb-2 overflow-hidden rounded-2xl border border-white/15 shadow-sm max-w-xs bg-black/40 min-h-[100px]">
+                          <img 
+                            src={cardImageToDisplay} 
+                            alt="첨부 이미지" 
+                            loading="lazy"
+                            className="w-full h-auto object-cover max-h-64 rounded-2xl" 
+                          />
+                        </div>
+                      );
+                    })()}
+
+                    {/* Message Bubble */}
+                    <div 
+                      className={`p-4 sm:p-5 rounded-2xl sm:rounded-3xl text-sm sm:text-[15px] lg:text-base leading-relaxed shadow-lg select-text ${
+                        isUser
+                          ? 'bg-gradient-to-r from-violet-600/90 to-indigo-600/90 backdrop-blur-md text-white rounded-tr-xs border border-violet-400/30 font-sans'
+                          : 'bg-white/[0.07] backdrop-blur-xl border border-white/10 text-slate-100 rounded-tl-xs font-sans transition-all'
+                      }`}
+                    >
+                      {isUser ? (
+                        <div className="whitespace-pre-wrap">{textContent}</div>
+                      ) : (
+                        <>
+                          <LucyProTypewriter 
+                            content={textContent}
+                            isLatest={index === filteredMessages.length - 1}
+                            isGenerating={isLucyGenerating && index === filteredMessages.length - 1}
+                            darkMode={true}
+                          />
+                          {/* 🔮 LucKey 연계 추천 채널 및 Key 실천 도약 바 */}
+                          {(() => {
+                            if (isLucyGenerating && index === filteredMessages.length - 1) return null;
+                            if (!textContent || textContent.trim().length <= 10) return null;
+                            if (msgModeInfo.isCasual) return null;
+
+                            const isGreeting = (() => {
+                              if (msgId === 'greet' || msgId === 'greet-main' || msgId.startsWith('greet-') || msgId.toLowerCase().includes('greet')) {
+                                return true;
+                              }
+                              const prevUser = filteredMessages.slice(0, index).reverse().find((m: any) => m.role === 'user');
+                              if (!prevUser) {
+                                return true;
+                              }
+                              const cleanText = textContent.trim();
+                              if (
+                                cleanText.includes("통합 AI 마스터 가이드 '루시'야") ||
+                                cleanText.includes('반가워! 나는 루시야') ||
+                                cleanText.includes('오늘도 새로운 하루가 시작되었어') ||
+                                cleanText.includes('지난 대화들의 소중한 이야기들도 내 마음에 다 간직하고 있으니') ||
+                                cleanText.includes('영혼 여정을 함께하는')
+                              ) {
+                                return true;
+                              }
+                              const userText = (typeof prevUser.content === 'string'
+                                ? prevUser.content
+                                : Array.isArray(prevUser.content)
+                                ? prevUser.content.find((item: any) => item.type === 'text')?.text || ''
+                                : '').trim();
+                              if (!userText) {
+                                return true;
+                              }
+                              const isSimpleGreetingQuery = /^(안녕|안녕하세요|안뇽|하이|hi|hello|좋은\s*아침|좋은\s*하루|반가워|반갑습니다|루시\s*안녕|루시야\s*안녕|안녕\s*루시)[!~.\s]*$/i.test(userText);
+                              if (isSimpleGreetingQuery && cleanText.length < 160) {
+                                return true;
+                              }
+                              return false;
+                            })();
+
+                            if (isGreeting) return null;
+
+                            const prevUser = filteredMessages.slice(0, index).reverse().find((m: any) => m.role === 'user');
+                            const prevUserQuery = prevUser
+                              ? typeof prevUser.content === 'string'
+                                ? prevUser.content
+                                : Array.isArray(prevUser.content)
+                                ? prevUser.content.find((item: any) => item.type === 'text')?.text || ''
+                                : ''
+                              : '';
+
+                            return (
+                              <div className="mt-2.5">
+                                <LucyResponseRecommendation
+                                  userQuery={prevUserQuery}
+                                  lucyAnswer={textContent}
+                                  currentChannels={activeChannels}
+                                  isCasual={msgModeInfo.isCasual}
+                                  isGreeting={isGreeting}
+                                  onSwitchChannel={(channels, isMaster, label) => handleActivateMessageMode(channels, isMaster, label)}
+                                  onNavigate={(path) => navigate(path)}
+                                />
+                              </div>
+                            );
+                          })()}
+
+                        </>
+                      )}
+                    </div>
+
+                    {/* Action buttons: Copy & TTS */}
+                    <div className={`flex items-center gap-1.5 mt-1.5 flex-wrap ${isUser ? 'justify-end pr-1' : 'pl-1'}`}>
+                      <button
+                        onClick={() => handleCopy(msgId, textContent)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                        title="복사"
+                      >
+                        {copiedId === msgId ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                      </button>
+                      <button
+                        onClick={() => handleVoicePlay(msgId, textContent, 'Kore')}
+                        className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                          playingMsgId === msgId && (ttsInfo.isSpeaking || ttsInfo.isLoading)
+                            ? 'text-amber-300 bg-amber-500/20'
+                            : 'text-slate-400 hover:text-amber-300 hover:bg-white/10'
+                        }`}
+                        title={
+                          playingMsgId === msgId && ttsInfo.isLoading
+                            ? "음성 준비 중..."
+                            : playingMsgId === msgId && ttsInfo.isSpeaking
+                            ? "음성 멈추기"
+                            : "음성으로 듣기"
+                        }
+                      >
+                        {playingMsgId === msgId && ttsInfo.isLoading ? (
+                          <Loader2 size={14} className="animate-spin text-amber-400" />
+                        ) : playingMsgId === msgId && ttsInfo.isSpeaking ? (
+                          <VolumeX size={14} className="animate-pulse text-amber-300" />
+                        ) : (
+                          <Volume2 size={14} />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+
+            {isLucyGenerating && (
+              <div className="flex items-center gap-2.5 p-3.5 bg-white/[0.08] backdrop-blur-xl border border-emerald-400/30 rounded-2xl w-fit shadow-md animate-pulse">
+                <span className="text-base select-none animate-bounce">🍀</span>
+                <div className="flex gap-1 items-center">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce" />
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce delay-100" />
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce delay-200" />
+                </div>
+                <span className="text-xs sm:text-sm text-emerald-200 font-bold ml-1">
+                  Lucy가 깊은 영감을 담아 답변을 작성하고 있습니다...
+                </span>
+              </div>
             )}
+            
+            <div className="h-16 w-full shrink-0" />
+            <div ref={chatEndRef} />
           </div>
-        </div>
+        </main>
 
-        {/*  Search Input Dropdown */}
+        {/* Floating Jump to Bottom Button when Scrolled Up */}
         <AnimatePresence>
-          {isSearchOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden"
+          {isUserScrolledUp && (
+            <motion.button
+              initial={{ opacity: 0, y: 10, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.9 }}
+              onClick={() => {
+                isUserScrolledUpRef.current = false;
+                setIsUserScrolledUp(false);
+                scrollToBottom(true, true);
+              }}
+              className="fixed bottom-28 right-5 sm:right-10 z-40 px-3.5 py-2 rounded-full bg-slate-900/90 hover:bg-slate-950 text-white text-xs font-bold shadow-xl backdrop-blur-md border border-white/20 flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+              title="최신 메시지 보기"
             >
-              <div className="flex items-center gap-2 bg-slate-100/90 border border-slate-300/80 rounded-xl px-3 py-1.5 focus-within:border-amber-400 focus-within:bg-white transition-all">
-                <Search size={14} className="text-slate-400 shrink-0" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="대화 내용 검색 (키워드 입력)..."
-                  className="flex-1 bg-transparent text-xs sm:text-sm text-slate-800 placeholder-slate-400 outline-none"
-                  autoFocus
-                />
-                {searchQuery && (
-                  <span className="text-[11px] font-medium text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
-                    {filteredMessages.length}개 발견
-                  </span>
-                )}
+              <ChevronDown size={14} className="text-amber-400 animate-bounce" />
+              <span>최신 대화</span>
+            </motion.button>
+          )}
+        </AnimatePresence>
+
+        {/* Dynamic Context Suggestion Chips */}
+        {!isCasualChat && currentPrompts.length > 0 && (
+          <div className="w-full bg-white/[0.03] backdrop-blur-md border-t border-white/10 shrink-0">
+            <div className="max-w-5xl mx-auto px-3.5 sm:px-6 py-2 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+                {currentPrompts.map((promptText, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleSend(promptText)}
+                    disabled={isLucyGenerating}
+                    className="shrink-0 px-3 py-1.5 rounded-full bg-white/[0.07] hover:bg-white/[0.14] border border-white/10 hover:border-amber-400/40 text-xs font-medium text-slate-200 hover:text-white transition-all shadow-xs cursor-pointer active:scale-95 disabled:opacity-40"
+                  >
+                    {promptText}
+                  </button>
+                ))}
+              </div>
+
+              {/* Random Shuffle Button */}
+              <button
+                onClick={refreshPrompts}
+                className="p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-amber-300 transition-colors shrink-0 cursor-pointer"
+                title="새로운 맞춤 예시 질문 추천 받기 (랜덤 셔플)"
+              >
+                <RefreshCw size={13} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Bottom Glass Input Bar: Image Preview + STT Mic + Multi-Modal Vision + Send */}
+        <footer 
+          style={{ paddingBottom: 'max(0.6rem, calc(var(--sab, 0px) + 0.45rem))' }}
+          className="w-full px-3 sm:px-5 pt-2 pb-2.5 sm:pb-3.5 bg-white/[0.04] backdrop-blur-xl border-t border-white/10 shadow-xs shrink-0 z-30 relative"
+        >
+          <div className="max-w-2xl mx-auto flex flex-col gap-1.5">
+            {/* Image Attachment Preview */}
+            {attachedImage && (
+              <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md p-1.5 rounded-xl w-fit border border-white/15">
+                <img src={attachedImage} alt="첨부 미리보기" className="w-10 h-10 object-cover rounded-lg" />
+                <div className="text-xs text-slate-300 font-medium pr-2">이미지 비전 분석 준비됨</div>
                 <button 
-                  onClick={() => { setSearchQuery(''); setIsSearchOpen(false); }}
-                  className="text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
+                  onClick={() => setAttachedImage(null)}
+                  className="p-1 rounded-full hover:bg-white/20 text-slate-400 hover:text-white cursor-pointer"
                 >
                   <X size={14} />
                 </button>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </header>
+            )}
 
-      {/* Chat Messages Stream */}
-      <main ref={messagesContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-3 sm:p-5 lg:p-6 w-full max-w-5xl xl:max-w-6xl 2xl:max-w-7xl mx-auto select-text">
-        <div ref={messagesWrapperRef} className="space-y-3 sm:space-y-4 pb-28 sm:pb-32">
-          {filteredMessages.length === 0 && (
-            <div className="text-center py-12 sm:py-20 px-4 space-y-5">
-              <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-amber-200 to-amber-100 text-amber-600 flex items-center justify-center mx-auto shadow-sm ring-4 ring-amber-100">
-                <Sparkles size={36} className="text-amber-600" />
-              </div>
-              <div className="space-y-2">
-                <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
-                  안녕하세요, {userDisplayName} 님! Lucy예요.
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-500 max-w-lg mx-auto leading-relaxed">
-                  궁금한 점이나 고민, 일상 이야기를 자유롭게 들려주세요.<br/>AI가 대화 내용을 실시간으로 자동 감지하여 최적의 전문 지능(사주·전략·치유·호흡·창의)으로 응답합니다.
-                </p>
-              </div>
-            </div>
-          )}
+            {/* Live Auto-Detect Indicator Badge */}
+            <AnimatePresence>
+              {isAutoDetect && autoDetectedTitle && input.trim().length >= 2 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 4 }}
+                  className="flex items-center gap-1.5 px-2.5 py-0.5 bg-violet-500/20 border border-violet-400/40 text-violet-200 rounded-full text-[10px] font-semibold w-fit shadow-xs backdrop-blur-md"
+                >
+                  <Sparkles size={11} className="text-violet-400 animate-spin" />
+                  <span>AI 대화 맥락 감지:</span>
+                  <span className="font-bold text-violet-100 underline decoration-violet-400">{autoDetectedTitle}</span>
+                  <span className="text-[9px] text-violet-300 bg-violet-400/20 px-1 py-0.2 rounded-full font-medium">자동 전환됨</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-          {filteredMessages.map((msg, index) => {
-            const isUser = msg.role === 'user';
-            const msgId = String(msg.id || index);
-            const rawContent = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content);
-            const timeStr = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '';
-            const hasImage = Array.isArray(msg.content) && msg.content.some((item: any) => item.type === 'image_url');
-            const imageUrl = hasImage ? (msg.content as any[]).find((item: any) => item.type === 'image_url')?.image_url?.url : null;
-            const rawTextContent = Array.isArray(msg.content) ? (msg.content as any[]).find((item: any) => item.type === 'text')?.text || '' : rawContent;
-            const textContent = isUser ? cleanUserMessageDisplay(rawTextContent) : rawTextContent;
-            const msgModeInfo = resolveMessageModeAndChannels(msg, filteredMessages, index);
-
-            return (
-              <motion.div
-                key={msgId}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
-              >
-                {/* Speaker Label, Mode Badge Pill (Clickable) & Timestamp */}
-                <div className="flex items-center gap-1.5 mb-1.5 px-1 text-[11px] flex-wrap">
-                  {!isUser ? (
-                    <span className="font-bold text-amber-800 flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-amber-500" />
-                      Lucy
-                    </span>
-                  ) : (
-                    <span className="font-bold text-slate-600 flex items-center gap-1">
-                      <User size={12} className="text-slate-400" />
-                      {userDisplayName}
-                    </span>
-                  )}
-
-                  {/* Clickable Mode Badge Pill */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleActivateMessageMode(msgModeInfo.channels, msgModeInfo.isMaster, msgModeInfo.badgeLabel);
-                    }}
-                    className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95 ${msgModeInfo.badgeColor}`}
-                    title={`클릭 시 [${msgModeInfo.badgeLabel}] 모드로 즉각 전환됩니다.`}
-                  >
-                    <span>{msgModeInfo.badgeIcon}</span>
-                    <span>{msgModeInfo.badgeLabel}</span>
-                    <span className="text-[9px] opacity-75 font-normal">모드 ON</span>
-                  </button>
-
-                  <span className="text-[10px] text-slate-400">{timeStr}</span>
-                </div>
-
-                <div className="relative group max-w-[92%] sm:max-w-[85%] lg:max-w-[80%]">
-                  {/* Attached Image Preview (in User Message or Lucy's Card Deep Insight Reply) */}
-                  {(() => {
-                    const cardImageToDisplay = isUser ? imageUrl : (imageUrl || null);
-                    if (!cardImageToDisplay) return null;
-                    return (
-                      <div className="mb-2 overflow-hidden rounded-2xl border border-slate-200 shadow-sm max-w-xs bg-slate-100 min-h-[100px]">
-                        <img 
-                          src={cardImageToDisplay} 
-                          alt="첨부 이미지" 
-                          loading="lazy"
-                          className="w-full h-auto object-cover max-h-64 rounded-2xl" 
-                        />
-                      </div>
-                    );
-                  })()}
-
-                  {/* Message Bubble */}
-                  <div 
-                    className={`p-4 sm:p-5 rounded-2xl sm:rounded-3xl text-sm sm:text-[15px] lg:text-base leading-relaxed shadow-xs select-text ${
-                      isUser
-                        ? 'bg-slate-900 text-white rounded-tr-xs font-sans'
-                        : 'bg-white border border-slate-200/90 text-slate-800 rounded-tl-xs shadow-sm font-sans transition-all'
-                    }`}
-                  >
-                    {isUser ? (
-                      <div className="whitespace-pre-wrap">{textContent}</div>
+            {/* 🔊 실시간 루시 음성 재생 바 */}
+            <AnimatePresence>
+              {(ttsInfo.isSpeaking || ttsInfo.isLoading) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 6 }}
+                  className="flex items-center justify-between px-3 py-1.5 bg-gradient-to-r from-amber-500/20 via-yellow-500/25 to-amber-500/20 border border-amber-400/40 rounded-xl text-xs text-amber-200 shadow-md backdrop-blur-md"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    {ttsInfo.isLoading ? (
+                      <Loader2 size={13} className="animate-spin text-amber-400 shrink-0" />
                     ) : (
-                      <>
-                        <LucyProTypewriter 
-                          content={textContent}
-                          isLatest={index === filteredMessages.length - 1}
-                          isGenerating={isLucyGenerating && index === filteredMessages.length - 1}
-                        />
-                        {/* 🔮 LucKey 연계 추천 채널 및 Key 실천 도약 바: 수다모드 및 루시의 인사말에서는 생략, 전문 모드에서만 유지 */}
-                        {(() => {
-                          if (isLucyGenerating && index === filteredMessages.length - 1) return null;
-                          if (!textContent || textContent.trim().length <= 10) return null;
-                          if (msgModeInfo.isCasual) return null;
-
-                          // 루시의 인사말인지 여부 정밀 판별
-                          const isGreeting = (() => {
-                            if (msgId === 'greet' || msgId === 'greet-main' || msgId.startsWith('greet-') || msgId.toLowerCase().includes('greet')) {
-                              return true;
-                            }
-                            // 이전 사용자 메시지가 전혀 없는 경우 (최초 입장 시 출력되는 루시 인사말)
-                            const prevUser = filteredMessages.slice(0, index).reverse().find((m: any) => m.role === 'user');
-                            if (!prevUser) {
-                              return true;
-                            }
-                            const cleanText = textContent.trim();
-                            if (
-                              cleanText.includes("통합 AI 마스터 가이드 '루시'야") ||
-                              cleanText.includes('반가워! 나는 루시야') ||
-                              cleanText.includes('오늘도 새로운 하루가 시작되었어') ||
-                              cleanText.includes('지난 대화들의 소중한 이야기들도 내 마음에 다 간직하고 있으니') ||
-                              cleanText.includes('영혼 여정을 함께하는')
-                            ) {
-                              return true;
-                            }
-                            const userText = (typeof prevUser.content === 'string'
-                              ? prevUser.content
-                              : Array.isArray(prevUser.content)
-                              ? prevUser.content.find((item: any) => item.type === 'text')?.text || ''
-                              : '').trim();
-                            if (!userText) {
-                              return true;
-                            }
-                            const isSimpleGreetingQuery = /^(안녕|안녕하세요|안뇽|하이|hi|hello|좋은\s*아침|좋은\s*하루|반가워|반갑습니다|루시\s*안녕|루시야\s*안녕|안녕\s*루시)[!~.\s]*$/i.test(userText);
-                            if (isSimpleGreetingQuery && cleanText.length < 160) {
-                              return true;
-                            }
-                            return false;
-                          })();
-
-                          if (isGreeting) return null;
-
-                          const prevUser = filteredMessages.slice(0, index).reverse().find((m: any) => m.role === 'user');
-                          const prevUserQuery = prevUser
-                            ? typeof prevUser.content === 'string'
-                              ? prevUser.content
-                              : Array.isArray(prevUser.content)
-                              ? prevUser.content.find((item: any) => item.type === 'text')?.text || ''
-                              : ''
-                            : '';
-
-                          return (
-                            <div className="mt-2.5">
-                              <LucyResponseRecommendation
-                                userQuery={prevUserQuery}
-                                lucyAnswer={textContent}
-                                currentChannels={activeChannels}
-                                isCasual={msgModeInfo.isCasual}
-                                isGreeting={isGreeting}
-                                onSwitchChannel={(channels, isMaster, label) => handleActivateMessageMode(channels, isMaster, label)}
-                                onNavigate={(path) => navigate(path)}
-                              />
-                            </div>
-                          );
-                        })()}
-
-                      </>
+                      <Volume2 size={13} className="text-amber-400 animate-pulse shrink-0" />
+                    )}
+                    <span className="font-bold text-amber-200 text-[11px] shrink-0">
+                      {ttsInfo.isLoading ? '루시 음성 준비 중...' : '루시 음성 안내 중'}
+                    </span>
+                    {ttsInfo.activeText && ttsInfo.activeText !== '__CONVERSATION__' && (
+                      <span className="text-[10px] text-amber-300/80 truncate max-w-[200px] sm:max-w-[340px]">
+                        "{ttsInfo.activeText.slice(0, 35)}..."
+                      </span>
                     )}
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      stopTTS();
+                      setPlayingMsgId(null);
+                    }}
+                    className="flex items-center gap-1 px-2 py-0.5 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-lg font-bold text-[10px] cursor-pointer active:scale-95 transition-all shadow-xs shrink-0 ml-2"
+                    title="음성 즉시 중지"
+                  >
+                    <Square size={9} className="fill-current" />
+                    <span>중지</span>
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-                  {/* Action buttons: Copy & TTS */}
-                  <div className={`flex items-center gap-1.5 mt-1.5 flex-wrap ${isUser ? 'justify-end pr-1' : 'pl-1'}`}>
-                    <button
-                      onClick={() => handleCopy(msgId, textContent)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-                      title="복사"
-                    >
-                      {copiedId === msgId ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
-                    </button>
-                    <button
-                      onClick={() => handleVoicePlay(msgId, textContent, 'Kore')}
-                      className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                        playingMsgId === msgId && (ttsInfo.isSpeaking || ttsInfo.isLoading)
-                          ? 'text-amber-600 bg-amber-50'
-                          : 'text-slate-400 hover:text-amber-600 hover:bg-slate-100'
-                      }`}
-                      title={
-                        playingMsgId === msgId && ttsInfo.isLoading
-                          ? "음성 준비 중..."
-                          : playingMsgId === msgId && ttsInfo.isSpeaking
-                          ? "음성 멈추기"
-                          : "음성으로 듣기"
-                      }
-                    >
-                      {playingMsgId === msgId && ttsInfo.isLoading ? (
-                        <Loader2 size={14} className="animate-spin text-amber-600" />
-                      ) : playingMsgId === msgId && ttsInfo.isSpeaking ? (
-                        <VolumeX size={14} className="animate-pulse" />
-                      ) : (
-                        <Volume2 size={14} />
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
+            <div className={`flex items-center gap-1.5 sm:gap-2 bg-white/[0.06] border rounded-2xl px-2.5 sm:px-3 py-1 sm:py-1.5 transition-all shadow-inner backdrop-blur-md ${
+              isRecording 
+                ? 'border-rose-400 bg-rose-500/20 ring-2 ring-rose-400/40' 
+                : 'border-white/15 focus-within:border-amber-400/60 focus-within:bg-white/[0.1]'
+            }`}>
+              {/* Hidden File Input */}
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleImageSelect} 
+                accept="image/*" 
+                className="hidden" 
+              />
 
-          {isLucyGenerating && (
-            <div className="flex items-center gap-2.5 p-3.5 bg-white/95 border border-emerald-200/80 rounded-2xl w-fit shadow-xs animate-pulse">
-              <span className="text-base select-none animate-bounce">🍀</span>
-              <div className="flex gap-1 items-center">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-bounce" />
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-bounce delay-100" />
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-bounce delay-200" />
-              </div>
-              <span className="text-xs sm:text-sm text-emerald-950 font-bold ml-1">
-                Lucy가 답변을 작성하고 있습니다...
-              </span>
-            </div>
-          )}
-          
-          <div className="h-16 w-full shrink-0" />
-          <div ref={chatEndRef} />
-        </div>
-      </main>
-
-      {/*  Floating Jump to Bottom Button when Scrolled Up */}
-      <AnimatePresence>
-        {isUserScrolledUp && (
-          <motion.button
-            initial={{ opacity: 0, y: 10, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.9 }}
-            onClick={() => {
-              isUserScrolledUpRef.current = false;
-              setIsUserScrolledUp(false);
-              scrollToBottom(true, true);
-            }}
-            className="fixed bottom-28 right-5 sm:right-10 z-40 px-3.5 py-2 rounded-full bg-slate-900/90 hover:bg-slate-950 text-white text-xs font-bold shadow-xl backdrop-blur-xs border border-slate-700/60 flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all"
-            title="최신 메시지 보기"
-          >
-            <ChevronDown size={14} className="text-amber-400 animate-bounce" />
-            <span>최신 대화</span>
-          </motion.button>
-        )}
-      </AnimatePresence>
-
-      {/*  Dynamic Context Suggestion Chips (Hidden in Casual Chat mode, Randomly updated in active modes) */}
-      {!isCasualChat && currentPrompts.length > 0 && (
-        <div className="w-full bg-white/80 backdrop-blur-xs border-t border-slate-200/70 shrink-0">
-          <div className="max-w-5xl xl:max-w-6xl 2xl:max-w-7xl mx-auto px-3.5 sm:px-8 lg:px-12 py-2 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
-              {currentPrompts.map((promptText, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleSend(promptText)}
-                  disabled={isLucyGenerating}
-                  className="shrink-0 px-3 py-1.5 rounded-full bg-white hover:bg-amber-50 border border-slate-200 hover:border-amber-300 text-xs font-medium text-slate-700 hover:text-amber-950 transition-all shadow-xs cursor-pointer active:scale-95 disabled:opacity-40"
-                >
-                  {promptText}
-                </button>
-              ))}
-            </div>
-
-            {/*  Random Shuffle Button */}
-            <button
-              onClick={refreshPrompts}
-              className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-amber-600 transition-colors shrink-0 cursor-pointer"
-              title="새로운 맞춤 예시 질문 추천 받기 (랜덤 셔플)"
-            >
-              <RefreshCw size={13} />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ️ Bottom Input Bar: Image Preview + STT Mic + Multi-Modal Vision + Send */}
-      <footer 
-        style={{ paddingBottom: 'max(0.5rem, calc(var(--sab, 0px) + 0.35rem))' }}
-        className="w-full px-3 sm:px-4 pt-1.5 pb-2 sm:pb-3 bg-white/95 backdrop-blur-md border-t border-slate-200/80 shadow-xs shrink-0 z-30 relative"
-      >
-        <div className="max-w-lg sm:max-w-xl mx-auto flex flex-col gap-1.5">
-          {/* Image Attachment Preview */}
-          {attachedImage && (
-            <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl w-fit border border-slate-200">
-              <img src={attachedImage} alt="첨부 미리보기" className="w-10 h-10 object-cover rounded-lg" />
-              <div className="text-xs text-slate-600 font-medium pr-2">이미지 비전 분석 준비됨</div>
-              <button 
-                onClick={() => setAttachedImage(null)}
-                className="p-1 rounded-full hover:bg-slate-200 text-slate-500 cursor-pointer"
+              {/* 📷 Image / Camera Button */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-amber-300 hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+                title="사진/이미지 첨부 (멀티모달 비전 분석)"
               >
-                <X size={14} />
+                <Camera size={16} />
               </button>
-            </div>
-          )}
 
-          {/* Live Auto-Detect Indicator Badge */}
-          <AnimatePresence>
-            {isAutoDetect && autoDetectedTitle && input.trim().length >= 2 && (
-              <motion.div
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 4 }}
-                className="flex items-center gap-1.5 px-2.5 py-0.5 bg-violet-50 border border-violet-200/90 text-violet-900 rounded-full text-[10px] font-semibold w-fit shadow-2xs"
+              {/* 🎙️ STT Mic Voice Input Button */}
+              <button
+                type="button"
+                onClick={toggleSpeechRecognition}
+                className={`p-1.5 rounded-xl transition-all cursor-pointer shrink-0 ${
+                  isRecording 
+                    ? 'bg-rose-500 text-white animate-pulse shadow-md' 
+                    : 'text-slate-400 hover:text-amber-300 hover:bg-white/10'
+                }`}
+                title={isRecording ? '음성 녹음 중지' : '마이크로 음성 말하기 (Speech to Text)'}
               >
-                <Sparkles size={11} className="text-violet-600 animate-spin" />
-                <span>AI 대화 맥락 감지:</span>
-                <span className="font-bold text-violet-950 underline decoration-violet-300">{autoDetectedTitle}</span>
-                <span className="text-[9px] text-violet-600 bg-violet-100/80 px-1 py-0.2 rounded-full font-medium">자동 전환됨</span>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                {isRecording ? <MicOff size={16} /> : <Mic size={16} />}
+              </button>
 
-          {/* 🔊 실시간 루시 음성 재생 바 (현재 말하는 중일 때 즉시 멈춤 지원) */}
-          <AnimatePresence>
-            {(ttsInfo.isSpeaking || ttsInfo.isLoading) && (
-              <motion.div
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 6 }}
-                className="flex items-center justify-between px-3 py-1.5 bg-gradient-to-r from-amber-500/15 via-yellow-500/20 to-amber-500/15 border border-amber-300/80 rounded-xl text-xs text-amber-950 shadow-xs backdrop-blur-xs"
+              {/* 🔊 Auto-TTS Quick Toggle Button */}
+              <button
+                type="button"
+                onClick={toggleAutoTts}
+                className={`p-1.5 rounded-xl transition-all cursor-pointer shrink-0 ${
+                  isAutoTts
+                    ? 'text-emerald-300 bg-emerald-500/25 border border-emerald-400/40 shadow-xs'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/10'
+                }`}
+                title={isAutoTts ? '루시 답변 자동 음성 읽기 켜짐 (클릭 시 끄기)' : '자동 음성 읽기 꺼짐 (클릭 시 켜기)'}
+                aria-label={isAutoTts ? '음성 자동 읽기 켜짐' : '음성 자동 읽기 꺼짐'}
               >
-                <div className="flex items-center gap-2 min-w-0">
-                  {ttsInfo.isLoading ? (
-                    <Loader2 size={13} className="animate-spin text-amber-600 shrink-0" />
-                  ) : (
-                    <Volume2 size={13} className="text-amber-600 animate-pulse shrink-0" />
-                  )}
-                  <span className="font-bold text-amber-950 text-[11px] shrink-0">
-                    {ttsInfo.isLoading ? '루시 음성 준비 중...' : '루시 음성 안내 중'}
-                  </span>
-                  {ttsInfo.activeText && ttsInfo.activeText !== '__CONVERSATION__' && (
-                    <span className="text-[10px] text-amber-900/70 truncate max-w-[200px] sm:max-w-[340px]">
-                      "{ttsInfo.activeText.slice(0, 35)}..."
-                    </span>
-                  )}
-                </div>
+                {isAutoTts ? <Volume2 size={16} className="text-emerald-400 animate-pulse" /> : <VolumeX size={16} />}
+              </button>
+
+              {/* Textarea */}
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                placeholder={
+                  isRecording 
+                    ? '마이크로 말씀하시는 중입니다...' 
+                    : isCasualChat 
+                    ? '루시와 편하게 이야기해 보세요... (빅뱅 버튼 홀드로 즉시 음성 대화)'
+                    : isFullProMaster 
+                    ? '5대 지능 풀가동 마스터에게 무엇이든 질문해 보세요... (Enter 전송)'
+                    : `${currentModeTitle}에 질문해 보세요... (Enter 전송)`
+                }
+                rows={1}
+                className="flex-1 bg-transparent text-slate-100 placeholder-slate-400 text-xs sm:text-sm resize-none outline-none leading-relaxed min-h-[34px] max-h-[100px] py-1"
+              />
+
+              {/* Send or Stop Generation Button */}
+              {isLucyGenerating ? (
                 <button
                   type="button"
-                  onClick={() => {
-                    stopTTS();
-                    setPlayingMsgId(null);
-                  }}
-                  className="flex items-center gap-1 px-2 py-0.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold text-[10px] cursor-pointer active:scale-95 transition-all shadow-2xs shrink-0 ml-2"
-                  title="음성 즉시 중지"
+                  onClick={handleAbortGeneration}
+                  className="p-2 sm:p-2.5 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl transition-all shadow-md cursor-pointer shrink-0 active:scale-95 flex items-center justify-center animate-pulse"
+                  title="답변 생성 중단 (클릭 시 대기를 즉시 멈추고 입력창이 활성화됩니다)"
+                  aria-label="생성 중단"
                 >
-                  <Square size={9} className="fill-current" />
-                  <span>중지</span>
+                  <Square size={15} className="fill-current text-white" />
                 </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <div className={`flex items-center gap-1.5 sm:gap-2 bg-slate-50 border rounded-2xl px-2.5 sm:px-3 py-1 sm:py-1.5 transition-all shadow-inner ${
-            isRecording 
-              ? 'border-rose-400 bg-rose-50/40 ring-2 ring-rose-200' 
-              : 'border-slate-200 focus-within:border-amber-400 focus-within:bg-white'
-          }`}>
-            {/* Hidden File Input */}
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleImageSelect} 
-              accept="image/*" 
-              className="hidden" 
-            />
-
-            {/*  Image / Camera Button */}
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="p-1.5 rounded-xl text-slate-400 hover:text-amber-700 hover:bg-slate-200/70 transition-colors cursor-pointer shrink-0"
-              title="사진/이미지 첨부 (멀티모달 비전 분석)"
-            >
-              <Camera size={16} />
-            </button>
-
-            {/* ️ STT Mic Voice Input Button */}
-            <button
-              type="button"
-              onClick={toggleSpeechRecognition}
-              className={`p-1.5 rounded-xl transition-all cursor-pointer shrink-0 ${
-                isRecording 
-                  ? 'bg-rose-500 text-white animate-pulse shadow-sm' 
-                  : 'text-slate-400 hover:text-amber-700 hover:bg-slate-200/70'
-              }`}
-              title={isRecording ? '음성 녹음 중지' : '마이크로 음성 말하기 (Speech to Text)'}
-            >
-              {isRecording ? <MicOff size={16} /> : <Mic size={16} />}
-            </button>
-
-            {/* 🔊 Auto-TTS Quick Toggle Button (입력창 바로 옆 원클릭 토글) */}
-            <button
-              type="button"
-              onClick={toggleAutoTts}
-              className={`p-1.5 rounded-xl transition-all cursor-pointer shrink-0 ${
-                isAutoTts
-                  ? 'text-emerald-600 bg-emerald-100/80 border border-emerald-300 shadow-2xs'
-                  : 'text-slate-400 hover:text-slate-600 hover:bg-slate-200/70'
-              }`}
-              title={isAutoTts ? '질문자(남성) 및 루시 답변(여성) 연속 자동 음성 읽기 켜짐 (클릭 시 끄기)' : '자동 음성 읽기 꺼짐 (클릭 시 켜기)'}
-              aria-label={isAutoTts ? '음성 자동 연속 읽기 켜짐' : '음성 자동 읽기 꺼짐'}
-            >
-              {isAutoTts ? <Volume2 size={16} className="text-emerald-600 animate-pulse" /> : <VolumeX size={16} />}
-            </button>
-
-            {/* Textarea */}
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-              placeholder={
-                isRecording 
-                  ? '마이크로 말씀하시는 중입니다...' 
-                  : isCasualChat 
-                  ? '루시와 편하게 이야기해 보세요... (채널을 켜서 전문 상담 가능)'
-                  : isFullProMaster 
-                  ? '5대 지능 풀가동 마스터에게 무엇이든 질문해 보세요... (Enter 전송)'
-                  : `${currentModeTitle}에 질문해 보세요... (Enter 전송)`
-              }
-              rows={1}
-              className="flex-1 bg-transparent text-slate-800 placeholder-slate-400 text-xs sm:text-sm resize-none outline-none leading-relaxed min-h-[34px] max-h-[100px] py-1"
-            />
-
-            {/* Send or Stop Generation Button */}
-            {isLucyGenerating ? (
-              <button
-                type="button"
-                onClick={handleAbortGeneration}
-                className="p-2 sm:p-2.5 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl transition-all shadow-md cursor-pointer shrink-0 active:scale-95 flex items-center justify-center animate-pulse"
-                title="답변 생성 중단 (클릭 시 대기를 즉시 멈추고 입력창이 활성화됩니다)"
-                aria-label="생성 중단"
-              >
-                <Square size={15} className="fill-current text-white" />
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => handleSend()}
-                disabled={!input.trim() && !attachedImage}
-                className="p-2 sm:p-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 disabled:opacity-30 text-slate-950 font-bold rounded-xl transition-all shadow-sm cursor-pointer shrink-0 active:scale-95"
-                title="메시지 전송"
-              >
-                <Send size={15} />
-              </button>
-            )}
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleSend()}
+                  disabled={!input.trim() && !attachedImage}
+                  className="p-2 sm:p-2.5 bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-500 hover:to-yellow-500 disabled:opacity-30 text-slate-950 font-bold rounded-xl transition-all shadow-md cursor-pointer shrink-0 active:scale-95"
+                  title="메시지 전송"
+                >
+                  <Send size={15} />
+                </button>
+              )}
+            </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      </div>
 
-      {/*  제제 님의 소울 프로필 퀵뷰 모달 */}
+      {/* 🔮 제제 님의 소울 프로필 퀵뷰 다크 글래스 모달 */}
       <AnimatePresence>
         {isProfileModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-slate-200 relative space-y-4"
+              className="bg-[#0e1322]/95 rounded-3xl p-6 w-full max-w-md shadow-2xl border border-white/15 relative space-y-4 backdrop-blur-2xl"
             >
               <button
                 onClick={() => setIsProfileModalOpen(false)}
-                className="absolute top-5 right-5 p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-700 cursor-pointer"
+                className="absolute top-5 right-5 p-1.5 rounded-full hover:bg-white/10 text-slate-400 hover:text-white cursor-pointer"
               >
                 <X size={18} />
               </button>
 
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-200 text-white flex items-center justify-center shadow-sm">
-                  <Sparkles size={24} className="text-white" />
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center shadow-md">
+                  <Sparkles size={24} className="text-slate-950" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900">{userDisplayName} 님의 소울 프로필</h3>
-                  <p className="text-xs text-slate-500">Google 계정 연동 및 사주·에너지 요약</p>
+                  <h3 className="text-lg font-bold text-white">{userDisplayName} 님의 소울 프로필</h3>
+                  <p className="text-xs text-slate-400">Google 계정 연동 및 사주·에너지 요약</p>
                 </div>
               </div>
 
-              <div className="bg-amber-50/60 border border-amber-200/80 rounded-2xl p-4 space-y-2.5 text-xs text-slate-700">
-                <div className="flex justify-between border-b border-amber-200/60 pb-2">
-                  <span className="text-slate-500 font-medium">소울 닉네임</span>
-                  <span className="font-bold text-amber-900">{userDisplayName}</span>
+              <div className="bg-white/[0.05] border border-white/10 rounded-2xl p-4 space-y-2.5 text-xs text-slate-200">
+                <div className="flex justify-between border-b border-white/10 pb-2">
+                  <span className="text-slate-400 font-medium">소울 닉네임</span>
+                  <span className="font-bold text-amber-300">{userDisplayName}</span>
                 </div>
-                <div className="flex justify-between border-b border-amber-200/60 pb-2">
-                  <span className="text-slate-500 font-medium">연동 이메일</span>
-                  <span className="font-medium text-slate-800 truncate max-w-[200px]">{firebaseUser?.email || '미연동'}</span>
+                <div className="flex justify-between border-b border-white/10 pb-2">
+                  <span className="text-slate-400 font-medium">연동 이메일</span>
+                  <span className="font-medium text-slate-200 truncate max-w-[200px]">{firebaseUser?.email || '미연동'}</span>
                 </div>
-                <div className="flex justify-between border-b border-amber-200/60 pb-2">
-                  <span className="text-slate-500 font-medium">사주 본원 (일주)</span>
-                  <span className="font-bold text-amber-900">{sajuInfo ? sajuInfo.shortDigest : '기본 분석 진행 중'}</span>
+                <div className="flex justify-between border-b border-white/10 pb-2">
+                  <span className="text-slate-400 font-medium">사주 본원 (일주)</span>
+                  <span className="font-bold text-amber-300">{sajuInfo ? sajuInfo.shortDigest : '기본 분석 진행 중'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500 font-medium">상담 선호 스타일</span>
-                  <span className="font-bold text-emerald-800">{sharedState?.userProfile?.psych?.counselingStyle || '따뜻하고 직관적인 공감'}</span>
+                  <span className="text-slate-400 font-medium">상담 선호 스타일</span>
+                  <span className="font-bold text-emerald-400">{sharedState?.userProfile?.psych?.counselingStyle || '따뜻하고 직관적인 공감'}</span>
                 </div>
               </div>
 
               <div className="flex justify-end pt-2">
                 <button
                   onClick={() => setIsProfileModalOpen(false)}
-                  className="w-full py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="w-full py-2.5 rounded-xl bg-white/15 hover:bg-white/20 text-white font-bold text-xs transition-colors cursor-pointer border border-white/10"
                 >
                   닫기
                 </button>
@@ -1979,32 +2006,32 @@ export default function LucyStandalonePage() {
         )}
       </AnimatePresence>
 
-      {/* ️ 대화 초기화 확인 모달 */}
+      {/* 🗑️ 대화 초기화 확인 다크 글래스 모달 */}
       <AnimatePresence>
         {isResetConfirmOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
             <motion.div
               initial={{ scale: 0.95, opacity: 0, y: 10 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 10 }}
-              className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4"
+              className="bg-[#0e1322]/95 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-white/15 space-y-4 backdrop-blur-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                <div className="w-12 h-12 rounded-2xl bg-rose-500/20 border border-rose-500/30 text-rose-400 flex items-center justify-center shrink-0">
                   <Trash2 size={22} />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900">대화 초기화 & 새 대화 시작</h3>
-                  <p className="text-xs text-slate-500">대화창을 비우고 상쾌하게 새로 시작합니다</p>
+                  <h3 className="text-base font-bold text-white">대화 초기화 & 새 대화 시작</h3>
+                  <p className="text-xs text-slate-400">대화창을 비우고 상쾌하게 새로 시작합니다</p>
                 </div>
               </div>
 
-              <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-2 text-xs text-slate-600 leading-relaxed">
+              <div className="bg-white/[0.05] border border-white/10 rounded-2xl p-4 space-y-2 text-xs text-slate-300 leading-relaxed">
                 <p>
-                  지금까지 나눈 소중한 대화 내역은 루시의 <span className="font-bold text-indigo-600">영구 기억(Soul Memory) 아카이브</span>에 안전하게 요약 보존됩니다.
+                  지금까지 나눈 소중한 대화 내역은 루시의 <span className="font-bold text-indigo-400">영구 기억(Soul Memory) 아카이브</span>에 안전하게 요약 보존됩니다.
                 </p>
-                <p className="text-slate-500">
+                <p className="text-slate-400">
                   대화창을 깨끗한 새 화면으로 초기화할까요?
                 </p>
               </div>
@@ -2013,7 +2040,7 @@ export default function LucyStandalonePage() {
                 <button
                   type="button"
                   onClick={() => setIsResetConfirmOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:bg-white/10 transition-colors cursor-pointer border border-white/10"
                 >
                   취소
                 </button>
@@ -2027,7 +2054,7 @@ export default function LucyStandalonePage() {
                     setResetToast('대화가 깨끗하게 초기화되었습니다.');
                     setTimeout(() => setResetToast(null), 3000);
                   }}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-sm transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
                 >
                   <Trash2 size={14} />
                   <span>초기화하기</span>
@@ -2038,14 +2065,14 @@ export default function LucyStandalonePage() {
         )}
       </AnimatePresence>
 
-      {/*  Reset Feedback Toast */}
+      {/* 🚀 Reset Feedback Toast */}
       <AnimatePresence>
         {resetToast && (
           <motion.div
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-slate-900/90 text-white text-xs font-medium shadow-xl backdrop-blur-md flex items-center gap-2 border border-white/10"
+            className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-slate-900/90 text-white text-xs font-medium shadow-2xl backdrop-blur-md flex items-center gap-2 border border-white/10"
           >
             <span>{resetToast}</span>
           </motion.div>
@@ -2066,9 +2093,6 @@ export default function LucyStandalonePage() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* End of content */}
-
     </div>
   );
 }

@@ -24,8 +24,12 @@ import { sendPrismToss } from '@/lib/prismToss';
 import { tossSelectionToMenu, PRISM_ALL_APP_DESTINATIONS } from '@/lib/selectionContextRecommender';
 import { BigBangCircularMeter } from './BigBangCircularMeter';
 import { PrismAppIcon } from './PrismAppIcon';
+import { useApp } from '@/contexts/AppContext';
+import { playTTS, stopTTS, normalizeTextForSpeech } from '@/utils/tts';
+import { unlockAudioPlayback } from '@/lib/audio';
 
 export function BigBangButton() {
+  const { sendUnifiedMessage } = useApp();
   let location = '/';
   let navigate = (to: string) => {
     if (typeof window !== 'undefined') {
@@ -124,6 +128,143 @@ export function BigBangButton() {
       }
     };
   }, []);
+
+  // 🎙️ 빅뱅버튼 푸시투토크(Push-to-Talk) 음성모드 상태 & 마이크 파동 분석
+  const [isVoiceMode, setIsVoiceMode] = useState(false);
+  const isVoiceModeRef = useRef(false);
+  const [voiceTranscript, setVoiceTranscript] = useState('');
+  const voiceTranscriptRef = useRef('');
+  const [audioVolume, setAudioVolume] = useState(0);
+
+  const voiceRecognitionRef = useRef<any>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioAnalyserRef = useRef<AnalyserNode | null>(null);
+  const audioStreamRef = useRef<MediaStream | null>(null);
+  const audioRafRef = useRef<number | null>(null);
+
+  const stopVoiceRecording = useCallback(() => {
+    isVoiceModeRef.current = false;
+    setIsVoiceMode(false);
+    setAudioVolume(0);
+
+    if (voiceRecognitionRef.current) {
+      try {
+        voiceRecognitionRef.current.stop();
+      } catch (_) {}
+      voiceRecognitionRef.current = null;
+    }
+
+    if (audioRafRef.current) {
+      cancelAnimationFrame(audioRafRef.current);
+      audioRafRef.current = null;
+    }
+
+    if (audioStreamRef.current) {
+      audioStreamRef.current.getTracks().forEach((t) => t.stop());
+      audioStreamRef.current = null;
+    }
+
+    if (audioContextRef.current) {
+      audioContextRef.current.close().catch(() => {});
+      audioContextRef.current = null;
+    }
+  }, []);
+
+  const startVoiceRecording = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    stopTTS();
+    unlockAudioPlayback();
+    isVoiceModeRef.current = true;
+    setIsVoiceMode(true);
+    setVoiceTranscript('');
+    voiceTranscriptRef.current = '';
+
+    // 1. Web Speech API STT 가동
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (SpeechRecognition) {
+      try {
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'ko-KR';
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.maxAlternatives = 1;
+
+        recognition.onresult = (event: any) => {
+          let interim = '';
+          let final = '';
+          for (let i = 0; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+              final += event.results[i][0].transcript;
+            } else {
+              interim += event.results[i][0].transcript;
+            }
+          }
+          const text = (final || interim).trim();
+          if (text) {
+            setVoiceTranscript(text);
+            voiceTranscriptRef.current = text;
+          }
+        };
+
+        recognition.onerror = (e: any) => {
+          console.warn('[BigBangVoice] STT error:', e);
+        };
+
+        recognition.start();
+        voiceRecognitionRef.current = recognition;
+      } catch (err) {
+        console.warn('[BigBangVoice] STT start failed:', err);
+      }
+    }
+
+    // 2. 실시간 마이크 오디오 볼륨 파동(Waveform) 분석
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices
+        .getUserMedia({ audio: true })
+        .then((stream) => {
+          if (!isVoiceModeRef.current) {
+            stream.getTracks().forEach((t) => t.stop());
+            return;
+          }
+          audioStreamRef.current = stream;
+          try {
+            const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+            const ctx = new AudioCtx();
+            audioContextRef.current = ctx;
+            const source = ctx.createMediaStreamSource(stream);
+            const analyser = ctx.createAnalyser();
+            analyser.fftSize = 64;
+            source.connect(analyser);
+            audioAnalyserRef.current = analyser;
+
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            const checkVolume = () => {
+              if (!isVoiceModeRef.current) return;
+              analyser.getByteFrequencyData(dataArray);
+              let sum = 0;
+              for (let i = 0; i < dataArray.length; i++) {
+                sum += dataArray[i];
+              }
+              const avg = sum / dataArray.length;
+              setAudioVolume(Math.min(1, avg / 128));
+              audioRafRef.current = requestAnimationFrame(checkVolume);
+            };
+            audioRafRef.current = requestAnimationFrame(checkVolume);
+          } catch (_) {}
+        })
+        .catch((_err) => {
+          // 마이크 권한이 없는 경우에도 기본 호흡 파동 애니메이션 유지
+        });
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      stopVoiceRecording();
+    };
+  }, [stopVoiceRecording]);
 
   // 🎯 현재 활성화된 브라우저 텍스트 선택(스크롤) 내용 추출 (취소되었거나 비어있으면 '' 반환)
   // 일반 본문 노드뿐만 아니라 input/textarea 빈칸 입력창 및 방금 보존된 pending selection까지 완벽 지원
@@ -558,17 +699,15 @@ export function BigBangButton() {
     omniWarpAudio.playWhiteHole();
     triggerHaptic('whitehole');
 
-    // 🎙️ 빅뱅 버튼 500ms 홀드 시 어디서든 루시 AI 실시간 음성모드 자동 가동
+    // 🎙️ 빅뱅 버튼 250ms 홀드 시 푸시투토크(Push-to-Talk) 실시간 음성모드 자동 가동
     if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
     holdTimerRef.current = setTimeout(() => {
       if (touchStartRef.current && !isAborted) {
         triggerHaptic('whitehole');
         omniWarpAudio.playWhiteHole();
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('prism:open_lucy_voice_mode'));
-        }
+        startVoiceRecording();
       }
-    }, 500);
+    }, 250);
 
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(updateLoop);
@@ -577,6 +716,14 @@ export function BigBangButton() {
   const handlePointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
     if (!isPressing || !touchStartRef.current) return;
     currentPointerEventRef.current = e;
+
+    // 만약 드래그 거리가 35px 이상 멀어지면 음성 인식을 중단하고 드래그 모드로 전환
+    if (isVoiceModeRef.current) {
+      const d = Math.hypot(e.clientX - touchStartRef.current.x, e.clientY - touchStartRef.current.y);
+      if (d >= 35) {
+        stopVoiceRecording();
+      }
+    }
   };
 
   // ⚡ 추천 1순위 즉시 도약 헬퍼 (더블탭 시 실행 - 루시와 Key는 엄격 제외)
@@ -948,12 +1095,42 @@ export function BigBangButton() {
       return;
     }
 
-    // 🎙️ [홀드: dist < 20] ➔ 루시 AI 음성모드(여성 목소리 실시간 대화) 즉시 연결!
-    triggerHaptic('whitehole');
-    omniWarpAudio.playWhiteHole();
+    // 🎙️ [홀드 릴리즈: 푸시투토크 음성 녹음 완료 처리]
+    if (isVoiceModeRef.current) {
+      const userSpokenText = voiceTranscriptRef.current.trim();
+      stopVoiceRecording();
 
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('prism:open_lucy_voice_mode'));
+      if (userSpokenText && userSpokenText.length >= 1) {
+        triggerHaptic('whitehole');
+        omniWarpAudio.playWhiteHole();
+
+        // 1. 대화방 메인('/') 화면으로 즉시 이동하여 질문과 답변 노출
+        if (location !== '/') {
+          navigate('/');
+          window.dispatchEvent(new CustomEvent('prism-navigate', { detail: { path: '/' } }));
+          window.dispatchEvent(new CustomEvent('nav-click-active', { detail: { path: '/' } }));
+        }
+
+        // 2. 질문을 루시 AI에게 전달하여 채팅방에 질문과 대답을 함께 기록하고, 루시 답변만 TTS 낭독 (질문 낭독 생략!)
+        sendUnifiedMessage(userSpokenText, 'lucy', undefined, {
+          onFinish: async (fullText) => {
+            // ⚠️ [사용자 요구사항]: tts 질문낭독은 생략하고, 루시의 답변만 즉시 낭독!
+            const cleanAnswer = normalizeTextForSpeech(fullText);
+            if (cleanAnswer) {
+              stopTTS();
+              await playTTS(cleanAnswer, 'Kore', true, '다정');
+            }
+          },
+        });
+
+        touchStartSelectionRef.current = '';
+        setActivePhase('idle');
+        setGauge(0);
+        setDurationMs(0);
+        return;
+      }
+    } else {
+      stopVoiceRecording();
     }
 
     // 🌟 텍스트 드래그(선택) 연동: 글자를 스크롤/선택한 상태에서 빅뱅 홀드 ➔ 루시에게 즉시 토스!
@@ -983,28 +1160,6 @@ export function BigBangButton() {
       }
     }
 
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(
-        new CustomEvent('prism:bigbang_commit', {
-          detail: {
-            phase: 'whitehole',
-            target: {
-              id: 'lucy_voice',
-              name: 'Lucy AI 음성모드',
-              destinationPath: '/',
-              themeColor: '#34d399',
-              eventHorizonMode: 'whitehole',
-              previewLabel: '[홀드 실행] Lucy AI 실시간 음성모드',
-              previewDescription: '루시와 나누는 여성 음성 실시간 대화 모드 연결',
-            },
-            context,
-            metrics: { ...metrics, phase: 'whitehole' },
-            timestamp: Date.now(),
-          },
-        })
-      );
-    }
-
     touchStartSelectionRef.current = '';
     setActivePhase('idle');
     setGauge(0);
@@ -1013,6 +1168,7 @@ export function BigBangButton() {
 
   const handlePointerCancel = () => {
     cleanupGlobalPointerListeners();
+    stopVoiceRecording();
     if (rafRef.current) {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
@@ -1128,6 +1284,32 @@ export function BigBangButton() {
                 <span className="text-yellow-300 font-black">홀드</span><span className="text-slate-300">▸루시</span>
                 <span className="text-slate-500">│</span>
                 <span className="text-cyan-300 font-black">드래그</span><span className="text-slate-300">▸Key</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* 🎙️ Push-to-Talk 실시간 음성인식 HUD 칩 */}
+          <AnimatePresence>
+            {isVoiceMode && (
+              <motion.div
+                initial={{ opacity: 0, y: 12, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 8, scale: 0.9 }}
+                transition={{ duration: 0.15, ease: 'easeOut' }}
+                className="absolute -top-20 left-1/2 -translate-x-1/2 pointer-events-none z-50 flex flex-col items-center whitespace-nowrap select-none"
+              >
+                <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-950/95 backdrop-blur-md border border-cyan-400/60 shadow-[0_0_24px_rgba(56,189,248,0.5)]">
+                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_#f43f5e]" />
+                  <span className="text-xs font-bold text-white tracking-tight">
+                    루시가 듣고 있어요...
+                  </span>
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cyan-500/25 text-cyan-300 border border-cyan-400/40">
+                    손을 떼면 전송
+                  </span>
+                </div>
+                <div className="text-[11px] text-cyan-200 font-medium mt-1 px-3 py-1 bg-black/80 rounded-lg backdrop-blur-sm drop-shadow max-w-[280px] sm:max-w-[360px] truncate text-center border border-white/10">
+                  {voiceTranscript ? `"${voiceTranscript}"` : '편안히 말씀해 주세요...'}
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -1332,33 +1514,71 @@ export function BigBangButton() {
                 }}
               />
 
-              {/* 🎯 Big Bang Center: 순수 코스믹 싱귤래리티 코어 (아이콘 없이 순수 빛과 에너지 집중) */}
+              {/* 🎯 Big Bang Center: 음성 인식 중일 때는 실시간 파동(Waveform), 대기 시 순수 코스믹 코어 */}
               <div className="relative z-20 w-full h-full rounded-full flex items-center justify-center text-center select-none pointer-events-none">
-                <div className="relative flex items-center justify-center pointer-events-none">
-                  <div
-                    className={`rounded-full transition-all duration-200 ${
-                      isPressing
-                        ? activePhase === 'wormhole'
-                          ? 'w-4 h-4 bg-cyan-200 blur-[0.5px] shadow-[0_0_14px_#38bdf8]'
-                          : isWhiteholeMode
-                          ? 'w-4 h-4 bg-white blur-[0.5px] shadow-[0_0_18px_#ffffff]'
-                          : isBlackholeMode
-                          ? 'w-3 h-3 bg-black border border-purple-400/60 shadow-[0_0_12px_#000000]'
-                          : 'w-3.5 h-3.5 bg-cyan-300/90 blur-[0.5px] shadow-[0_0_10px_#38bdf8]'
-                        : 'w-2.5 h-2.5 bg-cyan-300/80 blur-[1px] animate-pulse'
-                    }`}
-                  />
-                  <div
-                    className={`absolute rounded-full border border-cyan-400/30 transition-all duration-300 ${
-                      isPressing ? 'w-8 h-8 scale-110 opacity-70' : 'w-5 h-5 animate-ping opacity-40'
-                    }`}
-                  />
-                  <div
-                    className={`absolute rounded-full border border-purple-400/20 transition-all duration-300 ${
-                      isPressing ? 'w-12 h-12 scale-115 opacity-60' : 'w-8 h-8 animate-pulse opacity-30'
-                    }`}
-                  />
-                </div>
+                {isVoiceMode ? (
+                  <div className="relative flex items-center justify-center pointer-events-none">
+                    {/* 동심원 음파 리플 파동 (Expanding Sonar Ripple Waves) */}
+                    <motion.div
+                      animate={{ scale: [1, 1.5 + audioVolume * 0.8, 2.2 + audioVolume * 1.2], opacity: [0.75, 0.35, 0] }}
+                      transition={{ repeat: Infinity, duration: 1.1, ease: 'easeOut' }}
+                      className="absolute w-7 h-7 rounded-full border border-cyan-400/70 pointer-events-none shadow-[0_0_12px_rgba(56,189,248,0.6)]"
+                    />
+                    <motion.div
+                      animate={{ scale: [1, 1.3 + audioVolume * 0.6, 1.8 + audioVolume * 0.9], opacity: [0.6, 0.25, 0] }}
+                      transition={{ repeat: Infinity, duration: 1.1, delay: 0.35, ease: 'easeOut' }}
+                      className="absolute w-7 h-7 rounded-full border border-amber-300/60 pointer-events-none shadow-[0_0_10px_rgba(253,230,138,0.5)]"
+                    />
+
+                    {/* 5개 네온 이퀄라이저 파동 바 (Dancing Waveform Bars) */}
+                    <div className="flex items-center justify-center gap-[3px] h-9 z-30">
+                      {[0.45, 0.85, 1.3, 0.85, 0.45].map((scaleFactor, idx) => {
+                        const minH = 6 * scaleFactor;
+                        const maxH = Math.max(10, 28 * scaleFactor * (0.8 + audioVolume * 2.2));
+                        return (
+                          <motion.div
+                            key={idx}
+                            className="w-[3px] rounded-full bg-gradient-to-t from-cyan-400 via-amber-300 to-white shadow-[0_0_8px_rgba(56,189,248,0.9)]"
+                            animate={{
+                              height: [`${minH}px`, `${maxH}px`, `${minH}px`],
+                            }}
+                            transition={{
+                              repeat: Infinity,
+                              duration: 0.32 + idx * 0.05,
+                              ease: 'easeInOut',
+                            }}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative flex items-center justify-center pointer-events-none">
+                    <div
+                      className={`rounded-full transition-all duration-200 ${
+                        isPressing
+                          ? activePhase === 'wormhole'
+                            ? 'w-4 h-4 bg-cyan-200 blur-[0.5px] shadow-[0_0_14px_#38bdf8]'
+                            : isWhiteholeMode
+                            ? 'w-4 h-4 bg-white blur-[0.5px] shadow-[0_0_18px_#ffffff]'
+                            : isBlackholeMode
+                            ? 'w-3 h-3 bg-black border border-purple-400/60 shadow-[0_0_12px_#000000]'
+                            : 'w-3.5 h-3.5 bg-cyan-300/90 blur-[0.5px] shadow-[0_0_10px_#38bdf8]'
+                          : 'w-2.5 h-2.5 bg-cyan-300/80 blur-[1px] animate-pulse'
+                      }`}
+                    />
+                    <div
+                      className={`absolute rounded-full border border-cyan-400/30 transition-all duration-300 ${
+                        isPressing ? 'w-8 h-8 scale-110 opacity-70' : 'w-5 h-5 animate-ping opacity-40'
+                      }`}
+                    />
+                    <div
+                      className={`absolute rounded-full border border-purple-400/20 transition-all duration-300 ${
+                        isPressing ? 'w-12 h-12 scale-115 opacity-60' : 'w-8 h-8 animate-pulse opacity-30'
+                      }`}
+                    />
+                  </div>
+                )}
               </div>
             </motion.button>
           </div>

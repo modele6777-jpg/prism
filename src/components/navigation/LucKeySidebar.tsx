@@ -21,6 +21,35 @@ import {
 import { useApp } from '@/contexts/AppContext';
 import { safeLocalStorage } from '@/utils/safeStorage';
 import { loadProfileFromAllVaults } from '@/lib/profileVault';
+import { LucKeyIntroModal } from './LucKeyIntroModal';
+
+export function LucKeyCloverKeyIcon({ size = 20, className = '' }: { size?: number; className?: string }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      {/* 4-leaf clover bow */}
+      <circle cx="12" cy="5.2" r="2.2" />
+      <circle cx="12" cy="9.4" r="2.2" />
+      <circle cx="9.9" cy="7.3" r="2.2" />
+      <circle cx="14.1" cy="7.3" r="2.2" />
+      <circle cx="12" cy="7.3" r="0.75" fill="currentColor" />
+      {/* Key shaft extending down */}
+      <line x1="12" y1="11.6" x2="12" y2="21.5" />
+      {/* Key bit notches */}
+      <line x1="12" y1="18.5" x2="15.2" y2="18.5" />
+      <line x1="12" y1="21" x2="14.2" y2="21" />
+    </svg>
+  );
+}
 
 interface LucKeySidebarProps {
   className?: string;
@@ -53,6 +82,7 @@ export function LucKeySidebar({ className = '' }: LucKeySidebarProps) {
   });
 
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
+  const [isIntroModalOpen, setIsIntroModalOpen] = useState(false);
 
   // Dynamic user profile with live MBTI
   const profile = useMemo(() => {
@@ -132,7 +162,7 @@ export function LucKeySidebar({ className = '' }: LucKeySidebarProps) {
     return cleanLoc === '/profile' || cleanLoc === '/chronicle' || cleanLoc.startsWith('/profile/');
   }, [location]);
 
-  // 1. Core Gateways: Lucy ai & Lucy Voice Mode & Key
+  // 1. Core Gateways: Lucy ai & Key
   const CORE_ITEMS: NavItemDef[] = useMemo(
     () => [
       {
@@ -145,21 +175,6 @@ export function LucKeySidebar({ className = '' }: LucKeySidebarProps) {
         accentColor: 'emerald',
         badge: '메인',
         badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-      },
-      {
-        id: 'voice',
-        title: 'Lucy AI 음성모드',
-        subtitle: '여성 목소리 실시간 대화',
-        path: '#voice',
-        onClick: () => {
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('prism:open_lucy_voice_mode'));
-          }
-        },
-        icon: Mic,
-        accentColor: 'rose',
-        badge: '여성음성',
-        badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
       },
       {
         id: 'key',
@@ -301,12 +316,12 @@ export function LucKeySidebar({ className = '' }: LucKeySidebarProps) {
         <div className="flex items-center justify-center border-b border-white/10 px-1.5 py-3">
           <button
             type="button"
-            onClick={() => navigate('/')}
-            className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 font-black shadow-[0_0_14px_rgba(52,211,153,0.4)] cursor-pointer hover:scale-105 active:scale-95 transition-all border border-emerald-300/30"
-            title="Lucy ai (루시 홈)"
-            aria-label="Lucy ai"
+            onClick={() => setIsIntroModalOpen(true)}
+            className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-500/20 via-teal-500/20 to-cyan-500/20 border border-emerald-400/40 text-emerald-300 shadow-[0_0_16px_rgba(52,211,153,0.35)] cursor-pointer hover:scale-105 active:scale-95 transition-all flex items-center justify-center group"
+            title="LucKey 앱 소개 (차별점 & 특장점)"
+            aria-label="LucKey 소개"
           >
-            🍀
+            <LucKeyCloverKeyIcon size={20} className="group-hover:rotate-12 transition-transform drop-shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
           </button>
         </div>
 
@@ -429,6 +444,17 @@ export function LucKeySidebar({ className = '' }: LucKeySidebarProps) {
           />
         </button>
       )}
+
+      {/* 🍀 LucKey App Introduction Modal */}
+      <LucKeyIntroModal
+        isOpen={isIntroModalOpen}
+        onClose={() => setIsIntroModalOpen(false)}
+        onStartChat={() => {
+          if (location !== '/') {
+            navigate('/');
+          }
+        }}
+      />
     </>
   );
 }
