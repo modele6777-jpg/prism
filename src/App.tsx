@@ -83,6 +83,7 @@ const ROUTES_MAP = [
   { path: "/orange", Component: OrangeApp },
   { path: "/bluebird", Component: BluebirdApp },
   { path: "/heal", Component: HealApp },
+  { path: "/aura", Component: HealApp },
   { path: "/epilogue", Component: EpilogueApp },
   { path: "/library", Component: LibraryPage },
   { path: "/profile", Component: EpilogueApp },
@@ -119,6 +120,7 @@ function ActivePage({ loc }: { loc: string }) {
         <Route path="/orange"><OrangeApp /></Route>
         <Route path="/bluebird"><BluebirdApp /></Route>
         <Route path="/heal"><HealApp /></Route>
+        <Route path="/aura"><HealApp /></Route>
         <Route path="/epilogue"><EpilogueApp /></Route>
         <Route path="/library"><LibraryPage /></Route>
         <Route path="/profile"><EpilogueApp /></Route>
@@ -134,6 +136,8 @@ function ActivePage({ loc }: { loc: string }) {
         <Route path="/crystal"><CalmApp /></Route>
         <Route path="/calm"><CalmApp /></Route>
         <Route path="/key"><CalmApp /></Route>
+        {/* Fallback to Lucy home for unmatched paths */}
+        <Route><LucyStandalonePage /></Route>
       </Switch>
     </React.Suspense>
   );
@@ -353,7 +357,6 @@ function AppContent() {
     }
   }, [isUnlocked, sharedState?.themeColor]);
 
-  const isStandaloneChat = location === '/' || location === '/chat' || location === '/lucy' || location === '/handbook' || location === '/rebible' || location === '/orb' || location === '/gateway' || location === '/crystal' || location === '/key' || location === '/calm';
   const isOrbSite = location === '/orb' || location === '/gateway' || location === '/crystal';
   const isCalmSite = location === '/calm' || location === '/key';
   const isChatView = location === '/' || location === '/chat' || location === '/lucy';
@@ -375,8 +378,8 @@ function AppContent() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [location, navigate]);
 
-  // Standalone routes bypass full auth gating immediately so they never hang on key/calm/chat entry
-  if ((!isAuthReady || !appEntranceDone) && !isStandaloneChat) {
+  // App entrance loader (only show if entrance is not done)
+  if (!appEntranceDone) {
     return (
       <PrismRainbowLoader
         fullScreen
@@ -386,23 +389,8 @@ function AppContent() {
     );
   }
 
-  const hasStoredAuthUid = (() => {
-    try {
-      return !!safeSessionStorage.getItem('prism_auth_uid');
-    } catch {
-      return false;
-    }
-  })();
-
-  if (!firebaseUser && !isStandaloneChat) {
-    return (
-      <div className="prism-app-shell relative z-[1] bg-transparent">
-        <LoginScreen />
-      </div>
-    );
-  }
-
-  if (!isUnlocked && !isStandaloneChat) {
+  // If user is authenticated and specifically locked with PIN
+  if (firebaseUser && !isUnlocked) {
     return (
       <div className="prism-app-shell relative z-[1] bg-transparent">
         <PinLockScreen onUnlock={unlock} />
