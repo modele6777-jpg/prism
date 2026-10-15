@@ -22,6 +22,7 @@ import { detectLucyChannelsFromText } from '@/lib/lucyAutoModeDetector';
 import { triggerHaptic } from '@/lib/omniWarp/omniWarpHaptics';
 import { getAndClearPendingSelection } from '@/lib/selectionBridge';
 import { LucyResponseRecommendation } from '@/components/LucyResponseRecommendation';
+import { LucyChatHistoryModal } from '@/components/navigation/LucyChatHistoryModal';
 
 // Helper: Compress uploaded images to prevent UI stutter and huge payload overhead
 function compressImageIfNeeded(file: File): Promise<string> {
@@ -481,6 +482,7 @@ export default function LucyStandalonePage() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [resetToast, setResetToast] = useState<string | null>(null);
   const [modeSwitchToast, setModeSwitchToast] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -1350,8 +1352,19 @@ export default function LucyStandalonePage() {
               </div>
             </div>
 
-            {/* Right Action Tools: 1. 검색 -> 2. 자동 읽기 -> 3. 초기화 */}
+            {/* Right Action Tools: 0. 대화기록 -> 1. 검색 -> 2. 자동 읽기 -> 3. 초기화 */}
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              {/* 0. 대화 기록 보관함 (Soul Chat Archive) */}
+              <button
+                type="button"
+                onClick={() => setIsHistoryModalOpen(true)}
+                className="p-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center border bg-white/10 hover:bg-emerald-500/20 hover:text-emerald-300 text-slate-300 border-white/10"
+                title="지금까지의 대화 기록 보관함 열기"
+                aria-label="대화 기록 보관함"
+              >
+                <BookOpen size={16} />
+              </button>
+
               {/* 1. 검색 (Search Toggle) */}
               <button
                 onClick={() => setIsSearchOpen(!isSearchOpen)}
@@ -2093,6 +2106,19 @@ export default function LucyStandalonePage() {
           </motion.div>
         )}
       </AnimatePresence>
+      {/* 📜 Lucy AI Chat History Session Browser Modal */}
+      <LucyChatHistoryModal
+        isOpen={isHistoryModalOpen}
+        onClose={() => setIsHistoryModalOpen(false)}
+        onNewChat={() => {
+          abortGenerating('lucy');
+          stopTTS();
+          clearPersonaMessages('lucy');
+          setResetToast('새로운 대화가 시작되었습니다.');
+          setTimeout(() => setResetToast(null), 3000);
+        }}
+        onContinueChat={() => setIsHistoryModalOpen(false)}
+      />
     </div>
   );
 }

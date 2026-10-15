@@ -12,8 +12,6 @@ import {
   Moon,
   Sun,
   Mic,
-  BookMarked,
-  Library,
   ChevronLeft,
   ChevronRight,
   RefreshCw,
@@ -22,6 +20,7 @@ import { useApp } from '@/contexts/AppContext';
 import { safeLocalStorage } from '@/utils/safeStorage';
 import { loadProfileFromAllVaults } from '@/lib/profileVault';
 import { LucKeyIntroModal } from './LucKeyIntroModal';
+import { LucyChatHistoryModal } from './LucyChatHistoryModal';
 
 export function LucKeyCloverKeyIcon({ size = 20, className = '' }: { size?: number; className?: string }) {
   return (
@@ -83,6 +82,7 @@ export function LucKeySidebar({ className = '' }: LucKeySidebarProps) {
 
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
   const [isIntroModalOpen, setIsIntroModalOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
   // Dynamic user profile with live MBTI
   const profile = useMemo(() => {
@@ -162,15 +162,16 @@ export function LucKeySidebar({ className = '' }: LucKeySidebarProps) {
     return cleanLoc === '/profile' || cleanLoc === '/chronicle' || cleanLoc.startsWith('/profile/');
   }, [location]);
 
-  // 1. Core Gateways: Lucy ai & Key
+  // 1. Core Gateways: Lucy ai (opens chat history) & Key
   const CORE_ITEMS: NavItemDef[] = useMemo(
     () => [
       {
         id: 'lucy',
         title: 'Lucy ai',
-        subtitle: '행운의 올인원 AI 실시간 대화',
+        subtitle: '행운의 올인원 AI 실시간 대화 (대화 기록 보관함)',
         path: '/',
         matchPaths: ['/', '/chat', '/lucy'],
+        onClick: () => setIsHistoryModalOpen(true),
         icon: MessageCircle,
         accentColor: 'emerald',
         badge: '메인',
@@ -256,30 +257,6 @@ export function LucKeySidebar({ className = '' }: LucKeySidebarProps) {
     []
   );
 
-  // 3. Wisdom items
-  const WISDOM_ITEMS: NavItemDef[] = useMemo(
-    () => [
-      {
-        id: 'handbook',
-        title: '지혜 & 성서 핸드북',
-        subtitle: 'ReBible 오디오북 · 40기법 사전',
-        path: '/handbook',
-        matchPaths: ['/handbook', '/rebible'],
-        icon: BookMarked,
-        accentColor: 'cyan',
-      },
-      {
-        id: 'library',
-        title: '소울 라이브러리',
-        subtitle: '통합 지혜 & 독서 아카이브',
-        path: '/library',
-        icon: Library,
-        accentColor: 'emerald',
-      },
-    ],
-    []
-  );
-
   // Helper renderer for item row
   const renderItemRow = (item: NavItemDef) => {
     const active = isItemActive(item);
@@ -339,7 +316,7 @@ export function LucKeySidebar({ className = '' }: LucKeySidebarProps) {
         </div>
       </div>
 
-      {/* Navigation Links (Core + 7 Studios + Wisdom) */}
+      {/* Navigation Links (Core + 7 Studios) */}
       <div className="flex-1 overflow-y-auto px-1.5 py-1 space-y-2.5 no-scrollbar">
         {/* Core Gateways */}
         <div className="space-y-1">
@@ -349,11 +326,6 @@ export function LucKeySidebar({ className = '' }: LucKeySidebarProps) {
         {/* 7 Studios */}
         <div className="space-y-1 pt-1.5 border-t border-white/5">
           {STUDIOS_ITEMS.map((item) => renderItemRow(item))}
-        </div>
-
-        {/* Wisdom & Library */}
-        <div className="space-y-1 pt-1.5 border-t border-white/5">
-          {WISDOM_ITEMS.map((item) => renderItemRow(item))}
         </div>
       </div>
 
@@ -450,6 +422,18 @@ export function LucKeySidebar({ className = '' }: LucKeySidebarProps) {
         isOpen={isIntroModalOpen}
         onClose={() => setIsIntroModalOpen(false)}
         onStartChat={() => {
+          if (location !== '/') {
+            navigate('/');
+          }
+        }}
+      />
+
+      {/* 📜 Lucy AI Chat History Session Browser Modal */}
+      <LucyChatHistoryModal
+        isOpen={isHistoryModalOpen}
+        onClose={() => setIsHistoryModalOpen(false)}
+        onNewChat={handleNewChat}
+        onContinueChat={() => {
           if (location !== '/') {
             navigate('/');
           }
