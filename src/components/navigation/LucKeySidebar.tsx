@@ -17,7 +17,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
-import { safeLocalStorage } from '@/utils/safeStorage';
+import { safeLocalStorage, safeSessionStorage } from '@/utils/safeStorage';
 import { loadProfileFromAllVaults } from '@/lib/profileVault';
 import { LucKeyIntroModal } from './LucKeyIntroModal';
 import { LucyChatHistoryModal } from './LucyChatHistoryModal';
@@ -134,12 +134,19 @@ export function LucKeySidebar({ className = '' }: LucKeySidebarProps) {
 
   // Reset or Start New Chat
   const handleNewChat = useCallback(() => {
+    try {
+      safeSessionStorage.setItem('lucy_request_new_chat', 'true');
+    } catch (_) {}
+
     if (location !== '/') {
       navigate('/');
     }
-    window.setTimeout(() => {
-      window.dispatchEvent(new CustomEvent('prism:reset_lucy_chat'));
-    }, 80);
+    window.dispatchEvent(new CustomEvent('prism:reset_lucy_chat'));
+
+    // 모바일 화면에서는 사이드바 자동 닫힘
+    if (window.innerWidth < 1024) {
+      setIsOpen(false);
+    }
   }, [location, navigate]);
 
   // Check active navigation path
@@ -162,16 +169,25 @@ export function LucKeySidebar({ className = '' }: LucKeySidebarProps) {
     return cleanLoc === '/profile' || cleanLoc === '/chronicle' || cleanLoc.startsWith('/profile/');
   }, [location]);
 
-  // 1. Core Gateways: Lucy ai (opens chat history) & Key
+  // 1. Core Gateways: Lucy ai & Key
   const CORE_ITEMS: NavItemDef[] = useMemo(
     () => [
       {
         id: 'lucy',
         title: 'Lucy ai',
-        subtitle: '행운의 올인원 AI 실시간 대화 (대화 기록 보관함)',
+        subtitle: '행운의 올인원 AI 실시간 대화 · 5대 지능 부스터',
         path: '/',
         matchPaths: ['/', '/chat', '/lucy'],
-        onClick: () => setIsHistoryModalOpen(true),
+        onClick: () => {
+          if (location !== '/') {
+            navigate('/');
+          } else {
+            window.dispatchEvent(new CustomEvent('prism:focus_lucy_input'));
+          }
+          if (window.innerWidth < 1024) {
+            setIsOpen(false);
+          }
+        },
         icon: MessageCircle,
         accentColor: 'emerald',
         badge: '메인',

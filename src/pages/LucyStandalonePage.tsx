@@ -527,6 +527,7 @@ export default function LucyStandalonePage() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesWrapperRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
   const isTTSActive = useTTSActive();
   const [isUserScrolledUp, setIsUserScrolledUp] = useState(false);
@@ -1211,17 +1212,40 @@ export default function LucyStandalonePage() {
       abortGenerating('lucy');
       stopTTS();
       clearPersonaMessages('lucy');
-      setResetToast('대화가 깨끗하게 초기화되었습니다.');
+      setInput('');
+      setAttachedImage(null);
+      setResetToast('새로운 대화가 시작되었습니다.');
       setTimeout(() => setResetToast(null), 3000);
+      setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 150);
     };
     window.addEventListener('prism:reset_lucy_chat', handleResetChatEvent);
+
+    const handleFocusInputEvent = () => {
+      scrollToBottom(true, true);
+      setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 100);
+    };
+    window.addEventListener('prism:focus_lucy_input', handleFocusInputEvent);
+
+    // 사이드바 또는 다른 페이지에서 요청된 새 대화 시작 플래그 검사
+    try {
+      const isRequested = safeSessionStorage.getItem('lucy_request_new_chat');
+      if (isRequested === 'true') {
+        safeSessionStorage.removeItem('lucy_request_new_chat');
+        handleResetChatEvent();
+      }
+    } catch (_) {}
 
     return () => {
       window.removeEventListener('lucy-inject-message', handleDynamicInject);
       window.removeEventListener('prism:selection_saved', handleDynamicSelection);
       window.removeEventListener('prism:reset_lucy_chat', handleResetChatEvent);
+      window.removeEventListener('prism:focus_lucy_input', handleFocusInputEvent);
     };
-  }, [abortGenerating, clearPersonaMessages]);
+  }, [abortGenerating, clearPersonaMessages, scrollToBottom]);
 
   const handleCopy = (id: string, text: string) => {
     navigator.clipboard.writeText(text);
@@ -1907,6 +1931,7 @@ export default function LucyStandalonePage() {
 
               {/* Textarea */}
               <textarea
+                ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
